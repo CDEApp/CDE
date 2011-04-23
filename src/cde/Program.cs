@@ -6,19 +6,24 @@ namespace cde
 {
     class Program
     {
-        static string path = @"C:\";
-        static string file = @"c_SM15T_1_3.cde";
 
         static void Main(string[] args)
         {
             if (args.Length == 0)
             {
-                CreateCDECache(path, file);
+                CreateCDECache(@"C:\");
+                CreateCDECache(@"E:\");
+                CreateCDECache(@"F:\");
+                CreateCDECache(@"G:\");
+
+                Console.Write("Press return to continue");
+                Console.Out.Flush();
+                var name = Console.ReadLine();
             }
             else
             {
                 Console.WriteLine("Finding " + args[0]);
-                FindString(file, args[0]);
+                FindString(@"c_SM15T_1_3.cde", args[0]);
             }
         }
 
@@ -38,17 +43,16 @@ namespace cde
 
         }
 
-        static void CreateCDECache(string path, string cacheFile)
+        static void CreateCDECache(string path)
         {
             var re = new RootEntry();
             re.PopulateRoot(path);
-
-            var newFS = new FileStream(cacheFile, FileMode.Create);
-            re.Write(newFS);
-            newFS.Close();
-
-            Console.WriteLine(string.Format("files {0} dirs {1} totalsize {2}",
-                re.FileCount, re.DirCount, re.Size));
+            re.SaveRootEntry();
+            var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
+            Console.WriteLine("Scanned Path {0}", re.RootPath);
+            Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
+            Console.WriteLine("Saved Scanned Path {0}", re.DefaultFileName);
+            Console.WriteLine("Files {0:0,0} Dirs {1:0,0} Total Size of Files {2:0,0}", re.FileCount, re.DirCount, re.Size);
         }
     }
 }

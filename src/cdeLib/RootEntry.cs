@@ -5,6 +5,9 @@ using Alphaleonis.Win32.Filesystem;
 using cde;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
+using File = Alphaleonis.Win32.Filesystem.File;
+using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
@@ -17,7 +20,7 @@ namespace cdeLib
         public string RootPath { get; set; }
 
         [ProtoMember(3, IsRequired = true)]
-        public string VolumeName { get; set; }  // as set in explorer ? the visiable name of root of device scanned
+        public string VolumeName { get; set; }
 
         [ProtoMember(4, IsRequired = true)]
         public string Description { get; set; } // user entered description ?
@@ -35,6 +38,8 @@ namespace cdeLib
         public DateTime ScanStartUTC { get; set; } // when scan stared UTC
         public DateTime ScanEndUTC { get; set; } // when scan ended UTC
 
+        public string DefaultFileName;
+
         public RootEntry ()
         {
             PathsWithUnauthorisedExceptions = new List<string>();    
@@ -43,7 +48,21 @@ namespace cdeLib
         public void PopulateRoot(string startPath)
         {
             RootPath = startPath;
+
+            var volRoot = Directory.GetDirectoryRoot(startPath);
+            var volInfo = Volume.GetVolumeInformation(volRoot);
+            DriveLetterHint = volRoot.Substring(0, 1);
+            VolumeName = volInfo.Name;
+            DefaultFileName = string.Format("{0}-{1}.cde", DriveLetterHint, VolumeName);
+
+            var dsi = Volume.GetDiskFreeSpace(RootPath);
+            AvailSpace = dsi.FreeBytesAvailable;
+            UsedSpace = dsi.TotalNumberOfBytes;
+
+            ScanStartUTC = DateTime.UtcNow;
             RecurseTree(startPath);
+            ScanEndUTC = DateTime.UtcNow;
+
             SetSummaryFields();
         }
 
@@ -99,6 +118,14 @@ namespace cdeLib
             }
 
             return FindClosestParentDir(relativePath);
+        }
+
+        public void SaveRootEntry()
+        {
+            using(var newFS = File.Open(DefaultFileName, FileMode.Create))
+            {
+                Write(newFS);
+            }
         }
 
         public void Write(Stream output)

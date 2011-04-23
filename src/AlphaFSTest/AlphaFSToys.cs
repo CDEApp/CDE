@@ -38,6 +38,9 @@ namespace AlphaFSTest
             var dsi = Volume.GetDiskFreeSpace(path);
             Console.WriteLine("FreeBytesAvailable {0}", dsi.FreeBytesAvailable);
             Console.WriteLine("TotalNumberOfBytes {0}", dsi.TotalNumberOfBytes);
+
+            var p = Directory.GetDirectoryRoot(path);
+            Console.WriteLine("GetDirectoryRoot {0} => {1}", path, p);
         }
 
         // ReSharper disable InconsistentNaming
