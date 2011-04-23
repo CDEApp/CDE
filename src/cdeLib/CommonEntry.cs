@@ -67,7 +67,7 @@ namespace cdeLib
             var size = 0ul;
             foreach (var dirEntry in Children)
             {
-                if (dirEntry.IsDir)
+                if (dirEntry.IsDirectory)
                 {
                     dirEntry.SetSummaryFields();
                     dirCount += dirEntry.DirCount + 1;
@@ -93,7 +93,7 @@ namespace cdeLib
                 {
                     Console.WriteLine("found {0}", fullPath);
                 }
-                if (dirEntry.IsDir)
+                if (dirEntry.IsDirectory)
                 {
                     dirEntry.FindEntries(find, fullPath);
                 }
