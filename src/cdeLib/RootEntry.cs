@@ -1,7 +1,13 @@
-﻿using System;
+﻿#define MSGZIP
+//#define GZIP
+//#define BZIP2
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using Alphaleonis.Win32.Filesystem;
+//using ICSharpCode.SharpZipLib.BZip2;
+//using ICSharpCode.SharpZipLib.GZip;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
@@ -129,12 +135,47 @@ namespace cdeLib
 
         public void Write(Stream output)
         {
+            #if BZIP2
+            using (var bzip2Stream = new BZip2OutputStream(output, 1))
+            {
+                Serializer.Serialize(bzip2Stream, this);
+            }
+            #elif GZIP
+            using (var gzipStream = new GZipOutputStream(output))
+            {
+                Serializer.Serialize(gzipStream, this);
+            }
+            #elif MSGZIP
+            using (var gzipStream = new GZipStream(output, CompressionMode.Compress, false))
+            {
+                Serializer.Serialize(gzipStream, this);
+            }
+            #else
             Serializer.Serialize(output, this);
+            #endif
         }
 
         public static RootEntry Read(Stream input)
         {
-            var re = Serializer.Deserialize<RootEntry>(input);
+            RootEntry re;
+            #if BZIP2
+            using (var bzip2InputStream = new BZip2InputStream(input))
+            {
+                re = Serializer.Deserialize<RootEntry>(bzip2InputStream);
+            }
+            #elif GZIP
+            using (var gzipInputStream = new GZipInputStream(input))
+            {
+                re = Serializer.Deserialize<RootEntry>(gzipInputStream);
+            }
+            #elif MSGZIP
+            using (var gzipInputStream = new GZipStream(input, CompressionMode.Decompress, false))
+            {
+                re = Serializer.Deserialize<RootEntry>(gzipInputStream);
+            }
+            #else
+            re = Serializer.Deserialize<RootEntry>(input);
+            #endif
             return re;
         }
 
