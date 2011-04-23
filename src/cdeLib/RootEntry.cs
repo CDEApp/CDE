@@ -40,6 +40,13 @@ namespace cdeLib
             PathsWithUnauthorisedExceptions = new List<string>();    
         }
 
+        public void PopulateRoot(string startPath)
+        {
+            RootPath = startPath;
+            RecurseTree(startPath);
+            SetSummaryFields();
+        }
+
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.

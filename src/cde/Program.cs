@@ -41,9 +41,7 @@ namespace cde
         static void CreateCDECache(string path, string cacheFile)
         {
             var re = new RootEntry();
-            re.RecurseTree(path);
-            re.SetSummaryFields();
-            re.RootPath = path;
+            re.PopulateRoot(path);
 
             var newFS = new FileStream(cacheFile, FileMode.Create);
             re.Write(newFS);
