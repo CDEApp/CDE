@@ -36,14 +36,23 @@ namespace cdeLib
         [ProtoMember(5, IsRequired = true)]
         public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
-        // additional useful info about Root of a scan.
-        public string DriveLetterHint { get; set; } // hint at what letter of drive of root path was at scan time
-        public ulong AvailSpace { get; set; } // hint at space on device at scan time
-        public ulong UsedSpace { get; set; } // hint at usage of device at scan time
-        public DateTime ScanStartUTC { get; set; } // when scan stared UTC
-        public DateTime ScanEndUTC { get; set; } // when scan ended UTC
+        [ProtoMember(6, IsRequired = true)]
+        public string DefaultFileName { get; set; }
 
-        public string DefaultFileName;
+        [ProtoMember(7, IsRequired = true)]
+        public string DriveLetterHint { get; set; }
+
+        [ProtoMember(8, IsRequired = true)]
+        public ulong AvailSpace { get; set; }
+
+        [ProtoMember(9, IsRequired = true)]
+        public ulong UsedSpace { get; set; }
+
+        [ProtoMember(10, IsRequired = true)]
+        public DateTime ScanStartUTC { get; set; }
+
+        [ProtoMember(11, IsRequired = true)]
+        public DateTime ScanEndUTC { get; set; }
 
         public RootEntry ()
         {
@@ -183,6 +192,22 @@ namespace cdeLib
         {
             FindEntries(find, RootPath);
         }
+
+        public static List<RootEntry> LoadCurrentDirCache()
+        {
+            var roots = new List<RootEntry>();
+            var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
+            foreach (var file in files)
+            {
+                using (var fs = File.Open(file, FileMode.Open))
+                {
+                    var re = Read(fs);
+                    roots.Add(re);
+                }
+            }
+            return roots;
+        }
+
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169
