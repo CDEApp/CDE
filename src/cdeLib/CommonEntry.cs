@@ -84,20 +84,23 @@ namespace cdeLib
             Size = size;
         }
 
-        public void FindEntries(string find, string path)
+        public uint FindEntries(string find, string path)
         {
+            var found = 0u;
             foreach (var dirEntry in Children)
             {
                 var fullPath = Path.Combine(path, dirEntry.Name);
                 if (dirEntry.Name.IndexOf(find) >= 0)
                 {
+                    ++found;
                     Console.WriteLine("found {0}", fullPath);
                 }
                 if (dirEntry.IsDirectory)
                 {
-                    dirEntry.FindEntries(find, fullPath);
+                    found += dirEntry.FindEntries(find, fullPath);
                 }
             }
+            return found;
         }
     }
 }

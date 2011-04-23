@@ -61,9 +61,20 @@ namespace cdeLib
 
         public void PopulateRoot(string startPath)
         {
+            if (!Directory.Exists(startPath))
+            {
+                throw new ArgumentException(string.Format("Cannot find path \"{0}\"", startPath));
+            }
+
             RootPath = startPath;
 
             var volRoot = Directory.GetDirectoryRoot(startPath);
+
+            if (volRoot != startPath)
+            {
+                throw new ArgumentException(string.Format("Currently only support caching volumes from root. This path is not a root path \"{0}\"", startPath));
+            }
+
             var volInfo = Volume.GetVolumeInformation(volRoot);
             DriveLetterHint = volRoot.Substring(0, 1);
             VolumeName = volInfo.Name;
@@ -188,9 +199,9 @@ namespace cdeLib
             return re;
         }
 
-        public void FindEntries(string find)
+        public uint FindEntries(string find)
         {
-            FindEntries(find, RootPath);
+            return FindEntries(find, RootPath);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()
