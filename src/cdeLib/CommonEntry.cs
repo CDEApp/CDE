@@ -61,13 +61,6 @@ namespace cdeLib
             return this;
         }
 
-        //private static string FirstPathElement(string relativePath)
-        //{
-        //    return relativePath.Remove(relativePath.IndexOf(Path.DirectorySeparatorChar));
-        //}
-
-        public abstract void Write(Stream output);
-
         // set DirCount FileCount DirSize
         public void SetSummaryFields()
         {
@@ -93,5 +86,20 @@ namespace cdeLib
             Size = size;
         }
 
+        public void FindEntries(string find, string path)
+        {
+            foreach (var dirEntry in Children)
+            {
+                var fullPath = Path.Combine(path, dirEntry.Name);
+                if (dirEntry.Name.IndexOf(find) >= 0)
+                {
+                    Console.WriteLine("found {0}", fullPath);
+                }
+                if (dirEntry.IsDir)
+                {
+                    dirEntry.FindEntries(find, fullPath);
+                }
+            }
+        }
     }
 }

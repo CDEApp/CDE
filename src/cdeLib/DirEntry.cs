@@ -48,10 +48,5 @@ namespace cdeLib
             }
             return de;
         }
-
-        public override void Write(Stream output)
-        {
-            Serializer.Serialize(output, this);
-        }
     }
 }

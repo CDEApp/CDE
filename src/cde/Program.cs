@@ -6,10 +6,36 @@ namespace cde
 {
     class Program
     {
+        static string path = @"C:\";
+        static string file = @"c_SM15T_1_3.cde";
+
         static void Main(string[] args)
         {
-            var path = @"C:\";
-            CreateCDECache(path, @"D:\Test1.cde");
+            if (args.Length == 0)
+            {
+                CreateCDECache(path, file);
+            }
+            else
+            {
+                Console.WriteLine("Finding " + args[0]);
+                FindString(file, args[0]);
+            }
+        }
+
+        static void FindString(string cacheFile, string find)
+        {
+            DateTime start = DateTime.UtcNow;
+            var newFS = new FileStream(cacheFile, FileMode.Open);
+            RootEntry rootEntry = RootEntry.Read(newFS);
+            DateTime end = DateTime.UtcNow;
+            var loadTimeSpan = end - start;
+            Console.WriteLine("Loaded Done... {0} in {1}msecs", cacheFile, loadTimeSpan.Milliseconds);
+            Console.WriteLine("Loaded Entries... {0}", rootEntry.DirCount + rootEntry.FileCount);
+
+            rootEntry.FindEntries(find);
+            
+            Console.WriteLine("Done. ");
+
         }
 
         static void CreateCDECache(string path, string cacheFile)
@@ -17,6 +43,7 @@ namespace cde
             var re = new RootEntry();
             re.RecurseTree(path);
             re.SetSummaryFields();
+            re.RootPath = path;
 
             var newFS = new FileStream(cacheFile, FileMode.Create);
             re.Write(newFS);

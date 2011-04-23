@@ -17,10 +17,10 @@ namespace cdeLib
         public string RootPath { get; set; }
 
         [ProtoMember(3, IsRequired = true)]
-        public string VolumeName { get; set; }
+        public string VolumeName { get; set; }  // as set in explorer ? the visiable name of root of device scanned
 
         [ProtoMember(4, IsRequired = true)]
-        public string Description { get; set; }
+        public string Description { get; set; } // user entered description ?
 
         /// <summary>
         /// There are a standard set on C: drive in win7 do we care about them ? Hmmmmm filter em out ? or hold internal filter to filter em out ojn display optionally.
@@ -28,13 +28,12 @@ namespace cdeLib
         [ProtoMember(5, IsRequired = true)]
         public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
-        //[ProtoMember(7, IsRequired = true)]
-        //public IList<DirEntry> List { get; set; }
-
-        //List<Type> exceptionList = new List<Type>
-        //    {
-        //        typeof (UnauthorizedAccessException)
-        //    };
+        // additional useful info about Root of a scan.
+        public string DriveLetterHint { get; set; } // hint at what letter of drive of root path was at scan time
+        public ulong AvailSpace { get; set; } // hint at space on device at scan time
+        public ulong UsedSpace { get; set; } // hint at usage of device at scan time
+        public DateTime ScanStartUTC { get; set; } // when scan stared UTC
+        public DateTime ScanEndUTC { get; set; } // when scan ended UTC
 
         public RootEntry ()
         {
@@ -95,9 +94,20 @@ namespace cdeLib
             return FindClosestParentDir(relativePath);
         }
 
-        public override void Write(Stream output)
+        public void Write(Stream output)
         {
             Serializer.Serialize(output, this);
+        }
+
+        public static RootEntry Read(Stream input)
+        {
+            var re = Serializer.Deserialize<RootEntry>(input);
+            return re;
+        }
+
+        public void FindEntries(string find)
+        {
+            FindEntries(find, RootPath);
         }
 
         #region List of UAE paths on a known win7 volume - probably decent example
@@ -272,8 +282,7 @@ namespace cdeLib
             }
             Console.WriteLine(" list " + List.Count);
         }
-#endif
-
+        #endif
         #endregion
     }
 }
