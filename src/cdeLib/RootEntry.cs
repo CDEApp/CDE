@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using Alphaleonis.Win32.Filesystem;
 using cde;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
@@ -21,13 +22,24 @@ namespace cdeLib
         [ProtoMember(4, IsRequired = true)]
         public string Description { get; set; }
 
-        [ProtoMember(7, IsRequired = true)]
-        public IList<DirEntry> List { get; set; }
-        
-        List<Type> exceptionList = new List<Type>
-            {
-                typeof (UnauthorizedAccessException)
-            };
+        /// <summary>
+        /// There are a standard set on C: drive in win7 do we care about them ? Hmmmmm filter em out ? or hold internal filter to filter em out ojn display optionally.
+        /// </summary>
+        [ProtoMember(5, IsRequired = true)]
+        public IList<string> PathsWithUnauthorisedExceptions { get; set; }
+
+        //[ProtoMember(7, IsRequired = true)]
+        //public IList<DirEntry> List { get; set; }
+
+        //List<Type> exceptionList = new List<Type>
+        //    {
+        //        typeof (UnauthorizedAccessException)
+        //    };
+
+        public RootEntry ()
+        {
+            PathsWithUnauthorisedExceptions = new List<string>();    
+        }
 
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
@@ -44,7 +56,7 @@ namespace cdeLib
                 var directory = t.Item2;
 
                 var fsEntries = Directory.GetFullFileSystemEntries
-                    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, null, exceptionList);
+                    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
                 foreach (var fsEntry in fsEntries)
                 {
                     var dirEntry = new DirEntry(fsEntry);
@@ -55,6 +67,16 @@ namespace cdeLib
                     }
                 }
             }
+        }
+
+        private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
+        {
+            if (e.GetType().Equals(typeof(UnauthorizedAccessException)))
+            {
+                PathsWithUnauthorisedExceptions.Add(path);
+                return EnumerationExceptionDecision.Skip;
+            }
+            return EnumerationExceptionDecision.Abort;
         }
 
         public CommonEntry FindDir(string basePath, string entryPath)
@@ -77,6 +99,117 @@ namespace cdeLib
         {
             Serializer.Serialize(output, this);
         }
+
+        #region List of UAE paths on a known win7 volume - probably decent example
+        #pragma warning disable 169
+        // ReSharper disable InconsistentNaming
+        private List<string> knownUAEpattern = new List<string>(100)
+            {
+                @"%windows%\System32\LogFiles\WMI\RtBackup",
+                @"%windows%\CSC\v2.0.6",
+                @"%userprofilepath%\%user%\Templates",
+                @"%userprofilepath%\%user%\Start Menu",
+                @"%userprofilepath%\%user%\SendTo",
+                @"%userprofilepath%\%user%\Recent",
+                @"%userprofilepath%\%user%\PrintHood",
+                @"%userprofilepath%\%user%\NetHood",
+                @"%userprofilepath%\%user%\My Documents",
+                @"%userprofilepath%\%user%\Local Settings",
+                @"%userprofilepath%\%user%\Documents\My Videos",
+                @"%userprofilepath%\%user%\Documents\My Pictures",
+                @"%userprofilepath%\%user%\Documents\My Music",
+                @"%userprofilepath%\%user%\Cookies",
+                @"%userprofilepath%\%user%\Application Data",
+                @"%userprofilepath%\%user%\AppData\Local\Temporary Internet Files",
+                @"%userprofilepath%\%user%\AppData\Local\History",
+                @"%userprofilepath%\%user%\AppData\Local\Application Data",
+                @"%userprofilepath%\%user%\NetHood",
+                @"%userprofilepath%\Default User",
+
+                // @"C:\Users\All Users\" is same as @"C:\ProgramData\"
+                @"%AllUsersProfile%\Templates", // yet another profile root variant.
+
+                @"C:\ProgramData\Templates",
+                @"C:\ProgramData\Start Menu",
+                @"C:\ProgramData\Favorites",
+                @"C:\ProgramData\Documents",
+                @"C:\ProgramData\Desktop",
+                @"C:\ProgramData\Application Data",
+
+
+                @"C:\System Volume Information",
+                @"C:\Documents and Settings",                                                   
+            };
+
+        private List<string> knownUAE = new List<string>(100)
+            {
+                @"C:\Windows\System32\LogFiles\WMI\RtBackup",
+                @"C:\Windows\CSC\v2.0.6",
+                @"C:\Users\robtest\Templates",
+                @"C:\Users\robtest\Start Menu",
+                @"C:\Users\robtest\SendTo",
+                @"C:\Users\robtest\Recent",
+                @"C:\Users\robtest\PrintHood",
+                @"C:\Users\robtest\NetHood",
+                @"C:\Users\robtest\My Documents",
+                @"C:\Users\robtest\Local Settings",
+                @"C:\Users\robtest\Documents\My Videos",
+                @"C:\Users\robtest\Documents\My Pictures",
+                @"C:\Users\robtest\Documents\My Music",
+                @"C:\Users\robtest\Cookies",
+                @"C:\Users\robtest\Application Data",
+                @"C:\Users\robtest\AppData\Local\Temporary Internet Files",
+                @"C:\Users\robtest\AppData\Local\History",
+                @"C:\Users\robtest\AppData\Local\Application Data",
+                @"C:\Users\rluiten\Templates",
+                @"C:\Users\rluiten\Start Menu",
+                @"C:\Users\rluiten\SendTo",
+                @"C:\Users\rluiten\Recent",
+                @"C:\Users\rluiten\PrintHood",
+                @"C:\Users\rluiten\NetHood",
+                @"C:\Users\rluiten\My Documents",
+                @"C:\Users\rluiten\Local Settings",
+                @"C:\Users\rluiten\Application Data",
+                @"C:\Users\rluiten\AppData\Local\Temporary Internet Files",
+                @"C:\Users\rluiten\AppData\Local\History",
+                @"C:\Users\Public\Documents\My Videos",
+                @"C:\Users\Public\Documents\My Pictures",
+                @"C:\Users\Public\Documents\My Music",
+                @"C:\Users\Default User",
+                @"C:\Users\Default\Templates",
+                @"C:\Users\Default\Start Menu",
+                @"C:\Users\Default\SendTo",
+                @"C:\Users\Default\Recent",
+                @"C:\Users\Default\PrintHood",
+                @"C:\Users\Default\NetHood",
+                @"C:\Users\Default\My Documents",
+                @"C:\Users\Default\Local Settings",
+                @"C:\Users\Default\Documents\My Videos",
+                @"C:\Users\Default\Documents\My Pictures",
+                @"C:\Users\Default\Documents\My Music",
+                @"C:\Users\Default\Cookies",
+                @"C:\Users\Default\Application Data",
+                @"C:\Users\Default\AppData\Local\Temporary Internet Files",
+                @"C:\Users\Default\AppData\Local\History",
+                @"C:\Users\Default\AppData\Local\Application Data",
+                @"C:\Users\All Users\Templates",
+                @"C:\Users\All Users\Start Menu",
+                @"C:\Users\All Users\Favorites",
+                @"C:\Users\All Users\Documents",
+                @"C:\Users\All Users\Desktop",
+                @"C:\Users\All Users\Application Data",
+                @"C:\System Volume Information",
+                @"C:\ProgramData\Templates",
+                @"C:\ProgramData\Start Menu",
+                @"C:\ProgramData\Favorites",
+                @"C:\ProgramData\Documents",
+                @"C:\ProgramData\Desktop",
+                @"C:\ProgramData\Application Data",
+                @"C:\Documents and Settings",
+            };
+        // ReSharper restore InconsistentNaming
+        #pragma warning restore 169
+        #endregion
 
         #region other implementations that are slower and or not worth using
         #if (LEFTOVERCODE)
@@ -139,7 +272,8 @@ namespace cdeLib
             }
             Console.WriteLine(" list " + List.Count);
         }
-        #endif
+#endif
+
         #endregion
     }
 }
