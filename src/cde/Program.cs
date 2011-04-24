@@ -7,31 +7,20 @@ namespace cde
     {
         static void Main(string[] args)
         {
-            if (args.Length == 2 && args[0] == "/cache")
+            if (args.Length == 2 && args[0] == "--scan")
             {
                 CreateCDECache(args[1]);
             }
-            //if (args.Length == 0)
-            //{
-            //    CreateCDECache(@"C:\");
-            //    CreateCDECache(@"D:\");
-            //    CreateCDECache(@"E:\");
-            //    CreateCDECache(@"F:\");
-            //    CreateCDECache(@"G:\");
-            //    //Console.Write("Press return to continue");
-            //    //Console.Out.Flush();
-            //    //var name = Console.ReadLine();
-            //}
-            else if (args.Length == 1)
+            else if (args.Length == 2 && args[0] == "--find")
             {
-                FindString(args[0]);
+                FindString(args[1]);
             }
             else
             {
-                Console.WriteLine("Usage: cde /cache <path>");
-                Console.WriteLine("       creates a cache file of path in current directory");
-                Console.WriteLine("Usage: cde <string>");
-                Console.WriteLine("       uses all cache files in current directory and searches for <string> as substring of file system entries.");
+                Console.WriteLine("Usage: cde --scan <path>");
+                Console.WriteLine("       scans path and creates a cache file.");
+                Console.WriteLine("Usage: cde --find <string>");
+                Console.WriteLine("       uses all cache files available searches for <string> as substring of file system entries.");
             }
         }
 
