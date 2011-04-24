@@ -94,6 +94,14 @@ namespace AlphaFSTest
 
             Assert.That(a, Is.True);
         }
+
+        [Test]
+        public void GetDirectoryRoot_WithRelativePath_ReturnsCurrentDirRoot()
+        {
+            var root = Directory.GetDirectoryRoot(@"\Windows");
+
+            Assert.That(root, Is.EqualTo(@"D:\"));  // my dev drive is D:
+        }
         // ReSharper restore InconsistentNaming
     }
 }
