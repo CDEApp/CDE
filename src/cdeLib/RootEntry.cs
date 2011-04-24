@@ -12,6 +12,7 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using Path = Alphaleonis.Win32.Filesystem.Path;
 using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
@@ -65,20 +66,13 @@ namespace cdeLib
             {
                 throw new ArgumentException(string.Format("Cannot find path \"{0}\"", startPath));
             }
+            string deviceHint;
+            string volumeName;
+            string volRoot;
+            DefaultFileName = GetDefaultFileName(startPath, out deviceHint, out volRoot, out volumeName);
 
-            RootPath = startPath;
-
-            var volRoot = Directory.GetDirectoryRoot(startPath);
-
-            if (volRoot != startPath)
-            {
-                throw new ArgumentException(string.Format("Currently only support caching volumes from root. This path is not a root path \"{0}\"", startPath));
-            }
-
-            var volInfo = Volume.GetVolumeInformation(volRoot);
-            DriveLetterHint = volRoot.Substring(0, 1);
-            VolumeName = volInfo.Name;
-            DefaultFileName = string.Format("{0}-{1}.cde", DriveLetterHint, VolumeName);
+            DriveLetterHint = deviceHint;
+            VolumeName = volumeName;
 
             var dsi = Volume.GetDiskFreeSpace(RootPath);
             AvailSpace = dsi.FreeBytesAvailable;
@@ -91,6 +85,96 @@ namespace cdeLib
             SetSummaryFields();
         }
 
+        public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot, out string volumeName)
+        {
+            string fileName;
+
+            scanPath = FullPath(scanPath);  // Fully qualified path used to generate filename
+            volumeRoot = GetDirectoryRoot(scanPath);
+            volumeName = GetVolumeName(volumeRoot);
+
+            hint = GetDriverLetterHint(scanPath, volumeRoot);
+
+            var filenameSafePath = SafeFileName(scanPath);
+            if (IsUnc(scanPath))
+            {
+                fileName = string.Format("{0}-{1}.cde", hint, filenameSafePath.Substring(2));
+            }
+            else
+            {
+                if (volumeRoot == scanPath)
+                {
+                    fileName = string.Format("{0}-{1}.cde", hint, volumeName);
+                }
+                else
+                {   // how to make a nice name out of path ?
+                    fileName = string.Format("{0}-{1}_.cde", hint, filenameSafePath);
+                }
+            }
+            return fileName;
+        }
+
+        #region Methods virtual to assist testing.
+        public virtual string FullPath(string path)
+        {
+            return Path.GetFullPath(path);
+        }
+
+        public virtual bool IsPathRooted(string path)
+        {
+            return Path.IsPathRooted(path);
+        }
+
+        public virtual bool IsUnc(string path)
+        {
+            return IsUnc(path);
+        }
+
+        public virtual string GetDirectoryRoot(string path)
+        {
+            return Directory.GetDirectoryRoot(path);
+        }
+
+        public virtual string GetVolumeName(string rootPath)
+        {
+            return Volume.GetVolumeInformation(rootPath).Name;
+        }
+        #endregion
+
+        public string GetDriverLetterHint(string path, string volumeRoot)
+        {
+            string hint;
+            if (IsUnc(path))
+            {
+                hint = "UNC";
+            }
+            else
+            {
+                if (volumeRoot == path)
+                {
+                    hint = volumeRoot.Substring(0, 1);
+                }
+                else
+                {
+                    hint = "PATH";
+                }
+            }
+            return hint;
+        }
+
+        public string SafeFileName(string path)
+        {
+            return path.Replace('\\', '_')
+                        .Replace('$', '_')
+                        .Replace(':', '_');
+        }
+
+        public string GetDefaultFileName(string scanPath, VolumeInfo volInfo)
+        {
+            return "";
+        }
+
+ 
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.
