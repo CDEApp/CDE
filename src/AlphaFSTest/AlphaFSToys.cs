@@ -70,7 +70,30 @@ namespace AlphaFSTest
                 }
             }
         }
-        // ReSharper restore InconsistentNaming
 
+        [Test]
+        public void IsRootedPath_ForRootedPath_ReturnsTrue()
+        {
+            var a = Path.IsPathRooted(@"C:\");
+
+            Assert.That(a, Is.True);
+        }
+
+        [Test]
+        public void IsRootedPath_ForRelativePath_ReturnsFalse()
+        {
+            var a = Path.IsPathRooted(@"MyPath");
+
+            Assert.That(a, Is.False);
+        }
+
+        [Test]
+        public void IsRootedPath_ForLeadingSlashRootedPath_ReturnsTrue()
+        {
+            var a = Path.IsPathRooted(@"\MyPath");
+
+            Assert.That(a, Is.True);
+        }
+        // ReSharper restore InconsistentNaming
     }
 }
