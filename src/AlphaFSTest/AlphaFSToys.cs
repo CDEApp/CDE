@@ -96,11 +96,51 @@ namespace AlphaFSTest
         }
 
         [Test]
+        public void IsRootedPath_UncPath_ReturnsTrue()
+        {
+            var a = Path.IsPathRooted(@"\\myserver\myshare");
+
+            Assert.That(a, Is.True);
+        }
+
+        [Test]
         public void GetDirectoryRoot_WithRelativePath_ReturnsCurrentDirRoot()
         {
             var root = Directory.GetDirectoryRoot(@"\Windows");
 
             Assert.That(root, Is.EqualTo(@"D:\"));  // my dev drive is D:
+        }
+
+        [Test]
+        public void GetDirectoryNameWithoutRoot_OnPathPrefixSlash()
+        {
+            var a = Path.GetDirectoryNameWithoutRoot(@"\Data");
+
+            Assert.That(a, Is.EqualTo(@""));
+        }
+
+        [Test]
+        public void GetDirectoryName_Test1()
+        {
+            var a = Path.GetDirectoryName(@"\Data");
+
+            Assert.That(a, Is.EqualTo(@"\"));
+        }
+
+        [Test]
+        public void GetFullPath_OfLeadingSlashPath()
+        {
+            var a = Path.GetFullPath(@"\Data");
+
+            Assert.That(a, Is.EqualTo(@"D:\Data"));
+        }
+
+        [Test]
+        public void GetFullPath_OfUncPath()
+        {
+            var a = Path.GetFullPath(@"\\Friday\cache");
+
+            Assert.That(a, Is.EqualTo(@"\\Friday\cache\"));
         }
         // ReSharper restore InconsistentNaming
     }
