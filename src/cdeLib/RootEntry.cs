@@ -1,4 +1,4 @@
-﻿#define MSGZIP
+﻿//#define MSGZIP
 //#define GZIP
 //#define BZIP2
 using System;
@@ -71,6 +71,7 @@ namespace cdeLib
             string volRoot;
             DefaultFileName = GetDefaultFileName(startPath, out deviceHint, out volRoot, out volumeName);
 
+            RootPath = startPath;
             DriveLetterHint = deviceHint;
             VolumeName = volumeName;
 
@@ -127,7 +128,7 @@ namespace cdeLib
 
         public virtual bool IsUnc(string path)
         {
-            return IsUnc(path);
+            return Path.IsUnc(path);
         }
 
         public virtual string GetDirectoryRoot(string path)
@@ -169,12 +170,6 @@ namespace cdeLib
                         .Replace(':', '_');
         }
 
-        public string GetDefaultFileName(string scanPath, VolumeInfo volInfo)
-        {
-            return "";
-        }
-
- 
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.
