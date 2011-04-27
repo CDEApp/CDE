@@ -21,7 +21,7 @@ namespace cdeLibTest
         {
             var p = @"C:\temp";
             var re = new RootEntry();
-            re.RecurseTree(p);
+            re.RecurseTree(p, null, null);
 
             Assert.That(re, Is.Not.Null);
             Assert.That(re.Children, Is.Not.Null);
@@ -33,7 +33,7 @@ namespace cdeLibTest
         {
             var p = @"C:\temp";
             var re = new RootEntry();
-            re.RecurseTree(p);
+            re.RecurseTree(p, null, null);
 
             Assert.That(re, Is.Not.Null);
             var found = re.Children.Any(x => x.Children.Count > 0);

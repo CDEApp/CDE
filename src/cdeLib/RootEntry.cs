@@ -60,7 +60,7 @@ namespace cdeLib
             PathsWithUnauthorisedExceptions = new List<string>();    
         }
 
-        public void PopulateRoot(string startPath)
+        public void PopulateRoot(string startPath, DScanEvery10000Entries do10000, DScanEndofEntries doEnd)
         {
             if (!Directory.Exists(startPath))
             {
@@ -80,7 +80,7 @@ namespace cdeLib
             UsedSpace = dsi.TotalNumberOfBytes;
 
             ScanStartUTC = DateTime.UtcNow;
-            RecurseTree(startPath);
+            RecurseTree(startPath, do10000, doEnd);
             ScanEndUTC = DateTime.UtcNow;
 
             SetSummaryFields();
@@ -170,12 +170,15 @@ namespace cdeLib
                         .Replace(':', '_');
         }
 
+        int _entryCountEvent = 10000;
+
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.
         /// </summary>
-        public void RecurseTree(string startPath)
+        public void RecurseTree(string startPath, DScanEvery10000Entries do10000, DScanEndofEntries doEnd)
         {
+            var entryCount = 0;
             var dirs = new Stack<Tuple<CommonEntry,string>>();
             dirs.Push(Tuple.Create((CommonEntry)this, startPath));
             while (dirs.Count > 0)
@@ -194,9 +197,28 @@ namespace cdeLib
                     {
                         dirs.Push(Tuple.Create((CommonEntry)dirEntry, fsEntry.FullPath));
                     }
+                    ++entryCount;
+                    if (entryCount > _entryCountEvent)
+                    {
+                        if (do10000 != null)
+                        {
+                            do10000();
+                        }
+                        entryCount = 0;
+                    }
                 }
             }
+            if (doEnd != null)
+            {
+                doEnd();
+            }
         }
+
+        public delegate void DScanEvery10000Entries();
+
+        public delegate void DScanEndofEntries();
+
+
 
         private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
         {

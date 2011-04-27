@@ -51,12 +51,23 @@ namespace cde
             }
         }
 
+        public static void ScanEvery1000Entries()
+        {
+            Console.Write(".");
+        }
+
+        public static void ScanEndofEntries()
+        {
+            Console.WriteLine("");
+        }
+
         static void CreateCDECache(string path)
         {
             var re = new RootEntry();
             try
             {
-                re.PopulateRoot(path);
+                re.PopulateRoot(path, ScanEvery1000Entries, ScanEndofEntries);
+
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
                 Console.WriteLine("Scanned Path {0}", re.RootPath);
