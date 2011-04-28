@@ -84,7 +84,7 @@ namespace cdeLib
             Size = size;
         }
 
-        public uint FindEntries(string find, string path)
+        public uint FindEntries(string find, string path, FindEntryEvent fee)
         {
             var found = 0u;
             foreach (var dirEntry in Children)
@@ -93,14 +93,20 @@ namespace cdeLib
                 if (dirEntry.Name.IndexOf(find) >= 0)
                 {
                     ++found;
-                    Console.WriteLine("found {0}", fullPath);
+                    if (fee != null)
+                    {
+                        fee(fullPath, dirEntry);
+                    }
                 }
                 if (dirEntry.IsDirectory)
                 {
-                    found += dirEntry.FindEntries(find, fullPath);
+                    found += dirEntry.FindEntries(find, fullPath, fee);
                 }
             }
             return found;
         }
+
+        public delegate void FindEntryEvent(string path, DirEntry dirEntry);
+
     }
 }

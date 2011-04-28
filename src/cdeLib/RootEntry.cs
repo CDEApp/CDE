@@ -57,10 +57,10 @@ namespace cdeLib
 
         public RootEntry ()
         {
-            PathsWithUnauthorisedExceptions = new List<string>();    
+            PathsWithUnauthorisedExceptions = new List<string>();
         }
 
-        public void PopulateRoot(string startPath, SimpleScanEvent do10000, SimpleScanEvent doEnd)
+        public void PopulateRoot(string startPath)
         {
             if (!Directory.Exists(startPath))
             {
@@ -80,7 +80,7 @@ namespace cdeLib
             UsedSpace = dsi.TotalNumberOfBytes;
 
             ScanStartUTC = DateTime.UtcNow;
-            RecurseTree(startPath, do10000, doEnd);
+            RecurseTree(startPath);
             ScanEndUTC = DateTime.UtcNow;
 
             SetSummaryFields();
@@ -170,13 +170,11 @@ namespace cdeLib
                         .Replace(':', '_');
         }
 
-        const int EntryCountEvent = 10000;
-
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.
         /// </summary>
-        public void RecurseTree(string startPath, SimpleScanEvent do10000, SimpleScanEvent doEnd)
+        public void RecurseTree(string startPath)
         {
             var entryCount = 0;
             var dirs = new Stack<Tuple<CommonEntry,string>>();
@@ -200,21 +198,27 @@ namespace cdeLib
                     ++entryCount;
                     if (entryCount > EntryCountEvent)
                     {
-                        if (do10000 != null)
+                        if (SimpleScanCountEvent != null)
                         {
-                            do10000();
+                            SimpleScanCountEvent();
                         }
                         entryCount = 0;
                     }
                 }
             }
-            if (doEnd != null)
+            if (SimpleScanEndEvent != null)
             {
-                doEnd();
+                SimpleScanEndEvent();
             }
         }
 
-        public delegate void SimpleScanEvent();
+        public int EntryCountEvent = 10000;
+
+        public SimpleScanDelegate SimpleScanCountEvent { get; set; }
+
+        public SimpleScanDelegate SimpleScanEndEvent { get; set; }
+
+        public delegate void SimpleScanDelegate();
 
         private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
         {
@@ -223,8 +227,17 @@ namespace cdeLib
                 PathsWithUnauthorisedExceptions.Add(path);
                 return EnumerationExceptionDecision.Skip;
             }
+
+            if (ExceptionEvent != null)
+            {
+                ExceptionEvent(path, e);
+            }
             return EnumerationExceptionDecision.Abort;
         }
+
+        public ExceptionTraceDelegate ExceptionEvent { get; set; }
+
+        public delegate void ExceptionTraceDelegate(string path, Exception ex);
 
         public CommonEntry FindDir(string basePath, string entryPath)
         {
@@ -296,9 +309,9 @@ namespace cdeLib
             return re;
         }
 
-        public uint FindEntries(string find)
+        public uint FindEntries(string find, FindEntryEvent fee)
         {
-            return FindEntries(find, RootPath);
+            return FindEntries(find, RootPath, fee);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()
@@ -315,7 +328,6 @@ namespace cdeLib
             }
             return roots;
         }
-
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169
