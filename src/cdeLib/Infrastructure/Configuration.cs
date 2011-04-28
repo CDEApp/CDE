@@ -8,6 +8,9 @@ namespace cdeLib.Infrastructure
         int ProgressUpdateInterval { get; }
     }
 
+    /// <summary>
+    /// Configuration to talk to app.config
+    /// </summary>
     public class Configuration : IConfiguration
     {
         /// <summary>
