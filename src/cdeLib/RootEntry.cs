@@ -60,7 +60,7 @@ namespace cdeLib
             PathsWithUnauthorisedExceptions = new List<string>();    
         }
 
-        public void PopulateRoot(string startPath, DScanEvery10000Entries do10000, DScanEndofEntries doEnd)
+        public void PopulateRoot(string startPath, SimpleScanEvent do10000, SimpleScanEvent doEnd)
         {
             if (!Directory.Exists(startPath))
             {
@@ -170,13 +170,13 @@ namespace cdeLib
                         .Replace(':', '_');
         }
 
-        int _entryCountEvent = 10000;
+        const int EntryCountEvent = 10000;
 
         /// <summary>
         /// This version recurses itself so it can cache the folders and the node in tree.
         /// This improves performance when building the tree enormously.
         /// </summary>
-        public void RecurseTree(string startPath, DScanEvery10000Entries do10000, DScanEndofEntries doEnd)
+        public void RecurseTree(string startPath, SimpleScanEvent do10000, SimpleScanEvent doEnd)
         {
             var entryCount = 0;
             var dirs = new Stack<Tuple<CommonEntry,string>>();
@@ -198,7 +198,7 @@ namespace cdeLib
                         dirs.Push(Tuple.Create((CommonEntry)dirEntry, fsEntry.FullPath));
                     }
                     ++entryCount;
-                    if (entryCount > _entryCountEvent)
+                    if (entryCount > EntryCountEvent)
                     {
                         if (do10000 != null)
                         {
@@ -214,11 +214,7 @@ namespace cdeLib
             }
         }
 
-        public delegate void DScanEvery10000Entries();
-
-        public delegate void DScanEndofEntries();
-
-
+        public delegate void SimpleScanEvent();
 
         private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
         {
