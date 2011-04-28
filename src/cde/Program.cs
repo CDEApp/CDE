@@ -39,7 +39,7 @@ namespace cde
             var totalFound = 0u;
             foreach (var rootEntry in rootEntries)
             {
-                totalFound += rootEntry.FindEntries(find);
+                totalFound += rootEntry.FindEntries(find, PrintFoundEntries);
             }
             if (totalFound > 0)
             {
@@ -51,14 +51,9 @@ namespace cde
             }
         }
 
-        public static void ScanEvery1000Entries()
+        private static void PrintFoundEntries(string path, DirEntry direntry)
         {
-            Console.Write(".");
-        }
-
-        public static void ScanEndofEntries()
-        {
-            Console.WriteLine("");
+            Console.WriteLine("found {0}", path);
         }
 
         static void CreateCDECache(string path)
@@ -66,7 +61,11 @@ namespace cde
             var re = new RootEntry();
             try
             {
-                re.PopulateRoot(path, ScanEvery1000Entries, ScanEndofEntries);
+                re.SimpleScanCountEvent = ScanEvery1000Entries;
+                re.SimpleScanEndEvent = ScanEndofEntries;
+                re.ExceptionEvent = PrintExceptions;
+
+                re.PopulateRoot(path);
 
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
@@ -79,7 +78,21 @@ namespace cde
             {
                 Console.WriteLine("Error: {0}", aex.Message);
             }
+        }
 
+        private static void PrintExceptions(string path, Exception ex)
+        {
+            Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
+        }
+
+        public static void ScanEvery1000Entries()
+        {
+            Console.Write(".");
+        }
+
+        public static void ScanEndofEntries()
+        {
+            Console.WriteLine("");
         }
     }
 }
