@@ -38,6 +38,7 @@
       <HintPath>..\..\lib\protobuf-net r282\protobuf-net.dll</HintPath>
     </Reference>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -48,6 +49,7 @@
   <ItemGroup>
     <Compile Include="CommonEntry.cs" />
     <Compile Include="DirEntry.cs" />
+    <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootEntry.cs" />
     <Compile Include="StringExtension.cs" />

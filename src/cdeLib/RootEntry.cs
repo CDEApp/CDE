@@ -8,6 +8,7 @@ using System.IO.Compression;
 using Alphaleonis.Win32.Filesystem;
 //using ICSharpCode.SharpZipLib.BZip2;
 //using ICSharpCode.SharpZipLib.GZip;
+using cdeLib.Infrastructure;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
@@ -20,6 +21,7 @@ namespace cdeLib
     [ProtoContract]
     public class RootEntry : CommonEntry
     {
+        private IConfiguration _configuration;
         const string MatchAll = "*";
 
         [ProtoMember(2, IsRequired = true)]
@@ -58,6 +60,8 @@ namespace cdeLib
         public RootEntry ()
         {
             PathsWithUnauthorisedExceptions = new List<string>();
+            _configuration = new Configuration();
+            EntryCountEvent = _configuration.ProgressUpdateInterval;
         }
 
         public void PopulateRoot(string startPath)
@@ -212,7 +216,7 @@ namespace cdeLib
             }
         }
 
-        public int EntryCountEvent = 10000;
+        public int EntryCountEvent { get; set; }
 
         public SimpleScanDelegate SimpleScanCountEvent { get; set; }
 
