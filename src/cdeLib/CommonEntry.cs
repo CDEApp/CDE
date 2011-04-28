@@ -90,7 +90,8 @@ namespace cdeLib
             foreach (var dirEntry in Children)
             {
                 var fullPath = Path.Combine(path, dirEntry.Name);
-                if (dirEntry.Name.IndexOf(find) >= 0)
+                //TODO: Should this be togglable for case sensitive searches?
+                if (dirEntry.Name.IndexOf(find,StringComparison.InvariantCultureIgnoreCase) >= 0)
                 {
                     ++found;
                     if (fee != null)
