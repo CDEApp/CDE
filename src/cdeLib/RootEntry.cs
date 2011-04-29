@@ -313,7 +313,7 @@ namespace cdeLib
             return re;
         }
 
-        public void TraverseTree(ApplyToEntry apply)
+        public void TraverseTree(Action<string, DirEntry> apply)
         {
             TraverseTree(RootPath, apply);
         }

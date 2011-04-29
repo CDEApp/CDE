@@ -87,7 +87,7 @@ namespace cdeLib
             Size = size;
         }
 
-        public void TraverseTree(string path, ApplyToEntry apply)
+        public void TraverseTree(string path, Action<string, DirEntry> apply)
         {
             //var pathStack = new Stack<string>();
             //pathStack.Push(path);
@@ -116,8 +116,6 @@ namespace cdeLib
                 }
             }
         }
-
-        public delegate void ApplyToEntry(string fullPath, DirEntry dirEntry);
 
     }
 }
