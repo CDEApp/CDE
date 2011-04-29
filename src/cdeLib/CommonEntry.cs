@@ -28,7 +28,7 @@ namespace cdeLib
 
         protected CommonEntry()
         {
-            Children = new List<DirEntry>();    // only needed for dir's. todo optimise ?
+            Children = new List<DirEntry>();    // only needed for dir's but who cares.
         }
 
         public CommonEntry FindClosestParentDir(string relativePath)
@@ -87,30 +87,37 @@ namespace cdeLib
             Size = size;
         }
 
-        public uint FindEntries(string find, string path, FindEntryEvent fee)
+        public void TraverseTree(string path, ApplyToEntry apply)
         {
-            var found = 0u;
-            foreach (var dirEntry in Children)
+            //var pathStack = new Stack<string>();
+            //pathStack.Push(path);
+            var dirs = new Stack<Tuple<CommonEntry, string>>();
+            dirs.Push(Tuple.Create(this, path));
+
+            while (dirs.Count > 0)
             {
-                var fullPath = Path.Combine(path, dirEntry.Name);
-                //TODO: Should this be togglable for case sensitive searches?
-                if (dirEntry.Name.IndexOf(find,StringComparison.InvariantCultureIgnoreCase) >= 0)
+                var t = dirs.Pop();
+                var commonEntry = t.Item1;
+                var workPath = t.Item2;
+
+                //var workPath = pathStack.Pop();
+                foreach (var dirEntry in commonEntry.Children)
                 {
-                    ++found;
-                    if (fee != null)
+                    var fullPath = Path.Combine(workPath, dirEntry.Name);
+                    if (apply != null)
                     {
-                        fee(fullPath, dirEntry);
+                        apply(fullPath, dirEntry);
+                    }
+
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirs.Push(Tuple.Create((CommonEntry)dirEntry, fullPath));
                     }
                 }
-                if (dirEntry.IsDirectory)
-                {
-                    found += dirEntry.FindEntries(find, fullPath, fee);
-                }
             }
-            return found;
         }
 
-        public delegate void FindEntryEvent(string path, DirEntry dirEntry);
+        public delegate void ApplyToEntry(string fullPath, DirEntry dirEntry);
 
     }
 }

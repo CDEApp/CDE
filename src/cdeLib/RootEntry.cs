@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
+//using System.IO.Compression;
 using Alphaleonis.Win32.Filesystem;
 //using ICSharpCode.SharpZipLib.BZip2;
 //using ICSharpCode.SharpZipLib.GZip;
@@ -21,7 +21,7 @@ namespace cdeLib
     [ProtoContract]
     public class RootEntry : CommonEntry
     {
-        private IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         const string MatchAll = "*";
 
         [ProtoMember(2, IsRequired = true)]
@@ -112,7 +112,7 @@ namespace cdeLib
                     fileName = string.Format("{0}-{1}.cde", hint, volumeName);
                 }
                 else
-                {   // how to make a nice name out of path ?
+                {
                     fileName = string.Format("{0}-{1}_.cde", hint, filenameSafePath);
                 }
             }
@@ -313,9 +313,9 @@ namespace cdeLib
             return re;
         }
 
-        public uint FindEntries(string find, FindEntryEvent fee)
+        public void TraverseTree(ApplyToEntry apply)
         {
-            return FindEntries(find, RootPath, fee);
+            TraverseTree(RootPath, apply);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()
@@ -444,68 +444,5 @@ namespace cdeLib
         #pragma warning restore 169
         #endregion
 
-        #region other implementations that are slower and or not worth using
-        #if (LEFTOVERCODE)
-        public bool RecurseTree1(string basePath)
-        {
-            var exceptionList = new List<Type>
-                {
-                    typeof (UnauthorizedAccessException)
-                };
-
-            var entries = Directory.GetFullFileSystemEntries
-                (null, basePath, MatchAll, SearchOption.AllDirectories, false, null, exceptionList);
-            foreach (var entry in entries)
-            {
-                FindDir(RootPath, entry.FullPath).Children.Add(new DirEntry(entry));
-            }
-            return true;
-        }
-
-        // version that manages recurse itself, so it can remember parent folders to build tree.
-        // this is heaps quicker and covers all files, unlike theRecurseTree() above..
-        //   dont understand why stuff is missing here ?
-        public bool RecurseTree2(string basePath)
-        {
-            var dirs = new Stack<string>();
-            dirs.Push(basePath);
-            while (dirs.Count > 0)
-            {
-                var path = dirs.Pop();
-                var ce = FindDir(RootPath, path);
-
-                var entries = Directory.GetFullFileSystemEntries(path, MatchAll, SearchOption.TopDirectoryOnly);
-                foreach (var entry in entries)
-                {
-                    ce.Children.Add(new DirEntry(entry));
-                    if (entry.IsDirectory)
-                    {
-                        dirs.Push(entry.FullPath);
-                    }
-                }
-            }
-            return true;
-        }
-
-        public void BuildList(int startSize)
-        {
-            var exceptionList = new List<Type>
-                {
-                    typeof (UnauthorizedAccessException)
-                };
-
-            //var list = new List<string>(startSize);
-            List = new List<DirEntry>(startSize);
-            var entries = Directory.GetFullFileSystemEntries//(RootPath, MatchAll, SearchOption.AllDirectories);
-                (null, RootPath, MatchAll, SearchOption.AllDirectories, false, null, exceptionList);
-            foreach (var entry in entries)
-            {
-                //list.Add(entry.FullPath);
-                List.Add(DirEntry.GetDirEntryFullPath(entry));
-            }
-            Console.WriteLine(" list " + List.Count);
-        }
-        #endif
-        #endregion
     }
 }
