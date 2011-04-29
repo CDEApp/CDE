@@ -61,7 +61,7 @@ namespace cdeLib
         {
             PathsWithUnauthorisedExceptions = new List<string>();
             _configuration = new Configuration();
-            EntryCountEvent = _configuration.ProgressUpdateInterval;
+            EntryCountThreshold = _configuration.ProgressUpdateInterval;
         }
 
         public void PopulateRoot(string startPath)
@@ -200,7 +200,7 @@ namespace cdeLib
                         dirs.Push(Tuple.Create((CommonEntry)dirEntry, fsEntry.FullPath));
                     }
                     ++entryCount;
-                    if (entryCount > EntryCountEvent)
+                    if (entryCount > EntryCountThreshold)
                     {
                         if (SimpleScanCountEvent != null)
                         {
@@ -216,13 +216,11 @@ namespace cdeLib
             }
         }
 
-        public int EntryCountEvent { get; set; }
+        public int EntryCountThreshold { get; set; }
 
-        public SimpleScanDelegate SimpleScanCountEvent { get; set; }
+        public Action SimpleScanCountEvent { get; set; }
 
-        public SimpleScanDelegate SimpleScanEndEvent { get; set; }
-
-        public delegate void SimpleScanDelegate();
+        public Action SimpleScanEndEvent { get; set; }
 
         private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
         {
@@ -239,9 +237,7 @@ namespace cdeLib
             return EnumerationExceptionDecision.Abort;
         }
 
-        public ExceptionTraceDelegate ExceptionEvent { get; set; }
-
-        public delegate void ExceptionTraceDelegate(string path, Exception ex);
+        public Action<string, Exception> ExceptionEvent { get; set; }
 
         public CommonEntry FindDir(string basePath, string entryPath)
         {
