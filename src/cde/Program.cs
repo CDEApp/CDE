@@ -1,5 +1,9 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using cdeLib;
+using cdeLib.Infrastructure;
 
 namespace cde
 {
@@ -15,6 +19,14 @@ namespace cde
             {
                 FindString(args[1]);
             }
+            else if (args.Length ==1 && args[0] == "--md5")
+            {
+                CreateMd5OnCache();
+            }
+            else if( args.Length ==1 && args[0] == "--dupes")
+            {
+                FindDupes();
+            }
             else
             {
                 Console.WriteLine("Usage: cde --scan <path>");
@@ -22,6 +34,20 @@ namespace cde
                 Console.WriteLine("Usage: cde --find <string>");
                 Console.WriteLine("       uses all cache files available searches for <string> as substring of file system entries.");
             }
+        }
+
+        private static void FindDupes()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var duplication = new Duplication(rootEntries);
+            duplication.FindDuplicates();
+        }
+
+        private static void CreateMd5OnCache()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var duplication = new Duplication();
+            duplication.ApplyMd5Checksum(rootEntries);
         }
 
         static void FindString(string find)

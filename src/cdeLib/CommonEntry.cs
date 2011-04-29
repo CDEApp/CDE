@@ -23,6 +23,9 @@ namespace cdeLib
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
 
+        [ProtoMember(7, IsRequired = false)]
+        public string MD5Hash { get; set; }
+
         protected CommonEntry()
         {
             Children = new List<DirEntry>();    // only needed for dir's. todo optimise ?
