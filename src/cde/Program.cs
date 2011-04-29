@@ -15,6 +15,11 @@ namespace cde
 
         static void Main(string[] args)
         {
+            if (args.Length ==0)
+            {
+                ShowHelp();
+                return;
+            }
             var param0 = args[0].ToLowerInvariant();
             if (args.Length == 2 && param0 == "--scan")
             {
@@ -34,19 +39,24 @@ namespace cde
             }
             else
             {
-                Console.WriteLine("Usage: cde --scan <path>");
-                Console.WriteLine("       scans path and creates a cache file.");
-                Console.WriteLine("Usage: cde --find <string>");
-                Console.WriteLine("       uses all cache files available searches for <string> as substring of on file name.");
-                Console.WriteLine("Usage: cde --grep <regex>");
-                Console.WriteLine("       uses all cache files available searches for <regex> as regex match on file name.");
-                Console.WriteLine("Usage: cde --greppath <regex>");
-                Console.WriteLine("       uses all cache files available searches for <regex> as regex match on full path to file name.");
-                Console.WriteLine("Usage: cde --md5 ");
-                Console.WriteLine("       Calculate md5 for all entries in cache file");
-                Console.WriteLine("Usage: cde --dupes ");
-                Console.WriteLine("       Show duplicates. Must of precaculated MD5 first");
+                ShowHelp();
             }
+        }
+
+        private static void ShowHelp()
+        {
+            Console.WriteLine("Usage: cde --scan <path>");
+            Console.WriteLine("       scans path and creates a cache file.");
+            Console.WriteLine("Usage: cde --find <string>");
+            Console.WriteLine("       uses all cache files available searches for <string> as substring of on file name.");
+            Console.WriteLine("Usage: cde --grep <regex>");
+            Console.WriteLine("       uses all cache files available searches for <regex> as regex match on file name.");
+            Console.WriteLine("Usage: cde --greppath <regex>");
+            Console.WriteLine("       uses all cache files available searches for <regex> as regex match on full path to file name.");
+            Console.WriteLine("Usage: cde --md5 ");
+            Console.WriteLine("       Calculate md5 for all entries in cache file");
+            Console.WriteLine("Usage: cde --dupes ");
+            Console.WriteLine("       Show duplicates. Must of precaculated MD5 first");
         }
 
         private static void FindDupes()
