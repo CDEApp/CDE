@@ -131,13 +131,11 @@ namespace cde
                 }
                 catch (ArgumentException ae)
                 {
-                    // BAD PATTERN: Syntax error
                     return string.Format("Bad Regex: {0}.", ae.Message);
                 }
             }
             else
             {
-                //BAD PATTERN: Pattern is null or blank
                 return "Bad Regex: Pattern is Null or Empty.";
             }
             return (string.Empty);
