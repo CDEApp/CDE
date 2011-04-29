@@ -33,14 +33,18 @@ namespace cde
                 Console.WriteLine("       scans path and creates a cache file.");
                 Console.WriteLine("Usage: cde --find <string>");
                 Console.WriteLine("       uses all cache files available searches for <string> as substring of file system entries.");
+                Console.WriteLine("Usage: cde --md5 ");
+                Console.WriteLine("       Calculate md5 for all entries in cache file");
+                Console.WriteLine("Usage: cde --dupes ");
+                Console.WriteLine("       Show duplicates. Must of precaculated MD5 first");
             }
         }
 
         private static void FindDupes()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var duplication = new Duplication(rootEntries);
-            duplication.FindDuplicates();
+            var duplication = new Duplication();
+            duplication.FindDuplicates(rootEntries);
         }
 
         private static void CreateMd5OnCache()
