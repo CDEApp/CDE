@@ -25,7 +25,7 @@ namespace cdeLib
 
         protected CommonEntry()
         {
-            Children = new List<DirEntry>();    // only needed for dir's. todo optimise ?
+            Children = new List<DirEntry>();    // only needed for dir's but who cares.
         }
 
         public CommonEntry FindClosestParentDir(string relativePath)
@@ -89,7 +89,7 @@ namespace cdeLib
             //var pathStack = new Stack<string>();
             //pathStack.Push(path);
             var dirs = new Stack<Tuple<CommonEntry, string>>();
-            dirs.Push(Tuple.Create((CommonEntry)this, path));
+            dirs.Push(Tuple.Create(this, path));
 
             while (dirs.Count > 0)
             {

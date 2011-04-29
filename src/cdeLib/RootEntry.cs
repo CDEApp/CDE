@@ -4,7 +4,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
+//using System.IO.Compression;
 using Alphaleonis.Win32.Filesystem;
 //using ICSharpCode.SharpZipLib.BZip2;
 //using ICSharpCode.SharpZipLib.GZip;
@@ -21,7 +21,7 @@ namespace cdeLib
     [ProtoContract]
     public class RootEntry : CommonEntry
     {
-        private IConfiguration _configuration;
+        private readonly IConfiguration _configuration;
         const string MatchAll = "*";
 
         [ProtoMember(2, IsRequired = true)]
@@ -112,7 +112,7 @@ namespace cdeLib
                     fileName = string.Format("{0}-{1}.cde", hint, volumeName);
                 }
                 else
-                {   // how to make a nice name out of path ?
+                {
                     fileName = string.Format("{0}-{1}_.cde", hint, filenameSafePath);
                 }
             }

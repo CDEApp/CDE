@@ -10,19 +10,19 @@ namespace cde
         private const string ParamFind = "--find";
         private const string ParamGrep = "--grep";
         private const string ParamGreppath = "--greppath";
-        private static List<string> findParams = new List<string>
+        private static readonly List<string> FindParams = new List<string>
                 { ParamFind, ParamGrep, ParamGreppath };
 
         static void Main(string[] args)
         {
             var param0 = args[0].ToLowerInvariant();
-            if (args.Length == 2 && args[0] == "--scan")
+            if (args.Length == 2 && param0 == "--scan")
             {
                 CreateCDECache(args[1]);
             }
-            else if (args.Length == 2 && findParams.Contains(args[0].ToLowerInvariant()))
+            else if (args.Length == 2 && FindParams.Contains(param0))
             {
-                FindString(args[1], args[0].ToLowerInvariant());
+                FindString(args[1], param0);
             }
             else
             {
@@ -146,7 +146,7 @@ namespace cde
             var re = new RootEntry();
             try
             {
-                re.SimpleScanCountEvent = ScanEvery1000Entries;
+                re.SimpleScanCountEvent = ScanCountPrintDot;
                 re.SimpleScanEndEvent = ScanEndofEntries;
                 re.ExceptionEvent = PrintExceptions;
 
@@ -170,7 +170,7 @@ namespace cde
             Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
         }
 
-        public static void ScanEvery1000Entries()
+        public static void ScanCountPrintDot()
         {
             Console.Write(".");
         }
