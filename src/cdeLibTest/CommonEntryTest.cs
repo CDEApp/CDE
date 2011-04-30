@@ -1,4 +1,7 @@
-﻿using NUnit.Framework;
+﻿using System;
+using cdeLib;
+using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace cdeLibTest
 {
@@ -15,10 +18,32 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void Method_Something_Result()
+        public void TraverseTree_EmptyTree_ActionNotRun()
         {
-            Assert.Fail("Not done yet");
+            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
+            mockAction.Stub(x => x("", null));
+            var de = new DirEntry();
+
+            de.TraverseTree("", mockAction);
+
+            mockAction.AssertWasNotCalled(x => x("", null));
         }
+
+        [Test]
+        public void TraverseTree_SingleChildTree_CallsActionOnChild()
+        {
+            var de1 = new DirEntry { Name = "d1" };// only looks at Children for recurse.
+            var de2 = new DirEntry { Name = "d2" };
+            de1.Children.Add(de2);
+
+            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
+            mockAction.Stub(x => x("d2", de2));
+
+            de1.TraverseTree("", mockAction);
+
+            mockAction.AssertWasCalled(x => x("d2", de2));
+        }
+
     }
     // ReSharper restore InconsistentNaming
 }
