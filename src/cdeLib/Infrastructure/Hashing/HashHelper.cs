@@ -15,25 +15,6 @@ namespace cdeLib.Infrastructure
 
         }
 
-        public string GetMurmerHashFromFile(string filename)
-        {
-            try
-            {
-                using (Stream stream = File.OpenRead(filename))
-                {
-                    IHashAlgorithm hashAlgorithm = new MurmurHash2Unsafe();
-                    var num = hashAlgorithm.Hash(ReadFully(stream,_configuration.HashFirstPassSize ));
-                    return num.ToString("x2");
-                }
-             
-            }
-            catch (Exception ex)
-            {
-                ILogger logger = new Logger();
-                logger.LogException(ex, "Murmer");
-                return null;
-            }
-        }
         public string GetMD5HashFromFile(string filename, int bytesToHash)
         {
             try
@@ -49,10 +30,8 @@ namespace cdeLib.Infrastructure
                         totalBytesRead += bytesRead;
                     }
 
-
                     using (MD5 md5 = MD5.Create())
                     {
-                        //var buffer = md5.ComputeHash(stream);
                         var buffer = md5.ComputeHash(buf);
                         return ByteArrayToString(buffer);
                     }

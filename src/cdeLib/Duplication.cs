@@ -6,11 +6,24 @@ using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
+    public class FlatFile
+    {
+        public FlatFile(string filePath, DirEntry dirEntry)
+        {
+            FilePath = filePath;
+            DirEntry = dirEntry;
+        }
+
+        public string FilePath { get; set; }
+        public DirEntry DirEntry { get; set; }
+    }
+
     public class Duplication
     {
         private readonly ILogger _logger;
         private Dictionary<string, List<string>> dupes;
         private Dictionary<string, int> _stats = new Dictionary<string, int>();
+        private Dictionary<ulong,List<FlatFile>> _duplicateFileSize = new Dictionary<ulong, List<FlatFile>>();
         public Duplication()
         {
             _logger = new Logger();
@@ -23,7 +36,25 @@ namespace cdeLib
 
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseAllTrees(rootEntries, CalculatePartialMD5Hash);
+            CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
+            Console.WriteLine("Found {0} sets of files matched by filesize",_duplicateFileSize.Count);
+            Logger l = new Logger();
+            foreach(var kvp in _duplicateFileSize)
+            {
+                foreach(var flatFile in kvp.Value)
+                {
+                    CalculatePartialMD5Hash(flatFile.FilePath,flatFile.DirEntry);
+                }
+            }
+//            foreach (var kvp in _duplicateFileSize)
+//            {
+//                foreach (var flatFile in kvp.Value)
+//                {
+//                    CalculatePartialMD5Hash(flatFile.FilePath, flatFile.DirEntry);
+//                }
+//            }
+
+            //CommonEntry.TraverseAllTrees(rootEntries, CalculatePartialMD5Hash);
 
             CheckDupesAndCompleteFullHash(rootEntries);
             foreach(var rootEntry in rootEntries)
@@ -31,6 +62,18 @@ namespace cdeLib
                 rootEntry.SaveRootEntry();
             }
             Console.WriteLine("FullHash: {0}  PartialHash: {1}",_stats["full"],_stats["partial"]);
+        }
+
+        private void FindMatchesOnFileSize(string filePath, DirEntry dirEntry)
+        {
+            if (_duplicateFileSize.ContainsKey(dirEntry.Size))
+            {
+               _duplicateFileSize[dirEntry.Size].Add(new FlatFile(filePath,dirEntry));
+            }
+            else
+            {
+                _duplicateFileSize.Add(dirEntry.Size, new List<FlatFile>() { new FlatFile(filePath, dirEntry) }); 
+            }
         }
 
         private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
@@ -44,8 +87,6 @@ namespace cdeLib
                 dupes.Add(keyValuePair.Key,keyValuePair.Value);
             }
             CommonEntry.TraverseAllTrees(rootEntries, CalculateFullMD5Hash);
-           
-          
         }
 
         private void CalculateFullMD5Hash(string fullPath, DirEntry de)

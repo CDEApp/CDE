@@ -1,12 +1,68 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Security.Cryptography;
 using System.Threading;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 
 namespace cdeLibTest.Infrastructure
 {
+
+    public class CRC32 : IHashAlgorithm
+    {
+        uint[] tab;
+
+        public CRC32()
+        {
+            Init(0x04c11db7);
+        }
+
+        public CRC32(uint poly)
+        {
+            Init(poly);
+        }
+
+        void Init(uint poly)
+        {
+            tab = new uint[256];
+            for (uint i = 0; i < 256; i++)
+            {
+                uint t = i;
+                for (int j = 0; j < 8; j++)
+                    if ((t & 1) == 0)
+                        t >>= 1;
+                    else
+                        t = (t >> 1) ^ poly;
+                tab[i] = t;
+            }
+        }
+
+        public uint Hash(byte[] data)
+        {
+            uint hash = 0xFFFFFFFF;
+            foreach (byte b in data)
+                hash = (hash << 8) ^ tab[b ^ (hash >> 24)];
+            return ~hash;
+        }
+    }
+
+    public class SHA1Wrapper : IHashAlgorithm
+    {
+        private SHA1 sha1;
+        public SHA1Wrapper()
+        {
+            sha1 = SHA1.Create();
+        }
+
+
+        public uint Hash(byte[] data)
+        {
+            var result = sha1.ComputeHash(data);
+            return BitConverter.ToUInt32(result,0);
+        }
+    }
+
     public class DuplicationTests
     {
         /// <summary>
@@ -19,12 +75,23 @@ namespace cdeLibTest.Infrastructure
         public void PerformanceHashTest()
         {
             var tests = new Dictionary<string, IHashAlgorithm>();
-            var murmurHash2Simple = new MurmurHash2Simple();
-            var murmurHash2Unsafe = new MurmurHash2Unsafe();
+//            var murmurHash2Simple = new MurmurHash2Simple();
+//            var murmurHash2Unsafe = new MurmurHash2Unsafe();
+//            var murmur2HashInline = new MurmurHash2InlineBitConverter();
             var hashHelper = new MD5Hash();
-            tests.Add("murmurHash2Simple",murmurHash2Simple);
-            tests.Add("murmurHash2Unsafe",murmurHash2Unsafe);
+            var sha1 = new SHA1Wrapper();
+            var crc32 = new CRC32();
+//            var murmer2UInt32Hack = new MurmurHash2UInt32Hack();
+            
+//            tests.Add("murmurHash2Simple",murmurHash2Simple);
+//            tests.Add("murmurHash2Unsafe",murmurHash2Unsafe);
+//            tests.Add("murmerHash2Inline", murmur2HashInline);
+//            tests.Add("murmerHash2UInt32Hack", murmer2UInt32Hack);
+            
             tests.Add("md5.NET", hashHelper);
+            tests.Add("Sha1",sha1);
+            tests.Add("CRC32", crc32);
+            
 
 
             var data = new Byte[256 * 1024];
@@ -50,6 +117,5 @@ namespace cdeLibTest.Infrastructure
                     timer.ElapsedMilliseconds);
             }
         }
-        
     }
 }
