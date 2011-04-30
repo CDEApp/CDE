@@ -18,40 +18,11 @@ namespace cdeLib
 
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
-            FindAllEntries(rootEntries, CalculateMD5Hash);
+            CommonEntry.TraverseAllTrees(rootEntries, CalculateMD5Hash);
+
             foreach(var rootEntry in rootEntries)
             {
                 rootEntry.SaveRootEntry();
-            }
-        }
-
-        private void FindAllEntries(IEnumerable<RootEntry> rootEntries, Action<string, DirEntry> action)
-        {
-            foreach (var rootEntry in rootEntries)
-            {
-                foreach (var entry in rootEntry.Children)
-                {
-                    FindEntry(rootEntry.RootPath, entry, action);
-                }
-                
-            }
-        }
-
-        private static void FindEntry(string path, DirEntry de, Action<string,DirEntry> action)
-        {
-            foreach (var f in de.Children)
-            {
-                if (f.IsDirectory)
-                {
-                    var newPath = Path.Combine(path, de.Name);
-                    newPath = Path.Combine(newPath, f.Name);
-                    FindEntry(newPath, f,action);
-                }
-                else
-                {
-                    var fullPath = Path.Combine(path, f.Name);
-                    action(fullPath, f);
-                }
             }
         }
 
@@ -97,7 +68,7 @@ namespace cdeLib
         public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
         {
             //TODO: What if we don't have md5 hash? go and create it? 
-            FindAllEntries(rootEntries, BuildDuplicateList);
+            CommonEntry.TraverseAllTrees(rootEntries, BuildDuplicateList);
             //Display
             var dupes = _duplicateFileList.Where(d=>d.Value.Count>1).ToList();
             foreach(var dupe in dupes)

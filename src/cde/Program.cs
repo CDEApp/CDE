@@ -89,7 +89,7 @@ namespace cde
             }
 
             Regex regex;
-            CommonEntry.ApplyToEntry matchFunc;
+            Action<string, DirEntry> matchFunc;
             var totalFound = 0u;
             switch (paramString)
             {
