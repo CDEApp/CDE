@@ -11,8 +11,15 @@ namespace cdeLib
         private const string ParamGreppath = "--greppath";
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamGrep, ParamGreppath };
 
+        private static uint _totalFound;
+        private static Regex _regex;
+        private static string _find;
+
         public static void FindString(string find, string paramString)
         {
+            _find = find;
+            _regex = null;
+
             switch (paramString)
             {
                 case ParamGrep:
@@ -23,51 +30,28 @@ namespace cdeLib
                         Console.WriteLine(regexError);
                         return;
                     }
+                    _regex = new Regex(find, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
                     break;
             }
 
-            Regex regex;
-            Action<string, DirEntry> matchFunc;
-            var totalFound = 0u;
+            Action<string, DirEntry> matchAction;
+            _totalFound = 0u;
             switch (paramString)
             {
                 case ParamFind:
-                    matchFunc = delegate(string fullPath, DirEntry dirEntry)
-                    {
-                        if (dirEntry.Name.IndexOf(find, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                        {
-                            ++totalFound;
-                            Console.WriteLine("found {0}", fullPath);
-                        }
-                    };
+                    matchAction = MatchSubstringName;
                     break;
 
                 case ParamGrep:
-                    regex = new Regex(find, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    matchFunc = delegate(string fullPath, DirEntry dirEntry)
-                    {
-                        if (regex.IsMatch(dirEntry.Name))
-                        {
-                            ++totalFound;
-                            Console.WriteLine("found {0}", fullPath);
-                        }
-                    };
+                    matchAction = MatchRegexName;
                     break;
 
                 case ParamGreppath:
-                    regex = new Regex(find, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    matchFunc = delegate(string fullPath, DirEntry dirEntry)
-                    {
-                        if (regex.IsMatch(fullPath))
-                        {
-                            ++totalFound;
-                            Console.WriteLine("found {0}", fullPath);
-                        }
-                    };
+                    matchAction = MatchRegexFullPath;
                     break;
 
                 default:
-                    throw new ArgumentException(string.Format("Unknown parameter {0} to FindString", paramString));
+                    throw new ArgumentException(string.Format("Unknown parameter \"{0}\" to FindString", paramString));
             }
 
             Console.WriteLine("Searching for entries that contain \"{0}\"", find);
@@ -82,19 +66,19 @@ namespace cdeLib
             }
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTree(rootEntry.RootPath, matchFunc);
+                rootEntry.TraverseTree(rootEntry.RootPath, matchAction);
             }
 
-            if (totalFound > 0)
+            if (_totalFound > 0)
             {
-                Console.WriteLine("Found a total of {0} entries. Containing the string \"{1}\"", totalFound, find);
+                Console.WriteLine("Found a total of {0} entries. Containing the string \"{1}\"", _totalFound, find);
             }
             else
             {
                 Console.WriteLine("No entries found in cached information.");
             }
         }
-    
+
         public static string GetRegexErrorMessage(string testPattern)
         {
             if ((testPattern != null) && (testPattern.Trim().Length > 0))
@@ -114,6 +98,32 @@ namespace cdeLib
             }
             return (string.Empty);
         }
-    }
 
+        private static void MatchSubstringName(string fullPath, DirEntry dirEntry)
+        {
+            if (dirEntry.Name.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
+            {
+                ++_totalFound;
+                Console.WriteLine("found {0}", fullPath);
+            }
+        }
+
+        private static void MatchRegexName(string fullPath, DirEntry dirEntry)
+        {
+            if (_regex.IsMatch(dirEntry.Name))
+            {
+                ++_totalFound;
+                Console.WriteLine("found {0}", fullPath);
+            }
+        }
+
+        private static void MatchRegexFullPath(string fullPath, DirEntry dirEntry)
+        {
+            if (_regex.IsMatch(fullPath))
+            {
+                ++_totalFound;
+                Console.WriteLine("found {0}", fullPath);
+            }
+        }
+    }
 }
