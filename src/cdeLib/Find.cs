@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
@@ -24,7 +25,7 @@ namespace cdeLib
             {
                 case ParamGrep:
                 case ParamGreppath:
-                    var regexError = GetRegexErrorMessage(find);
+                    var regexError = RegexHelper.GetRegexErrorMessage(find);
                     if (!string.IsNullOrEmpty(regexError))
                     {
                         Console.WriteLine(regexError);
@@ -77,26 +78,6 @@ namespace cdeLib
             {
                 Console.WriteLine("No entries found in cached information.");
             }
-        }
-
-        public static string GetRegexErrorMessage(string testPattern)
-        {
-            if ((testPattern != null) && (testPattern.Trim().Length > 0))
-            {
-                try
-                {
-                    Regex.Match("", testPattern);
-                }
-                catch (ArgumentException ae)
-                {
-                    return string.Format("Bad Regex: {0}.", ae.Message);
-                }
-            }
-            else
-            {
-                return "Bad Regex: Pattern is Null or Empty.";
-            }
-            return (string.Empty);
         }
 
         private static void MatchSubstringName(string fullPath, DirEntry dirEntry)

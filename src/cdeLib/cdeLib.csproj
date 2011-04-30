@@ -54,6 +54,7 @@
     <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Infrastructure\HashHelper.cs" />
     <Compile Include="Infrastructure\Logger.cs" />
+    <Compile Include="Infrastructure\RegexHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootEntry.cs" />
     <Compile Include="StringExtension.cs" />
