@@ -46,10 +46,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonEntryTest.cs" />
+    <Compile Include="CommonEntryTestStub.cs" />
     <Compile Include="Infrastructure\ConfigurationTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootEntryTest.cs" />
-    <Compile Include="RootEntryTest_FindClosestParentDir.cs" />
+    <Compile Include="CommonEntryTest_FindClosestParentDir.cs" />
     <Compile Include="StringExtensionTest.cs" />
   </ItemGroup>
   <ItemGroup>

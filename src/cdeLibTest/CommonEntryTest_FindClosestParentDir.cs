@@ -7,7 +7,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class RootEntryTest_FindClosestParentDir
+    class CommonEntryTest_FindClosestParentDir
     {
         readonly string pathSep = Path.DirectorySeparatorChar;
 
@@ -15,7 +15,7 @@ namespace cdeLibTest
         [Test]
         public void FindClosestParentDir_WithEmptyString_ThrowsException()
         {
-            var re = new RootEntry();
+            var re = new CommonEntryTestStub();
 
             re.FindClosestParentDir(string.Empty);
         }
@@ -23,20 +23,20 @@ namespace cdeLibTest
         [Test]
         public void FindClosestParentDir_NotExistinRoot_ReturnRE()
         {
-            var re = new RootEntry();
+            var re = new CommonEntryTestStub();
             var de = new DirEntry { Name = "Groo" };
             re.Children.Add(de);
             const string relativePath = "Groo2";
 
             var ce = re.FindClosestParentDir(relativePath);
 
-            Assert.That(ce, Is.InstanceOf(typeof(RootEntry)));
+            Assert.That(ce, Is.InstanceOf(typeof(CommonEntryTestStub)));
         }
 
         [Test]
         public void FindClosestParentDir_FirstLevelFromRoot_ReturnCorrectDE()
         {
-            var re = new RootEntry();
+            var re = new CommonEntryTestStub();
             var de = new DirEntry { Name = "Groo" };
             re.Children.Add(de);
             const string relativePath = "Groo";
@@ -52,7 +52,7 @@ namespace cdeLibTest
         [Test]
         public void FindClosestParentDir_SecondLevelFromRoot_ReturnCorrectDE()
         {
-            var re = new RootEntry();
+            var re = new CommonEntryTestStub();
             var de = new DirEntry { Name = "Groo" };
             var de2 = new DirEntry { Name = "Broo" };
             re.Children.Add(de);
@@ -69,7 +69,7 @@ namespace cdeLibTest
         [Test]
         public void FindClosestParentDir_SecondLevelNonExistFromRoot_ReturnCorrectDE()
         {
-            var re = new RootEntry();
+            var re = new CommonEntryTestStub();
             var de = new DirEntry { Name = "Groo" };
             var de2 = new DirEntry { Name = "Broo" };
             re.Children.Add(de);
