@@ -63,6 +63,7 @@ namespace cdeLib
         }
 
         // set DirCount FileCount DirSize
+        // can this be done with TraverseTree ?
         public void SetSummaryFields()
         {
             var fileCount = 0u;
@@ -87,10 +88,16 @@ namespace cdeLib
             Size = size;
         }
 
-        public void TraverseTree(string path, Action<string, DirEntry> apply)
+        public static void TraverseAllTrees(IEnumerable<RootEntry> rootEntries, Action<string, DirEntry> action)
         {
-            //var pathStack = new Stack<string>();
-            //pathStack.Push(path);
+            foreach (var rootEntry in rootEntries)
+            {
+                rootEntry.TraverseTree(rootEntry.RootPath, action);
+            }
+        }
+
+        public void TraverseTree(string path, Action<string, DirEntry> action)
+        {
             var dirs = new Stack<Tuple<CommonEntry, string>>();
             dirs.Push(Tuple.Create(this, path));
 
@@ -100,13 +107,12 @@ namespace cdeLib
                 var commonEntry = t.Item1;
                 var workPath = t.Item2;
 
-                //var workPath = pathStack.Pop();
                 foreach (var dirEntry in commonEntry.Children)
                 {
                     var fullPath = Path.Combine(workPath, dirEntry.Name);
-                    if (apply != null)
+                    if (action != null)
                     {
-                        apply(fullPath, dirEntry);
+                        action(fullPath, dirEntry);
                     }
 
                     if (dirEntry.IsDirectory)
