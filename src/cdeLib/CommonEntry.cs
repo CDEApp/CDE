@@ -26,6 +26,9 @@ namespace cdeLib
         [ProtoMember(7, IsRequired = false)]
         public string MD5Hash { get; set; }
 
+        [ProtoMember(8, IsRequired = true)]
+        public bool IsPartialHash { get; set; }
+
         protected CommonEntry()
         {
             Children = new List<DirEntry>();    // only needed for dir's but who cares.

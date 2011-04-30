@@ -8,15 +8,21 @@ namespace cdeLib.Infrastructure
 {
     public class HashHelper
     {
+        private IConfiguration _configuration;
+        public HashHelper()
+        {
+            _configuration = new Configuration();
 
-        public static string GetMurmerHashFromFile(string filename)
+        }
+
+        public string GetMurmerHashFromFile(string filename)
         {
             try
             {
                 using (Stream stream = File.OpenRead(filename))
                 {
                     IHashAlgorithm hashAlgorithm = new MurmurHash2Unsafe();
-                    var num = hashAlgorithm.Hash(ReadFully(stream, 32768));
+                    var num = hashAlgorithm.Hash(ReadFully(stream,_configuration.HashFirstPassSize ));
                     return num.ToString("x2");
                 }
              
@@ -28,17 +34,16 @@ namespace cdeLib.Infrastructure
                 return null;
             }
         }
-        public static string GetMD5HashFromFile(string filename)
+        public string GetMD5HashFromFile(string filename, int bytesToHash)
         {
             try
             {
-                int maxBytesToHash = 65536;
                 using (Stream stream = File.OpenRead(filename))
                 {
-                    byte[] buf = new byte[maxBytesToHash];
+                    byte[] buf = new byte[bytesToHash];
                     int bytesRead = stream.Read(buf, 0, buf.Length);
                     long totalBytesRead = bytesRead;
-                    while (bytesRead > 0 && totalBytesRead <= maxBytesToHash)
+                    while (bytesRead > 0 && totalBytesRead <= bytesToHash)
                     {
                         bytesRead = stream.Read(buf, 0, buf.Length);
                         totalBytesRead += bytesRead;
@@ -62,7 +67,7 @@ namespace cdeLib.Infrastructure
         }
 
 
-        public static string GetMD5HashFromFile2(string filename)
+        public string GetMD5HashFromFile(string filename)
         {
             try
             {
@@ -84,7 +89,7 @@ namespace cdeLib.Infrastructure
             }
         }
 
-        public static string ByteArrayToString(byte[] bytes)
+        public string ByteArrayToString(byte[] bytes)
         {
             var sb = new StringBuilder();
             for (var i = 0; i < bytes.Length; i++)
@@ -95,7 +100,7 @@ namespace cdeLib.Infrastructure
             return sb.ToString();
         }
 
-        public static byte[] ReadFully(Stream stream, int initialLength)
+        public byte[] ReadFully(Stream stream, int initialLength)
         {
             // If we've been passed an unhelpful initial length, just
             // use 32K.

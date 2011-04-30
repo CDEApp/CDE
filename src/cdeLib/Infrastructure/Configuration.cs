@@ -6,6 +6,7 @@ namespace cdeLib.Infrastructure
     public interface IConfiguration
     {
         int ProgressUpdateInterval { get; }
+        int HashFirstPassSize { get; }
     }
 
     /// <summary>
@@ -27,5 +28,18 @@ namespace cdeLib.Infrastructure
                 return result;
             }
         }
+
+        /// <summary>
+        /// Size in bytes to use for a firstRunHashSize
+        /// </summary>
+        public int HashFirstPassSize
+        { get {
+            int result;
+            Int32.TryParse(ConfigurationManager.AppSettings["HashFirstPassSize"], out result);
+            if (result <= 1024)
+                result = 1024;
+            return result;
+            
+        }}
     }
 }
