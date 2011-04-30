@@ -8,6 +8,12 @@ namespace cdeLib
 {
     public class Duplication
     {
+        private readonly ILogger _logger;
+        public Duplication()
+        {
+            _logger = new Logger();
+        }
+
         private Dictionary<string, List<string>> _duplicateFileList = new Dictionary<string, List<string>>();
 
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
@@ -55,16 +61,19 @@ namespace cdeLib
             {
                 if (!String.IsNullOrEmpty(de.MD5Hash))
                 {
-                    Console.WriteLine("{0} already has md5 {1} ", fullPath, de.MD5Hash);
+                    _logger.LogInfo(String.Format("{0} already has md5 {1} ", fullPath, de.MD5Hash));
                 }
                 else
                 {
                     var hash = HashHelper.GetMD5HashFromFile(fullPath);
+                    //TODO: Need to convert method to use stream, currently getting out of memory for large files.
+                    //var hash = HashHelper.GetMurmerHashFromFile(fullPath)
                     de.MD5Hash = hash;
-                    Console.WriteLine("{0} {1}", fullPath, hash);    
+                    _logger.LogInfo(String.Format("{0} {1}", fullPath, hash));    
                 }
             }
         }
+
 
         private void BuildDuplicateList(string fullPath, DirEntry de)
         {
