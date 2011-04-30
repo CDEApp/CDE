@@ -66,7 +66,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimpleRootPath_ReturnsDriveLetter()
         {
-            var re = new TestRootEntry();
+            var re = new RootEntryTestStub();
 
             var hint = re.GetDriverLetterHint(@"C:\", @"C:\");
             
@@ -76,7 +76,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimpleRootPathOddAsRootDifferent_ReturnsPath()
         {
-            var re = new TestRootEntry();
+            var re = new RootEntryTestStub();
 
             var hint = re.GetDriverLetterHint(@"C:\", @"D:\");
 
@@ -86,7 +86,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimplePath_ReturnsPATH()
         {
-            var re = new TestRootEntry();
+            var re = new RootEntryTestStub();
 
             var hint = re.GetDriverLetterHint(@"C:\MyFolder", @"C:\");
 
@@ -96,7 +96,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_UncPath_ReturnsUNC()
         {
-            var re = new TestRootEntry(isUnc:true);
+            var re = new RootEntryTestStub(isUnc:true);
 
             var hint = re.GetDriverLetterHint(@"\\server\basepath\path", @"doest matter");
 
@@ -107,7 +107,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimpleRootPath_ReturnsExpectedStuff()
         {
-            var re = new TestRootEntry();
+            var re = new RootEntryTestStub();
 
             string hint, volRoot, volName;
 
@@ -122,7 +122,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimpleRootPath2_ReturnsExpectedStuff()
         {
-            var re = new TestRootEntry(root:@"D:\", volName:"OtherValue", fullPath:@"D:\");
+            var re = new RootEntryTestStub(root:@"D:\", volName:"OtherValue", fullPath:@"D:\");
 
             string hint, volRoot, volName;
 
@@ -138,7 +138,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimplePath_ReturnsExpectedStuff()
         {
-            var re = new TestRootEntry(fullPath: @"C:\MyTestFolder");
+            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder");
 
             string hint, volRoot, volName;
 
@@ -153,7 +153,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimplePath2_ReturnsExpectedStuff()
         {
-            var re = new TestRootEntry(fullPath: @"C:\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
 
             string hint, volRoot, volName;
 
@@ -168,7 +168,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_NonRootedPath_UsesFullPathToScanPath()
         {
-            var re = new TestRootEntry(fullPath: @"C:\Stuff\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(fullPath: @"C:\Stuff\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
             var fileName = re.GetDefaultFileName(@"MyTestFolder\Mine", out hint, out volRoot, out volName);
@@ -182,7 +182,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_RootedPathByLeadingSlash_UsingFullPath()
         {
-            var re = new TestRootEntry(fullPath: @"C:\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
             var fileName = re.GetDefaultFileName(@"\MyTestFolder\Mine", out hint, out volRoot, out volName);
@@ -196,7 +196,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_UNCPath_UsesFullPath()
         {
-            var re = new TestRootEntry(isUnc:true, fullPath: @"\\myserver\myshare");
+            var re = new RootEntryTestStub(isUnc:true, fullPath: @"\\myserver\myshare");
             string hint, volRoot, volName;
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot, out volName);
@@ -210,7 +210,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_UNCPath2_UsesFullPath()
         {
-            var re = new TestRootEntry(isUnc: true, fullPath: @"\\myserver\myshare\stuff");
+            var re = new RootEntryTestStub(isUnc: true, fullPath: @"\\myserver\myshare\stuff");
             string hint, volRoot, volName;
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot, out volName);
@@ -221,7 +221,7 @@ namespace cdeLibTest
             Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare_stuff.cde"));
         }
 
-        public class TestRootEntry : RootEntry
+        public class RootEntryTestStub : RootEntry
         {
             private readonly string _root;
             private readonly string _volName;
@@ -229,7 +229,7 @@ namespace cdeLibTest
             private readonly bool _isPathRooted;
             private readonly string _fullPath;
 
-            public TestRootEntry(
+            public RootEntryTestStub(
                 string root=@"C:\",
                 string volName="VolName", 
                 bool isUnc=false, 
