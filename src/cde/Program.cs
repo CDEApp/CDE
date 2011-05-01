@@ -21,7 +21,7 @@ namespace cde
             {
                 Find.FindString(args[1], param0);
             }
-            else if (args.Length ==1 && args[0] == "--md5")
+            else if (args.Length ==1 && args[0] == "--hash")
             {
                 CreateMd5OnCache();
             }
@@ -45,10 +45,10 @@ namespace cde
             Console.WriteLine("       uses all cache files available searches for <regex> as regex match on file name.");
             Console.WriteLine("Usage: cde --greppath <regex>");
             Console.WriteLine("       uses all cache files available searches for <regex> as regex match on full path to file name.");
-            Console.WriteLine("Usage: cde --md5 ");
-            Console.WriteLine("       Calculate md5 for all entries in cache file");
+            Console.WriteLine("Usage: cde --hash ");
+            Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
             Console.WriteLine("Usage: cde --dupes ");
-            Console.WriteLine("       Show duplicates. Must of precaculated MD5 first");
+            Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
         }
 
         private static void FindDupes()

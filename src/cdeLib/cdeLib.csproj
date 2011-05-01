@@ -52,6 +52,7 @@
     <Compile Include="DirEntry.cs" />
     <Compile Include="Duplication.cs" />
     <Compile Include="Find.cs" />
+    <Compile Include="FlatDirEntryDTO.cs" />
     <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Infrastructure\Hashing\HashHelper.cs" />
     <Compile Include="Infrastructure\Hashing\IHashAlgorithm.cs" />

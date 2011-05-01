@@ -8,20 +8,13 @@ namespace cdeLib.Infrastructure
 {
     public class HashHelper
     {
-        private IConfiguration _configuration;
-        public HashHelper()
-        {
-            _configuration = new Configuration();
-
-        }
-
         public string GetMD5HashFromFile(string filename, int bytesToHash)
         {
             try
             {
                 using (Stream stream = File.OpenRead(filename))
                 {
-                    byte[] buf = new byte[bytesToHash];
+                    var buf = new byte[bytesToHash];
                     int bytesRead = stream.Read(buf, 0, buf.Length);
                     long totalBytesRead = bytesRead;
                     while (bytesRead > 0 && totalBytesRead <= bytesToHash)
@@ -81,8 +74,7 @@ namespace cdeLib.Infrastructure
 
         public byte[] ReadFully(Stream stream, int initialLength)
         {
-            // If we've been passed an unhelpful initial length, just
-            // use 32K.
+            // If we've been passed an unhelpful initial length, just use 32k
             if (initialLength < 1)
             {
                 initialLength = 32768;
@@ -110,7 +102,7 @@ namespace cdeLib.Infrastructure
 
                     // Nope. Resize the buffer, put in the byte we've just
                     // read, and continue
-                    byte[] newBuffer = new byte[buffer.Length * 2];
+                    var newBuffer = new byte[buffer.Length * 2];
                     Array.Copy(buffer, newBuffer, buffer.Length);
                     newBuffer[read] = (byte)nextByte;
                     buffer = newBuffer;

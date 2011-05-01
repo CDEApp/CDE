@@ -26,7 +26,7 @@ namespace cdeLib
         [ProtoMember(7, IsRequired = false)]
         public string MD5Hash { get; set; }
 
-        [ProtoMember(8, IsRequired = true)]
+        [ProtoMember(8, IsRequired = false)]
         public bool IsPartialHash { get; set; }
 
         protected CommonEntry()

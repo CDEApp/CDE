@@ -35,7 +35,7 @@ namespace cdeLib.Infrastructure
         public int HashFirstPassSize
         { get {
             int result;
-            Int32.TryParse(ConfigurationManager.AppSettings["HashFirstPassSize"], out result);
+            Int32.TryParse(ConfigurationManager.AppSettings["Hash.FirstPassSizeInBytes"], out result);
             if (result <= 1024)
                 result = 1024;
             return result;

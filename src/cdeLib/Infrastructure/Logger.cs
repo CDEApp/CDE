@@ -6,6 +6,7 @@ namespace cdeLib.Infrastructure
     {
         void LogException(Exception ex, string message);
         void LogInfo(string message);
+        void LogDebug(string message);
     }
 
     /// <summary>
@@ -19,6 +20,11 @@ namespace cdeLib.Infrastructure
         }
 
         public void LogInfo(string message)
+        {
+            Console.WriteLine(message);
+        }
+
+        public void LogDebug(string message)
         {
             Console.WriteLine(message);
         }

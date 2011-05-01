@@ -78,7 +78,7 @@ namespace cdeLibTest.Infrastructure
 //            var murmurHash2Simple = new MurmurHash2Simple();
 //            var murmurHash2Unsafe = new MurmurHash2Unsafe();
 //            var murmur2HashInline = new MurmurHash2InlineBitConverter();
-            var hashHelper = new MD5Hash();
+            //var hashHelper = new MD5Hash();
             var sha1 = new SHA1Wrapper();
             var crc32 = new CRC32();
 //            var murmer2UInt32Hack = new MurmurHash2UInt32Hack();
@@ -88,7 +88,7 @@ namespace cdeLibTest.Infrastructure
 //            tests.Add("murmerHash2Inline", murmur2HashInline);
 //            tests.Add("murmerHash2UInt32Hack", murmer2UInt32Hack);
             
-            tests.Add("md5.NET", hashHelper);
+            //tests.Add("md5.NET", hashHelper);
             tests.Add("Sha1",sha1);
             tests.Add("CRC32", crc32);
             
