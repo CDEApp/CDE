@@ -1,4 +1,4 @@
-using System.Windows;
+using System;
 using Caliburn.Micro;
 using cdeLib;
 
@@ -38,9 +38,15 @@ namespace Finder.ViewModels
         public void LoadData()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            
             HelloString = string.Format("Data Loaded: {0}",rootEntries.Count);
-            
+        }
+
+        public void Scan(string name)
+        {
+            //TODO: wire up command properly
+            var re = new RootEntry();
+            re.PopulateRoot(name);
+            HelloString = String.Format("Filecount: {0}", re.FileCount);
         }
 
         public void SayHello(string name)

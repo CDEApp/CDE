@@ -7,12 +7,15 @@
              d:DesignHeight="300" d:DesignWidth="500">
     <StackPanel>
         <StackPanel Orientation="Horizontal">
-            <TextBlock Text="Name: "/>
-            <TextBox x:Name="Name"/>
+            <TextBlock Text="Cmd: "/>
+            <TextBox x:Name="Name" Width="138" />
         </StackPanel>
         <TextBlock x:Name="HelloString"/>
-        <Button x:Name="SayHello" Content="Click Me" Width="83" />
-        <Button x:Name="LoadData" Content="Load Data" Width="83" />
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="SayHello" Content="Click Me" Width="83" />
+            <Button x:Name="LoadData" Content="Load Data" Width="83" />
+            <Button x:Name="Scan" Content="Scan Cmd" Width="83" />
+        </StackPanel>
         <DataGrid AutoGenerateColumns="False" Height="200" Name="dataGrid1" Width="479" />
     </StackPanel>
     
