@@ -92,6 +92,20 @@ namespace cdeLib.Infrastructure
             }
         }
 
+<<<<<<< HEAD
+=======
+        public static string ByteArrayToString(byte[] bytes)
+        {
+            var sb = new StringBuilder();
+            for (var i = 0; i < bytes.Length; i++)
+            {
+                //TODO: Optimize via http://blogs.msdn.com/b/blambert/archive/2009/02/22/blambert-codesnip-fast-byte-array-to-hex-string-conversion.aspx
+                sb.Append(bytes[i].ToString("x2"));
+            }
+            return sb.ToString();
+        }
+>>>>>>> 9f69b1c0873e2aba8259d5f58596c4d79c278b41
+
         public byte[] ReadFully(Stream stream, int initialLength)
         {
             // If we've been passed an unhelpful initial length, just use 32k

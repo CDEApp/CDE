@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Text;
 using cdeLib;
 using NUnit.Framework;
 
@@ -27,7 +28,7 @@ namespace cdeLibTest
 
             rootDest = new RootEntry { RootPath = @"C:\" };
             deDest = GetNewTestF1();
-            deDest.MD5Hash = null;
+            deDest.Hash = null;
             deDest.IsPartialHash = true;
             rootDest.Children.Add(deDest);
         }
@@ -40,7 +41,7 @@ namespace cdeLibTest
                            Modified = new DateTime(2011, 05, 01, 12, 11, 10),
                            Size = 10,
                            IsPartialHash = true,
-                           MD5Hash = "testhash"
+                           Hash = Encoding.UTF8.GetBytes("testhash")
                        };
         }
 
@@ -49,7 +50,7 @@ namespace cdeLibTest
         {
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("testhash")));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(true));
         }
 
@@ -60,7 +61,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
@@ -71,7 +72,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
@@ -82,32 +83,32 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
         [Test]
         public void TraverseTreesCopyHash_OneEntrySourceHasPartialMD5_DestHasPartialMD5_NotCopied()
         {
-            deSource.MD5Hash = "Moo1";
-            deDest.MD5Hash = "Bang";
+            deSource.Hash = Encoding.UTF8.GetBytes("Moo1");
+            deDest.Hash = Encoding.UTF8.GetBytes("Bang");
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.EqualTo("Bang"));
+            Assert.That(deDest.Hash, Is.EqualTo("Bang"));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(true));
         }
 
         [Test]
         public void TraverseTreesCopyHash_OneEntrySourceHasFullMD5_DestHasPartialMD5_Copied()
         {
-            deSource.MD5Hash = "Moo1";
+            deSource.Hash = Encoding.UTF8.GetBytes("Moo1");
             deSource.IsPartialHash = false;
-            deDest.MD5Hash = "Bang";
+            deDest.Hash = Encoding.UTF8.GetBytes("Bang");
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.MD5Hash, Is.EqualTo("Moo1"));
+            Assert.That(deDest.Hash, Is.EqualTo("Moo1"));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(false));
         }
 
@@ -116,7 +117,7 @@ namespace cdeLibTest
         {
             var deSourceLev2 = GetNewTestF1();
             var deDestLev2 = GetNewTestF1();
-            deDestLev2.MD5Hash = null;
+            deDestLev2.Hash = null;
             deDestLev2.IsPartialHash = false;
 
             deSource.IsDirectory = true;
@@ -126,7 +127,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 
-            Assert.That(deDestLev2.MD5Hash, Is.EqualTo("testhash"));
+            Assert.That(deDestLev2.Hash, Is.EqualTo("testhash"));
             Assert.That(deDestLev2.IsPartialHash, Is.EqualTo(true));
         }
 
@@ -135,7 +136,7 @@ namespace cdeLibTest
         {
             var deSourceLev2 = GetNewTestF1();
             var deDestLev2 = GetNewTestF1();
-            deDestLev2.MD5Hash = null;
+            deDestLev2.Hash = null;
             deDestLev2.IsPartialHash = false;
             deDestLev2.Name = "notsame";
 
@@ -146,7 +147,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 
-            Assert.That(deDestLev2.MD5Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDestLev2.Hash, Is.Not.EqualTo("testhash"));
             Assert.That(deDestLev2.IsPartialHash, Is.Not.EqualTo(true));
         }
     }

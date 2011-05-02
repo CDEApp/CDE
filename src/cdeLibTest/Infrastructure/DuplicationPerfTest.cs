@@ -16,6 +16,7 @@ namespace cdeLibTest.Infrastructure
         /// hashHelper (md5):        223.23 MB/s (11198)
         /// </summary>
         [Test]
+        [Ignore("Only for benchmarking")]
         public void PerformanceHashTest()
         {
             var tests = new Dictionary<string, IHashAlgorithm>();

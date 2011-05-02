@@ -179,17 +179,17 @@ namespace cdeLib
                     {
                         // copy MD5 if none in destination.
                         // copy MD5 as upgrade to full if dest currently partial.
-                        if ((!String.IsNullOrEmpty(sourceDirEntry.MD5Hash)
-                             && String.IsNullOrEmpty(destinationDirEntry.MD5Hash))
+                        if ((sourceDirEntry.Hash != null)
+                             && (destinationDirEntry.Hash == null)
                             ||
-                            ((!String.IsNullOrEmpty(sourceDirEntry.MD5Hash)
-                              && !String.IsNullOrEmpty(destinationDirEntry.MD5Hash))
+                            ((sourceDirEntry.Hash != null)
+                              && (destinationDirEntry.Hash != null)
                               && !sourceDirEntry.IsPartialHash
                               && destinationDirEntry.IsPartialHash
                             ))
                         {
                             destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
-                            destinationDirEntry.MD5Hash = sourceDirEntry.MD5Hash;
+                            destinationDirEntry.Hash = sourceDirEntry.Hash;
                         }
                     }
                     else

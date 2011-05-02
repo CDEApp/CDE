@@ -10,10 +10,12 @@ namespace cdeLibTest.Infrastructure
 {
     public class DuplicationTests
     {
+        public const string FolderName = "test";
+
         [TearDown]
         public void Teardown()
         {
-            Directory.Delete("test",true);
+            Directory.Delete(FolderName, true);
             var files = Directory.GetFiles(".\\", "*.cde");
             foreach (var file in files)
             {
@@ -29,24 +31,24 @@ namespace cdeLibTest.Infrastructure
             const int dataSize = 256*1024;
 
             //write 2 duplicate files.
-            Directory.CreateDirectory("test");
+            Directory.CreateDirectory(FolderName);
 
             var data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream("test\\testset1",FileMode.Create));
-            WriteFile(data, new FileStream("test\\testset1dupe", FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset1",FolderName),FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset1dupe",FolderName), FileMode.Create));
 
             //no dupe
             data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream("test\\testset2", FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset2",FolderName), FileMode.Create));
 
             //3 dupes
             data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream("test\\testset3", FileMode.Create));
-            WriteFile(data, new FileStream("test\\testset3dupe1", FileMode.Create));
-            WriteFile(data, new FileStream("test\\testset3dupe2", FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset3",FolderName), FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset3dupe1",FolderName), FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset3dupe2", FolderName), FileMode.Create));
         }
 
         private static void WriteFile(byte[] data, Stream fs)
@@ -61,11 +63,11 @@ namespace cdeLibTest.Infrastructure
         }
 
         [Test]
-        public void CanDetectDuplicates()
+        public void CanFindDuplicates()
         {
             var duplication = new Duplication();
             var rootEntry = new RootEntry();
-            rootEntry.PopulateRoot("test\\");
+            rootEntry.PopulateRoot(String.Format("{0}\\",FolderName));
             var rootEntries = new List<RootEntry> {rootEntry};
             duplication.ApplyMd5Checksum(rootEntries);
             duplication.FindDuplicates(rootEntries);

@@ -22,7 +22,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
             Assert.That(b.Length, Is.EqualTo(2));
         }
 
@@ -45,7 +45,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
         [ProtoContract]
@@ -68,7 +68,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
         [Test]
@@ -84,7 +84,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
 
@@ -115,7 +115,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
         [ProtoContract]
@@ -144,7 +144,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
         [Test]
@@ -160,7 +160,7 @@ namespace ProtobufTest
             var b = ms.ToArray();
 
             Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", HashHelper.ByteArrayToString(b));
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
         }
 
         [Test]
