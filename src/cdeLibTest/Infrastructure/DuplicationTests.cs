@@ -1,138 +1,77 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.Security.Cryptography;
-using System.Threading;
-using cdeLib.Infrastructure;
+using System.IO;
+using cdeLib;
 using NUnit.Framework;
+using Directory = Alphaleonis.Win32.Filesystem.Directory;
+using FileMode = System.IO.FileMode;
 
 namespace cdeLibTest.Infrastructure
 {
-
-    public class MD5Hash : IHashAlgorithm
-    {
-        public MD5Hash()
-        {
-            
-        }
-
-        public uint Hash(byte[] data)
-        {
-            MD5 md5 = MD5.Create();
-            var hash = md5.ComputeHash(data);
-            return BitConverter.ToUInt32(hash, 0);
-        }
-    }
-
-    public class CRC32 : IHashAlgorithm
-    {
-        uint[] tab;
-
-        public CRC32()
-        {
-            Init(0x04c11db7);
-        }
-
-        public CRC32(uint poly)
-        {
-            Init(poly);
-        }
-
-        void Init(uint poly)
-        {
-            tab = new uint[256];
-            for (uint i = 0; i < 256; i++)
-            {
-                uint t = i;
-                for (int j = 0; j < 8; j++)
-                    if ((t & 1) == 0)
-                        t >>= 1;
-                    else
-                        t = (t >> 1) ^ poly;
-                tab[i] = t;
-            }
-        }
-
-        public uint Hash(byte[] data)
-        {
-            uint hash = 0xFFFFFFFF;
-            foreach (byte b in data)
-                hash = (hash << 8) ^ tab[b ^ (hash >> 24)];
-            return ~hash;
-        }
-    }
-
-    public class SHA1Wrapper : IHashAlgorithm
-    {
-        private SHA1 sha1;
-        public SHA1Wrapper()
-        {
-            sha1 = SHA1.Create();
-        }
-
-
-        public uint Hash(byte[] data)
-        {
-            var result = sha1.ComputeHash(data);
-            return BitConverter.ToUInt32(result,0);
-        }
-    }
-
     public class DuplicationTests
     {
-       
-
-        /// <summary>
-        /// MurmerUnsafe should be the fastest.
-        /// murmurHash2Simple:        267.27 MB/s (9353)
-        /// murmurHash2Unsafe:        439.32 MB/s (5690)
-        /// hashHelper (md5):        223.23 MB/s (11198)
-        /// </summary>
-        [Test]
-        public void PerformanceHashTest()
+        [TearDown]
+        public void Teardown()
         {
-            var tests = new Dictionary<string, IHashAlgorithm>();
-//            var murmurHash2Simple = new MurmurHash2Simple();
-//            var murmurHash2Unsafe = new MurmurHash2Unsafe();
-//            var murmur2HashInline = new MurmurHash2InlineBitConverter();
-            var hashHelper = new MD5Hash();
-            var sha1 = new SHA1Wrapper();
-            var crc32 = new CRC32();
-//            var murmer2UInt32Hack = new MurmurHash2UInt32Hack();
-            
-//            tests.Add("murmurHash2Simple",murmurHash2Simple);
-//            tests.Add("murmurHash2Unsafe",murmurHash2Unsafe);
-//            tests.Add("murmerHash2Inline", murmur2HashInline);
-//            tests.Add("murmerHash2UInt32Hack", murmer2UInt32Hack);
-            
-            tests.Add("md5.NET", hashHelper);
-            tests.Add("Sha1",sha1);
-            tests.Add("CRC32", crc32);
-            
-
-
-            var data = new Byte[256 * 1024];
-            new Random().NextBytes(data);
-            Thread.CurrentThread.Priority = ThreadPriority.Highest;
-            Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
-            if (Environment.ProcessorCount > 1)
+            Directory.Delete("test",true);
+            var files = Directory.GetFiles(".\\", "*.cde");
+            foreach (var file in files)
             {
-                Process.GetCurrentProcess().ProcessorAffinity =
-                      new IntPtr(1 << (Environment.ProcessorCount - 1));
+                Alphaleonis.Win32.Filesystem.File.Delete(file);
             }
-            foreach (var testSubject in tests)
+
+        }
+
+        [SetUp]
+        public void SetUp()
+        {
+            var random = new Random();
+            const int dataSize = 256*1024;
+
+            //write 2 duplicate files.
+            Directory.CreateDirectory("test");
+
+            var data = new Byte[dataSize];
+            random.NextBytes(data);
+            WriteFile(data, new FileStream("test\\testset1",FileMode.Create));
+            WriteFile(data, new FileStream("test\\testset1dupe", FileMode.Create));
+
+            //no dupe
+            data = new Byte[dataSize];
+            random.NextBytes(data);
+            WriteFile(data, new FileStream("test\\testset2", FileMode.Create));
+
+            //3 dupes
+            data = new Byte[dataSize];
+            random.NextBytes(data);
+            WriteFile(data, new FileStream("test\\testset3", FileMode.Create));
+            WriteFile(data, new FileStream("test\\testset3dupe1", FileMode.Create));
+            WriteFile(data, new FileStream("test\\testset3dupe2", FileMode.Create));
+        }
+
+        private static void WriteFile(byte[] data, Stream fs)
+        {
+            BinaryWriter bw;
+            using (bw = new BinaryWriter(fs))
             {
-                Stopwatch timer = Stopwatch.StartNew();
-                for (int i = 0; i < 9999; i++)
-                {
-                    testSubject.Value.Hash(data);
-                }
-                timer.Stop();
-                Console.WriteLine("{0}:\t\t{1:F2} MB/s ({2})", testSubject.Key,
-                    (data.Length * (1000.0 / (timer.ElapsedMilliseconds / 9999.0)))
-                        / (1024.0 * 1024.0),
-                    timer.ElapsedMilliseconds);
+                bw.Write(data);
+                bw.Close();
+                fs.Close();
             }
+        }
+
+        [Test]
+        public void CanDetectDuplicates()
+        {
+            var duplication = new Duplication();
+            var rootEntry = new RootEntry();
+            rootEntry.PopulateRoot("test\\");
+            var rootEntries = new List<RootEntry> {rootEntry};
+            duplication.ApplyMd5Checksum(rootEntries);
+            duplication.FindDuplicates(rootEntries);
+            
+            //Do Assertion on count of dupes, should be 2 collections.
+
         }
     }
 }

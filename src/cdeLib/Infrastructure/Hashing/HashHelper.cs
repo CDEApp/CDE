@@ -1,14 +1,22 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using System.Text;
 using File = Alphaleonis.Win32.Filesystem.File;
 
 namespace cdeLib.Infrastructure
 {
     public class HashResponse
     {
-        public string Hash { get; set; }
+        public string HashAsString
+        {
+            get {
+                if (Hash == null)
+                    return null;
+                return ByteArrayHelper.ByteArrayToString(Hash);
+            }
+        }
+
+        public byte[] Hash { get; set; }
         public bool IsPartialHash { get; set; }
         public long BytesHashed { get; set; }
     }
@@ -16,15 +24,14 @@ namespace cdeLib.Infrastructure
     public class HashHelper
     {
         /// <summary>
-        /// Overload for GetMD5HashResponseFromFile(filename, bytesToHash);
+        ///   Overload for GetMD5HashResponseFromFile(filename, bytesToHash);
         /// </summary>
-        /// <param name="filename"></param>
-        /// <param name="bytesToHash"></param>
+        /// <param name = "filename"></param>
+        /// <param name = "bytesToHash"></param>
         /// <returns></returns>
-        public string GetMD5HashFromFile(string filename, int bytesToHash)
+        public byte[] GetMD5HashFromFile(string filename, int bytesToHash)
         {
-            var hashResponse = GetMD5HashResponseFromFile(filename, bytesToHash);
-            return hashResponse.Hash;
+            return GetMD5HashResponseFromFile(filename, bytesToHash).Hash;
         }
 
         public HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
@@ -47,9 +54,7 @@ namespace cdeLib.Infrastructure
 
                     using (var md5 = MD5.Create())
                     {
-                        var buffer = md5.ComputeHash(buf);
-                        hashResponse.Hash = ByteArrayToString(buffer);
-
+                        hashResponse.Hash = md5.ComputeHash(buf);
                     }
                 }
                 return hashResponse;
@@ -69,12 +74,10 @@ namespace cdeLib.Infrastructure
             {
                 using (Stream stream = File.OpenRead(filename))
                 {
-
                     var hashResponse = new HashResponse();
                     using (var md5 = MD5.Create())
                     {
-                        var buffer = md5.ComputeHash(stream);
-                        hashResponse.Hash = ByteArrayToString(buffer);
+                        hashResponse.Hash = md5.ComputeHash(stream);
                         hashResponse.IsPartialHash = false;
                         hashResponse.BytesHashed += stream.Length;
                         return hashResponse;
@@ -89,16 +92,6 @@ namespace cdeLib.Infrastructure
             }
         }
 
-        public string ByteArrayToString(byte[] bytes)
-        {
-            var sb = new StringBuilder();
-            for (var i = 0; i < bytes.Length; i++)
-            {
-                //TODO: Optimize via http://blogs.msdn.com/b/blambert/archive/2009/02/22/blambert-codesnip-fast-byte-array-to-hex-string-conversion.aspx
-                sb.Append(bytes[i].ToString("x2"));
-            }
-            return sb.ToString();
-        }
 
         public byte[] ReadFully(Stream stream, int initialLength)
         {
@@ -108,7 +101,7 @@ namespace cdeLib.Infrastructure
                 initialLength = 32768;
             }
 
-            byte[] buffer = new byte[initialLength];
+            var buffer = new byte[initialLength];
             int read = 0;
 
             int chunk;
@@ -130,19 +123,17 @@ namespace cdeLib.Infrastructure
 
                     // Nope. Resize the buffer, put in the byte we've just
                     // read, and continue
-                    var newBuffer = new byte[buffer.Length * 2];
+                    var newBuffer = new byte[buffer.Length*2];
                     Array.Copy(buffer, newBuffer, buffer.Length);
-                    newBuffer[read] = (byte)nextByte;
+                    newBuffer[read] = (byte) nextByte;
                     buffer = newBuffer;
                     read++;
                 }
             }
             // Buffer is now too big. Shrink it.
-            byte[] ret = new byte[read];
+            var ret = new byte[read];
             Array.Copy(buffer, ret, read);
             return ret;
         }
-
-       
     }
 }

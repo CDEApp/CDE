@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Comparer;
 
 namespace cdeLib
 {
@@ -25,24 +26,23 @@ namespace cdeLib
     public class Duplication
     {
         private readonly ILogger _logger;
-        private readonly Dictionary<string, List<string>> _dupes;
-        //private readonly Dictionary<string, int> _stats = new Dictionary<string, int>();
+        private readonly Dictionary<byte[], List<string>> _dupes;
         private readonly Dictionary<ulong,List<FlatDirEntryDTO>> _duplicateFileSize = new Dictionary<ulong, List<FlatDirEntryDTO>>();
-        private readonly Dictionary<string, List<string>> _duplicateFileList = new Dictionary<string, List<string>>();
+        private readonly Dictionary<byte[], List<string>> _duplicateFileList = new Dictionary<byte[], List<string>>(new ByteArrayComparer());
         private readonly IConfiguration _configuration;
         private readonly DuplicationStatistics _duplicationStatistics;
         
         public Duplication()
         {
             _logger = new Logger();
-            _dupes = new Dictionary<string, List<string>>();
+            _dupes = new Dictionary<byte[], List<string>>(new ByteArrayComparer());
             _configuration = new Configuration();
             _duplicationStatistics = new DuplicationStatistics();
         }
 
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
-            Stopwatch timer = new Stopwatch();
+            var timer = new Stopwatch();
             timer.Start();
             
             CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
@@ -103,11 +103,11 @@ namespace cdeLib
                 return;
 
             //ignore if we already have a hash.
-            if (!String.IsNullOrEmpty(de.MD5Hash) && !de.IsPartialHash)
+            if (de.Hash != null && !de.IsPartialHash)
             {
                 return;
             }
-            if (de.MD5Hash != null && _dupes.ContainsKey(de.MD5Hash))
+            if (de.Hash != null && _dupes.ContainsKey(de.Hash))
             {
                 CalculateMD5Hash(fullPath, de, false);
             }
@@ -119,7 +119,7 @@ namespace cdeLib
                 return;
             
             //ignore if we already have a hash.
-            if (!de.MD5Hash.IsNullOrEmpty())
+            if (de.Hash != null)
             {
                 return;
             }
@@ -137,7 +137,7 @@ namespace cdeLib
                 if (doPartialHash)
                 {
                     //dont recalculate.
-                    if (!String.IsNullOrEmpty(de.MD5Hash) && de.IsPartialHash)
+                    if (de.Hash != null && de.IsPartialHash)
                     {
                         return;
                     }
@@ -145,7 +145,7 @@ namespace cdeLib
 
                     if (hashResponse != null)
                     {
-                        de.MD5Hash = hashResponse.Hash;
+                        de.Hash = hashResponse.Hash;
                         de.IsPartialHash = hashResponse.IsPartialHash;
                         _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
                         if (de.IsPartialHash)
@@ -164,12 +164,12 @@ namespace cdeLib
                 }
                 else
                 {
-                    if (!String.IsNullOrEmpty(de.MD5Hash) && !de.IsPartialHash)
+                    if ((de.Hash != null) && !de.IsPartialHash)
                     {
                         return;
                     }
                     var hashResponse = hashHelper.GetMD5HashFromFile(fullPath);
-                    de.MD5Hash = hashResponse.Hash;
+                    de.Hash = hashResponse.Hash;
                     de.IsPartialHash = hashResponse.IsPartialHash;
                     _duplicationStatistics.FullHashes += 1;
                     _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
@@ -184,20 +184,20 @@ namespace cdeLib
 
         private void BuildDuplicateList(string fullPath, DirEntry de)
         {
-            if (String.IsNullOrEmpty(de.MD5Hash))
+            if (de.Hash == null)
             {
                 //TODO: how to deal with uncalculated files?
                 return;
             }
             //add duplicate
-            if (_duplicateFileList.ContainsKey(de.MD5Hash))
+            if (_duplicateFileList.ContainsKey(de.Hash))
             {
-                _duplicateFileList[de.MD5Hash].Add(fullPath);
+                _duplicateFileList[de.Hash].Add(fullPath);
             }
             else
             {
                 //create new entry.
-                _duplicateFileList.Add(de.MD5Hash,new List<string> {fullPath});
+                _duplicateFileList.Add(de.Hash,new List<string> {fullPath});
             }
         }
 
