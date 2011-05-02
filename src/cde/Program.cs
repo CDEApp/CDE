@@ -83,6 +83,14 @@ namespace cde
 
                 re.PopulateRoot(path);
 
+                var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
+                if (oldRoot != null)
+                {
+                    Console.WriteLine("Found cache \"{0}\"", re.DefaultFileName);
+                    Console.WriteLine("Updating hashs on new scan from found cache file.");
+                    oldRoot.TraverseTreesCopyHash(re);
+                }
+
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
                 Console.WriteLine("Scanned Path {0}", re.RootPath);
