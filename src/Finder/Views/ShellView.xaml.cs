@@ -15,11 +15,11 @@ using System.Windows.Shapes;
 namespace Finder.Views
 {
     /// <summary>
-    /// Interaction logic for MainView.xaml
+    /// Interaction logic for ShellView.xaml
     /// </summary>
-    public partial class MainView : UserControl
+    public partial class ShellView : UserControl
     {
-        public MainView()
+        public ShellView()
         {
             InitializeComponent();
         }
