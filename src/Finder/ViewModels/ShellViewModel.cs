@@ -1,5 +1,6 @@
 using System.Windows;
 using Caliburn.Micro;
+using cdeLib;
 
 namespace Finder.ViewModels
 {
@@ -32,6 +33,14 @@ namespace Finder.ViewModels
         public bool CanSayHello
         {
             get { return !string.IsNullOrWhiteSpace(Name); }
+        }
+
+        public void LoadData()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            
+            HelloString = string.Format("Data Loaded: {0}",rootEntries.Count);
+            
         }
 
         public void SayHello(string name)

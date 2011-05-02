@@ -11,6 +11,9 @@
             <TextBox x:Name="Name"/>
         </StackPanel>
         <TextBlock x:Name="HelloString"/>
-        <Button x:Name="SayHello" Content="Click Me"/>
-        </StackPanel>
+        <Button x:Name="SayHello" Content="Click Me" Width="83" />
+        <Button x:Name="LoadData" Content="Load Data" Width="83" />
+        <DataGrid AutoGenerateColumns="False" Height="200" Name="dataGrid1" Width="479" />
+    </StackPanel>
+    
 </UserControl>
