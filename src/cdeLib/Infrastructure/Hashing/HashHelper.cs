@@ -6,10 +6,30 @@ using File = Alphaleonis.Win32.Filesystem.File;
 
 namespace cdeLib.Infrastructure
 {
+    public class HashResponse
+    {
+        public string Hash { get; set; }
+        public bool IsPartialHash { get; set; }
+        public long BytesHashed { get; set; }
+    }
+
     public class HashHelper
     {
+        /// <summary>
+        /// Overload for GetMD5HashResponseFromFile(filename, bytesToHash);
+        /// </summary>
+        /// <param name="filename"></param>
+        /// <param name="bytesToHash"></param>
+        /// <returns></returns>
         public string GetMD5HashFromFile(string filename, int bytesToHash)
         {
+            var hashResponse = GetMD5HashResponseFromFile(filename, bytesToHash);
+            return hashResponse.Hash;
+        }
+
+        public HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
+        {
+            var hashResponse = new HashResponse();
             try
             {
                 using (Stream stream = File.OpenRead(filename))
@@ -22,13 +42,17 @@ namespace cdeLib.Infrastructure
                         bytesRead = stream.Read(buf, 0, buf.Length);
                         totalBytesRead += bytesRead;
                     }
+                    hashResponse.BytesHashed = totalBytesRead;
+                    hashResponse.IsPartialHash = stream.Length > bytesToHash;
 
-                    using (MD5 md5 = MD5.Create())
+                    using (var md5 = MD5.Create())
                     {
                         var buffer = md5.ComputeHash(buf);
-                        return ByteArrayToString(buffer);
+                        hashResponse.Hash = ByteArrayToString(buffer);
+
                     }
                 }
+                return hashResponse;
             }
             catch (Exception ex)
             {
@@ -39,17 +63,21 @@ namespace cdeLib.Infrastructure
         }
 
 
-        public string GetMD5HashFromFile(string filename)
+        public HashResponse GetMD5HashFromFile(string filename)
         {
             try
             {
                 using (Stream stream = File.OpenRead(filename))
                 {
-                 
-                    using (MD5 md5 = MD5.Create())
+
+                    var hashResponse = new HashResponse();
+                    using (var md5 = MD5.Create())
                     {
                         var buffer = md5.ComputeHash(stream);
-                        return ByteArrayToString(buffer);
+                        hashResponse.Hash = ByteArrayToString(buffer);
+                        hashResponse.IsPartialHash = false;
+                        hashResponse.BytesHashed += stream.Length;
+                        return hashResponse;
                     }
                 }
             }

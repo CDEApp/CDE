@@ -1,31 +1,50 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
+    public class DuplicationStatistics
+    {
+        public DuplicationStatistics()
+        {
+            PartialHashes = 0;
+            FullHashes = 0;
+            BytesProcessed = 0;
+
+        }
+
+        public long PartialHashes { get; set; }
+        public long FullHashes { get; set; }
+        public long BytesProcessed { get; set; }
+    }
+
     public class Duplication
     {
         private readonly ILogger _logger;
         private readonly Dictionary<string, List<string>> _dupes;
-        private readonly Dictionary<string, int> _stats = new Dictionary<string, int>();
+        //private readonly Dictionary<string, int> _stats = new Dictionary<string, int>();
         private readonly Dictionary<ulong,List<FlatDirEntryDTO>> _duplicateFileSize = new Dictionary<ulong, List<FlatDirEntryDTO>>();
         private readonly Dictionary<string, List<string>> _duplicateFileList = new Dictionary<string, List<string>>();
         private readonly IConfiguration _configuration;
+        private readonly DuplicationStatistics _duplicationStatistics;
         
         public Duplication()
         {
             _logger = new Logger();
-            _stats.Add("partial",0);
-            _stats.Add("full", 0);
             _dupes = new Dictionary<string, List<string>>();
             _configuration = new Configuration();
+            _duplicationStatistics = new DuplicationStatistics();
         }
 
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
+            Stopwatch timer = new Stopwatch();
+            timer.Start();
+            
             CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
             Console.WriteLine("Found {0} sets of files matched by filesize",_duplicateFileSize.Count);
             foreach(var kvp in _duplicateFileSize)
@@ -35,14 +54,21 @@ namespace cdeLib
                     CalculatePartialMD5Hash(flatFile.FilePath,flatFile.DirEntry);
                 }
             }
-
             CheckDupesAndCompleteFullHash(rootEntries);
-            foreach(var rootEntry in rootEntries)
+            Console.WriteLine("");
+            timer.Stop();
+            string perf = String.Format("{0:F2} MB/s",
+                ((_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds))) / (1024.0 * 1024.0)
+                );
+
+            Console.WriteLine("FullHash: {0}  PartialHash: {1}  Processed: {2:F2} MB Perf: {3}", _duplicationStatistics.FullHashes, _duplicationStatistics.PartialHashes,
+                _duplicationStatistics.BytesProcessed/ (1024*1024),
+                perf);
+            foreach (var rootEntry in rootEntries)
             {
                 rootEntry.SaveRootEntry();
             }
-            Console.WriteLine("");
-            Console.WriteLine("FullHash: {0}  PartialHash: {1}",_stats["full"],_stats["partial"]);
+
         }
 
         private void FindMatchesOnFileSize(string filePath, DirEntry dirEntry)
@@ -63,7 +89,7 @@ namespace cdeLib
             _logger.LogDebug("CheckDupesAndCompleteFullHash");
             CommonEntry.TraverseAllTrees(rootEntries, BuildDuplicateList);
             var founddupes = _duplicateFileList.Where(d => d.Value.Count > 1);
-            _logger.LogInfo(String.Format("Found {0} dupes",founddupes.Count()));
+            _logger.LogInfo(String.Format("Found {0} duplication collections.",founddupes.Count()));
             foreach (var keyValuePair in founddupes)
             {
                 _dupes.Add(keyValuePair.Key,keyValuePair.Value);
@@ -93,7 +119,7 @@ namespace cdeLib
                 return;
             
             //ignore if we already have a hash.
-            if (!String.IsNullOrEmpty(de.MD5Hash))
+            if (!de.MD5Hash.IsNullOrEmpty())
             {
                 return;
             }
@@ -108,7 +134,6 @@ namespace cdeLib
             {
                 var hashHelper = new HashHelper();
                 var configuration = new Configuration();
-                string hash;
                 if (doPartialHash)
                 {
                     //dont recalculate.
@@ -116,13 +141,25 @@ namespace cdeLib
                     {
                         return;
                     }
-                    hash = hashHelper.GetMD5HashFromFile(fullPath, configuration.HashFirstPassSize);
-                    de.MD5Hash = hash;
-                    de.IsPartialHash = true;
-                    _stats["partial"] += 1;
-                    if (_stats["partial"] % displayCounterInterval == 0)
+                    var hashResponse = hashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
+
+                    if (hashResponse != null)
                     {
-                        Console.Write("p");
+                        de.MD5Hash = hashResponse.Hash;
+                        de.IsPartialHash = hashResponse.IsPartialHash;
+                        _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                        if (de.IsPartialHash)
+                            _duplicationStatistics.PartialHashes += 1;
+                        else
+                            _duplicationStatistics.FullHashes += 1;
+                        if (_duplicationStatistics.PartialHashes % displayCounterInterval == 0)
+                        {
+                            Console.Write("p");
+                        }
+                        if (_duplicationStatistics.FullHashes % displayCounterInterval == 0)
+                        {
+                            Console.Write("f");
+                        }
                     }
                 }
                 else
@@ -131,11 +168,12 @@ namespace cdeLib
                     {
                         return;
                     }
-                    hash = hashHelper.GetMD5HashFromFile(fullPath);
-                    de.MD5Hash = hash;
-                    de.IsPartialHash = false;
-                    _stats["full"] += 1;
-                    if (_stats["full"] % displayCounterInterval == 0)
+                    var hashResponse = hashHelper.GetMD5HashFromFile(fullPath);
+                    de.MD5Hash = hashResponse.Hash;
+                    de.IsPartialHash = hashResponse.IsPartialHash;
+                    _duplicationStatistics.FullHashes += 1;
+                    _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                    if (_duplicationStatistics.FullHashes % displayCounterInterval == 0)
                     {
                         Console.Write("f");
                     }

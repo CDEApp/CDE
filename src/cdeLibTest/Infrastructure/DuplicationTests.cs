@@ -9,6 +9,21 @@ using NUnit.Framework;
 namespace cdeLibTest.Infrastructure
 {
 
+    public class MD5Hash : IHashAlgorithm
+    {
+        public MD5Hash()
+        {
+            
+        }
+
+        public uint Hash(byte[] data)
+        {
+            MD5 md5 = MD5.Create();
+            var hash = md5.ComputeHash(data);
+            return BitConverter.ToUInt32(hash, 0);
+        }
+    }
+
     public class CRC32 : IHashAlgorithm
     {
         uint[] tab;
@@ -65,6 +80,8 @@ namespace cdeLibTest.Infrastructure
 
     public class DuplicationTests
     {
+       
+
         /// <summary>
         /// MurmerUnsafe should be the fastest.
         /// murmurHash2Simple:        267.27 MB/s (9353)
@@ -78,7 +95,7 @@ namespace cdeLibTest.Infrastructure
 //            var murmurHash2Simple = new MurmurHash2Simple();
 //            var murmurHash2Unsafe = new MurmurHash2Unsafe();
 //            var murmur2HashInline = new MurmurHash2InlineBitConverter();
-            //var hashHelper = new MD5Hash();
+            var hashHelper = new MD5Hash();
             var sha1 = new SHA1Wrapper();
             var crc32 = new CRC32();
 //            var murmer2UInt32Hack = new MurmurHash2UInt32Hack();
@@ -88,7 +105,7 @@ namespace cdeLibTest.Infrastructure
 //            tests.Add("murmerHash2Inline", murmur2HashInline);
 //            tests.Add("murmerHash2UInt32Hack", murmer2UInt32Hack);
             
-            //tests.Add("md5.NET", hashHelper);
+            tests.Add("md5.NET", hashHelper);
             tests.Add("Sha1",sha1);
             tests.Add("CRC32", crc32);
             

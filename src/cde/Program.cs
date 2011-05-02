@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using cdeLib;
 
 namespace cde
@@ -62,7 +63,13 @@ namespace cde
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var duplication = new Duplication();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             duplication.ApplyMd5Checksum(rootEntries);
+            sw.Stop();
+            TimeSpan ts = sw.Elapsed;
+            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
+            Console.WriteLine("Hash took : {0}",elapsedTime);
         }
 
         static void CreateCDECache(string path)

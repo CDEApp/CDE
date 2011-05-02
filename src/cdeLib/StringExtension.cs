@@ -5,6 +5,12 @@ namespace cdeLib
 {
     public static class StringExtension
     {
+
+        public static bool IsNullOrEmpty(this string value)
+        {
+            return String.IsNullOrEmpty(value);
+        }
+
         /// <summary>
         /// Assumption that rootPath of form "D:" is equivalent to root of device not a relative path to start with ?
         /// </summary>
