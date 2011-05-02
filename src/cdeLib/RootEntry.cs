@@ -320,13 +320,26 @@ namespace cdeLib
             var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
             foreach (var file in files)
             {
-                using (var fs = File.Open(file, FileMode.Open))
+                var re = LoadDirCache(file);
+                if (re != null)
                 {
-                    var re = Read(fs);
                     roots.Add(re);
                 }
             }
             return roots;
+        }
+
+        public static RootEntry LoadDirCache(string file)
+        {
+            if (File.Exists(file))
+            {
+                using (var fs = File.Open(file, FileMode.Open))
+                {
+                    var re = Read(fs);
+                    return re;
+                }
+            }
+            return null;
         }
 
         #region List of UAE paths on a known win7 volume - probably decent example

@@ -92,6 +92,7 @@ namespace cdeLib.Infrastructure
             }
         }
 
+        public string ByteArrayToString(byte[] bytes)
 
         public byte[] ReadFully(Stream stream, int initialLength)
         {

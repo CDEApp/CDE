@@ -129,5 +129,79 @@ namespace cdeLib
             }
         }
 
+        public void TraverseTreesCopyHash(RootEntry destination)
+        {
+            var dirs = new Stack<Tuple<string, CommonEntry, CommonEntry>>();
+            var source = this as RootEntry;
+
+            if (source == null || destination == null)
+            {
+                throw new ArgumentException("source and destination must be not null.");
+            }
+
+            var sourcePath = source.RootPath;
+            var destinationPath = destination.RootPath;
+
+            if (sourcePath != destinationPath)
+            {
+                throw new ArgumentException("source and destination must have same root path.");
+            }
+
+            // traverse every source entry copy across the meta data that matches on destination entry
+            // if it adds value to destination.
+            // if destination is not there source not processed.
+            dirs.Push(Tuple.Create(sourcePath, (CommonEntry) source, (CommonEntry) destination));
+
+            while (dirs.Count > 0)
+            {
+                var t = dirs.Pop();
+                var workPath = t.Item1;
+                var baseSourceEntry = t.Item2;
+                var baseDestinationEntry = t.Item3;
+
+                foreach (var sourceDirEntry in baseSourceEntry.Children)
+                {
+                    var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
+
+                    // find if theres a destination entry available.
+                    var sourceEntry = sourceDirEntry;
+                    var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
+                        x => (x.Name == sourceEntry.Name)
+                             && (x.Modified == sourceEntry.Modified)
+                             && (x.Size == sourceEntry.Size));
+
+                    if (destinationDirEntry == null)
+                    {
+                        continue;
+                    }
+
+                    if (!sourceDirEntry.IsDirectory)
+                    {
+                        // copy MD5 if none in destination.
+                        // copy MD5 as upgrade to full if dest currently partial.
+                        if ((!String.IsNullOrEmpty(sourceDirEntry.MD5Hash)
+                             && String.IsNullOrEmpty(destinationDirEntry.MD5Hash))
+                            ||
+                            ((!String.IsNullOrEmpty(sourceDirEntry.MD5Hash)
+                              && !String.IsNullOrEmpty(destinationDirEntry.MD5Hash))
+                              && !sourceDirEntry.IsPartialHash
+                              && destinationDirEntry.IsPartialHash
+                            ))
+                        {
+                            destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
+                            destinationDirEntry.MD5Hash = sourceDirEntry.MD5Hash;
+                        }
+                    }
+                    else
+                    {
+                        if (destinationDirEntry.IsDirectory)
+                        {
+                            dirs.Push(Tuple.Create(fullPath, (CommonEntry) sourceDirEntry,
+                                                   (CommonEntry) destinationDirEntry));
+                        }
+                    }
+                }
+            }
+        }
     }
 }

@@ -125,5 +125,28 @@ namespace cdeLibTest
         }
 
     }
+
+    [TestFixture]
+    class CommonEntryTest_TraverseTreesCopyHash
+    {
+        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "source and destination must be not null.")]
+        [Test]
+        public void TraverseTreesCopyHash_RunWithDirEntry_Exception()
+        {
+            var reSource = new DirEntry { Name = @"Moo" };
+
+            reSource.TraverseTreesCopyHash(null);
+        }
+
+        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "source and destination must have same root path.")]
+        [Test]
+        public void TraverseTreesCopyHash_RootPathsDifferent_Exception()
+        {
+            var reSource = new RootEntry { RootPath = @"C:\a" };
+            var reDest = new RootEntry { RootPath = @"C:\" };
+
+            reSource.TraverseTreesCopyHash(reDest);
+        }
+    }
     // ReSharper restore InconsistentNaming
 }
