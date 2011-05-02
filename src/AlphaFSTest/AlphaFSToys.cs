@@ -1,6 +1,12 @@
 ﻿using System;
+using System.IO;
 using Alphaleonis.Win32.Filesystem;
+using cdeLib.Infrastructure;
 using NUnit.Framework;
+using Directory = Alphaleonis.Win32.Filesystem.Directory;
+using File = Alphaleonis.Win32.Filesystem.File;
+using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using Path = Alphaleonis.Win32.Filesystem.Path;
 
 namespace AlphaFSTest
 {
@@ -141,6 +147,31 @@ namespace AlphaFSTest
             var a = Path.GetFullPath(@"\\Friday\cache");
 
             Assert.That(a, Is.EqualTo(@"\\Friday\cache\"));
+        }
+
+        [Test]
+        public void GetFilesWithExtension_AFileNotEndingInButContainingPatternIsReturend_NotSureWhy()
+        {
+            var name1 = "G-SN750B_02_S13UJ1NQ221583.cde";
+            var name2 = "G-SN750B_02_S13UJ1NQ221583.cde-backup-with-hash";
+            var f1 = File.Create(name1);
+            var f2 = File.Create(name2);
+            f1.Close();
+            f2.Close();
+            //var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
+            var files = AlphaFSHelper.GetFilesWithExtension("cde");
+
+            foreach (var file in files)
+            {
+                Console.WriteLine("file {0}", file);
+            }
+
+            //System.Threading.Thread.Sleep(1000); // delay 1 second
+
+            File.Delete(name1);
+            File.Delete(name2);
+
+            Assert.That(files.Length, Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
         }
         // ReSharper restore InconsistentNaming
     }

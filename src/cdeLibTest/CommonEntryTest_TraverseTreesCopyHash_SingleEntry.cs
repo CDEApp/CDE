@@ -61,7 +61,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo(Encoding.UTF8.GetBytes("testhash")));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
@@ -72,7 +72,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo(Encoding.UTF8.GetBytes("testhash")));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
@@ -83,7 +83,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.Not.EqualTo("testhash"));
+            Assert.That(deDest.Hash, Is.Not.EqualTo(Encoding.UTF8.GetBytes("testhash")));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 

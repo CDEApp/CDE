@@ -40,12 +40,16 @@ namespace cde
         {
             Console.WriteLine("Usage: cde --scan <path>");
             Console.WriteLine("       scans path and creates a cache file.");
+            Console.WriteLine("       copies hashes from old cache file to new one if old found.");
             Console.WriteLine("Usage: cde --find <string>");
-            Console.WriteLine("       uses all cache files available searches for <string> as substring of on file name.");
+            Console.WriteLine("       uses all cache files available searches for <string>");
+            Console.WriteLine("       as substring of on file name.");
             Console.WriteLine("Usage: cde --grep <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex> as regex match on file name.");
+            Console.WriteLine("       uses all cache files available searches for <regex>");
+            Console.WriteLine("       as regex match on file name.");
             Console.WriteLine("Usage: cde --greppath <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex> as regex match on full path to file name.");
+            Console.WriteLine("       uses all cache files available searches for <regex>");
+            Console.WriteLine("        as regex match on full path to file name.");
             Console.WriteLine("Usage: cde --hash ");
             Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
             Console.WriteLine("Usage: cde --dupes ");

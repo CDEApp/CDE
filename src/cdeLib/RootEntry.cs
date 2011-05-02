@@ -317,7 +317,7 @@ namespace cdeLib
         public static List<RootEntry> LoadCurrentDirCache()
         {
             var roots = new List<RootEntry>();
-            var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
+            var files = AlphaFSHelper.GetFilesWithExtension("cde");
             foreach (var file in files)
             {
                 var re = LoadDirCache(file);
