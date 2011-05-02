@@ -7,7 +7,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class CommonEntryTest_TraverseTreesCopyHash_SingleEntry
+    public class CommonEntryTest_TraverseTreesCopyHash_SingleEntry
     {
         private RootEntry rootSource;
         private RootEntry rootDest;
@@ -95,7 +95,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.EqualTo("Bang"));
+            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("Bang")));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(true));
         }
 
@@ -108,7 +108,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.EqualTo("Moo1"));
+            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("Moo1")));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(false));
         }
 
@@ -127,7 +127,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 
-            Assert.That(deDestLev2.Hash, Is.EqualTo("testhash"));
+            Assert.That(deDestLev2.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("testhash")));
             Assert.That(deDestLev2.IsPartialHash, Is.EqualTo(true));
         }
 

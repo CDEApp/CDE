@@ -6,7 +6,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class RootEntryTest
+    public class RootEntryTest
     {
         [Test]
         public void Constructor_Minimal_Creates()

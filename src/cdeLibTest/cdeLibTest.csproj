@@ -56,7 +56,6 @@
     <Compile Include="Infrastructure\Crc32.cs" />
     <Compile Include="Infrastructure\DuplicationPerfTest.cs" />
     <Compile Include="Infrastructure\DuplicationTests.cs" />
-    <Compile Include="Infrastructure\HashHelperTests.cs" />
     <Compile Include="Infrastructure\MD5Hash.cs" />
     <Compile Include="Infrastructure\Sha1Wrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

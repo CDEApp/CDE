@@ -8,7 +8,7 @@ namespace cdeLibTest.Infrastructure
     {
         public uint Hash(byte[] data)
         {
-            MD5 md5 = MD5.Create();
+            var md5 = MD5.Create();
             var hash = md5.ComputeHash(data);
             return BitConverter.ToUInt32(hash, 0);
         }

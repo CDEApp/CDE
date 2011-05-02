@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using cdeLib;
+using cdeLib.Infrastructure;
 using NUnit.Framework;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using FileMode = System.IO.FileMode;
@@ -73,6 +74,15 @@ namespace cdeLibTest.Infrastructure
             duplication.FindDuplicates(rootEntries);
             
             //Do Assertion on count of dupes, should be 2 collections.
+
+        }
+
+        [Test]
+        public void Can_Acquire_hash_From_File()
+        {
+            var hashHelper = new HashHelper();
+            var hash = hashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
+            Assert.IsNotNull(hash.Hash);
 
         }
     }
