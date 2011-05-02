@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="CommonEntryTest.cs" />
     <Compile Include="CommonEntryTestStub.cs" />
+    <Compile Include="CommonEntryTest_TraverseTreesCopyHash_SingleEntry.cs" />
     <Compile Include="Infrastructure\ConfigurationTests.cs" />
     <Compile Include="Infrastructure\DuplicationTests.cs" />
     <Compile Include="Infrastructure\HashBenchmark.cs" />
