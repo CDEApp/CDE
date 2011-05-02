@@ -89,7 +89,7 @@ namespace cdeLib.Infrastructure
             }
         }
 
-        public string ByteArrayToString(byte[] bytes)
+        public static string ByteArrayToString(byte[] bytes)
         {
             var sb = new StringBuilder();
             for (var i = 0; i < bytes.Length; i++)
