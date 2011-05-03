@@ -5,7 +5,6 @@ using Finder.ViewModels;
 
 namespace Finder
 {
-    //Bootstrapper<ShellViewModel>
     public class FinderBootStrapper : TypedAutofacBootStrapper<ShellViewModel>
     {
         private readonly ILog _logger = LogManager.GetLog(typeof (FinderBootStrapper));
