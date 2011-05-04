@@ -22,7 +22,19 @@ namespace cde
             {
                 Find.FindString(args[1], param0);
             }
-            else if (args.Length ==1 && args[0] == "--hash")
+            else if (args.Length == 2 && args[0] == "--replGrepPath")
+            {
+                FindRepl(Find.ParamGreppath, args[1]);
+            }
+            else if (args.Length == 2 && args[0] == "--replGrep")
+            {
+                FindRepl(Find.ParamGrep, args[1]);
+            }
+            else if (args.Length == 2 && args[0] == "--replFind")
+            {
+                FindRepl(Find.ParamFind, args[1]);
+            }
+            else if (args.Length == 1 && args[0] == "--hash")
             {
                 CreateMd5OnCache();
             }
@@ -34,6 +46,23 @@ namespace cde
             {
                 ShowHelp();
             }
+        }
+        // repl = read-eval-print-loop
+        private static void FindRepl(string parmString, string firstPattern)
+        {
+            Find.GetDirCache();
+            Find.FindString(firstPattern, parmString);
+            do
+            {
+                Console.Write("Enter string to search <nothing exits>: ");
+                var pattern = Console.ReadLine();
+                if (pattern == string.Empty)
+                {
+                    Console.WriteLine("Exiting...");
+                    break;
+                }
+                Find.FindString(pattern, parmString);
+            } while (true);
         }
 
         private static void ShowHelp()
@@ -49,11 +78,16 @@ namespace cde
             Console.WriteLine("       as regex match on file name.");
             Console.WriteLine("Usage: cde --greppath <regex>");
             Console.WriteLine("       uses all cache files available searches for <regex>");
-            Console.WriteLine("        as regex match on full path to file name.");
+            Console.WriteLine("       as regex match on full path to file name.");
             Console.WriteLine("Usage: cde --hash ");
             Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
             Console.WriteLine("Usage: cde --dupes ");
             Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
+            Console.WriteLine("Usage: cde --replGreppath <regex>");
+            Console.WriteLine("Usage: cde --replGrep <regex>");
+            Console.WriteLine("Usage: cde --repFind <regex>");
+            Console.WriteLine("       read-eval-print loops version of the 3 find options.");
+            Console.WriteLine("       This one is repl it doesnt exit unless you press enter with no search term.");
         }
 
         private static void FindDupes()

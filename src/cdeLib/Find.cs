@@ -7,14 +7,15 @@ namespace cdeLib
 {
     public class Find
     {
-        private const string ParamFind = "--find";
-        private const string ParamGrep = "--grep";
-        private const string ParamGreppath = "--greppath";
+        public const string ParamFind = "--find";
+        public const string ParamGrep = "--grep";
+        public const string ParamGreppath = "--greppath";
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamGrep, ParamGreppath };
 
         private static uint _totalFound;
         private static Regex _regex;
         private static string _find;
+        private static List<RootEntry> _rootEntries;
 
         public static void FindString(string find, string paramString)
         {
@@ -56,16 +57,12 @@ namespace cdeLib
             }
 
             Console.WriteLine("Searching for entries that contain \"{0}\"", find);
-            var start = DateTime.UtcNow;
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            var end = DateTime.UtcNow;
-            var loadTimeSpan = end - start;
-            Console.WriteLine("Loaded {0} file(s) in {1:0.00} msecs", rootEntries.Count, loadTimeSpan.TotalMilliseconds);
-            foreach (var rootEntry in rootEntries)
+            GetDirCache();
+            foreach (var rootEntry in _rootEntries)
             {
                 Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirCount + rootEntry.FileCount);
             }
-            foreach (var rootEntry in rootEntries)
+            foreach (var rootEntry in _rootEntries)
             {
                 rootEntry.TraverseTree(rootEntry.RootPath, matchAction);
             }
@@ -77,6 +74,18 @@ namespace cdeLib
             else
             {
                 Console.WriteLine("No entries found in cached information.");
+            }
+        }
+
+        public static void GetDirCache()
+        {
+            if (_rootEntries == null)
+            {
+                var start = DateTime.UtcNow;
+                _rootEntries = RootEntry.LoadCurrentDirCache();
+                var end = DateTime.UtcNow;
+                var loadTimeSpan = end - start;
+                Console.WriteLine("Loaded {0} file(s) in {1:0.00} msecs", _rootEntries.Count, loadTimeSpan.TotalMilliseconds);
             }
         }
 
