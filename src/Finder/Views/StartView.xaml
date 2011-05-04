@@ -1,0 +1,21 @@
+﻿<UserControl x:Class="Finder.Views.StartView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             mc:Ignorable="d" 
+             d:DesignHeight="300" d:DesignWidth="300">
+    <StackPanel>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="Cmd: "/>
+            <TextBox x:Name="Name" Width="138" />
+        </StackPanel>
+        <TextBlock x:Name="HelloString"/>
+        <StackPanel Orientation="Horizontal">
+            <Button x:Name="SayHello" Content="Click Me" Width="83" />
+            <Button x:Name="LoadData" Content="Load Data" Width="83" />
+            <Button x:Name="Scan" Content="Scan Cmd" Width="83" />
+        </StackPanel>
+        <DataGrid AutoGenerateColumns="False" Height="200" Name="dataGrid1" Width="479" />
+    </StackPanel>
+</UserControl>

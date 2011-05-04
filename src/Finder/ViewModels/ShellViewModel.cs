@@ -1,57 +1,20 @@
-using System;
 using Caliburn.Micro;
-using cdeLib;
 
 namespace Finder.ViewModels
 {
-    public class ShellViewModel : PropertyChangedBase, IShell
+    public class ShellViewModel : Conductor<IScreen>, IShell
     {
-        private string _name;
-        private string _helloString;
+        private readonly StartViewModel startScreen;
 
-        public string Name
+        public ShellViewModel(StartViewModel startScreen)
         {
-            get { return _name; }
-            set
-            {
-                _name = value;
-                NotifyOfPropertyChange(() => Name);
-                NotifyOfPropertyChange(() => CanSayHello);
-            }
+            this.startScreen = startScreen;
         }
 
-        public string HelloString
+        protected override void OnInitialize()
         {
-        get
-            {
-                return _helloString;
-            }
-            private set { _helloString = value;
-            NotifyOfPropertyChange(()=>HelloString);}
-        }
-
-        public bool CanSayHello
-        {
-            get { return !string.IsNullOrWhiteSpace(Name); }
-        }
-
-        public void LoadData()
-        {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            HelloString = string.Format("Data Loaded: {0}",rootEntries.Count);
-        }
-
-        public void Scan(string name)
-        {
-            //TODO: wire up command properly
-            var re = new RootEntry();
-            re.PopulateRoot(name);
-            HelloString = String.Format("Filecount: {0}", re.FileCount);
-        }
-
-        public void SayHello(string name)
-        {
-            HelloString = string.Format("Hello {0}.", Name);
+            ActivateItem(startScreen);
+            base.OnInitialize();
         }
     }
 }
