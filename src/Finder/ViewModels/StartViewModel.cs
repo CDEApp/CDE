@@ -7,7 +7,7 @@ namespace Finder.ViewModels
     public class StartViewModel : Screen
     {
         private string _name;
-        private string _helloString;
+        private string _response;
 
         public string Name
         {
@@ -20,16 +20,16 @@ namespace Finder.ViewModels
             }
         }
 
-        public string HelloString
+        public string Response
         {
             get
             {
-                return _helloString;
+                return _response;
             }
             private set
             {
-                _helloString = value;
-                NotifyOfPropertyChange(() => HelloString);
+                _response = value;
+                NotifyOfPropertyChange(() => Response);
             }
         }
 
@@ -41,7 +41,7 @@ namespace Finder.ViewModels
         public void LoadData()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            HelloString = string.Format("Data Loaded: {0}", rootEntries.Count);
+            Response = string.Format("Data Loaded: {0}", rootEntries.Count);
         }
 
         public void Scan(string name)
@@ -49,20 +49,22 @@ namespace Finder.ViewModels
             //TODO: wire up command properly
             var re = new RootEntry();
             re.PopulateRoot(name);
-            HelloString = String.Format("Filecount: {0}", re.FileCount);
+            Response = String.Format("Filecount: {0}", re.FileCount);
         }
 
         public void SayHello(string name)
         {
-            HelloString = string.Format("Hello {0}.", Name);
+            Response = string.Format("Hello {0}.", Name);
         }
 
-        public void SearchScreen()
+        public void ExecuteSearch()
         {
-            SearchViewModel model = new SearchViewModel();
-            Screen screen = new Screen();
-            WindowManager windowManager = new WindowManager();
-            windowManager.ShowDialog(model);
+            //Activate a popup.
+//            SearchViewModel model = new SearchViewModel();
+//            Screen screen = new Screen();
+//            WindowManager windowManager = new WindowManager();
+//            windowManager.ShowDialog(model);
+
         }
     }
 }
