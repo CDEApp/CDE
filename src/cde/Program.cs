@@ -22,7 +22,7 @@ namespace cde
             {
                 Find.FindString(args[1], param0);
             }
-            else if (args.Length == 2 && args[0] == "--replGrepPath")
+            else if (args.Length == 2 && args[0] == "--replGreppath")
             {
                 FindRepl(Find.ParamGreppath, args[1]);
             }
