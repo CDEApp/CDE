@@ -6,6 +6,10 @@ namespace cdeLib.Infrastructure
     {
         public static string ByteArrayToString(byte[] bytes)
         {
+            if (bytes == null)
+            {
+                return "null";
+            }
             var sb = new StringBuilder();
             for (var i = 0; i < bytes.Length; i++)
             {
