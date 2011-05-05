@@ -60,10 +60,6 @@ namespace cdeLib
             GetDirCache();
             foreach (var rootEntry in _rootEntries)
             {
-                Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirCount + rootEntry.FileCount);
-            }
-            foreach (var rootEntry in _rootEntries)
-            {
                 rootEntry.TraverseTree(rootEntry.RootPath, matchAction);
             }
 
@@ -86,6 +82,10 @@ namespace cdeLib
                 var end = DateTime.UtcNow;
                 var loadTimeSpan = end - start;
                 Console.WriteLine("Loaded {0} file(s) in {1:0.00} msecs", _rootEntries.Count, loadTimeSpan.TotalMilliseconds);
+                foreach (var rootEntry in _rootEntries)
+                {
+                    Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirCount + rootEntry.FileCount);
+                }
             }
         }
 
