@@ -70,9 +70,14 @@
     <Compile Include="FinderBootStrapper.cs" />
     <Compile Include="Infrastructure\DebugLogger.cs" />
     <Compile Include="Infrastructure\TypedAutofacBootStrapper.cs" />
+    <Compile Include="Model\BackendUIExtensions.cs" />
+    <Compile Include="Model\CommandResult.cs" />
     <Compile Include="Model\ICommand.cs" />
     <Compile Include="Model\IQuery.cs" />
+    <Compile Include="Model\QueryResult.cs" />
     <Compile Include="Model\SearchDTO.cs" />
+    <Compile Include="Model\SearchFiles.cs" />
+    <Compile Include="Model\SearchResult.cs" />
     <Compile Include="Services\SearchService.cs" />
     <Compile Include="ViewModels\IndividualResultViewModel.cs" />
     <Compile Include="ViewModels\IShell.cs" />

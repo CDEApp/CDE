@@ -53,7 +53,7 @@ namespace Finder.Services
         {
             ThreadPool.QueueUserWorkItem(state =>
             {
-                Thread.Sleep(1000); //simulating network
+                //Thread.Sleep(1000); //simulating network
 
                 var requestType = request.GetType();
                 var handler = methods.Where(x => requestType.IsAssignableFrom(x.GetParameters().First().ParameterType)).First();

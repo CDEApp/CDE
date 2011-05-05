@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using Caliburn.Micro;
 using cdeLib;
+using Finder.Model;
 
 namespace Finder.ViewModels
 {
@@ -57,8 +59,13 @@ namespace Finder.ViewModels
             Response = string.Format("Hello {0}.", Name);
         }
 
-        public void ExecuteSearch()
+        public IEnumerable<IResult> ExecuteSearch()
         {
+            var search = new SearchFiles {SearchText = Name}.AsResult();
+
+            yield return search;
+
+
             //Activate a popup.
 //            SearchViewModel model = new SearchViewModel();
 //            Screen screen = new Screen();

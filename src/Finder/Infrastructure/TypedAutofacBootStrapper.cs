@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Linq;
 using Autofac;
 using Caliburn.Micro;
+using Finder.Model;
+using Finder.Services;
 using IContainer = Autofac.IContainer;
 
 namespace Finder.Infrastructure
@@ -55,10 +57,17 @@ namespace Finder.Infrastructure
             builder.Register<IWindowManager>(c => new WindowManager()).InstancePerLifetimeScope();
             //  register the single event aggregator for this container
             builder.Register<IEventAggregator>(c => new EventAggregator()).InstancePerLifetimeScope();
-
+            AutoProperties(builder);
             ConfigureContainer(builder);
 
             _container = builder.Build();
+        }
+
+        private void AutoProperties(ContainerBuilder builder)
+        {
+            builder.RegisterType<SearchService>().As<IBackend>().InstancePerLifetimeScope();
+            //builder.RegisterType<QueryResult<object>>
+            //QueryResult<TResponse>(query);
         }
         
         protected override object GetInstance(Type serviceType, string key)
