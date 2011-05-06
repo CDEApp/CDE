@@ -221,6 +221,55 @@ namespace cdeLibTest
             Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare_stuff.cde"));
         }
 
+        [Test]
+        public void CanonicalPath_DeviceRelativePath_OK()
+        {
+            //var re = new RootEntryTestStub(fullPath: @"g:");
+            var re = new RootEntry();
+            const string testPath = @"g:";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"G:\"));
+        }
+
+        [Test]
+        public void CanonicalPath_TrailingSlash_OK()
+        {
+            //var re = new RootEntryTestStub(fullPath: @"g:");
+            var re = new RootEntry();
+            const string testPath = @"C:\Windows\";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"C:\Windows"));
+        }
+
+        [Test]
+        public void CanonicalPath_UNCTrailingSlash_OK()
+        {
+            //var re = new RootEntryTestStub(fullPath: @"g:");
+            var re = new RootEntry();
+            const string testPath = @"\\Friday\d$\";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
+        }
+
+        [Test]
+        public void CanonicalPath_UNCTrailingSlash2_OK()
+        {
+            //var re = new RootEntryTestStub(fullPath: @"g:");
+            var re = new RootEntry();
+            const string testPath = @"\\Friday\d$";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
+        }
+
+ 
         public class RootEntryTestStub : RootEntry
         {
             private readonly string _root;

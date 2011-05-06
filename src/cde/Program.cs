@@ -119,6 +119,7 @@ namespace cde
                 re.SimpleScanEndEvent = ScanEndofEntries;
                 re.ExceptionEvent = PrintExceptions;
 
+                path = re.CanonicalPath(path);
                 re.PopulateRoot(path);
 
                 var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
@@ -141,6 +142,7 @@ namespace cde
                 Console.WriteLine("Error: {0}", aex.Message);
             }
         }
+
 
         private static void PrintExceptions(string path, Exception ex)
         {

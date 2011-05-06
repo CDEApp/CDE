@@ -184,6 +184,12 @@ namespace ProtobufTest
             m.Close();
         }
 
+        [Test]
+        public void hack()
+        {
+            var s = DateTime.Now.ToString("o");
+            Console.WriteLine("DateTime.Now.ToString(\"o\") {0}", s);
+        }
     }
     // ReSharper restore InconsistentNaming
 }
