@@ -224,8 +224,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_DeviceRelativePath_OK()
         {
-            //var re = new RootEntryTestStub(fullPath: @"g:");
-            var re = new RootEntry();
+            var re = new RootEntryTestStub(isUnc: false, root: @"g:\", fullPath: @"g:\");
             const string testPath = @"g:";
 
             var result = re.CanonicalPath(testPath);
@@ -236,9 +235,8 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_TrailingSlash_OK()
         {
-            //var re = new RootEntryTestStub(fullPath: @"g:");
-            var re = new RootEntry();
-            const string testPath = @"C:\Windows\";
+            var re = new RootEntryTestStub(isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
+            const string testPath = @"c:\Windows\";
 
             var result = re.CanonicalPath(testPath);
 
@@ -248,8 +246,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_UNCTrailingSlash_OK()
         {
-            //var re = new RootEntryTestStub(fullPath: @"g:");
-            var re = new RootEntry();
+            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
             const string testPath = @"\\Friday\d$\";
 
             var result = re.CanonicalPath(testPath);
@@ -260,8 +257,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_UNCTrailingSlash2_OK()
         {
-            //var re = new RootEntryTestStub(fullPath: @"g:");
-            var re = new RootEntry();
+            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
             const string testPath = @"\\Friday\d$";
 
             var result = re.CanonicalPath(testPath);

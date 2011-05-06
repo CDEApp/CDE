@@ -167,7 +167,7 @@ namespace cdeLib
             path = FullPath(path);  // Fully qualified path used to generate filename
 
             var volumeRoot = GetDirectoryRoot(path);
-            var b = volumeRoot != path;
+
             if (IsUnc(path))
             {
                 if (!path.EndsWith(Path.DirectorySeparatorChar))
@@ -181,7 +181,9 @@ namespace cdeLib
                 {
                     path = path.TrimEnd(Path.DirectorySeparatorChar.ToCharArray());
                 }
+                path = char.ToUpper(path[0]) + path.Substring(1);
             }
+            
             return path;
         }
 
