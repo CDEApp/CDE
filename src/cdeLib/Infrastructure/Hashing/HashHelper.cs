@@ -59,6 +59,10 @@ namespace cdeLib.Infrastructure
                 }
                 return hashResponse;
             }
+            catch (FileLoadException)   // if doing hasing on system drive cant open files dont care.
+            {
+                return null;
+            }
             catch (Exception ex)
             {
                 ILogger logger = new Logger();
