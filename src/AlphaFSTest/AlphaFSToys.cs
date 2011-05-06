@@ -173,6 +173,50 @@ namespace AlphaFSTest
 
             Assert.That(files.Length, Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
         }
+
+        [Ignore("Example problem with alphaFS")]
+        [Test]
+        public void GetFullPath_BugInAlphaFS_GRRR()
+        {
+            // BUG in AlphaFS. Path.FullGetPath()
+            // if G: is G:\Test then it returns G:
+            // if G: is G:\ then it returns G:
+            // Where as System.IO.Path
+            // if G: is G:\Test then it returns G:\Test
+            // if G: is G:\ then it returns G:\
+
+            var originalDir = Directory.GetCurrentDirectory();
+            Console.WriteLine("0 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+
+            var alphaFP = Path.GetFullPath(@"C:");
+            var ioFP = System.IO.Path.GetFullPath(@"C:");
+            Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", alphaFP);
+            Console.WriteLine("0 System.IO.Path.GetFullPath(@\"C:\") {0}", ioFP);
+
+            Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Directory.GetDirectoryRoot(@\"C:\") {0}", Directory.GetDirectoryRoot(@"C:"));
+            Console.WriteLine("0 System.IO.Directory.GetDirectoryRoot(@\"C:\") {0}", System.IO.Directory.GetDirectoryRoot(@"C:"));
+            Console.WriteLine();
+
+            Directory.SetCurrentDirectory(@"C:\Windows\");
+            Console.WriteLine("1 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine("1 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
+            Console.WriteLine("1 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine();
+
+            Directory.SetCurrentDirectory(@"C:\");
+            Console.WriteLine("2 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine("2 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
+            Console.WriteLine("2 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine();
+
+            Directory.SetCurrentDirectory(originalDir);
+            Console.WriteLine("3 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine("3 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
+            Console.WriteLine("3 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine();
+
+            Assert.Fail();
+        }
         // ReSharper restore InconsistentNaming
     }
 }
