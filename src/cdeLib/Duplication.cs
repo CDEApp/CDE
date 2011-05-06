@@ -27,7 +27,7 @@ namespace cdeLib
     {
         private readonly ILogger _logger;
         private readonly Dictionary<byte[], List<string>> _dupes;
-        private readonly Dictionary<ulong,List<FlatDirEntryDTO>> _duplicateFileSize = new Dictionary<ulong, List<FlatDirEntryDTO>>();
+        private Dictionary<ulong,List<FlatDirEntryDTO>> _duplicateFileSize = new Dictionary<ulong, List<FlatDirEntryDTO>>();
         private readonly Dictionary<byte[], List<string>> _duplicateFileList = new Dictionary<byte[], List<string>>(new ByteArrayComparer());
         private readonly IConfiguration _configuration;
         private readonly DuplicationStatistics _duplicationStatistics;
@@ -46,6 +46,12 @@ namespace cdeLib
             timer.Start();
             
             CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
+
+            // prune all entries that only have one file of that size
+            var newMatches = _duplicateFileSize.Where(kvp => kvp.Value.Count > 1)
+                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            _duplicateFileSize = newMatches;
+
             Console.WriteLine("Found {0} sets of files matched by filesize",_duplicateFileSize.Count);
             foreach(var kvp in _duplicateFileSize)
             {

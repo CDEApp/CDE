@@ -4,11 +4,11 @@
              xmlns:local="clr-namespace:Finder">
     <Application.Resources>
         <ResourceDictionary>
-        <ResourceDictionary.MergedDictionaries>
-        <ResourceDictionary>
-            <local:FinderBootStrapper x:Key="bootstrapper"/>
-        </ResourceDictionary>
-        </ResourceDictionary.MergedDictionaries>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary>
+                    <local:FinderBootStrapper x:Key="bootstrapper"/>
+                </ResourceDictionary>
+            </ResourceDictionary.MergedDictionaries>
         </ResourceDictionary>
     </Application.Resources>
 </Application>

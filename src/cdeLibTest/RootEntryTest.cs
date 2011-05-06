@@ -171,7 +171,8 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(fullPath: @"C:\Stuff\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
-            var fileName = re.GetDefaultFileName(@"MyTestFolder\Mine", out hint, out volRoot, out volName);
+            var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
 
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -185,7 +186,8 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
-            var fileName = re.GetDefaultFileName(@"\MyTestFolder\Mine", out hint, out volRoot, out volName);
+            var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
 
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -221,6 +223,51 @@ namespace cdeLibTest
             Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare_stuff.cde"));
         }
 
+        [Test]
+        public void CanonicalPath_DeviceRelativePath_OK()
+        {
+            var re = new RootEntryTestStub(isUnc: false, root: @"g:\", fullPath: @"g:\");
+            const string testPath = @"g:";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"G:\"));
+        }
+
+        [Test]
+        public void CanonicalPath_TrailingSlash_OK()
+        {
+            var re = new RootEntryTestStub(isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
+            const string testPath = @"c:\Windows\";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"C:\Windows"));
+        }
+
+        [Test]
+        public void CanonicalPath_UNCTrailingSlash_OK()
+        {
+            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+            const string testPath = @"\\Friday\d$\";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
+        }
+
+        [Test]
+        public void CanonicalPath_UNCTrailingSlash2_OK()
+        {
+            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+            const string testPath = @"\\Friday\d$";
+
+            var result = re.CanonicalPath(testPath);
+
+            Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
+        }
+
+ 
         public class RootEntryTestStub : RootEntry
         {
             private readonly string _root;

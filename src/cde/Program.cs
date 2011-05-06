@@ -142,6 +142,7 @@ namespace cde
             }
         }
 
+
         private static void PrintExceptions(string path, Exception ex)
         {
             Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);

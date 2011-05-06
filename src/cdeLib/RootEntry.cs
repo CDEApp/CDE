@@ -66,6 +66,7 @@ namespace cdeLib
 
         public void PopulateRoot(string startPath)
         {
+            startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
             {
                 throw new ArgumentException(string.Format("Cannot find path \"{0}\"", startPath));
@@ -94,7 +95,6 @@ namespace cdeLib
         {
             string fileName;
 
-            scanPath = FullPath(scanPath);  // Fully qualified path used to generate filename
             volumeRoot = GetDirectoryRoot(scanPath);
             volumeName = GetVolumeName(volumeRoot);
 
@@ -120,8 +120,14 @@ namespace cdeLib
         }
 
         #region Methods virtual to assist testing.
+        private const int PathLengthToAvoidAlphaFsLib = 200;
         public virtual string FullPath(string path)
         {
+            // BUG in AlphaFS. Path.FullGetPath()
+            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
+            {
+                return System.IO.Path.GetFullPath(path);
+            }
             return Path.GetFullPath(path);
         }
 
@@ -137,14 +143,51 @@ namespace cdeLib
 
         public virtual string GetDirectoryRoot(string path)
         {
+            // BUG in AlphaFS. Directory.GetDirectoryRoot()
+            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
+            {
+                return System.IO.Directory.GetDirectoryRoot(path);
+            }
             return Directory.GetDirectoryRoot(path);
         }
 
         public virtual string GetVolumeName(string rootPath)
         {
-            return Volume.GetVolumeInformation(rootPath).Name;
+            var alphasFSroot = Directory.GetDirectoryRoot(rootPath);    // hacky hacky 
+            return Volume.GetVolumeInformation(alphasFSroot).Name;
         }
         #endregion
+
+        /// <summary>
+        /// Return canoncial version of path.
+        /// Ensure device id are upper case.
+        /// if ends in a '\' and its not just a device eg G:\ then strip trailing \
+        /// </summary>
+        public string CanonicalPath(string path)
+        {
+            path = FullPath(path);  // Fully qualified path used to generate filename
+
+            var volumeRoot = GetDirectoryRoot(path);
+
+            if (IsUnc(path))
+            {
+                if (!path.EndsWith(Path.DirectorySeparatorChar))
+                {
+                    path = path + Path.DirectorySeparatorChar;
+                }
+            }
+            else
+            {
+                if (path.EndsWith(Path.DirectorySeparatorChar) && volumeRoot != path)
+                {
+                    path = path.TrimEnd(Path.DirectorySeparatorChar.ToCharArray());
+                }
+                path = char.ToUpper(path[0]) + path.Substring(1);
+            }
+            
+            return path;
+        }
+
 
         public string GetDriverLetterHint(string path, string volumeRoot)
         {
