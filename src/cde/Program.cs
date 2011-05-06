@@ -119,7 +119,6 @@ namespace cde
                 re.SimpleScanEndEvent = ScanEndofEntries;
                 re.ExceptionEvent = PrintExceptions;
 
-                path = re.CanonicalPath(path);
                 re.PopulateRoot(path);
 
                 var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);

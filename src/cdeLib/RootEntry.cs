@@ -66,6 +66,7 @@ namespace cdeLib
 
         public void PopulateRoot(string startPath)
         {
+            startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
             {
                 throw new ArgumentException(string.Format("Cannot find path \"{0}\"", startPath));

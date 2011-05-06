@@ -171,7 +171,8 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(fullPath: @"C:\Stuff\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
-            var fileName = re.GetDefaultFileName(@"MyTestFolder\Mine", out hint, out volRoot, out volName);
+            var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
 
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -185,7 +186,8 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
             string hint, volRoot, volName;
 
-            var fileName = re.GetDefaultFileName(@"\MyTestFolder\Mine", out hint, out volRoot, out volName);
+            var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
 
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
