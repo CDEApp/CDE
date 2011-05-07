@@ -168,7 +168,9 @@ namespace cdeLib
                         continue;
                     }
 
-                    if (!sourceDirEntry.IsDirectory)
+                    if (!sourceDirEntry.IsDirectory
+                        && sourceDirEntry.Modified == destinationDirEntry.Modified
+                        && sourceDirEntry.Size == destinationDirEntry.Size)
                     {
                         // copy MD5 if none in destination.
                         // copy MD5 as upgrade to full if dest currently partial.
