@@ -24,13 +24,6 @@ namespace cdeLib
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
 
-        [ProtoMember(7, IsRequired = false)]
-        public byte[] Hash { get; set; }
-
-        public string HashAsString {get { return ByteArrayHelper.ByteArrayToString(Hash); }}
-
-        [ProtoMember(8, IsRequired = false)]
-        public bool IsPartialHash { get; set; }
 
         protected CommonEntry()
         {

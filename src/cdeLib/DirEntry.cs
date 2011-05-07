@@ -20,10 +20,18 @@ namespace cdeLib
 
         [ProtoMember(4, IsRequired = true)]
         public bool IsDirectory { get; set; }
-        //[ProtoMember(5, IsRequired = true)]
+        //[ProtoMember(?, IsRequired = true)]
         //public bool IsSymbolicLink { get; set; }
-        //[ProtoMember(6, IsRequired = true)]
+        //[ProtoMember(?, IsRequired = true)]
         //public bool IsReparsePoint { get; set; }
+
+        [ProtoMember(5, IsRequired = true)]
+        public byte[] Hash { get; set; }
+
+        public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
+
+        [ProtoMember(6, IsRequired = true)]
+        public bool IsPartialHash { get; set; }
 
         /// <summary>
         /// Use this key for finding duplicate files, it ensures that files of
