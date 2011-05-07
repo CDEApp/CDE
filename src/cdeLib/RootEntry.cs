@@ -3,6 +3,7 @@
 //#define BZIP2
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 //using System.IO.Compression;
 using Alphaleonis.Win32.Filesystem;
@@ -18,6 +19,7 @@ using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
+    [DebuggerDisplay("RootPath = {RootPath}, Count = {Children.Count}")]
     [ProtoContract]
     public class RootEntry : CommonEntry
     {

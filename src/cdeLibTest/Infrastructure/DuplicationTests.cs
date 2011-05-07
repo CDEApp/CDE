@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using cdeLib;
-using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Hashing;
 using NUnit.Framework;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using FileMode = System.IO.FileMode;

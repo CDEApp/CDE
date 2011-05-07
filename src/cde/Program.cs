@@ -16,7 +16,7 @@ namespace cde
             var param0 = args[0].ToLowerInvariant();
             if (args.Length == 2 && param0 == "--scan")
             {
-                CreateCDECache(args[1]);
+                CreateCache(args[1]);
             }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
@@ -101,16 +101,16 @@ namespace cde
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var duplication = new Duplication();
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
             duplication.ApplyMd5Checksum(rootEntries);
             sw.Stop();
-            TimeSpan ts = sw.Elapsed;
-            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
+            var ts = sw.Elapsed;
+            var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
             Console.WriteLine("Hash took : {0}",elapsedTime);
         }
 
-        static void CreateCDECache(string path)
+        static void CreateCache(string path)
         {
             var re = new RootEntry();
             try

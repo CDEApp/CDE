@@ -98,7 +98,7 @@ namespace cdeLib
         {
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTree(rootEntry.RootPath, action);
+                rootEntry.TraverseTree(action);
             }
         }
 

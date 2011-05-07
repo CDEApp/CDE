@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -23,6 +24,26 @@ namespace cdeLib
         //public bool IsSymbolicLink { get; set; }
         //[ProtoMember(6, IsRequired = true)]
         //public bool IsReparsePoint { get; set; }
+
+        /// <summary>
+        /// Use this key for finding duplicate files, it ensures that files of
+        /// different length with same md5 wont compare as same via hash.
+        /// </summary>
+        public byte[] KeyHash
+        {
+            get
+            {
+                if (Hash != null)
+                {
+                    if (_workHash == null)
+                    {
+                        _workHash = Hash.Concat(BitConverter.GetBytes(Size)).ToArray();
+                    }
+                }
+                return _workHash;
+            }
+        }
+        private byte[] _workHash;
 
         public DirEntry()
         {
