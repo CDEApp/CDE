@@ -1,11 +1,23 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using cdeLib;
 
 namespace cde
 {
     class Program
     {
+        public static string Version
+        {
+            get
+            {
+                var asm = Assembly.GetExecutingAssembly();
+                var fvi = FileVersionInfo.GetVersionInfo(asm.Location);
+                return String.Format("{0} v{1}.{2}", fvi.ProductName,
+                    fvi.ProductMajorPart, fvi.ProductMinorPart);
+            }
+        }
+
         static void Main(string[] args)
         {
             if (args.Length ==0)
@@ -22,29 +34,33 @@ namespace cde
             {
                 Find.FindString(args[1], param0);
             }
-            else if (args.Length == 2 && args[0] == "--replGreppath")
+            else if (args.Length == 2 && param0 == "--replgreppath")
             {
                 FindRepl(Find.ParamGreppath, args[1]);
             }
-            else if (args.Length == 2 && args[0] == "--replGrep")
+            else if (args.Length == 2 && param0 == "--replgrep")
             {
                 FindRepl(Find.ParamGrep, args[1]);
             }
-            else if (args.Length == 2 && args[0] == "--replFind")
+            else if (args.Length == 2 && param0 == "--replfind")
             {
                 FindRepl(Find.ParamFind, args[1]);
             }
-            else if (args.Length == 1 && args[0] == "--hash")
+            else if (args.Length == 1 && param0 == "--hash")
             {
                 CreateMd5OnCache();
             }
-            else if( args.Length ==1 && args[0] == "--dupes")
+            else if (args.Length == 1 && param0 == "--dupes")
             {
                 FindDupes();
             }
-            else if (args.Length == 1 && args[0] == "--treedump1")
+            else if (args.Length == 1 && param0 == "--treedump1")
             {
                 PrintPathsHaveHash();
+            }
+            else if (args.Length == 1 && param0 == "--version")
+            {
+                Console.WriteLine(Version);
             }
             else
             {
@@ -72,6 +88,9 @@ namespace cde
 
         private static void ShowHelp()
         {
+            Console.WriteLine(Version);
+            Console.WriteLine("Usage: cde --version");
+            Console.WriteLine("       display version.");
             Console.WriteLine("Usage: cde --scan <path>");
             Console.WriteLine("       scans path and creates a cache file.");
             Console.WriteLine("       copies hashes from old cache file to new one if old found.");

@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("cde")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("cdeLib")]
+[assembly: AssemblyDescription("catalog directory entries library")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("cde")]
+[assembly: AssemblyProduct("cdeLib")]
 [assembly: AssemblyCopyright("© 2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
