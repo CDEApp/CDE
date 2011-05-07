@@ -158,11 +158,10 @@ namespace cdeLib
                     var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
 
                     // find if theres a destination entry available.
+                    // size of dir is irrelevant. date of dir we don't care about.
                     var sourceEntry = sourceDirEntry;
                     var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
-                        x => (x.Name == sourceEntry.Name)
-                             && (x.Modified == sourceEntry.Modified)
-                             && (x.Size == sourceEntry.Size));
+                                                x => (x.Name == sourceEntry.Name));
 
                     if (destinationDirEntry == null)
                     {

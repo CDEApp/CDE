@@ -42,11 +42,16 @@ namespace cde
             {
                 FindDupes();
             }
+            else if (args.Length == 1 && args[0] == "--treedump1")
+            {
+                PrintPathsHaveHash();
+            }
             else
             {
                 ShowHelp();
             }
         }
+
         // repl = read-eval-print-loop
         private static void FindRepl(string parmString, string firstPattern)
         {
@@ -142,7 +147,6 @@ namespace cde
             }
         }
 
-
         private static void PrintExceptions(string path, Exception ex)
         {
             Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
@@ -156,6 +160,18 @@ namespace cde
         public static void ScanEndofEntries()
         {
             Console.WriteLine("");
+        }
+
+        private static void PrintPathsHaveHash()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            CommonEntry.TraverseAllTrees(rootEntries, PrintPathWithHash);
+        }
+
+        private static void PrintPathWithHash(string filePath, DirEntry de)
+        {
+            var hash = de.Hash == null ? " " : "#";
+            Console.WriteLine("{0}{1}", hash, filePath);
         }
     }
 }
