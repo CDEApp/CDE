@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Comparer;
@@ -57,23 +60,54 @@ namespace cdeLib
             _logger.LogInfo(string.Format("Total files found with at least 1 other file of same length {0}", totalEntriesInSizeDupes));
             _logger.LogInfo(string.Format("Longest list of same sized files is {0} for size {1} ", longestListLength, longestListSize));
 
-            foreach (var kvp in newMatches)
-            {
-                foreach (var flatFile in kvp.Value)
-                {
-                    CalculatePartialMD5Hash(flatFile.FilePath, flatFile.DirEntry);
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
-                        break;
-                    }
-                }
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\nBreak key detected exiting hashing phase outer.");
-                    break;
-                }
-            }
+            //flatten
+            var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
+            
+            //group by volume/network share
+            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FilePath));
+
+            //parralel at the grouping level, hopefully this is one group per disk.
+            Parallel.ForEach(groupedByDirectoryRoot, (grp, loopState) =>
+                                                         {
+                                                             foreach(var flatFile in grp)
+                                                             {
+                                                                 CalculatePartialMD5Hash(flatFile.FilePath, flatFile.DirEntry);
+                                                                 if (Hack.BreakConsoleFlag)
+                                                                 {
+
+                                                                     Console.WriteLine(
+                                                                         "\nBreak key detected exiting hashing phase inner.");
+                                                                     loopState.Break();
+                                                                 }
+                                                             }
+                                                             if (Hack.BreakConsoleFlag)
+                                                             {
+                                                                 Console.WriteLine(
+                                                                     "\nBreak key detected exiting hashing phase outer.");
+                                                                 loopState.Break();
+                                                             }
+                                                         });
+
+//            Parallel.ForEach(newMatches, (kvp,loopState) =>
+//                                             {
+//                                                 foreach (var flatFile in kvp.Value)
+//                                                 {
+//                                                     CalculatePartialMD5Hash(flatFile.FilePath, flatFile.DirEntry);
+//                                                     if (Hack.BreakConsoleFlag)
+//                                                     {
+//
+//                                                         Console.WriteLine(
+//                                                             "\nBreak key detected exiting hashing phase inner.");
+//                                                         loopState.Break();
+//                                                     }
+//                                                 }
+//                                                 if (Hack.BreakConsoleFlag)
+//                                                 {
+//                                                     Console.WriteLine(
+//                                                         "\nBreak key detected exiting hashing phase outer.");
+//                                                     loopState.Break();
+//                                                 }
+//                                             });
 
             if (Hack.BreakConsoleFlag)
             {
@@ -118,7 +152,7 @@ namespace cdeLib
             {
                 return;
             }
-
+            //_logger.LogDebug(String.Format("ThreadId: {0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath));
             CalculateMD5Hash(fullPath, de, true);
         }
 

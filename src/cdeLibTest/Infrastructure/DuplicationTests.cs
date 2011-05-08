@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using cdeLib;
 using cdeLib.Infrastructure.Hashing;
@@ -84,6 +85,19 @@ namespace cdeLibTest.Infrastructure
             var hash = hashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
             Assert.IsNotNull(hash.Hash);
 
+        }
+
+        [Test]
+        [Ignore]
+        public void Test_Memory_Usage_Of_MD5_Stream()
+        {
+            Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            long totalBytesOfMemoryUsed = currentProcess.WorkingSet64;
+            Console.WriteLine("Memory Usage {0}",totalBytesOfMemoryUsed);
+            var hashHelper = new HashHelper();
+            var hash = hashHelper.GetMD5HashFromFile("C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
+            // get the current process
+            // get the physical mem usage
         }
     }
 }

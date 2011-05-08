@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using Alphaleonis.Win32.Filesystem;
+using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
@@ -57,7 +58,6 @@ namespace AlphaFSTest
             foreach (var vol in vols)
             {
                 Console.WriteLine("Volume {0}", vol);
-
                 var volPaths = Volume.GetVolumePathNamesForVolume(vol);
                 var lastPath = "";
                 foreach (var volPath in volPaths)
@@ -75,6 +75,17 @@ namespace AlphaFSTest
                     }
                 }
             }
+        }
+
+        [Test]
+        [Ignore("Test for Jason's comprehension")]
+        public void GetDirectoryRootDiscovery_NonTest()
+        {
+            var re = new RootEntry();
+            var fn = re.GetDirectoryRoot(@"\\lyon\j$\foo\bar");
+            var fn2 = re.GetDirectoryRoot(@"C:\windows\foo\bar");
+            Console.WriteLine(fn);
+            Console.WriteLine(fn2);
         }
 
         [Test]

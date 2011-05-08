@@ -269,7 +269,6 @@ namespace cdeLibTest
             Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
         }
 
- 
         public class RootEntryTestStub : RootEntry
         {
             private readonly string _root;
