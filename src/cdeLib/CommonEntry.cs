@@ -234,9 +234,10 @@ namespace cdeLib
 
     public class DirEntryEnumerator : IEnumerator<DirEntry>
     {
+        private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
-        private Stack<DirEntry> _entries;
-        //private IEnumerator<CommonEntry> _childEnumerator;
+        private Stack<CommonEntry> _entries;
+        private IEnumerator<DirEntry> _childEnumerator;
 
         public DirEntry Current
         {
@@ -250,20 +251,16 @@ namespace cdeLib
 
         public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
         {
-            _current = null;
-            _entries = CreateStackOfTopLevelDirEntries(rootEntries);
-            //_childEnumerator = null;
+            _rootEntries = rootEntries;
+            Reset();
         }
 
-        private static Stack<DirEntry> CreateStackOfTopLevelDirEntries(IEnumerable<RootEntry> rootEntries)
+        private static Stack<CommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
         {
-            var entries = new Stack<DirEntry>();
+            var entries = new Stack<CommonEntry>();
             foreach (var re in rootEntries)
             {
-                foreach (var de in re.Children)
-                {
-                    entries.Push(de);
-                }
+                entries.Push(re);
             }
             return entries;
         }
@@ -274,45 +271,45 @@ namespace cdeLib
             _entries = null;
         }
 
-        //public bool MoveNext()
-        //{
-        //    if (_childEnumerator == null)
-        //    {
-        //        var de = _entries.Pop();
-        //        _childEnumerator = de.Children.GetEnumerator();
-        //    }
-        //    if (_childEnumerator.MoveNext())
-        //    {
-                
-        //    }
-        //    _current = _entries.Count > 0 ? _entries.Pop() : null;
-
-        //    if (_current != null && _current.IsDirectory)
-        //    {
-        //        foreach (var child in _current.Children)    // yuck im copying data.
-        //        {
-        //            _entries.Push(child);
-        //        }
-        //    }
-        //    return _current != null;
-        //}
-
+        // have idea that i can somehow Concat() iterators from the Children directly to _childEnumerator
         public bool MoveNext()
         {
-            _current = _entries.Count > 0 ? _entries.Pop() : null;
-            if (_current != null && _current.IsDirectory)
+            _current = null;
+            if (_childEnumerator == null)
             {
-                foreach (var child in _current.Children)    // yuck im copying data.
+                if (_entries.Count > 0)
                 {
-                    _entries.Push(child);
+                    var de = _entries.Pop();
+                    _childEnumerator = de.Children.GetEnumerator();
                 }
             }
+
+            if (_childEnumerator != null)
+            {
+                if (_childEnumerator.MoveNext())
+                {
+                    _current = _childEnumerator.Current;
+                    if (_current.IsDirectory)
+                    {
+                        _entries.Push(_current);
+                    }
+                }
+                else
+                {
+                    _childEnumerator = null;
+                    MoveNext();
+                }
+            }
+
             return _current != null;
         }
 
         public void Reset()
         {
-            throw new NotImplementedException("Reset() is not supported on this Enumerator");
+            _current = null;
+            _entries = StackOfRoots(_rootEntries);
+            _childEnumerator = null;
+            //throw new NotImplementedException("Reset() is not supported on this Enumerator");
         }
     }
 }
