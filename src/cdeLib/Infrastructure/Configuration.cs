@@ -7,6 +7,7 @@ namespace cdeLib.Infrastructure
     {
         int ProgressUpdateInterval { get; }
         int HashFirstPassSize { get; }
+        int DegreesOfParallelism { get; }
     }
 
     /// <summary>
@@ -41,5 +42,15 @@ namespace cdeLib.Infrastructure
             return result;
             
         }}
+
+        public int DegreesOfParallelism
+        {
+            get
+            {
+                int result;
+                Int32.TryParse(ConfigurationManager.AppSettings["Hash.DegreesOfParallelism"], out result);
+                return result;
+            }
+        }
     }
 }
