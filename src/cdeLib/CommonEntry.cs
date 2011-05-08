@@ -14,15 +14,14 @@ namespace cdeLib
         [ProtoMember(3, IsRequired = true)]
         public ICollection<DirEntry> Children { get; set; }
 
-        [ProtoMember(4, IsRequired = true)]
+        //[ProtoMember(4, IsRequired = true)] No longer saving set on load or scan.
         public uint DirCount { get; set; }
 
-        [ProtoMember(5, IsRequired = true)]
+        //[ProtoMember(5, IsRequired = true)] No longer saving set on load or scan.
         public uint FileCount { get; set; }
 
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
-
 
         protected CommonEntry()
         {
@@ -208,6 +207,11 @@ namespace cdeLib
                     }
                 }
             }
+        }
+    
+        public static IEnumerable<DirEntry> GetDirEntries(List<RootEntry> rootEntries)
+        {
+            return new DirEntryEnumerator(rootEntries);
         }
     }
 }

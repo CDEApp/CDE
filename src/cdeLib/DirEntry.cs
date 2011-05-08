@@ -34,6 +34,11 @@ namespace cdeLib
         public bool IsPartialHash { get; set; }
 
         /// <summary>
+        /// Populated on load, not saved to disk.
+        /// </summary>
+        public string FullPath { get; set; }
+
+        /// <summary>
         /// Use this key for finding duplicate files, it ensures that files of
         /// different length with same md5 wont compare as same via hash.
         /// </summary>
@@ -82,5 +87,6 @@ namespace cdeLib
                 Size = (ulong)fs.FileSize;
             }
         }
+
     }
 }

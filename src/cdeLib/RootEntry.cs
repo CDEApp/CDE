@@ -89,7 +89,12 @@ namespace cdeLib
             ScanStartUTC = DateTime.UtcNow;
             RecurseTree(startPath);
             ScanEndUTC = DateTime.UtcNow;
+            SetInMemoryFields();
+        }
 
+        public void SetInMemoryFields()
+        {
+            SetFullPath();
             SetSummaryFields();
         }
 
@@ -220,8 +225,8 @@ namespace cdeLib
         }
 
         /// <summary>
-        /// This version recurses itself so it can cache the folders and the node in tree.
-        /// This improves performance when building the tree enormously.
+        /// This version recurses itself so it can cache the folders and the node in its own stack.
+        /// This improves performance.
         /// </summary>
         public void RecurseTree(string startPath)
         {
@@ -302,9 +307,9 @@ namespace cdeLib
 
         public void SaveRootEntry()
         {
-            using(var newFS = File.Open(DefaultFileName, FileMode.Create))
+            using(var newFs = File.Open(DefaultFileName, FileMode.Create))
             {
-                Write(newFS);
+                Write(newFs);
             }
         }
 
@@ -381,10 +386,21 @@ namespace cdeLib
                 using (var fs = File.Open(file, FileMode.Open))
                 {
                     var re = Read(fs);
+                    re.SetInMemoryFields();
                     return re;
                 }
             }
             return null;
+        }
+
+        public void SetFullPath()
+        {
+            TraverseTree(SetFullPath);
+        }
+
+        public static void SetFullPath(string fullPath, DirEntry de)
+        {
+            de.FullPath = fullPath;
         }
 
         #region List of UAE paths on a known win7 volume - probably decent example

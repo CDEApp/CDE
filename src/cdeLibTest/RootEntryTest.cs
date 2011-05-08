@@ -268,7 +268,7 @@ namespace cdeLibTest
 
             Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
         }
-
+ 
         public class RootEntryTestStub : RootEntry
         {
             private readonly string _root;
@@ -316,6 +316,24 @@ namespace cdeLibTest
                 return _fullPath;
             }
 
+        }
+
+        [Test]
+        public void SetFullPath_OnRootDirectory_SetsAllFullPaths()
+        {
+            var re = new RootEntry { RootPath = @"C:\" };
+            var fe1 = new DirEntry { Name = "fe1" };
+            var de2 = new DirEntry { Name = "de2", IsDirectory = true};
+            var fe3 = new DirEntry { Name = "fe3" };
+            re.Children.Add(fe1);
+            re.Children.Add(de2);
+            de2.Children.Add(fe3);
+
+            re.SetFullPath();
+
+            Assert.That(fe1.FullPath, Is.EqualTo(@"C:\fe1"));
+            Assert.That(de2.FullPath, Is.EqualTo(@"C:\de2"));
+            Assert.That(fe3.FullPath, Is.EqualTo(@"C:\de2\fe3"));
         }
     }
     // ReSharper restore InconsistentNaming
