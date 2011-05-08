@@ -53,6 +53,7 @@
     <Compile Include="Duplication.cs" />
     <Compile Include="Find.cs" />
     <Compile Include="FlatDirEntryDTO.cs" />
+    <Compile Include="Hack.cs" />
     <Compile Include="Infrastructure\AlphaFSHelper.cs" />
     <Compile Include="Infrastructure\Comparer\ByteArrayComparer.cs" />
     <Compile Include="Infrastructure\ByteArrayHelper.cs" />
@@ -65,7 +66,6 @@
     <Compile Include="RootEntry.cs" />
     <Compile Include="StringExtension.cs" />
   </ItemGroup>
-  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

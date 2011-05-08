@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using cdeLib.Infrastructure;
 using ProtoBuf;
 using Path = Alphaleonis.Win32.Filesystem.Path;
 
@@ -24,13 +23,6 @@ namespace cdeLib
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
 
-        [ProtoMember(7, IsRequired = false)]
-        public byte[] Hash { get; set; }
-
-        public string HashAsString {get { return ByteArrayHelper.ByteArrayToString(Hash); }}
-
-        [ProtoMember(8, IsRequired = false)]
-        public bool IsPartialHash { get; set; }
 
         protected CommonEntry()
         {
@@ -98,7 +90,7 @@ namespace cdeLib
         {
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTree(rootEntry.RootPath, action);
+                rootEntry.TraverseTree(action);
             }
         }
 
@@ -125,6 +117,18 @@ namespace cdeLib
                     {
                         dirs.Push(Tuple.Create((CommonEntry)dirEntry, fullPath));
                     }
+
+                    if (Hack.BreakConsoleFlag)
+                    {
+                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                        break;
+                    }
+                }
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
+                    break;
                 }
             }
         }
@@ -165,18 +169,19 @@ namespace cdeLib
                     var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
 
                     // find if theres a destination entry available.
+                    // size of dir is irrelevant. date of dir we don't care about.
                     var sourceEntry = sourceDirEntry;
                     var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
-                        x => (x.Name == sourceEntry.Name)
-                             && (x.Modified == sourceEntry.Modified)
-                             && (x.Size == sourceEntry.Size));
+                                                x => (x.Name == sourceEntry.Name));
 
                     if (destinationDirEntry == null)
                     {
                         continue;
                     }
 
-                    if (!sourceDirEntry.IsDirectory)
+                    if (!sourceDirEntry.IsDirectory
+                        && sourceDirEntry.Modified == destinationDirEntry.Modified
+                        && sourceDirEntry.Size == destinationDirEntry.Size)
                     {
                         // copy MD5 if none in destination.
                         // copy MD5 as upgrade to full if dest currently partial.

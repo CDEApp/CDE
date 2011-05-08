@@ -16,7 +16,7 @@ namespace cdeLib.Infrastructure
     {
         public void LogException(Exception ex, string message)
         {
-            Console.WriteLine("{0} {1}",message,ex.Message);
+            Console.WriteLine("{0}: {1} {2}", ex.GetType(), message, ex.Message);
         }
 
         public void LogInfo(string message)

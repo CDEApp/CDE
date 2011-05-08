@@ -1,13 +1,26 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Reflection;
 using cdeLib;
 
 namespace cde
 {
     class Program
     {
+        public static string Version
+        {
+            get
+            {
+                var asm = Assembly.GetExecutingAssembly();
+                var fvi = FileVersionInfo.GetVersionInfo(asm.Location);
+                return String.Format("{0} v{1}.{2}", fvi.ProductName,
+                    fvi.ProductMajorPart, fvi.ProductMinorPart);
+            }
+        }
+
         static void Main(string[] args)
         {
+            Console.CancelKeyPress += BreakConsole;
             if (args.Length ==0)
             {
                 ShowHelp();
@@ -16,37 +29,53 @@ namespace cde
             var param0 = args[0].ToLowerInvariant();
             if (args.Length == 2 && param0 == "--scan")
             {
-                CreateCDECache(args[1]);
+                CreateCache(args[1]);
             }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
                 Find.FindString(args[1], param0);
             }
-            else if (args.Length == 2 && args[0] == "--replGreppath")
+            else if (args.Length == 2 && param0 == "--replgreppath")
             {
                 FindRepl(Find.ParamGreppath, args[1]);
             }
-            else if (args.Length == 2 && args[0] == "--replGrep")
+            else if (args.Length == 2 && param0 == "--replgrep")
             {
                 FindRepl(Find.ParamGrep, args[1]);
             }
-            else if (args.Length == 2 && args[0] == "--replFind")
+            else if (args.Length == 2 && param0 == "--replfind")
             {
                 FindRepl(Find.ParamFind, args[1]);
             }
-            else if (args.Length == 1 && args[0] == "--hash")
+            else if (args.Length == 1 && param0 == "--hash")
             {
                 CreateMd5OnCache();
             }
-            else if( args.Length ==1 && args[0] == "--dupes")
+            else if (args.Length == 1 && param0 == "--dupes")
             {
                 FindDupes();
+            }
+            else if (args.Length == 1 && param0 == "--treedump1")
+            {
+                PrintPathsHaveHash();
+            }
+            else if (args.Length == 1 && param0 == "--version")
+            {
+                Console.WriteLine(Version);
             }
             else
             {
                 ShowHelp();
             }
         }
+
+        private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
+        {
+            Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
+            Hack.BreakConsoleFlag = true;
+            e.Cancel = true;
+        }
+
         // repl = read-eval-print-loop
         private static void FindRepl(string parmString, string firstPattern)
         {
@@ -67,6 +96,9 @@ namespace cde
 
         private static void ShowHelp()
         {
+            Console.WriteLine(Version);
+            Console.WriteLine("Usage: cde --version");
+            Console.WriteLine("       display version.");
             Console.WriteLine("Usage: cde --scan <path>");
             Console.WriteLine("       scans path and creates a cache file.");
             Console.WriteLine("       copies hashes from old cache file to new one if old found.");
@@ -101,16 +133,16 @@ namespace cde
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var duplication = new Duplication();
-            Stopwatch sw = new Stopwatch();
+            var sw = new Stopwatch();
             sw.Start();
             duplication.ApplyMd5Checksum(rootEntries);
             sw.Stop();
-            TimeSpan ts = sw.Elapsed;
-            string elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
+            var ts = sw.Elapsed;
+            var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
             Console.WriteLine("Hash took : {0}",elapsedTime);
         }
 
-        static void CreateCDECache(string path)
+        static void CreateCache(string path)
         {
             var re = new RootEntry();
             try
@@ -142,7 +174,6 @@ namespace cde
             }
         }
 
-
         private static void PrintExceptions(string path, Exception ex)
         {
             Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
@@ -156,6 +187,18 @@ namespace cde
         public static void ScanEndofEntries()
         {
             Console.WriteLine("");
+        }
+
+        private static void PrintPathsHaveHash()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            CommonEntry.TraverseAllTrees(rootEntries, PrintPathWithHash);
+        }
+
+        private static void PrintPathWithHash(string filePath, DirEntry de)
+        {
+            var hash = de.Hash == null ? " " : "#";
+            Console.WriteLine("{0}{1}", hash, filePath);
         }
     }
 }

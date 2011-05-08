@@ -19,7 +19,7 @@ namespace cdeLibTest
         [Test]
         public void Constuctor_GetTree_OK()
         {
-            var p = @"C:\temp";
+            const string p = @"C:\temp";
             var re = new RootEntry();
             re.RecurseTree(p);
 
@@ -31,7 +31,7 @@ namespace cdeLibTest
         [Test]
         public void Constuctor_GetTreeWithMoreThanOneLevel_OK()
         {
-            var p = @"C:\temp";
+            const string p = @"C:\temp";
             var re = new RootEntry();
             re.RecurseTree(p);
 
@@ -122,7 +122,9 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimpleRootPath2_ReturnsExpectedStuff()
         {
-            var re = new RootEntryTestStub(root:@"D:\", volName:"OtherValue", fullPath:@"D:\");
+            // ReSharper disable RedundantArgumentName
+            var re = new RootEntryTestStub(root: @"D:\", volName: "OtherValue", fullPath:@"D:\");
+            // ReSharper restore RedundantArgumentName
 
             string hint, volRoot, volName;
 

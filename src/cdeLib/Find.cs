@@ -65,7 +65,7 @@ namespace cdeLib
 
             if (_totalFound > 0)
             {
-                Console.WriteLine("Found a total of {0} entries. Containing the string \"{1}\"", _totalFound, find);
+                Console.WriteLine("Found a total of {0} entries. Matching string \"{1}\"", _totalFound, find);
             }
             else
             {
