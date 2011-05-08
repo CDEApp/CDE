@@ -225,8 +225,8 @@ namespace cdeLib
         }
 
         /// <summary>
-        /// This version recurses itself so it can cache the folders and the node in tree.
-        /// This improves performance when building the tree enormously.
+        /// This version recurses itself so it can cache the folders and the node in its own stack.
+        /// This improves performance.
         /// </summary>
         public void RecurseTree(string startPath)
         {
