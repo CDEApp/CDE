@@ -209,24 +209,21 @@ namespace cdeLib
             }
         }
     
-        public static IEnumerable<FlatDirEntryDTO> GetDirEntries(List<RootEntry> rootEntries)
+        public static IEnumerable<DirEntry> GetDirEntries(List<RootEntry> rootEntries)
         {
-            var entries = new Stack<FlatDirEntryDTO>();
+            var entries = new Stack<DirEntry>();
             foreach (var re in rootEntries)
             {
-                var rootPath = re.RootPath;
-
                 foreach (var de in re.Children)
                 {
-                    var fullPath = Path.Combine(rootPath, de.Name);
-                    entries.Push(new FlatDirEntryDTO(fullPath, de));
+                    entries.Push(de);
                 }
             }
 
             while (entries.Count > 0)
             {
-                var flatDe = entries.Pop();
-                yield return flatDe;
+                var de = entries.Pop();
+                yield return de;
             }
             yield break; // end of enum
         }

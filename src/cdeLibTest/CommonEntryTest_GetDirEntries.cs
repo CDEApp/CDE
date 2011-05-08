@@ -53,14 +53,14 @@ namespace cdeLibTest
             var re = new RootEntry {RootPath = @"C:\"};
             var de1 = new DirEntry {Name = @"de1"};
             re.Children.Add(de1);
+            re.SetInMemoryFields();
             var rootEntries = new List<RootEntry> {re};
-            var expectFde = new FlatDirEntryDTO(@"C:\de1", de1);
-
+            
             var deEnum = CommonEntry.GetDirEntries(rootEntries);
 
-            var fde = deEnum.First();
-            Assert.That(fde.DirEntry, Is.EqualTo(expectFde.DirEntry));
-            Assert.That(fde.FilePath, Is.EqualTo(expectFde.FilePath));
+            var de = deEnum.First();
+            Assert.That(de, Is.EqualTo(de1));
+            Assert.That(de.FullPath, Is.EqualTo(@"C:\de1"));
         }
 
         [Ignore("Incomplete")]
@@ -72,14 +72,12 @@ namespace cdeLibTest
             var fe2 = new DirEntry { Name = @"fe2" };
             de1.Children.Add(fe2);
             re.Children.Add(de1);
+            re.SetInMemoryFields();
             var rootEntries = new List<RootEntry> { re };
 
-            var expectFde = new FlatDirEntryDTO(@"C:\de1", de1);
-            var expectFde2 = new FlatDirEntryDTO(@"C:\de1\fe2", fe2);
-            var expected = new List<FlatDirEntryDTO> { expectFde, expectFde2 };
 
             var deEnum = CommonEntry.GetDirEntries(rootEntries);
-            var expectEnum = expected.GetEnumerator();
+            //var expectEnum = expected.GetEnumerator();
 
             
             //while (deEnum.MoveNext() && expectEnum.MoveNext())

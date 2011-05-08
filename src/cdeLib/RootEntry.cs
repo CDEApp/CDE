@@ -92,7 +92,7 @@ namespace cdeLib
             SetInMemoryFields();
         }
 
-        private void SetInMemoryFields()
+        public void SetInMemoryFields()
         {
             SetFullPath();
             SetSummaryFields();
@@ -307,9 +307,9 @@ namespace cdeLib
 
         public void SaveRootEntry()
         {
-            using(var newFS = File.Open(DefaultFileName, FileMode.Create))
+            using(var newFs = File.Open(DefaultFileName, FileMode.Create))
             {
-                Write(newFS);
+                Write(newFs);
             }
         }
 
