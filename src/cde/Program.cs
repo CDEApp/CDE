@@ -20,6 +20,7 @@ namespace cde
 
         static void Main(string[] args)
         {
+            Console.CancelKeyPress += BreakConsole;
             if (args.Length ==0)
             {
                 ShowHelp();
@@ -66,6 +67,13 @@ namespace cde
             {
                 ShowHelp();
             }
+        }
+
+        private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
+        {
+            Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
+            Hack.BreakConsoleFlag = true;
+            e.Cancel = true;
         }
 
         // repl = read-eval-print-loop

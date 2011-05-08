@@ -53,6 +53,7 @@
     <Compile Include="Duplication.cs" />
     <Compile Include="Find.cs" />
     <Compile Include="FlatDirEntryDTO.cs" />
+    <Compile Include="Hack.cs" />
     <Compile Include="Infrastructure\AlphaFSHelper.cs" />
     <Compile Include="Infrastructure\Comparer\ByteArrayComparer.cs" />
     <Compile Include="Infrastructure\ByteArrayHelper.cs" />

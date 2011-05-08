@@ -59,13 +59,30 @@ namespace cdeLib
 
             foreach (var kvp in newMatches)
             {
-                foreach(var flatFile in kvp.Value)
+                foreach (var flatFile in kvp.Value)
                 {
                     CalculatePartialMD5Hash(flatFile.FilePath, flatFile.DirEntry);
+                    if (Hack.BreakConsoleFlag)
+                    {
+                        Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
+                        break;
+                    }
+                }
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine("\nBreak key detected exiting hashing phase outer.");
+                    break;
                 }
             }
 
-            CheckDupesAndCompleteFullHash(rootEntries);
+            if (Hack.BreakConsoleFlag)
+            {
+                Console.WriteLine("\nBreak key detected skipping full hashing phase.");
+            }
+            else
+            {
+                CheckDupesAndCompleteFullHash(rootEntries);
+            }
             _logger.LogInfo("");
             timer.Stop();
             var perf = string.Format("{0:F2} MB/s",
@@ -108,7 +125,7 @@ namespace cdeLib
         private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
         {
             _logger.LogDebug("");
-            _logger.LogDebug("CheckDupesAndCompleteFullHash");
+            _logger.LogDebug("Checking duplicates and completing full hash.");
             CommonEntry.TraverseAllTrees(rootEntries, BuildDuplicateListIncludePartialHash);
 
             var founddupes = _duplicateFile.Where(d => d.Value.Count > 1);
@@ -121,6 +138,11 @@ namespace cdeLib
             foreach (var keyValuePair in founddupes)
             {
                 _duplicateForFullHash.Add(keyValuePair.Key, keyValuePair.Value);
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine("\nBreak key detected exiting full hashing phase outer.");
+                    break;
+                }
             }
             CommonEntry.TraverseAllTrees(rootEntries, CalculateFullMD5Hash);
         }

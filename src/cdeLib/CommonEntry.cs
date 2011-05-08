@@ -117,6 +117,18 @@ namespace cdeLib
                     {
                         dirs.Push(Tuple.Create((CommonEntry)dirEntry, fullPath));
                     }
+
+                    if (Hack.BreakConsoleFlag)
+                    {
+                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                        break;
+                    }
+                }
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
+                    break;
                 }
             }
         }
