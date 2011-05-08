@@ -83,6 +83,8 @@ namespace cde
             Find.FindString(firstPattern, parmString);
             do
             {
+                if (Hack.BreakConsoleFlag) 
+                    Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behavouir in loop.
                 Console.Write("Enter string to search <nothing exits>: ");
                 var pattern = Console.ReadLine();
                 if (pattern == string.Empty)

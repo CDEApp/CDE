@@ -14,14 +14,14 @@ namespace Finder.Model
             this.query = query;
         }
 
-        //TODO Get autofac to inject this, not doing service locator.
+        //TODO Get autofac to inject this, instead of doing service locator.
         //[Import]
         public IBackend Backend
         {
             get { 
                 
-                var x = IoC.Get<IBackend>();
-                return x;
+                var back = IoC.Get<IBackend>();
+                return back;
             }
             set { this.backend = value; }
         }

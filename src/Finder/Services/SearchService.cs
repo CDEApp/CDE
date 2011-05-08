@@ -62,6 +62,24 @@ namespace Finder.Services
             });
         }
 
+        public void Handle(SearchFiles searchfiles, Action<IEnumerable<SearchResult>> reply)
+        {
+            int x = 1;
+            reply(searchResults.Where(searchDto => searchDto.Name.ToLower().Contains(searchfiles.SearchText.ToLower()))
+                      .Select(found => new SearchResult() {Directory = found.Path, Name = found.Name}));
+
+//            reply(from file in searchResults
+//                  where file.Name.ToLower().Contains(searchfiles.SearchText.ToLower())
+//                  select new SearchResult()
+//                             {
+//                                 Directory = "foo",
+//                                 Name = "bar"
+//                             }
+//
+//                );
+
+        }
+
         #endregion
     }
 }

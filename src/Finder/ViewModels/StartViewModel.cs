@@ -62,9 +62,15 @@ namespace Finder.ViewModels
         public IEnumerable<IResult> ExecuteSearch()
         {
             var search = new SearchFiles {SearchText = Name}.AsResult();
-
+           
             yield return search;
-
+            if (search.Response != null)
+            {
+                foreach (var result in search.Response)
+                {
+                    Response += result.Name;
+                }
+            }
 
             //Activate a popup.
 //            SearchViewModel model = new SearchViewModel();

@@ -21,6 +21,7 @@ namespace Finder
 
             //  good place to register application types or custom modules
             //builder.RegisterModule<RegistrationModule>();
+
         }
     }
 }
