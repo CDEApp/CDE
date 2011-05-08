@@ -50,6 +50,7 @@
   <ItemGroup>
     <Compile Include="CommonEntry.cs" />
     <Compile Include="DirEntry.cs" />
+    <Compile Include="DirEntryEnumerator.cs" />
     <Compile Include="Duplication.cs" />
     <Compile Include="Find.cs" />
     <Compile Include="FlatDirEntryDTO.cs" />
