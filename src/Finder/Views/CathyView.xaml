@@ -3,34 +3,13 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:i="clr-namespace:System.Windows.Interactivity;assembly=System.Windows.Interactivity"
         xmlns:cal="http://www.caliburnproject.org"
-        Title="ShellView" Height="494" Width="910">
+        Title="CathyView" Height="494" Width="910">
     <Grid>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="129*" />
-            <ColumnDefinition Width="442*" />
-        </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="Auto" />
-            <RowDefinition Height="247*" />
             <RowDefinition Height="108*" />
         </Grid.RowDefinitions>
-        <Label Content="Label" Name="label1" Margin="6" />
-        <TextBox Name="Name" Grid.Column="1" Margin="6" />
-        <TextBlock Name="HelloString" Text="TextBlock" Grid.Row="1" Grid.Column="1" Margin="6" />
-        <Button Content="Click Me" Grid.Row="1" Name="SayHello" Margin="6,3,7,3" >
-            <i:Interaction.Triggers>
-                <i:EventTrigger EventName="Click">
-                    <cal:ActionMessage MethodName="SayHello" />
-                </i:EventTrigger>
-            </i:Interaction.Triggers>
-        </Button>
-        <Button Content="Load Data" Name="LoadData" Grid.Row="3" Margin="6" />
-        <Button Content="Scan Cmd" Name="Scan" Grid.Row="3" Margin="5,6,488,6" Grid.Column="1" />
-        <TabControl Grid.Row="5" Name="tabControl1" Grid.ColumnSpan="2" Grid.RowSpan="2">
+        <TabControl Grid.Row="6" Name="tabControl1" Grid.RowSpan="2">
             <TabItem Header="Search" Name="tiSearch">
                 <Grid>
                     <Grid.ColumnDefinitions>
@@ -81,5 +60,30 @@
                 </StackPanel>
             </TabItem>
         </TabControl>
+        <Grid Name="HeadGrid">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="365*" />
+            </Grid.ColumnDefinitions>
+            <Label Content="Label" Name="label1" Margin="6" />
+            <TextBox Name="Name" Grid.Column="1" Grid.ColumnSpan="2" Margin="6" />
+            <Button Content="Click Me" Name="SayHello" Grid.Column="3" Margin="6">
+                <i:Interaction.Triggers>
+                    <i:EventTrigger EventName="Click">
+                        <cal:ActionMessage MethodName="SayHello" />
+                    </i:EventTrigger>
+                </i:Interaction.Triggers>
+            </Button>
+            <Button Content="Load Data" Name="LoadData" Grid.Row="1" Grid.Column="1" Margin="6" />
+            <Button Content="Scan Cmd" Name="Scan" Grid.Row="1" Grid.Column="2" Margin="6" />
+            <TextBlock Name="HelloString" Text="TextBlock" Grid.Column="4" Margin="6" VerticalAlignment="Center" />
+        </Grid>
     </Grid>
 </Window>
