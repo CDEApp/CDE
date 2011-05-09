@@ -59,6 +59,10 @@ namespace cde
             {
                 PrintPathsHaveHash();
             }
+            else if (args.Length == 1 && param0 == "--treedump2")
+            {
+                PrintPathsHaveHashEnumerator();
+            }
             else if (args.Length == 1 && param0 == "--version")
             {
                 Console.WriteLine(Version);
@@ -201,6 +205,17 @@ namespace cde
         {
             var hash = de.Hash == null ? " " : "#";
             Console.WriteLine("{0}{1}", hash, filePath);
+        }
+
+        private static void PrintPathsHaveHashEnumerator()
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
+            foreach (var dirEntry in deEnumerator)
+            {
+                var hash = dirEntry.Hash == null ? " " : "#";
+                Console.WriteLine("{0}{1}", hash, dirEntry.FullPath);
+            }
         }
     }
 }

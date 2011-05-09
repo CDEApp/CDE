@@ -364,6 +364,11 @@ namespace cdeLib
             TraverseTree(RootPath, apply);
         }
 
+        public void TraverseTree2(Action<DirEntry> apply)
+        {
+            TraverseTree2(RootPath, apply);
+        }
+
         public static List<RootEntry> LoadCurrentDirCache()
         {
             var roots = new List<RootEntry>();
