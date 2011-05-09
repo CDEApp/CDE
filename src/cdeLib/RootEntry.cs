@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 //using System.IO.Compression;
+using System.Runtime.Serialization;
 using Alphaleonis.Win32.Filesystem;
 //using ICSharpCode.SharpZipLib.BZip2;
 //using ICSharpCode.SharpZipLib.GZip;
