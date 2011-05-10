@@ -7,46 +7,49 @@ using NUnit.Framework;
 
 namespace cdeLibTest
 {
+    public class DirEntryTestBase
+    {
+        protected RootEntry Re1;
+        protected DirEntry De1;
+        protected DirEntry Fe2;
+        protected List<RootEntry> RootEntries;
+
+        public void RebuildTestRoot()
+        {
+            Re1 = new RootEntry { RootPath = @"C:\" };
+            De1 = new DirEntry { Name = @"de1", IsDirectory = true };
+            Fe2 = new DirEntry { Name = @"fe2" };
+            De1.Children.Add(Fe2);
+            Re1.Children.Add(De1);
+            Re1.SetInMemoryFields();
+            RootEntries = new List<RootEntry> { Re1 };
+        }
+    }
+
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    public class DirEntryEnumeratorTest
+    public class DirEntryEnumeratorTest : DirEntryTestBase
     {
-        private RootEntry _re1;
-        private DirEntry _de1;
-        private DirEntry _fe2;
-        private List<RootEntry> _rootEntries;
-
         [SetUp]
         public void RunBeforeEveryTest()
         {
             RebuildTestRoot();
         }
 
-        public void RebuildTestRoot()
-        {
-            _re1 = new RootEntry { RootPath = @"C:\" };
-            _de1 = new DirEntry { Name = @"de1", IsDirectory = true };
-            _fe2 = new DirEntry { Name = @"fe2" };
-            _de1.Children.Add(_fe2);
-            _re1.Children.Add(_de1);
-            _re1.SetInMemoryFields();
-            _rootEntries = new List<RootEntry> { _re1 };
-        }
-
         [Test]
         public void Constructor_Minimal_NoErrors()
         {
-            _rootEntries = new List<RootEntry>();
+            RootEntries = new List<RootEntry>();
 
-            new DirEntryEnumerator(_rootEntries);
+            new DirEntryEnumerator(RootEntries);
         }
 
         [Test]
         public void MoveNext_NoRootEntries_FirstMoveNextFalse()
         {
-            _rootEntries = new List<RootEntry>();
+            RootEntries = new List<RootEntry>();
 
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
 
             Assert.That(e.Current, Is.Null);
             Assert.That(e.MoveNext(), Is.False);
@@ -55,7 +58,7 @@ namespace cdeLibTest
         [Test]
         public void MoveNext_WithTree_CurrentIsNullBeforeMoveNext()
         {
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
 
             Assert.That(e.Current, Is.Null);
         }
@@ -63,7 +66,7 @@ namespace cdeLibTest
         [Test]
         public void MoveNext_WithTree_FirstMoveNextIsTrue()
         {
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
 
             Assert.That(e.MoveNext(), Is.True);
         }
@@ -71,26 +74,26 @@ namespace cdeLibTest
         [Test]
         public void MoveNext_WithTree_AfterMoveNextCurrentHasFirstEntry()
         {
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
             e.MoveNext();
 
-            Assert.That(e.Current, Is.EqualTo(_de1), "Did not get de1 entry.");
+            Assert.That(e.Current, Is.EqualTo(De1), "Did not get de1 entry.");
         }
 
         [Test]
         public void MoveNext_WithTree_AfterTwoMoveNextCurrentHasSecondEntry()
         {
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
             e.MoveNext();
             e.MoveNext();
 
-            Assert.That(e.Current, Is.EqualTo(_fe2), "Did not get fe2 entry.");
+            Assert.That(e.Current, Is.EqualTo(Fe2), "Did not get fe2 entry.");
         }
 
         [Test]
         public void MoveNext_WithTree_ThirdMoveNextReturnsFalse()
         {
-            var e = new DirEntryEnumerator(_rootEntries);
+            var e = new DirEntryEnumerator(RootEntries);
             e.MoveNext();
             e.MoveNext();
 
@@ -101,10 +104,10 @@ namespace cdeLibTest
         public void ListOfRootEntryTest_TryOutEnumerable()
         {
             var fe3 = new DirEntry { Name = "fe3" };
-            _de1.Children.Add(fe3);
-            var myListEnumerator = new DirEntryEnumerator(_rootEntries);
+            De1.Children.Add(fe3);
+            var myListEnumerator = new DirEntryEnumerator(RootEntries);
 
-            var expectList = new List<DirEntry> { _de1, _fe2, fe3 };
+            var expectList = new List<DirEntry> { De1, Fe2, fe3 };
             var expectEnumerator = expectList.GetEnumerator();
 
             while (myListEnumerator.MoveNext() && expectEnumerator.MoveNext())
@@ -128,6 +131,7 @@ namespace cdeLibTest
         private ulong _num;
         private ulong _fileCount;
 
+        [Ignore("Its a performance test needs .cde file in current dir.")]
         [Test]
         public void PerformanceTest_Compare_TraverseTree_With_DirEntryEnumerator()
         {
@@ -201,4 +205,111 @@ namespace cdeLibTest
         }
     }
     // ReSharper restore InconsistentNaming
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class FDEEnumeratorTest : DirEntryTestBase
+    {
+        [SetUp]
+        public void RunBeforeEveryTest()
+        {
+            RebuildTestRoot();
+        }
+
+        [Test]
+        public void Constructor_Minimal_NoErrors()
+        {
+            RootEntries = new List<RootEntry>();
+
+            new FDEEnumerator(RootEntries);
+        }
+
+        [Test]
+        public void MoveNext_NoRootEntries_FirstMoveNextFalse()
+        {
+            RootEntries = new List<RootEntry>();
+
+            var e = new FDEEnumerator(RootEntries);
+
+            Assert.That(e.Current, Is.Null);
+            Assert.That(e.MoveNext(), Is.False);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_CurrentIsNullBeforeMoveNext()
+        {
+            var e = new FDEEnumerator(RootEntries);
+
+            Assert.That(e.Current, Is.Null);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_FirstMoveNextIsTrue()
+        {
+            var e = new FDEEnumerator(RootEntries);
+
+            Assert.That(e.MoveNext(), Is.True);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_AfterMoveNextCurrentHasFirstEntry()
+        {
+            var e = new FDEEnumerator(RootEntries);
+            e.MoveNext();
+
+            Assert.That(e.Current.DirEntry, Is.EqualTo(De1), "Did not get de1 entry.");
+            Assert.That(e.Current.FilePath, Is.EqualTo(@"C:\de1"), "Did not get de1 entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree_AfterTwoMoveNextCurrentHasSecondEntry()
+        {
+            var e = new FDEEnumerator(RootEntries);
+            e.MoveNext();
+            e.MoveNext();
+
+            Assert.That(e.Current.DirEntry, Is.EqualTo(Fe2), "Did not get fe2 entry.");
+            Assert.That(e.Current.FilePath, Is.EqualTo(@"C:\de1\fe2"), "Did not get fe2 entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree_ThirdMoveNextReturnsFalse()
+        {
+            var e = new FDEEnumerator(RootEntries);
+            e.MoveNext();
+            e.MoveNext();
+
+            Assert.That(e.MoveNext(), Is.False, "There are only supposed to be 2 entries");
+        }
+
+        [Test]
+        public void ListOfRootEntryTest_TryOutEnumerable()
+        {
+            var fe3 = new DirEntry { Name = "fe3" };
+            De1.Children.Add(fe3);
+            var myListEnumerator = new FDEEnumerator(RootEntries);
+
+            var expectList2 = new List<FlatDirEntryDTO>
+                {
+                    new FlatDirEntryDTO(@"C:\de1", De1),
+                    new FlatDirEntryDTO(@"C:\de1\fe2", Fe2),
+                    new FlatDirEntryDTO(@"C:\de1\fe3", fe3)
+                };
+
+            var expectList = new List<DirEntry> { De1, Fe2, fe3 };
+            var expectEnumerator = expectList2.GetEnumerator();
+
+            while (myListEnumerator.MoveNext() && expectEnumerator.MoveNext())
+            {
+                Console.WriteLine("a {0}", myListEnumerator.Current.DirEntry.Name);
+                if (expectEnumerator.Current != null)
+                {
+                    Console.WriteLine("b0 {0}", expectEnumerator.Current.DirEntry.Name);
+                    Console.WriteLine("b1 {0}", expectEnumerator.Current.FilePath);
+                    Assert.That(myListEnumerator.Current.DirEntry, Is.EqualTo(expectEnumerator.Current.DirEntry), "Sequence of directory entries is not matching on DirEntry.");
+                    Assert.That(myListEnumerator.Current.FilePath, Is.EqualTo(expectEnumerator.Current.FilePath), "Sequence of directory entries is not matching on Fullpath.");
+                }
+            }
+        }
+    }
 }

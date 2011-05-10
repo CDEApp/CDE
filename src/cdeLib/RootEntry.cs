@@ -94,6 +94,7 @@ namespace cdeLib
 
         public void SetInMemoryFields()
         {
+            FullPath = RootPath;
             SetFullPath();
             SetSummaryFields();
         }
@@ -128,7 +129,7 @@ namespace cdeLib
 
         #region Methods virtual to assist testing.
         private const int PathLengthToAvoidAlphaFsLib = 200;
-        public virtual string FullPath(string path)
+        public virtual string GetFullPath(string path)
         {
             // BUG in AlphaFS. Path.FullGetPath()
             if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
@@ -172,7 +173,7 @@ namespace cdeLib
         /// </summary>
         public string CanonicalPath(string path)
         {
-            path = FullPath(path);  // Fully qualified path used to generate filename
+            path = GetFullPath(path);  // Fully qualified path used to generate filename
 
             var volumeRoot = GetDirectoryRoot(path);
 
@@ -405,7 +406,10 @@ namespace cdeLib
 
         public static void SetFullPath(string fullPath, DirEntry de)
         {
-            de.FullPath = fullPath;
+            if (de.IsDirectory)
+            {
+                de.FullPath = fullPath;
+            }
         }
 
         #region List of UAE paths on a known win7 volume - probably decent example

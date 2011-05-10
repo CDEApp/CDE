@@ -23,6 +23,11 @@ namespace cdeLib
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
 
+        /// <summary>
+        /// Populated on load, not saved to disk.
+        /// </summary>
+        public string FullPath { get; set; }
+
         protected CommonEntry()
         {
             Children = new List<DirEntry>();    // only needed for dir's but who cares.
@@ -258,5 +263,19 @@ namespace cdeLib
         {
             return new DirEntryEnumerator(rootEntries);
         }
+
+        // ReSharper disable InconsistentNaming
+        public static IEnumerable<FlatDirEntryDTO> GetFDEs(List<RootEntry> rootEntries)
+        {
+            return new FDEEnumerator(rootEntries);
+        }
+        // ReSharper restore InconsistentNaming
+
+        public static IEnumerable<PairDirEntry> GetPairDirEntries(List<RootEntry> rootEntries)
+        {
+            return new PairDirEntryEnumerator(rootEntries);
+        }
     }
 }
+
+
