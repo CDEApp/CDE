@@ -220,11 +220,11 @@ namespace cde
         private static void PrintPathsHaveHashEnumerator()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
-            foreach (var dirEntry in deEnumerator)
+            var deEnumerator = CommonEntry.GetFDEs(rootEntries);
+            foreach (var fde in deEnumerator)
             {
-                var hash = dirEntry.Hash == null ? " " : "#";
-                Console.WriteLine("{0}{1}", hash, dirEntry.FullPath);
+                var hash = fde.DirEntry.Hash == null ? " " : "#";
+                Console.WriteLine("{0}{1}", hash, fde.FilePath);
             }
         }
     }

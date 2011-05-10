@@ -311,7 +311,7 @@ namespace cdeLibTest
                 return _isPathRooted;
             }
 
-            public override string FullPath(string path)
+            public override string GetFullPath(string path)
             {
                 return _fullPath;
             }
@@ -328,12 +328,12 @@ namespace cdeLibTest
             re.Children.Add(fe1);
             re.Children.Add(de2);
             de2.Children.Add(fe3);
+            re.SetInMemoryFields();
 
-            re.SetFullPath();
-
-            Assert.That(fe1.FullPath, Is.EqualTo(@"C:\fe1"));
+            Assert.That(re.FullPath, Is.EqualTo(@"C:\"));
+            Assert.That(fe1.FullPath, Is.Null);// Is.EqualTo(@"C:\fe1")); FullPath only set on directories to save memory.
             Assert.That(de2.FullPath, Is.EqualTo(@"C:\de2"));
-            Assert.That(fe3.FullPath, Is.EqualTo(@"C:\de2\fe3"));
+            Assert.That(fe3.FullPath, Is.Null);//Is.EqualTo(@"C:\de2\fe3"));
         }
     }
     // ReSharper restore InconsistentNaming

@@ -111,5 +111,6 @@ namespace Finder.ViewModels
             re.PopulateRoot(name);
             HelloString = String.Format("Filecount: {0}", re.FileCount);
         }
+
     }
 }
