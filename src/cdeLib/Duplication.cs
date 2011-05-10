@@ -69,15 +69,15 @@ namespace cdeLib
                                           longestListSize));
 
             //flatten
-            //_logger.LogDebug("Flatten..");
+            _logger.LogDebug("Flatten..");
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
 
             //group by volume/network share
-            //_logger.LogDebug("GroupBy..");
+            _logger.LogDebug("GroupBy..");
             var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FilePath));
 
             //parralel at the grouping level, hopefully this is one group per disk.
-            //_logger.LogDebug("Hash..");
+            _logger.LogDebug("Hash..");
             var timer = new Stopwatch();
             timer.Start();
 

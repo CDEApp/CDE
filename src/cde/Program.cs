@@ -1,12 +1,15 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Reflection;
+using Autofac;
 using cdeLib;
+using cdeLib.Infrastructure;
 
 namespace cde
 {
     class Program
     {
+        public static IContainer Container;
         public static string Version
         {
             get
@@ -20,6 +23,7 @@ namespace cde
 
         static void Main(string[] args)
         {
+            Container = BootStrapper.Components();
             Console.CancelKeyPress += BreakConsole;
             if (args.Length ==0)
             {
@@ -137,8 +141,12 @@ namespace cde
 
         private static void CreateMd5OnCache()
         {
+            var logger = Container.Resolve<ILogger>();
+            var diagnostics = Container.Resolve<IApplicationDiagnostics>();
+            logger.LogInfo(String.Format("Memory pre-catload: {0}",diagnostics.GetMemoryAllocated().FormatAsBytes()));
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var duplication = new Duplication();
+            logger.LogInfo(String.Format("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes()));
+            var duplication = Container.Resolve<Duplication>();
             var sw = new Stopwatch();
             sw.Start();
             duplication.ApplyMd5Checksum(rootEntries);

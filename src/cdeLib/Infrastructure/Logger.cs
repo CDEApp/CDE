@@ -14,6 +14,8 @@ namespace cdeLib.Infrastructure
     /// </summary>
     public class Logger : ILogger
     {
+        private static readonly Logger _instance = new Logger();
+
         public void LogException(Exception ex, string message)
         {
             Console.WriteLine("{0}: {1} {2}", ex.GetType(), message, ex.Message);
@@ -27,6 +29,11 @@ namespace cdeLib.Infrastructure
         public void LogDebug(string message)
         {
             Console.WriteLine(message);
+        }
+
+        public static Logger Instance
+        {
+            get { return _instance; }
         }
     }
 }

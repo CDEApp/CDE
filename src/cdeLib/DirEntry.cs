@@ -11,8 +11,6 @@ namespace cdeLib
     [ProtoContract]
     public class DirEntry : CommonEntry
     {
-        private readonly ILogger _logger;
-
         [ProtoMember(2, IsRequired = true)]
         public string Name { get; set; }
         [ProtoMember(3, IsRequired = true)]
@@ -60,9 +58,9 @@ namespace cdeLib
 
         public DirEntry()
         {
-            _logger = new Logger();
         }
 
+ 
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
             Name = fs.FileName;
@@ -73,7 +71,7 @@ namespace cdeLib
             catch (ArgumentOutOfRangeException ex)
             {
                 //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
-                _logger.LogException(ex,fs.FullPath);
+                Logger.Instance.LogException(ex,fs.FullPath);
             }
             IsDirectory = fs.IsDirectory;
             //IsSymbolicLink = fs.IsSymbolicLink;
