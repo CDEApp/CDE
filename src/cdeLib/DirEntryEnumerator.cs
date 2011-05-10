@@ -21,6 +21,12 @@ namespace cdeLib
             get { return Current; }
         }
 
+        public DirEntryEnumerator(RootEntry rootEntry)
+        {
+            _rootEntries = new List<RootEntry> { rootEntry };
+            Reset();
+        }                                                   
+
         public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
         {
             _rootEntries = rootEntries;
@@ -114,6 +120,12 @@ namespace cdeLib
         {
             get { return Current; }
         }
+
+        public FDEEnumerator(RootEntry rootEntry)
+        {
+            _rootEntries = new List<RootEntry> { rootEntry };
+            Reset();
+        }                                                    
 
         public FDEEnumerator(IEnumerable<RootEntry> rootEntries)
         {
@@ -219,6 +231,12 @@ namespace cdeLib
         object IEnumerator.Current
         {
             get { return Current; }
+        }
+
+        public PairDirEntryEnumerator(RootEntry rootEntry)
+        {
+            _rootEntries = new List<RootEntry> { rootEntry };
+            Reset();
         }
 
         public PairDirEntryEnumerator(IEnumerable<RootEntry> rootEntries)

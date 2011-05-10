@@ -258,18 +258,39 @@ namespace cdeLib
                 }
             }
         }
-    
+
+        // want to keep Alphaleonis out of the references of the main cde app.
+        public virtual string Combine(string name)
+        {
+            return Path.Combine(FullPath, name);
+        }
+
+        public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
+        {
+            return new DirEntryEnumerator(rootEntry);
+        }                                                   
+
         public static IEnumerable<DirEntry> GetDirEntries(List<RootEntry> rootEntries)
         {
             return new DirEntryEnumerator(rootEntries);
         }
 
         // ReSharper disable InconsistentNaming
+        public static IEnumerable<FlatDirEntryDTO> GetFDEs(RootEntry rootEntry)
+        {
+            return new FDEEnumerator(rootEntry);
+        }
+
         public static IEnumerable<FlatDirEntryDTO> GetFDEs(List<RootEntry> rootEntries)
         {
             return new FDEEnumerator(rootEntries);
         }
         // ReSharper restore InconsistentNaming
+
+        public static IEnumerable<PairDirEntry> GetPairDirEntries(RootEntry rootEntry)
+        {
+            return new PairDirEntryEnumerator(rootEntry);
+        }
 
         public static IEnumerable<PairDirEntry> GetPairDirEntries(List<RootEntry> rootEntries)
         {

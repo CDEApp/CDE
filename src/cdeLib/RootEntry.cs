@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 //using System.IO.Compression;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 //using ICSharpCode.SharpZipLib.BZip2;
 //using ICSharpCode.SharpZipLib.GZip;
@@ -401,14 +402,11 @@ namespace cdeLib
 
         public void SetFullPath()
         {
-            TraverseTree(SetFullPath);
-        }
-
-        public static void SetFullPath(string fullPath, DirEntry de)
-        {
-            if (de.IsDirectory)
+            var pdee = GetPairDirEntries(this);
+            foreach (var pairDirEntry in pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
             {
-                de.FullPath = fullPath;
+                pairDirEntry.ChildDE.FullPath =
+                    Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
             }
         }
 
