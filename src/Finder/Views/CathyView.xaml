@@ -26,12 +26,12 @@
                     <DataGrid AutoGenerateColumns="True" Grid.Row="1" Name="dgSearch" Grid.ColumnSpan="5" />
                     <Label Content="Pattern" Name="labPattern" Margin="2" />
                     <ComboBox Name="cbPattern" IsEditable="True" Grid.Column="1" Margin="2" />
-                    <ComboBox Grid.Column="3" Name="comboBox1" ItemsSource="{Binding}" Margin="2" SelectedIndex="2">
+                    <ComboBox Grid.Column="3" Name="cbSearchMode" ItemsSource="{Binding}" Margin="2" SelectedIndex="2">
                         <ComboBoxItem Content="Substring Name" />
                         <ComboBoxItem Content="Regex Name" />
                         <ComboBoxItem Content="Regex Path" />
                     </ComboBox>
-                    <Button Content="Search" Grid.Column="2" Name="button1" Margin="2" />
+                    <Button Content="Search" Grid.Column="2" Name="btnSearch" Margin="2" />
                 </Grid>
             </TabItem>
             <TabItem Header="Directory" Name="tiDirectory" >
