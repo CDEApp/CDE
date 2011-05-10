@@ -4,6 +4,7 @@ using System.Reflection;
 using Autofac;
 using cdeLib;
 using cdeLib.Infrastructure;
+using ProtoBuf;
 
 namespace cde
 {
@@ -149,6 +150,7 @@ namespace cde
             var duplication = Container.Resolve<Duplication>();
             var sw = new Stopwatch();
             sw.Start();
+            
             duplication.ApplyMd5Checksum(rootEntries);
             sw.Stop();
             var ts = sw.Elapsed;
