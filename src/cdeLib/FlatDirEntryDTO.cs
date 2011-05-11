@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace cdeLib
+﻿namespace cdeLib
 {
 
     /// <summary>
@@ -11,6 +9,7 @@ namespace cdeLib
     {
         public FlatDirEntryDTO(string filePath, DirEntry dirEntry)
         {
+            //TODO: Get Rid of FilePath its chewing up too much RAM.   (IE Get rid of FlatDirEntryDTO as well)
             FilePath = filePath;
             DirEntry = dirEntry;
         }

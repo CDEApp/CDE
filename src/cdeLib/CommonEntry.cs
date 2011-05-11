@@ -98,6 +98,8 @@ namespace cdeLib
             }
         }
 
+
+
         public void TraverseTree(string path, Action<string, DirEntry> action)
         {
             var dirs = new Stack<Tuple<CommonEntry, string>>();

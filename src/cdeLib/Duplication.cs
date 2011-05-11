@@ -11,6 +11,8 @@ using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
 {
+
+
     public class Duplication
     {
         
@@ -151,8 +153,12 @@ namespace cdeLib
         public IDictionary<ulong, List<FlatDirEntryDTO>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
-            return _duplicateFileSize.Where(kvp => kvp.Value.Count > 1)
-                .ToDictionary(kvp => kvp.Key, kvp => kvp.Value);
+            _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+
+            //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
+            _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x=>_duplicateFileSize.Remove(x.Key));
+            _logger.LogDebug(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            return _duplicateFileSize;
         }
 
         private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
