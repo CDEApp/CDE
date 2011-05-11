@@ -48,6 +48,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BAATree.cs" />
     <Compile Include="CommonEntry.cs" />
     <Compile Include="DirEntry.cs" />
     <Compile Include="DirEntryEnumerator.cs" />
