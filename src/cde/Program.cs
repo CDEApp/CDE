@@ -135,7 +135,7 @@ namespace cde
         private static void FindDupes()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var duplication = new Duplication();
+            var duplication = Container.Resolve<Duplication>();
             duplication.FindDuplicates(rootEntries);
         }
 

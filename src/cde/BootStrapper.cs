@@ -14,6 +14,7 @@ namespace cdeLib
 
             //singletons.
             builder.RegisterType<Logger>().As<ILogger>().SingleInstance();
+            builder.RegisterType<Configuration>().As<IConfiguration>().SingleInstance();
             builder.RegisterType<ApplicationDiagnostics>().As<IApplicationDiagnostics>().SingleInstance();
             
             builder.RegisterType<Duplication>().InstancePerLifetimeScope();

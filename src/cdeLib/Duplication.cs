@@ -11,24 +11,10 @@ using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
 {
-    public class DuplicationStatistics
-    {
-        public DuplicationStatistics()
-        {
-            PartialHashes = 0;
-            FullHashes = 0;
-            BytesProcessed = 0;
-            FailedToHash = 0;
-        }
-
-        public long PartialHashes { get; set; }
-        public long FullHashes { get; set; }
-        public long BytesProcessed { get; set; }
-        public long FailedToHash { get; set; }
-    }
-
     public class Duplication
     {
+        
+
         private readonly IConfiguration _configuration;
 
         private readonly Dictionary<byte[], List<FlatDirEntryDTO>> _duplicateFile =
@@ -42,17 +28,26 @@ namespace cdeLib
 
         private readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
+        private readonly IApplicationDiagnostics _applicationDiagnostics;
 
-        public Duplication()
+        public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics)
         {
-            _logger = new Logger();
-            _configuration = new Configuration();
+            _logger = logger;
+            _configuration = configuration;
+            _applicationDiagnostics = applicationDiagnostics;
             _duplicationStatistics = new DuplicationStatistics();
+            _logger.LogDebug(String.Format("Dupe Constructor Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
         }
 
+        /// <summary>
+        /// Apply an MD5 Checksum to all rootEntries
+        /// </summary> 
+        /// <param name="rootEntries">Collection of rootEntries</param>
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
+            _logger.LogDebug(String.Format("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
             var newMatches = GetSizePairs(rootEntries);
+            _logger.LogDebug(String.Format("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             var totalFilesInRootEntries = rootEntries.Sum(x => x.FileCount);
             var totalEntriesInSizeDupes = newMatches.Sum(x => x.Value.Count);
@@ -69,15 +64,19 @@ namespace cdeLib
                                           longestListSize));
 
             //flatten
-            _logger.LogDebug("Flatten..");
+            _logger.LogDebug("Flatten List..");
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
+            _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //group by volume/network share
-            _logger.LogDebug("GroupBy..");
+            _logger.LogDebug("GroupBy Volume/Share..");
             var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FilePath));
+            _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parralel at the grouping level, hopefully this is one group per disk.
-            _logger.LogDebug("Hash..");
+            _logger.LogDebug("Beging Hashing...");
+            _logger.LogDebug(String.Format("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            
             var timer = new Stopwatch();
             timer.Start();
 

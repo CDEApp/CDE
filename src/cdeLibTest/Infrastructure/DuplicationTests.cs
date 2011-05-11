@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using cdeLib;
+using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
 using NUnit.Framework;
+using Rhino.Mocks;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using FileMode = System.IO.FileMode;
 
@@ -13,10 +15,16 @@ namespace cdeLibTest.Infrastructure
     public class DuplicationTests
     {
         public const string FolderName = "test";
+        private ILogger _logger;
+        private IConfiguration _configuration;
+        private IApplicationDiagnostics _applicationDiagnostics;
 
         [TearDown]
         public void Teardown()
         {
+            
+
+
             Directory.Delete(FolderName, true);
             var files = Directory.GetFiles(".\\", "*.cde");
             foreach (var file in files)
@@ -29,6 +37,10 @@ namespace cdeLibTest.Infrastructure
         [SetUp]
         public void SetUp()
         {
+            _logger = MockRepository.GenerateMock<ILogger>();
+            _configuration = MockRepository.GenerateMock<IConfiguration>();
+            _applicationDiagnostics = MockRepository.GenerateMock<IApplicationDiagnostics>();
+
             var random = new Random();
             const int dataSize = 256*1024;
 
@@ -67,7 +79,7 @@ namespace cdeLibTest.Infrastructure
         [Test]
         public void CanFindDuplicates()
         {
-            var duplication = new Duplication();
+            var duplication = new Duplication(_logger, _configuration, _applicationDiagnostics); ;
             var rootEntry = new RootEntry();
             rootEntry.PopulateRoot(String.Format("{0}\\",FolderName));
             var rootEntries = new List<RootEntry> {rootEntry};

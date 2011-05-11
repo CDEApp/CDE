@@ -1,15 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Autofac;
 using cdeLib;
+using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Comparer;
 using NUnit.Framework;
+using Rhino.Mocks;
 
 namespace cdeLibTest
 {
     [TestFixture]
     class DuplicationTest
     {
+
+        private ILogger _logger;
+        private IConfiguration _configuration;
+        private IApplicationDiagnostics _applicationDiagnostics;
+
+        [SetUp]
+        public void Setup()
+        {
+            _logger = MockRepository.GenerateMock<ILogger>();
+            _configuration = MockRepository.GenerateMock<IConfiguration>();
+            _applicationDiagnostics = MockRepository.GenerateMock<IApplicationDiagnostics>();
+        }
+
         // ReSharper disable InconsistentNaming
         [Test]
         public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
@@ -37,7 +53,7 @@ namespace cdeLibTest
             re1.Children.Add(de10);
             var roots = new List<RootEntry> { re1 };
 
-            var d = new Duplication();
+            var d = new Duplication(_logger,_configuration,_applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(roots);
 
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
@@ -74,7 +90,7 @@ namespace cdeLibTest
             re1.Children.Add(de10);
             var roots = new List<RootEntry> { re1 };
 
-            var d = new Duplication();
+            var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var dp = d.GetDupePairs(roots);
             var dp1 = dp.First();
 
@@ -89,7 +105,7 @@ namespace cdeLibTest
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
 
-            var d = new Duplication();
+            var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(rootEntries);
 
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
@@ -136,7 +152,7 @@ namespace cdeLibTest
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
 
-            var d = new Duplication();
+            var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var dupePairEnum = d.GetDupePairs(rootEntries);
 
             foreach (var dupe in dupePairEnum)
@@ -158,7 +174,7 @@ namespace cdeLibTest
         public void ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var d = new Duplication();
+            var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
 
             d.ApplyMd5Checksum(rootEntries);
         }

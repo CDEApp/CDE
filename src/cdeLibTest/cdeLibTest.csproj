@@ -34,6 +34,9 @@
     <Reference Include="AlphaFS">
       <HintPath>..\..\lib\AlphaFS-1.5\Release\AlphaFS.dll</HintPath>
     </Reference>
+    <Reference Include="Autofac">
+      <HintPath>..\..\lib\Autofac\Autofac.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\..\lib\NUnit-2.5.10..11092\bin\net-2.0\nunit.framework.dll</HintPath>
     </Reference>
