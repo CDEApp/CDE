@@ -86,12 +86,12 @@ namespace cdeLib
             var outerOptions = new ParallelOptions {CancellationToken = token};
             try
             {
+              
                 Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) =>
                                                                            {
                                                                                var parallelOptions = new ParallelOptions();
                                                                                parallelOptions.MaxDegreeOfParallelism = _configuration.ProgressUpdateInterval;
                                                                                parallelOptions.CancellationToken = token;
-
                                                                                Parallel.ForEach(grp, parallelOptions,
                                                                                                 (flatFile, innerLoopState) =>
                                                                                                     {
@@ -100,14 +100,14 @@ namespace cdeLib
                                                                                                              flatFile.DirEntry);
                                                                                                         if (Hack.BreakConsoleFlag)
                                                                                                         {
-                                                                                                            Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
+                                                                                                            //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
                                                                                                             cts.Cancel();
                                                                                                             parallelOptions.CancellationToken.ThrowIfCancellationRequested();
                                                                                                         }
 
                                                                                                         if (Hack.BreakConsoleFlag)
                                                                                                         {
-                                                                                                            Console.WriteLine ("\nBreak key detected exiting hashing phase outer.");
+                                                                                                            //Console.WriteLine ("\nBreak key detected exiting hashing phase outer.");
                                                                                                             cts.Cancel();
                                                                                                         }
                                                                                                     });
