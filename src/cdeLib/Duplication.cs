@@ -155,7 +155,7 @@ namespace cdeLib
 
         public IDictionary<ulong, List<FlatDirEntry2>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseAllTrees(rootEntries, FindMatchesOnFileSize);
+            CommonEntry.TraverseAllTrees3(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
 
             //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
@@ -201,6 +201,24 @@ namespace cdeLib
                 }
             }
             CommonEntry.TraverseAllTrees(rootEntries, CalculateFullMD5Hash);
+        }
+
+        private void FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
+        {
+            if (de.IsDirectory || de.Size == 0) // || de.Size < 4096)
+            {
+                return;
+            }
+
+            var flatDirEntry = new FlatDirEntry2(ce, de);
+            if (_duplicateFileSize2.ContainsKey(de.Size))
+            {
+                _duplicateFileSize2[de.Size].Add(flatDirEntry);
+            }
+            else
+            {
+                _duplicateFileSize2[de.Size] = new List<FlatDirEntry2> { flatDirEntry };
+            }
         }
 
         private void FindMatchesOnFileSize(string filePath, DirEntry de)

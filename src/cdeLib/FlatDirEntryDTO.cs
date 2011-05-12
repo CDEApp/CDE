@@ -24,7 +24,7 @@ namespace cdeLib
     {
         public FlatDirEntry2(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            ParentDirEntry = dirEntry;
+            ParentDirEntry = parentEntry;
             DirEntry = dirEntry;
         }
 
@@ -32,12 +32,14 @@ namespace cdeLib
         { 
             get
             {
-                return Path.Combine(ParentDirEntry.FullPath, DirEntry.Name);
+                var a = ParentDirEntry.FullPath ?? "pnull";
+                var b = DirEntry.Name ?? "dnull";
+                return Path.Combine(a, b);
             }
         }
 
         //public string FilePath { get; set; }
-        public DirEntry ParentDirEntry { get; set; }
+        public CommonEntry ParentDirEntry { get; set; }
         public DirEntry DirEntry { get; set; }
     }
 }

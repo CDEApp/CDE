@@ -52,16 +52,17 @@ namespace cdeLibTest
             re1.Children.Add(de9);
             re1.Children.Add(de10);
             var roots = new List<RootEntry> { re1 };
+            re1.SetInMemoryFields();
 
             var d = new Duplication(_logger,_configuration,_applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(roots);
 
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
             Assert.That(sizePairDictionary.Count, Is.EqualTo(2));
-            Assert.Fail("broken");
-            //var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
-            //Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
-            //Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(5));
+
+            var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
+            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(5));
         }
 
         [Test]
@@ -111,10 +112,9 @@ namespace cdeLibTest
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
             //Assert.That(sizePairDictionary.Count, Is.EqualTo(15809));
 
-            Assert.Fail("broken");
-            //var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
-            //Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
-            ////Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(73939));
+            var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
+            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            //Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(73939));
 
             var dupePairEnum = d.GetDupePairs(rootEntries);
 
@@ -147,6 +147,34 @@ namespace cdeLibTest
             }
             return sumOfUniqueHashesForEachSize;
         }
+
+        public static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<FlatDirEntry2>>> sizePairDictionary)
+        {
+            var sumOfUniqueHashesForEachSize = 0ul;
+            foreach (var list in sizePairDictionary)
+            {
+                var fdeListOfSize = list.Value;
+                var seenHash = new Dictionary<byte[], int>(new ByteArrayComparer());
+                foreach (var flatDe in fdeListOfSize)
+                {
+                    var hash = flatDe.DirEntry.Hash;
+                    if (hash != null && !flatDe.DirEntry.IsPartialHash)   // because this is run on SizeDupe list it can have null hashes.
+                    {
+                        if (!seenHash.ContainsKey(hash))
+                        {
+                            seenHash[hash] = 0;
+                        }
+                        else
+                        {
+                            ++seenHash[hash];
+                        }
+                    }
+                }
+                sumOfUniqueHashesForEachSize = sumOfUniqueHashesForEachSize + (ulong)seenHash.Count;
+            }
+            return sumOfUniqueHashesForEachSize;
+        }
+
 
         [Test]
         public void GetDupePairs_CheckAllDupeFilesHaveFullHash_OK()
