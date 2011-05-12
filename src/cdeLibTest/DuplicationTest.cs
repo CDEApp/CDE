@@ -58,10 +58,10 @@ namespace cdeLibTest
 
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
             Assert.That(sizePairDictionary.Count, Is.EqualTo(2));
-
-            var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
-            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
-            Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(5));
+            Assert.Fail("broken");
+            //var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
+            //Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            //Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(5));
         }
 
         [Test]
@@ -111,9 +111,10 @@ namespace cdeLibTest
             Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
             //Assert.That(sizePairDictionary.Count, Is.EqualTo(15809));
 
-            var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
-            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
-            //Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(73939));
+            Assert.Fail("broken");
+            //var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize(sizePairDictionary);
+            //Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            ////Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(73939));
 
             var dupePairEnum = d.GetDupePairs(rootEntries);
 

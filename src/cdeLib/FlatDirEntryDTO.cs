@@ -1,4 +1,6 @@
-﻿namespace cdeLib
+﻿using Alphaleonis.Win32.Filesystem;
+
+namespace cdeLib
 {
 
     /// <summary>
@@ -15,6 +17,27 @@
         }
 
         public string FilePath { get; set; }
+        public DirEntry DirEntry { get; set; }
+    }
+
+    public class FlatDirEntry2
+    {
+        public FlatDirEntry2(CommonEntry parentEntry, DirEntry dirEntry)
+        {
+            ParentDirEntry = dirEntry;
+            DirEntry = dirEntry;
+        }
+
+        public string FilePath
+        { 
+            get
+            {
+                return Path.Combine(ParentDirEntry.FullPath, DirEntry.Name);
+            }
+        }
+
+        //public string FilePath { get; set; }
+        public DirEntry ParentDirEntry { get; set; }
         public DirEntry DirEntry { get; set; }
     }
 }

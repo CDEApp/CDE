@@ -184,6 +184,51 @@ namespace cdeLib
             }
         }
 
+        public static void TraverseAllTrees3(IEnumerable<RootEntry> rootEntries, Action<CommonEntry, DirEntry> action)
+        {
+            foreach (var rootEntry in rootEntries)
+            {
+                rootEntry.TraverseTree3(action);
+            }
+        }
+
+        // stripped down without fullpath carry along, see if it helps perf, it should some
+        public void TraverseTree3(string path, Action<CommonEntry, DirEntry> action)
+        {
+            var dirs = new Stack<CommonEntry>();
+            dirs.Push(this);
+
+            while (dirs.Count > 0)
+            {
+                var commonEntry = dirs.Pop();
+
+                foreach (var dirEntry in commonEntry.Children)
+                {
+                    if (action != null)
+                    {
+                        action(commonEntry, dirEntry);
+                    }
+
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirs.Push(dirEntry);
+                    }
+
+                    if (Hack.BreakConsoleFlag)
+                    {
+                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                        break;
+                    }
+                }
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
+                    break;
+                }
+            }
+        }
+
         public void TraverseTreesCopyHash(RootEntry destination)
         {
             var dirs = new Stack<Tuple<string, CommonEntry, CommonEntry>>();
