@@ -60,6 +60,8 @@ namespace cdeLib
         [ProtoMember(11, IsRequired = true)]
         public DateTime ScanEndUTC { get; set; }
 
+        public uint RootIndex;  // hackery with Entry and EntryStore
+
         public RootEntry ()
         {
             PathsWithUnauthorisedExceptions = new List<string>();
@@ -68,6 +70,16 @@ namespace cdeLib
         }
 
         public void PopulateRoot(string startPath)
+        {
+            startPath = GetRootEntry(startPath);
+
+            ScanStartUTC = DateTime.UtcNow;
+            RecurseTree(startPath);
+            ScanEndUTC = DateTime.UtcNow;
+            SetInMemoryFields();
+        }
+
+        public string GetRootEntry(string startPath)
         {
             startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
@@ -86,11 +98,7 @@ namespace cdeLib
             var dsi = Volume.GetDiskFreeSpace(RootPath);
             AvailSpace = dsi.FreeBytesAvailable;
             UsedSpace = dsi.TotalNumberOfBytes;
-
-            ScanStartUTC = DateTime.UtcNow;
-            RecurseTree(startPath);
-            ScanEndUTC = DateTime.UtcNow;
-            SetInMemoryFields();
+            return startPath;
         }
 
         public void SetInMemoryFields()
@@ -405,8 +413,8 @@ namespace cdeLib
             var pdee = GetPairDirEntries(this);
             foreach (var pairDirEntry in pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
             {
-                pairDirEntry.ChildDE.FullPath =
-                    Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
+                //pairDirEntry.ChildDE.FullPath =
+                    //Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
             }
         }
 

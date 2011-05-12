@@ -65,7 +65,7 @@ namespace cdeLib
 
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
-            Name = fs.FileName;
+            //Name = fs.FileName;
             try
             {
                 Modified = fs.LastModified;
@@ -87,25 +87,24 @@ namespace cdeLib
                 Size = (ulong)fs.FileSize;
             }
 
-            Hash = new byte[16]; // everyone has a hash
-            var DUMMY = 0x55FF55FFAADDEECCul;
-            Hash[0] = (byte)(DUMMY & 0xFF);
-            Hash[1] = (byte)(DUMMY >> 8 & 0xFF);
-            Hash[2] = (byte)(DUMMY >> 16 & 0xFF);
-            Hash[3] = (byte)(DUMMY >> 24 & 0xFF);
-            Hash[4] = (byte)(DUMMY >> 32 & 0xFF);
-            Hash[5] = (byte)(DUMMY >> 48 & 0xFF);
-            Hash[6] = (byte)(DUMMY >> 56 & 0xFF);
-            Hash[7] = (byte)(DUMMY & 0xFF);
-            Hash[8] = (byte)(DUMMY >> 8 & 0xFF);
-            Hash[9] = (byte)(DUMMY >> 16 & 0xFF);
-            Hash[10] = (byte)(DUMMY >> 24 & 0xFF);
-            Hash[11] = (byte)(DUMMY >> 32 & 0xFF);
-            Hash[12] = (byte)(DUMMY >> 48 & 0xFF);
-            Hash[13] = (byte)(DUMMY >> 56 & 0xFF);
-            Hash[14] = (byte)(DUMMY & 0xFF);
-            Hash[15] = (byte)(DUMMY & 0xFF);
+        //    Hash = new byte[16]; // everyone has a hash
+        //    var DUMMY = 0x55FF55FFAADDEECCul;
+        //    Hash[0] = (byte)(DUMMY & 0xFF);
+        //    Hash[1] = (byte)(DUMMY >> 8 & 0xFF);
+        //    Hash[2] = (byte)(DUMMY >> 16 & 0xFF);
+        //    Hash[3] = (byte)(DUMMY >> 24 & 0xFF);
+        //    Hash[4] = (byte)(DUMMY >> 32 & 0xFF);
+        //    Hash[5] = (byte)(DUMMY >> 48 & 0xFF);
+        //    Hash[6] = (byte)(DUMMY >> 56 & 0xFF);
+        //    Hash[7] = (byte)(DUMMY & 0xFF);
+        //    Hash[8] = (byte)(DUMMY >> 8 & 0xFF);
+        //    Hash[9] = (byte)(DUMMY >> 16 & 0xFF);
+        //    Hash[10] = (byte)(DUMMY >> 24 & 0xFF);
+        //    Hash[11] = (byte)(DUMMY >> 32 & 0xFF);
+        //    Hash[12] = (byte)(DUMMY >> 48 & 0xFF);
+        //    Hash[13] = (byte)(DUMMY >> 56 & 0xFF);
+        //    Hash[14] = (byte)(DUMMY & 0xFF);
+        //    Hash[15] = (byte)(DUMMY & 0xFF);
         }
-
     }
 }
