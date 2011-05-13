@@ -3,14 +3,15 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-    public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry> // is it weird to be both
+    public class PairDirEntryEnumerator : IEnumerator<PairDirEntry>, IEnumerable<PairDirEntry>
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
-        private DirEntry _current;
+        private PairDirEntry _current;
         private Stack<CommonEntry> _entries;
+        private CommonEntry _parentDirEntry;
         private IEnumerator<DirEntry> _childEnumerator;
 
-        public DirEntry Current
+        public PairDirEntry Current
         {
             get { return _current; }
         }
@@ -20,13 +21,13 @@ namespace cdeLib
             get { return Current; }
         }
 
-        public DirEntryEnumerator(RootEntry rootEntry)
+        public PairDirEntryEnumerator(RootEntry rootEntry)
         {
             _rootEntries = new List<RootEntry> { rootEntry };
             Reset();
-        }                                                   
+        }
 
-        public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
+        public PairDirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
         {
             _rootEntries = rootEntries;
             Reset();
@@ -57,6 +58,7 @@ namespace cdeLib
                 if (_entries.Count > 0)
                 {
                     var de = _entries.Pop();
+                    _parentDirEntry = de;
                     _childEnumerator = de.Children.GetEnumerator();
                 }
             }
@@ -65,10 +67,11 @@ namespace cdeLib
             {
                 if (_childEnumerator.MoveNext())
                 {
-                    _current = _childEnumerator.Current;
-                    if (_current.IsDirectory)
+                    var de = _childEnumerator.Current;
+                    _current = new PairDirEntry(_parentDirEntry, de);
+                    if (de.IsDirectory)
                     {
-                        _entries.Push(_current);
+                        _entries.Push(de);
                     }
                 }
                 else
@@ -88,14 +91,14 @@ namespace cdeLib
             _childEnumerator = null;
         }
 
-        IEnumerator<DirEntry> IEnumerable<DirEntry>.GetEnumerator()
+        IEnumerator<PairDirEntry> IEnumerable<PairDirEntry>.GetEnumerator()
         {
-            return new DirEntryEnumerator(_rootEntries);
+            return new PairDirEntryEnumerator(_rootEntries);
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return new DirEntryEnumerator(_rootEntries);
+            return new PairDirEntryEnumerator(_rootEntries);
         }
     }
 }
