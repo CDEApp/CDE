@@ -95,9 +95,9 @@ namespace cdeLibTest
             var dp = d.GetDupePairs(roots);
             var dp1 = dp.First();
 
-            var f1 = dp1.Value.FirstOrDefault(x => x.DirEntry == de4).DirEntry;
+            var f1 = dp1.Value.FirstOrDefault(x => x.ChildDE == de4).ChildDE;
             Assert.That(f1, Is.EqualTo(de4));
-            var f2 = dp1.Value.FirstOrDefault(x => x.DirEntry == de5).DirEntry;
+            var f2 = dp1.Value.FirstOrDefault(x => x.ChildDE == de5).ChildDE;
             Assert.That(f2, Is.EqualTo(de5));
         }
 
@@ -121,7 +121,7 @@ namespace cdeLibTest
             Console.WriteLine("Number of Dupe Pairs {0}", dupePairEnum.Count);
         }
 
-        public static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<FlatDirEntryDTO>>> sizePairDictionary)
+        public static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<PairDirEntry>>> sizePairDictionary)
         {
             var sumOfUniqueHashesForEachSize = 0ul;
             foreach (var list in sizePairDictionary)
@@ -130,35 +130,8 @@ namespace cdeLibTest
                 var seenHash = new Dictionary<byte[], int>(new ByteArrayComparer());
                 foreach (var flatDe in fdeListOfSize)
                 {
-                    var hash = flatDe.DirEntry.Hash;
-                    if (hash != null && !flatDe.DirEntry.IsPartialHash)   // because this is run on SizeDupe list it can have null hashes.
-                    {
-                        if (!seenHash.ContainsKey(hash))
-                        {
-                            seenHash[hash] = 0;
-                        }
-                        else
-                        {
-                            ++seenHash[hash];
-                        }
-                    }
-                }
-                sumOfUniqueHashesForEachSize = sumOfUniqueHashesForEachSize + (ulong)seenHash.Count;
-            }
-            return sumOfUniqueHashesForEachSize;
-        }
-
-        public static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<FlatDirEntry2>>> sizePairDictionary)
-        {
-            var sumOfUniqueHashesForEachSize = 0ul;
-            foreach (var list in sizePairDictionary)
-            {
-                var fdeListOfSize = list.Value;
-                var seenHash = new Dictionary<byte[], int>(new ByteArrayComparer());
-                foreach (var flatDe in fdeListOfSize)
-                {
-                    var hash = flatDe.DirEntry.Hash;
-                    if (hash != null && !flatDe.DirEntry.IsPartialHash)   // because this is run on SizeDupe list it can have null hashes.
+                    var hash = flatDe.ChildDE.Hash;
+                    if (hash != null && !flatDe.ChildDE.IsPartialHash)   // because this is run on SizeDupe list it can have null hashes.
                     {
                         if (!seenHash.ContainsKey(hash))
                         {
@@ -188,7 +161,7 @@ namespace cdeLibTest
             {
                 foreach (var de in dupe.Value)
                 {
-                    if (de.DirEntry.IsPartialHash)
+                    if (de.ChildDE.IsPartialHash)
                     {
                         Console.WriteLine("Trouble partial hash {0}", de.FilePath);
                         Assert.Fail();

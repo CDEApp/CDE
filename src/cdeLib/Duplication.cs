@@ -19,17 +19,14 @@ namespace cdeLib
 
         private readonly IConfiguration _configuration;
 
-        private readonly Dictionary<byte[], List<FlatDirEntryDTO>> _duplicateFile =
-            new Dictionary<byte[], List<FlatDirEntryDTO>>(new ByteArrayComparer());
+        private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateFile =
+            new Dictionary<byte[], List<PairDirEntry>>(new ByteArrayComparer());
 
-        private readonly Dictionary<ulong, List<FlatDirEntryDTO>> _duplicateFileSize =
-            new Dictionary<ulong, List<FlatDirEntryDTO>>();
+        private readonly Dictionary<ulong, List<PairDirEntry>> _duplicateFileSize2 =
+            new Dictionary<ulong, List<PairDirEntry>>();
 
-        private readonly Dictionary<ulong, List<FlatDirEntry2>> _duplicateFileSize2 =
-            new Dictionary<ulong, List<FlatDirEntry2>>();
-
-        private readonly Dictionary<byte[], List<FlatDirEntryDTO>> _duplicateForFullHash =
-            new Dictionary<byte[], List<FlatDirEntryDTO>>(new ByteArrayComparer());
+        private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateForFullHash =
+            new Dictionary<byte[], List<PairDirEntry>>(new ByteArrayComparer());
 
         private readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
@@ -101,7 +98,7 @@ namespace cdeLib
                                                                                                     {
                                                                                                         CalculatePartialMD5Hash
                                                                                                             (flatFile.FilePath,
-                                                                                                             flatFile.DirEntry);
+                                                                                                             flatFile.ChildDE);
                                                                                                         if (Hack.BreakConsoleFlag)
                                                                                                         {
                                                                                                             //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
@@ -153,13 +150,13 @@ namespace cdeLib
             }
         }
 
-        public IDictionary<ulong, List<FlatDirEntry2>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
+        public IDictionary<ulong, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseAllTrees3(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize2.Count));
 
             //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
-            _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x=>_duplicateFileSize.Remove(x.Key));
+            _duplicateFileSize2.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize2.Remove(x.Key));
             _logger.LogDebug(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize2.Count));
             return _duplicateFileSize2;
         }
@@ -210,32 +207,14 @@ namespace cdeLib
                 return;
             }
 
-            var flatDirEntry = new FlatDirEntry2(ce, de);
+            var flatDirEntry = new PairDirEntry(ce, de);
             if (_duplicateFileSize2.ContainsKey(de.Size))
             {
                 _duplicateFileSize2[de.Size].Add(flatDirEntry);
             }
             else
             {
-                _duplicateFileSize2[de.Size] = new List<FlatDirEntry2> { flatDirEntry };
-            }
-        }
-
-        private void FindMatchesOnFileSize(string filePath, DirEntry de)
-        {
-            if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
-            {
-                return;
-            }
-
-            var flatDirEntry = new FlatDirEntryDTO(filePath, de);
-            if (_duplicateFileSize.ContainsKey(de.Size))
-            {
-                _duplicateFileSize[de.Size].Add(flatDirEntry);
-            }
-            else
-            {
-                _duplicateFileSize[de.Size] = new List<FlatDirEntryDTO> {flatDirEntry};
+                _duplicateFileSize2[de.Size] = new List<PairDirEntry> { flatDirEntry };
             }
         }
 
@@ -337,23 +316,20 @@ namespace cdeLib
 
         private void BuildDuplicateListIncludePartialHash(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Name ?? "dnull";
-            var fullPath = Path.Combine(a, b);
             if (dirEntry.IsDirectory || dirEntry.Hash == null || dirEntry.Size == 0)
             {
                 //TODO: how to deal with uncalculated files?
                 return;
             }
 
-            var info = new FlatDirEntryDTO(fullPath, dirEntry);
+            var info = new PairDirEntry(parentEntry, dirEntry);
             if (_duplicateFile.ContainsKey(dirEntry.KeyHash))
             {
                 _duplicateFile[dirEntry.KeyHash].Add(info);
             }
             else
             {
-                _duplicateFile[dirEntry.KeyHash] = new List<FlatDirEntryDTO> {info};
+                _duplicateFile[dirEntry.KeyHash] = new List<PairDirEntry> { info };
             }
         }
 
@@ -376,7 +352,7 @@ namespace cdeLib
             }
         }
 
-        public IList<KeyValuePair<byte[], List<FlatDirEntryDTO>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
+        public IList<KeyValuePair<byte[], List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseAllTrees3(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();
