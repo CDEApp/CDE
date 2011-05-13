@@ -95,9 +95,7 @@ namespace cdeLib
             if (dirEntry.Name.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
             {
                 ++_totalFound;
-                var a = parentEntry.FullPath ?? "pnull";
-                var b = dirEntry.Name ?? "dnull";
-                var fullPath = Path.Combine(a, b);
+                var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                 Console.WriteLine("found {0}", fullPath);
             }
         }
@@ -107,18 +105,14 @@ namespace cdeLib
             if (_regex.IsMatch(dirEntry.Name))
             {
                 ++_totalFound;
-                var a = parentEntry.FullPath ?? "pnull";
-                var b = dirEntry.Name ?? "dnull";
-                var fullPath = Path.Combine(a, b);
+                var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                 Console.WriteLine("found {0}", fullPath);
             }
         }
 
         private static void MatchRegexFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Name ?? "dnull";
-            var fullPath = Path.Combine(a, b);
+            var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
             if (_regex.IsMatch(fullPath))
             {
                 ++_totalFound;

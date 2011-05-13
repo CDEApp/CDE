@@ -257,10 +257,11 @@ namespace cdeLib
             }
         }
 
-        // want to keep Alphaleonis out of the references of the main cde app.
-        public virtual string Combine(string name)
+        public static string MakeFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            return Path.Combine(FullPath, name);
+            var a = parentEntry.FullPath ?? "pnull";
+            var b = dirEntry.Name ?? "dnull";
+            return Path.Combine(a, b);
         }
 
         public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)

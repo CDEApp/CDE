@@ -9,12 +9,7 @@ namespace cdeLib
 
         public string FilePath
         {
-            get
-            {
-                var a = ParentDE.FullPath ?? "<<pnull>>";
-                var b = ChildDE.Name ?? "<<dnull>>";
-                return Path.Combine(a, b);
-            }
+            get { return CommonEntry.MakeFullPath(ParentDE, ChildDE); }
         }
 
         public PairDirEntry(CommonEntry parent, DirEntry child)

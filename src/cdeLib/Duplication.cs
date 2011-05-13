@@ -290,11 +290,6 @@ namespace cdeLib
 
         private void CalculateFullMD5Hash(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Name ?? "dnull";
-            var fullPath = Path.Combine(a, b); if (dirEntry.IsDirectory)
-                return;
-
             //ignore if we already have a hash.
             if (dirEntry.Hash != null)
             {
@@ -305,6 +300,7 @@ namespace cdeLib
 
                 if (_duplicateForFullHash.ContainsKey(dirEntry.KeyHash))
                 {
+                    var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                     CalculateMD5Hash(fullPath, dirEntry, false);
                 }
             }

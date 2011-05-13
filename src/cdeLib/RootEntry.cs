@@ -361,10 +361,11 @@ namespace cdeLib
         public void SetFullPath()
         {
             var pdee = GetPairDirEntries(this);
-            foreach (var pairDirEntry in pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
+            foreach (var pairDirEntry in 
+                pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
             {
-                pairDirEntry.ChildDE.FullPath =
-                    Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
+                pairDirEntry.ChildDE.FullPath = 
+                    MakeFullPath(pairDirEntry.ParentDE, pairDirEntry.ChildDE);
             }
         }
 
