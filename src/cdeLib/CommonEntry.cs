@@ -263,6 +263,16 @@ namespace cdeLib
             return Path.Combine(FullPath, name);
         }
 
+        public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
+        {
+            return new DirEntryEnumerator(rootEntry);
+        }
+
+        public static IEnumerable<DirEntry> GetDirEntries(List<RootEntry> rootEntries)
+        {
+            return new DirEntryEnumerator(rootEntries);
+        }
+
         public static IEnumerable<PairDirEntry> GetPairDirEntries(RootEntry rootEntry)
         {
             return new PairDirEntryEnumerator(rootEntry);
