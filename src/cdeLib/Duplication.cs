@@ -15,14 +15,12 @@ namespace cdeLib
 
     public class Duplication
     {
-        
-
         private readonly IConfiguration _configuration;
 
         private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateFile =
             new Dictionary<byte[], List<PairDirEntry>>(new ByteArrayComparer());
 
-        private readonly Dictionary<ulong, List<PairDirEntry>> _duplicateFileSize2 =
+        private readonly Dictionary<ulong, List<PairDirEntry>> _duplicateFileSize =
             new Dictionary<ulong, List<PairDirEntry>>();
 
         private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateForFullHash =
@@ -89,30 +87,28 @@ namespace cdeLib
             {
               
                 Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) =>
-                                                                           {
-                                                                               var parallelOptions = new ParallelOptions();
-                                                                               parallelOptions.MaxDegreeOfParallelism = _configuration.ProgressUpdateInterval;
-                                                                               parallelOptions.CancellationToken = token;
-                                                                               Parallel.ForEach(grp, parallelOptions,
-                                                                                                (flatFile, innerLoopState) =>
-                                                                                                    {
-                                                                                                        CalculatePartialMD5Hash
-                                                                                                            (flatFile.FilePath,
-                                                                                                             flatFile.ChildDE);
-                                                                                                        if (Hack.BreakConsoleFlag)
-                                                                                                        {
-                                                                                                            //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
-                                                                                                            cts.Cancel();
-                                                                                                            parallelOptions.CancellationToken.ThrowIfCancellationRequested();
-                                                                                                        }
+                    {
+                        var parallelOptions = new ParallelOptions();
+                        parallelOptions.MaxDegreeOfParallelism = _configuration.ProgressUpdateInterval;
+                        parallelOptions.CancellationToken = token;
+                        Parallel.ForEach(grp, parallelOptions,
+                            (flatFile, innerLoopState) =>
+                                {
+                                    CalculatePartialMD5Hash(flatFile.FilePath, flatFile.ChildDE);
+                                    if (Hack.BreakConsoleFlag)
+                                    {
+                                        //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
+                                        cts.Cancel();
+                                        parallelOptions.CancellationToken.ThrowIfCancellationRequested();
+                                    }
 
-                                                                                                        if (Hack.BreakConsoleFlag)
-                                                                                                        {
-                                                                                                            //Console.WriteLine ("\nBreak key detected exiting hashing phase outer.");
-                                                                                                            cts.Cancel();
-                                                                                                        }
-                                                                                                    });
-                                                                           });
+                                    if (Hack.BreakConsoleFlag)
+                                    {
+                                        //Console.WriteLine ("\nBreak key detected exiting hashing phase outer.");
+                                        cts.Cancel();
+                                    }
+                                });
+                    });
             }
             catch (Exception ex)
             {
@@ -131,8 +127,8 @@ namespace cdeLib
             _logger.LogInfo("");
             timer.Stop();
             var perf = string.Format("{0:F2} MB/s",
-                                     ((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/
-                                     (1024.0*1024.0)
+                    ((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/
+                    (1024.0*1024.0)
                 );
 
             var statsMessage =
@@ -153,12 +149,12 @@ namespace cdeLib
         public IDictionary<ulong, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseAllTreesPair(rootEntries, FindMatchesOnFileSize2);
-            _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize2.Count));
+            _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
 
             //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
-            _duplicateFileSize2.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize2.Remove(x.Key));
-            _logger.LogDebug(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize2.Count));
-            return _duplicateFileSize2;
+            _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize.Remove(x.Key));
+            _logger.LogDebug(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            return _duplicateFileSize;
         }
 
         private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
@@ -208,13 +204,13 @@ namespace cdeLib
             }
 
             var flatDirEntry = new PairDirEntry(ce, de);
-            if (_duplicateFileSize2.ContainsKey(de.Size))
+            if (_duplicateFileSize.ContainsKey(de.Size))
             {
-                _duplicateFileSize2[de.Size].Add(flatDirEntry);
+                _duplicateFileSize[de.Size].Add(flatDirEntry);
             }
             else
             {
-                _duplicateFileSize2[de.Size] = new List<PairDirEntry> { flatDirEntry };
+                _duplicateFileSize[de.Size] = new List<PairDirEntry> { flatDirEntry };
             }
         }
 
