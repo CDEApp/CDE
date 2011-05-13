@@ -361,11 +361,6 @@ namespace cdeLib
             return re;
         }
 
-        public void TraverseTree(Action<string, DirEntry> apply)
-        {
-            TraverseTree(RootPath, apply);
-        }
-
         public void TraverseTree2(Action<DirEntry> apply)
         {
             TraverseTree2(RootPath, apply);

@@ -61,10 +61,6 @@ namespace cde
             }
             else if (args.Length == 1 && param0 == "--treedump1")
             {
-                PrintPathsHaveHash();
-            }
-            else if (args.Length == 1 && param0 == "--treedump2")
-            {
                 PrintPathsHaveHashEnumerator();
             }
             else if (args.Length == 1 && param0 == "--version")
@@ -202,12 +198,6 @@ namespace cde
         public static void ScanEndofEntries()
         {
             Console.WriteLine("");
-        }
-
-        private static void PrintPathsHaveHash()
-        {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            CommonEntry.TraverseAllTrees(rootEntries, PrintPathWithHash);
         }
 
         private static void PrintPathWithHash(string filePath, DirEntry de)

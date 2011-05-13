@@ -90,55 +90,6 @@ namespace cdeLib
             Size = size;
         }
 
-        public static void TraverseAllTrees(IEnumerable<RootEntry> rootEntries, Action<string, DirEntry> action)
-        {
-            foreach (var rootEntry in rootEntries)
-            {
-                rootEntry.TraverseTree(action);
-            }
-        }
-
-
-
-        public void TraverseTree(string path, Action<string, DirEntry> action)
-        {
-            var dirs = new Stack<Tuple<CommonEntry, string>>();
-            dirs.Push(Tuple.Create(this, path));
-
-            while (dirs.Count > 0)
-            {
-                var t = dirs.Pop();
-                var commonEntry = t.Item1;
-                var workPath = t.Item2;
-
-                foreach (var dirEntry in commonEntry.Children)
-                {
-                    var fullPath = Path.Combine(workPath, dirEntry.Name);
-                    if (action != null)
-                    {
-                        action(fullPath, dirEntry);
-                    }
-
-                    if (dirEntry.IsDirectory)
-                    {
-                        dirs.Push(Tuple.Create((CommonEntry)dirEntry, fullPath));
-                    }
-
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                        break;
-                    }
-                }
-
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
-                    break;
-                }
-            }
-        }
-
         public static void TraverseAllTrees2(IEnumerable<RootEntry> rootEntries, Action<DirEntry> action)
         {
             foreach (var rootEntry in rootEntries)

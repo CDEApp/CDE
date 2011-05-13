@@ -128,7 +128,7 @@ namespace cdeLibTest
     [TestFixture]
     public class TestPerformance_TraverseTree_DirEntryEnumerator
     {
-        private ulong _num;
+        //private ulong _num;
         private ulong _fileCount;
 
         [Ignore("Its a performance test needs .cde file in current dir.")]
@@ -137,7 +137,7 @@ namespace cdeLibTest
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
 
-            _num = 0;
+            //_num = 0;
             _fileCount = 0;
             var sw = new Stopwatch();
             sw.Start();
@@ -146,7 +146,7 @@ namespace cdeLibTest
                 var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
                 foreach (var dirEntry in deEnumerator)
                 {
-                    _num += (ulong)dirEntry.FullPath.Length;
+                    //_num += (ulong)dirEntry.FullPath.Length;
                     ++_fileCount;
                     if (Hack.BreakConsoleFlag)
                     {
@@ -160,25 +160,25 @@ namespace cdeLibTest
             var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
             Console.WriteLine("took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
-            Console.WriteLine("Total path length : {0}", _num);
+            //Console.WriteLine("Total path length : {0}", _num);
 
             var re = rootEntries.First();
             sw.Start();
-            _num = 0;
+            //_num = 0;
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
-                re.TraverseTree(DoAction);
+                re.TraverseTree3(DoAction);
             }
             sw.Stop();
             ts = sw.Elapsed;
             elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
             Console.WriteLine("took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
-            Console.WriteLine("Total path length : {0}", _num);
+            //Console.WriteLine("Total path length : {0}", _num);
 
             sw.Start();
-            _num = 0;
+            //_num = 0;
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
@@ -189,19 +189,19 @@ namespace cdeLibTest
             elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
             Console.WriteLine("took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
-            Console.WriteLine("Total path length : {0}", _num);
+            //Console.WriteLine("Total path length : {0}", _num);
         }
 
-        private void DoAction(string fullPath, DirEntry dirEntry)
+        private void DoAction(CommonEntry parentEntry, DirEntry dirEntry)
         {
             ++_fileCount;
-            _num += (ulong)dirEntry.FullPath.Length;
+            //_num += (ulong)dirEntry.FullPath.Length;
         }
 
         private void DoAction2(DirEntry dirEntry)
         {
             ++_fileCount;
-            _num += (ulong)dirEntry.FullPath.Length;
+            //_num += (ulong)dirEntry.FullPath.Length;
         }
     }
     // ReSharper restore InconsistentNaming

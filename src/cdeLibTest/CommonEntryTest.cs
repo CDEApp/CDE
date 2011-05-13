@@ -21,34 +21,34 @@ namespace cdeLibTest
         [Test]
         public void TraverseTree_EmptyTree_ActionNotRun()
         {
-            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
-            mockAction.Stub(x => x("", null));
+            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            mockAction.Stub(x => x(null, null));
             var de = new DirEntry();
 
-            de.TraverseTree("", mockAction);
+            de.TraverseTree3("", mockAction);
 
-            mockAction.AssertWasNotCalled(x => x("", null));
+            mockAction.AssertWasNotCalled(x => x(null, null));
         }
 
         [Test]
         public void TraverseTree_SingleChildTree_CallsActionOnChild()
         {
-            var de1 = new DirEntry { Name = "d1" };// only looks at Children for recurse.
+            var de1 = new DirEntry { Name = "d1", FullPath = "Mooo"}; // only looks at Children for recurse.
             var de2 = new DirEntry { Name = "d2" };
             de1.Children.Add(de2);
 
-            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
-            mockAction.Stub(x => x("d2", de2));
+            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            mockAction.Stub(x => x(de1, de2));
 
-            de1.TraverseTree("", mockAction);
+            de1.TraverseTree3("", mockAction);
 
-            mockAction.AssertWasCalled(x => x("d2", de2));
+            mockAction.AssertWasCalled(x => x(de1, de2));
         }
 
         [Test]
         public void TraverseTree_TreeHeirarchy_CallsActionOnAllChildren()
         {
-            var re1 = new RootEntry { RootPath = "" };
+            var re1 = new RootEntry { RootPath = @"Z:\" };
             var de2a = new DirEntry { Name = "d2a" };
             var de2b = new DirEntry { Name = "d2b", IsDirectory = true };
             var de2c = new DirEntry { Name = "d2c" };
@@ -59,18 +59,19 @@ namespace cdeLibTest
             de2b.Children.Add(de3a);
             var de4a = new DirEntry { Name = "d4a" };
             de3a.Children.Add(de4a);
+            re1.SetInMemoryFields();
 
-            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             using (mockAction.GetMockRepository().Ordered())
             {
-                mockAction.Expect(x => x(@"d2a", de2a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b", de2b)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2c", de2c)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b\d3a", de3a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b\d3a\d4a", de4a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1);
+                mockAction.Expect(x => x(de2b, de3a)).Repeat.Times(1);
+                mockAction.Expect(x => x(de3a, de4a)).Repeat.Times(1);
             }
 
-            re1.TraverseTree("", mockAction);
+            re1.TraverseTree3("", mockAction);
 
             mockAction.VerifyAllExpectations();
         }
@@ -103,23 +104,23 @@ namespace cdeLibTest
             var bde4a = new DirEntry { Name = "d4a" };
             bde3a.Children.Add(bde4a);
 
-            var mockAction = MockRepository.GenerateMock<Action<string, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             using (mockAction.GetMockRepository().Ordered())
             {
-                mockAction.Expect(x => x(@"d2a", de2a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b", de2b)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2c", de2c)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b\d3a", de3a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"d2b\d3a\d4a", de4a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1);
+                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1);
+                mockAction.Expect(x => x(de2b, de3a)).Repeat.Times(1);
+                mockAction.Expect(x => x(de3a, de4a)).Repeat.Times(1);
 
-                mockAction.Expect(x => x(@"2\d2a", bde2a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"2\d2b", bde2b)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"2\d2c", bde2c)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"2\d2b\d3a", bde3a)).Repeat.Times(1);
-                mockAction.Expect(x => x(@"2\d2b\d3a\d4a", bde4a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re2, bde2a)).Repeat.Times(1);
+                mockAction.Expect(x => x(re2, bde2b)).Repeat.Times(1);
+                mockAction.Expect(x => x(re2, bde2c)).Repeat.Times(1);
+                mockAction.Expect(x => x(bde2b, bde3a)).Repeat.Times(1);
+                mockAction.Expect(x => x(bde3a, bde4a)).Repeat.Times(1);
             }
 
-            CommonEntry.TraverseAllTrees(new List<RootEntry> { re1, re2 }, mockAction);
+            CommonEntry.TraverseAllTrees3(new List<RootEntry> { re1, re2 }, mockAction);
 
             mockAction.VerifyAllExpectations();
         }

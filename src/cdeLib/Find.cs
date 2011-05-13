@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
+using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 
 namespace cdeLib
@@ -36,7 +37,7 @@ namespace cdeLib
                     break;
             }
 
-            Action<string, DirEntry> matchAction;
+            Action<CommonEntry, DirEntry> matchAction;
             _totalFound = 0u;
             switch (paramString)
             {
@@ -60,7 +61,7 @@ namespace cdeLib
             GetDirCache();
             foreach (var rootEntry in _rootEntries)
             {
-                rootEntry.TraverseTree(rootEntry.RootPath, matchAction);
+                rootEntry.TraverseTree3(rootEntry.RootPath, matchAction);
             }
 
             if (_totalFound > 0)
@@ -89,8 +90,11 @@ namespace cdeLib
             }
         }
 
-        private static void MatchSubstringName(string fullPath, DirEntry dirEntry)
+        private static void MatchSubstringName(CommonEntry parentEntry, DirEntry dirEntry)
         {
+            var a = parentEntry.FullPath ?? "pnull";
+            var b = dirEntry.Name ?? "dnull";
+            var fullPath = Path.Combine(a, b);
             if (dirEntry.Name.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
             {
                 ++_totalFound;
@@ -98,8 +102,11 @@ namespace cdeLib
             }
         }
 
-        private static void MatchRegexName(string fullPath, DirEntry dirEntry)
+        private static void MatchRegexName(CommonEntry parentEntry, DirEntry dirEntry)
         {
+            var a = parentEntry.FullPath ?? "pnull";
+            var b = dirEntry.Name ?? "dnull";
+            var fullPath = Path.Combine(a, b);
             if (_regex.IsMatch(dirEntry.Name))
             {
                 ++_totalFound;
@@ -107,8 +114,11 @@ namespace cdeLib
             }
         }
 
-        private static void MatchRegexFullPath(string fullPath, DirEntry dirEntry)
+        private static void MatchRegexFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
+            var a = parentEntry.FullPath ?? "pnull";
+            var b = dirEntry.Name ?? "dnull";
+            var fullPath = Path.Combine(a, b);
             if (_regex.IsMatch(fullPath))
             {
                 ++_totalFound;
