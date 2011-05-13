@@ -1,7 +1,8 @@
 using Autofac;
+using cdeLib;
 using cdeLib.Infrastructure;
 
-namespace cdeLib
+namespace cde
 {
     /// <summary>
     /// IoC Bootstrapper

@@ -1,24 +1,24 @@
 ﻿using System;
-using System.IO;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
-using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
 using Path = Alphaleonis.Win32.Filesystem.Path;
 
 namespace AlphaFSTest
 {
     [TestFixture]
+    // ReSharper disable InconsistentNaming
     public class AlphaFSToys
+    // ReSharper restore InconsistentNaming
     {
         [Ignore] // i got it wrong at moment
         [Test]
         public void GetVolumePathNamesForVolume()
         {
-            var vol = @"C:\temp";
+            const string vol = @"C:\temp";
             var vp = Volume.GetVolumePathNamesForVolume(vol);
             foreach (var s in vp)
             {
@@ -29,7 +29,7 @@ namespace AlphaFSTest
         [Test]
         public void GetVolumeInformation()
         {
-            var vol = @"C:\";
+            const string vol = @"C:\";
             var vi = Volume.GetVolumeInformation(vol); // requires a root voluem specifier it seems
             Console.WriteLine("vi.FileSystemName {0}", vi.FileSystemName);
             Console.WriteLine("vi.MaximumComponentLength {0}", vi.MaximumComponentLength);
@@ -41,7 +41,7 @@ namespace AlphaFSTest
         [Test]
         public void GetDiskFreeSpace()
         {
-            var path = @"C:\temp";
+            const string path = @"C:\temp";
             var dsi = Volume.GetDiskFreeSpace(path);
             Console.WriteLine("FreeBytesAvailable {0}", dsi.FreeBytesAvailable);
             Console.WriteLine("TotalNumberOfBytes {0}", dsi.TotalNumberOfBytes);
@@ -163,8 +163,8 @@ namespace AlphaFSTest
         [Test]
         public void GetFilesWithExtension_AFileNotEndingInButContainingPatternIsReturend_NotSureWhy()
         {
-            var name1 = "G-SN750B_02_S13UJ1NQ221583.cde";
-            var name2 = "G-SN750B_02_S13UJ1NQ221583.cde-backup-with-hash";
+            const string name1 = "G-SN750B_02_S13UJ1NQ221583.cde";
+            const string name2 = "G-SN750B_02_S13UJ1NQ221583.cde-backup-with-hash";
             var f1 = File.Create(name1);
             var f2 = File.Create(name2);
             f1.Close();

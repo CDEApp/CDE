@@ -25,7 +25,7 @@ namespace cdeWinFormsPresenter
             throw new NotImplementedException();
         }
 
-        static int _count = 0;
+        static int _count;
         public void OnButtonClick()
         {
             ++_count;

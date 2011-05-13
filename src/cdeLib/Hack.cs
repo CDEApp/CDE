@@ -1,8 +1,8 @@
 ﻿
 namespace cdeLib
 {
-    public class Hack
+    public static class Hack
     {
-        public static volatile bool BreakConsoleFlag = false;
+        public static volatile bool BreakConsoleFlag; // False is default
     }
 }

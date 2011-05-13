@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Hashing;
 using NUnit.Framework;
 
 namespace cdeLibTest.Infrastructure

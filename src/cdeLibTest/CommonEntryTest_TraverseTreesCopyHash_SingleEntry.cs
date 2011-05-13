@@ -20,7 +20,7 @@ namespace cdeLibTest
             SetupRootDestTest1();
         }
 
-        public void SetupRootDestTest1()
+        private void SetupRootDestTest1()
         {
             rootSource = new RootEntry { RootPath = @"C:\" };
             deSource = GetNewTestF1();
@@ -33,7 +33,7 @@ namespace cdeLibTest
             rootDest.Children.Add(deDest);
         }
 
-        public DirEntry GetNewTestF1()
+        private static DirEntry GetNewTestF1()
         {
             return new DirEntry
                        {

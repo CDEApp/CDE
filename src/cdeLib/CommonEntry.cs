@@ -11,6 +11,7 @@ namespace cdeLib
     ,ProtoInclude(2, typeof(DirEntry))]
     public abstract class CommonEntry
     {
+        // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = true)]
         public ICollection<DirEntry> Children { get; set; }
 
@@ -19,6 +20,7 @@ namespace cdeLib
 
         //[ProtoMember(5, IsRequired = true)] No longer saving set on load or scan.
         public uint FileCount { get; set; }
+        // ReSharper restore MemberCanBePrivate.Global
 
         [ProtoMember(6, IsRequired = true)]
         public ulong Size { get; set; }
@@ -269,7 +271,7 @@ namespace cdeLib
             return new DirEntryEnumerator(rootEntry);
         }
 
-        public static IEnumerable<DirEntry> GetDirEntries(List<RootEntry> rootEntries)
+        public static IEnumerable<DirEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
         {
             return new DirEntryEnumerator(rootEntries);
         }
@@ -279,7 +281,7 @@ namespace cdeLib
             return new PairDirEntryEnumerator(rootEntry);
         }
 
-        public static IEnumerable<PairDirEntry> GetPairDirEntries(List<RootEntry> rootEntries)
+        public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
         {
             return new PairDirEntryEnumerator(rootEntries);
         }

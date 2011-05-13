@@ -14,7 +14,7 @@ namespace cdeLibTest.Infrastructure
 {
     public class DuplicationTests
     {
-        public const string FolderName = "test";
+        private const string FolderName = "test";
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
@@ -22,16 +22,12 @@ namespace cdeLibTest.Infrastructure
         [TearDown]
         public void Teardown()
         {
-            
-
-
             Directory.Delete(FolderName, true);
             var files = Directory.GetFiles(".\\", "*.cde");
             foreach (var file in files)
             {
                 Alphaleonis.Win32.Filesystem.File.Delete(file);
             }
-
         }
 
         [SetUp]
@@ -79,7 +75,7 @@ namespace cdeLibTest.Infrastructure
         [Test]
         public void CanFindDuplicates()
         {
-            var duplication = new Duplication(_logger, _configuration, _applicationDiagnostics); ;
+            var duplication = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry();
             rootEntry.PopulateRoot(String.Format("{0}\\",FolderName));
             var rootEntries = new List<RootEntry> {rootEntry};
@@ -90,11 +86,12 @@ namespace cdeLibTest.Infrastructure
 
         }
 
+        // ReSharper disable InconsistentNaming
         [Test]
         public void Can_Acquire_hash_From_File()
         {
             var hashHelper = new HashHelper();
-            var hash = hashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
+            var hash = HashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
             Assert.IsNotNull(hash.Hash);
 
         }
@@ -103,13 +100,14 @@ namespace cdeLibTest.Infrastructure
         [Ignore]
         public void Test_Memory_Usage_Of_MD5_Stream()
         {
-            Process currentProcess = System.Diagnostics.Process.GetCurrentProcess();
+            Process currentProcess = Process.GetCurrentProcess();
             long totalBytesOfMemoryUsed = currentProcess.WorkingSet64;
             Console.WriteLine("Memory Usage {0}",totalBytesOfMemoryUsed);
             var hashHelper = new HashHelper();
-            var hash = hashHelper.GetMD5HashFromFile("C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
+            var hash = HashHelper.GetMD5HashFromFile("C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
             // get the current process
             // get the physical mem usage
         }
+        // ReSharper restore InconsistentNaming
     }
 }

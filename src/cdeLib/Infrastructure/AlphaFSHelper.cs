@@ -5,7 +5,7 @@ using Directory = Alphaleonis.Win32.Filesystem.Directory;
 
 namespace cdeLib.Infrastructure
 {
-    public class AlphaFSHelper
+    public static class AlphaFSHelper
     {
         // Bug in either AlphaFS or the Win32 either way here is a work around.
         public static string[] GetFilesWithExtension(string extension)

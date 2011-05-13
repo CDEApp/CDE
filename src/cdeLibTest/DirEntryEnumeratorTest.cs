@@ -9,20 +9,20 @@ namespace cdeLibTest
 {
     public class DirEntryTestBase
     {
-        protected RootEntry Re1;
+        private RootEntry _re1;
         protected DirEntry De1;
         protected DirEntry Fe2;
         protected List<RootEntry> RootEntries;
 
-        public void RebuildTestRoot()
+        protected void RebuildTestRoot()
         {
-            Re1 = new RootEntry { RootPath = @"C:\" };
+            _re1 = new RootEntry { RootPath = @"C:\" };
             De1 = new DirEntry { Name = @"de1", IsDirectory = true };
             Fe2 = new DirEntry { Name = @"fe2" };
             De1.Children.Add(Fe2);
-            Re1.Children.Add(De1);
-            Re1.SetInMemoryFields();
-            RootEntries = new List<RootEntry> { Re1 };
+            _re1.Children.Add(De1);
+            _re1.SetInMemoryFields();
+            RootEntries = new List<RootEntry> { _re1 };
         }
     }
 

@@ -1,11 +1,9 @@
-﻿using Alphaleonis.Win32.Filesystem;
-
-namespace cdeLib
+﻿namespace cdeLib
 {
     public class PairDirEntry
     {
-        public CommonEntry ParentDE;
-        public DirEntry ChildDE;
+        public readonly CommonEntry ParentDE;
+        public readonly DirEntry ChildDE;
 
         public string FilePath
         {

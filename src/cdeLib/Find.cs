@@ -1,12 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
-    public class Find
+    public static class Find
     {
         public const string ParamFind = "--find";
         public const string ParamGrep = "--grep";

@@ -230,7 +230,7 @@ namespace cdeLib
                     {
                         return;
                     }
-                    var hashResponse = hashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
+                    var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
 
                     if (hashResponse != null)
                     {
@@ -268,7 +268,7 @@ namespace cdeLib
                     {
                         return;
                     }
-                    var hashResponse = hashHelper.GetMD5HashFromFile(fullPath);
+                    var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
                     if (hashResponse != null)
                     {
                         de.Hash = hashResponse.Hash;

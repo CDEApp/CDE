@@ -1,4 +1,5 @@
 ﻿using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLibTest.Infrastructure
 {

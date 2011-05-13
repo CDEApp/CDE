@@ -1,6 +1,6 @@
 using System;
 
-namespace cdeLib.Infrastructure
+namespace cdeLib.Infrastructure.Hashing
 {
     public interface IHashAlgorithm
     {

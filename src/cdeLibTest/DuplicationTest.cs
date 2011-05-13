@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using Autofac;
 using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Comparer;
@@ -13,7 +12,6 @@ namespace cdeLibTest
     [TestFixture]
     class DuplicationTest
     {
-
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
@@ -121,7 +119,7 @@ namespace cdeLibTest
             Console.WriteLine("Number of Dupe Pairs {0}", dupePairEnum.Count);
         }
 
-        public static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<PairDirEntry>>> sizePairDictionary)
+        private static ulong GetSumOfUniqueHashesForEachSize(IEnumerable<KeyValuePair<ulong, List<PairDirEntry>>> sizePairDictionary)
         {
             var sumOfUniqueHashesForEachSize = 0ul;
             foreach (var list in sizePairDictionary)

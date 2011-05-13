@@ -213,7 +213,7 @@ namespace cdeLib
             return hint;
         }
 
-        public string SafeFileName(string path)
+        public static string SafeFileName(string path)
         {
             return path.Replace('\\', '_')
                         .Replace('$', '_')

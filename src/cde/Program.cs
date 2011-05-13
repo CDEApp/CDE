@@ -7,7 +7,7 @@ using cdeLib.Infrastructure;
 
 namespace cde
 {
-    class Program
+    static class Program
     {
         public static IContainer Container;
         public static string Version
@@ -190,20 +190,14 @@ namespace cde
             Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
         }
 
-        public static void ScanCountPrintDot()
+        private static void ScanCountPrintDot()
         {
             Console.Write(".");
         }
 
-        public static void ScanEndofEntries()
+        private static void ScanEndofEntries()
         {
             Console.WriteLine("");
-        }
-
-        private static void PrintPathWithHash(string filePath, DirEntry de)
-        {
-            var hash = de.Hash == null ? " " : "#";
-            Console.WriteLine("{0}{1}", hash, filePath);
         }
 
         private static void PrintPathsHaveHashEnumerator()
@@ -219,6 +213,3 @@ namespace cde
         }
     }
 }
-
-
-// IDEA test a list of fullpaths.

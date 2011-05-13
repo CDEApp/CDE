@@ -34,7 +34,7 @@ namespace cdeLib.Infrastructure.Hashing
             return GetMD5HashResponseFromFile(filename, bytesToHash).Hash;
         }
 
-        public HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
+        public static HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
         {
             var hashResponse = new HashResponse();
             try
@@ -71,8 +71,7 @@ namespace cdeLib.Infrastructure.Hashing
             }
         }
 
-
-        public HashResponse GetMD5HashFromFile(string filename)
+        public static HashResponse GetMD5HashFromFile(string filename)
         {
             try
             {
