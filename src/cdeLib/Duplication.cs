@@ -152,7 +152,7 @@ namespace cdeLib
 
         public IDictionary<ulong, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseAllTrees3(rootEntries, FindMatchesOnFileSize2);
+            CommonEntry.TraverseAllTreesPair(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize2.Count));
 
             //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
@@ -178,7 +178,7 @@ namespace cdeLib
         {
             _logger.LogDebug("");
             _logger.LogDebug("Checking duplicates and completing full hash.");
-            CommonEntry.TraverseAllTrees3(rootEntries, BuildDuplicateListIncludePartialHash);
+            CommonEntry.TraverseAllTreesPair(rootEntries, BuildDuplicateListIncludePartialHash);
 
             var founddupes = _duplicateFile.Where(d => d.Value.Count > 1);
             var totalEntriesInDupes = founddupes.Sum(x => x.Value.Count);
@@ -197,7 +197,7 @@ namespace cdeLib
                     break;
                 }
             }
-            CommonEntry.TraverseAllTrees3(rootEntries, CalculateFullMD5Hash);
+            CommonEntry.TraverseAllTreesPair(rootEntries, CalculateFullMD5Hash);
         }
 
         private void FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
@@ -354,7 +354,7 @@ namespace cdeLib
 
         public IList<KeyValuePair<byte[], List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseAllTrees3(rootEntries, BuildDuplicateList);
+            CommonEntry.TraverseAllTreesPair(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();
 
             _logger.LogInfo(string.Format("Count of list of all hashes of files with same sizes {0}",

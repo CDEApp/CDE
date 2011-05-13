@@ -168,7 +168,7 @@ namespace cdeLibTest
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
-                re.TraverseTree3(DoAction);
+                re.TraverseTreePair(DoAction);
             }
             sw.Stop();
             ts = sw.Elapsed;
@@ -182,7 +182,7 @@ namespace cdeLibTest
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
-                re.TraverseTree2(DoAction2);
+                re.TraverseTree(DoAction2);
             }
             sw.Stop();
             ts = sw.Elapsed;

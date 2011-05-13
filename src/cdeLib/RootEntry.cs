@@ -361,14 +361,14 @@ namespace cdeLib
             return re;
         }
 
-        public void TraverseTree2(Action<DirEntry> apply)
+        public void TraverseTree(Action<DirEntry> apply)
         {
-            TraverseTree2(RootPath, apply);
+            TraverseTree(RootPath, apply);
         }
 
-        public void TraverseTree3(Action<CommonEntry, DirEntry> apply)
+        public void TraverseTreePair(Action<CommonEntry, DirEntry> apply)
         {
-            TraverseTree3(RootPath, apply);
+            TraverseTreePair(RootPath, apply);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()

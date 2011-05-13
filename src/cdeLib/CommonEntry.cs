@@ -90,16 +90,16 @@ namespace cdeLib
             Size = size;
         }
 
-        public static void TraverseAllTrees2(IEnumerable<RootEntry> rootEntries, Action<DirEntry> action)
+        public static void TraverseAllTrees(IEnumerable<RootEntry> rootEntries, Action<DirEntry> action)
         {
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTree2(action);
+                rootEntry.TraverseTree(action);
             }
         }
 
         // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTree2(string path, Action<DirEntry> action)
+        public void TraverseTree(string path, Action<DirEntry> action)
         {
             var dirs = new Stack<CommonEntry>();
             dirs.Push(this);
@@ -135,16 +135,16 @@ namespace cdeLib
             }
         }
 
-        public static void TraverseAllTrees3(IEnumerable<RootEntry> rootEntries, Action<CommonEntry, DirEntry> action)
+        public static void TraverseAllTreesPair(IEnumerable<RootEntry> rootEntries, Action<CommonEntry, DirEntry> action)
         {
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTree3(action);
+                rootEntry.TraverseTreePair(action);
             }
         }
 
         // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTree3(string path, Action<CommonEntry, DirEntry> action)
+        public void TraverseTreePair(string path, Action<CommonEntry, DirEntry> action)
         {
             var dirs = new Stack<CommonEntry>();
             dirs.Push(this);
