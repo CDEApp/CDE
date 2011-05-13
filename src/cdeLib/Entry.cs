@@ -4,7 +4,6 @@ using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
-    // current direntry.. 
     // C: drive Files 149,507 Dirs 24,690 Total Size of Files 26,825,007,368
     // FILE   9,623,653 no hashes.  cde --replfind  60.3 Meg, 32bit 
     // FILE  12,784,234 all hashes. cde --replfind  66.0 Meg, 32bit
@@ -26,16 +25,10 @@ namespace cdeLib
     // a million at an array does not seem bad.
     public struct Entry
     {
-        //public uint DirCount;
-        //public uint FileCount;
         public ulong Size;
         public DateTime Modified;
         public string Name;
         public string FullPath;
-
-        // lol one bit adds a big chunk of allocated structure size, but multibits cost no more.
-        //public bool IsJunction;
-        //public bool IsReparse;
         public Hash16 Hash; // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
         public uint Child;
@@ -138,7 +131,7 @@ namespace cdeLib
             {
                 Modified = fs.LastModified;
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             {
                 //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
                 IsBadModified = true;
@@ -150,11 +143,6 @@ namespace cdeLib
             {
                 Size = (ulong) fs.FileSize;
             }
-        }
-
-        public void SetParent(uint p)
-        {
-            Parent = p;
         }
     }
 }
