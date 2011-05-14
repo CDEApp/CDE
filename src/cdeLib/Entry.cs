@@ -46,9 +46,6 @@ namespace cdeLib
         [ProtoMember(8, IsRequired = true)]
         public int Parent;
 
-        /// <summary>
-        /// Entry flags.
-        /// </summary>
         [Flags]
         public enum Flags
         {
@@ -57,7 +54,7 @@ namespace cdeLib
             [Description("Is a directory.")]
             Directory = 1 << 0,
             [Description("Has a bad modified date field.")]
-            BadModified = 1 << 1,
+            ModifiedBad = 1 << 1,
             [Description("Is a symbolic link.")]
             SymbolicLink = 1 << 2,
             [Description("Is a reparse point.")]
@@ -87,18 +84,18 @@ namespace cdeLib
             }
         }
 
-        public bool IsBadModified
+        public bool IsModifiedBad
         {
-            get { return (BitFields & Flags.BadModified) == Flags.BadModified; }
+            get { return (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad; }
             set
             {
                 if (value)
                 {
-                    BitFields |= Flags.BadModified;
+                    BitFields |= Flags.ModifiedBad;
                 }
                 else
                 {
-                    BitFields &= ~Flags.BadModified;
+                    BitFields &= ~Flags.ModifiedBad;
                 }
             }
         }
@@ -178,7 +175,7 @@ namespace cdeLib
             catch (ArgumentOutOfRangeException)
             {
                 //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
-                IsBadModified = true;
+                IsModifiedBad = true;
             }
             IsDirectory = fs.IsDirectory;
             IsSymbolicLink = fs.IsSymbolicLink;

@@ -146,7 +146,7 @@ namespace cdeLib
                         block[entryIndex].Sibling = siblingIndex;
                     }
                     siblingIndex = newIndex; // sibling chain for next entry
-                    if (block[entryIndex].IsBadModified)
+                    if (block[entryIndex].IsModifiedBad)
                     {
                         Console.WriteLine("Bad date on \"{0}\"", fsEntry.FullPath);
                     }
