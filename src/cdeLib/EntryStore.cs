@@ -6,6 +6,7 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
 
 namespace cdeLib
 {
@@ -38,7 +39,7 @@ namespace cdeLib
             Reset();
         }
 
-        public void Reset()
+        private void Reset()
         {
             NextAvailableIndex = 1;  // First Index to hold data.
             BaseBlock = new SortedList<int, Entry[]>(10);
@@ -82,7 +83,7 @@ namespace cdeLib
 
             if (entryIndex > block.Length)
             {
-                throw new IndexOutOfRangeException("Entry index exceedsd Entry block length.");
+                throw new IndexOutOfRangeException("Entry index exceeds Entry block length.");
                 // this happens if we shorten the last block to length needed.
                 // - hackery at end of scan truncate last array to only required size.
             }
@@ -107,6 +108,7 @@ namespace cdeLib
 
         const string MatchAll = "*";
 
+        // Better name ScanRootPath.
         public void RecurseTree()
         {
             if (Root == null)
@@ -215,7 +217,7 @@ namespace cdeLib
         /// <summary>
         /// This reduces the size of last block to minimum needed to hold those entries.
         /// </summary>
-        private void OptimiseEntryStoreSize()
+        public void OptimiseEntryStoreSize()
         {
             var highestIndex = NextAvailableIndex;
             var blockIndex = highestIndex >> ShiftMaskBit;
@@ -255,18 +257,7 @@ namespace cdeLib
             return Serializer.Deserialize<EntryStore>(input);
         }
 
-        //public int AddEntry(string name, string fullpath, ulong size, DateTime modified, bool isDirectory = false)
-        //{
-        //    var myNewIndex = AddEntry();
-        //    Entry[] block;
-        //    var entryIndex = EntryIndex(myNewIndex, out block);
-        //    block[entryIndex].Name = name;
-        //    block[entryIndex].FullPath = fullpath;
-        //    block[entryIndex].Size = size;
-        //    block[entryIndex].Modified = modified;
-        //    return myNewIndex;
-        //}
-
+        // convenience, may flesh out with all fields.
         public int AddEntry(string name, string fullpath, ulong size, DateTime modified, bool isDirectory = false, int parentIndex = 0, int siblingIndex = 0)
         {
             var myNewIndex = AddEntry();
@@ -276,6 +267,7 @@ namespace cdeLib
             block[entryIndex].FullPath = fullpath;
             block[entryIndex].Size = size;
             block[entryIndex].Modified = modified;
+            block[entryIndex].IsDirectory = isDirectory;
 
             if (parentIndex > 0)
             {
@@ -293,5 +285,67 @@ namespace cdeLib
             return myNewIndex;
         }
 
+        // useful, but RecurseTree has this inline, [its a bit more efficient but arguably not worth it]
+        public int AddEntry(FileSystemEntryInfo fs, int parentIndex = 0, int siblingIndex = 0)
+        {
+            var myNewIndex = AddEntry();
+            Entry[] block;
+            var entryIndex = EntryIndex(myNewIndex, out block);
+            block[entryIndex].Set(fs);
+
+            if (parentIndex > 0)
+            {
+                block[entryIndex].Parent = parentIndex;
+
+                Entry[] parentBlock;
+                var parentEntryIndex = EntryIndex(parentIndex, out parentBlock);
+                parentBlock[parentEntryIndex].Child = myNewIndex;
+            }
+
+            if (siblingIndex > 0)
+            {
+                block[entryIndex].Sibling = siblingIndex;
+            }
+            return myNewIndex;
+        }
+
+        // Set FullPath on all IsDirectory fields in store. - not to memory costly, valuable for use of tree.
+        public void SetInMemoryFields()
+        {
+            var rootIndex = Root.RootIndex;
+            //VisitAll(rootIndex, ApplyDirectoryFullPaths);
+        }
+
+        public void IsValid()
+        {
+            if (Root == null)
+            {
+                throw new Exception("Entry Store must have Root set to be valid.");
+            }
+            if (Root.RootIndex == 0)
+            {
+                throw new Exception("Entry Store Root must have valid RootIndex.");
+            }
+            if (string.IsNullOrEmpty(Root.RootPath))
+            {
+                throw new Exception("Entry Store Root must have valid RootPath.");
+            }
+            if (string.IsNullOrEmpty(Root.DefaultFileName))
+            {
+                throw new Exception("Entry Store Root must have valid DefaultFileName.");
+            }
+
+            Entry[] block;
+            var rootEntryIndex = EntryIndex(Root.RootIndex, out block);
+
+            if (!block[rootEntryIndex].IsDirectory)
+            {
+                throw new Exception("Entry Store Root Index Entry must be a directory.");
+            }
+            if (string.IsNullOrEmpty(block[rootEntryIndex].FullPath))
+            {
+                throw new Exception("Entry Store Root Index Entry must have non empty FullPath set.");
+            }
+        }
     }
 }
