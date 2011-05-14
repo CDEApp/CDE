@@ -1,10 +1,14 @@
 ﻿using System;
+using ProtoBuf;
 
 namespace cdeLib.Infrastructure
 {
+    [ProtoContract]
     public struct Hash16
     {
+        [ProtoMember(1, IsRequired = true)]
         public ulong HashA; // first 8 bytes
+        [ProtoMember(2, IsRequired = true)]
         public ulong HashB; // last 8 bytes
 
         public Hash16(byte[] hash)

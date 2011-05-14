@@ -60,7 +60,7 @@ namespace cdeLib
         [ProtoMember(11, IsRequired = true)]
         public DateTime ScanEndUTC { get; set; }
 
-        public uint RootIndex;  // hackery with Entry and EntryStore
+        public int RootIndex;  // hackery with Entry and EntryStore
 
         public RootEntry ()
         {

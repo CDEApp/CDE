@@ -77,6 +77,61 @@ namespace cdeLibTest
             e.RecurseTree();
         }
 
+        [ExpectedException(typeof(Exception))]
+        [Test]
+        public void SaveToFile_WithRootNotSet_ThrowsException()
+        {
+            var e = new EntryStore();
+
+            e.SaveToFile();
+        }
+
+        [Test]
+        public void SaveToFile_WithMinimal_EntryStore_WithARoot_OK()
+        {
+            var e = new EntryStore();
+            var myRootIndex = e.AddEntry(null, @"X:\", 55,
+                new DateTime(2011, 05, 04, 10, 09, 08), true);
+
+            e.Root = new RootEntry
+            {
+                RootIndex = myRootIndex,
+                DefaultFileName = "test1.cdx",
+                FullPath = @"X:\",
+            };
+
+            e.SaveToFile();
+        }
+
+        [Test]
+        public void SaveToFile_WithRootAndOneEntry_EntryStore_OK()
+        {
+            var e = new EntryStore();
+            var myRootIndex = e.AddEntry(null, @"X:\", 55, 
+                new DateTime(2011, 05, 04, 10, 09, 08), true);
+
+            e.Root = new RootEntry
+            {
+                RootIndex = myRootIndex,
+                DefaultFileName = "test2.cdx",
+                FullPath = @"X:\",
+            };
+
+            var myNewFileEntry = e.AddEntry("file1", null, 55, 
+                new DateTime(2011, 05, 04, 10, 09, 08), parentIndex: myRootIndex);
+
+            e.SaveToFile();
+        }
+
+        [Test]
+        public void SaveToFile_WithActualDriveConfigured_NoContentScan_RetrieveSetsExpectedData()
+        {
+            var e = new EntryStore();
+
+            var rootIndex = e.SetRoot(@"C:\");
+
+            e.SaveToFile();
+        }
 
         //
         // THINKING
@@ -101,7 +156,12 @@ namespace cdeLibTest
         // -  16384 entries =   1 billion entries per tree. 130KB overhead 
         // can split any tree up into pieces - but.. icky
         //
-
+        [Test]
+        public void Read_ASavedFile_OK()
+        {
+            var e2 = EntryStore.Read("C-Vertex3.cde");
+            Console.WriteLine("loaded {0}", e2.Root.DefaultFileName);
+        }
 
         [Test]
         public void RecurseTree_ScanCDrive_OK()
@@ -117,6 +177,7 @@ namespace cdeLibTest
             //var rootIndex = 
             e.SetRoot(@"C:\");
             e.RecurseTree();
+            e.SaveToFile();
 
             Console.WriteLine("BaseBlockCount {0}", e.BaseBlockCount);
 
@@ -125,10 +186,10 @@ namespace cdeLibTest
             uint nonEmptyNameCount = 0;
             uint nonEmptyFullPathCount = 0;
 
-            for (uint i = 0; i < e.NextAvailableIndex; i++) // this iterates over all entries LOL!!
+            for (int i = 0; i < e.NextAvailableIndex; i++) // this iterates over all entries LOL!!
             {
                 Entry[] block;
-                uint eIndex = e.EntryIndex(i, out block);
+                int eIndex = e.EntryIndex(i, out block);
                 if (!string.IsNullOrEmpty(block[eIndex].Name))
                 {
                     ++nonEmptyNameCount;
@@ -176,7 +237,7 @@ namespace cdeLibTest
             var e = new EntryStore();
             Entry[] blockIndex;
 
-            e.EntryIndex(1u, out blockIndex);
+            e.EntryIndex(1, out blockIndex);
         }
 
         [Test]
@@ -186,7 +247,7 @@ namespace cdeLibTest
             Entry[] block;
 
             var newIndex = e.AddEntry();
-            var entryIndex = e.EntryIndex(1u, out block);
+            var entryIndex = e.EntryIndex(1, out block);
 
             Assert.That(newIndex, Is.EqualTo(1));
             Assert.That(entryIndex, Is.EqualTo(1));
@@ -203,7 +264,7 @@ namespace cdeLibTest
                 e.AddEntry();
             }
             Entry[] block;
-            var entryIndex = e.EntryIndex(65537u, out block);
+            var entryIndex = e.EntryIndex(65537, out block);
 
             Assert.That(entryIndex, Is.EqualTo(1));
             Assert.That(block[entryIndex], Is.TypeOf(typeof(Entry)));
@@ -212,7 +273,7 @@ namespace cdeLibTest
         [Test]
         public void EntryIndex_MaxIndex_OK()
         {
-            const uint maxIndex = 65536 * 256u - 1;
+            const int maxIndex = 65536 * 256 - 1;
             var e = new EntryStore();
             for (int i = 0; i < maxIndex; i++)
             {

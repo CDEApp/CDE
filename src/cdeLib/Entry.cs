@@ -1,6 +1,8 @@
 ﻿using System;
+using System.ComponentModel;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
+using ProtoBuf;
 
 namespace cdeLib
 {
@@ -23,102 +25,144 @@ namespace cdeLib
     //
     //
     // a million at an array does not seem bad.
+    [ProtoContract]
     public struct Entry
     {
+        [ProtoMember(1, IsRequired = true)]
         public ulong Size;
+        [ProtoMember(2, IsRequired = true)]
         public DateTime Modified;
+        [ProtoMember(3, IsRequired = true)]
         public string Name;
+        [ProtoMember(4, IsRequired = true)]
         public string FullPath;
+        [ProtoMember(5, IsRequired = true)]
         public Hash16 Hash; // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
-        public uint Child;
-        public uint Sibling;
-        public uint Parent;
+        [ProtoMember(6, IsRequired = true)]
+        public int Child;
+        [ProtoMember(7, IsRequired = true)]
+        public int Sibling;
+        [ProtoMember(8, IsRequired = true)]
+        public int Parent;
 
-        public const int Directory    = 0x0001;
-        public const int Partialhash  = 0x0002;
-        public const int BadModified  = 0x0004;
-        public const int SymbolicLink = 0x0008;
-        public const int ReparsePoint = 0x0010;
+        /// <summary>
+        /// Entry flags.
+        /// </summary>
+        [Flags]
+        public enum Flags
+        {
+            [Description("Obligatory none value.")]
+            None = 0,
+            [Description("Is a directory.")]
+            Directory = 1 << 0,
+            [Description("Has a bad modified date field.")]
+            BadModified = 1 << 1,
+            [Description("Is a symbolic link.")]
+            SymbolicLink = 1 << 2,
+            [Description("Is a reparse point.")]
+            ReparsePoint = 1 << 3,
+            [Description("Hashing was done for this.")]
+            HashDone = 1 << 4,
+            [Description("The Hash if done was a partial.")]
+            PartialHash = 1 << 5
+        };
 
-        public int BitFields;
+        [ProtoMember(9, IsRequired = true)]
+        public Flags BitFields;
         #region BitFields based properties
         public bool IsDirectory
         {
-            get { return (BitFields & Directory) == Directory; }
+            get { return (BitFields & Flags.Directory) == Flags.Directory; }
             set
             {
                 if (value)
                 {
-                    BitFields |= Directory;
+                    BitFields |= Flags.Directory;
                 }
                 else
                 {
-                    BitFields &= ~Directory;
-                }
-            }
-        }
-
-        public bool IsPartialHash
-        {
-            get { return (BitFields & Partialhash) == Partialhash; }
-            set
-            {
-                if (value)
-                {
-                    BitFields |= Partialhash;
-                }
-                else
-                {
-                    BitFields &= ~Partialhash;
+                    BitFields &= ~Flags.Directory;
                 }
             }
         }
 
         public bool IsBadModified
         {
-            get { return (BitFields & BadModified) == BadModified; }
+            get { return (BitFields & Flags.BadModified) == Flags.BadModified; }
             set
             {
                 if (value)
                 {
-                    BitFields |= BadModified;
+                    BitFields |= Flags.BadModified;
                 }
                 else
                 {
-                    BitFields &= ~BadModified;
+                    BitFields &= ~Flags.BadModified;
                 }
             }
         }
 
         public bool IsSymbolicLink
         {
-            get { return (BitFields & SymbolicLink) == SymbolicLink; }
+            get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
             set
             {
                 if (value)
                 {
-                    BitFields |= SymbolicLink;
+                    BitFields |= Flags.SymbolicLink;
                 }
                 else
                 {
-                    BitFields &= ~SymbolicLink;
+                    BitFields &= ~Flags.SymbolicLink;
                 }
             }
         }
 
         public bool IsReparsePoint
         {
-            get { return (BitFields & ReparsePoint) == ReparsePoint; }
+            get { return (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint; }
             set
             {
                 if (value)
                 {
-                    BitFields |= ReparsePoint;
+                    BitFields |= Flags.ReparsePoint;
                 }
                 else
                 {
-                    BitFields &= ~ReparsePoint;
+                    BitFields &= ~Flags.ReparsePoint;
+                }
+            }
+        }
+
+        public bool IsHashDone
+        {
+            get { return (BitFields & Flags.HashDone) == Flags.HashDone; }
+            set
+            {
+                if (value)
+                {
+                    BitFields |= Flags.HashDone;
+                }
+                else
+                {
+                    BitFields &= ~Flags.HashDone;
+                }
+            }
+        }
+
+        public bool IsPartialHash
+        {
+            get { return (BitFields & Flags.PartialHash) == Flags.PartialHash; }
+            set
+            {
+                if (value)
+                {
+                    BitFields |= Flags.PartialHash;
+                }
+                else
+                {
+                    BitFields &= ~Flags.PartialHash;
                 }
             }
         }
