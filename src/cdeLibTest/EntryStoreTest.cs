@@ -10,6 +10,7 @@ namespace cdeLibTest
     [TestFixture]
     class EntrySizeOfStructTest
     {
+        [Ignore]
         [Test]
         public void Test()
         {
@@ -117,16 +118,7 @@ namespace cdeLibTest
             e.SetRoot(@"C:\");
             e.RecurseTree();
 
-            Console.WriteLine("0 {0}", e.BaseBlock[0]);
-            Console.WriteLine("1 {0}", e.BaseBlock[1]);
-            Console.WriteLine("2 {0}", e.BaseBlock[2]);
-            Console.WriteLine("3 {0}", e.BaseBlock[3]);
-            Console.WriteLine("4 {0}", e.BaseBlock[4]);
-            //Console.WriteLine("5 {0}", e.BaseBlock[5]);
-            //Console.WriteLine("6 {0}", e.BaseBlock[6]);
-            //Console.WriteLine("7 {0}", e.BaseBlock[7]);
-            //Console.WriteLine("8 {0}", e.BaseBlock[8]);
-            //Console.WriteLine("9 {0}", e.BaseBlock[9]);
+            Console.WriteLine("BaseBlockCount {0}", e.BaseBlockCount);
 
             Console.WriteLine(@"after scanning C:\ NextAvailableIndex = {0}", e.NextAvailableIndex);
 
@@ -233,6 +225,7 @@ namespace cdeLibTest
             Assert.That(block[entryIndex], Is.TypeOf(typeof(Entry)));
         }
 
+        [Ignore("There is no longer a hard upper limit")]
         [ExpectedException(typeof(IndexOutOfRangeException))]
         [Test]
         public void AddEntry_MaxIndexPlus1_Exception()
@@ -262,10 +255,10 @@ namespace cdeLibTest
 
             var myNewIndex2 = e.AddEntry();
 
-            var blockX = (Entry[])e.BaseBlock[0];
-            blockX[myNewIndex2].Name = "moo";
+            //var blockX = (Entry[])e.BaseBlock[0];
+            //blockX[myNewIndex2].Name = "moo";
 
-            Console.WriteLine("  grrr {0} {1} {2}", myNewIndex, block[myNewIndex2].Name, block[myNewIndex2].Size);
+            //Console.WriteLine("  grrr {0} {1} {2}", myNewIndex, block[myNewIndex2].Name, block[myNewIndex2].Size);
 
             //var s1 = e[myNewIndex2];
 

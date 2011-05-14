@@ -8,18 +8,17 @@ namespace cdeLib
 {
     public class EntryStore
     {
-        // 2 ^ 16 = 65536
+        // 2 ^ 16 = 65536 Entry per block.
         // 256*65535 = 16 million . with 2048 bytes on base array.
         // NextAvailableIndex starts at 1. zero is always empty block, it represents parent of roots.
         private const int ShiftMaskBit = 16;
         private const uint BlockMask = 0xFFFF;
         private const uint BlockSize = 65536;       
-        private const uint StartBaseBlocks = 256;   
-        public const uint MaxIndex = StartBaseBlocks * BlockSize - 1;
 
         public uint NextAvailableIndex;               
-        public uint BaseBlockCount;
-        public object[] BaseBlock;
+        SortedList<uint, Entry[]> BaseBlock;
+
+        public int BaseBlockCount { get { return BaseBlock.Count; } }
 
         public RootEntry Root;
 
@@ -34,8 +33,7 @@ namespace cdeLib
         public void Reset()
         {
             NextAvailableIndex = 1;  // First Index to hold data.
-            BaseBlockCount = StartBaseBlocks;
-            BaseBlock = new object[StartBaseBlocks];
+            BaseBlock = new SortedList<uint, Entry[]>(10);
             PathsWithUnauthorisedExceptions = new List<string>();
         }
 
@@ -44,58 +42,12 @@ namespace cdeLib
         /// </summary>
         public uint AddEntry()
         {
-            if (NextAvailableIndex > MaxIndex)
-            {
-                throw new IndexOutOfRangeException(string.Format("Cannot allocate more entries reached maximum {0}", MaxIndex));
-            }
             var myNewIndex = NextAvailableIndex;
             ++NextAvailableIndex;
             Entry[] block;
             EntryIndex(myNewIndex, out block); // ensure block allocated.
             return myNewIndex;
         }
-
-        ///// <summary>
-        ///// Allocate an Entry for use.
-        ///// Not Thread Safe.
-        ///// Pass out our block contexts for caller use.
-        ///// Reallocates baseBlock as required. todo maybe
-        ///// </summary>
-        ///// <returns>The Index of allocated Entry.</returns>
-        //public uint AddEntry(out uint blockIndex, out uint entryIndex)
-        //{
-        //    if (NextAvailableIndex > MaxIndex)
-        //    {
-        //        throw new IndexOutOfRangeException(string.Format("Cannot allocate more entries reached maximum {0}", MaxIndex));
-        //    }
-        //    var myNewIndex = NextAvailableIndex;
-        //    ++NextAvailableIndex;
-        //    entryIndex = EntryIndex(myNewIndex, out blockIndex); // ensure block allocated.
-        //    return myNewIndex;
-        //}
-
-        ///// <summary>
-        ///// Converts Index to a <paramref name="blockIndex"/> 
-        ///// and returns entryIndex in that block to the entry.
-        ///// Allocates Entry array if it is not allready allocated.
-        ///// 
-        ///// </summary>
-        //public uint EntryIndex(uint index, out uint blockIndex)
-        //{
-        //    if (index >= NextAvailableIndex)
-        //    {
-        //        throw new IndexOutOfRangeException("Out of allocated Entry store range.");
-        //    }
-        //    blockIndex = index >> ShiftMaskBit;
-        //    var entryIndex = index & BlockMask;
-        //    var dataBlock = (Entry[])BaseBlock[blockIndex];
-        //    if (dataBlock == null)
-        //    {
-        //        dataBlock = new Entry[BlockSize];
-        //        BaseBlock[blockIndex] = dataBlock;
-        //    }
-        //    return entryIndex;
-        //}
 
         /// <summary>
         /// Converts Index to a <paramref name="block"/> 
@@ -110,53 +62,34 @@ namespace cdeLib
             }
             var blockIndex = index >> ShiftMaskBit;
             var entryIndex = index & BlockMask;
-            block = (Entry[])BaseBlock[blockIndex];
-            if (block == null)
+            if (!BaseBlock.TryGetValue(blockIndex, out block))
             {
                 block = new Entry[BlockSize];
                 BaseBlock[blockIndex] = block;
             }
+            if (entryIndex > block.Length)
+            {
+                throw new IndexOutOfRangeException("Entry index exceedsd Entry block length.");
+                // this will only happen if we shorten the last block length somehow 
+                // - hackery in serialize save or load, maybe pre save chop down array to be a bit more memory efficient.
+            }
+
             return entryIndex;
         }
 
-        // NOT USEFUL. This data is a struct it just copies the fields out as value.
-        //public Entry this[uint myEntryIndex]
-        //{
-        //    get
-        //    {
-        //        uint blockIndex;
-        //        var entryIndex = EntryIndex(myEntryIndex, out blockIndex);
-        //        return ((Entry[]) BaseBlock[blockIndex])[entryIndex];
-        //    }
-        //}
-
         public uint SetRoot(string path)
         {
-            //var myNewIndex = AddEntry();
-            //uint blockIndex;
-            //var entryIndex = EntryIndex(BaseBlock, myEntryIndex, NextAvailableIndex, out blockIndex);
+            var myNewIndex = AddEntry();
+            Entry[] block;
+            var entryIndex = EntryIndex(myNewIndex, out block);
 
-            var myNewIndex = NextAvailableIndex;
-
-            ++NextAvailableIndex;
-            var entryIndex = myNewIndex & BlockMask;
-            var blockIndex = myNewIndex >> ShiftMaskBit;
-            var dataBlock = (Entry[])BaseBlock[blockIndex];
-            if (dataBlock == null)
-            {
-                dataBlock = new Entry[BlockSize];
-                BaseBlock[blockIndex] = dataBlock;
-            }
-
-            // Initialise our Root details.
             Root = new RootEntry();
             Root.GetRootEntry(path);
             Root.RootIndex = myNewIndex;
 
-            dataBlock[entryIndex].FullPath = Root.RootPath;
-            dataBlock[entryIndex].Parent = 0;
-            dataBlock[entryIndex].IsDirectory = true;
-
+            block[entryIndex].FullPath = Root.RootPath;
+            block[entryIndex].Parent = 0;
+            block[entryIndex].IsDirectory = true;
             return myNewIndex;
         }
 
