@@ -6,7 +6,7 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
-using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
+//using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
 
 namespace cdeLib
 {
@@ -24,7 +24,7 @@ namespace cdeLib
 
         // could do our own array like data structure for BaseBlock maybe ?
         [ProtoMember(1, IsRequired = true)]
-        SortedList<int, Entry[]> BaseBlock;
+        private SortedList<int, Entry[]> BaseBlock;
 
         public int BaseBlockCount { get { return BaseBlock.Count; } }
 
@@ -258,7 +258,7 @@ namespace cdeLib
         }
 
         // convenience, may flesh out with all fields.
-        public int AddEntry(string name, string fullpath, ulong size, DateTime modified, bool isDirectory = false, int parentIndex = 0, int siblingIndex = 0)
+        public int AddEntry(string name, string fullpath, ulong size, DateTime modified, bool isDirectory = false, int parentIndex = 0)
         {
             var myNewIndex = AddEntry();
             Entry[] block;
@@ -272,27 +272,17 @@ namespace cdeLib
             if (parentIndex > 0)
             {
                 block[entryIndex].Parent = parentIndex;
-
                 Entry[] parentBlock;
                 var parentEntryIndex = EntryIndex(parentIndex, out parentBlock);
+                var currentFirstChildIndex = parentBlock[parentEntryIndex].Child;
+                if (currentFirstChildIndex != 0)
+                {   // prepend our new Entry to the sibling chain
+                    block[entryIndex].Sibling = currentFirstChildIndex;
+                }
                 parentBlock[parentEntryIndex].Child = myNewIndex;
             }
-
-            // backwards the prior sibling points at this one.
-            //if (siblingIndex > 0)
-            //{
-            //    block[entryIndex].Sibling = siblingIndex;
-            //}
             return myNewIndex;
         }
-
-        public void SetSibling(int firstSibling,  int secondSibling)
-        {
-            Entry[] firstBlock;
-            var firstEntryIndex = EntryIndex(firstSibling, out firstBlock);
-            firstBlock[firstEntryIndex].Sibling = secondSibling;
-        }
-
 
         // useful, but RecurseTree has this inline, [its a bit more efficient but arguably not worth it]
         public int AddEntry(FileSystemEntryInfo fs, int parentIndex = 0, int siblingIndex = 0)
@@ -321,7 +311,7 @@ namespace cdeLib
         // Set FullPath on all IsDirectory fields in store. - not to memory costly, valuable for use of tree.
         public void SetInMemoryFields()
         {
-            var rootIndex = Root.RootIndex;
+            //var rootIndex = Root.RootIndex;
             //VisitAll(rootIndex, ApplyDirectoryFullPaths);
         }
 

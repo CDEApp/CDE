@@ -336,25 +336,24 @@ namespace cdeLibTest
         [Test]
         public void MoveNext_WithTree_CurrentIsNullBeforeMoveNext()
         {
-            AddEntries();
             var ee = new EntryEnumerator(EStore);
 
             Assert.That(ee.Current, Is.Null);
         }
 
         [Test]
-        public void MoveNext_WithTree_FirstMoveNextIsTrue()
+        public void MoveNext_WithTree1_FirstMoveNextIsTrue()
         {
-            AddEntries();
+            AddEntries1();
             var ee = new EntryEnumerator(EStore);
 
             Assert.That(ee.MoveNext(), Is.True);
         }
 
         [Test]
-        public void MoveNext_WithTree_AfterMoveNextCurrentHasFirstEntry()
+        public void MoveNext_WithTree1_AfterMoveNextCurrentHasFirstEntry()
         {
-            AddEntries();
+            AddEntries1();
             var ee = new EntryEnumerator(EStore);
             ee.MoveNext();
 
@@ -362,20 +361,43 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void MoveNext_WithTree_AfterTwoMoveNextCurrentHasSecondEntry()
+        public void MoveNext_WithTree1_AfterSecondMoveNextReturnsFalse()
         {
-            AddEntries();
+            AddEntries1();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+
+            Assert.That(ee.MoveNext(), Is.False);
+        }
+
+        [Test]
+        public void MoveNext_WithTree1_AfterSecondMoveNextCurrentNull()
+        {
+            AddEntries1();
             var ee = new EntryEnumerator(EStore);
             ee.MoveNext();
             ee.MoveNext();
 
-            Assert.That(ee.Current.Index, Is.EqualTo(Dir2Index), "Did not get Dir2Index entry.");
+            Assert.That(ee.Current, Is.Null);
         }
 
         [Test]
-        public void MoveNext_WithTree_AfterThreeMoveNextCurrentHasSecondEntry()
+        public void MoveNext_WithTree2_AfterTwoMoveNextCurrentHasSecondEntry()
         {
-            AddEntries();
+            AddEntries1();
+            AddEntries2();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.Current.Index, Is.EqualTo(File1Index), "Did not get File1Index entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree2_AfterThreeMoveNextCurrentHasThirdEntry()
+        {
+            AddEntries1();
+            AddEntries2();
             var ee = new EntryEnumerator(EStore);
             ee.MoveNext();
             ee.MoveNext();
@@ -385,15 +407,44 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void MoveNext_WithTree_FourthMoveNextReturnsFlas()
+        public void MoveNext_WithTree2_FourthMoveNextReturnsFalse()
         {
-            AddEntries();
+            AddEntries1();
+            AddEntries2();
             var ee = new EntryEnumerator(EStore);
             ee.MoveNext();
             ee.MoveNext();
             ee.MoveNext();
 
-            Assert.That(ee.MoveNext(), Is.False, "Fouth MoveNext() returned true wrongly saying it succeeded.");
+            Assert.That(ee.MoveNext(), Is.False, "Fouth MoveNext() true.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree3_FourthMoveNextReturnsTrue()
+        {
+            AddEntries1();
+            AddEntries2();
+            AddEntries3();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.MoveNext(), Is.True, "Fouth MoveNext() false,");
+        }
+
+        [Test]
+        public void MoveNext_WithTree3_AfterFourMoveNextReturnsFourthEntry()
+        {
+            AddEntries1();
+            AddEntries2();
+            AddEntries3();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.Current.Index, Is.EqualTo(File4Index), "Did not get File4Index entry.");
         }
     }
     // ReSharper restore InconsistentNaming
@@ -421,26 +472,35 @@ namespace cdeLibTest
             };
         }
 
-        public void AddEntries()
+        // root(1) -> file1(2)
+        public void AddEntries1()
         {
+            // root(1) -> file1(2)
             File1Index = EStore.AddEntry("file1", null, 55,
                     new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: RootIndex);
-
-            Dir2Index = EStore.AddEntry("dir2", null, 0,
-                    new DateTime(2011, 05, 04, 10, 09, 06), true, siblingIndex: File1Index);
-            EStore.SetSibling(File1Index, Dir2Index);
-
-            File3Index = EStore.AddEntry("file3", null, 66,
-                    new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: Dir2Index);
-
-            Console.WriteLine("NextAvailableIndex {0}", EStore.NextAvailableIndex);
+            Console.WriteLine("NextAvailableIndex 1 {0}", EStore.NextAvailableIndex);
         }
 
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
         public void AddEntries2()
         {
+            // root(1) -> dir2(3), file1(2)
+            Dir2Index = EStore.AddEntry("dir2", null, 0,
+                    new DateTime(2011, 05, 04, 10, 09, 06), true, RootIndex); // woot fix.
+
+            // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
+            File3Index = EStore.AddEntry("file3", null, 66,
+                    new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: Dir2Index);
+            Console.WriteLine("NextAvailableIndex 2 {0}", EStore.NextAvailableIndex);
+        }
+
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
+        public void AddEntries3()
+        {
+            // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
             File4Index = EStore.AddEntry("file4", null, 77,
                                          new DateTime(2011, 05, 04, 10, 09, 05), parentIndex: Dir2Index);
-            EStore.SetSibling(File3Index, File4Index);
+            Console.WriteLine("NextAvailableIndex 3 {0}", EStore.NextAvailableIndex);
         }
     }
 }

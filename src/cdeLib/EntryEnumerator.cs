@@ -61,48 +61,52 @@ namespace cdeLib
 
         public bool MoveNext()
         {
-            if (_current != null)
+            if (_current == null)
+            {
+                if (_indexStack.Count > 0)
+                {
+                    var dirIndex = _indexStack.Pop();
+                    Entry[] dirBlock;
+                    var dirEntryIndex = _entryStore.EntryIndex(dirIndex, out dirBlock);
+
+                    if (dirBlock != null)
+                    {
+                        if (dirBlock[dirEntryIndex].Child != 0)
+                        {
+                            _current = new EntryKey {Index = dirBlock[dirEntryIndex].Child};
+                        }
+                    }
+                }
+            }
+            else
             {
                 Entry[] currentBlock;
                 var currentEntryIndex = _entryStore.EntryIndex(_current.Index, out currentBlock);
+                if (currentBlock[currentEntryIndex].Child != 0) // should i check IsDirectory ?
+                {
+                    _indexStack.Push(_current.Index);
+                }
 
                 if (currentBlock[currentEntryIndex].Sibling != 0)
                 {
-                    _current = new EntryKey { Index = 3 }; // Index = currentBlock[currentEntryIndex].Sibling
+                    _current = new EntryKey {Index = currentBlock[currentEntryIndex].Sibling};
                 }
                 else
                 {
                     if (currentBlock[currentEntryIndex].Child != 0)
                     {
-                        _current =  new EntryKey { Index = 4 }; // Index = currentBlock[currentEntryIndex].Sibling
+                        _current = new EntryKey {Index = currentBlock[currentEntryIndex].Child};
                     }
                     else
                     {
                         _current = null;
                     }
                 }
-            }
-            else
-            {
-                var dirIndex = _indexStack.Pop();
-                Entry[] dirBlock;
-                var dirEntryIndex = _entryStore.EntryIndex(dirIndex, out dirBlock);
-
-                if (dirBlock != null)
+                if (_current == null)
                 {
-                    if (dirBlock[dirEntryIndex].Child != 0)
-                    {
-                        _current = new EntryKey { /* Block = dirBlock, EntryIndex = 0, */ Index = dirBlock[dirEntryIndex].Child };
-                    }
+                    return MoveNext();
                 }
             }
-
-            ////_current = new EntryKey();
-            //if (_dirStack.Count > 0)
-            //{
-            //    var dirIndex = _dirStack.Pop();
-                
-            //}
             return _current != null;
         }
 
