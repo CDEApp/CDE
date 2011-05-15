@@ -278,12 +278,21 @@ namespace cdeLib
                 parentBlock[parentEntryIndex].Child = myNewIndex;
             }
 
-            if (siblingIndex > 0)
-            {
-                block[entryIndex].Sibling = siblingIndex;
-            }
+            // backwards the prior sibling points at this one.
+            //if (siblingIndex > 0)
+            //{
+            //    block[entryIndex].Sibling = siblingIndex;
+            //}
             return myNewIndex;
         }
+
+        public void SetSibling(int firstSibling,  int secondSibling)
+        {
+            Entry[] firstBlock;
+            var firstEntryIndex = EntryIndex(firstSibling, out firstBlock);
+            firstBlock[firstEntryIndex].Sibling = secondSibling;
+        }
+
 
         // useful, but RecurseTree has this inline, [its a bit more efficient but arguably not worth it]
         public int AddEntry(FileSystemEntryInfo fs, int parentIndex = 0, int siblingIndex = 0)

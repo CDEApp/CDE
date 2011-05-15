@@ -296,7 +296,7 @@ namespace cdeLibTest
                     new FlatDirEntryDTO(@"C:\de1\fe3", fe3)
                 };
 
-            var expectList = new List<DirEntry> { De1, Fe2, fe3 };
+            /*var expectList = */ new List<DirEntry> { De1, Fe2, fe3 };
             var expectEnumerator = expectList2.GetEnumerator();
 
             while (myListEnumerator.MoveNext() && expectEnumerator.MoveNext())
@@ -310,6 +310,137 @@ namespace cdeLibTest
                     Assert.That(myListEnumerator.Current.FilePath, Is.EqualTo(expectEnumerator.Current.FilePath), "Sequence of directory entries is not matching on Fullpath.");
                 }
             }
+        }
+    }
+    // ReSharper restore InconsistentNaming
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class EntryEnumeratorTest : EntryTestBase
+    {
+        [SetUp]
+        public void RunBeforeEveryTest()
+        {
+            RebuildTestRoot();
+        }
+
+
+        [Test]
+        public void MoveNext_NoRootEntries_FirstMoveNextFalse()
+        {
+            var ee = new EntryEnumerator(EStore);
+
+            Assert.That(ee.MoveNext(), Is.False);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_CurrentIsNullBeforeMoveNext()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+
+            Assert.That(ee.Current, Is.Null);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_FirstMoveNextIsTrue()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+
+            Assert.That(ee.MoveNext(), Is.True);
+        }
+
+        [Test]
+        public void MoveNext_WithTree_AfterMoveNextCurrentHasFirstEntry()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+
+            Assert.That(ee.Current.Index, Is.EqualTo(File1Index), "Did not get File1Index entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree_AfterTwoMoveNextCurrentHasSecondEntry()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.Current.Index, Is.EqualTo(Dir2Index), "Did not get Dir2Index entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree_AfterThreeMoveNextCurrentHasSecondEntry()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.Current.Index, Is.EqualTo(File3Index), "Did not get File3Index entry.");
+        }
+
+        [Test]
+        public void MoveNext_WithTree_FourthMoveNextReturnsFlas()
+        {
+            AddEntries();
+            var ee = new EntryEnumerator(EStore);
+            ee.MoveNext();
+            ee.MoveNext();
+            ee.MoveNext();
+
+            Assert.That(ee.MoveNext(), Is.False, "Fouth MoveNext() returned true wrongly saying it succeeded.");
+        }
+    }
+    // ReSharper restore InconsistentNaming
+
+    public class EntryTestBase
+    {
+        protected EntryStore EStore;
+        protected int RootIndex;
+        protected int File1Index;
+        protected int Dir2Index;
+        protected int File3Index;
+        protected int File4Index;
+
+        public void RebuildTestRoot()
+        {
+            EStore = new EntryStore();
+            RootIndex = EStore.AddEntry(null, @"X:\", 0,
+                new DateTime(2011, 05, 04, 10, 09, 08), true);
+
+            EStore.Root = new RootEntry
+            {
+                RootIndex = RootIndex,
+                DefaultFileName = "test1.cde",
+                RootPath = @"X:\",
+            };
+        }
+
+        public void AddEntries()
+        {
+            File1Index = EStore.AddEntry("file1", null, 55,
+                    new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: RootIndex);
+
+            Dir2Index = EStore.AddEntry("dir2", null, 0,
+                    new DateTime(2011, 05, 04, 10, 09, 06), true, siblingIndex: File1Index);
+            EStore.SetSibling(File1Index, Dir2Index);
+
+            File3Index = EStore.AddEntry("file3", null, 66,
+                    new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: Dir2Index);
+
+            Console.WriteLine("NextAvailableIndex {0}", EStore.NextAvailableIndex);
+        }
+
+        public void AddEntries2()
+        {
+            File4Index = EStore.AddEntry("file4", null, 77,
+                                         new DateTime(2011, 05, 04, 10, 09, 05), parentIndex: Dir2Index);
+            EStore.SetSibling(File3Index, File4Index);
         }
     }
 }

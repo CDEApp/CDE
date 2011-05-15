@@ -57,6 +57,7 @@
     <Compile Include="DirEntryEnumerator.cs" />
     <Compile Include="Duplication.cs" />
     <Compile Include="Entry.cs" />
+    <Compile Include="EntryEnumerator.cs" />
     <Compile Include="EntryStore.cs" />
     <Compile Include="Find.cs" />
     <Compile Include="FlatDirEntryDTO.cs" />
