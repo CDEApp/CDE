@@ -185,5 +185,13 @@ namespace cdeLib
                 Size = (ulong) fs.FileSize;
             }
         }
+
+        public string GetFullPath(EntryStore entryStore)
+        {
+            var parentIndex = Parent;
+            Entry[] parentBlock;
+            var parentEntryIndex = entryStore.EntryIndex(parentIndex, out parentBlock);
+            return Path.Combine(parentBlock[parentEntryIndex].FullPath, Name);
+        }
     }
 }

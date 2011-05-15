@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 
 namespace cdeLib
@@ -11,13 +10,15 @@ namespace cdeLib
         //public int EntryIndex;  // derivable from Index
     }
 
-    public class EntryEnumerator : IEnumerator<EntryKey> //, IEnumerable<EntryKey>
+    public class EntryEnumerator : IEnumerator<EntryKey>, IEnumerable<EntryKey>
     {
-        private readonly IEnumerable<EntryStore> _entryStores;
+        //private readonly IEnumerable<EntryStore> _entryStores;
         //private readonly IEnumerable<EntryKey> _entryKeys;
         private Stack<int> _indexStack;
         private EntryKey _current;
-        private EntryStore _entryStore;
+        private readonly EntryStore _entryStore;
+
+        private readonly EntryKey _entryKey; // our key for returning enumerator state.
 
         public EntryEnumerator(EntryStore entryStore)
         {
@@ -25,6 +26,7 @@ namespace cdeLib
             _indexStack = new Stack<int>();
             _indexStack.Push(entryStore.Root.RootIndex);
             _entryStore = entryStore;
+            _entryKey = new EntryKey();
             StoresAreValid();
             Reset();
         }
@@ -46,12 +48,12 @@ namespace cdeLib
             //}
         }
 
-        public EntryEnumerator(int rootIndex, EntryStore entryStore)
-        {
-            _indexStack = new Stack<int>();
-            _indexStack.Push(rootIndex);
-            Reset();
-        }
+        //public EntryEnumerator(int rootIndex, EntryStore entryStore)
+        //{
+        //    _indexStack = new Stack<int>();
+        //    _indexStack.Push(rootIndex);
+        //    Reset();
+        //}
 
         public void Dispose()
         {
@@ -73,7 +75,8 @@ namespace cdeLib
                     {
                         if (dirBlock[dirEntryIndex].Child != 0)
                         {
-                            _current = new EntryKey {Index = dirBlock[dirEntryIndex].Child};
+                            _entryKey.Index = dirBlock[dirEntryIndex].Child;
+                            _current = _entryKey; // new EntryKey {Index = dirBlock[dirEntryIndex].Child};
                         }
                     }
                 }
@@ -89,13 +92,15 @@ namespace cdeLib
 
                 if (currentBlock[currentEntryIndex].Sibling != 0)
                 {
-                    _current = new EntryKey {Index = currentBlock[currentEntryIndex].Sibling};
+                    _entryKey.Index = currentBlock[currentEntryIndex].Sibling;
+                    _current = _entryKey; //new EntryKey { Index = currentBlock[currentEntryIndex].Sibling };
                 }
                 else
                 {
                     if (currentBlock[currentEntryIndex].Child != 0)
                     {
-                        _current = new EntryKey {Index = currentBlock[currentEntryIndex].Child};
+                        _entryKey.Index = currentBlock[currentEntryIndex].Child;
+                        _current = _entryKey; // new EntryKey { Index = currentBlock[currentEntryIndex].Child };
                     }
                     else
                     {
@@ -123,6 +128,16 @@ namespace cdeLib
         object IEnumerator.Current
         {
             get { return Current; }
+        }
+
+        public IEnumerator<EntryKey> GetEnumerator()
+        {
+            return new EntryEnumerator(_entryStore);
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return new EntryEnumerator(_entryStore);
         }
     }
 }

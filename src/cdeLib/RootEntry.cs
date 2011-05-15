@@ -413,8 +413,8 @@ namespace cdeLib
             var pdee = GetPairDirEntries(this);
             foreach (var pairDirEntry in pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
             {
-                //pairDirEntry.ChildDE.FullPath =
-                    //Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
+                pairDirEntry.ChildDE.FullPath =
+                    Path.Combine(pairDirEntry.ParentDE.FullPath, pairDirEntry.ChildDE.Name);
             }
         }
 

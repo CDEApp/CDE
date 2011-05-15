@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
@@ -245,7 +246,7 @@ namespace cdeLib
                 using (var fs = File.Open(file, FileMode.Open))
                 {
                     var entryStore = Read(fs);
-                    //re.SetInMemoryFields();
+                    entryStore.SetInMemoryFields();
                     return entryStore;
                 }
             }
@@ -308,11 +309,19 @@ namespace cdeLib
             return myNewIndex;
         }
 
-        // Set FullPath on all IsDirectory fields in store. - not to memory costly, valuable for use of tree.
+        // Set FullPath on all IsDirectory fields in store.
         public void SetInMemoryFields()
         {
-            //var rootIndex = Root.RootIndex;
-            //VisitAll(rootIndex, ApplyDirectoryFullPaths);
+            var entryEnumerator = new EntryEnumerator(this);
+            foreach (var entryKey in entryEnumerator)
+            {
+                Entry[] block;
+                var entryIndex = EntryIndex(entryKey.Index, out block);
+                if (block[entryIndex].IsDirectory)
+                {   // set full path on this dir
+                    block[entryIndex].FullPath = block[entryIndex].GetFullPath(this);
+                }
+            }
         }
 
         public void IsValid()
