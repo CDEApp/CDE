@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EntryEnumeratorTest.cs" />
     <Compile Include="EntryStoreTest_IsValid.cs" />
     <Compile Include="EntryStoreTest.cs" />
     <Compile Include="CommonEntryTest.cs" />
