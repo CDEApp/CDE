@@ -63,7 +63,7 @@ namespace cdeLib
  
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
-            //Name = fs.FileName;
+            Name = fs.FileName;
             try
             {
                 Modified = fs.LastModified;
