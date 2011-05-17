@@ -35,6 +35,10 @@ namespace cde
             {
                 CreateCache(args[1]);
             }
+            else if (args.Length == 2 && param0 == "--scan2")
+            {
+                CreateCache2(args[1]);
+            }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
                 Find.FindString(args[1], param0);
@@ -157,6 +161,28 @@ namespace cde
             var ts = sw.Elapsed;
             var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
             Console.WriteLine("Hash took : {0}",elapsedTime);
+        }
+
+        static void CreateCache2(string path)
+        {
+            //Process objProcess = Process.GetCurrentProcess();
+            //long gcMemStart = GC.GetTotalMemory(true);
+            //long processMemStart = objProcess.PrivateMemorySize64;
+
+            var e = new EntryStore();
+            e.SimpleScanCountEvent = ScanCountPrintDot;
+            e.SimpleScanEndEvent = ScanEndofEntries;
+            e.EntryCountThreshold = 10000;
+
+            e.SetRoot(path);
+            e.Root.ScanStartUTC = DateTime.UtcNow;
+            e.RecurseTree();
+            e.Root.ScanEndUTC = DateTime.UtcNow;
+            e.SaveToFile();
+            var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
+            Console.WriteLine("Scanned Path {0}", e.Root.RootPath);
+            Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
+            Console.WriteLine("Saved Scanned Path {0}", e.Root.DefaultFileName);
         }
 
         static void CreateCache(string path)
