@@ -54,6 +54,7 @@ namespace cdeLib
         [ProtoMember(11, IsRequired = true)]
         public DateTime ScanEndUTC { get; set; }
 
+        [ProtoMember(12, IsRequired = true)] // need to save for new data model.
         public int RootIndex;  // hackery with Entry and EntryStore
 
         public RootEntry ()

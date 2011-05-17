@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
+using cdeLib.Infrastructure;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
@@ -21,8 +22,6 @@ namespace cdeLib
         private const uint BlockMask = 0xFFFF;
         private const uint BlockSize = 65536;       
 
-        public int NextAvailableIndex;               // not need to save ?
-
         // could do our own array like data structure for BaseBlock maybe ?
         [ProtoMember(1, IsRequired = true)]
         private SortedList<int, Entry[]> BaseBlock;
@@ -34,6 +33,9 @@ namespace cdeLib
 
         [ProtoMember(3, IsRequired = true)]
         public IList<string> PathsWithUnauthorisedExceptions { get; set; }
+
+        [ProtoMember(4, IsRequired = true)]
+        public int NextAvailableIndex;
 
         public EntryStore()
         {
@@ -254,6 +256,22 @@ namespace cdeLib
                 }
             }
             return null;
+        }
+
+
+        public static List<EntryStore> LoadCurrentDirCache()
+        {
+            var roots = new List<EntryStore>();
+            var files = AlphaFSHelper.GetFilesWithExtension("cde");
+            foreach (var file in files)
+            {
+                var re = Read(file);
+                if (re != null)
+                {
+                    roots.Add(re);
+                }
+            }
+            return roots;
         }
 
         public static EntryStore Read(Stream input)
