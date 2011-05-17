@@ -223,13 +223,16 @@ namespace cdeLib
             var highestIndex = NextAvailableIndex;
             var blockIndex = highestIndex >> ShiftMaskBit;
             var highestEntryIndex = (int)(highestIndex & BlockMask);
-            var block = BaseBlock.Values[blockIndex];
-            if (block != null)
+            if (blockIndex < BaseBlock.Count)   // if block not allocated dont optimise it.
             {
-                if (highestEntryIndex < block.Length)
-                {   // reduce our last block size to minimum required.
-                    Array.Resize(ref block, highestEntryIndex);
-                    BaseBlock[blockIndex] = block;
+                var block = BaseBlock.Values[blockIndex];
+                if (block != null)
+                {
+                    if (highestEntryIndex < block.Length)
+                    {   // reduce our last block size to minimum required.
+                        Array.Resize(ref block, highestEntryIndex);
+                        BaseBlock[blockIndex] = block;
+                    }
                 }
             }
         }
