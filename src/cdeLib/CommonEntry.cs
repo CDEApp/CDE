@@ -14,12 +14,6 @@ namespace cdeLib
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = true)]
         public ICollection<DirEntry> Children { get; set; }
-
-        //[ProtoMember(4, IsRequired = true)] No longer saving set on load or scan.
-        public uint DirCount { get; set; }
-
-        //[ProtoMember(5, IsRequired = true)] No longer saving set on load or scan.
-        public uint FileCount { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
         [ProtoMember(6, IsRequired = true)]
@@ -66,29 +60,30 @@ namespace cdeLib
             return this;
         }
 
+        public class DirStats
+        {
+            public uint DirCount;
+            public uint FileCount;
+        }
+
         // set DirCount FileCount DirSize
         // can this be done with TraverseTree ?
-        public void SetSummaryFields()
+        public void SetSummaryFields(DirStats dirStats)
         {
-            var fileCount = 0u;
-            var dirCount = 0u;
             var size = 0ul;
             foreach (var dirEntry in Children)
             {
                 if (dirEntry.IsDirectory)
                 {
-                    dirEntry.SetSummaryFields();
-                    dirCount += dirEntry.DirCount + 1;
-                    fileCount += dirEntry.FileCount;
+                    dirEntry.SetSummaryFields(dirStats);
+                    dirStats.DirCount += 1;
                 }
                 else
                 {
-                    ++fileCount;
+                    dirStats.FileCount += 1;
                 }
                 size += dirEntry.Size;
             }
-            FileCount = fileCount;
-            DirCount = dirCount;
             Size = size;
         }
 

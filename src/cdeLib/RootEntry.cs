@@ -21,6 +21,10 @@ namespace cdeLib
         private readonly IConfiguration _configuration;
         const string MatchAll = "*";
 
+        public uint DirCount { get; set; }
+
+        public uint FileCount { get; set; }
+
         [ProtoMember(2, IsRequired = true)]
         public string RootPath { get; set; }
 
@@ -101,6 +105,14 @@ namespace cdeLib
             FullPath = RootPath;
             SetFullPath();
             SetSummaryFields();
+        }
+
+        public void SetSummaryFields()
+        {
+            var dirStats = new DirStats();
+            SetSummaryFields(dirStats);
+            DirCount = dirStats.DirCount;
+            FileCount = dirStats.FileCount;
         }
 
         public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot, out string volumeName)
