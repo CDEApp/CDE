@@ -31,6 +31,7 @@
     <DefineConstants>TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>x64</PlatformTarget>
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="AlphaFS">
@@ -53,11 +54,14 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BAATree.cs" />
     <Compile Include="CommonEntry.cs" />
     <Compile Include="DirEntry.cs" />
     <Compile Include="DirEntryEnumerator.cs" />
     <Compile Include="Duplication.cs" />
     <Compile Include="DuplicationStatistics.cs" />
+    <Compile Include="EntryEnumerator.cs" />
+    <Compile Include="EntryStore.cs" />
     <Compile Include="Find.cs" />
     <Compile Include="Hack.cs" />
     <Compile Include="Infrastructure\AlphaFSHelper.cs" />

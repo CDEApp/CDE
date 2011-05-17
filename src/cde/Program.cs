@@ -67,6 +67,12 @@ namespace cde
             {
                 Console.WriteLine(Version);
             }
+            else if (args.Length == 1 && param0 == "--loadwait")
+            {
+                Console.WriteLine(Version);
+                var rootEntries = RootEntry.LoadCurrentDirCache();
+                Console.ReadLine();
+            }
             else
             {
                 ShowHelp();

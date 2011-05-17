@@ -21,6 +21,7 @@
     <DefineConstants>DEBUG;TRACE</DefineConstants>
     <ErrorReport>prompt</ErrorReport>
     <WarningLevel>4</WarningLevel>
+    <PlatformTarget>AnyCPU</PlatformTarget>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
     <DebugType>pdbonly</DebugType>
@@ -52,12 +53,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="EntryEnumeratorTest.cs" />
+    <Compile Include="EntryStoreTest_IsValid.cs" />
+    <Compile Include="EntryStoreTest.cs" />
     <Compile Include="CommonEntryTest.cs" />
     <Compile Include="CommonEntryTestStub.cs" />
     <Compile Include="CommonEntryTest_TraverseTreesCopyHash.cs" />
     <Compile Include="CommonEntryTest_TraverseTreesCopyHash_SingleEntry.cs" />
     <Compile Include="DirEntryEnumeratorTest.cs" />
     <Compile Include="DuplicationTest.cs" />
+    <Compile Include="Hash16_Test.cs" />
     <Compile Include="Infrastructure\ConfigurationTests.cs" />
     <Compile Include="Infrastructure\Crc32.cs" />
     <Compile Include="Infrastructure\DuplicationPerfTest.cs" />

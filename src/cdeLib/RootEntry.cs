@@ -54,6 +54,8 @@ namespace cdeLib
         [ProtoMember(11, IsRequired = true)]
         public DateTime ScanEndUTC { get; set; }
 
+        public int RootIndex;  // hackery with Entry and EntryStore
+
         public RootEntry ()
         {
             PathsWithUnauthorisedExceptions = new List<string>();
@@ -62,6 +64,16 @@ namespace cdeLib
         }
 
         public void PopulateRoot(string startPath)
+        {
+            startPath = GetRootEntry(startPath);
+
+            ScanStartUTC = DateTime.UtcNow;
+            RecurseTree(startPath);
+            ScanEndUTC = DateTime.UtcNow;
+            SetInMemoryFields();
+        }
+
+        public string GetRootEntry(string startPath)
         {
             startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
@@ -80,11 +92,7 @@ namespace cdeLib
             var dsi = Volume.GetDiskFreeSpace(RootPath);
             AvailSpace = dsi.FreeBytesAvailable;
             UsedSpace = dsi.TotalNumberOfBytes;
-
-            ScanStartUTC = DateTime.UtcNow;
-            RecurseTree(startPath);
-            ScanEndUTC = DateTime.UtcNow;
-            SetInMemoryFields();
+            return startPath;
         }
 
         public void SetInMemoryFields()
