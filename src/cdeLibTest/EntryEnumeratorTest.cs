@@ -110,7 +110,7 @@ namespace cdeLibTest
 
         // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
         [Test]
-        public void MoveNext_WithTree3_FourthMoveNextReturnsTrue()
+        public void MoveNext_WithTree3_FifthMoveNextReturnsFalse()
         {
             AddEntries1();
             AddEntries2();
@@ -119,8 +119,8 @@ namespace cdeLibTest
             ee.MoveNext();
             ee.MoveNext();
             ee.MoveNext();
+            ee.MoveNext();
 
-            Assert.That(ee.MoveNext(), Is.True, "Fouth MoveNext() false,");
             Assert.That(ee.MoveNext(), Is.False, "Fifth MoveNext() True,");
         }
 
@@ -135,32 +135,9 @@ namespace cdeLibTest
             ee.MoveNext();
             ee.MoveNext();
             ee.MoveNext();
+            ee.MoveNext();
 
-            Assert.That(ee.Current.Index, Is.EqualTo(File4Index), "Did not get File4Index entry.");
-            Assert.That(ee.MoveNext(), Is.False);
-        }
-
-        // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
-        [Test]
-        public void PrintPathsHaveHash2_WithTree3_A()
-        {
-            AddEntries1();
-            AddEntries2();
-            AddEntries3();
-
-            EStore.PrintPathsHaveHash2();
-
-            var ee = new EntryEnumerator(EStore);
-
-            Assert.That(ee.MoveNext(), Is.True, "t1");
-            Assert.That(ee.Current.Index, Is.EqualTo(Dir2Index), "Did not get Dir2Index entry.");
-            Assert.That(ee.MoveNext(), Is.True, "t2");
-            Assert.That(ee.Current.Index, Is.EqualTo(File1Index), "Did not get File1Index entry.");
-            Assert.That(ee.MoveNext(), Is.True, "t3");
-            Assert.That(ee.Current.Index, Is.EqualTo(File4Index), "Did not get File4Index entry.");
-            Assert.That(ee.MoveNext(), Is.True, "t4");
             Assert.That(ee.Current.Index, Is.EqualTo(File3Index), "Did not get File3Index entry.");
-            Assert.That(ee.MoveNext(), Is.False, "t5");
         }
 
         // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
