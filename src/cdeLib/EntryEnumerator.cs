@@ -17,7 +17,7 @@ namespace cdeLib
     {
         //private readonly IEnumerable<EntryStore> _entryStores;
         //private readonly IEnumerable<EntryKey> _entryKeys;
-        private Stack<int> _indexStack;
+        private Queue<int> _indexStack; // using Queue so we enter dirs in order of hitting them.
         private EntryKey _current;
         private readonly EntryStore _entryStore;
 
@@ -26,8 +26,8 @@ namespace cdeLib
         public EntryEnumerator(EntryStore entryStore)
         {
             //_entryStores = new List<EntryStore> { entryStore };
-            _indexStack = new Stack<int>();
-            _indexStack.Push(entryStore.Root.RootIndex);
+            _indexStack = new Queue<int>();
+            _indexStack.Enqueue(entryStore.Root.RootIndex);
             _entryStore = entryStore;
             _cachedEntryKey = new EntryKey();
             StoresAreValid();
@@ -70,7 +70,7 @@ namespace cdeLib
             {
                 if (_indexStack.Count > 0)
                 {
-                    var dirIndex = _indexStack.Pop();
+                    var dirIndex = _indexStack.Dequeue();
                     Entry[] dirBlock;
                     var dirEntryIndex = _entryStore.EntryIndex(dirIndex, out dirBlock);
 
@@ -91,7 +91,7 @@ namespace cdeLib
 
                 if (currentBlock[currentEntryIndex].Child != 0) // should i check IsDirectory ?
                 {
-                    _indexStack.Push(_current.Index);
+                    _indexStack.Enqueue(_current.Index);
                 }
 
                 if (currentBlock[currentEntryIndex].Sibling != 0)
