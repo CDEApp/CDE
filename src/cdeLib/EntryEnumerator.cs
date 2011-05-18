@@ -12,6 +12,9 @@ namespace cdeLib
         //public int EntryIndex;  // derivable from Index
     }
 
+    /// <summary>
+    /// This enumerates path nodes breadth first.
+    /// </summary>
     [DebuggerDisplay("_current = {_current.Index} stack {_indexStack.Count}")]
     public class EntryEnumerator : IEnumerator<EntryKey>, IEnumerable<EntryKey>
     {
@@ -74,13 +77,10 @@ namespace cdeLib
                     Entry[] dirBlock;
                     var dirEntryIndex = _entryStore.EntryIndex(dirIndex, out dirBlock);
 
-                    if (dirBlock != null)
+                    if (dirBlock != null && dirBlock[dirEntryIndex].Child != 0)
                     {
-                        if (dirBlock[dirEntryIndex].Child != 0)
-                        {
-                            _cachedEntryKey.Index = dirBlock[dirEntryIndex].Child;
-                            _current = _cachedEntryKey; //_current = new EntryKey {Index = dirBlock[dirEntryIndex].Child};
-                        }
+                        _cachedEntryKey.Index = dirBlock[dirEntryIndex].Child;
+                        _current = _cachedEntryKey; //_current = new EntryKey {Index = dirBlock[dirEntryIndex].Child};
                     }
                 }
             }

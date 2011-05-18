@@ -384,6 +384,7 @@ namespace cdeLib
         }
 
         // Set FullPath on all IsDirectory fields in store.
+        // This relies on enumerator being breadth first.
         public void SetInMemoryFields()
         {
             var entryEnumerator = new EntryEnumerator(this);
