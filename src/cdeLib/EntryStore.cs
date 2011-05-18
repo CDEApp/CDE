@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -138,9 +137,7 @@ namespace cdeLib
                     var newIndex = AddEntry();
                     Entry[] block;
                     var entryIndex = EntryIndex(newIndex, out block);
-
                     block[entryIndex].Set(fsEntry);
-
                     block[entryIndex].Parent = parentIndex;
                     if (siblingIndex == 0)
                     {
@@ -148,7 +145,9 @@ namespace cdeLib
                     }
                     else
                     {
-                        block[entryIndex].Sibling = siblingIndex;
+                        Entry[] siblingBlock;
+                        var siblingEntryIndex = EntryIndex(siblingIndex, out siblingBlock);
+                        siblingBlock[siblingEntryIndex].Sibling = newIndex;
                     }
                     siblingIndex = newIndex; // sibling chain for next entry
                     if (block[entryIndex].IsModifiedBad)
@@ -252,6 +251,7 @@ namespace cdeLib
                 {
                     var entryStore = Read(fs);
                     entryStore.SetInMemoryFields();
+                    entryStore.SetSummaryFields();
                     return entryStore;
                 }
             }
@@ -330,6 +330,59 @@ namespace cdeLib
             return myNewIndex;
         }
 
+        public void SetSummaryFields()
+        {
+            var dirStats = new CommonEntry.DirStats();
+            SetSummaryFields(dirStats);
+            Root.DirCount = dirStats.DirCount;
+            Root.FileCount = dirStats.FileCount;
+        }
+
+        public void SetSummaryFields(CommonEntry.DirStats dirStats)
+        {
+            // do i need a recursive version here can i use iterator ?
+            // if i check path changes iterator might work ? 
+            // i know iterator is current entries first then down to first subdir.
+            var entryEnumerator = new EntryEnumerator(this);
+            var prevParentPath = string.Empty;
+            var size = 0ul;
+            bool blockSet;
+            Entry[] block = new Entry[] {};
+            int entryIndex = -1;
+            foreach (var entryKey in entryEnumerator)
+            {
+                entryIndex = EntryIndex(entryKey.Index, out block);
+                string currParentPath = block[entryIndex].GetParentPath(this);
+                blockSet = true;
+                //if (block[entryIndex].IsDirectory)
+                //{
+                //    dirStats.DirCount += 1;
+                //}
+                //else
+                //{
+                //    dirStats.FileCount += 1;
+                //}
+                if (currParentPath == prevParentPath)
+                {
+                    if (!block[entryIndex].IsDirectory)
+                    {
+                        size += block[entryIndex].Size;
+                    }
+                }
+                else
+                {
+                    block[entryIndex].SetParentSize(this, size);
+                    size = 0ul;
+                }
+
+                prevParentPath = currParentPath;
+            }
+            if (entryIndex >= 0) // catch the setting after whole tree processed.
+            {
+                block[entryIndex].SetParentSize(this, size);
+            }
+        }
+
         // Set FullPath on all IsDirectory fields in store.
         public void SetInMemoryFields()
         {
@@ -374,6 +427,27 @@ namespace cdeLib
             if (string.IsNullOrEmpty(block[rootEntryIndex].FullPath))
             {
                 throw new Exception("Entry Store Root Index Entry must have non empty FullPath set.");
+            }
+        }
+
+        public static void PrintPathsHaveHash()
+        {
+            var rootEntries = EntryStore.LoadCurrentDirCache();
+            foreach (var entryStore in rootEntries)
+            {
+                entryStore.PrintPathsHaveHash2();
+            }
+        }
+
+        public void PrintPathsHaveHash2()
+        {
+            var entryEnumerator = new EntryEnumerator(this);
+            foreach (var entryKey in entryEnumerator)
+            {
+                Entry[] block;
+                var entryIndex = EntryIndex(entryKey.Index, out block);
+                var hash = block[entryIndex].IsHashDone ? "#" : " ";
+                Console.WriteLine("{0}{1}", hash, block[entryIndex].GetFullPath(this));
             }
         }
     }

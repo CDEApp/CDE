@@ -188,10 +188,21 @@ namespace cdeLib
 
         public string GetFullPath(EntryStore entryStore)
         {
-            var parentIndex = Parent;
+            return Path.Combine(GetParentPath(entryStore), Name);
+        }
+
+        public string GetParentPath(EntryStore entryStore)
+        {
             Entry[] parentBlock;
-            var parentEntryIndex = entryStore.EntryIndex(parentIndex, out parentBlock);
-            return Path.Combine(parentBlock[parentEntryIndex].FullPath, Name);
+            var parentEntryIndex = entryStore.EntryIndex(Parent, out parentBlock);
+            return parentBlock[parentEntryIndex].FullPath;
+        }
+
+        public void SetParentSize(EntryStore entryStore, ulong size)
+        {
+            Entry[] parentBlock;
+            var parentEntryIndex = entryStore.EntryIndex(Parent, out parentBlock);
+            parentBlock[parentEntryIndex].Size = size;
         }
     }
 }

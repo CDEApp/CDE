@@ -108,6 +108,7 @@ namespace cdeLibTest
             Assert.That(ee.MoveNext(), Is.False, "Fouth MoveNext() true.");
         }
 
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
         [Test]
         public void MoveNext_WithTree3_FourthMoveNextReturnsTrue()
         {
@@ -120,8 +121,10 @@ namespace cdeLibTest
             ee.MoveNext();
 
             Assert.That(ee.MoveNext(), Is.True, "Fouth MoveNext() false,");
+            Assert.That(ee.MoveNext(), Is.False, "Fifth MoveNext() True,");
         }
 
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
         [Test]
         public void MoveNext_WithTree3_AfterFourMoveNextReturnsFourthEntry()
         {
@@ -134,6 +137,49 @@ namespace cdeLibTest
             ee.MoveNext();
 
             Assert.That(ee.Current.Index, Is.EqualTo(File4Index), "Did not get File4Index entry.");
+            Assert.That(ee.MoveNext(), Is.False);
+        }
+
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
+        [Test]
+        public void PrintPathsHaveHash2_WithTree3_A()
+        {
+            AddEntries1();
+            AddEntries2();
+            AddEntries3();
+
+            EStore.PrintPathsHaveHash2();
+
+            var ee = new EntryEnumerator(EStore);
+
+            Assert.That(ee.MoveNext(), Is.True, "t1");
+            Assert.That(ee.Current.Index, Is.EqualTo(Dir2Index), "Did not get Dir2Index entry.");
+            Assert.That(ee.MoveNext(), Is.True, "t2");
+            Assert.That(ee.Current.Index, Is.EqualTo(File1Index), "Did not get File1Index entry.");
+            Assert.That(ee.MoveNext(), Is.True, "t3");
+            Assert.That(ee.Current.Index, Is.EqualTo(File4Index), "Did not get File4Index entry.");
+            Assert.That(ee.MoveNext(), Is.True, "t4");
+            Assert.That(ee.Current.Index, Is.EqualTo(File3Index), "Did not get File3Index entry.");
+            Assert.That(ee.MoveNext(), Is.False, "t5");
+        }
+
+        // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
+        [Test]
+        public void PrintPathsHaveHash2_WithTree4_A()
+        {
+            AddEntriesX4();
+
+            var ee = new EntryEnumerator(EStore);
+
+            Assert.That(ee.MoveNext(), Is.True, "t1");
+            Assert.That(ee.Current.Index, Is.EqualTo(File1Index), "Did not get Dir2Index entry.");
+            Assert.That(ee.MoveNext(), Is.True, "t2");
+            Assert.That(ee.Current.Index, Is.EqualTo(Dir2Index), "Did not get File1Index entry.");
+            Assert.That(ee.MoveNext(), Is.True, "t3");
+            Assert.That(ee.Current.Index, Is.EqualTo(Dir5Index), "Did not get File4Dir5IndexIndex entry.");
+            Assert.That(ee.MoveNext(), Is.False, "t6");
+
+            EStore.PrintPathsHaveHash2();
         }
     }
     // ReSharper restore InconsistentNaming
@@ -146,6 +192,7 @@ namespace cdeLibTest
         protected int Dir2Index;
         protected int File3Index;
         protected int File4Index;
+        protected int Dir5Index;
 
         public void RebuildTestRoot()
         {
@@ -174,7 +221,7 @@ namespace cdeLibTest
         public void AddEntries2()
         {
             // root(1) -> dir2(3), file1(2)
-            Dir2Index = EStore.AddEntry("dir2", null, 0,
+            Dir2Index = EStore.AddEntry("dir2", @"X:\dir2", 0,
                     new DateTime(2011, 05, 04, 10, 09, 06), true, RootIndex); // woot fix.
 
             // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
@@ -183,13 +230,31 @@ namespace cdeLibTest
             Console.WriteLine("NextAvailableIndex 2 {0}", EStore.NextAvailableIndex);
         }
 
-        // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
+        // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
         public void AddEntries3()
         {
             // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
             File4Index = EStore.AddEntry("file4", null, 77,
                                          new DateTime(2011, 05, 04, 10, 09, 05), parentIndex: Dir2Index);
             Console.WriteLine("NextAvailableIndex 3 {0}", EStore.NextAvailableIndex);
+        }
+
+        // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
+        public void AddEntriesX4()
+        {
+            // root(1) -> dir2(.)
+            Dir2Index = EStore.AddEntry("dir2", @"X:\dir2", 0,
+                    new DateTime(2011, 05, 04, 10, 09, 06), true, RootIndex); // woot fix.
+
+            // root(1) -> file1(.), dir2(.)
+            File1Index = EStore.AddEntry("file1", null, 55,
+                    new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: RootIndex);
+            Console.WriteLine("NextAvailableIndex 1 {0}", EStore.NextAvailableIndex);
+
+            // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
+            Dir5Index = EStore.AddEntry("dir5", @"x:\dir2\dir5", 0,
+                                         new DateTime(2011, 05, 04, 10, 09, 04), parentIndex: Dir2Index);
+            Console.WriteLine("NextAvailableIndex 4 {0}", EStore.NextAvailableIndex);
         }
     }
 }

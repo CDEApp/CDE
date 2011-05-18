@@ -67,6 +67,10 @@ namespace cde
             {
                 PrintPathsHaveHashEnumerator();
             }
+            else if (args.Length == 1 && param0 == "--treedump2")
+            {
+                EntryStore.PrintPathsHaveHash();
+            }
             else if (args.Length == 1 && param0 == "--version")
             {
                 Console.WriteLine(Version);

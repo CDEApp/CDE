@@ -1,8 +1,10 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace cdeLib
 {
+    [DebuggerDisplay("Index = {Index}")]
     public class EntryKey
     {
         public int Index; // external index
@@ -10,6 +12,7 @@ namespace cdeLib
         //public int EntryIndex;  // derivable from Index
     }
 
+    [DebuggerDisplay("_current = {_current.Index} stack {_indexStack.Count}")]
     public class EntryEnumerator : IEnumerator<EntryKey>, IEnumerable<EntryKey>
     {
         //private readonly IEnumerable<EntryStore> _entryStores;
@@ -18,7 +21,7 @@ namespace cdeLib
         private EntryKey _current;
         private readonly EntryStore _entryStore;
 
-        private readonly EntryKey _entryKey; // our key for returning enumerator state.
+        private readonly EntryKey _cachedEntryKey; // our key for returning enumerator state.
 
         public EntryEnumerator(EntryStore entryStore)
         {
@@ -26,7 +29,7 @@ namespace cdeLib
             _indexStack = new Stack<int>();
             _indexStack.Push(entryStore.Root.RootIndex);
             _entryStore = entryStore;
-            _entryKey = new EntryKey();
+            _cachedEntryKey = new EntryKey();
             StoresAreValid();
             Reset();
         }
@@ -75,8 +78,8 @@ namespace cdeLib
                     {
                         if (dirBlock[dirEntryIndex].Child != 0)
                         {
-                            _entryKey.Index = dirBlock[dirEntryIndex].Child;
-                            _current = _entryKey; // new EntryKey {Index = dirBlock[dirEntryIndex].Child};
+                            _cachedEntryKey.Index = dirBlock[dirEntryIndex].Child;
+                            _current = _cachedEntryKey; //_current = new EntryKey {Index = dirBlock[dirEntryIndex].Child};
                         }
                     }
                 }
@@ -85,6 +88,7 @@ namespace cdeLib
             {
                 Entry[] currentBlock;
                 var currentEntryIndex = _entryStore.EntryIndex(_current.Index, out currentBlock);
+
                 if (currentBlock[currentEntryIndex].Child != 0) // should i check IsDirectory ?
                 {
                     _indexStack.Push(_current.Index);
@@ -92,21 +96,14 @@ namespace cdeLib
 
                 if (currentBlock[currentEntryIndex].Sibling != 0)
                 {
-                    _entryKey.Index = currentBlock[currentEntryIndex].Sibling;
-                    _current = _entryKey; //new EntryKey { Index = currentBlock[currentEntryIndex].Sibling };
+                    _cachedEntryKey.Index = currentBlock[currentEntryIndex].Sibling;
+                    _current = _cachedEntryKey; //_current = new EntryKey { Index = currentBlock[currentEntryIndex].Sibling };
                 }
                 else
                 {
-                    if (currentBlock[currentEntryIndex].Child != 0)
-                    {
-                        _entryKey.Index = currentBlock[currentEntryIndex].Child;
-                        _current = _entryKey; // new EntryKey { Index = currentBlock[currentEntryIndex].Child };
-                    }
-                    else
-                    {
-                        _current = null;
-                    }
+                    _current = null;
                 }
+
                 if (_current == null)
                 {
                     return MoveNext();
