@@ -343,6 +343,10 @@ namespace cdeLib
             // do i need a recursive version here can i use iterator ?
             // if i check path changes iterator might work ? 
             // i know iterator is current entries first then down to first subdir.
+
+            // enumerator is breadth first, so adding up files/dirs works.
+            // but adding up sizes at each dir in tree isnt as simple...
+
             var entryEnumerator = new EntryEnumerator(this);
             var prevParentPath = string.Empty;
             var size = 0ul;
@@ -433,7 +437,7 @@ namespace cdeLib
 
         public static void PrintPathsHaveHash()
         {
-            var rootEntries = EntryStore.LoadCurrentDirCache();
+            var rootEntries = LoadCurrentDirCache();
             foreach (var entryStore in rootEntries)
             {
                 entryStore.PrintPathsHaveHash2();

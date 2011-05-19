@@ -117,7 +117,7 @@ namespace cdeLibTest
                 FullPath = @"X:\",
             };
 
-            var myNewFileEntry = e.AddEntry("file1", null, 55, 
+            e.AddEntry("file1", null, 55, 
                 new DateTime(2011, 05, 04, 10, 09, 08), parentIndex: myRootIndex);
 
             e.SaveToFile();
@@ -128,7 +128,7 @@ namespace cdeLibTest
         {
             var e = new EntryStore();
 
-            var rootIndex = e.SetRoot(@"C:\");
+            e.SetRoot(@"C:\");
 
             e.SaveToFile();
         }
@@ -285,52 +285,6 @@ namespace cdeLibTest
             Assert.That(entryIndex, Is.EqualTo(65535));
             Assert.That(block[entryIndex], Is.TypeOf(typeof(Entry)));
         }
-
-        [Ignore("There is no longer a hard upper limit")]
-        [ExpectedException(typeof(IndexOutOfRangeException))]
-        [Test]
-        public void AddEntry_MaxIndexPlus1_Exception()
-        {
-            const uint maxIndexPlus1 = 65536 * 256u ;
-            var e = new EntryStore();
-            for (int i = 0; i < maxIndexPlus1; i++)
-            {
-                e.AddEntry();
-            }
-        }
-
-
-        [Ignore("The indexer is useless with struct, so use EntryIndex with out Entry[]")]
-        [Test]
-        public void Indexer_LooksupAddedData_OK()
-        {
-            var e = new EntryStore();
-            var myNewIndex = e.AddEntry();
-
-
-            Entry[] block;
-            var entryIndex = e.EntryIndex(myNewIndex, out block);
-            block[entryIndex].Name = "Fred";
-
-            Console.WriteLine("  grrr {0} {1} {2}", myNewIndex, block[entryIndex].Name, block[entryIndex].Size);
-
-            var myNewIndex2 = e.AddEntry();
-
-            //var blockX = (Entry[])e.BaseBlock[0];
-            //blockX[myNewIndex2].Name = "moo";
-
-            //Console.WriteLine("  grrr {0} {1} {2}", myNewIndex, block[myNewIndex2].Name, block[myNewIndex2].Size);
-
-            //var s1 = e[myNewIndex2];
-
-            //var x = e[myNewIndex2]; // this doesnt work it copies the struct out.
-            //x.Name = "a";
-
-            //var s2 = e[myNewIndex2];
-            //Console.WriteLine("  grrr {0} {1} {2}", x, s1, s2);
-        }
-
-
         // ReSharper restore InconsistentNaming
     }
 }
