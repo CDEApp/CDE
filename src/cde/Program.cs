@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using Autofac;
 using cdeLib;
@@ -58,6 +59,10 @@ namespace cde
             else if (args.Length == 1 && param0 == "--hash")
             {
                 CreateMd5OnCache();
+            }
+            else if (args.Length == 1 && param0 == "--hash2")
+            {
+                CreateMd5OnCache2();
             }
             else if (args.Length == 1 && param0 == "--dupes")
             {
@@ -172,6 +177,17 @@ namespace cde
             var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
             Console.WriteLine("Hash took : {0}",elapsedTime);
         }
+
+        private static void CreateMd5OnCache2()
+        {
+            var rootEntries = EntryStore.LoadCurrentDirCache();
+            var re = rootEntries.FirstOrDefault();
+            if (re != null)
+            {
+                re.ApplyMd5Checksum();
+            }
+        }
+
 
         static void CreateCache2(string path)
         {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -258,7 +259,6 @@ namespace cdeLib
             return null;
         }
 
-
         public static List<EntryStore> LoadCurrentDirCache()
         {
             var roots = new List<EntryStore>();
@@ -454,6 +454,56 @@ namespace cdeLib
                 var hash = block[entryIndex].IsHashDone ? "#" : " ";
                 Console.WriteLine("{0}{1}", hash, block[entryIndex].GetFullPath(this));
             }
+        }
+
+        private Logger _logger;
+        private ApplicationDiagnostics _applicationDiagnostics;
+        private IDictionary<ulong, List<int>> _duplicateFileSize;
+
+        public void ApplyMd5Checksum()
+        {
+            _logger = new Logger();
+            _applicationDiagnostics = new ApplicationDiagnostics();
+
+            _logger.LogDebug(String.Format("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            var sizeDupes = GetSizePairs();
+            _logger.LogDebug(String.Format("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+
+        }
+
+        public IDictionary<ulong, List<int>> GetSizePairs()
+        {
+
+            _duplicateFileSize = new Dictionary<ulong, List<int>>();
+            var entryEnumerator = new EntryEnumerator(this);
+            foreach (var entryKey in entryEnumerator)
+            {
+                Entry[] block;
+                var index = entryKey.Index;
+                var entryIndex = EntryIndex(index, out block);
+                var size = block[entryIndex].Size;
+                if (!block[entryIndex].IsDirectory && size != 0)
+                {
+                    if (_duplicateFileSize.ContainsKey(size))
+                    {
+                        _duplicateFileSize[size].Add(index);
+                    }
+                    else
+                    {
+                        _duplicateFileSize[size] = new List<int> { index };
+                    }
+                }
+            }
+            Console.WriteLine(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+
+            //Remove the single values from the dictionary.
+            _duplicateFileSize.Where(kvp => kvp.Value.Count == 1)
+                .ToList()
+                .ForEach(x => _duplicateFileSize.Remove(x.Key));
+
+            Console.WriteLine(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+
+            return _duplicateFileSize;
         }
     }
 }
