@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -473,36 +474,76 @@ namespace cdeLib
 
         public IDictionary<ulong, List<int>> GetSizePairs()
         {
-
+            // try out idea of processing all in slices removing 1's each time.
+            ulong bumpSize = 20000;// +200000000000;
+            //bumpSize = 50000  +200000000000;
+            ulong min = 0;
+            ulong max = bumpSize;
+            bool goNext;
+            int loopy = 0;
             _duplicateFileSize = new Dictionary<ulong, List<int>>();
-            var entryEnumerator = new EntryEnumerator(this);
-            foreach (var entryKey in entryEnumerator)
+
+            //Console.WriteLine(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            do
             {
-                Entry[] block;
-                var index = entryKey.Index;
-                var entryIndex = EntryIndex(index, out block);
-                var size = block[entryIndex].Size;
-                if (!block[entryIndex].IsDirectory && size != 0)
+                goNext = false;
+                var entryEnumerator = new EntryEnumerator(this);
+                foreach (var entryKey in entryEnumerator)
                 {
-                    if (_duplicateFileSize.ContainsKey(size))
+                    Entry[] block;
+                    var index = entryKey.Index;
+                    var entryIndex = EntryIndex(index, out block);
+                    var size = block[entryIndex].Size;
+
+                    if (size >= min && size < max)
                     {
-                        _duplicateFileSize[size].Add(index);
+                        if (!block[entryIndex].IsDirectory && size != 0)
+                        {
+                            if (_duplicateFileSize.ContainsKey(size))
+                            {
+                                _duplicateFileSize[size].Add(index);
+                            }
+                            else
+                            {
+                                _duplicateFileSize[size] = new List<int> { index };
+                            }
+                        }
                     }
-                    else
+                    else if (size >= max)
                     {
-                        _duplicateFileSize[size] = new List<int> { index };
+                        goNext = true;
                     }
                 }
-            }
-            Console.WriteLine(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
 
-            //Remove the single values from the dictionary.
-            _duplicateFileSize.Where(kvp => kvp.Value.Count == 1)
-                .ToList()
-                .ForEach(x => _duplicateFileSize.Remove(x.Key));
+                //Remove the single values from the dictionary.
+                var pruneList = _duplicateFileSize.Where(kvp => kvp.Value.Count == 1)
+                    .ToList();
+                //Console.WriteLine("Prune 1's {0}", pruneList.Count);
+                pruneList.ForEach(x => _duplicateFileSize.Remove(x.Key));
 
+                if (goNext)
+                {
+                    min = max;
+                    max += bumpSize;
+                    if (min > 2000000)
+                    {
+                        bumpSize = bumpSize + bumpSize;
+                    }
+                    //bumpSize *= (ulong)(bumpSize * 1.5);
+                    //bumpSize = bumpSize + bumpSize;
+                }
+                ++loopy;
+                //Console.WriteLine("loopy {0} min {1} max {2}", loopy, min, max);
+                //GC.Collect();
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    break;
+                }
+            } while (goNext);
+
+            Console.WriteLine("loopy {0}", loopy);
             Console.WriteLine(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
-
             return _duplicateFileSize;
         }
     }
