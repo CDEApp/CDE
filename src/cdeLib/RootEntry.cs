@@ -144,15 +144,9 @@ namespace cdeLib
         }
 
         #region Methods virtual to assist testing.
-        private const int PathLengthToAvoidAlphaFsLib = 200;
         public virtual string GetFullPath(string path)
         {
-            // BUG in AlphaFS. Path.FullGetPath()
-            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
-            {
-                return System.IO.Path.GetFullPath(path);
-            }
-            return Path.GetFullPath(path);
+            return AlphaFSHelper.GetFullPath(path);
         }
 
         public virtual bool IsPathRooted(string path)
@@ -167,12 +161,7 @@ namespace cdeLib
 
         public virtual string GetDirectoryRoot(string path)
         {
-            // BUG in AlphaFS. Directory.GetDirectoryRoot()
-            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
-            {
-                return System.IO.Directory.GetDirectoryRoot(path);
-            }
-            return Directory.GetDirectoryRoot(path);
+            return AlphaFSHelper.GetDirectoryRoot(path);
         }
 
         public virtual string GetVolumeName(string rootPath)

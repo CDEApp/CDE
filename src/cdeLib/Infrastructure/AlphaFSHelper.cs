@@ -15,5 +15,26 @@ namespace cdeLib.Infrastructure
             var checkedExtensionEndFiles = files.Where(val => val.EndsWith(extension)).ToArray();
             return checkedExtensionEndFiles;
         }
+
+        // BUG in AlphaFS. Path.FullGetPath()
+        private const int PathLengthToAvoidAlphaFsLib = 200;
+        public static string GetFullPath(string path)
+        {
+            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
+            {
+                return System.IO.Path.GetFullPath(path);
+            }
+            return Path.GetFullPath(path);
+        }
+
+        // BUG in AlphaFS. Directory.GetDirectoryRoot()
+        public static string GetDirectoryRoot(string path)
+        {
+            if (path.Length < PathLengthToAvoidAlphaFsLib)  // arbitrary number to use the system io version.
+            {
+                return System.IO.Directory.GetDirectoryRoot(path);
+            }
+            return Directory.GetDirectoryRoot(path);
+        }
     }
 }
