@@ -83,13 +83,13 @@ namespace cde
             else if (args.Length == 1 && param0 == "--loadwait")
             {
                 Console.WriteLine(Version);
-                var rootEntries = RootEntry.LoadCurrentDirCache();
+                RootEntry.LoadCurrentDirCache();
                 Console.ReadLine();
             }
             else if (args.Length == 1 && param0 == "--loadwait2")
             {
                 Console.WriteLine(Version);
-                var rootEntries = EntryStore.LoadCurrentDirCache();
+                EntryStore.LoadCurrentDirCache();
                 Console.ReadLine();
             }
             else
