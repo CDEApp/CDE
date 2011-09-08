@@ -66,14 +66,15 @@ namespace AlphaFSTest
                     lastPath = volPath;
                 }
 
-                if (!(lastPath == @"H:\" || lastPath == @"S:\")) // avoid exception
-                {
-                    var volMounts = Volume.GetVolumeMountPoints(vol); // bombs on H: dvdrw... 
-                    foreach (var volMount in volMounts)
-                    {
-                        Console.WriteLine("Volume Mount {0}", volMount);
-                    }
-                }
+                //// these exceptions are specific to robins machine.
+                //if (!(lastPath == @"H:\" || lastPath == @"S:\"|| lastPath == @"R:\")) // avoid exception
+                //{
+                //    var volMounts = Volume.GetVolumeMountPoints(vol); // bombs on H: dvdrw... 
+                //    foreach (var volMount in volMounts)
+                //    {
+                //        Console.WriteLine("Volume Mount {0}", volMount);
+                //    }
+                //}
             }
         }
 
