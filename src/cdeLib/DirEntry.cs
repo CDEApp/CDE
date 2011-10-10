@@ -180,8 +180,6 @@ namespace cdeLib
             {
                 //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
                 IsModifiedBad = true;
-                //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
-                Logger.Instance.LogException(ex,fs.FullPath);
             }
             IsDirectory = fs.IsDirectory;
             IsSymbolicLink = fs.IsSymbolicLink;
