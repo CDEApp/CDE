@@ -1,6 +1,7 @@
 ﻿using System;
 using cdeLib;
 using NUnit.Framework;
+using cdeLib.Infrastructure;
 
 namespace cdeLibTest
 {
@@ -52,12 +53,12 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(09));
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash[0], Is.EqualTo(12));
-            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash[0], Is.EqualTo(13));
-            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash[0], Is.EqualTo(14));
+            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
         }
 
         [Test]
@@ -68,12 +69,12 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Null);
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash[0], Is.EqualTo(12));
-            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash[0], Is.EqualTo(13));
-            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash[0], Is.EqualTo(14));
+            Assert.That(_dde1.IsHashDone, Is.False);
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
         }
 
         [Test]
@@ -84,12 +85,12 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Null);
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash[0], Is.EqualTo(12));
-            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash[0], Is.EqualTo(13));
-            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash[0], Is.EqualTo(14));
+            Assert.That(_dde1.IsHashDone, Is.False);
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
         }
 
         [Test]
@@ -100,12 +101,12 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Null);
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash[0], Is.EqualTo(12));
-            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash[0], Is.EqualTo(13));
-            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash[0], Is.EqualTo(14));
+            Assert.That(_dde1.IsHashDone, Is.False);
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
         }
 
         [Test]
@@ -116,12 +117,12 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(09));
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash[0], Is.EqualTo(12));
-            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash[0], Is.EqualTo(13));
-            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash[0], Is.EqualTo(14));
+            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+            Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+            Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
         }
 
         [Test]
@@ -132,48 +133,48 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(09));
-            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash[0], Is.EqualTo(10));
-            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash[0], Is.EqualTo(11));
-            Assert.That(_dde5.Hash, Is.Null);
-            Assert.That(_dde6.Hash, Is.Null);
-            Assert.That(_dde7.Hash, Is.Null);
+            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+            Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+            Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+            Assert.That(_dde5.IsHashDone, Is.False);
+            Assert.That(_dde6.IsHashDone, Is.False);
+            Assert.That(_dde7.IsHashDone, Is.False);
         }
 
         [Test]
         public void TraverseTreesCopyHash_CopyHashIfSourceHasFullGasgAndDestHasPartialHash()
         {
             RecreateTestTree();
-            _dde1.Hash = new byte[] { 99 };
+            _dde1.Hash = new Hash16(99);
             _dde1.IsPartialHash = true;
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(09));
+            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
         }
 
         [Test]
         public void TraverseTreesCopyHash_DontCopyHashIfDestHasFullHash()
         {
             RecreateTestTree();
-            _dde1.Hash = new byte[] { 99 };
+            _dde1.SetHash(99);//_dde1.Hash = new byte[] { 99 };
             _dde1.IsPartialHash = false;
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(99));
+            //Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(99));
         }
 
         private void RecreateTestTree()
         {
             _reSource = new RootEntry { RootPath = @"C:\" };
-            _sde1 = new DirEntry { Name = @"de1", Size = 10, Hash = new byte[] { 09 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
-            _sde2 = new DirEntry { Name = @"de2", Size = 10, Hash = new byte[] { 10 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
-            _sde3 = new DirEntry { Name = @"de3", Size = 10, Hash = new byte[] { 11 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
+            _sde1 = new DirEntry { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
+            _sde2 = new DirEntry { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
+            _sde3 = new DirEntry { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
             _sfe4 = new DirEntry { IsDirectory = true, Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _sde5 = new DirEntry { Name = @"de5", Size = 11, Hash = new byte[] { 12 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
-            _sde6 = new DirEntry { Name = @"de6", Size = 11, Hash = new byte[] { 13 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
-            _sde7 = new DirEntry { Name = @"de7", Size = 11, Hash = new byte[] { 14 }, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
+            _sde5 = new DirEntry { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
+            _sde6 = new DirEntry { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
+            _sde7 = new DirEntry { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
             _reSource.Children.Add(_sde1);
             _reSource.Children.Add(_sde2);
             _reSource.Children.Add(_sde3);
@@ -183,13 +184,13 @@ namespace cdeLibTest
             _sfe4.Children.Add(_sde7);
 
             _reDest = new RootEntry { RootPath = @"C:\" };
-            _dde1 = new DirEntry { Name = @"de1", Size = 10, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
-            _dde2 = new DirEntry { Name = @"de2", Size = 10, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
-            _dde3 = new DirEntry { Name = @"de3", Size = 10, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
+            _dde1 = new DirEntry { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
+            _dde2 = new DirEntry { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
+            _dde3 = new DirEntry { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
             _dfe4 = new DirEntry { IsDirectory = true, Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _dde5 = new DirEntry { Name = @"de5", Size = 11, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
-            _dde6 = new DirEntry { Name = @"de6", Size = 11, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
-            _dde7 = new DirEntry { Name = @"de7", Size = 11, Hash = null, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
+            _dde5 = new DirEntry { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
+            _dde6 = new DirEntry { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
+            _dde7 = new DirEntry { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
             _reDest.Children.Add(_dde1);
             _reDest.Children.Add(_dde2);
             _reDest.Children.Add(_dde3);

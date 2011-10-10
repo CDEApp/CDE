@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
-using cdeLib.Infrastructure;
 using NUnit.Framework;
+using cdeLib.Infrastructure;
 using ProtoBuf;
 
 namespace ProtobufTest
@@ -48,6 +47,7 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(2));
         }
 
         [ProtoContract]
@@ -71,6 +71,7 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(17));
         }
 
         [Test]
@@ -87,8 +88,29 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(5));
         }
 
+        [Test]
+        public void Serialize_TestByteArray10Long_CheckLength()
+        {
+            var tbClass = new TestByteClass();
+            tbClass.f1 = new byte[10];
+            for (int i = 0; i < 10; i++)
+            {
+                tbClass.f1[i] = (byte)(16 + i);
+            }
+
+            var ms = new MemoryStream();
+
+            Serializer.Serialize(ms, tbClass);
+
+            var b = ms.ToArray();
+
+            Console.WriteLine("b.Length {0}", b.Length);
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(17));
+        }
 
         [ProtoContract]
         public class TestByteClass
@@ -118,6 +140,7 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(5));
         }
 
         [ProtoContract]
@@ -147,6 +170,7 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Assert.That(b.Length, Is.EqualTo(12));
         }
 
         [Test]
@@ -163,34 +187,7 @@ namespace ProtobufTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
-        }
-
-        [Test]
-        public void MemoryStream_ToArray_Rather_Than_GetBuffer_Its_Much_More_Useful()
-        {
-            var m = new MemoryStream(64);
-            Console.WriteLine("Length: {0}\tPosition: {1}\tCapacity: {2}", m.Length, m.Position, m.Capacity);
-
-            for (int i = 0; i < 64; i++)
-            {
-                m.WriteByte((byte)i);
-            }
-            Console.WriteLine("Length: {0}\tPosition: {1}\tCapacity: {2}", m.Length, m.Position, m.Capacity);
-
-            byte[] ba = m.ToArray();
-            foreach (byte b in ba)
-            {
-                Console.Write("{0,-3}", b);
-            }
-
-            m.Close();
-        }
-
-        [Test]
-        public void hack()
-        {
-            var s = DateTime.Now.ToString("o");
-            Console.WriteLine("DateTime.Now.ToString(\"o\") {0}", s);
+            Assert.That(b.Length, Is.EqualTo(22));
         }
     }
     // ReSharper restore InconsistentNaming
@@ -323,6 +320,193 @@ namespace ProtobufTest
         //        return sb.ToString();
         //    }
         //}
+
+        [Test]
+        public void Serialize_TestBool1_CheckLength()
+        {
+            var tbClass = new TestBool1();
+
+            var ms = new MemoryStream();
+
+            Serializer.Serialize(ms, tbClass);
+
+            var b = ms.ToArray();
+
+            Console.WriteLine("b.Length {0}", b.Length);
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            //Assert.That(b.Length, Is.EqualTo(23));
+
+            var tbClass2 = new TestBool1_Flags();
+            ms = new MemoryStream();
+
+            Serializer.Serialize(ms, tbClass2);
+
+            b = ms.ToArray();
+
+            Console.WriteLine("b.Length {0}", b.Length);
+            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            //Assert.That(b.Length, Is.EqualTo(13));
+
+        }
+
+        [ProtoContract]
+        public class TestBool1
+        {
+            [ProtoMember(1, IsRequired = true)]
+            public string stringField = "TestBool1";
+
+            [ProtoMember(2, IsRequired = true)]
+            public bool IsDirectory;
+
+            [ProtoMember(3, IsRequired = true)]
+            public bool IsModifiedBad;
+
+            //[ProtoMember(4, IsRequired = true)]
+            //public bool IsSymbolicLink;
+
+            //[ProtoMember(5, IsRequired = true)]
+            //public bool IsReparsePoint;
+            
+            [ProtoMember(6, IsRequired = true)]
+            public bool IsHashDone;
+
+            [ProtoMember(7, IsRequired = true)]
+            public bool IsPartialHash;
+        }
+
+        [ProtoContract]
+        public class TestBool1_Flags
+        {
+            [Flags]
+            public enum Flags
+            {
+                [System.ComponentModel.Description("Obligatory none value.")]
+                None = 0,
+                [System.ComponentModel.Description("Is a directory.")]
+                Directory = 1 << 0,
+                [System.ComponentModel.Description("Has a bad modified date field.")]
+                ModifiedBad = 1 << 1,
+                [System.ComponentModel.Description("Is a symbolic link.")]
+                SymbolicLink = 1 << 2,
+                [System.ComponentModel.Description("Is a reparse point.")]
+                ReparsePoint = 1 << 3,
+                [System.ComponentModel.Description("Hashing was done for this.")]
+                HashDone = 1 << 4,
+                [System.ComponentModel.Description("The Hash if done was a partial.")]
+                PartialHash = 1 << 5
+            };
+            
+            [ProtoMember(1, IsRequired = true)]
+            public string stringField = "TestBool1";
+
+            [ProtoMember(2, IsRequired = true)]
+            public Flags BitFields;
+
+            #region BitFields based properties
+            public bool IsDirectory
+            {
+                get { return (BitFields & Flags.Directory) == Flags.Directory; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.Directory;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.Directory;
+                    }
+                }
+            }
+
+            public bool IsModifiedBad
+            {
+                get { return (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.ModifiedBad;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.ModifiedBad;
+                    }
+                }
+            }
+
+            public bool IsSymbolicLink
+            {
+                get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.SymbolicLink;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.SymbolicLink;
+                    }
+                }
+            }
+
+            public bool IsReparsePoint
+            {
+                get { return (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.ReparsePoint;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.ReparsePoint;
+                    }
+                }
+            }
+
+            public bool IsHashDone
+            {
+                get { return (BitFields & Flags.HashDone) == Flags.HashDone; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.HashDone;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.HashDone;
+                    }
+                }
+            }
+
+            public bool IsPartialHash
+            {
+                get { return (BitFields & Flags.PartialHash) == Flags.PartialHash; }
+                set
+                {
+                    if (value)
+                    {
+                        BitFields |= Flags.PartialHash;
+                    }
+                    else
+                    {
+                        BitFields &= ~Flags.PartialHash;
+                    }
+                }
+            }
+            #endregion
+
+            public TestBool1_Flags()
+            {
+                
+            }
+        }
+
+
     }
     // ReSharper restore InconsistentNaming
 }

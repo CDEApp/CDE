@@ -6,7 +6,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
-using cdeLib.Infrastructure.Comparer;
 using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
@@ -17,14 +16,14 @@ namespace cdeLib
     {
         private readonly IConfiguration _configuration;
 
-        private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateFile =
-            new Dictionary<byte[], List<PairDirEntry>>(new ByteArrayComparer());
+        private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateFile =
+            new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
 
         private readonly Dictionary<ulong, List<PairDirEntry>> _duplicateFileSize =
             new Dictionary<ulong, List<PairDirEntry>>();
 
-        private readonly Dictionary<byte[], List<PairDirEntry>> _duplicateForFullHash =
-            new Dictionary<byte[], List<PairDirEntry>>(new ByteArrayComparer());
+        private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateForFullHash =
+            new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
 
         private readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
@@ -157,13 +156,31 @@ namespace cdeLib
             return _duplicateFileSize;
         }
 
+        private void FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
+        {
+            if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
+            {
+                return;
+            }
+
+            var flatDirEntry = new PairDirEntry(ce, de);
+            if (_duplicateFileSize.ContainsKey(de.Size))
+            {
+                _duplicateFileSize[de.Size].Add(flatDirEntry);
+            }
+            else
+            {
+                _duplicateFileSize[de.Size] = new List<PairDirEntry> { flatDirEntry };
+            }
+        }
+
         private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
         {
             if (de.IsDirectory)
                 return;
 
             //ignore if we already have a hash.
-            if (de.Hash != null)
+            if (de.IsHashDone)
             {
                 return;
             }
@@ -196,24 +213,6 @@ namespace cdeLib
             CommonEntry.TraverseAllTreesPair(rootEntries, CalculateFullMD5Hash);
         }
 
-        private void FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
-        {
-            if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
-            {
-                return;
-            }
-
-            var flatDirEntry = new PairDirEntry(ce, de);
-            if (_duplicateFileSize.ContainsKey(de.Size))
-            {
-                _duplicateFileSize[de.Size].Add(flatDirEntry);
-            }
-            else
-            {
-                _duplicateFileSize[de.Size] = new List<PairDirEntry> { flatDirEntry };
-            }
-        }
-
         private void CalculateMD5Hash(string fullPath, DirEntry de, bool doPartialHash)
         {
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
@@ -226,7 +225,7 @@ namespace cdeLib
                 if (doPartialHash)
                 {
                     //dont recalculate.
-                    if (de.Hash != null && de.IsPartialHash)
+                    if (de.IsHashDone && de.IsPartialHash)
                     {
                         return;
                     }
@@ -234,7 +233,7 @@ namespace cdeLib
 
                     if (hashResponse != null)
                     {
-                        de.Hash = hashResponse.Hash;
+                        de.SetHash(hashResponse.Hash);
                         de.IsPartialHash = hashResponse.IsPartialHash;
                         _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
                         if (de.IsPartialHash)
@@ -264,14 +263,14 @@ namespace cdeLib
                 }
                 else
                 {
-                    if ((de.Hash != null) && !de.IsPartialHash)
+                    if (de.IsHashDone && !de.IsPartialHash)
                     {
                         return;
                     }
                     var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
                     if (hashResponse != null)
                     {
-                        de.Hash = hashResponse.Hash;
+                        de.SetHash(hashResponse.Hash);
                         de.IsPartialHash = hashResponse.IsPartialHash;
                         _duplicationStatistics.FullHashes += 1;
                         _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
@@ -291,14 +290,14 @@ namespace cdeLib
         private void CalculateFullMD5Hash(CommonEntry parentEntry, DirEntry dirEntry)
         {
             //ignore if we already have a hash.
-            if (dirEntry.Hash != null)
+            if (dirEntry.IsHashDone)
             {
                 if (!dirEntry.IsPartialHash)
                 {
                     return;
                 }
 
-                if (_duplicateForFullHash.ContainsKey(dirEntry.KeyHash))
+                if (_duplicateForFullHash.ContainsKey(dirEntry))
                 {
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                     CalculateMD5Hash(fullPath, dirEntry, false);
@@ -308,20 +307,20 @@ namespace cdeLib
 
         private void BuildDuplicateListIncludePartialHash(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            if (dirEntry.IsDirectory || dirEntry.Hash == null || dirEntry.Size == 0)
+            if (dirEntry.IsDirectory || !dirEntry.IsHashDone || dirEntry.Size == 0)
             {
                 //TODO: how to deal with uncalculated files?
                 return;
             }
 
             var info = new PairDirEntry(parentEntry, dirEntry);
-            if (_duplicateFile.ContainsKey(dirEntry.KeyHash))
+            if (_duplicateFile.ContainsKey(dirEntry))
             {
-                _duplicateFile[dirEntry.KeyHash].Add(info);
+                _duplicateFile[dirEntry].Add(info);
             }
             else
             {
-                _duplicateFile[dirEntry.KeyHash] = new List<PairDirEntry> { info };
+                _duplicateFile[dirEntry] = new List<PairDirEntry> { info };
             }
         }
 
@@ -344,7 +343,7 @@ namespace cdeLib
             }
         }
 
-        public IList<KeyValuePair<byte[], List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
+        public IList<KeyValuePair<DirEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseAllTreesPair(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();

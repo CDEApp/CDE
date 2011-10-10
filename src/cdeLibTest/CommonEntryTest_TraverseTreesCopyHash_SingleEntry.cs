@@ -2,6 +2,7 @@
 using System.Text;
 using cdeLib;
 using NUnit.Framework;
+using cdeLib.Infrastructure;
 
 namespace cdeLibTest
 {
@@ -28,21 +29,23 @@ namespace cdeLibTest
 
             rootDest = new RootEntry { RootPath = @"C:\" };
             deDest = GetNewTestF1();
-            deDest.Hash = null;
+            deDest.SetHash(0);  // clear it just in case.
+            deDest.IsHashDone = false;
             deDest.IsPartialHash = true;
             rootDest.Children.Add(deDest);
         }
 
         private static DirEntry GetNewTestF1()
         {
-            return new DirEntry
+            var de = new DirEntry
                        {
                            Name = "f1",
                            Modified = new DateTime(2011, 05, 01, 12, 11, 10),
                            Size = 10,
                            IsPartialHash = true,
-                           Hash = Encoding.UTF8.GetBytes("testhash")
                        };
+            de.SetHash(12312);
+            return de;
         }
 
         [Test]
@@ -50,7 +53,7 @@ namespace cdeLibTest
         {
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("testhash")));
+            Assert.That(deDest.Hash, Is.EqualTo(new Hash16(12312)));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(true));
         }
 
@@ -72,7 +75,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.Not.EqualTo(Encoding.UTF8.GetBytes("testhash")));
+            Assert.That(deDest.Hash, Is.Not.EqualTo(new Hash16(12312)));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
@@ -83,32 +86,34 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.Not.EqualTo(Encoding.UTF8.GetBytes("testhash")));
+            Assert.That(deDest.Hash, Is.Not.EqualTo(new Hash16(12312)));
             Assert.That(deDest.IsPartialHash, Is.Not.EqualTo(false));
         }
 
         [Test]
         public void TraverseTreesCopyHash_OneEntrySourceHasPartialMD5_DestHasPartialMD5_NotCopied()
         {
-            deSource.Hash = Encoding.UTF8.GetBytes("Moo1");
-            deDest.Hash = Encoding.UTF8.GetBytes("Bang");
+            deSource.SetHash(12312);
+            deDest.SetHash(12313);
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("Bang")));
+            Assert.That(deDest.Hash, Is.EqualTo(new Hash16(12313)));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(true));
         }
 
         [Test]
         public void TraverseTreesCopyHash_OneEntrySourceHasFullMD5_DestHasPartialMD5_Copied()
         {
-            deSource.Hash = Encoding.UTF8.GetBytes("Moo1");
+            //deSource.Hash = Encoding.UTF8.GetBytes("Moo1");
+            deSource.SetHash(12312);
             deSource.IsPartialHash = false;
-            deDest.Hash = Encoding.UTF8.GetBytes("Bang");
+            //deDest.Hash = Encoding.UTF8.GetBytes("Bang");
+            deDest.SetHash(12313);
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
-            Assert.That(deDest.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("Moo1")));
+            Assert.That(deDest.Hash, Is.EqualTo(new Hash16(12312)));
             Assert.That(deDest.IsPartialHash, Is.EqualTo(false));
         }
 
@@ -117,7 +122,7 @@ namespace cdeLibTest
         {
             var deSourceLev2 = GetNewTestF1();
             var deDestLev2 = GetNewTestF1();
-            deDestLev2.Hash = null;
+            deDestLev2.IsHashDone = false;
             deDestLev2.IsPartialHash = false;
 
             deSource.IsDirectory = true;
@@ -127,7 +132,7 @@ namespace cdeLibTest
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 
-            Assert.That(deDestLev2.Hash, Is.EqualTo(Encoding.UTF8.GetBytes("testhash")));
+            Assert.That(deDestLev2.Hash, Is.EqualTo(new Hash16(12312)));
             Assert.That(deDestLev2.IsPartialHash, Is.EqualTo(true));
         }
 
@@ -136,7 +141,7 @@ namespace cdeLibTest
         {
             var deSourceLev2 = GetNewTestF1();
             var deDestLev2 = GetNewTestF1();
-            deDestLev2.Hash = null;
+            deDestLev2.IsHashDone = false;
             deDestLev2.IsPartialHash = false;
             deDestLev2.Name = "notsame";
 

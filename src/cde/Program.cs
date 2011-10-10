@@ -264,7 +264,7 @@ namespace cde
             var pdee = CommonEntry.GetPairDirEntries(rootEntries);
             foreach (var pairDirEntry in pdee)      
             {
-                var hash = pairDirEntry.ChildDE.Hash == null ? " " : "#";
+                var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 var fullPath = CommonEntry.MakeFullPath(pairDirEntry.ParentDE, pairDirEntry.ChildDE);
                 Console.WriteLine("{0}{1}", hash, fullPath);                           
             }

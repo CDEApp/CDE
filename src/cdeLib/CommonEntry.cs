@@ -13,11 +13,11 @@ namespace cdeLib
     public abstract class CommonEntry
     {
         // ReSharper disable MemberCanBePrivate.Global
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(3, IsRequired = false)]
         public ICollection<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
-        [ProtoMember(6, IsRequired = true)]
+        [ProtoMember(4, IsRequired = true)]
         public ulong Size { get; set; }
 
         /// <summary>
@@ -231,11 +231,11 @@ namespace cdeLib
                     {
                         // copy MD5 if none in destination.
                         // copy MD5 as upgrade to full if dest currently partial.
-                        if ((sourceDirEntry.Hash != null)
-                             && (destinationDirEntry.Hash == null)
+                        if ((sourceDirEntry.IsHashDone)
+                             && (!destinationDirEntry.IsHashDone)
                             ||
-                            ((sourceDirEntry.Hash != null)
-                              && (destinationDirEntry.Hash != null)
+                            ((sourceDirEntry.IsHashDone)
+                              && (destinationDirEntry.IsHashDone)
                               && !sourceDirEntry.IsPartialHash
                               && destinationDirEntry.IsPartialHash
                             ))
