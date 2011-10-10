@@ -30,7 +30,7 @@ namespace AlphaFSTest
         public void GetVolumeInformation()
         {
             const string vol = @"C:\";
-            var vi = Volume.GetVolumeInformation(vol); // requires a root voluem specifier it seems
+            var vi = Volume.GetVolumeInformation(vol); // requires a root volume specifier it seems
             Console.WriteLine("vi.FileSystemName {0}", vi.FileSystemName);
             Console.WriteLine("vi.MaximumComponentLength {0}", vi.MaximumComponentLength);
             Console.WriteLine("vi.HasPersistentAccessControlLists {0}", vi.HasPersistentAccessControlLists);
@@ -191,6 +191,7 @@ namespace AlphaFSTest
         public void GetFullPath_BugInAlphaFS_GRRR()
         {
             // BUG in AlphaFS. Path.FullGetPath()
+            // BUG in AlphaFS. Path.GetDirectoryRoot()
             // if G: is G:\Test then it returns G:
             // if G: is G:\ then it returns G:
             // Where as System.IO.Path
