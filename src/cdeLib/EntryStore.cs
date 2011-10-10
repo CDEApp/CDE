@@ -351,14 +351,12 @@ namespace cdeLib
             var entryEnumerator = new EntryEnumerator(this);
             var prevParentPath = string.Empty;
             var size = 0ul;
-            bool blockSet;
-            Entry[] block = new Entry[] {};
+            var block = new Entry[] {};
             int entryIndex = -1;
             foreach (var entryKey in entryEnumerator)
             {
                 entryIndex = EntryIndex(entryKey.Index, out block);
                 string currParentPath = block[entryIndex].GetParentPath(this);
-                blockSet = true;
                 //if (block[entryIndex].IsDirectory)
                 //{
                 //    dirStats.DirCount += 1;
