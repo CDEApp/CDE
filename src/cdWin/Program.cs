@@ -26,6 +26,9 @@ namespace cdeWin
             var de31 = new DirEntry { Name = "de31", IsDirectory = true };
             var de311 = new DirEntry { Name = "de311", IsDirectory = true };
             var de3111 = new DirEntry { Name = "de3111", IsDirectory = true };
+            var de3112 = new DirEntry { Name = "de3112", IsDirectory = true };
+            var de31121 = new DirEntry { Name = "de31121", IsDirectory = true };
+            var de3113 = new DirEntry { Name = "de3113", IsDirectory = true };
             var de31111 = new DirEntry { Name = "de31111", IsDirectory = true };
             re.Children.Add(fe1);
             re.Children.Add(de2);
@@ -36,6 +39,9 @@ namespace cdeWin
             de3.Children.Add(de31);
             de31.Children.Add(de311);
             de311.Children.Add(de3111);
+            de311.Children.Add(de3112);
+            de3112.Children.Add(de31121);
+            de311.Children.Add(de3113);
             de3111.Children.Add(de31111);
             re.SetInMemoryFields();
 
