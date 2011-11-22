@@ -172,13 +172,14 @@ namespace cdeLib
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
             Name = fs.FileName;
+            // TODO this assumes date error on LastModified, what about Created and LastAccessed ?
             try
             {
                 Modified = fs.LastModified;
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
+                // AlphaFS blows up trying to convert bad DateTime. eg. 1/1/1601 
                 IsModifiedBad = true;
             }
             IsDirectory = fs.IsDirectory;
