@@ -1,3 +1,4 @@
+using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
@@ -62,11 +63,9 @@ namespace cdeWin
 
         private static void CreateNodesPreExpand(TreeNode parentNode)
         {
-            var n = parentNode.Nodes[0];
-            var b = n.Nodes;
             if (parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName)
             {
-                // Replace Dummy with real nodes now that will be visible.
+                // Replace Dummy with real nodes now visible.
                 parentNode.Nodes.Clear();
                 AddAllDirectoriesChildren(parentNode, (CommonEntry) parentNode.Tag);
             }
@@ -96,6 +95,38 @@ namespace cdeWin
                 //ImageIndex = 0, 
                 Tag = tag
             };
+        }
+
+        public void AfterSelect()  // OnAfterSelect handler
+        {
+            var selectedNode = _clientDisplayTreeFromRootFormForm.ActiveAfterSelectNode;
+            SetListView((CommonEntry) selectedNode.Tag);
+        }
+
+        private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
+        readonly string[] _cols = { "Name", "Size", "Modified" };
+        readonly string[] _vals = new string[3]; // hack 
+        private readonly Color _listViewForeColor = Color.Black;
+        private readonly Color _listViewDirForeColor = Color.Blue;
+
+        private void SetListView(CommonEntry selectedDirEntry)
+        {
+            _clientDisplayTreeFromRootFormForm.SetColumnHeaders(_cols);
+            foreach (var dirEntry in selectedDirEntry.Children)
+            {
+                Color itemColor = _listViewForeColor;
+
+                _vals[0] = dirEntry.Name;
+                _vals[1] = dirEntry.Size.ToString(); 
+                if (dirEntry.IsDirectory)
+                {
+                    itemColor = _listViewDirForeColor;
+                    _vals[1] = "<Dir>";
+                }
+                //_vals[1] = dirEntry.IsDirectory ? "<Dir>" : dirEntry.Size.ToString();
+                _vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(ModifiedFieldFormat, dirEntry.Modified);
+                _clientDisplayTreeFromRootFormForm.AddListViewRow(_vals, itemColor, dirEntry);
+            }
         }
     }
 

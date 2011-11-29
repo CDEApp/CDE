@@ -1,5 +1,5 @@
-﻿using System.Windows.Forms;
-using cdeLib;
+﻿using System.Drawing;
+using System.Windows.Forms;
 
 namespace cdeWin
 {
@@ -15,11 +15,18 @@ namespace cdeWin
 
         event EventAction OnLoadData;
         event EventAction OnBeforeExpandNode;
+        event EventAction OnAfterSelect;
 
-        TreeNode TreeViewNodes { set; }
-        TreeNode ListViewStuff { set; }
+        TreeNode TreeViewNodes { get;  set; }
+        //TreeNode ListViewStuff { set; }
 
-        TreeNode ActiveBeforeExpandNode { get; }
+        TreeNode ActiveBeforeExpandNode { get; set; }
+        TreeNode ActiveAfterSelectNode { get; set; }
+        bool CancelExpandEvent { get; set; }
+
+        void SetColumnHeaders(string[] cols);
+        void AddListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -32,44 +39,93 @@ namespace cdeWin
 
         private void RegisterCLientEvents()
         {
+            lvEntries.View = View.Details; // detail 
+
             btnLoadData.Click += (s, e) => OnLoadData();
-            tvMain.BeforeExpand += (s, e) => {
+
+            CancelExpandEvent = false;
+            tvMain.BeforeExpand += (s, e) => 
+            {
                 ActiveBeforeExpandNode = e.Node;
                 OnBeforeExpandNode();
+                e.Cancel = CancelExpandEvent;
+                CancelExpandEvent = false;
             };
 
+            tvMain.AfterSelect += (s, e) => 
+            {
+                ActiveAfterSelectNode = e.Node;
+                OnAfterSelect();
+            };
         }
 
         public event EventAction OnLoadData;
         public event EventAction OnBeforeExpandNode;
-        public TreeNode ActiveBeforeExpandNode { get; private set; }
+        public event EventAction OnAfterSelect;
+        public TreeNode ActiveBeforeExpandNode { get; set; }
+        public TreeNode ActiveAfterSelectNode { get; set; }
+
+        /// <summary>
+        /// One shot cancel next expand in BeforExpand, then sets back to false.
+        /// </summary>
+        public bool CancelExpandEvent { get; set; }
 
         /// <summary>
         /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
         /// </summary>
         public TreeNode TreeViewNodes
         {
+            get { return tvMain.Nodes[0]; } // Assumption just one root node.
+
             set
             {
+                //AddColumnHeaders();
                 tvMain.BeginUpdate();
                 tvMain.Nodes.Add(value);
                 tvMain.SelectedNode = tvMain.Nodes[0];
-                ////tvMain.Nodes[0].Expand();
-                //tvMain.Select();
+                tvMain.Nodes[0].Expand();
+                tvMain.Select();
                 tvMain.EndUpdate();
+
+                // TODO set the value of the detail pane. lvEntries
             }
         }
 
-        public TreeNode ListViewStuff
+        //public TreeNode ListViewStuff
+        //{
+        //    set
+        //    {
+        //        var a = lvEntries.DataBindings;
+        //        var b = lvEntries.Items;
+        //        var c = value;
+        //    }
+        //}
+
+        /// <summary>
+        /// Clear list view and set column headers.
+        /// </summary>
+        /// <param name="cols"></param>
+        public void SetColumnHeaders(string[] cols)
         {
-            set
+            lvEntries.Clear();
+            //lvEntries.Items.Clear();
+            foreach (var col in cols)
             {
-                var a = lvEntries.DataBindings;
-                var b = lvEntries.Items;
-                var c = value;
-                // to use databindings i need to build a barfy dataset with icky internal referency crap pass.
+                lvEntries.Columns.Add(col, 100, HorizontalAlignment.Left);
             }
         }
 
+        public void AddListViewRow(string[] vals, Color firstColumnForeColor, object tag)
+        {
+            var lvItem = new ListViewItem(vals[0]);     // first val
+            lvItem.UseItemStyleForSubItems = false;     // make styling apply.
+            lvItem.SubItems[0].ForeColor = firstColumnForeColor;   // style our name entries
+            lvItem.Tag = tag;
+            for (var i = 1; i < vals.Length; ++i)       // the rest of vals
+            {
+                var s = lvItem.SubItems.Add(vals[i]);
+            }
+            lvEntries.Items.Add(lvItem);
+        }
     }
 }

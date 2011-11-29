@@ -20,7 +20,7 @@ namespace cdeWin
 
             var re = new RootEntry { RootPath = @"C:\Test1" }; // TODO ? trailing slash bad in tree view IMO!
             var fe1 = new DirEntry { Name = "fe1", Size = 23, Modified = new DateTime(2011, 03, 13, 22, 10, 5, DateTimeKind.Local) };
-            var de2 = new DirEntry { Name = "de2", IsDirectory = true };
+            var de2 = new DirEntry { Name = "de2", IsDirectory = true, IsModifiedBad = true };
             var fe23 = new DirEntry { Name = "fe23", Size = 35, Modified = new DateTime(2011, 04, 14, 23, 11, 6, DateTimeKind.Local) };
             var de3 = new DirEntry { Name = "de3", IsDirectory = true };
             var de31 = new DirEntry { Name = "de31", IsDirectory = true };
