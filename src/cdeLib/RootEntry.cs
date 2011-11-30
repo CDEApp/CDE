@@ -137,7 +137,7 @@ namespace cdeLib
                 }
                 else
                 {
-                    fileName = string.Format("{0}-{1}_{2}.cde", hint, filenameSafePath, volumeName);
+                    fileName = string.Format("{0}-{1}-{2}.cde", hint, volumeName, filenameSafePath);
                 }
             }
             return fileName;
@@ -211,14 +211,14 @@ namespace cdeLib
             }
             else
             {
-                if (volumeRoot == path)
-                {
+                //if (volumeRoot == path)
+                //{
                     hint = volumeRoot.Substring(0, 1);
-                }
-                else
-                {
-                    hint = "PATH";
-                }
+                //}
+                //else
+                //{
+                //    hint = volumeRoot.Substring(0, 1) + "-PATH";
+                //}
             }
             return hint;
         }
