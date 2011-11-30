@@ -137,7 +137,7 @@ namespace cdeLib
                 }
                 else
                 {
-                    fileName = string.Format("{0}-{1}_.cde", hint, filenameSafePath);
+                    fileName = string.Format("{0}-{1}_{2}.cde", hint, filenameSafePath, volumeName);
                 }
             }
             return fileName;

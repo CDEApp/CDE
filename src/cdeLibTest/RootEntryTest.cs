@@ -149,7 +149,7 @@ namespace cdeLibTest
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
             Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_.cde"));
+            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_VolName.cde"));
         }
 
         [Test]
@@ -164,7 +164,7 @@ namespace cdeLibTest
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
             Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_Mine_.cde"));
+            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_Mine_VolName.cde"));
         }
 
         [Test]
@@ -179,7 +179,7 @@ namespace cdeLibTest
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
             Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"PATH-C__Stuff_MyTestFolder_Mine_.cde"));
+            Assert.That(fileName, Is.EqualTo(@"PATH-C__Stuff_MyTestFolder_Mine_VolName.cde"));
         }
 
         [Test]
@@ -194,7 +194,7 @@ namespace cdeLibTest
             Assert.That(hint, Is.EqualTo(@"PATH"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
             Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_Mine_.cde"));
+            Assert.That(fileName, Is.EqualTo(@"PATH-C__MyTestFolder_Mine_VolName.cde"));
         }
 
         [Test]
