@@ -48,18 +48,12 @@ namespace cdeLibTest
         [Test]
         public void TraverseTree_TreeHeirarchy_CallsActionOnAllChildren()
         {
-            var re1 = new RootEntry { RootPath = @"Z:\" };
-            var de2a = new DirEntry { Name = "d2a" };
-            var de2b = new DirEntry { Name = "d2b", IsDirectory = true };
-            var de2c = new DirEntry { Name = "d2c" };
-            re1.Children.Add(de2a);
-            re1.Children.Add(de2b);
-            re1.Children.Add(de2c);
-            var de3a = new DirEntry { Name = "d3a", IsDirectory = true };
-            de2b.Children.Add(de3a);
-            var de4a = new DirEntry { Name = "d4a" };
-            de3a.Children.Add(de4a);
-            re1.SetInMemoryFields();
+            DirEntry de2a;
+            DirEntry de2b;
+            DirEntry de2c;
+            DirEntry de3a;
+            DirEntry de4a;
+            var re1 = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             using (mockAction.GetMockRepository().Ordered())
@@ -76,33 +70,41 @@ namespace cdeLibTest
             mockAction.VerifyAllExpectations();
         }
 
-        [Test]
-        public void TraverseAllTrees_TreeHeirarchy_CallsActionOnAllChildrenOnBothRoots()
+        public static RootEntry NewTestRootEntry(out DirEntry de2a, out DirEntry de2b, out DirEntry de2c, out DirEntry de3a, out DirEntry de4a)
         {
-            var re1 = new RootEntry { RootPath = "" };
-            var de2a = new DirEntry { Name = "d2a" };
-            var de2b = new DirEntry { Name = "d2b", IsDirectory = true };
-            var de2c = new DirEntry { Name = "d2c" };
+            var re1 = new RootEntry {RootPath = @"Z:\"};
+            de2a = new DirEntry {Name = "d2a"};
+            de2b = new DirEntry {Name = "d2b", IsDirectory = true};
+            de2c = new DirEntry {Name = "d2c"};
             re1.Children.Add(de2a);
             re1.Children.Add(de2b);
             re1.Children.Add(de2c);
-            var de3a = new DirEntry { Name = "d3a", IsDirectory = true };
+            de3a = new DirEntry {Name = "d3a", IsDirectory = true};
             de2b.Children.Add(de3a);
-            var de4a = new DirEntry { Name = "d4a" };
+            de4a = new DirEntry {Name = "d4a"};
             de3a.Children.Add(de4a);
+            re1.SetInMemoryFields();
+            return re1;
+        }
 
+        [Test]
+        public void TraverseAllTrees_TreeHeirarchy_CallsActionOnAllChildrenOnBothRoots()
+        {
+            DirEntry de2a;
+            DirEntry de2b;
+            DirEntry de2c;
+            DirEntry de3a;
+            DirEntry de4a;
+            var re1 = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+
+            DirEntry bde2a;
+            DirEntry bde2b;
+            DirEntry bde2c;
+            DirEntry bde3a;
+            DirEntry bde4a;
+            var re2 = NewTestRootEntry(out bde2a, out bde2b, out bde2c, out bde3a, out bde4a);
             // same structure as re1 with a different root path
-            var re2 = new RootEntry { RootPath = "2" };
-            var bde2a = new DirEntry { Name = "d2a" };
-            var bde2b = new DirEntry { Name = "d2b", IsDirectory = true };
-            var bde2c = new DirEntry { Name = "d2c" };
-            re2.Children.Add(bde2a);
-            re2.Children.Add(bde2b);
-            re2.Children.Add(bde2c);
-            var bde3a = new DirEntry { Name = "d3a", IsDirectory = true };
-            bde2b.Children.Add(bde3a);
-            var bde4a = new DirEntry { Name = "d4a" };
-            bde3a.Children.Add(bde4a);
+            re2.RootPath = "2";
 
             var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             using (mockAction.GetMockRepository().Ordered())
