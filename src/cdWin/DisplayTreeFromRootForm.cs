@@ -1,11 +1,18 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using cdeLib;
 
 namespace cdeWin
 {
-    /* Passive view hackery http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view */
+    /* Passive view hackery http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view 
+     * This is ok, but its one presenter per Form, lots of controls gets large...
+     * Would like to break upinto seperate presenters for sets of controls and maybe a higher level
+     * coordinating presenter.
+     * 
+     * Alternate presenter setup in cdeWinForm - need to review it again.
+     */
 
     public interface IDisplayTreeFromRootForm : IView
     {
@@ -13,6 +20,7 @@ namespace cdeWin
         event EventAction OnBeforeExpandNode;
         event EventAction OnAfterSelect;
         event EventAction OnSearchRoots;
+        event EventAction OnMyFormClosing;
 
         /// <summary>
         /// Depends on SearchResultListViewItem.
@@ -31,8 +39,11 @@ namespace cdeWin
         int SearchResultListViewItemIndex { get; set; }
         ListViewItem SearchResultListViewItem { get; set; }
 
-        void SetDirectoryColumnHeaders(string[] cols);
-        void SetSearchColumnHeaders(string[] cols);
+        void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns);
+        void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns);
+        ListView.ColumnHeaderCollection GetDirectoryListViewColumns { get; }
+        ListView.ColumnHeaderCollection GetSearchResultListViewColumns { get; }
+
         void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void SetSearchVirtualList(List<PairDirEntry> pdeList);
@@ -44,11 +55,15 @@ namespace cdeWin
         public DisplayTreeFromRootFormForm()
         {
             InitializeComponent();
-            RegisterCLientEvents();
+            RegisterClientEvents();
+            //Console.WriteLine("Width " + Size.Width);
+            //Console.WriteLine("Height " + Size.Height);
         }
 
-        private void RegisterCLientEvents()
+        private void RegisterClientEvents()
         {
+            FormClosing += (s, e) => OnMyFormClosing();
+
             whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
             whatToSearchComboBox.SelectedIndex = 0; // default Include
 
@@ -57,6 +72,7 @@ namespace cdeWin
             searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
 
             directoryListView.View = View.Details; // detail 
+
             CancelExpandEvent = false;
             directoryTreeView.BeforeExpand += (s, e) => 
             {
@@ -91,6 +107,7 @@ namespace cdeWin
         public event EventAction OnSearchRoots;
         public int SearchResultListViewItemIndex { get; set; }
         public event EventAction OnSearchResultRetrieveVirtualItem;
+        public event EventAction OnMyFormClosing;
 
         public TreeNode ActiveBeforeExpandNode { get; set; }
         public TreeNode ActiveAfterSelectNode { get; set; }
@@ -122,7 +139,6 @@ namespace cdeWin
 
             set
             {
-                //AddColumnHeaders();
                 if (value != null)
                 {
                     directoryTreeView.BeginUpdate();
@@ -139,19 +155,20 @@ namespace cdeWin
         /// <summary>
         /// Clear list view and set column headers.
         /// </summary>
-        /// <param name="cols"></param>
-        public void SetDirectoryColumnHeaders(string[] cols)
+        public void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns)
         {
-            SetColumnHeaders(directoryListView, cols);
+            SetColumnHeaders(directoryListView, columns);
         }
 
-        public void SetColumnHeaders(ListView lv, string[] cols)
+        public void SetColumnHeaders(ListView lv, IEnumerable<ColumnConfig> columns)
         {
             lv.Clear();
-            //lv.Items.Clear();
-            foreach (var col in cols)
+            if (columns != null)
             {
-                lv.Columns.Add(col, 100, HorizontalAlignment.Left);
+                foreach (var col in columns)
+                {
+                    lv.Columns.Add(col.Name, col.Width, col.Alignment);
+                }
             }
         }
 
@@ -177,9 +194,9 @@ namespace cdeWin
             get { return whatToSearchComboBox.SelectedIndex == 0; }
         }
 
-        public void SetSearchColumnHeaders(string[] cols)
+        public void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns)
         {
-            SetColumnHeaders(searchResultListView, cols);
+            SetColumnHeaders(searchResultListView, columns);
         }
 
         public void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag)
@@ -193,11 +210,22 @@ namespace cdeWin
             searchResultListView.VirtualMode = true;
             searchResultsStatus.Text = "SR " + pdeList.Count.ToString();
             ForceDrawSearchResultListView();
+            ListView.ColumnHeaderCollection a = this.directoryListView.Columns;
         }
 
         public void ForceDrawSearchResultListView()
         {
             searchResultListView.Invalidate();
+        }
+
+        public ListView.ColumnHeaderCollection GetDirectoryListViewColumns
+        {
+            get { return directoryListView.Columns; }
+        }
+
+        public ListView.ColumnHeaderCollection GetSearchResultListViewColumns
+        {
+            get { return searchResultListView.Columns; }
         }
     }
 }

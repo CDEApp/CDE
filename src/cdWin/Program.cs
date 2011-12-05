@@ -9,18 +9,27 @@ namespace cdeWin
     {
         private static List<RootEntry> RootEntries;
 
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
         [STAThread]
         static void Main()
         {
+            // TODO consider using (var config = new Config()) { } - with Save built in.
+            var config = new Config("cdeWinView.cfg"); // pickup from current directory for now.
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             RootEntries = RootEntry.LoadCurrentDirCache();
-            var displayTreeFromRootPresenter = new DisplayTreeFromRootPresenter(new DisplayTreeFromRootFormForm(), RootEntries);
-            displayTreeFromRootPresenter.Display();
-            //Application.Run(new DisplayTreeFromRootForm());
+
+            var mainForm = new DisplayTreeFromRootFormForm();
+            config.SetForm(mainForm);
+
+            var mainPresenter = new DisplayTreeFromRootPresenter(mainForm, RootEntries, config);
+
+            mainPresenter.Display();
+            //Application.Run(new DisplayTreeFromRootPresenter());
+
+            var active = config.Active;
+            active.MainWindowConfig.FromForm(mainForm);
+            config.Save();
         }
     }
 }

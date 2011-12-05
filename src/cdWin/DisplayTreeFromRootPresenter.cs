@@ -18,11 +18,13 @@ namespace cdeWin
         private const string DummyNodeName = "_dummyNode";
         private readonly IDisplayTreeFromRootForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
+        private Config _config;
 
-        public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm form, List<RootEntry> rootEntries) : base(form)
+        public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
             _clientForm = form;
             _rootEntries = rootEntries;
+            _config = config;
         }
 
         public void Display()
@@ -129,7 +131,6 @@ namespace cdeWin
 
         private void SetDirectoryListView(CommonEntry selectedDirEntry)
         {
-            _clientForm.SetDirectoryColumnHeaders(_directoryCols);
             foreach (var dirEntry in selectedDirEntry.Children)
             {
                 var itemColor = PopulateRowValues(_directoryVals, dirEntry, _listViewForeColor);
@@ -144,7 +145,19 @@ namespace cdeWin
             if (dirEntry.IsDirectory)
             {
                 itemColor = _listViewDirForeColor;
-                vals[1] = "<Dir>";
+                if (dirEntry.IsDirectory)
+                {
+                    var val = "<Dir";
+                    if (dirEntry.IsReparsePoint)
+                    {
+                        val += " R";
+                    }
+                    if (dirEntry.IsSymbolicLink)
+                    {
+                        val += " S";
+                    }
+                    vals[1] = val + ">";
+                }
             }
             vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(ModifiedFieldFormat, dirEntry.Modified);
             return itemColor;
@@ -152,7 +165,6 @@ namespace cdeWin
 
         public void SearchRoots()
         {
-            _clientForm.SetSearchColumnHeaders(_searchCols);
             var pattern = _clientForm.Pattern;
             var regexMode = _clientForm.RegexMode;
             if (regexMode)
@@ -178,6 +190,12 @@ namespace cdeWin
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             _clientForm.SearchResultListViewItem = lvi;
+        }
+
+        // before form closes, with reason why if i bother to capture it.
+        public void MyFormClosing()
+        {
+            _config.CaptureConfig(_clientForm);
         }
     }
 }

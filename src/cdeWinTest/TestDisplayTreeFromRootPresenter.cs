@@ -52,7 +52,7 @@ namespace cdeWinTest
             _rootEntries = new List<RootEntry>();
             _rootEntries.Add(CreateTestRoot());
             _mockView = MockRepository.GenerateMock<IDisplayTreeFromRootForm>();
-            _testPresenter = new DisplayTreeFromRootPresenter(_mockView, _rootEntries);
+            _testPresenter = new DisplayTreeFromRootPresenter(_mockView, _rootEntries, null);
         }
 
         [Test]
