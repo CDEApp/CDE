@@ -5,7 +5,7 @@
         public readonly CommonEntry ParentDE;
         public readonly DirEntry ChildDE;
 
-        public string FilePath
+        public string FullPath
         {
             get { return CommonEntry.MakeFullPath(ParentDE, ChildDE); }
         }

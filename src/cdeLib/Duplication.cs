@@ -69,7 +69,7 @@ namespace cdeLib
 
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
-            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FilePath));
+            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FullPath));
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parralel at the grouping level, hopefully this is one group per disk.
@@ -93,7 +93,7 @@ namespace cdeLib
                         Parallel.ForEach(grp, parallelOptions,
                             (flatFile, innerLoopState) =>
                                 {
-                                    CalculatePartialMD5Hash(flatFile.FilePath, flatFile.ChildDE);
+                                    CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
                                     if (Hack.BreakConsoleFlag)
                                     {
                                         //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
@@ -339,7 +339,7 @@ namespace cdeLib
             foreach (var dupe in dupePairs)
             {
                 _logger.LogInfo("--------------------------------------");
-                dupe.Value.ForEach(v => Console.WriteLine("{0}", v.FilePath));
+                dupe.Value.ForEach(v => Console.WriteLine("{0}", v.FullPath));
             }
         }
 

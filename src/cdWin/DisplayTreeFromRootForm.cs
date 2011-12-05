@@ -1,5 +1,7 @@
-﻿using System.Drawing;
+﻿using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
+using cdeLib;
 
 namespace cdeWin
 {
@@ -7,26 +9,34 @@ namespace cdeWin
 
     public interface IDisplayTreeFromRootForm : IView
     {
-        // this doesnt address incremental update,
-        // but that doesnt matter for cde...
-
-        //IEnumerable<ClientReport> Clients { get; set; }
-        //ClientReport GetSelectedClient();
-
         event EventAction OnLoadData;
         event EventAction OnBeforeExpandNode;
         event EventAction OnAfterSelect;
+        event EventAction OnSearchRoots;
+
+        /// <summary>
+        /// Depends on SearchResultListViewItem.
+        /// </summary>
+        event EventAction OnSearchResultRetrieveVirtualItem;
 
         TreeNode TreeViewNodes { get;  set; }
-        //TreeNode ListViewStuff { set; }
 
         TreeNode ActiveBeforeExpandNode { get; set; }
         TreeNode ActiveAfterSelectNode { get; set; }
         bool CancelExpandEvent { get; set; }
+        string Pattern { get; set; }
+        bool RegexMode { get; set; }
+        bool IncludePathInSearch { get; }
 
-        void SetColumnHeaders(string[] cols);
-        void AddListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+        int SearchResultListViewItemIndex { get; set; }
+        ListViewItem SearchResultListViewItem { get; set; }
 
+        void SetDirectoryColumnHeaders(string[] cols);
+        void SetSearchColumnHeaders(string[] cols);
+        void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+        void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+        void SetSearchVirtualList(List<PairDirEntry> pdeList);
+        ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag);
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -39,12 +49,16 @@ namespace cdeWin
 
         private void RegisterCLientEvents()
         {
-            lvEntries.View = View.Details; // detail 
+            whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
+            whatToSearchComboBox.SelectedIndex = 0; // default Include
 
-            btnLoadData.Click += (s, e) => OnLoadData();
 
+            searchResultListView.View = View.Details; // detail 
+            searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
+
+            directoryListView.View = View.Details; // detail 
             CancelExpandEvent = false;
-            tvMain.BeforeExpand += (s, e) => 
+            directoryTreeView.BeforeExpand += (s, e) => 
             {
                 ActiveBeforeExpandNode = e.Node;
                 OnBeforeExpandNode();
@@ -52,80 +66,138 @@ namespace cdeWin
                 CancelExpandEvent = false;
             };
 
-            tvMain.AfterSelect += (s, e) => 
+            directoryTreeView.AfterSelect += (s, e) => 
             {
                 ActiveAfterSelectNode = e.Node;
                 OnAfterSelect();
             };
+
+            searchButton.Click += (s, e) => OnSearchRoots();
+
+            toolStripDropDownButton1.ShowDropDownArrow = false;
+            toolStripDropDownButton1.Click += (s, e) => OnLoadData();
+        }
+
+        private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            SearchResultListViewItemIndex = e.ItemIndex;
+            OnSearchResultRetrieveVirtualItem();
+            e.Item = SearchResultListViewItem;
         }
 
         public event EventAction OnLoadData;
         public event EventAction OnBeforeExpandNode;
         public event EventAction OnAfterSelect;
+        public event EventAction OnSearchRoots;
+        public int SearchResultListViewItemIndex { get; set; }
+        public event EventAction OnSearchResultRetrieveVirtualItem;
+
         public TreeNode ActiveBeforeExpandNode { get; set; }
         public TreeNode ActiveAfterSelectNode { get; set; }
+        public ListViewItem SearchResultListViewItem { get; set; }
 
         /// <summary>
         /// One shot cancel next expand in BeforExpand, then sets back to false.
         /// </summary>
         public bool CancelExpandEvent { get; set; }
 
+        public string Pattern
+        {
+            get { return searchComboBox.Text; }
+            set { searchComboBox.Text = value; }
+        }
+
+        public bool RegexMode
+        {
+            get { return regexCheckbox.Checked; }
+            set { regexCheckbox.Checked = value; }
+        }
+
         /// <summary>
         /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
         /// </summary>
         public TreeNode TreeViewNodes
         {
-            get { return tvMain.Nodes[0]; } // Assumption just one root node.
+            get { return directoryTreeView.Nodes[0]; } // Assumption just one root node.
 
             set
             {
                 //AddColumnHeaders();
-                tvMain.BeginUpdate();
-                tvMain.Nodes.Add(value);
-                tvMain.SelectedNode = tvMain.Nodes[0];
-                tvMain.Nodes[0].Expand();
-                tvMain.Select();
-                tvMain.EndUpdate();
-
-                // TODO set the value of the detail pane. lvEntries
+                if (value != null)
+                {
+                    directoryTreeView.BeginUpdate();
+                    directoryTreeView.Nodes.Add(value);
+                    directoryTreeView.SelectedNode = directoryTreeView.Nodes[0];
+                    directoryTreeView.Nodes[0].Expand();
+                    directoryTreeView.Select();
+                    directoryTreeView.EndUpdate();
+                }
+                // TODO set the value of the detail pane. directoryListView
             }
         }
-
-        //public TreeNode ListViewStuff
-        //{
-        //    set
-        //    {
-        //        var a = lvEntries.DataBindings;
-        //        var b = lvEntries.Items;
-        //        var c = value;
-        //    }
-        //}
 
         /// <summary>
         /// Clear list view and set column headers.
         /// </summary>
         /// <param name="cols"></param>
-        public void SetColumnHeaders(string[] cols)
+        public void SetDirectoryColumnHeaders(string[] cols)
         {
-            lvEntries.Clear();
-            //lvEntries.Items.Clear();
+            SetColumnHeaders(directoryListView, cols);
+        }
+
+        public void SetColumnHeaders(ListView lv, string[] cols)
+        {
+            lv.Clear();
+            //lv.Items.Clear();
             foreach (var col in cols)
             {
-                lvEntries.Columns.Add(col, 100, HorizontalAlignment.Left);
+                lv.Columns.Add(col, 100, HorizontalAlignment.Left);
             }
         }
 
-        public void AddListViewRow(string[] vals, Color firstColumnForeColor, object tag)
+        public void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag)
         {
-            var lvItem = new ListViewItem(vals[0]);     // first val
-            lvItem.UseItemStyleForSubItems = false;     // make styling apply.
-            lvItem.SubItems[0].ForeColor = firstColumnForeColor;   // style our name entries
+            directoryListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
+        }
+
+        public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
+        {
+            var lvItem = new ListViewItem(vals[0]) {UseItemStyleForSubItems = false};
+            lvItem.SubItems[0].ForeColor = firstColumnForeColor;
             lvItem.Tag = tag;
-            for (var i = 1; i < vals.Length; ++i)       // the rest of vals
+            for (var i = 1; i < vals.Length; ++i)
             {
-                var s = lvItem.SubItems.Add(vals[i]);
+                lvItem.SubItems.Add(vals[i]);
             }
-            lvEntries.Items.Add(lvItem);
+            return lvItem;
+        }
+
+        public bool IncludePathInSearch
+        {
+            get { return whatToSearchComboBox.SelectedIndex == 0; }
+        }
+
+        public void SetSearchColumnHeaders(string[] cols)
+        {
+            SetColumnHeaders(searchResultListView, cols);
+        }
+
+        public void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag)
+        {
+            searchResultListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
+        }
+
+        public void SetSearchVirtualList(List<PairDirEntry> pdeList)
+        {
+            searchResultListView.VirtualListSize = pdeList.Count;
+            searchResultListView.VirtualMode = true;
+            searchResultsStatus.Text = "SR " + pdeList.Count.ToString();
+            ForceDrawSearchResultListView();
+        }
+
+        public void ForceDrawSearchResultListView()
+        {
+            searchResultListView.Invalidate();
         }
     }
 }

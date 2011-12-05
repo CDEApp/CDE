@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Windows.Forms;
 using NUnit.Framework;
 using Rhino.Mocks;
@@ -42,15 +43,16 @@ namespace cdeWinTest
         }
 
         private IDisplayTreeFromRootForm _mockView;
-        private RootEntry _rootEntry;
+        private List<RootEntry> _rootEntries;
         private DisplayTreeFromRootPresenter _testPresenter;
 
         [SetUp]
         public void BeforeEveryTest()
         {
-            _rootEntry = CreateTestRoot();
+            _rootEntries = new List<RootEntry>();
+            _rootEntries.Add(CreateTestRoot());
             _mockView = MockRepository.GenerateMock<IDisplayTreeFromRootForm>();
-            _testPresenter = new DisplayTreeFromRootPresenter(_mockView, _rootEntry);
+            _testPresenter = new DisplayTreeFromRootPresenter(_mockView, _rootEntries);
         }
 
         [Test]

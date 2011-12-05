@@ -1,7 +1,11 @@
+using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using cdeLib;
+using cdeLib.Infrastructure;
 
 namespace cdeWin
 {
@@ -12,36 +16,42 @@ namespace cdeWin
     public class DisplayTreeFromRootPresenter : Presenter<IDisplayTreeFromRootForm>, IDisplayTreeFromRootPresenter
     {
         private const string DummyNodeName = "_dummyNode";
-        private readonly IDisplayTreeFromRootForm _clientDisplayTreeFromRootFormForm;
-        private readonly RootEntry _rootEntry;
+        private readonly IDisplayTreeFromRootForm _clientForm;
+        private readonly List<RootEntry> _rootEntries;
 
-        public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm displayTreeFromRootFormForm, RootEntry rootEntry) : base(displayTreeFromRootFormForm)
+        public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm form, List<RootEntry> rootEntries) : base(form)
         {
-            _clientDisplayTreeFromRootFormForm = displayTreeFromRootFormForm;
-            _rootEntry = rootEntry;
+            _clientForm = form;
+            _rootEntries = rootEntries;
         }
 
         public void Display()
         {
             try
             {
-                _clientDisplayTreeFromRootFormForm.ShowDialog();
+                _clientForm.ShowDialog();
             }
             finally
             {
-                _clientDisplayTreeFromRootFormForm.Dispose();
+                _clientForm.Dispose();
             }
         }
 
         public void LoadData()  // OnLoadData handler
         {
-            _clientDisplayTreeFromRootFormForm.TreeViewNodes = BuildRootNode();
+            _clientForm.TreeViewNodes = BuildRootNode();
         }
 
         private TreeNode BuildRootNode()
         {
-            var rootTreeNode = NewTreeNode(_rootEntry, _rootEntry.RootPath);
-            SetDummyChildNode(rootTreeNode, _rootEntry);
+            var rootEntry = _rootEntries == null ? null : _rootEntries.ElementAtOrDefault(0);
+            if (rootEntry == null)
+            {
+                return null;
+            }
+
+            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.RootPath);
+            SetDummyChildNode(rootTreeNode, rootEntry);
             return rootTreeNode;
         }
 
@@ -58,17 +68,22 @@ namespace cdeWin
 
         public void BeforeExpandNode()  // OnBeforeExpandNode handler
         {
-            CreateNodesPreExpand(_clientDisplayTreeFromRootFormForm.ActiveBeforeExpandNode);
+            CreateNodesPreExpand(_clientForm.ActiveBeforeExpandNode);
         }
 
         private static void CreateNodesPreExpand(TreeNode parentNode)
         {
-            if (parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName)
+            if (HasDummyChildNode(parentNode))
             {
                 // Replace Dummy with real nodes now visible.
                 parentNode.Nodes.Clear();
                 AddAllDirectoriesChildren(parentNode, (CommonEntry) parentNode.Tag);
             }
+        }
+
+        private static bool HasDummyChildNode(TreeNode parentNode)
+        {
+            return parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName;
         }
 
         private static void AddAllDirectoriesChildren(TreeNode treeNode, CommonEntry dirEntry)
@@ -99,35 +114,70 @@ namespace cdeWin
 
         public void AfterSelect()  // OnAfterSelect handler
         {
-            var selectedNode = _clientDisplayTreeFromRootFormForm.ActiveAfterSelectNode;
-            SetListView((CommonEntry) selectedNode.Tag);
+            var selectedNode = _clientForm.ActiveAfterSelectNode;
+            SetDirectoryListView((CommonEntry) selectedNode.Tag);
         }
 
         private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
-        readonly string[] _cols = { "Name", "Size", "Modified" };
-        readonly string[] _vals = new string[3]; // hack 
+        readonly string[] _directoryCols = { "Name", "Size", "Modified" };
+        readonly string[] _directoryVals = new string[3]; // hack 
         private readonly Color _listViewForeColor = Color.Black;
         private readonly Color _listViewDirForeColor = Color.Blue;
+        readonly string[] _searchCols = { "Name", "Size", "Modified", "Fullpath" };
+        readonly string[] _searchVals = new string[4]; // hack 
+        private List<PairDirEntry> _searchResults;
 
-        private void SetListView(CommonEntry selectedDirEntry)
+        private void SetDirectoryListView(CommonEntry selectedDirEntry)
         {
-            _clientDisplayTreeFromRootFormForm.SetColumnHeaders(_cols);
+            _clientForm.SetDirectoryColumnHeaders(_directoryCols);
             foreach (var dirEntry in selectedDirEntry.Children)
             {
-                Color itemColor = _listViewForeColor;
-
-                _vals[0] = dirEntry.Name;
-                _vals[1] = dirEntry.Size.ToString(); 
-                if (dirEntry.IsDirectory)
-                {
-                    itemColor = _listViewDirForeColor;
-                    _vals[1] = "<Dir>";
-                }
-                //_vals[1] = dirEntry.IsDirectory ? "<Dir>" : dirEntry.Size.ToString();
-                _vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(ModifiedFieldFormat, dirEntry.Modified);
-                _clientDisplayTreeFromRootFormForm.AddListViewRow(_vals, itemColor, dirEntry);
+                var itemColor = PopulateRowValues(_directoryVals, dirEntry, _listViewForeColor);
+                _clientForm.AddDirectoryListViewRow(_directoryVals, itemColor, dirEntry);
             }
         }
-    }
 
+        private Color PopulateRowValues(string[] vals, DirEntry dirEntry, Color itemColor)
+        {
+            vals[0] = dirEntry.Name;
+            vals[1] = dirEntry.Size.ToString();
+            if (dirEntry.IsDirectory)
+            {
+                itemColor = _listViewDirForeColor;
+                vals[1] = "<Dir>";
+            }
+            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(ModifiedFieldFormat, dirEntry.Modified);
+            return itemColor;
+        }
+
+        public void SearchRoots()
+        {
+            _clientForm.SetSearchColumnHeaders(_searchCols);
+            var pattern = _clientForm.Pattern;
+            var regexMode = _clientForm.RegexMode;
+            if (regexMode)
+            {
+                var regexError = RegexHelper.GetRegexErrorMessage(pattern);
+                if (!string.IsNullOrEmpty(regexError))
+                {
+                    MessageBox.Show(regexError);
+                    return;
+                }
+            }
+
+            var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
+            _searchResults = resultEnum.ToList();
+            _clientForm.SetSearchVirtualList(_searchResults);
+        }
+
+        public void SearchResultRetrieveVirtualItem()
+        {
+            var pairDirEntry = _searchResults[_clientForm.SearchResultListViewItemIndex];
+            var dirEntry = pairDirEntry.ChildDE;
+            var itemColor = PopulateRowValues(_searchVals, dirEntry, _listViewForeColor);
+            _searchVals[3] = pairDirEntry.ParentDE.FullPath;
+            var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
+            _clientForm.SearchResultListViewItem = lvi;
+        }
+    }
 }

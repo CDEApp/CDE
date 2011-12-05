@@ -3,7 +3,7 @@ using System.Text.RegularExpressions;
 
 namespace cdeLib.Infrastructure
 {
-    class RegexHelper
+    public class RegexHelper
     {
         public static string GetRegexErrorMessage(string testPattern)
         {

@@ -12,10 +12,88 @@ namespace cdeLib
         public const string ParamGreppath = "--greppath";
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamGrep, ParamGreppath };
 
+        // ReSharper disable InconsistentNaming
         private static uint _totalFound;
         private static Regex _regex;
         private static string _find;
         private static List<RootEntry> _rootEntries;
+        // ReSharper restore InconsistentNaming
+
+        public static IEnumerable<PairDirEntry> GetSearchHits(IEnumerable<RootEntry> rootEntries, string pattern, bool regexMode, bool includePath)
+        {
+            var pairDirEntries = CommonEntry.GetPairDirEntries(rootEntries);
+
+            if (regexMode)
+            {
+                var regex = new Regex(pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                if (includePath)
+                {
+                    foreach (var pairDirEntry in pairDirEntries)
+                    {
+                        if (regex.IsMatch(pairDirEntry.FullPath))
+                        {
+                            yield return pairDirEntry;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var pairDirEntry in pairDirEntries)
+                    {
+                        if (regex.IsMatch(pairDirEntry.ChildDE.Name))
+                        {
+                            yield return pairDirEntry;
+                        }
+                    }
+                }
+            }
+            else
+            {
+                if (includePath)  // not sure this is useful to users.
+                {
+                    foreach (var pairDirEntry in pairDirEntries)
+                    {
+                        if (pairDirEntry.FullPath.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        {
+                            yield return pairDirEntry;
+                        }
+                    }
+                }
+                else
+                {
+                    foreach (var pairDirEntry in pairDirEntries)
+                    {
+                        if (pairDirEntry.ChildDE.Name.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        {
+                            yield return pairDirEntry;
+                        }
+                    }
+                }
+            }
+            yield break;
+        }
+
+
+        public static void FindString2(string find, string paramString)
+        {
+            Console.WriteLine("Searching for entries that contain \"{0}\"", find);
+            var totalFound = 0L;
+            var e = GetSearchHits(_rootEntries, find, false, false);
+            foreach (var pairDirEntry in e)
+            {
+                ++totalFound;
+                Console.WriteLine("found {0}", pairDirEntry.FullPath);
+            }
+
+            if (totalFound > 0)
+            {
+                Console.WriteLine("Found a total of {0} entries. Matching string \"{1}\"", totalFound, find);
+            }
+            else
+            {
+                Console.WriteLine("No entries found in cached information.");
+            }
+        }
 
         public static void FindString(string find, string paramString)
         {

@@ -183,7 +183,7 @@ namespace cdeLibTest
                 {
                     if (de.ChildDE.IsPartialHash)
                     {
-                        Console.WriteLine("Trouble partial hash {0}", de.FilePath);
+                        Console.WriteLine("Trouble partial hash {0}", de.FullPath);
                         Assert.Fail();
                     }
                 }

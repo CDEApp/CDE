@@ -43,6 +43,7 @@ namespace cde
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
                 Find.FindString(args[1], param0);
+                Find.FindString2(args[1], param0);
             }
             else if (args.Length == 2 && param0 == "--replgreppath")
             {
