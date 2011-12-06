@@ -50,6 +50,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AutoWaitCursor.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="DisplayTreeFromRootForm.cs">
       <SubType>Form</SubType>

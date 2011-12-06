@@ -39,13 +39,13 @@
             this.searchResultPanel = new System.Windows.Forms.Panel();
             this.searchResultListView = new System.Windows.Forms.ListView();
             this.searchControlPanel = new System.Windows.Forms.Panel();
+            this.searchTextBox = new System.Windows.Forms.TextBox();
             this.labelSearchPath = new System.Windows.Forms.Label();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
             this.checkboxFolders = new System.Windows.Forms.CheckBox();
             this.checkboxFiles = new System.Windows.Forms.CheckBox();
             this.searchButton = new System.Windows.Forms.Button();
             this.regexCheckbox = new System.Windows.Forms.CheckBox();
-            this.searchComboBox = new System.Windows.Forms.ComboBox();
             this.searchLabel = new System.Windows.Forms.Label();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
@@ -79,7 +79,7 @@
             this.directoryTreeView.HideSelection = false;
             this.directoryTreeView.Location = new System.Drawing.Point(0, 0);
             this.directoryTreeView.Name = "directoryTreeView";
-            this.directoryTreeView.Size = new System.Drawing.Size(179, 444);
+            this.directoryTreeView.Size = new System.Drawing.Size(179, 420);
             this.directoryTreeView.TabIndex = 0;
             // 
             // directoryListView
@@ -87,7 +87,7 @@
             this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.directoryListView.Location = new System.Drawing.Point(0, 0);
             this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(355, 444);
+            this.directoryListView.Size = new System.Drawing.Size(355, 420);
             this.directoryListView.TabIndex = 2;
             this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
@@ -159,19 +159,26 @@
             // 
             // searchControlPanel
             // 
+            this.searchControlPanel.Controls.Add(this.searchTextBox);
             this.searchControlPanel.Controls.Add(this.labelSearchPath);
             this.searchControlPanel.Controls.Add(this.whatToSearchComboBox);
             this.searchControlPanel.Controls.Add(this.checkboxFolders);
             this.searchControlPanel.Controls.Add(this.checkboxFiles);
             this.searchControlPanel.Controls.Add(this.searchButton);
             this.searchControlPanel.Controls.Add(this.regexCheckbox);
-            this.searchControlPanel.Controls.Add(this.searchComboBox);
             this.searchControlPanel.Controls.Add(this.searchLabel);
             this.searchControlPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.searchControlPanel.Location = new System.Drawing.Point(3, 3);
             this.searchControlPanel.Name = "searchControlPanel";
             this.searchControlPanel.Size = new System.Drawing.Size(538, 68);
             this.searchControlPanel.TabIndex = 0;
+            // 
+            // searchTextBox
+            // 
+            this.searchTextBox.Location = new System.Drawing.Point(87, 2);
+            this.searchTextBox.Name = "searchTextBox";
+            this.searchTextBox.Size = new System.Drawing.Size(253, 20);
+            this.searchTextBox.TabIndex = 8;
             // 
             // labelSearchPath
             // 
@@ -234,14 +241,6 @@
             this.regexCheckbox.Text = "Rege&x";
             this.regexCheckbox.UseVisualStyleBackColor = true;
             // 
-            // searchComboBox
-            // 
-            this.searchComboBox.FormattingEnabled = true;
-            this.searchComboBox.Location = new System.Drawing.Point(87, 1);
-            this.searchComboBox.Name = "searchComboBox";
-            this.searchComboBox.Size = new System.Drawing.Size(253, 21);
-            this.searchComboBox.TabIndex = 1;
-            // 
             // searchLabel
             // 
             this.searchLabel.AutoSize = true;
@@ -269,7 +268,7 @@
             this.catalogResultPanel.Dock = System.Windows.Forms.DockStyle.Fill;
             this.catalogResultPanel.Location = new System.Drawing.Point(3, 103);
             this.catalogResultPanel.Name = "catalogResultPanel";
-            this.catalogResultPanel.Size = new System.Drawing.Size(538, 344);
+            this.catalogResultPanel.Size = new System.Drawing.Size(538, 320);
             this.catalogResultPanel.TabIndex = 1;
             // 
             // catalogResultListView
@@ -277,7 +276,7 @@
             this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
             this.catalogResultListView.Name = "catalogResultListView";
-            this.catalogResultListView.Size = new System.Drawing.Size(538, 344);
+            this.catalogResultListView.Size = new System.Drawing.Size(538, 320);
             this.catalogResultListView.TabIndex = 0;
             this.catalogResultListView.UseCompatibleStateImageBehavior = false;
             // 
@@ -313,7 +312,7 @@
             // splitContainer1.Panel2
             // 
             this.splitContainer1.Panel2.Controls.Add(this.directoryListView);
-            this.splitContainer1.Size = new System.Drawing.Size(538, 444);
+            this.splitContainer1.Size = new System.Drawing.Size(538, 420);
             this.splitContainer1.SplitterDistance = 179;
             this.splitContainer1.TabIndex = 0;
             // 
@@ -416,7 +415,6 @@
         private System.Windows.Forms.SplitContainer splitContainer1;
         private System.Windows.Forms.Panel searchResultPanel;
         private System.Windows.Forms.Panel searchControlPanel;
-        private System.Windows.Forms.ComboBox searchComboBox;
         private System.Windows.Forms.Label searchLabel;
         private System.Windows.Forms.Panel catalogResultPanel;
         private System.Windows.Forms.Panel catalogControlPanel;
@@ -433,6 +431,7 @@
         private System.Windows.Forms.CheckBox checkboxFiles;
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
         private System.Windows.Forms.Label labelSearchPath;
+        private System.Windows.Forms.TextBox searchTextBox;
     }
 }
 

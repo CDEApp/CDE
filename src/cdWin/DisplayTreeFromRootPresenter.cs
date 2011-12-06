@@ -177,6 +177,8 @@ namespace cdeWin
                 }
             }
 
+            _clientForm.AddSearchTextBoxAutoComplete(pattern);
+
             var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
             _searchResults = resultEnum.ToList();
             _clientForm.SetSearchVirtualList(_searchResults);

@@ -119,14 +119,14 @@ namespace cdeWin
         [ProtoMember(5)]
         public int PatternHistoryLength = DefaultPatternHistoryLength;
         [ProtoMember(6)]
-        public List<string> PreviousRegexPattern;
+        public List<string> PreviousRegexPatternHistory;
         [ProtoMember(7)]
-        public List<string> PreviousPattern;
+        public List<string> PreviousPatternHistory;
 
         public Configuration()
         {
-            PreviousRegexPattern = new List<string>(DefaultPatternHistoryLength);
-            PreviousPattern = new List<string>(DefaultPatternHistoryLength);
+            PreviousRegexPatternHistory = new List<string>(DefaultPatternHistoryLength);
+            PreviousPatternHistory = new List<string>(DefaultPatternHistoryLength);
         }
     }
 
@@ -225,13 +225,17 @@ namespace cdeWin
             // these values are not available after Form closed.
             Active.DirectoryListView.SaveColumnWidths(form.GetDirectoryListViewColumns);
             Active.SearchResultListView.SaveColumnWidths(form.GetSearchResultListViewColumns);
+            Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
+            //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
 
-        public void SetForm(DisplayTreeFromRootFormForm mainForm)
+        public void SetConfigOnForm(DisplayTreeFromRootFormForm mainForm)
         {
             Active.MainWindowConfig.RestoreForm(mainForm);
             mainForm.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);
             mainForm.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
+            mainForm.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
+            //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
 
@@ -48,10 +49,16 @@ namespace cdeWin
         void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void SetSearchVirtualList(List<PairDirEntry> pdeList);
         ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag);
+
+        void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
+        void AddSearchTextBoxAutoComplete(string pattern);
+        List<string> GetSearchTextBoxAutoComplete();
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
     {
+        private AutoCompleteStringCollection searchTextBoxHistory;
+
         public DisplayTreeFromRootFormForm()
         {
             InitializeComponent();
@@ -60,6 +67,7 @@ namespace cdeWin
             //Console.WriteLine("Height " + Size.Height);
         }
 
+        // sets some configuration stuff to... ? hmmm split or not good idea ? 
         private void RegisterClientEvents()
         {
             FormClosing += (s, e) => OnMyFormClosing();
@@ -67,11 +75,12 @@ namespace cdeWin
             whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
             whatToSearchComboBox.SelectedIndex = 0; // default Include
 
-
             searchResultListView.View = View.Details; // detail 
+            searchResultListView.FullRowSelect = true;
             searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
 
             directoryListView.View = View.Details; // detail 
+            directoryListView.FullRowSelect = true;
 
             CancelExpandEvent = false;
             directoryTreeView.BeforeExpand += (s, e) => 
@@ -92,6 +101,13 @@ namespace cdeWin
 
             toolStripDropDownButton1.ShowDropDownArrow = false;
             toolStripDropDownButton1.Click += (s, e) => OnLoadData();
+
+            AcceptButton = searchButton;
+
+            AutoWaitCursor.Cursor = Cursors.WaitCursor;
+            AutoWaitCursor.Delay = new TimeSpan(0,0,0,0,25);
+            AutoWaitCursor.MainWindowHandle = Handle; // might need to be in Load event of form.
+            AutoWaitCursor.Start();
         }
 
         private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
@@ -120,8 +136,8 @@ namespace cdeWin
 
         public string Pattern
         {
-            get { return searchComboBox.Text; }
-            set { searchComboBox.Text = value; }
+            get { return searchTextBox.Text; }
+            set { searchTextBox.Text = value; }
         }
 
         public bool RegexMode
@@ -210,7 +226,6 @@ namespace cdeWin
             searchResultListView.VirtualMode = true;
             searchResultsStatus.Text = "SR " + pdeList.Count.ToString();
             ForceDrawSearchResultListView();
-            ListView.ColumnHeaderCollection a = this.directoryListView.Columns;
         }
 
         public void ForceDrawSearchResultListView()
@@ -226,6 +241,44 @@ namespace cdeWin
         public ListView.ColumnHeaderCollection GetSearchResultListViewColumns
         {
             get { return searchResultListView.Columns; }
+        }
+
+        public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
+        {
+            searchTextBox.AutoCompleteMode = AutoCompleteMode.Suggest;
+            searchTextBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            searchTextBox.AutoCompleteCustomSource = history.ToAutoCompleteStringCollection();
+        }
+
+        public void AddSearchTextBoxAutoComplete(string pattern)
+        {
+            var ac = searchTextBox.AutoCompleteCustomSource;
+            if (!ac.Contains(pattern))
+            {
+                ac.Add(pattern);
+            }
+        }
+
+        public List<string> GetSearchTextBoxAutoComplete()
+        {
+            var list = new List<string>(20);
+            list.AddRange(searchTextBox.AutoCompleteCustomSource.Cast<string>());
+            return list;
+        }
+
+    }
+
+    public static class EnumerableExtensionsEx
+    {
+        public static AutoCompleteStringCollection ToAutoCompleteStringCollection(this IEnumerable<string> enumerable)
+        {
+            if (enumerable == null) throw new ArgumentNullException("enumerable");
+            var autoComplete = new AutoCompleteStringCollection();
+            foreach (var item in enumerable)
+            {
+                autoComplete.Add(item);
+            }
+            return autoComplete;
         }
     }
 }

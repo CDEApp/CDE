@@ -20,7 +20,7 @@ namespace cdeWin
             RootEntries = RootEntry.LoadCurrentDirCache();
 
             var mainForm = new DisplayTreeFromRootFormForm();
-            config.SetForm(mainForm);
+            config.SetConfigOnForm(mainForm);
 
             var mainPresenter = new DisplayTreeFromRootPresenter(mainForm, RootEntries, config);
 
