@@ -57,8 +57,6 @@ namespace cdeWin
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
     {
-        private AutoCompleteStringCollection searchTextBoxHistory;
-
         public DisplayTreeFromRootFormForm()
         {
             InitializeComponent();
