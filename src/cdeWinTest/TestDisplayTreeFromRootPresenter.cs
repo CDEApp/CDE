@@ -61,14 +61,14 @@ namespace cdeWinTest
             _testPresenter.LoadData();
 
             // now that have get; can do it this way instead of AssertWasCalled complexity.
-            //TreeNode rootNode = _mockView.TreeViewNodes;
+            //TreeNode rootNode = _mockView.DirectoryTreeViewNodes;
             //Assert.That(rootNode.Text, Is.EqualTo(testRootPath));
             //Assert.That(rootNode.Nodes.Count, Is.EqualTo(1));
             //Assert.That(rootNode.Nodes[0].Text, Is.EqualTo(DummyNodeName));
 
             // this was working -- adding a getter to property breaks this 
             // BROKE cause it was Stub not Mock - odd it breaks only once add getter though.
-            _mockView.AssertWasCalled(x => x.TreeViewNodes
+            _mockView.AssertWasCalled(x => x.DirectoryTreeViewNodes
                 = Arg<TreeNode>.Matches( new PredicateConstraint<TreeNode>(
                         y => y.Text == testRootPath
                              && y.Nodes.Count == 1
@@ -79,14 +79,14 @@ namespace cdeWinTest
         public void ExpandRootNode_PoplulatesFirstLevelChildren()
         {
             _testPresenter.LoadData();
-            var rootNode = _mockView.TreeViewNodes;
-            _mockView.ActiveBeforeExpandNode = rootNode;
+            var rootNode = _mockView.DirectoryTreeViewNodes;
+            _mockView.DirectoryTreeViewActiveBeforeExpandNode = rootNode;
 
-            _testPresenter.BeforeExpandNode();
+            _testPresenter.DirectoryTreeViewBeforeExpandNode();
 
          //   Assert.That(rootNode.Nodes.Count, Is.EqualTo(1));
          //   Assert.That(rootNode.Nodes[0].Text, Is.EqualTo(testDirName));
-            _mockView.AssertWasCalled(x => x.TreeViewNodes
+            _mockView.AssertWasCalled(x => x.DirectoryTreeViewNodes
                 = Arg<TreeNode>.Matches(new PredicateConstraint<TreeNode>(
                             y => y.Text == testRootPath
                              && y.Nodes.Count == 1

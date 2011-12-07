@@ -18,41 +18,49 @@ namespace cdeWin
     public interface IDisplayTreeFromRootForm : IView
     {
         event EventAction OnLoadData;
-        event EventAction OnBeforeExpandNode;
-        event EventAction OnAfterSelect;
+        event EventAction OnDirectoryTreeViewBeforeExpandNode;
+        event EventAction OnDirectoryTreeViewAfterSelect;
         event EventAction OnSearchRoots;
         event EventAction OnMyFormClosing;
+        event EventAction OnCatalogListViewItemActivate;
 
         /// <summary>
         /// Depends on SearchResultListViewItem.
         /// </summary>
         event EventAction OnSearchResultRetrieveVirtualItem;
+        event EventAction OnDirectoryRetrieveVirtualItem;
 
-        TreeNode TreeViewNodes { get;  set; }
+        TreeNode DirectoryTreeViewNodes { get;  set; }
 
-        TreeNode ActiveBeforeExpandNode { get; set; }
-        TreeNode ActiveAfterSelectNode { get; set; }
-        bool CancelExpandEvent { get; set; }
+        TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+        TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
+        bool DirectoryTreeViewCancelExpandEvent { get; set; }
+
         string Pattern { get; set; }
         bool RegexMode { get; set; }
         bool IncludePathInSearch { get; }
 
         int SearchResultListViewItemIndex { get; set; }
+        int DirectoryListViewItemIndex { get; set; }
         ListViewItem SearchResultListViewItem { get; set; }
+        ListViewItem DirectoryListViewItem { get; set; }
 
         void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns);
         void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns);
         ListView.ColumnHeaderCollection GetDirectoryListViewColumns { get; }
         ListView.ColumnHeaderCollection GetSearchResultListViewColumns { get; }
+        ListView.ColumnHeaderCollection GetCatalogListViewColumns { get; }
 
-        void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag);
-        void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag);
-        void SetSearchVirtualList(List<PairDirEntry> pdeList);
+        //void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+        void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag);
+        void SetSearchResultVirtualList(List<PairDirEntry> pdeList);
+        void SetDirectoryVirtualList(CommonEntry parentCommonEntry);
         ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag);
 
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
         void AddSearchTextBoxAutoComplete(string pattern);
         List<string> GetSearchTextBoxAutoComplete();
+        RootEntry ActiveCatalogAfterSelectRootEntry { get; }
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -73,26 +81,27 @@ namespace cdeWin
             whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
             whatToSearchComboBox.SelectedIndex = 0; // default Include
 
-            searchResultListView.View = View.Details; // detail 
+            searchResultListView.View = View.Details;
             searchResultListView.FullRowSelect = true;
             searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
 
-            directoryListView.View = View.Details; // detail 
+            directoryListView.View = View.Details;
             directoryListView.FullRowSelect = true;
+            directoryListView.RetrieveVirtualItem += OnDirectoryListViewOnRetrieveVirtualItem;
 
-            CancelExpandEvent = false;
+            DirectoryTreeViewCancelExpandEvent = false;
             directoryTreeView.BeforeExpand += (s, e) => 
             {
-                ActiveBeforeExpandNode = e.Node;
-                OnBeforeExpandNode();
-                e.Cancel = CancelExpandEvent;
-                CancelExpandEvent = false;
+                DirectoryTreeViewActiveBeforeExpandNode = e.Node;
+                OnDirectoryTreeViewBeforeExpandNode();
+                e.Cancel = DirectoryTreeViewCancelExpandEvent;
+                DirectoryTreeViewCancelExpandEvent = false;
             };
 
             directoryTreeView.AfterSelect += (s, e) => 
             {
-                ActiveAfterSelectNode = e.Node;
-                OnAfterSelect();
+                DirectoryTreeViewActiveAfterSelectNode = e.Node;
+                OnDirectoryTreeViewAfterSelect();
             };
 
             searchButton.Click += (s, e) => OnSearchRoots();
@@ -100,13 +109,31 @@ namespace cdeWin
             toolStripDropDownButton1.ShowDropDownArrow = false;
             toolStripDropDownButton1.Click += (s, e) => OnLoadData();
 
-            AcceptButton = searchButton;
+            // Enter in Search Text Box fires Search Button.
+            searchTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
+            searchTextBox.LostFocus += (s, e) => AcceptButton = null;
 
             AutoWaitCursor.Cursor = Cursors.WaitCursor;
             AutoWaitCursor.Delay = new TimeSpan(0,0,0,0,25);
-            AutoWaitCursor.MainWindowHandle = Handle; // might need to be in Load event of form.
+            AutoWaitCursor.MainWindowHandle = Handle;
             AutoWaitCursor.Start();
+
+            catalogResultListView.MultiSelect = false;
+            catalogResultListView.View = View.Details;
+            catalogResultListView.FullRowSelect = true;
+            catalogResultListView.Activation = ItemActivation.Standard;
+            catalogResultListView.ItemActivate += OnCatalogResultListViewOnItemActivate;
         }
+
+        private void OnCatalogResultListViewOnItemActivate(object sender, EventArgs e)
+        {
+            // Catalog List View has multi select off.
+            ActiveCatalogAfterSelectRootEntry = catalogResultListView.SelectedItems[0].Tag as RootEntry;
+            OnCatalogListViewItemActivate();
+        }
+
+        public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
+
 
         private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
@@ -115,22 +142,34 @@ namespace cdeWin
             e.Item = SearchResultListViewItem;
         }
 
+        private void OnDirectoryListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
+        {
+            DirectoryListViewItemIndex = e.ItemIndex;
+            OnDirectoryRetrieveVirtualItem();
+            e.Item = DirectoryListViewItem;
+        }
+
         public event EventAction OnLoadData;
-        public event EventAction OnBeforeExpandNode;
-        public event EventAction OnAfterSelect;
+        public event EventAction OnDirectoryTreeViewBeforeExpandNode;
+        public event EventAction OnDirectoryTreeViewAfterSelect;
         public event EventAction OnSearchRoots;
         public int SearchResultListViewItemIndex { get; set; }
+        public int DirectoryListViewItemIndex { get; set; }
         public event EventAction OnSearchResultRetrieveVirtualItem;
+        public event EventAction OnDirectoryRetrieveVirtualItem;
         public event EventAction OnMyFormClosing;
+        public event EventAction OnCatalogListViewItemActivate;
 
-        public TreeNode ActiveBeforeExpandNode { get; set; }
-        public TreeNode ActiveAfterSelectNode { get; set; }
+        public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+        public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
+        public CommonEntry ActiveDirectoryAfterSelectNode { get; set; }
         public ListViewItem SearchResultListViewItem { get; set; }
+        public ListViewItem DirectoryListViewItem { get; set; }
 
         /// <summary>
         /// One shot cancel next expand in BeforExpand, then sets back to false.
         /// </summary>
-        public bool CancelExpandEvent { get; set; }
+        public bool DirectoryTreeViewCancelExpandEvent { get; set; }
 
         public string Pattern
         {
@@ -147,7 +186,7 @@ namespace cdeWin
         /// <summary>
         /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
         /// </summary>
-        public TreeNode TreeViewNodes
+        public TreeNode DirectoryTreeViewNodes
         {
             get { return directoryTreeView.Nodes[0]; } // Assumption just one root node.
 
@@ -156,13 +195,13 @@ namespace cdeWin
                 if (value != null)
                 {
                     directoryTreeView.BeginUpdate();
+                    directoryTreeView.Nodes.Clear();
                     directoryTreeView.Nodes.Add(value);
                     directoryTreeView.SelectedNode = directoryTreeView.Nodes[0];
                     directoryTreeView.Nodes[0].Expand();
                     directoryTreeView.Select();
                     directoryTreeView.EndUpdate();
                 }
-                // TODO set the value of the detail pane. directoryListView
             }
         }
 
@@ -184,6 +223,11 @@ namespace cdeWin
                     lv.Columns.Add(col.Name, col.Width, col.Alignment);
                 }
             }
+        }
+
+        public void ClearDirectoryListView()
+        {
+            directoryListView.Clear();
         }
 
         public void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag)
@@ -213,12 +257,12 @@ namespace cdeWin
             SetColumnHeaders(searchResultListView, columns);
         }
 
-        public void AddSearchListViewRow(string[] vals, Color firstColumnForeColor, object tag)
+        public void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag)
         {
-            searchResultListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
+            catalogResultListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
         }
 
-        public void SetSearchVirtualList(List<PairDirEntry> pdeList)
+        public void SetSearchResultVirtualList(List<PairDirEntry> pdeList)
         {
             searchResultListView.VirtualListSize = pdeList.Count;
             searchResultListView.VirtualMode = true;
@@ -231,6 +275,18 @@ namespace cdeWin
             searchResultListView.Invalidate();
         }
 
+        public void SetDirectoryVirtualList(CommonEntry parentCommonEntry)
+        {
+            directoryListView.VirtualListSize = parentCommonEntry.Children.Count;
+            directoryListView.VirtualMode = true;
+            ForceDrawDirectoryListView();
+        }
+
+        public void ForceDrawDirectoryListView()
+        {
+            directoryListView.Invalidate();
+        }
+
         public ListView.ColumnHeaderCollection GetDirectoryListViewColumns
         {
             get { return directoryListView.Columns; }
@@ -239,6 +295,11 @@ namespace cdeWin
         public ListView.ColumnHeaderCollection GetSearchResultListViewColumns
         {
             get { return searchResultListView.Columns; }
+        }
+
+        public ListView.ColumnHeaderCollection GetCatalogListViewColumns
+        {
+            get { return catalogResultListView.Columns; }
         }
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
@@ -264,6 +325,10 @@ namespace cdeWin
             return list;
         }
 
+        public void SetCatalogColumnHeaders(IEnumerable<ColumnConfig> columns)
+        {
+            SetColumnHeaders(catalogResultListView, columns);
+        }
     }
 
     public static class EnumerableExtensionsEx

@@ -14,7 +14,7 @@ namespace cdeLib
     {
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
-        public ICollection<DirEntry> Children { get; set; }
+        public IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
         [ProtoMember(4, IsRequired = true)]

@@ -1,8 +1,6 @@
-using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Infrastructure;
@@ -15,16 +13,34 @@ namespace cdeWin
 
     public class DisplayTreeFromRootPresenter : Presenter<IDisplayTreeFromRootForm>, IDisplayTreeFromRootPresenter
     {
+        private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
         private const string DummyNodeName = "_dummyNode";
+        private readonly Color _listViewForeColor = Color.Black;
+        private readonly Color _listViewDirForeColor = Color.Blue;
+
         private readonly IDisplayTreeFromRootForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
-        private Config _config;
+        private readonly Config _config;
+
+        private readonly string[] _directoryVals;
+        private readonly string[] _searchVals;
+        private readonly string[] _catalogVals;
+
+        private List<PairDirEntry> _searchResults;
+        private CommonEntry _directoryListViewCommonEntry;
 
         public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
             _clientForm = form;
             _rootEntries = rootEntries;
             _config = config;
+
+            var cfg = _config.Active;
+            _directoryVals = new string[cfg.DirectoryListView.Columns.Count];
+            _searchVals = new string[cfg.SearchResultListView.Columns.Count];
+            _catalogVals = new string[cfg.CatalogListView.Columns.Count];
+
+            SetCatalogListView(rootEntries);
         }
 
         public void Display()
@@ -41,7 +57,7 @@ namespace cdeWin
 
         public void LoadData()  // OnLoadData handler
         {
-            _clientForm.TreeViewNodes = BuildRootNode();
+            _clientForm.DirectoryTreeViewNodes = BuildRootNode();
         }
 
         private TreeNode BuildRootNode()
@@ -52,6 +68,11 @@ namespace cdeWin
                 return null;
             }
 
+            return BuildRootNode(rootEntry);
+        }
+
+        private static TreeNode BuildRootNode(RootEntry rootEntry)
+        {
             var rootTreeNode = NewTreeNode(rootEntry, rootEntry.RootPath);
             SetDummyChildNode(rootTreeNode, rootEntry);
             return rootTreeNode;
@@ -68,9 +89,9 @@ namespace cdeWin
             }
         }
 
-        public void BeforeExpandNode()  // OnBeforeExpandNode handler
+        public void DirectoryTreeViewBeforeExpandNode()
         {
-            CreateNodesPreExpand(_clientForm.ActiveBeforeExpandNode);
+            CreateNodesPreExpand(_clientForm.DirectoryTreeViewActiveBeforeExpandNode);
         }
 
         private static void CreateNodesPreExpand(TreeNode parentNode)
@@ -114,31 +135,7 @@ namespace cdeWin
             };
         }
 
-        public void AfterSelect()  // OnAfterSelect handler
-        {
-            var selectedNode = _clientForm.ActiveAfterSelectNode;
-            SetDirectoryListView((CommonEntry) selectedNode.Tag);
-        }
-
-        private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
-        readonly string[] _directoryCols = { "Name", "Size", "Modified" };
-        readonly string[] _directoryVals = new string[3]; // hack 
-        private readonly Color _listViewForeColor = Color.Black;
-        private readonly Color _listViewDirForeColor = Color.Blue;
-        readonly string[] _searchCols = { "Name", "Size", "Modified", "Fullpath" };
-        readonly string[] _searchVals = new string[4]; // hack 
-        private List<PairDirEntry> _searchResults;
-
-        private void SetDirectoryListView(CommonEntry selectedDirEntry)
-        {
-            foreach (var dirEntry in selectedDirEntry.Children)
-            {
-                var itemColor = PopulateRowValues(_directoryVals, dirEntry, _listViewForeColor);
-                _clientForm.AddDirectoryListViewRow(_directoryVals, itemColor, dirEntry);
-            }
-        }
-
-        private Color PopulateRowValues(string[] vals, DirEntry dirEntry, Color itemColor)
+        private Color CreateValuesForDirEntry(IList<string> vals, DirEntry dirEntry, Color itemColor)
         {
             vals[0] = dirEntry.Name;
             vals[1] = dirEntry.Size.ToString();
@@ -163,6 +160,31 @@ namespace cdeWin
             return itemColor;
         }
 
+        private void SetCatalogListView(IEnumerable<RootEntry> rootEntries)
+        {
+            foreach (var rootEntry in rootEntries)
+            {
+                var itemColor = CreateValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
+                _clientForm.AddCatalogListViewRow(_catalogVals, itemColor, rootEntry);
+            }
+        }
+
+        private Color CreateValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
+        {
+            vals[0] = rootEntry.RootPath;
+            vals[1] = rootEntry.VolumeName;
+            vals[2] = rootEntry.DirCount.ToString();
+            vals[3] = rootEntry.FileCount.ToString();
+            vals[4] = (rootEntry.DirCount + rootEntry.FileCount).ToString();
+            vals[5] = rootEntry.DriveLetterHint;
+            vals[6] = rootEntry.AvailSpace.ToHRString();
+            vals[7] = rootEntry.UsedSpace.ToHRString();
+            vals[8] = string.Format(ModifiedFieldFormat, rootEntry.ScanStartUTC);
+            vals[9] = rootEntry.Description;
+
+            return listViewForeColor;
+        }
+
         public void SearchRoots()
         {
             var pattern = _clientForm.Pattern;
@@ -181,23 +203,44 @@ namespace cdeWin
 
             var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
             _searchResults = resultEnum.ToList();
-            _clientForm.SetSearchVirtualList(_searchResults);
+            _clientForm.SetSearchResultVirtualList(_searchResults);
         }
 
         public void SearchResultRetrieveVirtualItem()
         {
             var pairDirEntry = _searchResults[_clientForm.SearchResultListViewItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
-            var itemColor = PopulateRowValues(_searchVals, dirEntry, _listViewForeColor);
+            var itemColor = CreateValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             _clientForm.SearchResultListViewItem = lvi;
         }
 
-        // before form closes, with reason why if i bother to capture it.
+        public void DirectoryTreeViewAfterSelect()
+        {
+            var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
+            _directoryListViewCommonEntry = (CommonEntry)selectedNode.Tag;
+            _clientForm.SetDirectoryVirtualList(_directoryListViewCommonEntry);
+        }
+
+        public void DirectoryRetrieveVirtualItem()
+        {
+            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.DirectoryListViewItemIndex];
+            var itemColor = CreateValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
+            var lvi = _clientForm.BuildListViewItem(_directoryVals, itemColor, dirEntry);
+            _clientForm.DirectoryListViewItem = lvi;
+        }
+
+        // before form closes capture any changed configuration.
         public void MyFormClosing()
         {
             _config.CaptureConfig(_clientForm);
+        }
+
+        public void CatalogListViewItemActivate()
+        {
+            _clientForm.DirectoryTreeViewNodes = BuildRootNode(_clientForm.ActiveCatalogAfterSelectRootEntry);
+            // TODO change the Active Tab in interface I Think go to directory tree to see it.
         }
     }
 }

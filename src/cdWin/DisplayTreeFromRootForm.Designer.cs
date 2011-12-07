@@ -51,6 +51,7 @@
             this.catalogResultPanel = new System.Windows.Forms.Panel();
             this.catalogResultListView = new System.Windows.Forms.ListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
+            this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
             this.splitContainer1 = new System.Windows.Forms.SplitContainer();
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
@@ -65,6 +66,7 @@
             this.searchControlPanel.SuspendLayout();
             this.catalogTab.SuspendLayout();
             this.catalogResultPanel.SuspendLayout();
+            this.catalogControlPanel.SuspendLayout();
             this.directoryTab.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
             this.splitContainer1.Panel1.SuspendLayout();
@@ -266,9 +268,9 @@
             // 
             this.catalogResultPanel.Controls.Add(this.catalogResultListView);
             this.catalogResultPanel.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.catalogResultPanel.Location = new System.Drawing.Point(3, 103);
+            this.catalogResultPanel.Location = new System.Drawing.Point(3, 26);
             this.catalogResultPanel.Name = "catalogResultPanel";
-            this.catalogResultPanel.Size = new System.Drawing.Size(538, 320);
+            this.catalogResultPanel.Size = new System.Drawing.Size(538, 397);
             this.catalogResultPanel.TabIndex = 1;
             // 
             // catalogResultListView
@@ -276,17 +278,27 @@
             this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
             this.catalogResultListView.Name = "catalogResultListView";
-            this.catalogResultListView.Size = new System.Drawing.Size(538, 320);
+            this.catalogResultListView.Size = new System.Drawing.Size(538, 397);
             this.catalogResultListView.TabIndex = 0;
             this.catalogResultListView.UseCompatibleStateImageBehavior = false;
             // 
             // catalogControlPanel
             // 
+            this.catalogControlPanel.Controls.Add(this.labelCatalogPlaceholder);
             this.catalogControlPanel.Dock = System.Windows.Forms.DockStyle.Top;
             this.catalogControlPanel.Location = new System.Drawing.Point(3, 3);
             this.catalogControlPanel.Name = "catalogControlPanel";
-            this.catalogControlPanel.Size = new System.Drawing.Size(538, 100);
+            this.catalogControlPanel.Size = new System.Drawing.Size(538, 23);
             this.catalogControlPanel.TabIndex = 0;
+            // 
+            // labelCatalogPlaceholder
+            // 
+            this.labelCatalogPlaceholder.AutoSize = true;
+            this.labelCatalogPlaceholder.Location = new System.Drawing.Point(4, 4);
+            this.labelCatalogPlaceholder.Name = "labelCatalogPlaceholder";
+            this.labelCatalogPlaceholder.Size = new System.Drawing.Size(229, 13);
+            this.labelCatalogPlaceholder.TabIndex = 0;
+            this.labelCatalogPlaceholder.Text = "Place to put create catalog controls eventually.";
             // 
             // directoryTab
             // 
@@ -389,6 +401,8 @@
             this.searchControlPanel.PerformLayout();
             this.catalogTab.ResumeLayout(false);
             this.catalogResultPanel.ResumeLayout(false);
+            this.catalogControlPanel.ResumeLayout(false);
+            this.catalogControlPanel.PerformLayout();
             this.directoryTab.ResumeLayout(false);
             this.splitContainer1.Panel1.ResumeLayout(false);
             this.splitContainer1.Panel2.ResumeLayout(false);
@@ -432,6 +446,7 @@
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
         private System.Windows.Forms.Label labelSearchPath;
         private System.Windows.Forms.TextBox searchTextBox;
+        private System.Windows.Forms.Label labelCatalogPlaceholder;
     }
 }
 

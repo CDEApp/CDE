@@ -23,7 +23,6 @@ namespace cdeWin
             config.SetConfigOnForm(mainForm);
 
             var mainPresenter = new DisplayTreeFromRootPresenter(mainForm, RootEntries, config);
-
             mainPresenter.Display();
             //Application.Run(new DisplayTreeFromRootPresenter());
 

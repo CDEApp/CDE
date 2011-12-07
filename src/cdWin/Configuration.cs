@@ -114,18 +114,17 @@ namespace cdeWin
         public ListViewConfig SearchResultListView;
         [ProtoMember(4)]
         public ListViewConfig DirectoryListView;
+        [ProtoMember(5)]
+        public ListViewConfig CatalogListView;
 
         public const int DefaultPatternHistoryLength = 20;
-        [ProtoMember(5)]
-        public int PatternHistoryLength = DefaultPatternHistoryLength;
         [ProtoMember(6)]
-        public List<string> PreviousRegexPatternHistory;
+        public int PatternHistoryLength = DefaultPatternHistoryLength;
         [ProtoMember(7)]
         public List<string> PreviousPatternHistory;
 
         public Configuration()
         {
-            PreviousRegexPatternHistory = new List<string>(DefaultPatternHistoryLength);
             PreviousPatternHistory = new List<string>(DefaultPatternHistoryLength);
         }
     }
@@ -160,6 +159,22 @@ namespace cdeWin
                     new ColumnConfig { Name="Name", Width=260},
                     new ColumnConfig { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Modified", Width=130 },
+                }
+            },
+            CatalogListView = new ListViewConfig
+            {
+                Columns = new List<ColumnConfig>
+                {
+                    new ColumnConfig { Name="Root Path", Width=100},
+                    new ColumnConfig { Name="Volume Name", Width=100},
+                    new ColumnConfig { Name="Dirs", Width=60, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Files", Width=60, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="D+F", Width=60, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Drive Hint", Width=60},
+                    new ColumnConfig { Name="Space", Width=70, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Created", Width=130 }, // NOTE convert from UTC ?
+                    new ColumnConfig { Name="Description", Width=150 },
                 }
             },
         };
@@ -225,6 +240,7 @@ namespace cdeWin
             // these values are not available after Form closed.
             Active.DirectoryListView.SaveColumnWidths(form.GetDirectoryListViewColumns);
             Active.SearchResultListView.SaveColumnWidths(form.GetSearchResultListViewColumns);
+            Active.CatalogListView.SaveColumnWidths(form.GetCatalogListViewColumns);
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
             //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
@@ -234,6 +250,7 @@ namespace cdeWin
             Active.MainWindowConfig.RestoreForm(mainForm);
             mainForm.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);
             mainForm.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
+            mainForm.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
             mainForm.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
             //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
