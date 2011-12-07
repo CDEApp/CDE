@@ -30,6 +30,8 @@ namespace cdeLib
             Children = new List<DirEntry>();    // only needed for dir's but who cares.
         }
 
+        abstract public bool IsRoot();
+
         public CommonEntry FindClosestParentDir(string relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath))

@@ -22,7 +22,9 @@ namespace cdeWin
         event EventAction OnSearchRoots;
         event EventAction OnMyFormClosing;
         event EventAction OnCatalogListViewItemActivate;
-
+        event EventAction OnDirectoryListViewItemActivate;
+        event EventAction OnSearchResultListViewItemActivate;
+        
         /// <summary>
         /// Depends on SearchResultListViewItem.
         /// </summary>
@@ -59,6 +61,8 @@ namespace cdeWin
         void AddSearchTextBoxAutoComplete(string pattern);
         List<string> GetSearchTextBoxAutoComplete();
         RootEntry ActiveCatalogAfterSelectRootEntry { get; }
+        int ActiveDirectoryEntryAfterActivate { get; }
+        int ActiveSearchResultEntryAfterActivate { get; }
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -82,10 +86,12 @@ namespace cdeWin
             searchResultListView.View = View.Details;
             searchResultListView.FullRowSelect = true;
             searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
+            searchResultListView.ItemActivate += OnSearchresultListViewOnItemActivate;
 
             directoryListView.View = View.Details;
             directoryListView.FullRowSelect = true;
             directoryListView.RetrieveVirtualItem += OnDirectoryListViewOnRetrieveVirtualItem;
+            directoryListView.ItemActivate += OnDirectoryListViewOnItemActivate;
 
             DirectoryTreeViewCancelExpandEvent = false;
             directoryTreeView.BeforeExpand += (s, e) => 
@@ -120,19 +126,41 @@ namespace cdeWin
             catalogResultListView.View = View.Details;
             catalogResultListView.FullRowSelect = true;
             catalogResultListView.Activation = ItemActivation.Standard;
-            catalogResultListView.ItemActivate += OnCatalogResultListViewOnItemActivate;
+            catalogResultListView.ItemActivate += OnCatalogListViewOnItemActivate;
         }
 
-        private void OnCatalogResultListViewOnItemActivate(object sender, EventArgs e)
+        private void OnCatalogListViewOnItemActivate(object sender, EventArgs e)
         {
             // Catalog List View has multi select off.
             ActiveCatalogAfterSelectRootEntry = catalogResultListView.SelectedItems[0].Tag as RootEntry;
             OnCatalogListViewItemActivate();
         }
 
+        private void OnDirectoryListViewOnItemActivate(object sender, EventArgs e)
+        {
+            // Only activate if single item selected for now.
+            if (directoryListView.SelectedIndices.Count == 1)
+            {
+                ActiveDirectoryEntryAfterActivate = directoryListView.SelectedIndices[0];
+                OnDirectoryListViewItemActivate();
+            }
+        }
+
+        private void OnSearchresultListViewOnItemActivate(object sender, EventArgs e)
+        {
+            // Only activate if single item selected for now.
+            if (searchResultListView.SelectedIndices.Count == 1)
+            {
+                ActiveSearchResultEntryAfterActivate = searchResultListView.SelectedIndices[0];
+                OnSearchResultListViewItemActivate();
+            }
+        }
+        
+
         public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
-
-
+        public int ActiveDirectoryEntryAfterActivate { get; private set; }
+        public int ActiveSearchResultEntryAfterActivate { get; private set; }
+        
         private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             SearchResultListViewItemIndex = e.ItemIndex;
@@ -156,7 +184,9 @@ namespace cdeWin
         public event EventAction OnDirectoryRetrieveVirtualItem;
         public event EventAction OnMyFormClosing;
         public event EventAction OnCatalogListViewItemActivate;
-
+        public event EventAction OnDirectoryListViewItemActivate;
+        public event EventAction OnSearchResultListViewItemActivate;
+        
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
         public CommonEntry ActiveDirectoryAfterSelectNode { get; set; }

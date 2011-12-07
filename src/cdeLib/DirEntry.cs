@@ -169,6 +169,11 @@ namespace cdeLib
         {
         }
 
+        override public bool IsRoot()
+        {
+            return false;
+        }
+
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
             Name = fs.FileName;

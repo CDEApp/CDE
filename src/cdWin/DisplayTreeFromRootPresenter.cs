@@ -226,5 +226,33 @@ namespace cdeWin
             _clientForm.DirectoryTreeViewNodes = BuildRootNode(_clientForm.ActiveCatalogAfterSelectRootEntry);
             // TODO change the Active Tab in interface I Think go to directory tree to see it.
         }
+
+        public void DirectoryListViewItemActivate()
+        {
+            // Have activated on a entry in Directory List View.
+            // If its a folder then change the tree view to select this folder.
+            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryEntryAfterActivate];
+
+
+            // _directoryListViewCommonEntry is the parent of our DirectoryListView control.
+            MessageBox.Show(_directoryListViewCommonEntry.FullPath + " == " + dirEntry.Name);
+
+            // given a path - set the right root ? and expand path to right node ?
+            // need it navigating from SearchResults....
+
+            // treeview may not have a selected node any more ?
+            // we should keep the directory our listview is showing somewhere ?
+
+            // maybe later launch the file we double clicked on ?
+
+        }
+
+        public void SearchResultListViewItemActivate()
+        {
+            var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultEntryAfterActivate];
+
+            MessageBox.Show(pairDirEntry.RootDE.RootPath + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Name);
+
+        }
     }
 }

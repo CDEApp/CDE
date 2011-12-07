@@ -30,6 +30,7 @@ namespace cdeLib
                 {
                     foreach (var pairDirEntry in pairDirEntries)
                     {
+                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
                         if (regex.IsMatch(pairDirEntry.FullPath))
                         {
                             yield return pairDirEntry;
@@ -40,6 +41,7 @@ namespace cdeLib
                 {
                     foreach (var pairDirEntry in pairDirEntries)
                     {
+                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
                         if (regex.IsMatch(pairDirEntry.ChildDE.Name))
                         {
                             yield return pairDirEntry;
@@ -53,6 +55,7 @@ namespace cdeLib
                 {
                     foreach (var pairDirEntry in pairDirEntries)
                     {
+                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
                         if (pairDirEntry.FullPath.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
                         {
                             yield return pairDirEntry;
@@ -63,6 +66,7 @@ namespace cdeLib
                 {
                     foreach (var pairDirEntry in pairDirEntries)
                     {
+                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
                         if (pairDirEntry.ChildDE.Name.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
                         {
                             yield return pairDirEntry;

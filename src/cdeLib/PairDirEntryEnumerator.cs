@@ -8,6 +8,7 @@ namespace cdeLib
         private readonly IEnumerable<RootEntry> _rootEntries;
         private PairDirEntry _current;
         private Stack<CommonEntry> _entries;
+        private RootEntry _rootEntry;
         private CommonEntry _parentDirEntry;
         private IEnumerator<DirEntry> _childEnumerator;
 
@@ -58,6 +59,10 @@ namespace cdeLib
                 if (_entries.Count > 0)
                 {
                     var de = _entries.Pop();
+                    if (de.IsRoot())
+                    {
+                        _rootEntry = (RootEntry)de;
+                    }
                     _parentDirEntry = de;
                     _childEnumerator = de.Children.GetEnumerator();
                 }
@@ -68,7 +73,7 @@ namespace cdeLib
                 if (_childEnumerator.MoveNext())
                 {
                     var de = _childEnumerator.Current;
-                    _current = new PairDirEntry(_parentDirEntry, de);
+                    _current = new PairDirEntry(_parentDirEntry, de, _rootEntry);
                     if (de.IsDirectory)
                     {
                         _entries.Push(de);

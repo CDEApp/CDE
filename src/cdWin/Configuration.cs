@@ -242,7 +242,6 @@ namespace cdeWin
             Active.SearchResultListView.SaveColumnWidths(form.GetSearchResultListViewColumns);
             Active.CatalogListView.SaveColumnWidths(form.GetCatalogListViewColumns);
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
-            //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
 
         public void SetConfigOnForm(DisplayTreeFromRootFormForm mainForm)
@@ -252,7 +251,6 @@ namespace cdeWin
             mainForm.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
             mainForm.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
             mainForm.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
-            //mainForm.SetSearchTextBoxAutoComplete(new List<string> { "test", "testing", "suppose", "^Program" });
         }
     }
 }
