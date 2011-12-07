@@ -55,22 +55,6 @@ namespace cdeWin
             }
         }
 
-        public void LoadData()  // OnLoadData handler
-        {
-            _clientForm.DirectoryTreeViewNodes = BuildRootNode();
-        }
-
-        private TreeNode BuildRootNode()
-        {
-            var rootEntry = _rootEntries == null ? null : _rootEntries.ElementAtOrDefault(0);
-            if (rootEntry == null)
-            {
-                return null;
-            }
-
-            return BuildRootNode(rootEntry);
-        }
-
         private static TreeNode BuildRootNode(RootEntry rootEntry)
         {
             var rootTreeNode = NewTreeNode(rootEntry, rootEntry.RootPath);
@@ -135,7 +119,7 @@ namespace cdeWin
             };
         }
 
-        private Color CreateValuesForDirEntry(IList<string> vals, DirEntry dirEntry, Color itemColor)
+        private Color CreateRowValuesForDirEntry(IList<string> vals, DirEntry dirEntry, Color itemColor)
         {
             vals[0] = dirEntry.Name;
             vals[1] = dirEntry.Size.ToString();
@@ -164,12 +148,12 @@ namespace cdeWin
         {
             foreach (var rootEntry in rootEntries)
             {
-                var itemColor = CreateValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
+                var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
                 _clientForm.AddCatalogListViewRow(_catalogVals, itemColor, rootEntry);
             }
         }
 
-        private Color CreateValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
+        private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
         {
             vals[0] = rootEntry.RootPath;
             vals[1] = rootEntry.VolumeName;
@@ -210,7 +194,7 @@ namespace cdeWin
         {
             var pairDirEntry = _searchResults[_clientForm.SearchResultListViewItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
-            var itemColor = CreateValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
+            var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             _clientForm.SearchResultListViewItem = lvi;
@@ -226,7 +210,7 @@ namespace cdeWin
         public void DirectoryRetrieveVirtualItem()
         {
             var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.DirectoryListViewItemIndex];
-            var itemColor = CreateValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
+            var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = _clientForm.BuildListViewItem(_directoryVals, itemColor, dirEntry);
             _clientForm.DirectoryListViewItem = lvi;
         }

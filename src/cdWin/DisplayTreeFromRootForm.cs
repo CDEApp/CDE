@@ -17,7 +17,6 @@ namespace cdeWin
 
     public interface IDisplayTreeFromRootForm : IView
     {
-        event EventAction OnLoadData;
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;
         event EventAction OnSearchRoots;
@@ -51,7 +50,6 @@ namespace cdeWin
         ListView.ColumnHeaderCollection GetSearchResultListViewColumns { get; }
         ListView.ColumnHeaderCollection GetCatalogListViewColumns { get; }
 
-        //void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void SetSearchResultVirtualList(List<PairDirEntry> pdeList);
         void SetDirectoryVirtualList(CommonEntry parentCommonEntry);
@@ -107,7 +105,7 @@ namespace cdeWin
             searchButton.Click += (s, e) => OnSearchRoots();
 
             toolStripDropDownButton1.ShowDropDownArrow = false;
-            toolStripDropDownButton1.Click += (s, e) => OnLoadData();
+            //toolStripDropDownButton1.Click += (s, e) => OnLoadData();
 
             // Enter in Search Text Box fires Search Button.
             searchTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
@@ -149,7 +147,6 @@ namespace cdeWin
             e.Item = DirectoryListViewItem;
         }
 
-        public event EventAction OnLoadData;
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
         public event EventAction OnSearchRoots;
@@ -223,16 +220,6 @@ namespace cdeWin
                     lv.Columns.Add(col.Name, col.Width, col.Alignment);
                 }
             }
-        }
-
-        public void ClearDirectoryListView()
-        {
-            directoryListView.Clear();
-        }
-
-        public void AddDirectoryListViewRow(string[] vals, Color firstColumnForeColor, object tag)
-        {
-            directoryListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
         }
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)

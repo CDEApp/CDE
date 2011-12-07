@@ -58,7 +58,8 @@ namespace cdeWinTest
         [Test]
         public void LoadData_TreeViewNodes_IsSetForRoot()
         {
-            _testPresenter.LoadData();
+            //_testPresenter.LoadData();
+            Assert.Fail("LoadData() no longer avail it was a hack");
 
             // now that have get; can do it this way instead of AssertWasCalled complexity.
             //TreeNode rootNode = _mockView.DirectoryTreeViewNodes;
@@ -78,7 +79,9 @@ namespace cdeWinTest
         [Test]
         public void ExpandRootNode_PoplulatesFirstLevelChildren()
         {
-            _testPresenter.LoadData();
+            //_testPresenter.LoadData();
+            Assert.Fail("LoadData() no longer avail it was a hack");
+
             var rootNode = _mockView.DirectoryTreeViewNodes;
             _mockView.DirectoryTreeViewActiveBeforeExpandNode = rootNode;
 
