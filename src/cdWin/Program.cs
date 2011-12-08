@@ -27,7 +27,7 @@ namespace cdeWin
             //Application.Run(new DisplayTreeFromRootPresenter());
 
             var active = config.Active;
-            active.MainWindowConfig.CaptureForm(mainForm);
+            active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
         }
     }
