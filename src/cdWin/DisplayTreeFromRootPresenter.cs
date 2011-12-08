@@ -164,7 +164,8 @@ namespace cdeWin
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
             vals[8] = string.Format(ModifiedFieldFormat, rootEntry.ScanStartUTC);
-            vals[9] = rootEntry.Description;
+            vals[9] = rootEntry.DefaultFileName; // todo give full path ? or actual file name ?
+            vals[10] = rootEntry.Description;
 
             return listViewForeColor;
         }

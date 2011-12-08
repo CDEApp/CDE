@@ -174,6 +174,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Space", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Created", Width=130 }, // NOTE convert from UTC ?
+                    new ColumnConfig { Name="Catalog File", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }
             },
