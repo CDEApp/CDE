@@ -219,13 +219,13 @@ namespace cdeWin
         // before form closes capture any changed configuration.
         public void MyFormClosing()
         {
-            _config.CaptureConfig(_clientForm);
+            _config.RecordConfig(_clientForm);
         }
 
         public void CatalogListViewItemActivate()
         {
             _clientForm.DirectoryTreeViewNodes = BuildRootNode(_clientForm.ActiveCatalogAfterSelectRootEntry);
-            // TODO change the Active Tab in interface I Think go to directory tree to see it.
+            _clientForm.SelectDirectoryPane();
         }
 
         public void DirectoryListViewItemActivate()

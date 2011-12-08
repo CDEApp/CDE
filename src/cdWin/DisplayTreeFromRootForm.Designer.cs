@@ -53,7 +53,10 @@
             this.catalogControlPanel = new System.Windows.Forms.Panel();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
-            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.directorySplitContainer = new System.Windows.Forms.SplitContainer();
+            this.directoryBottomPanel = new System.Windows.Forms.Panel();
+            this.copyPathButton = new System.Windows.Forms.Button();
+            this.directoryPathTextBox = new System.Windows.Forms.TextBox();
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.catalogsLoadedStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
@@ -68,10 +71,11 @@
             this.catalogResultPanel.SuspendLayout();
             this.catalogControlPanel.SuspendLayout();
             this.directoryTab.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
-            this.splitContainer1.Panel1.SuspendLayout();
-            this.splitContainer1.Panel2.SuspendLayout();
-            this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.directorySplitContainer)).BeginInit();
+            this.directorySplitContainer.Panel1.SuspendLayout();
+            this.directorySplitContainer.Panel2.SuspendLayout();
+            this.directorySplitContainer.SuspendLayout();
+            this.directoryBottomPanel.SuspendLayout();
             this.mainStatusStrip.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -81,7 +85,7 @@
             this.directoryTreeView.HideSelection = false;
             this.directoryTreeView.Location = new System.Drawing.Point(0, 0);
             this.directoryTreeView.Name = "directoryTreeView";
-            this.directoryTreeView.Size = new System.Drawing.Size(179, 420);
+            this.directoryTreeView.Size = new System.Drawing.Size(179, 393);
             this.directoryTreeView.TabIndex = 0;
             // 
             // directoryListView
@@ -89,7 +93,7 @@
             this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
             this.directoryListView.Location = new System.Drawing.Point(0, 0);
             this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(355, 420);
+            this.directoryListView.Size = new System.Drawing.Size(355, 393);
             this.directoryListView.TabIndex = 2;
             this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
@@ -302,7 +306,8 @@
             // 
             // directoryTab
             // 
-            this.directoryTab.Controls.Add(this.splitContainer1);
+            this.directoryTab.Controls.Add(this.directorySplitContainer);
+            this.directoryTab.Controls.Add(this.directoryBottomPanel);
             this.directoryTab.Location = new System.Drawing.Point(4, 22);
             this.directoryTab.Name = "directoryTab";
             this.directoryTab.Padding = new System.Windows.Forms.Padding(3);
@@ -311,22 +316,51 @@
             this.directoryTab.Text = "Directory";
             this.directoryTab.UseVisualStyleBackColor = true;
             // 
-            // splitContainer1
+            // directorySplitContainer
             // 
-            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.splitContainer1.Location = new System.Drawing.Point(3, 3);
-            this.splitContainer1.Name = "splitContainer1";
+            this.directorySplitContainer.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.directorySplitContainer.Location = new System.Drawing.Point(3, 3);
+            this.directorySplitContainer.Name = "directorySplitContainer";
             // 
-            // splitContainer1.Panel1
+            // directorySplitContainer.Panel1
             // 
-            this.splitContainer1.Panel1.Controls.Add(this.directoryTreeView);
+            this.directorySplitContainer.Panel1.Controls.Add(this.directoryTreeView);
             // 
-            // splitContainer1.Panel2
+            // directorySplitContainer.Panel2
             // 
-            this.splitContainer1.Panel2.Controls.Add(this.directoryListView);
-            this.splitContainer1.Size = new System.Drawing.Size(538, 420);
-            this.splitContainer1.SplitterDistance = 179;
-            this.splitContainer1.TabIndex = 0;
+            this.directorySplitContainer.Panel2.Controls.Add(this.directoryListView);
+            this.directorySplitContainer.Size = new System.Drawing.Size(538, 393);
+            this.directorySplitContainer.SplitterDistance = 179;
+            this.directorySplitContainer.TabIndex = 0;
+            // 
+            // directoryBottomPanel
+            // 
+            this.directoryBottomPanel.Controls.Add(this.copyPathButton);
+            this.directoryBottomPanel.Controls.Add(this.directoryPathTextBox);
+            this.directoryBottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.directoryBottomPanel.Location = new System.Drawing.Point(3, 396);
+            this.directoryBottomPanel.Name = "directoryBottomPanel";
+            this.directoryBottomPanel.Size = new System.Drawing.Size(538, 27);
+            this.directoryBottomPanel.TabIndex = 1;
+            // 
+            // copyPathButton
+            // 
+            this.copyPathButton.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.copyPathButton.Location = new System.Drawing.Point(3, 3);
+            this.copyPathButton.Name = "copyPathButton";
+            this.copyPathButton.Size = new System.Drawing.Size(75, 23);
+            this.copyPathButton.TabIndex = 2;
+            this.copyPathButton.Text = "Copy Path";
+            this.copyPathButton.UseVisualStyleBackColor = true;
+            // 
+            // directoryPathTextBox
+            // 
+            this.directoryPathTextBox.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
+            this.directoryPathTextBox.Location = new System.Drawing.Point(84, 5);
+            this.directoryPathTextBox.Name = "directoryPathTextBox";
+            this.directoryPathTextBox.Size = new System.Drawing.Size(449, 20);
+            this.directoryPathTextBox.TabIndex = 1;
             // 
             // mainStatusStrip
             // 
@@ -390,6 +424,7 @@
             this.Controls.Add(this.mainStatusStrip);
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
+            this.MinimumSize = new System.Drawing.Size(400, 300);
             this.Name = "DisplayTreeFromRootFormForm";
             this.Text = "cdeWinView";
             this.menuStrip1.ResumeLayout(false);
@@ -404,10 +439,12 @@
             this.catalogControlPanel.ResumeLayout(false);
             this.catalogControlPanel.PerformLayout();
             this.directoryTab.ResumeLayout(false);
-            this.splitContainer1.Panel1.ResumeLayout(false);
-            this.splitContainer1.Panel2.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
-            this.splitContainer1.ResumeLayout(false);
+            this.directorySplitContainer.Panel1.ResumeLayout(false);
+            this.directorySplitContainer.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.directorySplitContainer)).EndInit();
+            this.directorySplitContainer.ResumeLayout(false);
+            this.directoryBottomPanel.ResumeLayout(false);
+            this.directoryBottomPanel.PerformLayout();
             this.mainStatusStrip.ResumeLayout(false);
             this.mainStatusStrip.PerformLayout();
             this.ResumeLayout(false);
@@ -426,7 +463,7 @@
         private System.Windows.Forms.TabPage searchTab;
         private System.Windows.Forms.TabPage catalogTab;
         private System.Windows.Forms.TabPage directoryTab;
-        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.SplitContainer directorySplitContainer;
         private System.Windows.Forms.Panel searchResultPanel;
         private System.Windows.Forms.Panel searchControlPanel;
         private System.Windows.Forms.Label searchLabel;
@@ -447,6 +484,9 @@
         private System.Windows.Forms.Label labelSearchPath;
         private System.Windows.Forms.TextBox searchTextBox;
         private System.Windows.Forms.Label labelCatalogPlaceholder;
+        private System.Windows.Forms.Panel directoryBottomPanel;
+        private System.Windows.Forms.Button copyPathButton;
+        private System.Windows.Forms.TextBox directoryPathTextBox;
     }
 }
 

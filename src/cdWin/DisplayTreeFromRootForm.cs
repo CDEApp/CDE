@@ -48,9 +48,9 @@ namespace cdeWin
 
         void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns);
         void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns);
-        ListView.ColumnHeaderCollection GetDirectoryListViewColumns { get; }
-        ListView.ColumnHeaderCollection GetSearchResultListViewColumns { get; }
-        ListView.ColumnHeaderCollection GetCatalogListViewColumns { get; }
+        IEnumerable<ColumnConfig> GetDirectoryListViewColumns { get; }
+        IEnumerable<ColumnConfig> GetSearchResultListViewColumns { get; }
+        IEnumerable<ColumnConfig> GetCatalogListViewColumns { get; }
 
         void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag);
         void SetSearchResultVirtualList(List<PairDirEntry> pdeList);
@@ -63,19 +63,45 @@ namespace cdeWin
         RootEntry ActiveCatalogAfterSelectRootEntry { get; }
         int ActiveDirectoryEntryAfterActivate { get; }
         int ActiveSearchResultEntryAfterActivate { get; }
+        void SelectDirectoryPane();
+        float DirectoryPanelSplitterRatio { get; set; }
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
     {
+        public event EventAction OnDirectoryTreeViewBeforeExpandNode;
+        public event EventAction OnDirectoryTreeViewAfterSelect;
+        public event EventAction OnSearchRoots;
+        public event EventAction OnSearchResultRetrieveVirtualItem;
+        public event EventAction OnDirectoryRetrieveVirtualItem;
+        public event EventAction OnMyFormClosing;
+        public event EventAction OnCatalogListViewItemActivate;
+        public event EventAction OnDirectoryListViewItemActivate;
+        public event EventAction OnSearchResultListViewItemActivate;
+        public event EventAction OnDirectoryListViewSelectedIndexChanged;
+
+        public int SearchResultListViewItemIndex { get; set; }
+        public int DirectoryListViewItemIndex { get; set; }
+        public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+        public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
+        public CommonEntry ActiveDirectoryAfterSelectNode { get; set; }
+        public ListViewItem SearchResultListViewItem { get; set; }
+        public ListViewItem DirectoryListViewItem { get; set; }
+        public IEnumerable<int> SelectedDirectoryIndices { get; set; }
+
+        /// <summary>
+        /// One shot cancel next expand in BeforExpand, then sets back to false.
+        /// </summary>
+        public bool DirectoryTreeViewCancelExpandEvent { get; set; }
+
         public DisplayTreeFromRootFormForm()
         {
             InitializeComponent();
             RegisterClientEvents();
-            //Console.WriteLine("Width " + Size.Width);
-            //Console.WriteLine("Height " + Size.Height);
         }
 
         // sets some configuration stuff to... ? hmmm split or not good idea ? 
+
         private void RegisterClientEvents()
         {
             FormClosing += (s, e) => OnMyFormClosing();
@@ -155,12 +181,14 @@ namespace cdeWin
                 OnSearchResultListViewItemActivate();
             }
         }
-        
+
 
         public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
+
         public int ActiveDirectoryEntryAfterActivate { get; private set; }
+
         public int ActiveSearchResultEntryAfterActivate { get; private set; }
-        
+
         private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             SearchResultListViewItemIndex = e.ItemIndex;
@@ -174,29 +202,6 @@ namespace cdeWin
             OnDirectoryRetrieveVirtualItem();
             e.Item = DirectoryListViewItem;
         }
-
-        public event EventAction OnDirectoryTreeViewBeforeExpandNode;
-        public event EventAction OnDirectoryTreeViewAfterSelect;
-        public event EventAction OnSearchRoots;
-        public int SearchResultListViewItemIndex { get; set; }
-        public int DirectoryListViewItemIndex { get; set; }
-        public event EventAction OnSearchResultRetrieveVirtualItem;
-        public event EventAction OnDirectoryRetrieveVirtualItem;
-        public event EventAction OnMyFormClosing;
-        public event EventAction OnCatalogListViewItemActivate;
-        public event EventAction OnDirectoryListViewItemActivate;
-        public event EventAction OnSearchResultListViewItemActivate;
-        
-        public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
-        public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
-        public CommonEntry ActiveDirectoryAfterSelectNode { get; set; }
-        public ListViewItem SearchResultListViewItem { get; set; }
-        public ListViewItem DirectoryListViewItem { get; set; }
-
-        /// <summary>
-        /// One shot cancel next expand in BeforExpand, then sets back to false.
-        /// </summary>
-        public bool DirectoryTreeViewCancelExpandEvent { get; set; }
 
         public string Pattern
         {
@@ -304,19 +309,30 @@ namespace cdeWin
             directoryListView.Invalidate();
         }
 
-        public ListView.ColumnHeaderCollection GetDirectoryListViewColumns
+        public IEnumerable<ColumnConfig> GetDirectoryListViewColumns
         {
-            get { return directoryListView.Columns; }
+            get { return ColumnConfigs(directoryListView.Columns); }
         }
 
-        public ListView.ColumnHeaderCollection GetSearchResultListViewColumns
+        public IEnumerable<ColumnConfig> GetSearchResultListViewColumns
         {
-            get { return searchResultListView.Columns; }
+            get { return ColumnConfigs(searchResultListView.Columns); }
         }
 
-        public ListView.ColumnHeaderCollection GetCatalogListViewColumns
+        public IEnumerable<ColumnConfig> GetCatalogListViewColumns
         {
-            get { return catalogResultListView.Columns; }
+            get { return ColumnConfigs(catalogResultListView.Columns); }
+        }
+
+        private IEnumerable<ColumnConfig> ColumnConfigs(ListView.ColumnHeaderCollection chc)
+        {
+            var columns = chc.OfType<ColumnHeader>();
+            return columns.Select(columnHeader =>
+                                  new ColumnConfig
+                                      {
+                                          Name = columnHeader.Text,
+                                          Width = columnHeader.Width
+                                      });
         }
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
@@ -346,9 +362,46 @@ namespace cdeWin
         {
             SetColumnHeaders(catalogResultListView, columns);
         }
+
+        public void SelectDirectoryPane()
+        {
+            mainTabControl.SelectTab(2);
+        }
+
+        public float DirectoryPanelSplitterRatio
+        { 
+            get { return directorySplitContainer.GetSplitterRatio(); }
+            set { directorySplitContainer.SetSplitterRatio(value); } 
+        }
     }
 
-    public static class EnumerableExtensionsEx
+    public static class SplitContainerExtensions
+    {
+        public static float GetSplitterRatio(this SplitContainer splitter)
+        {
+            return (float)splitter.SplitterDistance/splitter.GetSplitterSize();
+        }
+
+        public static void SetSplitterRatio(this SplitContainer splitter, float splitterRatio)
+        {
+            var currentSize = splitter.GetSplitterSize();
+            var newDistance = (int)(currentSize * splitterRatio);
+            if (newDistance >= splitter.Panel1MinSize   // Set splitter if Valid splitter distance
+                && newDistance <= (currentSize - splitter.Panel2MinSize))
+            {   
+                splitter.SplitterDistance = newDistance;
+            }
+        }
+
+        public static int GetSplitterSize(this SplitContainer splitter)
+        {
+            return splitter.Orientation == Orientation.Vertical
+                       ? splitter.Width
+                       : splitter.Height;
+        }
+    }
+
+    public static class EnumerableStringExtensions
     {
         public static AutoCompleteStringCollection ToAutoCompleteStringCollection(this IEnumerable<string> enumerable)
         {

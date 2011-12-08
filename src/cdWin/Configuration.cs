@@ -48,7 +48,7 @@ namespace cdeWin
             form.WindowState = WindowState;
         }
 
-        public void FromForm(Form form)
+        public void RecordForm(Form form)
         {
             WindowState = form.WindowState;
 
@@ -84,21 +84,22 @@ namespace cdeWin
     [ProtoContract]
     public class ListViewConfig
     {
-        [ProtoMember(1)] public List<ColumnConfig> Columns;
+        [ProtoMember(1)]
+        public List<ColumnConfig> Columns;
 
         /// <summary>
         /// Only capture column width changes, nothing else at the moment.
         /// </summary>
-        public void SaveColumnWidths(ListView.ColumnHeaderCollection liveColumns)
+        public void RecordColumnWidths(IEnumerable<ColumnConfig> liveColumns)
         {
-            foreach (ColumnHeader liveColumn in liveColumns)
+            foreach (var liveColumn in liveColumns)
             {
-                var saveCol = Columns.FirstOrDefault(x => x.Name == liveColumn.Text);
+                var saveCol = Columns.FirstOrDefault(x => x.Name == liveColumn.Name);
                 if (saveCol != null)
                 {
                     saveCol.Width = liveColumn.Width;
                 }
-            }
+            } 
         }
     }
 
@@ -122,6 +123,8 @@ namespace cdeWin
         public int PatternHistoryLength = DefaultPatternHistoryLength;
         [ProtoMember(7)]
         public List<string> PreviousPatternHistory;
+        [ProtoMember(8)]
+        public float DirectoryPaneSplitterRatio;
 
         public Configuration()
         {
@@ -178,6 +181,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Description", Width=150 },
                 }
             },
+            DirectoryPaneSplitterRatio = -1f
         };
 
         public Configuration Loaded;
@@ -202,7 +206,9 @@ namespace cdeWin
                         return Read(fs);
                     }
                 }
+                // ReSharper disable EmptyGeneralCatchClause
                 catch { }
+                // ReSharper restore EmptyGeneralCatchClause
             }
             return null;
         }
@@ -222,7 +228,9 @@ namespace cdeWin
                     return true;
                 }
             }
+            // ReSharper disable EmptyGeneralCatchClause
             catch { }
+            // ReSharper restore EmptyGeneralCatchClause
             return false;
         }
 
@@ -236,22 +244,24 @@ namespace cdeWin
             Serializer.Serialize(output, Active);
         }
 
-        public void CaptureConfig(IDisplayTreeFromRootForm form)
+        public void RecordConfig(IDisplayTreeFromRootForm form)
         {
-            // these values are not available after Form closed.
-            Active.DirectoryListView.SaveColumnWidths(form.GetDirectoryListViewColumns);
-            Active.SearchResultListView.SaveColumnWidths(form.GetSearchResultListViewColumns);
-            Active.CatalogListView.SaveColumnWidths(form.GetCatalogListViewColumns);
+            // Record values before Form is closed.
+            Active.DirectoryListView.RecordColumnWidths(form.GetDirectoryListViewColumns);
+            Active.SearchResultListView.RecordColumnWidths(form.GetSearchResultListViewColumns);
+            Active.CatalogListView.RecordColumnWidths(form.GetCatalogListViewColumns);
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
+            Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
         }
 
-        public void SetConfigOnForm(DisplayTreeFromRootFormForm mainForm)
+        public void RestoreConfig(DisplayTreeFromRootFormForm form)
         {
-            Active.MainWindowConfig.RestoreForm(mainForm);
-            mainForm.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);
-            mainForm.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
-            mainForm.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
-            mainForm.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
+            Active.MainWindowConfig.RestoreForm(form);
+            form.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);
+            form.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
+            form.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
+            form.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
+            form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
         }
     }
 }

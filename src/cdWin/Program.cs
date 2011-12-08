@@ -20,14 +20,14 @@ namespace cdeWin
             RootEntries = RootEntry.LoadCurrentDirCache();
 
             var mainForm = new DisplayTreeFromRootFormForm();
-            config.SetConfigOnForm(mainForm);
+            config.RestoreConfig(mainForm);
 
             var mainPresenter = new DisplayTreeFromRootPresenter(mainForm, RootEntries, config);
             mainPresenter.Display();
             //Application.Run(new DisplayTreeFromRootPresenter());
 
             var active = config.Active;
-            active.MainWindowConfig.FromForm(mainForm);
+            active.MainWindowConfig.CaptureForm(mainForm);
             config.Save();
         }
     }
