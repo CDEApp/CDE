@@ -20,7 +20,6 @@ namespace cdeLib
         [ProtoMember(4, IsRequired = true)]
         public ulong Size { get; set; }
 
-        [ProtoMember(5, IsRequired = false)]
         public CommonEntry ParentCommonEntry { get; set; }
 
         /// <summary>
