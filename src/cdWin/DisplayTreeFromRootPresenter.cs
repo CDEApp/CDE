@@ -205,6 +205,7 @@ namespace cdeWin
         {
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
             _directoryListViewCommonEntry = (CommonEntry)selectedNode.Tag;
+            _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.FullPath;
             _clientForm.SetDirectoryVirtualList(_directoryListViewCommonEntry);
         }
 
@@ -232,11 +233,33 @@ namespace cdeWin
         {
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
-            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryEntryAfterActivate];
-
+            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
 
             // _directoryListViewCommonEntry is the parent of our DirectoryListView control.
             MessageBox.Show(_directoryListViewCommonEntry.FullPath + " == " + dirEntry.Name);
+
+            // - want the set of DirEntry leading from root to dirEntry...
+            // then passing that to form - select hose ? using 'tag' ? or name ? ick name.
+
+            var list = new List<DirEntry>(5);
+            // every item in list view has a parent, it might be RootEntry
+            var currentCommonEntry = dirEntry;
+            list.Add(currentCommonEntry);
+            var parentCommonEntry = currentCommonEntry.ParentCommonEntry;
+            while (parentCommonEntry.ParentCommonEntry != null)
+            {
+                currentCommonEntry = (DirEntry)parentCommonEntry;
+                list.Add(currentCommonEntry);
+                parentCommonEntry = parentCommonEntry.ParentCommonEntry;
+            }
+
+            var rootEntry = (RootEntry)parentCommonEntry;
+            list.Reverse(); // is now from root
+
+            MessageBox.Show("rootEntry.RootPath " + rootEntry.RootPath + " [" + list.Count + "]");
+            // NOTE: FullPath is not set for files.....
+            var listTrace = list.Aggregate("", (current, commonEntry) => current + ("_" + commonEntry.Name));
+            MessageBox.Show(listTrace);
 
             // given a path - set the right root ? and expand path to right node ?
             // need it navigating from SearchResults....
@@ -245,15 +268,35 @@ namespace cdeWin
             // we should keep the directory our listview is showing somewhere ?
 
             // maybe later launch the file we double clicked on ?
-
         }
 
         public void SearchResultListViewItemActivate()
         {
-            var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultEntryAfterActivate];
+            var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultIndexAfterActivate];
 
             MessageBox.Show(pairDirEntry.RootDE.RootPath + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Name);
+        }
 
+        public void DirectoryListViewItemSelectionChanged()
+        {
+            var indices = _clientForm.SelectedDirectoryIndices;
+            var take2 = indices.Take(2);
+            var countTake2 = take2.Count();
+            var anySelected = countTake2 > 0;
+            var multiSelected = countTake2 > 1;
+            if (anySelected)
+            {
+                var firstIndex = take2.First();
+                var dirEntry = _directoryListViewCommonEntry.Children[firstIndex];
+                if (multiSelected)
+                {
+                    _clientForm.SetDirectoryPathTextbox = dirEntry.ParentCommonEntry.FullPath;
+                }
+                else
+                {
+                    _clientForm.SetDirectoryPathTextbox = CommonEntry.MakeFullPath(dirEntry.ParentCommonEntry, dirEntry);
+                }
+            }
         }
     }
 }

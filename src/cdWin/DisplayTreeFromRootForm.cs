@@ -20,16 +20,13 @@ namespace cdeWin
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;
         event EventAction OnSearchRoots;
+        event EventAction OnSearchResultRetrieveVirtualItem;
+        event EventAction OnDirectoryRetrieveVirtualItem;
         event EventAction OnMyFormClosing;
         event EventAction OnCatalogListViewItemActivate;
         event EventAction OnDirectoryListViewItemActivate;
         event EventAction OnSearchResultListViewItemActivate;
-        
-        /// <summary>
-        /// Depends on SearchResultListViewItem.
-        /// </summary>
-        event EventAction OnSearchResultRetrieveVirtualItem;
-        event EventAction OnDirectoryRetrieveVirtualItem;
+        event EventAction OnDirectoryListViewItemSelectionChanged;
 
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
@@ -45,6 +42,7 @@ namespace cdeWin
         int DirectoryListViewItemIndex { get; set; }
         ListViewItem SearchResultListViewItem { get; set; }
         ListViewItem DirectoryListViewItem { get; set; }
+        IEnumerable<int> SelectedDirectoryIndices { get; set; }
 
         void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns);
         void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns);
@@ -61,10 +59,11 @@ namespace cdeWin
         void AddSearchTextBoxAutoComplete(string pattern);
         List<string> GetSearchTextBoxAutoComplete();
         RootEntry ActiveCatalogAfterSelectRootEntry { get; }
-        int ActiveDirectoryEntryAfterActivate { get; }
-        int ActiveSearchResultEntryAfterActivate { get; }
+        int ActiveDirectoryListViewIndexAfterActivate { get; }
+        int ActiveSearchResultIndexAfterActivate { get; }
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
+        string SetDirectoryPathTextbox { set; }
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -78,7 +77,7 @@ namespace cdeWin
         public event EventAction OnCatalogListViewItemActivate;
         public event EventAction OnDirectoryListViewItemActivate;
         public event EventAction OnSearchResultListViewItemActivate;
-        public event EventAction OnDirectoryListViewSelectedIndexChanged;
+        public event EventAction OnDirectoryListViewItemSelectionChanged;
 
         public int SearchResultListViewItemIndex { get; set; }
         public int DirectoryListViewItemIndex { get; set; }
@@ -119,6 +118,10 @@ namespace cdeWin
             directoryListView.RetrieveVirtualItem += OnDirectoryListViewOnRetrieveVirtualItem;
             directoryListView.ItemActivate += OnDirectoryListViewOnItemActivate;
 
+            // require both events for behavoiur I want of DirectoryPathTextBox
+            directoryListView.SelectedIndexChanged += OnDirectoryListViewOnItemSelectionChanged;
+            directoryListView.VirtualItemsSelectionRangeChanged += OnDirectoryListViewOnItemSelectionChanged;
+
             DirectoryTreeViewCancelExpandEvent = false;
             directoryTreeView.BeforeExpand += (s, e) => 
             {
@@ -153,6 +156,17 @@ namespace cdeWin
             catalogResultListView.FullRowSelect = true;
             catalogResultListView.Activation = ItemActivation.Standard;
             catalogResultListView.ItemActivate += OnCatalogListViewOnItemActivate;
+
+            directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
+        }
+
+        private void OnDirectoryListViewOnItemSelectionChanged(object s, EventArgs e)
+        {
+            SelectedDirectoryIndices = directoryListView.SelectedIndices.OfType<int>();
+            if (directoryListView.SelectedIndices.Count > 0)
+            {
+                OnDirectoryListViewItemSelectionChanged();
+            }
         }
 
         private void OnCatalogListViewOnItemActivate(object sender, EventArgs e)
@@ -167,7 +181,7 @@ namespace cdeWin
             // Only activate if single item selected for now.
             if (directoryListView.SelectedIndices.Count == 1)
             {
-                ActiveDirectoryEntryAfterActivate = directoryListView.SelectedIndices[0];
+                ActiveDirectoryListViewIndexAfterActivate = directoryListView.SelectedIndices[0];
                 OnDirectoryListViewItemActivate();
             }
         }
@@ -177,7 +191,7 @@ namespace cdeWin
             // Only activate if single item selected for now.
             if (searchResultListView.SelectedIndices.Count == 1)
             {
-                ActiveSearchResultEntryAfterActivate = searchResultListView.SelectedIndices[0];
+                ActiveSearchResultIndexAfterActivate = searchResultListView.SelectedIndices[0];
                 OnSearchResultListViewItemActivate();
             }
         }
@@ -185,9 +199,9 @@ namespace cdeWin
 
         public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
 
-        public int ActiveDirectoryEntryAfterActivate { get; private set; }
+        public int ActiveDirectoryListViewIndexAfterActivate { get; private set; }
 
-        public int ActiveSearchResultEntryAfterActivate { get; private set; }
+        public int ActiveSearchResultIndexAfterActivate { get; private set; }
 
         private void OnSearchResultListViewOnRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
@@ -372,6 +386,11 @@ namespace cdeWin
         { 
             get { return directorySplitContainer.GetSplitterRatio(); }
             set { directorySplitContainer.SetSplitterRatio(value); } 
+        }
+
+        public string SetDirectoryPathTextbox
+        {
+            set { directoryPathTextBox.Text = value; }
         }
     }
 

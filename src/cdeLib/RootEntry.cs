@@ -108,7 +108,7 @@ namespace cdeLib
         public void SetInMemoryFields()
         {
             FullPath = RootPath;
-            SetFullPath();
+            SetCommonEntryFields();
             SetSummaryFields();
         }
 
@@ -373,14 +373,21 @@ namespace cdeLib
             return null;
         }
 
-        public void SetFullPath()
+        /// <summary>
+        /// Set FullPath on all Directories.
+        /// Set ParentCommonEntry on all Entries in tree with a parent.
+        /// </summary>
+        public void SetCommonEntryFields()
         {
-            var pdee = GetPairDirEntries(this);
-            foreach (var pairDirEntry in 
-                pdee.Where(pairDirEntry => pairDirEntry.ChildDE.IsDirectory))
+            foreach (var pairDirEntry in GetPairDirEntries(this))
             {
-                pairDirEntry.ChildDE.FullPath = 
-                    MakeFullPath(pairDirEntry.ParentDE, pairDirEntry.ChildDE);
+                var child = pairDirEntry.ChildDE;
+                var parent = pairDirEntry.ParentDE;
+                if (child.IsDirectory)
+                {
+                    child.FullPath = MakeFullPath(parent, child);
+                }
+                child.ParentCommonEntry = parent;
             }
         }
 
@@ -494,6 +501,5 @@ namespace cdeLib
         // ReSharper restore InconsistentNaming
         #pragma warning restore 169
         #endregion
-
     }
 }
