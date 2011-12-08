@@ -172,7 +172,7 @@ namespace cdeWin
         private void OnCatalogListViewOnItemActivate(object sender, EventArgs e)
         {
             // Catalog List View has multi select off.
-            ActiveCatalogAfterSelectRootEntry = catalogResultListView.SelectedItems[0].Tag as RootEntry;
+            ActiveCatalogAfterSelectRootEntry = (RootEntry)catalogResultListView.SelectedItems[0].Tag;
             OnCatalogListViewItemActivate();
         }
 
@@ -234,7 +234,10 @@ namespace cdeWin
         /// </summary>
         public TreeNode DirectoryTreeViewNodes
         {
-            get { return directoryTreeView.Nodes[0]; } // Assumption just one root node.
+            get
+            {   // we only use one root node at the moment.
+                return directoryTreeView.Nodes.Count == 1 ? directoryTreeView.Nodes[0] : null;
+            }
 
             set
             {

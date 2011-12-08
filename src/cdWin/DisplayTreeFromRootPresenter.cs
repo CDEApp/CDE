@@ -225,7 +225,17 @@ namespace cdeWin
 
         public void CatalogListViewItemActivate()
         {
-            _clientForm.DirectoryTreeViewNodes = BuildRootNode(_clientForm.ActiveCatalogAfterSelectRootEntry);
+            var newRoot = _clientForm.ActiveCatalogAfterSelectRootEntry;
+            RootEntry currentRoot = null;
+            if (_clientForm.DirectoryTreeViewNodes != null)
+            {
+                currentRoot = _clientForm.DirectoryTreeViewNodes.Tag as RootEntry;
+            }
+
+            if (currentRoot == null || currentRoot != newRoot)
+            {
+                _clientForm.DirectoryTreeViewNodes = BuildRootNode(newRoot);
+            }
             _clientForm.SelectDirectoryPane();
         }
 
