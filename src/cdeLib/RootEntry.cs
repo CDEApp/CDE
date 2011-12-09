@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -14,7 +13,7 @@ using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
-    [DebuggerDisplay("RootPath = {RootPath}, Count = {Children.Count}")]
+    [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
     public class RootEntry : CommonEntry
     {

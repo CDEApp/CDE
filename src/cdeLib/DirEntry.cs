@@ -8,7 +8,7 @@ using ProtoBuf;
 
 namespace cdeLib
 {
-    [DebuggerDisplay("Name = {Name} {Size}, Count = {Children.Count} {IsHashDone} {Hash.HashB}")]
+    [DebuggerDisplay("Path = {Path} {Size}, Count = {Children.Count} {IsHashDone} {Hash.HashB}")]
     [ProtoContract]
     public class DirEntry : CommonEntry
     {
@@ -193,7 +193,7 @@ namespace cdeLib
             {
                 Modified = fs.LastModified;
             }
-            catch (ArgumentOutOfRangeException ex)
+            catch (ArgumentOutOfRangeException)
             {
                 // AlphaFS blows up trying to convert bad DateTime. eg. 1/1/1601 
                 IsModifiedBad = true;
