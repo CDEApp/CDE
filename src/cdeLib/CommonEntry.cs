@@ -267,6 +267,11 @@ namespace cdeLib
             }
         }
 
+        public string MakeFullPath(DirEntry dirEntry)
+        {
+            return MakeFullPath(this, dirEntry);
+        }
+
         public static string MakeFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
             var a = parentEntry.FullPath ?? "pnull";
