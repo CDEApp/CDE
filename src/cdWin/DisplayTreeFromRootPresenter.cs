@@ -246,12 +246,12 @@ namespace cdeWin
             var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
 
             // _directoryListViewCommonEntry is the parent of our DirectoryListView control.
-            MessageBox.Show(_directoryListViewCommonEntry.FullPath + " == " + dirEntry.Name);
+            //MessageBox.Show(_directoryListViewCommonEntry.FullPath + " == " + dirEntry.Name);
 
             // - want the set of DirEntry leading from root to dirEntry...
             // then passing that to form - select hose ? using 'tag' ? or name ? ick name.
 
-            var list = new List<DirEntry>(5);
+            var list = new List<DirEntry>(10); // more than default but small number.
             // every item in list view has a parent, it might be RootEntry
             var currentCommonEntry = dirEntry;
             list.Add(currentCommonEntry);
@@ -264,10 +264,9 @@ namespace cdeWin
             }
 
             var rootEntry = (RootEntry)parentCommonEntry;
-            list.Reverse(); // is now from root
+            list.Reverse(); // list now contains entries leading from root to our activated DirEntry
 
-            MessageBox.Show("rootEntry.RootPath " + rootEntry.RootPath + " [" + list.Count + "]");
-            // NOTE: FullPath is not set for files.....
+            // Remember: FullPath is not set for files.....
             var listTrace = list.Aggregate("", (current, commonEntry) => current + ("_" + commonEntry.Name));
             MessageBox.Show(listTrace);
 
