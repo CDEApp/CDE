@@ -57,7 +57,7 @@ namespace cdeWin
 
         private static TreeNode BuildRootNode(RootEntry rootEntry)
         {
-            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.RootPath);
+            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.Path);
             SetDummyChildNode(rootTreeNode, rootEntry);
             return rootTreeNode;
         }
@@ -106,7 +106,7 @@ namespace cdeWin
         {
             if (dirEntry.IsDirectory)
             {
-                var newTreeNode = NewTreeNode(dirEntry, dirEntry.Name);
+                var newTreeNode = NewTreeNode(dirEntry, dirEntry.Path);
                 treeNode.Nodes.Add(newTreeNode);
                 SetDummyChildNode(newTreeNode, dirEntry);
             }
@@ -122,7 +122,7 @@ namespace cdeWin
 
         private Color CreateRowValuesForDirEntry(IList<string> vals, DirEntry dirEntry, Color itemColor)
         {
-            vals[0] = dirEntry.Name;
+            vals[0] = dirEntry.Path;
             vals[1] = dirEntry.Size.ToString();
             if (dirEntry.IsDirectory)
             {
@@ -156,7 +156,7 @@ namespace cdeWin
 
         private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
         {
-            vals[0] = rootEntry.RootPath;
+            vals[0] = rootEntry.Path;
             vals[1] = rootEntry.VolumeName;
             vals[2] = rootEntry.DirCount.ToString();
             vals[3] = rootEntry.FileCount.ToString();
@@ -251,8 +251,7 @@ namespace cdeWin
 
             // Remember: FullPath is not set for files.....
             var listTrace = activatedDirEntryList.Aggregate("", 
-                (current, commonEntry) => 
-                    current + ("_" + commonEntry.Name) // GRR
+                    (current, commonEntry) => current + ("_" + commonEntry.Path)
                 );
             MessageBox.Show(listTrace);
 
@@ -275,7 +274,7 @@ namespace cdeWin
         {
             var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultIndexAfterActivate];
 
-            MessageBox.Show(pairDirEntry.RootDE.RootPath + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Name);
+            MessageBox.Show(pairDirEntry.RootDE.Path + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Path);
         }
 
         public void DirectoryListViewItemSelectionChanged()

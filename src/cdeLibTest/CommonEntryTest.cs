@@ -33,8 +33,8 @@ namespace cdeLibTest
         [Test]
         public void TraverseTree_SingleChildTree_CallsActionOnChild()
         {
-            var de1 = new DirEntry { Name = "d1", FullPath = "Mooo"}; // only looks at Children for recurse.
-            var de2 = new DirEntry { Name = "d2" };
+            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" }; // only looks at Children for recurse.
+            var de2 = new DirEntry { Path = "d2" };
             de1.Children.Add(de2);
 
             var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
@@ -72,16 +72,16 @@ namespace cdeLibTest
 
         public static RootEntry NewTestRootEntry(out DirEntry de2a, out DirEntry de2b, out DirEntry de2c, out DirEntry de3a, out DirEntry de4a)
         {
-            var re1 = new RootEntry {RootPath = @"Z:\"};
-            de2a = new DirEntry {Name = "d2a"};
-            de2b = new DirEntry {Name = "d2b", IsDirectory = true};
-            de2c = new DirEntry {Name = "d2c"};
+            var re1 = new RootEntry {Path = @"Z:\" };
+            de2a = new DirEntry {Path = "d2a" };
+            de2b = new DirEntry(true) {Path = "d2b" };
+            de2c = new DirEntry {Path = "d2c"};
             re1.Children.Add(de2a);
             re1.Children.Add(de2b);
             re1.Children.Add(de2c);
-            de3a = new DirEntry {Name = "d3a", IsDirectory = true};
+            de3a = new DirEntry(true) { Path = "d3a" };
             de2b.Children.Add(de3a);
-            de4a = new DirEntry {Name = "d4a"};
+            de4a = new DirEntry {Path = "d4a"};
             de3a.Children.Add(de4a);
             re1.SetInMemoryFields();
             return re1;
@@ -104,7 +104,7 @@ namespace cdeLibTest
             DirEntry bde4a;
             var re2 = NewTestRootEntry(out bde2a, out bde2b, out bde2c, out bde3a, out bde4a);
             // same structure as re1 with a different root path
-            re2.RootPath = "2";
+            re2.Path = "2";
 
             var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             using (mockAction.GetMockRepository().Ordered())

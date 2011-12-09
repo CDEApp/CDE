@@ -181,7 +181,7 @@ namespace cdeLibTest
             {
                 RootIndex = RootIndex,
                 DefaultFileName = "test1.cde",
-                RootPath = @"X:\",
+                Path = @"X:\",
             };
         }
 

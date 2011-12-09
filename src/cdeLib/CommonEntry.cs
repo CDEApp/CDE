@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using ProtoBuf;
-using Path = Alphaleonis.Win32.Filesystem.Path;
+using Filesystem = Alphaleonis.Win32.Filesystem;
 
 namespace cdeLib
 {
@@ -20,6 +20,12 @@ namespace cdeLib
         [ProtoMember(4, IsRequired = true)]
         public ulong Size { get; set; }
 
+        /// <summary>
+        /// RootEntry this is the root path, DirEntry this is the entry name.
+        /// </summary>
+        [ProtoMember(5, IsRequired = true)]
+        public string Path { get; set; }
+
         public CommonEntry ParentCommonEntry { get; set; }
 
         /// <summary>
@@ -35,15 +41,15 @@ namespace cdeLib
             {
                 throw new ArgumentException("Argument relativePath must be non empty.");
             }
-            var indexOfDirectorySeperator = relativePath.IndexOf(Path.DirectorySeparatorChar);
+            var indexOfDirectorySeperator = relativePath.IndexOf(Filesystem.Path.DirectorySeparatorChar);
             var firstPathElement = relativePath;
             var remainderPath = string.Empty;
             if (indexOfDirectorySeperator > 0)
             {
                 firstPathElement = relativePath.Remove(indexOfDirectorySeperator);
-                remainderPath = relativePath.Substring(indexOfDirectorySeperator + Path.DirectorySeparatorChar.Length);
+                remainderPath = relativePath.Substring(indexOfDirectorySeperator + Filesystem.Path.DirectorySeparatorChar.Length);
             }
-            var de = Children.FirstOrDefault(x => x.Name == firstPathElement);
+            var de = Children.FirstOrDefault(x => x.Path == firstPathElement);
             if (de != null)
             {
                 if (remainderPath == string.Empty)
@@ -197,8 +203,8 @@ namespace cdeLib
                 throw new ArgumentException("source and destination must be not null.");
             }
 
-            var sourcePath = source.RootPath;
-            var destinationPath = destination.RootPath;
+            var sourcePath = source.Path;
+            var destinationPath = destination.Path;
 
             //if (sourcePath != destinationPath)
             if (string.Compare(sourcePath, destinationPath, true) != 0)
@@ -222,13 +228,13 @@ namespace cdeLib
                 {
                     foreach (var sourceDirEntry in baseSourceEntry.Children)
                     {
-                        var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
+                        var fullPath = Filesystem.Path.Combine(workPath, sourceDirEntry.Path);
 
                         // find if theres a destination entry available.
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
                         var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
-                            x => (x.Name == sourceEntry.Name));
+                            x => (x.Path == sourceEntry.Path));
 
                         if (destinationDirEntry == null)
                         {
@@ -275,8 +281,8 @@ namespace cdeLib
         public static string MakeFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
             var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Name ?? "dnull";
-            return Path.Combine(a, b);
+            var b = dirEntry.Path ?? "dnull";
+            return Filesystem.Path.Combine(a, b);
         }
 
         public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)

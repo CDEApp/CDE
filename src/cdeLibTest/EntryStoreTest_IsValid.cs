@@ -26,7 +26,7 @@ namespace cdeLibTest
             entryStore.IsValid();
         }
 
-        [Test][ExpectedException(typeof(Exception), ExpectedMessage = "Entry Store Root must have valid RootPath.")]
+        [Test][ExpectedException(typeof(Exception), ExpectedMessage = "Entry Store Root must have valid Path.")]
         public void IsValid_NoRootPathSet_ThrowsException()
         {
             var entryStore = new EntryStore();
@@ -40,7 +40,7 @@ namespace cdeLibTest
         public void IsValid_NoDefaultFileNameSet_ThrowsException()
         {
             var entryStore = new EntryStore();
-            var Root = new RootEntry { RootIndex = 1, RootPath = @"C:\" };
+            var Root = new RootEntry { RootIndex = 1, Path = @"C:\" };
             entryStore.Root = Root;
 
             entryStore.IsValid();
@@ -50,7 +50,7 @@ namespace cdeLibTest
         public void IsValid_NoIndexesSetup_ThrowsException()
         {
             var entryStore = new EntryStore();
-            var Root = new RootEntry { RootIndex = 1, RootPath = @"C:\", DefaultFileName = "save.cde" };
+            var Root = new RootEntry { RootIndex = 1, Path = @"C:\", DefaultFileName = "save.cde" };
             entryStore.Root = Root;
 
             entryStore.IsValid();
@@ -61,7 +61,7 @@ namespace cdeLibTest
         {
             var entryStore = new EntryStore();
             var rootIndex = entryStore.AddEntry();
-            var Root = new RootEntry { RootIndex = rootIndex, RootPath = @"C:\", DefaultFileName = "save.cde" };
+            var Root = new RootEntry { RootIndex = rootIndex, Path = @"C:\", DefaultFileName = "save.cde" };
             entryStore.Root = Root;
 
             entryStore.IsValid();
@@ -72,7 +72,7 @@ namespace cdeLibTest
         {
             var entryStore = new EntryStore();
             var rootIndex = entryStore.AddEntry(null, "", 0, DateTime.UtcNow, true);
-            var Root = new RootEntry { RootIndex = rootIndex, RootPath = @"C:\", DefaultFileName = "save.cde" };
+            var Root = new RootEntry { RootIndex = rootIndex, Path = @"C:\", DefaultFileName = "save.cde" };
             entryStore.Root = Root;
 
             entryStore.IsValid();
@@ -83,7 +83,7 @@ namespace cdeLibTest
         {
             var entryStore = new EntryStore();
             var rootIndex = entryStore.AddEntry(null, @"C:\", 0, DateTime.UtcNow, true);
-            var Root = new RootEntry { RootIndex = rootIndex, RootPath = @"C:\", DefaultFileName = "save.cde" };
+            var Root = new RootEntry { RootIndex = rootIndex, Path = @"C:\", DefaultFileName = "save.cde" };
             entryStore.Root = Root;
 
             entryStore.IsValid();

@@ -31,12 +31,10 @@ namespace cdeLib
             PartialHash = 1 << 5
         };
 
-        [ProtoMember(2, IsRequired = true)]
-        public string Name { get; set; }
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(1, IsRequired = true)]
         public DateTime Modified { get; set; }
 
-        [ProtoMember(4, IsRequired = false)]
+        [ProtoMember(2, IsRequired = false)]
         public Hash16 Hash;
 
         /// <summary>
@@ -170,6 +168,18 @@ namespace cdeLib
         {
         }
 
+        /// <summary>
+        /// For Testing.
+        /// </summary>
+        public DirEntry(bool isDirectory)
+        {
+            IsDirectory = isDirectory;
+            if (isDirectory)
+            {
+                Children = new List<DirEntry>();
+            }
+        }
+
         override public bool IsRoot()
         {
             return false;
@@ -177,7 +187,7 @@ namespace cdeLib
 
         public DirEntry(FileSystemEntryInfo fs) : this()
         {
-            Name = fs.FileName;
+            Path = fs.FileName;
             // TODO this assumes date error on LastModified, what about Created and LastAccessed ?
             try
             {

@@ -104,7 +104,7 @@ namespace cdeLib
             Root.GetRootEntry(path);
             Root.RootIndex = myNewIndex;
 
-            block[entryIndex].FullPath = Root.RootPath;
+            block[entryIndex].FullPath = Root.Path;
             block[entryIndex].Parent = 0;
             block[entryIndex].IsDirectory = true;
             return myNewIndex;
@@ -121,7 +121,7 @@ namespace cdeLib
             }
             var entryCount = 0;
             var dirs = new Stack<Tuple<int, string>>();
-            dirs.Push(Tuple.Create(Root.RootIndex, Root.RootPath));
+            dirs.Push(Tuple.Create(Root.RootIndex, Root.Path));
             while (dirs.Count > 0)
             {
                 var t = dirs.Pop();
@@ -412,9 +412,9 @@ namespace cdeLib
             {
                 throw new Exception("Entry Store Root must have valid RootIndex.");
             }
-            if (string.IsNullOrEmpty(Root.RootPath))
+            if (string.IsNullOrEmpty(Root.Path))
             {
-                throw new Exception("Entry Store Root must have valid RootPath.");
+                throw new Exception("Entry Store Root must have valid Path.");
             }
             if (string.IsNullOrEmpty(Root.DefaultFileName))
             {

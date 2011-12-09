@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Text;
 using cdeLib;
 using NUnit.Framework;
@@ -23,11 +24,11 @@ namespace cdeLibTest
 
         private void SetupRootDestTest1()
         {
-            rootSource = new RootEntry { RootPath = @"C:\" };
+            rootSource = new RootEntry { Path = @"C:\" };
             deSource = GetNewTestF1();
             rootSource.Children.Add(deSource);
 
-            rootDest = new RootEntry { RootPath = @"C:\" };
+            rootDest = new RootEntry { Path = @"C:\" };
             deDest = GetNewTestF1();
             deDest.SetHash(0);  // clear it just in case.
             deDest.IsHashDone = false;
@@ -39,7 +40,7 @@ namespace cdeLibTest
         {
             var de = new DirEntry
                        {
-                           Name = "f1",
+                           Path = "f1",
                            Modified = new DateTime(2011, 05, 01, 12, 11, 10),
                            Size = 10,
                            IsPartialHash = true,
@@ -60,7 +61,7 @@ namespace cdeLibTest
         [Test]
         public void TraverseTreesCopyHash_OneEntrySourceHasMD5_NameDifference_NotCopied()
         {
-            deSource.Name = "F1";
+            deSource.Path = "F1";
 
             rootSource.TraverseTreesCopyHash(rootDest);
 
@@ -126,8 +127,10 @@ namespace cdeLibTest
             deDestLev2.IsPartialHash = false;
 
             deSource.IsDirectory = true;
+            deSource.Children = new List<DirEntry>();
             deSource.Children.Add(deSourceLev2);
             deDest.IsDirectory = true;
+            deDest.Children = new List<DirEntry>();
             deDest.Children.Add(deDestLev2);
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
@@ -143,11 +146,13 @@ namespace cdeLibTest
             var deDestLev2 = GetNewTestF1();
             deDestLev2.IsHashDone = false;
             deDestLev2.IsPartialHash = false;
-            deDestLev2.Name = "notsame";
+            deDestLev2.Path = "notsame";
 
             deSource.IsDirectory = true;
+            deSource.Children = new List<DirEntry>();
             deSource.Children.Add(deSourceLev2);
             deDest.IsDirectory = true;
+            deDest.Children = new List<DirEntry>();
             deDest.Children.Add(deDestLev2);
 
             rootSource.TraverseTreesCopyHash(rootDest); // act

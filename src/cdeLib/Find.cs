@@ -42,7 +42,7 @@ namespace cdeLib
                     foreach (var pairDirEntry in pairDirEntries)
                     {
                         //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (regex.IsMatch(pairDirEntry.ChildDE.Name))
+                        if (regex.IsMatch(pairDirEntry.ChildDE.Path))
                         {
                             yield return pairDirEntry;
                         }
@@ -67,7 +67,7 @@ namespace cdeLib
                     foreach (var pairDirEntry in pairDirEntries)
                     {
                         //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (pairDirEntry.ChildDE.Name.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                        if (pairDirEntry.ChildDE.Path.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
                         {
                             yield return pairDirEntry;
                         }
@@ -142,7 +142,7 @@ namespace cdeLib
             GetDirCache();
             foreach (var rootEntry in _rootEntries)
             {
-                rootEntry.TraverseTreePair(rootEntry.RootPath, matchAction);
+                rootEntry.TraverseTreePair(rootEntry.Path, matchAction);
             }
 
             if (_totalFound > 0)
@@ -173,7 +173,7 @@ namespace cdeLib
 
         private static void MatchSubstringName(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            if (dirEntry.Name.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
+            if (dirEntry.Path.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
             {
                 ++_totalFound;
                 var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
@@ -183,7 +183,7 @@ namespace cdeLib
 
         private static void MatchRegexName(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            if (_regex.IsMatch(dirEntry.Name))
+            if (_regex.IsMatch(dirEntry.Path))
             {
                 ++_totalFound;
                 var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);

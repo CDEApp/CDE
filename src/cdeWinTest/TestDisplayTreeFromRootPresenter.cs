@@ -22,17 +22,17 @@ namespace cdeWinTest
 
         public static RootEntry CreateTestRoot()
         {
-            var rootEntry = new RootEntry { RootPath = testRootPath };
+            var rootEntry = new RootEntry { Path = testRootPath };
             var dirEntry1 = new DirEntry
             {
                 IsDirectory = true,
-                Name = testDirName,
+                Path = testDirName,
                 Modified = new DateTime(2011, 04, 14, 21, 09, 04, DateTimeKind.Local)
             };
             var dirEntry2 = new DirEntry
             {
                 IsDirectory = false,
-                Name = "TestFile",
+                Path = "TestFile",
                 Size = 3311,
                 Modified = new DateTime(2011, 03, 13, 22, 10, 5, DateTimeKind.Local)
             };

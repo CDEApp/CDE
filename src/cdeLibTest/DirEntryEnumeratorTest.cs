@@ -17,9 +17,9 @@ namespace cdeLibTest
 
         protected void RebuildTestRoot()
         {
-            _re1 = new RootEntry { RootPath = @"C:\" };
-            De1 = new TestDirEntry(true) { Name = @"de1" };
-            Fe2 = new DirEntry { Name = @"fe2" };
+            _re1 = new RootEntry { Path = @"C:\" };
+            De1 = new DirEntry(true) { Path = @"de1" };
+            Fe2 = new DirEntry { Path = @"fe2" };
             De1.Children.Add(Fe2);
             _re1.Children.Add(De1);
             _re1.SetInMemoryFields();
@@ -104,7 +104,7 @@ namespace cdeLibTest
         [Test]
         public void ListOfRootEntryTest_TryOutEnumerable()
         {
-            var fe3 = new DirEntry { Name = "fe3" };
+            var fe3 = new DirEntry { Path = "fe3" };
             De1.Children.Add(fe3);
             var myListEnumerator = new DirEntryEnumerator(RootEntries);
 
@@ -113,10 +113,10 @@ namespace cdeLibTest
 
             while (myListEnumerator.MoveNext() && expectEnumerator.MoveNext())
             {
-                Console.WriteLine("a {0}", myListEnumerator.Current.Name);
+                Console.WriteLine("a {0}", myListEnumerator.Current.Path);
                 if (expectEnumerator.Current != null)
                 {
-                    Console.WriteLine("b {0}", expectEnumerator.Current.Name);
+                    Console.WriteLine("b {0}", expectEnumerator.Current.Path);
                     Assert.That(myListEnumerator.Current, Is.EqualTo(expectEnumerator.Current), "Sequence of directory entries is not matching.");
                 }
             }

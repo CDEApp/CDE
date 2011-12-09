@@ -51,9 +51,25 @@ namespace cdeLibTest
             var newMS = new MemoryStream(b);
             var re2 = Serializer.Deserialize<RootEntry>(newMS);
 
-            re2.RootPath = "moo";
             var same = re1.SameTree(re2);
             Assert.That(same, Is.True, TreeDuplicate.LastMessage);
+        }
+
+        [Test]
+        public void Serialize_Deserialize_RootEntryFailsMatches()
+        {
+            re1 = CommonEntryTest.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+
+            var ms = new MemoryStream();
+            Serializer.Serialize(ms, re1);
+            var b = ms.ToArray();
+
+            var newMS = new MemoryStream(b);
+            var re2 = Serializer.Deserialize<RootEntry>(newMS);
+
+            re2.Path = "moo";
+            var same = re1.SameTree(re2);
+            Assert.That(same, Is.False, TreeDuplicate.LastMessage);
         }
 
         [Ignore("Cant do this as dir tree is part of root entry bending test to toy with protobuf-net a bit")]
@@ -77,14 +93,14 @@ namespace cdeLibTest
             // var test = Serializer.ListItemTag;
             var iter = Serializer.DeserializeItems<RootEntry>(newMS, PrefixStyle.Base128, 1);
             var first = iter.FirstOrDefault();
-            if (first != null) Console.WriteLine("first.RootPath " + first.RootPath);
+            if (first != null) Console.WriteLine("first.RootPath " + first.Path);
 
             var second = iter.FirstOrDefault();
-            if (second != null) Console.WriteLine("second.RootPath " + second.RootPath);
+            if (second != null) Console.WriteLine("second.RootPath " + second.Path);
             var third = iter.FirstOrDefault();
             if (third != null)
             {
-                Console.WriteLine("third.RootPath " + third.RootPath);
+                Console.WriteLine("third.RootPath " + third.Path);
             }
             else
             {
@@ -123,9 +139,9 @@ namespace cdeLibTest
         {
             LastMessage = "";
 
-            if (re1.RootPath != re2.RootPath)
+            if (re1.Path != re2.Path)
             {
-                LastMessage = string.Format("RootPath {0} not same as {1}", re1.RootPath, re2.RootPath);
+                LastMessage = string.Format("RootPath {0} not same as {1}", re1.Path, re2.Path);
                 return false;
             }
 
@@ -134,8 +150,8 @@ namespace cdeLibTest
             var e2 = new DirEntryEnumerator(re2);
             while (e1.MoveNext() && e2.MoveNext())
             {
-                LastMessage = string.Format("{0} not same as {1}", e1.Current.Name, e2.Current.Name);
-                if (e1.Current.Name != e2.Current.Name)
+                LastMessage = string.Format("{0} not same as {1}", e1.Current.Path, e2.Current.Path);
+                if (e1.Current.Path != e2.Current.Path)
                 {
                     differenceFound = true;
                     break;

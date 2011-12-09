@@ -207,7 +207,7 @@ namespace cde
             e.Root.ScanEndUTC = DateTime.UtcNow;
             e.SaveToFile();
             var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
-            Console.WriteLine("Scanned Path {0}", e.Root.RootPath);
+            Console.WriteLine("Scanned Path {0}", e.Root.Path);
             Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
             Console.WriteLine("Saved Scanned Path {0}", e.Root.DefaultFileName);
         }
@@ -233,7 +233,7 @@ namespace cde
 
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
-                Console.WriteLine("Scanned Path {0}", re.RootPath);
+                Console.WriteLine("Scanned Path {0}", re.Path);
                 Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
                 Console.WriteLine("Saved Scanned Path {0}", re.DefaultFileName);
                 Console.WriteLine("Files {0:0,0} Dirs {1:0,0} Total Size of Files {2:0,0}", re.FileCount, re.DirCount, re.Size);

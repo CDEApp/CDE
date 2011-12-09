@@ -36,7 +36,7 @@ namespace cdeLibTest
             re.RecurseTree(p);
 
             Assert.That(re, Is.Not.Null);
-            var found = re.Children.Any(x => x.Children.Count > 0);
+            var found = re.Children.Any(x => x.Children != null && x.Children.Count > 0);
             Assert.That(found, Is.True, "One of entries does not have children.");
         }
 
@@ -44,7 +44,7 @@ namespace cdeLibTest
         public void FindDir_LookForDir_InRoot()
         {
             const string rootPath = @"C:\";
-            var re = new RootEntry { RootPath = rootPath };
+            var re = new RootEntry { Path = rootPath };
 
             var foundEntry = re.FindDir(rootPath, @"C:\Moo");
 
@@ -56,7 +56,7 @@ namespace cdeLibTest
         {
             const string rootPath = @"C:\";
             const string testPath = @"C:\Groo";
-            var re = new RootEntry { RootPath = rootPath };
+            var re = new RootEntry { Path = rootPath };
 
             var foundEntry = re.FindDir(rootPath, testPath);
 
@@ -321,10 +321,10 @@ namespace cdeLibTest
         [Test]
         public void SetFullPath_OnRootDirectory_SetsAllFullPaths()
         {
-            var re = new RootEntry { RootPath = @"C:\" };
-            var fe1 = new DirEntry { Name = "fe1" };
-            var de2 = new DirEntry { Name = "de2", IsDirectory = true};
-            var fe3 = new DirEntry { Name = "fe3" };
+            var re = new RootEntry { Path = @"C:\" };
+            var fe1 = new DirEntry { Path = "fe1" };
+            var de2 = new DirEntry(true) { Path = "de2" };
+            var fe3 = new DirEntry { Path = "fe3" };
             re.Children.Add(fe1);
             re.Children.Add(de2);
             de2.Children.Add(fe3);

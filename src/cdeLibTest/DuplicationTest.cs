@@ -27,17 +27,17 @@ namespace cdeLibTest
         [Test]
         public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
         {
-            var re1  = new RootEntry { RootPath = @"C:\" };
-            var de1  = new DirEntry { Name = @"de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
-            var de2  = new DirEntry { Name = @"de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
-            var de3  = new DirEntry { Name = @"de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
-            var de4  = new DirEntry { Name = @"de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
-            var de5  = new DirEntry { Name = @"de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Name = @"de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
-            var de7  = new DirEntry { Name = @"de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
-            var de8  = new DirEntry { Name = @"de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
-            var de9  = new DirEntry { Name = @"de9",  Size = 11, IsPartialHash = false };
-            var de10 = new DirEntry { Name = @"de10", Size = 11, IsPartialHash = true  };  de10.SetHash(13);
+            var re1  = new RootEntry { Path = @"C:\" };
+            var de1  = new DirEntry { Path = @"de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
+            var de2  = new DirEntry { Path = @"de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
+            var de3  = new DirEntry { Path = @"de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
+            var de4  = new DirEntry { Path = @"de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
+            var de5  = new DirEntry { Path = @"de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6  = new DirEntry { Path = @"de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de7  = new DirEntry { Path = @"de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
+            var de8  = new DirEntry { Path = @"de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de9  = new DirEntry { Path = @"de9",  Size = 11, IsPartialHash = false };
+            var de10 = new DirEntry { Path = @"de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
             re1.Children.Add(de1);
             re1.Children.Add(de2);
             re1.Children.Add(de3);
@@ -65,17 +65,17 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_DupeHashDoesNotMatchDiffSizeFilesOrPartialHash_OK()
         {
-            var re1  = new RootEntry { RootPath = @"C:\" };
-            var de1  = new DirEntry { Name = @"de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
-            var de2  = new DirEntry { Name = @"de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
-            var de3  = new DirEntry { Name = @"de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
-            var de4  = new DirEntry { Name = @"de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
-            var de5  = new DirEntry { Name = @"de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Name = @"de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
-            var de7  = new DirEntry { Name = @"de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
-            var de8  = new DirEntry { Name = @"de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
-            var de9  = new DirEntry { Name = @"de9",  Size = 11, IsPartialHash = false };
-            var de10 = new DirEntry { Name = @"de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
+            var re1  = new RootEntry { Path = @"C:\" };
+            var de1  = new DirEntry { Path = @"de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
+            var de2  = new DirEntry { Path = @"de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
+            var de3  = new DirEntry { Path = @"de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
+            var de4  = new DirEntry { Path = @"de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
+            var de5  = new DirEntry { Path = @"de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6  = new DirEntry { Path = @"de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de7  = new DirEntry { Path = @"de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
+            var de8  = new DirEntry { Path = @"de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de9  = new DirEntry { Path = @"de9",  Size = 11, IsPartialHash = false };
+            var de10 = new DirEntry { Path = @"de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
             re1.Children.Add(de1);
             re1.Children.Add(de2);
             re1.Children.Add(de3);
@@ -103,10 +103,10 @@ namespace cdeLibTest
         [Test]
         public void TestHasingWorkds()
         {
-            var de5  = new DirEntry { Name = @"de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Name = @"de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
-            var de7  = new DirEntry { Name = @"de7", Size = 11, IsPartialHash = true };  de7.SetHash(12);
-            var de8  = new DirEntry { Name = @"de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de5  = new DirEntry { Path = @"de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6  = new DirEntry { Path = @"de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de7  = new DirEntry { Path = @"de7", Size = 11, IsPartialHash = true  }; de7.SetHash(12);
+            var de8  = new DirEntry { Path = @"de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
 
             var ah5 = Hash16.EqualityComparer.StaticGetHashCode(de5.Hash);
             var ah6 = Hash16.EqualityComparer.StaticGetHashCode(de6.Hash);

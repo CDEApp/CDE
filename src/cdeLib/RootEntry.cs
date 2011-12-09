@@ -9,7 +9,7 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
-using Path = Alphaleonis.Win32.Filesystem.Path;
+using Filesystem = Alphaleonis.Win32.Filesystem;
 using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
@@ -25,40 +25,37 @@ namespace cdeLib
 
         public uint FileCount { get; set; }
 
-        [ProtoMember(2, IsRequired = true)]
-        public string RootPath { get; set; }
-
-        [ProtoMember(3, IsRequired = true)]
+        [ProtoMember(1, IsRequired = true)]
         public string VolumeName { get; set; }
 
-        [ProtoMember(4, IsRequired = true)]
+        [ProtoMember(2, IsRequired = true)]
         public string Description { get; set; } // user entered description ?
 
         /// <summary>
         /// There are a standard set on C: drive in win7 do we care about them ? Hmmmmm filter em out ? or hold internal filter to filter em out ojn display optionally.
         /// </summary>
-        [ProtoMember(5, IsRequired = true)]
+        [ProtoMember(3, IsRequired = true)]
         public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
-        [ProtoMember(6, IsRequired = true)]
+        [ProtoMember(4, IsRequired = true)]
         public string DefaultFileName { get; set; }
 
-        [ProtoMember(7, IsRequired = true)]
+        [ProtoMember(5, IsRequired = true)]
         public string DriveLetterHint { get; set; }
 
-        [ProtoMember(8, IsRequired = true)]
+        [ProtoMember(6, IsRequired = true)]
         public ulong AvailSpace { get; set; }
 
-        [ProtoMember(9, IsRequired = true)]
+        [ProtoMember(7, IsRequired = true)]
         public ulong UsedSpace { get; set; }
 
-        [ProtoMember(10, IsRequired = true)]
+        [ProtoMember(8, IsRequired = true)]
         public DateTime ScanStartUTC { get; set; }
 
-        [ProtoMember(11, IsRequired = true)]
+        [ProtoMember(9, IsRequired = true)]
         public DateTime ScanEndUTC { get; set; }
 
-        [ProtoMember(12, IsRequired = true)] // need to save for new data model.
+        [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         public int RootIndex;  // hackery with Entry and EntryStore
 
         public RootEntry ()
@@ -96,11 +93,11 @@ namespace cdeLib
             string volRoot;
             DefaultFileName = GetDefaultFileName(startPath, out deviceHint, out volRoot, out volumeName);
 
-            RootPath = startPath;
+            Path = startPath;
             DriveLetterHint = deviceHint;
             VolumeName = volumeName;
 
-            var dsi = Volume.GetDiskFreeSpace(RootPath);
+            var dsi = Volume.GetDiskFreeSpace(Path);
             AvailSpace = dsi.FreeBytesAvailable;
             UsedSpace = dsi.TotalNumberOfBytes;
             return startPath;
@@ -108,7 +105,7 @@ namespace cdeLib
 
         public void SetInMemoryFields()
         {
-            FullPath = RootPath;
+            FullPath = Path;
             SetCommonEntryFields();
             SetSummaryFields();
         }
@@ -157,12 +154,12 @@ namespace cdeLib
 
         public virtual bool IsPathRooted(string path)
         {
-            return Path.IsPathRooted(path);
+            return Filesystem.Path.IsPathRooted(path);
         }
 
         public virtual bool IsUnc(string path)
         {
-            return Path.IsUnc(path);
+            return Filesystem.Path.IsUnc(path);
         }
 
         public virtual string GetDirectoryRoot(string path)
@@ -190,16 +187,16 @@ namespace cdeLib
 
             if (IsUnc(path))
             {
-                if (!path.EndsWith(Path.DirectorySeparatorChar))
+                if (!path.EndsWith(Filesystem.Path.DirectorySeparatorChar))
                 {
-                    path = path + Path.DirectorySeparatorChar;
+                    path = path + Filesystem.Path.DirectorySeparatorChar;
                 }
             }
             else
             {
-                if (path.EndsWith(Path.DirectorySeparatorChar) && volumeRoot != path)
+                if (path.EndsWith(Filesystem.Path.DirectorySeparatorChar) && volumeRoot != path)
                 {
-                    path = path.TrimEnd(Path.DirectorySeparatorChar.ToCharArray());
+                    path = path.TrimEnd(Filesystem.Path.DirectorySeparatorChar.ToCharArray());
                 }
                 path = char.ToUpper(path[0]) + path.Substring(1);
             }
@@ -337,12 +334,12 @@ namespace cdeLib
 
         public void TraverseTree(Action<DirEntry> apply)
         {
-            TraverseTree(RootPath, apply);
+            TraverseTree(Path, apply);
         }
 
         public void TraverseTreePair(Action<CommonEntry, DirEntry> apply)
         {
-            TraverseTreePair(RootPath, apply);
+            TraverseTreePair(Path, apply);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()
