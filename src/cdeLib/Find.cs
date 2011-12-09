@@ -8,9 +8,10 @@ namespace cdeLib
     public static class Find
     {
         public const string ParamFind = "--find";
+        public const string ParamFindpath = "--findpath";
         public const string ParamGrep = "--grep";
         public const string ParamGreppath = "--greppath";
-        public static readonly List<string> FindParams = new List<string> { ParamFind, ParamGrep, ParamGreppath };
+        public static readonly List<string> FindParams = new List<string> { ParamFind, ParamFindpath, ParamGrep, ParamGreppath };
 
         // ReSharper disable InconsistentNaming
         private static uint _totalFound;
@@ -82,7 +83,10 @@ namespace cdeLib
         {
             Console.WriteLine("Searching for entries that contain \"{0}\"", find);
             var totalFound = 0L;
-            var e = GetSearchHits(_rootEntries, find, false, false);
+            var regexMode = paramString == ParamGrep || paramString == ParamGreppath;
+            var includePath = paramString == ParamGreppath || paramString == ParamFindpath;
+
+            var e = GetSearchHits(_rootEntries, find, regexMode, includePath);
             foreach (var pairDirEntry in e)
             {
                 ++totalFound;
@@ -124,6 +128,10 @@ namespace cdeLib
             {
                 case ParamFind:
                     matchAction = MatchSubstringName;
+                    break;
+
+                case ParamFindpath:
+                    matchAction = MatchSubstringFullPath;
                     break;
 
                 case ParamGrep:
@@ -177,6 +185,16 @@ namespace cdeLib
             {
                 ++_totalFound;
                 var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
+                Console.WriteLine("found {0}", fullPath);
+            }
+        }
+
+        private static void MatchSubstringFullPath(CommonEntry parentEntry, DirEntry dirEntry)
+        {
+            var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
+            if (fullPath.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
+            {
+                ++_totalFound;
                 Console.WriteLine("found {0}", fullPath);
             }
         }
