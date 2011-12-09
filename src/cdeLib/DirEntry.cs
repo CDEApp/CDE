@@ -190,7 +190,11 @@ namespace cdeLib
             IsDirectory = fs.IsDirectory;
             IsSymbolicLink = fs.IsSymbolicLink;
             IsReparsePoint = fs.IsReparsePoint;
-            if (!fs.IsDirectory)
+            if (IsDirectory)
+            {
+                Children = new List<DirEntry>();
+            }
+            else
             {
                 Size = (ulong)fs.FileSize;
             }

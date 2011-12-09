@@ -75,6 +75,7 @@
     <Compile Include="CommonEntryTest_FindClosestParentDir.cs" />
     <Compile Include="SerializeDataModelTest.cs" />
     <Compile Include="StringExtensionTest.cs" />
+    <Compile Include="TestDirEntry.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">

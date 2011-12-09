@@ -37,7 +37,7 @@ namespace cdeLib
             var entries = new Stack<CommonEntry>();
             foreach (var re in rootEntries)
             {
-                entries.Push(re);
+                entries.Push(re); // TODO dont push if no Children. ? ie 0 or null
             }
             return entries;
         }
@@ -57,7 +57,15 @@ namespace cdeLib
                 if (_entries.Count > 0)
                 {
                     var de = _entries.Pop();
-                    _childEnumerator = de.Children.GetEnumerator();
+                    if (de.Children != null)    // Children may not be initialized if Dir is empty.
+                    {
+                        _childEnumerator = de.Children.GetEnumerator();
+                    }
+                    else
+                    {
+                        _childEnumerator = null;
+                        MoveNext();
+                    }
                 }
             }
 
@@ -68,7 +76,7 @@ namespace cdeLib
                     _current = _childEnumerator.Current;
                     if (_current.IsDirectory)
                     {
-                        _entries.Push(_current);
+                        _entries.Push(_current); // TODO dont push if no children. ? ie 0 or null
                     }
                 }
                 else

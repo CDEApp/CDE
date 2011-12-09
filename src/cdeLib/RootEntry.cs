@@ -63,6 +63,7 @@ namespace cdeLib
 
         public RootEntry ()
         {
+            Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
             _configuration = new Configuration();
             EntryCountThreshold = _configuration.ProgressUpdateInterval;

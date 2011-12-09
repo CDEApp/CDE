@@ -168,13 +168,13 @@ namespace cdeLibTest
         private void RecreateTestTree()
         {
             _reSource = new RootEntry { RootPath = @"C:\" };
-            _sde1 = new DirEntry { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
-            _sde2 = new DirEntry { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
-            _sde3 = new DirEntry { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
-            _sfe4 = new DirEntry { IsDirectory = true, Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _sde5 = new DirEntry { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
-            _sde6 = new DirEntry { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
-            _sde7 = new DirEntry { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
+            _sde1 = new TestDirEntry(false) { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
+            _sde2 = new TestDirEntry(false) { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
+            _sde3 = new TestDirEntry(false) { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
+            _sfe4 = new TestDirEntry(true)  { Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
+            _sde5 = new TestDirEntry(false) { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
+            _sde6 = new TestDirEntry(false) { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
+            _sde7 = new TestDirEntry(false) { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
             _reSource.Children.Add(_sde1);
             _reSource.Children.Add(_sde2);
             _reSource.Children.Add(_sde3);
@@ -184,13 +184,13 @@ namespace cdeLibTest
             _sfe4.Children.Add(_sde7);
 
             _reDest = new RootEntry { RootPath = @"C:\" };
-            _dde1 = new DirEntry { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
-            _dde2 = new DirEntry { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
-            _dde3 = new DirEntry { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
-            _dfe4 = new DirEntry { IsDirectory = true, Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _dde5 = new DirEntry { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
-            _dde6 = new DirEntry { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
-            _dde7 = new DirEntry { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
+            _dde1 = new TestDirEntry(false) { Name = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
+            _dde2 = new TestDirEntry(false) { Name = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
+            _dde3 = new TestDirEntry(false) { Name = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
+            _dfe4 = new TestDirEntry(true)  { Name = @"fe4", Modified = new DateTime(2011, 02, 04) };
+            _dde5 = new TestDirEntry(false) { Name = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
+            _dde6 = new TestDirEntry(false) { Name = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
+            _dde7 = new TestDirEntry(false) { Name = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
             _reDest.Children.Add(_dde1);
             _reDest.Children.Add(_dde2);
             _reDest.Children.Add(_dde3);

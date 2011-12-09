@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using NUnit.Framework;
 
@@ -17,7 +18,7 @@ namespace cdeLibTest
         protected void RebuildTestRoot()
         {
             _re1 = new RootEntry { RootPath = @"C:\" };
-            De1 = new DirEntry { Name = @"de1", IsDirectory = true };
+            De1 = new TestDirEntry(true) { Name = @"de1" };
             Fe2 = new DirEntry { Name = @"fe2" };
             De1.Children.Add(Fe2);
             _re1.Children.Add(De1);

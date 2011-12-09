@@ -27,11 +27,6 @@ namespace cdeLib
         /// </summary>
         public string FullPath { get; set; }
 
-        protected CommonEntry()
-        {
-            Children = new List<DirEntry>();    // only needed for dir's but who cares.
-        }
-
         abstract public bool IsRoot();
 
         public CommonEntry FindClosestParentDir(string relativePath)
@@ -77,18 +72,21 @@ namespace cdeLib
         public void SetSummaryFields(DirStats dirStats)
         {
             var size = 0ul;
-            foreach (var dirEntry in Children)
+            if (Children != null)   // now that empty directories may not have Children initialized.
             {
-                if (dirEntry.IsDirectory)
+                foreach (var dirEntry in Children)
                 {
-                    dirEntry.SetSummaryFields(dirStats);
-                    dirStats.DirCount += 1;
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirEntry.SetSummaryFields(dirStats);
+                        dirStats.DirCount += 1;
+                    }
+                    else
+                    {
+                        dirStats.FileCount += 1;
+                    }
+                    size += dirEntry.Size;
                 }
-                else
-                {
-                    dirStats.FileCount += 1;
-                }
-                size += dirEntry.Size;
             }
             Size = size;
         }
@@ -111,22 +109,25 @@ namespace cdeLib
             {
                 var commonEntry = dirs.Pop();
 
-                foreach (var dirEntry in commonEntry.Children)
+                if (commonEntry.Children != null) // now that empty directories may not have Children initialized.
                 {
-                    if (action != null)
+                    foreach (var dirEntry in commonEntry.Children)
                     {
-                        action(dirEntry);
-                    }
+                        if (action != null)
+                        {
+                            action(dirEntry);
+                        }
 
-                    if (dirEntry.IsDirectory)
-                    {
-                        dirs.Push(dirEntry);
-                    }
+                        if (dirEntry.IsDirectory)
+                        {
+                            dirs.Push(dirEntry);
+                        }
 
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                        break;
+                        if (Hack.BreakConsoleFlag)
+                        {
+                            Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                            break;
+                        }
                     }
                 }
 
@@ -156,22 +157,25 @@ namespace cdeLib
             {
                 var commonEntry = dirs.Pop();
 
-                foreach (var dirEntry in commonEntry.Children)
+                if (commonEntry.Children != null)// now that empty directories may not have Children initialized.
                 {
-                    if (action != null)
+                    foreach (var dirEntry in commonEntry.Children)
                     {
-                        action(commonEntry, dirEntry);
-                    }
+                        if (action != null)
+                        {
+                            action(commonEntry, dirEntry);
+                        }
 
-                    if (dirEntry.IsDirectory)
-                    {
-                        dirs.Push(dirEntry);
-                    }
+                        if (dirEntry.IsDirectory)
+                        {
+                            dirs.Push(dirEntry);
+                        }
 
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                        break;
+                        if (Hack.BreakConsoleFlag)
+                        {
+                            Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                            break;
+                        }
                     }
                 }
 
@@ -214,46 +218,49 @@ namespace cdeLib
                 var baseSourceEntry = t.Item2;
                 var baseDestinationEntry = t.Item3;
 
-                foreach (var sourceDirEntry in baseSourceEntry.Children)
+                if (baseSourceEntry.Children != null)
                 {
-                    var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
-
-                    // find if theres a destination entry available.
-                    // size of dir is irrelevant. date of dir we don't care about.
-                    var sourceEntry = sourceDirEntry;
-                    var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
-                                                x => (x.Name == sourceEntry.Name));
-
-                    if (destinationDirEntry == null)
+                    foreach (var sourceDirEntry in baseSourceEntry.Children)
                     {
-                        continue;
-                    }
+                        var fullPath = Path.Combine(workPath, sourceDirEntry.Name);
 
-                    if (!sourceDirEntry.IsDirectory
-                        && sourceDirEntry.Modified == destinationDirEntry.Modified
-                        && sourceDirEntry.Size == destinationDirEntry.Size)
-                    {
-                        // copy MD5 if none in destination.
-                        // copy MD5 as upgrade to full if dest currently partial.
-                        if ((sourceDirEntry.IsHashDone)
-                             && (!destinationDirEntry.IsHashDone)
-                            ||
-                            ((sourceDirEntry.IsHashDone)
-                              && (destinationDirEntry.IsHashDone)
-                              && !sourceDirEntry.IsPartialHash
-                              && destinationDirEntry.IsPartialHash
-                            ))
+                        // find if theres a destination entry available.
+                        // size of dir is irrelevant. date of dir we don't care about.
+                        var sourceEntry = sourceDirEntry;
+                        var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
+                            x => (x.Name == sourceEntry.Name));
+
+                        if (destinationDirEntry == null)
                         {
-                            destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
-                            destinationDirEntry.Hash = sourceDirEntry.Hash;
+                            continue;
                         }
-                    }
-                    else
-                    {
-                        if (destinationDirEntry.IsDirectory)
+
+                        if (!sourceDirEntry.IsDirectory
+                            && sourceDirEntry.Modified == destinationDirEntry.Modified
+                            && sourceDirEntry.Size == destinationDirEntry.Size)
                         {
-                            dirs.Push(Tuple.Create(fullPath, (CommonEntry) sourceDirEntry,
-                                                   (CommonEntry) destinationDirEntry));
+                            // copy MD5 if none in destination.
+                            // copy MD5 as upgrade to full if dest currently partial.
+                            if ((sourceDirEntry.IsHashDone)
+                                && (!destinationDirEntry.IsHashDone)
+                                ||
+                                ((sourceDirEntry.IsHashDone)
+                                 && (destinationDirEntry.IsHashDone)
+                                 && !sourceDirEntry.IsPartialHash
+                                 && destinationDirEntry.IsPartialHash
+                                ))
+                            {
+                                destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
+                                destinationDirEntry.Hash = sourceDirEntry.Hash;
+                            }
+                        }
+                        else
+                        {
+                            if (destinationDirEntry.IsDirectory)
+                            {
+                                dirs.Push(Tuple.Create(fullPath, (CommonEntry) sourceDirEntry,
+                                                       (CommonEntry) destinationDirEntry));
+                            }
                         }
                     }
                 }
