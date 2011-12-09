@@ -246,38 +246,29 @@ namespace cdeWin
             // If its a folder then change the tree view to select this folder.
             var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
 
-            // _directoryListViewCommonEntry is the parent of our DirectoryListView control.
-            //MessageBox.Show(_directoryListViewCommonEntry.FullPath + " == " + dirEntry.Name);
-
             // - want the set of DirEntry leading from root to dirEntry...
-            // then passing that to form - select hose ? using 'tag' ? or name ? ick name.
-
-            var list = new List<DirEntry>(10); // more than default but small number.
-            // every item in list view has a parent, it might be RootEntry
-            var currentCommonEntry = dirEntry;
-            list.Add(currentCommonEntry);
-            var parentCommonEntry = currentCommonEntry.ParentCommonEntry;
-            while (parentCommonEntry.ParentCommonEntry != null)
-            {
-                currentCommonEntry = (DirEntry)parentCommonEntry;
-                list.Add(currentCommonEntry);
-                parentCommonEntry = parentCommonEntry.ParentCommonEntry;
-            }
-
-            var rootEntry = (RootEntry)parentCommonEntry;
-            list.Reverse(); // list now contains entries leading from root to our activated DirEntry
+            var activatedDirEntryList = DirEntry.GetListFromRoot(dirEntry);
 
             // Remember: FullPath is not set for files.....
-            var listTrace = list.Aggregate("", (current, commonEntry) => current + ("_" + commonEntry.Name));
+            var listTrace = activatedDirEntryList.Aggregate("", 
+                (current, commonEntry) => 
+                    current + ("_" + commonEntry.Name) // GRR
+                );
             MessageBox.Show(listTrace);
+
+            // TODO
+            // TODO
+            // TODO .FullPath on commonEntry is annoying.
+            // TODO .Name on only DirEntry is annoying. - make .Name on RootEntry same as RootPath... maybe "Path"
+            // TODO
+            // TODO
 
             // given a path - set the right root ? and expand path to right node ?
             // need it navigating from SearchResults....
 
-            // treeview may not have a selected node any more ?
-            // we should keep the directory our listview is showing somewhere ?
+            //_clientForm.SetDirectoryTreeViewSelected = activatedDirEntryList;
 
-            // maybe later launch the file we double clicked on ?
+            // treeview may not have a selected node any more ?
         }
 
         public void SearchResultListViewItemActivate()

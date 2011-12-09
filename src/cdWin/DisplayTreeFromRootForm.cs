@@ -65,6 +65,7 @@ namespace cdeWin
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
         string SetDirectoryPathTextbox { set; }
+        IEnumerable<DirEntry> SetDirectoryTreeViewSelected { set; }
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -397,6 +398,28 @@ namespace cdeWin
         public string SetDirectoryPathTextbox
         {
             set { directoryPathTextBox.Text = value; }
+        }
+
+        /// <summary>
+        /// Ensure the path is expaned and end point selected in tree view.
+        /// Relise on tag values matching the entires in list.
+        /// </summary>
+        public IEnumerable<DirEntry> SetDirectoryTreeViewSelected
+        {
+            set
+            {
+                var list = value;
+                var currentRootNode = DirectoryTreeViewNodes;
+                var currentRoot = (RootEntry)currentRootNode.Tag;
+                //if (currentRoot != currentRootNode)
+                {
+                    
+                }
+                foreach (var dirEntry in list)
+                {
+                    //var 
+                }
+            }
         }
     }
 

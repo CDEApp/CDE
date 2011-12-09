@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
@@ -14,19 +15,19 @@ namespace cdeLib
         [Flags]
         public enum Flags
         {
-            [System.ComponentModel.Description("Obligatory none value.")]
+            [Description("Obligatory none value.")]
             None = 0,
-            [System.ComponentModel.Description("Is a directory.")]
+            [Description("Is a directory.")]
             Directory = 1 << 0,
-            [System.ComponentModel.Description("Has a bad modified date field.")]
+            [Description("Has a bad modified date field.")]
             ModifiedBad = 1 << 1,
-            [System.ComponentModel.Description("Is a symbolic link.")]
+            [Description("Is a symbolic link.")]
             SymbolicLink = 1 << 2,
-            [System.ComponentModel.Description("Is a reparse point.")]
+            [Description("Is a reparse point.")]
             ReparsePoint = 1 << 3,
-            [System.ComponentModel.Description("Hashing was done for this.")]
+            [Description("Hashing was done for this.")]
             HashDone = 1 << 4,
-            [System.ComponentModel.Description("The Hash if done was a partial.")]
+            [Description("The Hash if done was a partial.")]
             PartialHash = 1 << 5
         };
 
@@ -237,6 +238,22 @@ namespace cdeLib
                 return (int)(obj.Size >> 32) * 31 +
                        (int)(obj.Size & 0xFFFFFFFF);
             }
+        }
+
+        /// <returns>List of CommonEntry, first is RootEntry, rest are DirEntry</returns>
+        public static IEnumerable<CommonEntry> GetListFromRoot(CommonEntry dirEntry)
+        {
+            var activatedDirEntryList = new List<CommonEntry>(10) {dirEntry};
+            // every item in list view has a parent, a highest level possibe it is a RootEntry
+            var parentCommonEntry = dirEntry.ParentCommonEntry;
+            while (parentCommonEntry.ParentCommonEntry != null)
+            {
+                activatedDirEntryList.Add(parentCommonEntry);
+                parentCommonEntry = parentCommonEntry.ParentCommonEntry;
+            }
+            activatedDirEntryList.Add(parentCommonEntry);
+            activatedDirEntryList.Reverse(); // list now contains entries leading from root to our activated DirEntry
+            return activatedDirEntryList;
         }
     }
 }
