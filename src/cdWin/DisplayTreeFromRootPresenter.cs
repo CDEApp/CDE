@@ -300,11 +300,11 @@ namespace cdeWin
                 var dirEntry = _directoryListViewCommonEntry.Children[firstIndex];
                 if (multiSelected)
                 {
-                    _clientForm.SetDirectoryPathTextbox = dirEntry.ParentCommonEntry.FullPath;
+                    _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.FullPath;
                 }
                 else
                 {
-                    _clientForm.SetDirectoryPathTextbox = CommonEntry.MakeFullPath(dirEntry.ParentCommonEntry, dirEntry);
+                    _clientForm.SetDirectoryPathTextbox = CommonEntry.MakeFullPath(_directoryListViewCommonEntry, dirEntry);
                 }
             }
         }
