@@ -42,7 +42,6 @@ namespace cde
             }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
-                Find.FindString(args[1], param0);
                 Find.FindString2(args[1], param0);
             }
             else if (args.Length == 2 && param0 == "--replgreppath")
@@ -137,6 +136,9 @@ namespace cde
             Console.WriteLine("Usage: cde --find <string>");
             Console.WriteLine("       uses all cache files available searches for <string>");
             Console.WriteLine("       as substring of on file name.");
+            Console.WriteLine("Usage: cde --findpath <string>");
+            Console.WriteLine("       uses all cache files available searches for <string>");
+            Console.WriteLine("       as regex match on full path to file name.");
             Console.WriteLine("Usage: cde --grep <regex>");
             Console.WriteLine("       uses all cache files available searches for <regex>");
             Console.WriteLine("       as regex match on file name.");

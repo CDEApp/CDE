@@ -81,6 +81,7 @@ namespace cdeLib
 
         public static void FindString2(string find, string paramString)
         {
+            GetDirCache();
             Console.WriteLine("Searching for entries that contain \"{0}\"", find);
             var totalFound = 0L;
             var regexMode = paramString == ParamGrep || paramString == ParamGreppath;
