@@ -289,22 +289,19 @@ namespace cdeWin
 
         public void DirectoryListViewItemSelectionChanged()
         {
-            var indices = _clientForm.SelectedDirectoryIndices;
-            var take2 = indices.Take(2);
-            var countTake2 = take2.Count();
-            var anySelected = countTake2 > 0;
-            var multiSelected = countTake2 > 1;
-            if (anySelected)
+            var indices = _clientForm.DirectorySelectedIndices;
+            var indicesCount = _clientForm.DirectorySelectedIndicesCount;
+            if (indicesCount > 0)
             {
-                var firstIndex = take2.First();
+                var firstIndex = indices.First();
                 var dirEntry = _directoryListViewCommonEntry.Children[firstIndex];
-                if (multiSelected)
+                if (indicesCount > 1)
                 {
                     _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.FullPath;
                 }
                 else
                 {
-                    _clientForm.SetDirectoryPathTextbox = CommonEntry.MakeFullPath(_directoryListViewCommonEntry, dirEntry);
+                    _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.MakeFullPath(dirEntry);
                 }
             }
         }

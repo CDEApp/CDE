@@ -42,8 +42,9 @@ namespace cdeWin
         int DirectoryListViewItemIndex { get; set; }
         ListViewItem SearchResultListViewItem { get; set; }
         ListViewItem DirectoryListViewItem { get; set; }
-        IEnumerable<int> SelectedDirectoryIndices { get; set; }
-
+        IEnumerable<int> DirectorySelectedIndices { get; set; }
+        int DirectorySelectedIndicesCount { get; set; }
+        
         void SetDirectoryColumnHeaders(IEnumerable<ColumnConfig> columns);
         void SetSearchColumnHeaders(IEnumerable<ColumnConfig> columns);
         IEnumerable<ColumnConfig> GetDirectoryListViewColumns { get; }
@@ -86,7 +87,8 @@ namespace cdeWin
         public CommonEntry ActiveDirectoryAfterSelectNode { get; set; }
         public ListViewItem SearchResultListViewItem { get; set; }
         public ListViewItem DirectoryListViewItem { get; set; }
-        public IEnumerable<int> SelectedDirectoryIndices { get; set; }
+        public IEnumerable<int> DirectorySelectedIndices { get; set; }
+        public int DirectorySelectedIndicesCount { get; set; }
 
         /// <summary>
         /// One shot cancel next expand in BeforExpand, then sets back to false.
@@ -162,7 +164,8 @@ namespace cdeWin
 
         private void OnDirectoryListViewOnItemSelectionChanged(object s, EventArgs e)
         {
-            SelectedDirectoryIndices = directoryListView.SelectedIndices.OfType<int>();
+            DirectorySelectedIndices = directoryListView.SelectedIndices.OfType<int>();
+            DirectorySelectedIndicesCount = directoryListView.SelectedIndices.Count;
             if (directoryListView.SelectedIndices.Count > 0)
             {
                 OnDirectoryListViewItemSelectionChanged();
