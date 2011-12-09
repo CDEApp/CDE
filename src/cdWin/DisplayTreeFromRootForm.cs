@@ -320,7 +320,8 @@ namespace cdeWin
 
         public void SetDirectoryVirtualList(CommonEntry parentCommonEntry)
         {
-            directoryListView.VirtualListSize = parentCommonEntry.Children.Count;
+            directoryListView.VirtualListSize = parentCommonEntry.Children != null 
+                                                ? parentCommonEntry.Children.Count : 0;
             directoryListView.VirtualMode = true;
             ForceDrawDirectoryListView();
         }
