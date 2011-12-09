@@ -67,7 +67,8 @@ namespace cdeWin
         /// </summary>
         private static void SetDummyChildNode(TreeNode treeNode, CommonEntry commonEntry)
         {
-            if (commonEntry.Children.Any(entry => entry.IsDirectory))
+            if (commonEntry.Children !=null 
+                && commonEntry.Children.Any(entry => entry.IsDirectory))
             {
                 treeNode.Nodes.Add(NewTreeNode(null, DummyNodeName));
             }
