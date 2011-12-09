@@ -54,7 +54,6 @@ namespace cdeLib
             _entries = null;
         }
 
-        // idea that I can somehow Concat() iterators from the Children to _childEnumerator - dont think so now.
         public bool MoveNext()
         {
             _current = null;

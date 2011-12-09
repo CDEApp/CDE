@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-    public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry> // is it weird to be both
+    public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
@@ -51,7 +51,6 @@ namespace cdeLib
             _entries = null;
         }
 
-        // idea that I can somehow Concat() iterators from the Children to _childEnumerator - dont think so now.
         public bool MoveNext()
         {
             _current = null;
