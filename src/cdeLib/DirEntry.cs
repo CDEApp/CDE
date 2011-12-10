@@ -8,7 +8,7 @@ using ProtoBuf;
 
 namespace cdeLib
 {
-    [DebuggerDisplay("Path = {Path} {Size}, Count = {Children.Count} {IsHashDone} {Hash.HashB}")]
+    [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} {IsHashDone} {Hash.HashB}")]
     [ProtoContract]
     public class DirEntry : CommonEntry
     {
