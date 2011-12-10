@@ -292,21 +292,21 @@ namespace cdeLib
 
         public Action<string, Exception> ExceptionEvent { get; set; }
 
-        public CommonEntry FindDir(string basePath, string entryPath)
-        {
-            var relativePath = entryPath.GetRelativePath(basePath);
-            if (relativePath == null)
-            {
-                throw new ArgumentException("Error entryPath must be logically under basePath.");
-            }
+        //public CommonEntry FindDir(string basePath, string entryPath)
+        //{
+        //    var relativePath = entryPath.GetRelativePath(basePath);
+        //    if (relativePath == null)
+        //    {
+        //        throw new ArgumentException("Error entryPath must be logically under basePath.");
+        //    }
 
-            if (relativePath == string.Empty)
-            {
-                return this;
-            }
+        //    if (relativePath == string.Empty)
+        //    {
+        //        return this;
+        //    }
 
-            return FindClosestParentDir(relativePath);
-        }
+        //    return FindClosestParentDir(relativePath);
+        //}
 
         public void SaveRootEntry()
         {

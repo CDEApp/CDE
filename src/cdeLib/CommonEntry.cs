@@ -33,36 +33,36 @@ namespace cdeLib
         /// </summary>
         public string FullPath { get; set; }
 
-        public CommonEntry FindClosestParentDir(string relativePath)
-        {
-            if (string.IsNullOrWhiteSpace(relativePath))
-            {
-                throw new ArgumentException("Argument relativePath must be non empty.");
-            }
-            var indexOfDirectorySeperator = relativePath.IndexOf(Filesystem.Path.DirectorySeparatorChar);
-            var firstPathElement = relativePath;
-            var remainderPath = string.Empty;
-            if (indexOfDirectorySeperator > 0)
-            {
-                firstPathElement = relativePath.Remove(indexOfDirectorySeperator);
-                remainderPath = relativePath.Substring(indexOfDirectorySeperator + Filesystem.Path.DirectorySeparatorChar.Length);
-            }
-            var de = Children.FirstOrDefault(x => x.Path == firstPathElement);
-            if (de != null)
-            {
-                if (remainderPath == string.Empty)
-                {
-                    return de;
-                }
-                var foundDe = de.FindClosestParentDir(remainderPath);
-                if (foundDe == null)
-                {
-                    return de;
-                }
-                return foundDe;
-            }
-            return this;
-        }
+        //public CommonEntry FindClosestParentDir(string relativePath)
+        //{
+        //    if (string.IsNullOrWhiteSpace(relativePath))
+        //    {
+        //        throw new ArgumentException("Argument relativePath must be non empty.");
+        //    }
+        //    var indexOfDirectorySeperator = relativePath.IndexOf(Filesystem.Path.DirectorySeparatorChar);
+        //    var firstPathElement = relativePath;
+        //    var remainderPath = string.Empty;
+        //    if (indexOfDirectorySeperator > 0)
+        //    {
+        //        firstPathElement = relativePath.Remove(indexOfDirectorySeperator);
+        //        remainderPath = relativePath.Substring(indexOfDirectorySeperator + Filesystem.Path.DirectorySeparatorChar.Length);
+        //    }
+        //    var de = Children.FirstOrDefault(x => x.Path == firstPathElement);
+        //    if (de != null)
+        //    {
+        //        if (remainderPath == string.Empty)
+        //        {
+        //            return de;
+        //        }
+        //        var foundDe = de.FindClosestParentDir(remainderPath);
+        //        if (foundDe == null)
+        //        {
+        //            return de;
+        //        }
+        //        return foundDe;
+        //    }
+        //    return this;
+        //}
 
         [DebuggerDisplay("FileCount = {FileCount}, DirCount = {DirCount}")]
         public class DirStats

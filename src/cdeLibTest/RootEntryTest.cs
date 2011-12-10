@@ -40,28 +40,28 @@ namespace cdeLibTest
             Assert.That(found, Is.True, "One of entries does not have children.");
         }
 
-        [Test]
-        public void FindDir_LookForDir_InRoot()
-        {
-            const string rootPath = @"C:\";
-            var re = new RootEntry { Path = rootPath };
+        //[Test]
+        //public void FindDir_LookForDir_InRoot()
+        //{
+        //    const string rootPath = @"C:\";
+        //    var re = new RootEntry { Path = rootPath };
 
-            var foundEntry = re.FindDir(rootPath, @"C:\Moo");
+        //    var foundEntry = re.FindDir(rootPath, @"C:\Moo");
 
-            Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
-        }
+        //    Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
+        //}
 
-        [Test]
-        public void FindDir_NotExistinRoot_ReturnRE()
-        {
-            const string rootPath = @"C:\";
-            const string testPath = @"C:\Groo";
-            var re = new RootEntry { Path = rootPath };
+        //[Test]
+        //public void FindDir_NotExistinRoot_ReturnRE()
+        //{
+        //    const string rootPath = @"C:\";
+        //    const string testPath = @"C:\Groo";
+        //    var re = new RootEntry { Path = rootPath };
 
-            var foundEntry = re.FindDir(rootPath, testPath);
+        //    var foundEntry = re.FindDir(rootPath, testPath);
 
-            Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
-        }
+        //    Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
+        //}
 
         [Test]
         public void GetDriverLetterHint_SimpleRootPath_ReturnsDriveLetter()
