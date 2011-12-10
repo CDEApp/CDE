@@ -65,7 +65,10 @@ namespace cdeWin
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
         string SetDirectoryPathTextbox { set; }
-        IEnumerable<DirEntry> SetDirectoryTreeViewSelected { set; }
+        TreeNode SetDirectoryTreeViewSelectedNode { set; }
+        void DirectoryListViewDeselectItems();
+        void SelectDirectoryListViewItem(int index);
+        void SetCatalogsLoadedStatus(int i);
     }
 
     public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
@@ -99,6 +102,10 @@ namespace cdeWin
         public DisplayTreeFromRootFormForm()
         {
             InitializeComponent();
+            AutoWaitCursor.Cursor = Cursors.WaitCursor;
+            AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
+            AutoWaitCursor.MainWindowHandle = Handle;
+            AutoWaitCursor.Start();
             RegisterClientEvents();
         }
 
@@ -107,6 +114,7 @@ namespace cdeWin
         private void RegisterClientEvents()
         {
             FormClosing += (s, e) => OnMyFormClosing();
+            Activated += OnMyFormActivated;
 
             whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
             whatToSearchComboBox.SelectedIndex = 0; // default Include
@@ -121,24 +129,13 @@ namespace cdeWin
             directoryListView.RetrieveVirtualItem += OnDirectoryListViewOnRetrieveVirtualItem;
             directoryListView.ItemActivate += OnDirectoryListViewOnItemActivate;
 
-            // require both events for behavoiur I want of DirectoryPathTextBox
+            // require both events for behaviour I want of DirectoryPathTextBox
             directoryListView.SelectedIndexChanged += OnDirectoryListViewOnItemSelectionChanged;
             directoryListView.VirtualItemsSelectionRangeChanged += OnDirectoryListViewOnItemSelectionChanged;
 
             DirectoryTreeViewCancelExpandEvent = false;
-            directoryTreeView.BeforeExpand += (s, e) => 
-            {
-                DirectoryTreeViewActiveBeforeExpandNode = e.Node;
-                OnDirectoryTreeViewBeforeExpandNode();
-                e.Cancel = DirectoryTreeViewCancelExpandEvent;
-                DirectoryTreeViewCancelExpandEvent = false;
-            };
-
-            directoryTreeView.AfterSelect += (s, e) => 
-            {
-                DirectoryTreeViewActiveAfterSelectNode = e.Node;
-                OnDirectoryTreeViewAfterSelect();
-            };
+            directoryTreeView.BeforeExpand += OnDirectoryTreeViewOnBeforeExpand;
+            directoryTreeView.AfterSelect += OnDirectoryTreeViewOnAfterSelect;
 
             searchButton.Click += (s, e) => OnSearchRoots();
 
@@ -149,11 +146,6 @@ namespace cdeWin
             searchTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
             searchTextBox.LostFocus += (s, e) => AcceptButton = null;
 
-            AutoWaitCursor.Cursor = Cursors.WaitCursor;
-            AutoWaitCursor.Delay = new TimeSpan(0,0,0,0,25);
-            AutoWaitCursor.MainWindowHandle = Handle;
-            AutoWaitCursor.Start();
-
             catalogResultListView.MultiSelect = false;
             catalogResultListView.View = View.Details;
             catalogResultListView.FullRowSelect = true;
@@ -161,6 +153,25 @@ namespace cdeWin
             catalogResultListView.ItemActivate += OnCatalogListViewOnItemActivate;
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
+        }
+
+        private void OnMyFormActivated(object sender, EventArgs eventArgs)
+        {
+            searchTextBox.Focus();
+        }
+
+        private void OnDirectoryTreeViewOnAfterSelect(object s, TreeViewEventArgs e)
+        {
+            DirectoryTreeViewActiveAfterSelectNode = e.Node;
+            OnDirectoryTreeViewAfterSelect();
+        }
+
+        private void OnDirectoryTreeViewOnBeforeExpand(object s, TreeViewCancelEventArgs e)
+        {
+            DirectoryTreeViewActiveBeforeExpandNode = e.Node;
+            OnDirectoryTreeViewBeforeExpandNode();
+            e.Cancel = DirectoryTreeViewCancelExpandEvent;
+            DirectoryTreeViewCancelExpandEvent = false;
         }
 
         private void OnDirectoryListViewOnItemSelectionChanged(object s, EventArgs e)
@@ -309,8 +320,18 @@ namespace cdeWin
         {
             searchResultListView.VirtualListSize = pdeList.Count;
             searchResultListView.VirtualMode = true;
-            searchResultsStatus.Text = "SR " + pdeList.Count.ToString();
+            SetSearchResultStatus(pdeList.Count);
             ForceDrawSearchResultListView();
+        }
+
+        public void SetSearchResultStatus(int i)
+        {
+            searchResultsStatus.Text = "SR " + i.ToString();
+        }
+
+        public void SetCatalogsLoadedStatus(int i)
+        {
+            catalogsLoadedStatus.Text = "C " + i.ToString();
         }
 
         public void ForceDrawSearchResultListView()
@@ -401,26 +422,30 @@ namespace cdeWin
             set { directoryPathTextBox.Text = value; }
         }
 
-        /// <summary>
-        /// Ensure the path is expaned and end point selected in tree view.
-        /// Relise on tag values matching the entires in list.
-        /// </summary>
-        public IEnumerable<DirEntry> SetDirectoryTreeViewSelected
+        public TreeNode SetDirectoryTreeViewSelectedNode
         {
-            set
+            set { directoryTreeView.SelectedNode = value; }
+        }
+
+        public void DirectoryListViewDeselectItems()
+        {
+            for (var i = 0; i < directoryListView.Items.Count; i++)
             {
-                var list = value;
-                var currentRootNode = DirectoryTreeViewNodes;
-                var currentRoot = (RootEntry)currentRootNode.Tag;
-                //if (currentRoot != currentRootNode)
+                var listItem = directoryListView.Items[i];
+                if (listItem.Selected)
                 {
-                    
-                }
-                foreach (var dirEntry in list)
-                {
-                    //var 
+                    listItem.Selected = false;
                 }
             }
+        }
+
+        public void SelectDirectoryListViewItem(int index)
+        {
+            var listItem = directoryListView.Items[index];
+            listItem.Selected = true;
+            listItem.Focused = true;
+            listItem.EnsureVisible();
+            directoryListView.Select();
         }
     }
 

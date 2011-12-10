@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -147,11 +148,14 @@ namespace cdeWin
 
         private void SetCatalogListView(IEnumerable<RootEntry> rootEntries)
         {
+            var count = 0;
             foreach (var rootEntry in rootEntries)
             {
                 var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
                 _clientForm.AddCatalogListViewRow(_catalogVals, itemColor, rootEntry);
+                ++count;
             }
+            _clientForm.SetCatalogsLoadedStatus(count);
         }
 
         private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
@@ -245,36 +249,88 @@ namespace cdeWin
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
             var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
+            if (dirEntry.IsDirectory)
+            {
+                SetDirectoryWithExpand(dirEntry);
+            }
+        }
 
-            // - want the set of DirEntry leading from root to dirEntry...
+        private void SetDirectoryWithExpand(DirEntry dirEntry)
+        {
             var activatedDirEntryList = DirEntry.GetListFromRoot(dirEntry);
 
-            // Remember: FullPath is not set for files.....
-            var listTrace = activatedDirEntryList.Aggregate("", 
-                    (current, commonEntry) => current + ("_" + commonEntry.Path)
-                );
-            MessageBox.Show(listTrace);
+            var currentRootNode = _clientForm.DirectoryTreeViewNodes;
+            RootEntry currentRoot = null;
+            if (currentRootNode != null)
+            {
+                currentRoot = (RootEntry)currentRootNode.Tag;
+            }
+            TreeNode workingTreeNode = null;
+            RootEntry newRoot = null;
+            foreach (var entry in activatedDirEntryList)
+            {
+                if (newRoot == null)
+                {
+                    newRoot = (RootEntry) entry;
+                    if (currentRoot != newRoot)
+                    {
+                        currentRootNode = BuildRootNode(newRoot);
+                        _clientForm.DirectoryTreeViewNodes = currentRootNode;
+                        currentRoot = newRoot;
+                    }
+                    workingTreeNode = currentRootNode; // starting at rootnode.
+                }
+                else
+                {
+                    if (workingTreeNode == null)
+                    {
+                        throw new ArgumentException("broken workingTreeNode is null 1");
+                    }
 
-            // TODO
-            // TODO
-            // TODO .FullPath on commonEntry is annoying.
-            // TODO .Name on only DirEntry is annoying. - make .Name on RootEntry same as RootPath... maybe "Path"
-            // TODO
-            // TODO
+                    if (((DirEntry) entry).IsDirectory)
+                    {
+                        CreateNodesPreExpand(workingTreeNode);
+                        workingTreeNode.Expand();
+                        object findTag = entry;
+                        var nodeForCurrentEntry = workingTreeNode.Nodes.Cast<TreeNode>()
+                            .FirstOrDefault(node => node.Tag == findTag);
+                        workingTreeNode = nodeForCurrentEntry;
+                    }
+                }
+            }
 
-            // given a path - set the right root ? and expand path to right node ?
-            // need it navigating from SearchResults....
+            if (workingTreeNode != null)
+            {
+                CreateNodesPreExpand(workingTreeNode);
+                workingTreeNode.Expand();
+                _clientForm.SetDirectoryTreeViewSelectedNode = workingTreeNode;
 
-            //_clientForm.SetDirectoryTreeViewSelected = activatedDirEntryList;
-
-            // treeview may not have a selected node any more ?
+                // This is required or item under cursor after double click is selected.
+                // not sure why ? some sort of left over click on new ListView content.
+                _clientForm.DirectoryListViewDeselectItems();
+                _clientForm.SelectDirectoryPane();
+            }
+            //else
+            //{
+            //    // this was launched with file.
+            //    // Find and select file in List view.
+            //    //MessageBox.Show("__ " + lastDirEntry.Path + " __");
+            //    //throw new ArgumentException("broken workingTreeNode is null 2");
+            //}
         }
 
         public void SearchResultListViewItemActivate()
         {
             var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultIndexAfterActivate];
+            var dirEntry = pairDirEntry.ChildDE;
+            SetDirectoryWithExpand(dirEntry);
 
-            MessageBox.Show(pairDirEntry.RootDE.Path + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Path);
+            if (!dirEntry.IsDirectory)
+            {   // select the file in list view, do i have to scroll to it as well ???
+                var index = _directoryListViewCommonEntry.Children.IndexOf(dirEntry);
+                _clientForm.SelectDirectoryListViewItem(index);
+            }
+            //MessageBox.Show(pairDirEntry.RootDE.Path + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Path);
         }
 
         public void DirectoryListViewItemSelectionChanged()
