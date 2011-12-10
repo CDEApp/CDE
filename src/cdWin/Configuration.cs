@@ -244,7 +244,7 @@ namespace cdeWin
             Serializer.Serialize(output, Active);
         }
 
-        public void RecordConfig(IDisplayTreeFromRootForm form)
+        public void RecordConfig(ICDEWinForm form)
         {
             // Record values before Form is closed.
             Active.DirectoryListView.RecordColumnWidths(form.GetDirectoryListViewColumns);
@@ -254,7 +254,7 @@ namespace cdeWin
             Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
         }
 
-        public void RestoreConfig(DisplayTreeFromRootFormForm form)
+        public void RestoreConfig(CDEWinForm form)
         {
             Active.MainWindowConfig.RestoreForm(form);
             form.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);

@@ -19,12 +19,12 @@ namespace cdeWin
             Application.SetCompatibleTextRenderingDefault(false);
             RootEntries = RootEntry.LoadCurrentDirCache();
 
-            var mainForm = new DisplayTreeFromRootFormForm();
+            var mainForm = new CDEWinForm();
             config.RestoreConfig(mainForm);
 
-            var mainPresenter = new DisplayTreeFromRootPresenter(mainForm, RootEntries, config);
+            var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);
             mainPresenter.Display();
-            //Application.Run(new DisplayTreeFromRootPresenter());
+            //Application.Run(new CDEWinFormPresenter());
 
             var active = config.Active;
             active.MainWindowConfig.RecordForm(mainForm);

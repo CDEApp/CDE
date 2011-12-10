@@ -1,6 +1,6 @@
 ﻿namespace cdeWin
 {
-    partial class DisplayTreeFromRootFormForm
+    partial class CDEWinForm
     {
         /// <summary>
         /// Required designer variable.
@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(DisplayTreeFromRootFormForm));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CDEWinForm));
             this.directoryTreeView = new System.Windows.Forms.TreeView();
             this.directoryListView = new System.Windows.Forms.ListView();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -415,7 +415,7 @@
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(81, 22);
             this.toolStripDropDownButton1.Text = "Test Button";
             // 
-            // DisplayTreeFromRootFormForm
+            // CDEWinForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
@@ -425,7 +425,7 @@
             this.Controls.Add(this.menuStrip1);
             this.MainMenuStrip = this.menuStrip1;
             this.MinimumSize = new System.Drawing.Size(400, 300);
-            this.Name = "DisplayTreeFromRootFormForm";
+            this.Name = "CDEWinForm";
             this.Text = "cdeWinView";
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();

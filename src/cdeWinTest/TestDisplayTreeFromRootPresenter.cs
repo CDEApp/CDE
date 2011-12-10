@@ -42,17 +42,17 @@ namespace cdeWinTest
             return rootEntry;
         }
 
-        private IDisplayTreeFromRootForm _mockView;
+        private ICDEWinForm _mockView;
         private List<RootEntry> _rootEntries;
-        private DisplayTreeFromRootPresenter _testPresenter;
+        private CDEWinFormPresenter _testPresenter;
 
         [SetUp]
         public void BeforeEveryTest()
         {
             _rootEntries = new List<RootEntry>();
             _rootEntries.Add(CreateTestRoot());
-            _mockView = MockRepository.GenerateMock<IDisplayTreeFromRootForm>();
-            _testPresenter = new DisplayTreeFromRootPresenter(_mockView, _rootEntries, null);
+            _mockView = MockRepository.GenerateMock<ICDEWinForm>();
+            _testPresenter = new CDEWinFormPresenter(_mockView, _rootEntries, null);
         }
 
         [Test]

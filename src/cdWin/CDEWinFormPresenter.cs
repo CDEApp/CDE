@@ -8,18 +8,18 @@ using cdeLib.Infrastructure;
 
 namespace cdeWin
 {
-    public interface IDisplayTreeFromRootPresenter : IPresenter
+    public interface ICDEWinFormPresenter : IPresenter
     {
     }
 
-    public class DisplayTreeFromRootPresenter : Presenter<IDisplayTreeFromRootForm>, IDisplayTreeFromRootPresenter
+    public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
         private const string DummyNodeName = "_dummyNode";
         private readonly Color _listViewForeColor = Color.Black;
         private readonly Color _listViewDirForeColor = Color.Blue;
 
-        private readonly IDisplayTreeFromRootForm _clientForm;
+        private readonly ICDEWinForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
         private readonly Config _config;
 
@@ -30,7 +30,7 @@ namespace cdeWin
         private List<PairDirEntry> _searchResults;
         private CommonEntry _directoryListViewCommonEntry;
 
-        public DisplayTreeFromRootPresenter(IDisplayTreeFromRootForm form, List<RootEntry> rootEntries, Config config) : base(form)
+        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
             _clientForm = form;
             _rootEntries = rootEntries;

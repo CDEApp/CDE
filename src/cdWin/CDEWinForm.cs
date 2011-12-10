@@ -15,7 +15,7 @@ namespace cdeWin
      * Alternate presenter setup in cdeWinForm - need to review it again.
      */
 
-    public interface IDisplayTreeFromRootForm : IView
+    public interface ICDEWinForm : IView
     {
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;
@@ -71,7 +71,7 @@ namespace cdeWin
         void SetCatalogsLoadedStatus(int i);
     }
 
-    public partial class DisplayTreeFromRootFormForm : Form, IDisplayTreeFromRootForm
+    public partial class CDEWinForm : Form, ICDEWinForm
     {
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
@@ -99,7 +99,7 @@ namespace cdeWin
         /// </summary>
         public bool DirectoryTreeViewCancelExpandEvent { get; set; }
 
-        public DisplayTreeFromRootFormForm()
+        public CDEWinForm()
         {
             InitializeComponent();
             AutoWaitCursor.Cursor = Cursors.WaitCursor;
