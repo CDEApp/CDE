@@ -21,7 +21,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Finder", "Finder\Finder.csp
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{20643019-F008-42C5-A559-28655EEE69EF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWin", "cdWin\cdeWin.csproj", "{AC6AD3DF-47A6-4A55-8EF5-3872E75D6A36}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWin", "cdeWin\cdeWin.csproj", "{AC6AD3DF-47A6-4A55-8EF5-3872E75D6A36}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWinTest", "cdeWinTest\cdeWinTest.csproj", "{2A5FB24C-BF9D-4920-8BF9-C28448E05C97}"
 EndProject
