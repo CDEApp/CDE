@@ -125,6 +125,8 @@ namespace cdeWin
         public List<string> PreviousPatternHistory;
         [ProtoMember(8)]
         public float DirectoryPaneSplitterRatio;
+        [ProtoMember(9)]
+        public string Pattern;
 
         public Configuration()
         {
@@ -181,7 +183,8 @@ namespace cdeWin
                     new ColumnConfig { Name="Description", Width=150 },
                 }
             },
-            DirectoryPaneSplitterRatio = -1f
+            DirectoryPaneSplitterRatio = -1f,
+            Pattern = string.Empty
         };
 
         public Configuration Loaded;
@@ -252,6 +255,7 @@ namespace cdeWin
             Active.CatalogListView.RecordColumnWidths(form.GetCatalogListViewColumns);
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
             Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
+            Active.Pattern = form.Pattern;
         }
 
         public void RestoreConfig(CDEWinForm form)
@@ -262,6 +266,7 @@ namespace cdeWin
             form.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
             form.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
             form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
+            form.Pattern = Active.Pattern;
         }
     }
 }

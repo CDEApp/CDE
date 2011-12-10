@@ -143,8 +143,8 @@ namespace cdeWin
             //toolStripDropDownButton1.Click += (s, e) => OnLoadData();
 
             // Enter in Search Text Box fires Search Button.
-            searchTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
-            searchTextBox.LostFocus += (s, e) => AcceptButton = null;
+            patternTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
+            patternTextBox.LostFocus += (s, e) => AcceptButton = null;
 
             catalogResultListView.MultiSelect = false;
             catalogResultListView.View = View.Details;
@@ -157,7 +157,7 @@ namespace cdeWin
 
         private void OnMyFormActivated(object sender, EventArgs eventArgs)
         {
-            searchTextBox.Focus();
+            patternTextBox.Focus();
         }
 
         private void OnDirectoryTreeViewOnAfterSelect(object s, TreeViewEventArgs e)
@@ -234,8 +234,8 @@ namespace cdeWin
 
         public string Pattern
         {
-            get { return searchTextBox.Text; }
-            set { searchTextBox.Text = value; }
+            get { return patternTextBox.Text; }
+            set { patternTextBox.Text = value; }
         }
 
         public bool RegexMode
@@ -380,14 +380,14 @@ namespace cdeWin
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
         {
-            searchTextBox.AutoCompleteMode = AutoCompleteMode.Suggest;
-            searchTextBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            searchTextBox.AutoCompleteCustomSource = history.ToAutoCompleteStringCollection();
+            patternTextBox.AutoCompleteMode = AutoCompleteMode.Suggest;
+            patternTextBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
+            patternTextBox.AutoCompleteCustomSource = history.ToAutoCompleteStringCollection();
         }
 
         public void AddSearchTextBoxAutoComplete(string pattern)
         {
-            var ac = searchTextBox.AutoCompleteCustomSource;
+            var ac = patternTextBox.AutoCompleteCustomSource;
             if (!ac.Contains(pattern))
             {
                 ac.Add(pattern);
@@ -397,7 +397,7 @@ namespace cdeWin
         public List<string> GetSearchTextBoxAutoComplete()
         {
             var list = new List<string>(20);
-            list.AddRange(searchTextBox.AutoCompleteCustomSource.Cast<string>());
+            list.AddRange(patternTextBox.AutoCompleteCustomSource.Cast<string>());
             return list;
         }
 

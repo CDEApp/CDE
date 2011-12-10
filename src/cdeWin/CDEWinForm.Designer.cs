@@ -39,7 +39,7 @@
             this.searchResultPanel = new System.Windows.Forms.Panel();
             this.searchResultListView = new System.Windows.Forms.ListView();
             this.searchControlPanel = new System.Windows.Forms.Panel();
-            this.searchTextBox = new System.Windows.Forms.TextBox();
+            this.patternTextBox = new System.Windows.Forms.TextBox();
             this.labelSearchPath = new System.Windows.Forms.Label();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
             this.checkboxFolders = new System.Windows.Forms.CheckBox();
@@ -165,7 +165,7 @@
             // 
             // searchControlPanel
             // 
-            this.searchControlPanel.Controls.Add(this.searchTextBox);
+            this.searchControlPanel.Controls.Add(this.patternTextBox);
             this.searchControlPanel.Controls.Add(this.labelSearchPath);
             this.searchControlPanel.Controls.Add(this.whatToSearchComboBox);
             this.searchControlPanel.Controls.Add(this.checkboxFolders);
@@ -179,12 +179,12 @@
             this.searchControlPanel.Size = new System.Drawing.Size(538, 68);
             this.searchControlPanel.TabIndex = 0;
             // 
-            // searchTextBox
+            // patternTextBox
             // 
-            this.searchTextBox.Location = new System.Drawing.Point(87, 2);
-            this.searchTextBox.Name = "searchTextBox";
-            this.searchTextBox.Size = new System.Drawing.Size(253, 20);
-            this.searchTextBox.TabIndex = 8;
+            this.patternTextBox.Location = new System.Drawing.Point(87, 2);
+            this.patternTextBox.Name = "patternTextBox";
+            this.patternTextBox.Size = new System.Drawing.Size(253, 20);
+            this.patternTextBox.TabIndex = 8;
             // 
             // labelSearchPath
             // 
@@ -482,7 +482,7 @@
         private System.Windows.Forms.CheckBox checkboxFiles;
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
         private System.Windows.Forms.Label labelSearchPath;
-        private System.Windows.Forms.TextBox searchTextBox;
+        private System.Windows.Forms.TextBox patternTextBox;
         private System.Windows.Forms.Label labelCatalogPlaceholder;
         private System.Windows.Forms.Panel directoryBottomPanel;
         private System.Windows.Forms.Button copyPathButton;
