@@ -310,13 +310,6 @@ namespace cdeWin
                 _clientForm.DirectoryListViewDeselectItems();
                 _clientForm.SelectDirectoryPane();
             }
-            //else
-            //{
-            //    // this was launched with file.
-            //    // Find and select file in List view.
-            //    //MessageBox.Show("__ " + lastDirEntry.Path + " __");
-            //    //throw new ArgumentException("broken workingTreeNode is null 2");
-            //}
         }
 
         public void SearchResultListViewItemActivate()
