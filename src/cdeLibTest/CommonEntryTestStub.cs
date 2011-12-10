@@ -10,10 +10,5 @@ namespace cdeLibTest
         {
             Children = new List<DirEntry>();
         }
-
-        public override bool IsRoot()
-        {
-            return false;
-        }
     }
 }

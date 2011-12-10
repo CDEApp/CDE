@@ -65,11 +65,6 @@ namespace cdeLib
             EntryCountThreshold = _configuration.ProgressUpdateInterval;
         }
 
-        override public bool IsRoot()
-        {
-            return true;
-        }
-
         public void PopulateRoot(string startPath)
         {
             startPath = GetRootEntry(startPath);

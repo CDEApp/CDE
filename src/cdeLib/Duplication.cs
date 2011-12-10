@@ -163,7 +163,7 @@ namespace cdeLib
                 return;
             }
 
-            var flatDirEntry = new PairDirEntry(ce, de, null);
+            var flatDirEntry = new PairDirEntry(ce, de);
             if (_duplicateFileSize.ContainsKey(de.Size))
             {
                 _duplicateFileSize[de.Size].Add(flatDirEntry);
@@ -313,7 +313,7 @@ namespace cdeLib
                 return;
             }
 
-            var info = new PairDirEntry(parentEntry, dirEntry, null);
+            var info = new PairDirEntry(parentEntry, dirEntry);
             if (_duplicateFile.ContainsKey(dirEntry))
             {
                 _duplicateFile[dirEntry].Add(info);

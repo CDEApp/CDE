@@ -33,8 +33,6 @@ namespace cdeLib
         /// </summary>
         public string FullPath { get; set; }
 
-        abstract public bool IsRoot();
-
         public CommonEntry FindClosestParentDir(string relativePath)
         {
             if (string.IsNullOrWhiteSpace(relativePath))
