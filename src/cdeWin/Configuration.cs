@@ -127,6 +127,8 @@ namespace cdeWin
         public float DirectoryPaneSplitterRatio;
         [ProtoMember(9)]
         public string Pattern;
+        [ProtoMember(10)]
+        public bool RegexMode;
 
         public Configuration()
         {
@@ -184,7 +186,8 @@ namespace cdeWin
                 }
             },
             DirectoryPaneSplitterRatio = -1f,
-            Pattern = string.Empty
+            Pattern = string.Empty,
+            RegexMode = true
         };
 
         public Configuration Loaded;
@@ -256,6 +259,7 @@ namespace cdeWin
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
             Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
             Active.Pattern = form.Pattern;
+            Active.RegexMode = form.RegexMode;
         }
 
         public void RestoreConfig(CDEWinForm form)
@@ -267,6 +271,7 @@ namespace cdeWin
             form.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
             form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
             form.Pattern = Active.Pattern;
+            form.RegexMode = Active.RegexMode;
         }
     }
 }

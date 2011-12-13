@@ -27,6 +27,8 @@ namespace cdeWin
         event EventAction OnDirectoryListViewItemActivate;
         event EventAction OnSearchResultListViewItemActivate;
         event EventAction OnDirectoryListViewItemSelectionChanged;
+        event EventAction OnSearchResultListViewColumnClick;
+        event EventAction OnDirectoryListViewColumnClick;
 
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
@@ -52,8 +54,8 @@ namespace cdeWin
         IEnumerable<ColumnConfig> GetCatalogListViewColumns { get; }
 
         void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag);
-        void SetSearchResultVirtualList(List<PairDirEntry> pdeList);
-        void SetDirectoryVirtualList(CommonEntry parentCommonEntry);
+        void SetSearchResultVirtualListSize(int listSize);
+        void SetDirectoryVirtualListSize(int listSize);
         ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag);
 
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
@@ -69,6 +71,10 @@ namespace cdeWin
         void DirectoryListViewDeselectItems();
         void SelectDirectoryListViewItem(int index);
         void SetCatalogsLoadedStatus(int i);
+        int SearchResultListViewColumnIndex { get; }
+        int DirectoryListViewColumnIndex { get; }
+        void ForceDrawSearchResultListView();
+        void ForceDrawDirectoryListView();
     }
 
     public partial class CDEWinForm : Form, ICDEWinForm
@@ -83,6 +89,8 @@ namespace cdeWin
         public event EventAction OnDirectoryListViewItemActivate;
         public event EventAction OnSearchResultListViewItemActivate;
         public event EventAction OnDirectoryListViewItemSelectionChanged;
+        public event EventAction OnSearchResultListViewColumnClick;
+        public event EventAction OnDirectoryListViewColumnClick;
 
         public int SearchResultListViewItemIndex { get; set; }
         public int DirectoryListViewItemIndex { get; set; }
@@ -93,6 +101,8 @@ namespace cdeWin
         public ListViewItem DirectoryListViewItem { get; set; }
         public IEnumerable<int> DirectorySelectedIndices { get; set; }
         public int DirectorySelectedIndicesCount { get; set; }
+        public int SearchResultListViewColumnIndex { get; set; }
+        public int DirectoryListViewColumnIndex { get; set; }
 
         /// <summary>
         /// One shot cancel next expand in BeforExpand, then sets back to false.
@@ -123,11 +133,13 @@ namespace cdeWin
             searchResultListView.FullRowSelect = true;
             searchResultListView.RetrieveVirtualItem += OnSearchResultListViewOnRetrieveVirtualItem;
             searchResultListView.ItemActivate += OnSearchresultListViewOnItemActivate;
+            searchResultListView.ColumnClick += OnSearchResultListViewOnColumnClick;
 
             directoryListView.View = View.Details;
             directoryListView.FullRowSelect = true;
             directoryListView.RetrieveVirtualItem += OnDirectoryListViewOnRetrieveVirtualItem;
             directoryListView.ItemActivate += OnDirectoryListViewOnItemActivate;
+            directoryListView.ColumnClick += OnDirectoryListViewOnColumnClick;
 
             // require both events for behaviour I want of DirectoryPathTextBox
             directoryListView.SelectedIndexChanged += OnDirectoryListViewOnItemSelectionChanged;
@@ -153,6 +165,18 @@ namespace cdeWin
             catalogResultListView.ItemActivate += OnCatalogListViewOnItemActivate;
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
+        }
+
+        private void OnDirectoryListViewOnColumnClick(object s, ColumnClickEventArgs e)
+        {
+            DirectoryListViewColumnIndex = e.Column;
+            OnDirectoryListViewColumnClick();
+        }
+
+        private void OnSearchResultListViewOnColumnClick(object s, ColumnClickEventArgs e)
+        {
+            SearchResultListViewColumnIndex = e.Column;
+            OnSearchResultListViewColumnClick();
         }
 
         private void OnMyFormActivated(object sender, EventArgs eventArgs)
@@ -210,7 +234,6 @@ namespace cdeWin
                 OnSearchResultListViewItemActivate();
             }
         }
-
 
         public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
 
@@ -316,11 +339,11 @@ namespace cdeWin
             catalogResultListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
         }
 
-        public void SetSearchResultVirtualList(List<PairDirEntry> pdeList)
+        public void SetSearchResultVirtualListSize(int listSize)
         {
-            searchResultListView.VirtualListSize = pdeList.Count;
+            searchResultListView.VirtualListSize = listSize;
             searchResultListView.VirtualMode = true;
-            SetSearchResultStatus(pdeList.Count);
+            SetSearchResultStatus(listSize);
             ForceDrawSearchResultListView();
         }
 
@@ -339,10 +362,9 @@ namespace cdeWin
             searchResultListView.Invalidate();
         }
 
-        public void SetDirectoryVirtualList(CommonEntry parentCommonEntry)
+        public void SetDirectoryVirtualListSize(int listSize)
         {
-            directoryListView.VirtualListSize = parentCommonEntry.Children != null 
-                                                ? parentCommonEntry.Children.Count : 0;
+            directoryListView.VirtualListSize = listSize;
             directoryListView.VirtualMode = true;
             ForceDrawDirectoryListView();
         }

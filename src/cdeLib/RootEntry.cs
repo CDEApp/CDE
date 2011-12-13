@@ -208,14 +208,7 @@ namespace cdeLib
             }
             else
             {
-                //if (volumeRoot == path)
-                //{
-                    hint = volumeRoot.Substring(0, 1);
-                //}
-                //else
-                //{
-                //    hint = volumeRoot.Substring(0, 1) + "-PATH";
-                //}
+                hint = volumeRoot.Substring(0, 1);
             }
             return hint;
         }

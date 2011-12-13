@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
@@ -19,6 +20,10 @@ namespace cdeWin
         private readonly Color _listViewForeColor = Color.Black;
         private readonly Color _listViewDirForeColor = Color.Blue;
 
+        // TODO these need to be centralised.
+        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+
         private readonly ICDEWinForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
         private readonly Config _config;
@@ -27,8 +32,14 @@ namespace cdeWin
         private readonly string[] _searchVals;
         private readonly string[] _catalogVals;
 
-        private List<PairDirEntry> _searchResults;
-        private CommonEntry _directoryListViewCommonEntry;
+        private List<PairDirEntry> _searchResultList;
+        private List<DirEntry> _directoryList;
+        private CommonEntry _directoryListCommonEntry;
+
+        private SortOrder _searchResultSortOrder;
+        private int _searchResultSortColumn;
+        private SortOrder _directorySortOrder;
+        private int _directorySortColumn;
 
         public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
@@ -192,13 +203,15 @@ namespace cdeWin
             _clientForm.AddSearchTextBoxAutoComplete(pattern);
 
             var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
-            _searchResults = resultEnum.ToList();
-            _clientForm.SetSearchResultVirtualList(_searchResults);
+            _searchResultList = resultEnum.ToList();
+            _searchResultSortColumn = 0;
+            _searchResultSortOrder = SortOrder.Ascending;
+            _clientForm.SetSearchResultVirtualListSize(_searchResultList.Count);
         }
 
         public void SearchResultRetrieveVirtualItem()
         {
-            var pairDirEntry = _searchResults[_clientForm.SearchResultListViewItemIndex];
+            var pairDirEntry = _searchResultList[_clientForm.SearchResultListViewItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
@@ -209,14 +222,28 @@ namespace cdeWin
         public void DirectoryTreeViewAfterSelect()
         {
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            _directoryListViewCommonEntry = (CommonEntry)selectedNode.Tag;
-            _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.FullPath;
-            _clientForm.SetDirectoryVirtualList(_directoryListViewCommonEntry);
+            var commonEntry = selectedNode.Tag as CommonEntry;
+            var listSize = 0;
+            _directoryList = null;
+            _directoryListCommonEntry = null;
+            if (commonEntry != null)
+            {
+                _directoryListCommonEntry = commonEntry;
+                if (commonEntry.Children != null)
+                {
+                    _directoryList = commonEntry.Children.ToList(); // copy of list
+                    _directoryList.Sort(DirectoryCompare);
+                    listSize = commonEntry.Children.Count;
+                }
+                _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
+            }
+            _clientForm.SetDirectoryVirtualListSize(listSize);
         }
 
         public void DirectoryRetrieveVirtualItem()
         {
-            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.DirectoryListViewItemIndex];
+            // VirtualItem wont be called if List size is zero so no check for null required.
+            var dirEntry = _directoryList[_clientForm.DirectoryListViewItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = _clientForm.BuildListViewItem(_directoryVals, itemColor, dirEntry);
             _clientForm.DirectoryListViewItem = lvi;
@@ -239,16 +266,25 @@ namespace cdeWin
 
             if (currentRoot == null || currentRoot != newRoot)
             {
-                _clientForm.DirectoryTreeViewNodes = BuildRootNode(newRoot);
+                SetNewDirectoryRoot(newRoot);
             }
             _clientForm.SelectDirectoryPane();
+        }
+
+        private TreeNode SetNewDirectoryRoot(RootEntry newRoot)
+        {
+            var newRootNode = BuildRootNode(newRoot);
+            _clientForm.DirectoryTreeViewNodes = newRootNode;
+            _directorySortColumn = 0;
+            _directorySortOrder = SortOrder.Ascending;
+            return newRootNode;
         }
 
         public void DirectoryListViewItemActivate()
         {
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
-            var dirEntry = _directoryListViewCommonEntry.Children[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
+            var dirEntry = _directoryList[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
             if (dirEntry.IsDirectory)
             {
                 SetDirectoryWithExpand(dirEntry);
@@ -271,26 +307,24 @@ namespace cdeWin
             {
                 if (newRoot == null)
                 {
-                    newRoot = (RootEntry) entry;
+                    newRoot = entry as RootEntry;
                     if (currentRoot != newRoot)
                     {
-                        currentRootNode = BuildRootNode(newRoot);
-                        _clientForm.DirectoryTreeViewNodes = currentRootNode;
+                        currentRootNode = SetNewDirectoryRoot(newRoot);
                         currentRoot = newRoot;
                     }
                     workingTreeNode = currentRootNode; // starting at rootnode.
                 }
                 else
                 {
-                    if (workingTreeNode == null)
-                    {
-                        throw new ArgumentException("broken workingTreeNode is null 1");
-                    }
-
-                    if (((DirEntry) entry).IsDirectory)
+                                                        // ReSharper disable PossibleNullReferenceException
+                    if ((entry as DirEntry).IsDirectory)
+                                                        // ReSharper restore PossibleNullReferenceException
                     {
                         CreateNodesPreExpand(workingTreeNode);
+                                                        // ReSharper disable PossibleNullReferenceException
                         workingTreeNode.Expand();
+                                                        // ReSharper restore PossibleNullReferenceException
                         object findTag = entry;
                         var nodeForCurrentEntry = workingTreeNode.Nodes.Cast<TreeNode>()
                             .FirstOrDefault(node => node.Tag == findTag);
@@ -314,13 +348,13 @@ namespace cdeWin
 
         public void SearchResultListViewItemActivate()
         {
-            var pairDirEntry = _searchResults[_clientForm.ActiveSearchResultIndexAfterActivate];
+            var pairDirEntry = _searchResultList[_clientForm.ActiveSearchResultIndexAfterActivate];
             var dirEntry = pairDirEntry.ChildDE;
             SetDirectoryWithExpand(dirEntry);
 
             if (!dirEntry.IsDirectory)
             {   // select the file in list view, do i have to scroll to it as well ???
-                var index = _directoryListViewCommonEntry.Children.IndexOf(dirEntry);
+                var index = _directoryList.IndexOf(dirEntry);
                 _clientForm.SelectDirectoryListViewItem(index);
             }
             //MessageBox.Show(pairDirEntry.RootDE.Path + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Path);
@@ -333,16 +367,120 @@ namespace cdeWin
             if (indicesCount > 0)
             {
                 var firstIndex = indices.First();
-                var dirEntry = _directoryListViewCommonEntry.Children[firstIndex];
-                if (indicesCount > 1)
-                {
-                    _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.FullPath;
-                }
-                else
-                {
-                    _clientForm.SetDirectoryPathTextbox = _directoryListViewCommonEntry.MakeFullPath(dirEntry);
-                }
+                var dirEntry = _directoryList[firstIndex];
+                _clientForm.SetDirectoryPathTextbox = indicesCount > 1 
+                    ? _directoryListCommonEntry.FullPath 
+                    : _directoryListCommonEntry.MakeFullPath(dirEntry);
             }
         }
+
+        public void SearchResultListViewColumnClick()
+        {
+            if (_searchResultList == null)
+            {
+                return;
+            }
+            var column = _clientForm.SearchResultListViewColumnIndex;
+            if (_searchResultSortColumn == column)
+            {
+                _searchResultSortOrder = _searchResultSortOrder == SortOrder.Ascending 
+                            ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _searchResultSortColumn = column;
+                _searchResultSortOrder = SortOrder.Ascending;
+            }
+            _searchResultList.Sort(SearchResultCompare);
+            _clientForm.ForceDrawSearchResultListView();
+        }
+
+        private int SearchResultCompare (PairDirEntry pde1, PairDirEntry pde2)
+        {
+            int compareResult;
+            var de1 = pde1.ChildDE;
+            var de2 = pde2.ChildDE;
+            switch (_searchResultSortColumn)
+            {
+                case 0: // SearchResult ListView Name column
+                    compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                    break;
+
+                case 1: // SearchResult ListView Size column
+                    compareResult = de1.SizeCompareTo(de2);
+                    break;
+
+                case 2: // SearchResult ListView Modified column
+                    compareResult = de1.ModifiedCompareTo(de2);
+                    break;
+
+                case 3: // SearchResult ListView Path column
+                    //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
+                    compareResult = _myCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, MyCompareOptions);
+                    if (compareResult == 0)
+                    {
+                        compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                    }
+                    break;
+
+                default:
+                    throw new Exception(string.Format("Problem column {0} not handled for sort.", _searchResultSortColumn));
+            }
+            if (_searchResultSortOrder == SortOrder.Descending)
+            {
+                compareResult *= -1;
+            }
+            return compareResult;
+        }
+
+        public void DirectoryListViewColumnClick()
+        {
+            if (_directoryList == null
+                || _directoryList.Count == 0)
+            {
+                return;
+            }
+            var column = _clientForm.DirectoryListViewColumnIndex;
+            if (_directorySortColumn == column)
+            {
+                _directorySortOrder = _directorySortOrder == SortOrder.Ascending 
+                            ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                _directorySortColumn = column;
+                _directorySortOrder = SortOrder.Ascending;
+            }
+            _directoryList.Sort(DirectoryCompare);
+            _clientForm.ForceDrawDirectoryListView();
+        }
+
+        private int DirectoryCompare(DirEntry de1, DirEntry de2)
+        {
+            int compareResult;
+            switch (_directorySortColumn)
+            {
+                case 0: // SearchResult ListView Name column
+                    compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                    break;
+
+                case 1: // SearchResult ListView Size column
+                    compareResult = de1.SizeCompareTo(de2);
+                    break;
+
+                case 2: // SearchResult ListView Modified column
+                    compareResult = de1.ModifiedCompareTo(de2);
+                    break;
+
+                default:
+                    throw new Exception(string.Format("Problem column {0} not handled for sort.", _directorySortColumn));
+            }
+            if (_directorySortOrder == SortOrder.Descending)
+            {
+                compareResult *= -1;
+            }
+            return compareResult;
+        }
+
     }
 }

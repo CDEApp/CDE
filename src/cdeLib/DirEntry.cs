@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Globalization;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -28,7 +29,9 @@ namespace cdeLib
             [Description("Hashing was done for this.")]
             HashDone = 1 << 4,
             [Description("The Hash if done was a partial.")]
-            PartialHash = 1 << 5
+            PartialHash = 1 << 5,
+            [Description("The Children are allready in default order.")]
+            DefaultSort = 1 << 6
         };
 
         [ProtoMember(1, IsRequired = true)]
@@ -149,6 +152,22 @@ namespace cdeLib
                 }
             }
         }
+
+        public bool IsDefaultSort
+        {
+            get { return (BitFields & Flags.DefaultSort) == Flags.DefaultSort; }
+            set
+            {
+                if (value)
+                {
+                    BitFields |= Flags.DefaultSort;
+                }
+                else
+                {
+                    BitFields &= ~Flags.DefaultSort;
+                }
+            }
+        }
         #endregion
 
         public void SetHash(byte[] hash)
@@ -204,6 +223,53 @@ namespace cdeLib
             {
                 Size = (ulong)fs.FileSize;
             }
+        }
+
+        // TODO these need to be centralised.
+        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+
+        public int SizeCompareTo(DirEntry de)
+        {
+            if (de == null)
+            {
+                return -1; // this before de
+            }
+            if (IsDirectory && !de.IsDirectory)
+            {
+                return -1; // this before de
+            }
+            if (!IsDirectory && de.IsDirectory)
+            {
+                return 1; // this after de
+            }
+            if (IsDirectory && de.IsDirectory)
+            {   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+                // really cheap to calculate dir size.... i think i should fill it in ?
+                return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+            }
+            return (int)(Size - de.Size);
+        }
+
+        public int ModifiedCompareTo(DirEntry de)
+        {
+            if (de == null)
+            {
+                return -1; // this before de
+            }
+            if (IsModifiedBad && !de.IsModifiedBad)
+            {
+                return -1; // this before de
+            }
+            if (!IsModifiedBad && de.IsModifiedBad)
+            {
+                return 1; // this after de
+            }
+            if (IsModifiedBad && de.IsModifiedBad)
+            {
+                return 0;
+            }
+            return DateTime.Compare(Modified, de.Modified);
         }
 
         public class EqualityComparer : IEqualityComparer<DirEntry>
