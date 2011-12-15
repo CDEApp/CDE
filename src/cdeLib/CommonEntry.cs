@@ -191,10 +191,10 @@ namespace cdeLib
             }
         }
 
-        public void TraverseTreesCopyHash(RootEntry destination)
+        public void TraverseTreesCopyHash(CommonEntry destination)
         {
             var dirs = new Stack<Tuple<string, CommonEntry, CommonEntry>>();
-            var source = this as RootEntry;
+            var source = this;
 
             if (source == null || destination == null)
             {
@@ -213,7 +213,7 @@ namespace cdeLib
             // traverse every source entry copy across the meta data that matches on destination entry
             // if it adds value to destination.
             // if destination is not there source not processed.
-            dirs.Push(Tuple.Create(sourcePath, (CommonEntry) source, (CommonEntry) destination));
+            dirs.Push(Tuple.Create(sourcePath, source, destination));
 
             while (dirs.Count > 0)
             {
