@@ -13,6 +13,11 @@ using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
+    // 
+    // TODO - RootEntry needs All the Flags.
+    // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
+    // 
+
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
     public class RootEntry : CommonEntry

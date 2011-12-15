@@ -66,24 +66,7 @@ namespace cdeLib
                     var de = _entries.Pop();
 
                     _parentDirEntry = de;
-                    // 
-                    // TODO - RootEntry needs All the Flags.
-                    // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
-                    // 
-                    // Use DefaultSorted Field to only do when needed ? use a bit field ?
-                    de.Children.Sort((de1, de2) =>
-                        {   // Dir then File, then by Path, using culture and options.
-                            if (de1.IsDirectory && !de2.IsDirectory)
-                            {
-                                return -1; // de1 before de2
-                            }
-                            if (!de1.IsDirectory && de2.IsDirectory)
-                            {
-                                return 1; // de1 after de2
-                            }
-                            return _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
-                            //return de1.Path.CompareTo(de2.Path);
-                        });
+                    de.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
                     _childEnumerator = de.Children.GetEnumerator();
                 }
             }

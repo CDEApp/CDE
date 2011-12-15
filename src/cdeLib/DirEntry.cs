@@ -210,6 +210,7 @@ namespace cdeLib
             catch (ArgumentOutOfRangeException)
             {
                 // AlphaFS blows up trying to convert bad DateTime. eg. 1/1/1601 
+                // create a bad date time file copy file to NAS with date of 2098 it mucks up.
                 IsModifiedBad = true;
             }
             IsDirectory = fs.IsDirectory;
@@ -229,7 +230,7 @@ namespace cdeLib
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
         private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
-        public int SizeCompareTo(DirEntry de)
+        public int SizeCompareWithDirTo(DirEntry de)
         {
             if (de == null)
             {
@@ -248,7 +249,8 @@ namespace cdeLib
                 // really cheap to calculate dir size.... i think i should fill it in ?
                 return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
             }
-            return (int)(Size - de.Size);
+            // the cast breaks this.
+            return Size.CompareTo(de.Size);
         }
 
         public int ModifiedCompareTo(DirEntry de)
@@ -270,6 +272,33 @@ namespace cdeLib
                 return 0;
             }
             return DateTime.Compare(Modified, de.Modified);
+        }
+
+        // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
+        public int PathCompareWithDirTo(DirEntry de)
+        {
+            if (de == null)
+            {
+                return -1; // this before de
+            }
+            if (IsDirectory && !de.IsDirectory)
+            {
+                return -1; // this before de
+            }
+            if (!IsDirectory && de.IsDirectory)
+            {
+                return 1; // this after de
+            }
+            return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+        }
+
+        public int PathCompareTo(DirEntry de)
+        {
+            if (de == null)
+            {
+                return -1; // this before de
+            }
+            return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
         public class EqualityComparer : IEqualityComparer<DirEntry>

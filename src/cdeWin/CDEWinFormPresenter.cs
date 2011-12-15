@@ -207,6 +207,7 @@ namespace cdeWin
             _searchResultSortColumn = 0;
             _searchResultSortOrder = SortOrder.Ascending;
             _clientForm.SetSearchResultVirtualListSize(_searchResultList.Count);
+            //Application.DoEvents(); // see if it eats clicky events while busy
         }
 
         public void SearchResultRetrieveVirtualItem()
@@ -222,7 +223,7 @@ namespace cdeWin
         public void DirectoryTreeViewAfterSelect()
         {
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            var commonEntry = selectedNode.Tag as CommonEntry;
+            var commonEntry = (CommonEntry)selectedNode.Tag;
             var listSize = 0;
             _directoryList = null;
             _directoryListCommonEntry = null;
@@ -261,7 +262,7 @@ namespace cdeWin
             RootEntry currentRoot = null;
             if (_clientForm.DirectoryTreeViewNodes != null)
             {
-                currentRoot = _clientForm.DirectoryTreeViewNodes.Tag as RootEntry;
+                currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes.Tag;
             }
 
             if (currentRoot == null || currentRoot != newRoot)
@@ -307,7 +308,7 @@ namespace cdeWin
             {
                 if (newRoot == null)
                 {
-                    newRoot = entry as RootEntry;
+                    newRoot = (RootEntry)entry;
                     if (currentRoot != newRoot)
                     {
                         currentRootNode = SetNewDirectoryRoot(newRoot);
@@ -317,14 +318,10 @@ namespace cdeWin
                 }
                 else
                 {
-                                                        // ReSharper disable PossibleNullReferenceException
-                    if ((entry as DirEntry).IsDirectory)
-                                                        // ReSharper restore PossibleNullReferenceException
+                    if (((DirEntry)entry).IsDirectory && workingTreeNode != null)
                     {
                         CreateNodesPreExpand(workingTreeNode);
-                                                        // ReSharper disable PossibleNullReferenceException
                         workingTreeNode.Expand();
-                                                        // ReSharper restore PossibleNullReferenceException
                         object findTag = entry;
                         var nodeForCurrentEntry = workingTreeNode.Nodes.Cast<TreeNode>()
                             .FirstOrDefault(node => node.Tag == findTag);
@@ -403,11 +400,11 @@ namespace cdeWin
             switch (_searchResultSortColumn)
             {
                 case 0: // SearchResult ListView Name column
-                    compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                    compareResult = de1.PathCompareWithDirTo(de2);
                     break;
 
                 case 1: // SearchResult ListView Size column
-                    compareResult = de1.SizeCompareTo(de2);
+                    compareResult = de1.SizeCompareWithDirTo(de2);
                     break;
 
                 case 2: // SearchResult ListView Modified column
@@ -461,11 +458,11 @@ namespace cdeWin
             switch (_directorySortColumn)
             {
                 case 0: // SearchResult ListView Name column
-                    compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                    compareResult = de1.PathCompareWithDirTo(de2);
                     break;
 
                 case 1: // SearchResult ListView Size column
-                    compareResult = de1.SizeCompareTo(de2);
+                    compareResult = de1.SizeCompareWithDirTo(de2);
                     break;
 
                 case 2: // SearchResult ListView Modified column
