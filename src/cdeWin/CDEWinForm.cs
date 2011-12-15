@@ -75,6 +75,7 @@ namespace cdeWin
         int DirectoryListViewColumnIndex { get; }
         void ForceDrawSearchResultListView();
         void ForceDrawDirectoryListView();
+        bool SearchButtonEnable { get; set; }
     }
 
     public partial class CDEWinForm : Form, ICDEWinForm
@@ -468,6 +469,18 @@ namespace cdeWin
             listItem.Focused = true;
             listItem.EnsureVisible();
             directoryListView.Select();
+        }
+
+        public bool SearchButtonEnable {
+            get { return searchButton.Enabled; }
+            set
+            {
+                if (value)
+                {   // Consume any events left from disabled button.
+                    Application.DoEvents();
+                }
+                searchButton.Enabled = value;
+            }
         }
     }
 

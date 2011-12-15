@@ -188,6 +188,7 @@ namespace cdeWin
 
         public void SearchRoots()
         {
+            _clientForm.SearchButtonEnable = false;
             var pattern = _clientForm.Pattern;
             var regexMode = _clientForm.RegexMode;
             if (regexMode)
@@ -207,7 +208,7 @@ namespace cdeWin
             _searchResultSortColumn = 0;
             _searchResultSortOrder = SortOrder.Ascending;
             _clientForm.SetSearchResultVirtualListSize(_searchResultList.Count);
-            //Application.DoEvents(); // see if it eats clicky events while busy
+            _clientForm.SearchButtonEnable = true;
         }
 
         public void SearchResultRetrieveVirtualItem()
