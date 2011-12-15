@@ -480,5 +480,9 @@ namespace cdeWin
             return compareResult;
         }
 
+        public void ExitMenuItem()
+        {
+            _clientForm.Close();
+        }
     }
 }

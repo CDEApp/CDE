@@ -59,10 +59,12 @@
     <Compile Include="CDEWinForm.Designer.cs">
       <DependentUpon>CDEWinForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="EnumerableStringExtensions.cs" />
     <Compile Include="IPresenter.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ScreenUtility.cs" />
+    <Compile Include="SplitContainerExtensions.cs" />
     <Compile Include="StringExtension.cs" />
     <EmbeddedResource Include="CDEWinForm.resx">
       <DependentUpon>CDEWinForm.cs</DependentUpon>

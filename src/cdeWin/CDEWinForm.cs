@@ -29,6 +29,7 @@ namespace cdeWin
         event EventAction OnDirectoryListViewItemSelectionChanged;
         event EventAction OnSearchResultListViewColumnClick;
         event EventAction OnDirectoryListViewColumnClick;
+        event EventAction OnExitMenuItem;
 
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
@@ -92,7 +93,8 @@ namespace cdeWin
         public event EventAction OnDirectoryListViewItemSelectionChanged;
         public event EventAction OnSearchResultListViewColumnClick;
         public event EventAction OnDirectoryListViewColumnClick;
-
+        public event EventAction OnExitMenuItem;
+        
         public int SearchResultListViewItemIndex { get; set; }
         public int DirectoryListViewItemIndex { get; set; }
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
@@ -166,6 +168,8 @@ namespace cdeWin
             catalogResultListView.ItemActivate += OnCatalogListViewOnItemActivate;
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
+
+            exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
         }
 
         private void OnDirectoryListViewOnColumnClick(object s, ColumnClickEventArgs e)
@@ -481,46 +485,6 @@ namespace cdeWin
                 }
                 searchButton.Enabled = value;
             }
-        }
-    }
-
-    public static class SplitContainerExtensions
-    {
-        public static float GetSplitterRatio(this SplitContainer splitter)
-        {
-            return (float)splitter.SplitterDistance/splitter.GetSplitterSize();
-        }
-
-        public static void SetSplitterRatio(this SplitContainer splitter, float splitterRatio)
-        {
-            var currentSize = splitter.GetSplitterSize();
-            var newDistance = (int)(currentSize * splitterRatio);
-            if (newDistance >= splitter.Panel1MinSize   // Set splitter if Valid splitter distance
-                && newDistance <= (currentSize - splitter.Panel2MinSize))
-            {   
-                splitter.SplitterDistance = newDistance;
-            }
-        }
-
-        public static int GetSplitterSize(this SplitContainer splitter)
-        {
-            return splitter.Orientation == Orientation.Vertical
-                       ? splitter.Width
-                       : splitter.Height;
-        }
-    }
-
-    public static class EnumerableStringExtensions
-    {
-        public static AutoCompleteStringCollection ToAutoCompleteStringCollection(this IEnumerable<string> enumerable)
-        {
-            if (enumerable == null) throw new ArgumentNullException("enumerable");
-            var autoComplete = new AutoCompleteStringCollection();
-            foreach (var item in enumerable)
-            {
-                autoComplete.Add(item);
-            }
-            return autoComplete;
         }
     }
 }
