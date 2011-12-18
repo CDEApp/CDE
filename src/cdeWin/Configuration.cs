@@ -253,8 +253,8 @@ namespace cdeWin
         public void RecordConfig(ICDEWinForm form)
         {
             // Record values before Form is closed.
-            Active.DirectoryListView.RecordColumnWidths(form.GetDirectoryListViewColumns);
-            Active.SearchResultListView.RecordColumnWidths(form.GetSearchResultListViewColumns);
+            Active.DirectoryListView.RecordColumnWidths(form.DirectoryListViewHelper.ColumnConfigs());
+            Active.SearchResultListView.RecordColumnWidths(form.SearchResultListViewHelper.ColumnConfigs());
             Active.CatalogListView.RecordColumnWidths(form.GetCatalogListViewColumns);
             Active.PreviousPatternHistory = form.GetSearchTextBoxAutoComplete();
             Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
@@ -265,8 +265,8 @@ namespace cdeWin
         public void RestoreConfig(CDEWinForm form)
         {
             Active.MainWindowConfig.RestoreForm(form);
-            form.SetDirectoryColumnHeaders(Active.DirectoryListView.Columns);
-            form.SetSearchColumnHeaders(Active.SearchResultListView.Columns);
+            form.DirectoryListViewHelper.SetColumnConfigs(Active.DirectoryListView.Columns);
+            form.SearchResultListViewHelper.SetColumnConfigs(Active.SearchResultListView.Columns);
             form.SetCatalogColumnHeaders(Active.CatalogListView.Columns);
             form.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
             form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;

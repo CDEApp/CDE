@@ -213,12 +213,13 @@ namespace cdeWin
 
         public void SearchResultRetrieveVirtualItem()
         {
-            var pairDirEntry = _searchResultList[_clientForm.SearchResultListViewItemIndex];
+            var helper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[helper.ItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
-            _clientForm.SearchResultListViewItem = lvi;
+            helper.RenderItem = lvi;
         }
 
         public void DirectoryTreeViewAfterSelect()
@@ -245,10 +246,11 @@ namespace cdeWin
         public void DirectoryRetrieveVirtualItem()
         {
             // VirtualItem wont be called if List size is zero so no check for null required.
-            var dirEntry = _directoryList[_clientForm.DirectoryListViewItemIndex];
+            var helper = _clientForm.DirectoryListViewHelper;
+            var dirEntry = _directoryList[helper.ItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = _clientForm.BuildListViewItem(_directoryVals, itemColor, dirEntry);
-            _clientForm.DirectoryListViewItem = lvi;
+            helper.RenderItem = lvi;
         }
 
         // before form closes capture any changed configuration.
@@ -277,7 +279,7 @@ namespace cdeWin
         {
             var newRootNode = BuildRootNode(newRoot);
             _clientForm.DirectoryTreeViewNodes = newRootNode;
-            _directorySortColumn = 0;
+            _directorySortColumn = 0; // TODO changing dirs needs to reset ? sort maybe ?
             _directorySortOrder = SortOrder.Ascending;
             return newRootNode;
         }
@@ -286,7 +288,8 @@ namespace cdeWin
         {
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
-            var dirEntry = _directoryList[_clientForm.ActiveDirectoryListViewIndexAfterActivate];
+            var helper = _clientForm.DirectoryListViewHelper;
+            var dirEntry = _directoryList[helper.AfterActivateIndex];
             if (dirEntry.IsDirectory)
             {
                 SetDirectoryWithExpand(dirEntry);
@@ -346,7 +349,8 @@ namespace cdeWin
 
         public void SearchResultListViewItemActivate()
         {
-            var pairDirEntry = _searchResultList[_clientForm.ActiveSearchResultIndexAfterActivate];
+            var helper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[helper.AfterActivateIndex];
             var dirEntry = pairDirEntry.ChildDE;
             SetDirectoryWithExpand(dirEntry);
 
@@ -355,13 +359,13 @@ namespace cdeWin
                 var index = _directoryList.IndexOf(dirEntry);
                 _clientForm.SelectDirectoryListViewItem(index);
             }
-            //MessageBox.Show(pairDirEntry.RootDE.Path + " ++ " + pairDirEntry.ParentDE.FullPath + " == " + pairDirEntry.ChildDE.Path);
         }
 
         public void DirectoryListViewItemSelectionChanged()
         {
-            var indices = _clientForm.DirectorySelectedIndices;
-            var indicesCount = _clientForm.DirectorySelectedIndicesCount;
+            var helper = _clientForm.DirectoryListViewHelper;
+            var indices = helper.SelectedIndices;
+            var indicesCount = helper.SelectedIndicesCount;
             if (indicesCount > 0)
             {
                 var firstIndex = indices.First();
@@ -378,7 +382,8 @@ namespace cdeWin
             {
                 return;
             }
-            var column = _clientForm.SearchResultListViewColumnIndex;
+            var helper = _clientForm.SearchResultListViewHelper;
+            var column = helper.ColumnClickIndex;
             if (_searchResultSortColumn == column)
             {
                 _searchResultSortOrder = _searchResultSortOrder == SortOrder.Ascending 
@@ -390,7 +395,7 @@ namespace cdeWin
                 _searchResultSortOrder = SortOrder.Ascending;
             }
             _searchResultList.Sort(SearchResultCompare);
-            _clientForm.ForceDrawSearchResultListView();
+            helper.ForceDraw();
         }
 
         private int SearchResultCompare (PairDirEntry pde1, PairDirEntry pde2)
@@ -433,12 +438,12 @@ namespace cdeWin
 
         public void DirectoryListViewColumnClick()
         {
-            if (_directoryList == null
-                || _directoryList.Count == 0)
+            if (_directoryList == null || _directoryList.Count == 0)
             {
                 return;
             }
-            var column = _clientForm.DirectoryListViewColumnIndex;
+            var helper = _clientForm.DirectoryListViewHelper;
+            var column = helper.ColumnClickIndex;
             if (_directorySortColumn == column)
             {
                 _directorySortOrder = _directorySortOrder == SortOrder.Ascending 
@@ -450,7 +455,7 @@ namespace cdeWin
                 _directorySortOrder = SortOrder.Ascending;
             }
             _directoryList.Sort(DirectoryCompare);
-            _clientForm.ForceDrawDirectoryListView();
+            helper.ForceDraw();
         }
 
         private int DirectoryCompare(DirEntry de1, DirEntry de2)
@@ -484,5 +489,20 @@ namespace cdeWin
         {
             _clientForm.Close();
         }
+
+        public void SearchResultContextMenuExploreClick()
+        {
+            // Does not make sense for multi select.
+            // Explore our entry, select the file if its a file otherwise just open explorer.
+
+            var helper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[helper.ContextItemIndex];
+            var path = pairDirEntry.FullPath;
+            if (pairDirEntry.ExistsOnFileSystem())
+            {
+                System.Diagnostics.Process.Start("explorer.exe", @"/select, " + path);
+            }
+        }
     }
+
 }
