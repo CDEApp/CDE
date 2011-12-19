@@ -10,8 +10,9 @@ namespace cdeWin
     // encapsulate ListView in VirtualMode handling
 
     /// <summary>
+    /// Consolidated code for Listview operation in VirtualMode.
     /// Only ListView events required are enabled.
-    /// Several property setters add Event as required so dont call them more than once.
+    /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
     public class ListViewHelper
     {
@@ -39,6 +40,7 @@ namespace cdeWin
             _listView = listView;
             _listView.View = View.Details;
             _listView.FullRowSelect = true;
+            _listView.Activation = ItemActivation.Standard;
         }
 
         /// <summary>
@@ -113,6 +115,12 @@ namespace cdeWin
             }
         }
         private EventAction _itemSelectionChanged;
+
+        public bool MultiSelect
+        {
+            get { return _listView.MultiSelect; }
+            set { _listView.MultiSelect = value; }
+        }
 
         /// <summary>
         /// Simplest invalidation of ListViewItem cache.
@@ -212,5 +220,47 @@ namespace cdeWin
         {
             _listView.Invalidate();
         }
+
+        public void SelectItem(int index)
+        {
+            //if (_listView.Items == null)
+            //{
+            //    //Console.WriteLine("_listView.Items == null - huh?");
+            //    return;
+            //}
+            if (_listView.Items.Count <= index)
+            {
+                //Console.WriteLine("_listView.Items.Count <= index - huh?");
+                return;
+            }
+
+            var listItem = _listView.Items[index];
+            listItem.Selected = true;
+            listItem.Focused = true;
+            listItem.EnsureVisible();
+            _listView.Select();
+        }
+
+        public void DeselectItems()
+        {
+            for (var i = 0; i < _listView.Items.Count; i++)
+            {
+                var listItem = _listView.Items[i];
+                if (listItem.Selected)
+                {
+                    listItem.Selected = false;
+                }
+            }
+        }
+
+        public void SetListSize(int value)
+        {
+            _listSize = value;
+            _listView.VirtualListSize = _listSize;
+            _listView.VirtualMode = true;
+            ForceDraw();
+        }
+        private int _listSize;
+
     }
 }

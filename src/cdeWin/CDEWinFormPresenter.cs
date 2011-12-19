@@ -159,14 +159,20 @@ namespace cdeWin
 
         private void SetCatalogListView(IEnumerable<RootEntry> rootEntries)
         {
-            var count = 0;
-            foreach (var rootEntry in rootEntries)
-            {
-                var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
-                _clientForm.AddCatalogListViewRow(_catalogVals, itemColor, rootEntry);
-                ++count;
-            }
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            var count = rootEntries.Count();
+            catalogHelper.SetListSize(count);
             _clientForm.SetCatalogsLoadedStatus(count);
+            _clientForm.CatalogListViewHelper.ForceDraw();
+        }
+
+        public void CatalogRetrieveVirtualItem()
+        {
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            var rootEntry = _rootEntries[catalogHelper.ItemIndex];
+            var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
+            var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
+            catalogHelper.RenderItem = lvi;
         }
 
         private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
@@ -200,30 +206,39 @@ namespace cdeWin
                     return;
                 }
             }
-
+            var searchHelper = _clientForm.SearchResultListViewHelper;
             _clientForm.AddSearchTextBoxAutoComplete(pattern);
 
             var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
             _searchResultList = resultEnum.ToList();
             _searchResultSortColumn = 0;
             _searchResultSortOrder = SortOrder.Ascending;
-            _clientForm.SetSearchResultVirtualListSize(_searchResultList.Count);
+
+            var listSize = _searchResultList.Count;
+            searchHelper.SetListSize(listSize);
+            _clientForm.SetSearchResultStatus(listSize);
             _clientForm.SearchButtonEnable = true;
+        }
+
+        public void SetSearchResultListView()
+        {
+            _clientForm.SetSearchResultStatus(1); // BROKEN TODO FIX
         }
 
         public void SearchResultRetrieveVirtualItem()
         {
-            var helper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[helper.ItemIndex];
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[searchHelper.ItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
-            var lvi = _clientForm.BuildListViewItem(_searchVals, itemColor, pairDirEntry);
-            helper.RenderItem = lvi;
+            var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
+            searchHelper.RenderItem = lvi;
         }
 
         public void DirectoryTreeViewAfterSelect()
         {
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
             var commonEntry = (CommonEntry)selectedNode.Tag;
             var listSize = 0;
@@ -240,17 +255,16 @@ namespace cdeWin
                 }
                 _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
             }
-            _clientForm.SetDirectoryVirtualListSize(listSize);
+            directoryHelper.SetListSize(listSize);
         }
 
         public void DirectoryRetrieveVirtualItem()
         {
-            // VirtualItem wont be called if List size is zero so no check for null required.
-            var helper = _clientForm.DirectoryListViewHelper;
-            var dirEntry = _directoryList[helper.ItemIndex];
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            var dirEntry = _directoryList[directoryHelper.ItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
-            var lvi = _clientForm.BuildListViewItem(_directoryVals, itemColor, dirEntry);
-            helper.RenderItem = lvi;
+            var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
+            directoryHelper.RenderItem = lvi;
         }
 
         // before form closes capture any changed configuration.
@@ -261,7 +275,8 @@ namespace cdeWin
 
         public void CatalogListViewItemActivate()
         {
-            var newRoot = _clientForm.ActiveCatalogAfterSelectRootEntry;
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            var newRoot = _rootEntries[catalogHelper.AfterActivateIndex];
             RootEntry currentRoot = null;
             if (_clientForm.DirectoryTreeViewNodes != null)
             {
@@ -288,8 +303,8 @@ namespace cdeWin
         {
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
-            var helper = _clientForm.DirectoryListViewHelper;
-            var dirEntry = _directoryList[helper.AfterActivateIndex];
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            var dirEntry = _directoryList[directoryHelper.AfterActivateIndex];
             if (dirEntry.IsDirectory)
             {
                 SetDirectoryWithExpand(dirEntry);
@@ -342,30 +357,35 @@ namespace cdeWin
 
                 // This is required or item under cursor after double click is selected.
                 // not sure why ? some sort of left over click on new ListView content.
-                _clientForm.DirectoryListViewDeselectItems();
+                var directoryHelper = _clientForm.DirectoryListViewHelper;
+                directoryHelper.DeselectItems();
+                //_clientForm.DirectoryListViewDeselectItems();
+
                 _clientForm.SelectDirectoryPane();
             }
         }
 
         public void SearchResultListViewItemActivate()
         {
-            var helper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[helper.AfterActivateIndex];
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[searchHelper.AfterActivateIndex];
             var dirEntry = pairDirEntry.ChildDE;
             SetDirectoryWithExpand(dirEntry);
 
             if (!dirEntry.IsDirectory)
             {   // select the file in list view, do i have to scroll to it as well ???
                 var index = _directoryList.IndexOf(dirEntry);
-                _clientForm.SelectDirectoryListViewItem(index);
+                var directoryHelper = _clientForm.DirectoryListViewHelper;
+                directoryHelper.SelectItem(index);
+                //_clientForm.SelectDirectoryListViewItem(index);
             }
         }
 
         public void DirectoryListViewItemSelectionChanged()
         {
-            var helper = _clientForm.DirectoryListViewHelper;
-            var indices = helper.SelectedIndices;
-            var indicesCount = helper.SelectedIndicesCount;
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            var indices = directoryHelper.SelectedIndices;
+            var indicesCount = directoryHelper.SelectedIndicesCount;
             if (indicesCount > 0)
             {
                 var firstIndex = indices.First();
@@ -382,8 +402,8 @@ namespace cdeWin
             {
                 return;
             }
-            var helper = _clientForm.SearchResultListViewHelper;
-            var column = helper.ColumnClickIndex;
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            var column = searchHelper.ColumnClickIndex;
             if (_searchResultSortColumn == column)
             {
                 _searchResultSortOrder = _searchResultSortOrder == SortOrder.Ascending 
@@ -395,7 +415,7 @@ namespace cdeWin
                 _searchResultSortOrder = SortOrder.Ascending;
             }
             _searchResultList.Sort(SearchResultCompare);
-            helper.ForceDraw();
+            searchHelper.ForceDraw();
         }
 
         private int SearchResultCompare (PairDirEntry pde1, PairDirEntry pde2)
@@ -442,8 +462,8 @@ namespace cdeWin
             {
                 return;
             }
-            var helper = _clientForm.DirectoryListViewHelper;
-            var column = helper.ColumnClickIndex;
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            var column = directoryHelper.ColumnClickIndex;
             if (_directorySortColumn == column)
             {
                 _directorySortOrder = _directorySortOrder == SortOrder.Ascending 
@@ -455,7 +475,7 @@ namespace cdeWin
                 _directorySortOrder = SortOrder.Ascending;
             }
             _directoryList.Sort(DirectoryCompare);
-            helper.ForceDraw();
+            directoryHelper.ForceDraw();
         }
 
         private int DirectoryCompare(DirEntry de1, DirEntry de2)
@@ -495,13 +515,25 @@ namespace cdeWin
             // Does not make sense for multi select.
             // Explore our entry, select the file if its a file otherwise just open explorer.
 
-            var helper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[helper.ContextItemIndex];
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            var pairDirEntry = _searchResultList[searchHelper.ContextItemIndex];
             var path = pairDirEntry.FullPath;
             if (pairDirEntry.ExistsOnFileSystem())
             {
                 System.Diagnostics.Process.Start("explorer.exe", @"/select, " + path);
             }
+        }
+
+        public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
+        {
+            var lvItem = new ListViewItem(vals[0]) { UseItemStyleForSubItems = false };
+            lvItem.SubItems[0].ForeColor = firstColumnForeColor;
+            lvItem.Tag = tag;
+            for (var i = 1; i < vals.Length; ++i)
+            {
+                lvItem.SubItems.Add(vals[i]);
+            }
+            return lvItem;
         }
     }
 

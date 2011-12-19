@@ -24,8 +24,11 @@ namespace cdeWin
         void OnSearchResultRetrieveVirtualItemFire();
         event EventAction OnDirectoryRetrieveVirtualItem;
         void OnDirectoryRetrieveVirtualItemFire();
+        event EventAction OnCatalogRetrieveVirtualItem;
+        void OnCatalogRetrieveVirtualItemFire();
         event EventAction OnMyFormClosing;
         event EventAction OnCatalogListViewItemActivate;
+        void OnCatalogListViewItemActivateFire();
         event EventAction OnDirectoryListViewItemActivate;
         void OnDirectoryListViewItemActivateFire();
         event EventAction OnSearchResultListViewItemActivate;
@@ -48,28 +51,22 @@ namespace cdeWin
         bool RegexMode { get; set; }
         bool IncludePathInSearch { get; }
 
-        IEnumerable<ColumnConfig> GetCatalogListViewColumns { get; }
-
-        void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag);
-        void SetSearchResultVirtualListSize(int listSize);
-        void SetDirectoryVirtualListSize(int listSize);
-        ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag);
-
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
         void AddSearchTextBoxAutoComplete(string pattern);
         List<string> GetSearchTextBoxAutoComplete();
-        RootEntry ActiveCatalogAfterSelectRootEntry { get; }
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
         string SetDirectoryPathTextbox { set; }
         TreeNode SetDirectoryTreeViewSelectedNode { set; }
-        void DirectoryListViewDeselectItems();
-        void SelectDirectoryListViewItem(int index);
+        void SetSearchResultStatus(int i);
         void SetCatalogsLoadedStatus(int i);
         bool SearchButtonEnable { get; set; }
 
         ListViewHelper SearchResultListViewHelper { get; set; }
         ListViewHelper DirectoryListViewHelper { get; set; }
+        ListViewHelper CatalogListViewHelper { get; set; }
+        //void DirectoryListViewDeselectItems();
+        //void SelectDirectoryListViewItem(int index);
     }
 
     public partial class CDEWinForm : Form, ICDEWinForm
@@ -81,8 +78,11 @@ namespace cdeWin
         public virtual void OnSearchResultRetrieveVirtualItemFire() { OnSearchResultRetrieveVirtualItem(); }
         public event EventAction OnDirectoryRetrieveVirtualItem;
         public virtual void OnDirectoryRetrieveVirtualItemFire() { OnDirectoryRetrieveVirtualItem(); }
+        public event EventAction OnCatalogRetrieveVirtualItem;
+        public virtual void OnCatalogRetrieveVirtualItemFire() { OnCatalogRetrieveVirtualItem(); }
         public event EventAction OnMyFormClosing;
         public event EventAction OnCatalogListViewItemActivate;
+        public virtual void OnCatalogListViewItemActivateFire() { OnCatalogListViewItemActivate(); }
         public event EventAction OnDirectoryListViewItemActivate;
         public virtual void OnDirectoryListViewItemActivateFire() { OnDirectoryListViewItemActivate(); }
         public event EventAction OnSearchResultListViewItemActivate;
@@ -101,6 +101,7 @@ namespace cdeWin
 
         public ListViewHelper SearchResultListViewHelper { get; set; }
         public ListViewHelper DirectoryListViewHelper { get; set; }
+        public ListViewHelper CatalogListViewHelper { get; set; }
 
         public CDEWinForm()
         {
@@ -149,11 +150,12 @@ namespace cdeWin
             patternTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternTextBox.LostFocus += (s, e) => AcceptButton = null;
 
-            catalogResultListView.MultiSelect = false;
-            catalogResultListView.View = View.Details;
-            catalogResultListView.FullRowSelect = true;
-            catalogResultListView.Activation = ItemActivation.Standard;
-            catalogResultListView.ItemActivate += CatalogListViewOnItemActivate;
+            CatalogListViewHelper = new ListViewHelper(catalogResultListView)
+                {
+                    MultiSelect = false,
+                    RetrieveVirtualItem = OnCatalogRetrieveVirtualItemFire,
+                    ItemActivate = OnCatalogListViewItemActivateFire,
+                };
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
@@ -228,15 +230,6 @@ namespace cdeWin
             OnDirectoryTreeViewBeforeExpandNode();
         }
 
-        private void CatalogListViewOnItemActivate(object sender, EventArgs e)
-        {
-            // Catalog List View has multi select off.
-            ActiveCatalogAfterSelectRootEntry = (RootEntry)catalogResultListView.SelectedItems[0].Tag;
-            OnCatalogListViewItemActivate();
-        }
-
-        public RootEntry ActiveCatalogAfterSelectRootEntry { get; private set; }
-
         public string Pattern
         {
             get { return patternTextBox.Text; }
@@ -274,34 +267,9 @@ namespace cdeWin
             }
         }
 
-        public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
-        {
-            var lvItem = new ListViewItem(vals[0]) {UseItemStyleForSubItems = false};
-            lvItem.SubItems[0].ForeColor = firstColumnForeColor;
-            lvItem.Tag = tag;
-            for (var i = 1; i < vals.Length; ++i)
-            {
-                lvItem.SubItems.Add(vals[i]);
-            }
-            return lvItem;
-        }
-
         public bool IncludePathInSearch
         {
             get { return whatToSearchComboBox.SelectedIndex == 0; }
-        }
-
-        public void AddCatalogListViewRow(string[] vals, Color firstColumnForeColor, object tag)
-        {
-            catalogResultListView.Items.Add(BuildListViewItem(vals, firstColumnForeColor, tag));
-        }
-
-        public void SetSearchResultVirtualListSize(int listSize)
-        {
-            searchResultListView.VirtualListSize = listSize;
-            searchResultListView.VirtualMode = true;
-            SetSearchResultStatus(listSize);
-            SearchResultListViewHelper.ForceDraw();;
         }
 
         public void SetSearchResultStatus(int i)
@@ -312,18 +280,6 @@ namespace cdeWin
         public void SetCatalogsLoadedStatus(int i)
         {
             catalogsLoadedStatus.Text = "C " + i.ToString();
-        }
-
-        public void SetDirectoryVirtualListSize(int listSize)
-        {
-            directoryListView.VirtualListSize = listSize;
-            directoryListView.VirtualMode = true;
-            DirectoryListViewHelper.ForceDraw();
-        }
-
-        public IEnumerable<ColumnConfig> GetCatalogListViewColumns
-        {
-            get { return catalogResultListView.Columns.ColumnConfigs(); }
         }
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
@@ -349,11 +305,6 @@ namespace cdeWin
             return list;
         }
 
-        public void SetCatalogColumnHeaders(IEnumerable<ColumnConfig> columns)
-        {
-            catalogResultListView.SetColumnHeaders(columns);
-        }
-
         public void SelectDirectoryPane()
         {
             mainTabControl.SelectTab(2);
@@ -373,27 +324,6 @@ namespace cdeWin
         public TreeNode SetDirectoryTreeViewSelectedNode
         {
             set { directoryTreeView.SelectedNode = value; }
-        }
-
-        public void DirectoryListViewDeselectItems()
-        {
-            for (var i = 0; i < directoryListView.Items.Count; i++)
-            {
-                var listItem = directoryListView.Items[i];
-                if (listItem.Selected)
-                {
-                    listItem.Selected = false;
-                }
-            }
-        }
-
-        public void SelectDirectoryListViewItem(int index)
-        {
-            var listItem = directoryListView.Items[index];
-            listItem.Selected = true;
-            listItem.Focused = true;
-            listItem.EnsureVisible();
-            directoryListView.Select();
         }
 
         public bool SearchButtonEnable {
