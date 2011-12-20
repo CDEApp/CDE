@@ -25,7 +25,7 @@ namespace cdeLibTest
             mockAction.Stub(x => x(null, null));
             var de = new DirEntry();
 
-            de.TraverseTreePair("", mockAction);
+            de.TraverseTreePair(mockAction);
 
             mockAction.AssertWasNotCalled(x => x(null, null));
         }
@@ -40,7 +40,7 @@ namespace cdeLibTest
             var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
             mockAction.Stub(x => x(de1, de2));
 
-            de1.TraverseTreePair("", mockAction);
+            de1.TraverseTreePair(mockAction);
 
             mockAction.AssertWasCalled(x => x(de1, de2));
         }
@@ -65,7 +65,7 @@ namespace cdeLibTest
                 mockAction.Expect(x => x(de3a, de4a)).Repeat.Times(1);
             }
 
-            re1.TraverseTreePair("", mockAction);
+            ((CommonEntry) re1).TraverseTreePair(mockAction);
 
             mockAction.VerifyAllExpectations();
         }

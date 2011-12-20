@@ -326,12 +326,12 @@ namespace cdeLib
 
         public void TraverseTree(Action<DirEntry> apply)
         {
-            TraverseTree(Path, apply);
+            base.TraverseTree(apply);
         }
 
         public void TraverseTreePair(Action<CommonEntry, DirEntry> apply)
         {
-            TraverseTreePair(Path, apply);
+            base.TraverseTreePair(apply);
         }
 
         public static List<RootEntry> LoadCurrentDirCache()

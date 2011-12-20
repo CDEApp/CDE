@@ -34,7 +34,11 @@ namespace cde
             var param0 = args[0].ToLowerInvariant();
             if (args.Length == 2 && param0 == "--scan")
             {
-                CreateCache(args[1]);
+                CreateCache(args[1], false);
+            }
+            else if (args.Length == 2 && param0 == "--scansort")
+            {
+                CreateCache(args[1], true);
             }
             else if (args.Length == 2 && param0 == "--scan2")
             {
@@ -214,7 +218,7 @@ namespace cde
             Console.WriteLine("Saved Scanned Path {0}", e.Root.DefaultFileName);
         }
 
-        static void CreateCache(string path)
+        static void CreateCache(string path, bool sort)
         {
             var re = new RootEntry();
             try
@@ -234,6 +238,13 @@ namespace cde
                 }
 
                 re.SaveRootEntry();
+                if (sort)
+                {   // this currently causes side effect sort due to PairDirEnumerator.
+                    re.DefaultFileName = re.DefaultFileName.Replace(".cde", ".cds");
+                    re.SetCommonEntryFields();
+                    re.SaveRootEntry();
+                }
+
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
                 Console.WriteLine("Scanned Path {0}", re.Path);
                 Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);

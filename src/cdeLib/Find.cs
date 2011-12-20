@@ -151,7 +151,7 @@ namespace cdeLib
             GetDirCache();
             foreach (var rootEntry in _rootEntries)
             {
-                rootEntry.TraverseTreePair(rootEntry.Path, matchAction);
+                ((CommonEntry) rootEntry).TraverseTreePair(matchAction);
             }
 
             if (_totalFound > 0)

@@ -104,7 +104,7 @@ namespace cdeLib
         }
 
         // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTree(string path, Action<DirEntry> action)
+        public void TraverseTree(Action<DirEntry> action)
         {
             var dirs = new Stack<CommonEntry>();
             dirs.Push(this);
@@ -152,7 +152,7 @@ namespace cdeLib
         }
 
         // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTreePair(string path, Action<CommonEntry, DirEntry> action)
+        public void TraverseTreePair(Action<CommonEntry, DirEntry> action)
         {
             var dirs = new Stack<CommonEntry>();
             dirs.Push(this);
@@ -231,8 +231,8 @@ namespace cdeLib
                         // find if theres a destination entry available.
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
-                        var destinationDirEntry = baseDestinationEntry.Children.FirstOrDefault(
-                            x => (x.Path == sourceEntry.Path));
+                        var destinationDirEntry = baseDestinationEntry.Children
+                            .FirstOrDefault(x => (x.Path == sourceEntry.Path));
 
                         if (destinationDirEntry == null)
                         {
