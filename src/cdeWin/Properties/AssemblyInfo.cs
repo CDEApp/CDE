@@ -5,12 +5,12 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("cdWin")]
-[assembly: AssemblyDescription("")]
+[assembly: AssemblyTitle("cdeWin")]
+[assembly: AssemblyDescription("Windows Forms interface for cde.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Microsoft")]
-[assembly: AssemblyProduct("cdWin")]
-[assembly: AssemblyCopyright("Copyright © Microsoft 2011")]
+[assembly: AssemblyProduct("cdeWin")]
+[assembly: AssemblyCopyright("Copyright © Robin Luiten 2011")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
 

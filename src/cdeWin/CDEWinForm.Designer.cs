@@ -62,6 +62,7 @@
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -367,6 +368,7 @@
             this.mainStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.catalogsLoadedStatus,
             this.searchResultsStatus,
+            this.searchTimeStatus,
             this.toolStripStatusLabelRightAlign,
             this.toolStripDropDownButton1});
             this.mainStatusStrip.Location = new System.Drawing.Point(0, 476);
@@ -403,7 +405,7 @@
             // 
             this.toolStripStatusLabelRightAlign.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.toolStripStatusLabelRightAlign.Name = "toolStripStatusLabelRightAlign";
-            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(395, 19);
+            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(351, 19);
             this.toolStripStatusLabelRightAlign.Spring = true;
             // 
             // toolStripDropDownButton1
@@ -414,6 +416,12 @@
             this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(81, 22);
             this.toolStripDropDownButton1.Text = "Test Button";
+            // 
+            // searchTimeStatus
+            // 
+            this.searchTimeStatus.Name = "searchTimeStatus";
+            this.searchTimeStatus.Size = new System.Drawing.Size(12, 19);
+            this.searchTimeStatus.Text = "*";
             // 
             // CDEWinForm
             // 
@@ -487,6 +495,7 @@
         private System.Windows.Forms.Panel directoryBottomPanel;
         private System.Windows.Forms.Button copyPathButton;
         private System.Windows.Forms.TextBox directoryPathTextBox;
+        private System.Windows.Forms.ToolStripStatusLabel searchTimeStatus;
     }
 }
 

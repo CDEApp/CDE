@@ -20,6 +20,71 @@ namespace cdeLib
         private static List<RootEntry> _rootEntries;
         // ReSharper restore InconsistentNaming
 
+        public static List<PairDirEntry> GetSearchHitsR(IEnumerable<RootEntry> rootEntries, string pattern, bool regexMode, bool includePath)
+        {
+            var list = new List<PairDirEntry>();
+            if (regexMode)
+            {
+                var regex = new Regex(pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                if (includePath)
+                {
+                    foreach (var root in rootEntries)
+                    {
+                        root.TraverseTreePair((p, d) =>
+                            {
+                                if (regex.IsMatch(p.MakeFullPath(d)))
+                                {
+                                    list.Add(new PairDirEntry(p, d));
+                                }
+                            });
+                    }
+                }
+                else
+                {
+                    foreach (var root in rootEntries)
+                    {
+                        root.TraverseTreePair((p, d) =>
+                            {
+                                if (regex.IsMatch(d.Path))
+                                {
+                                    list.Add(new PairDirEntry(p, d));
+                                }
+                            });
+                    }
+                }
+            }
+            else
+            {
+                if (includePath)  // not sure this is useful to users.
+                {
+                    foreach (var root in rootEntries)
+                    {
+                        root.TraverseTreePair((p, d) =>
+                            {
+                                if (p.MakeFullPath(d).IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                                {
+                                    list.Add(new PairDirEntry(p, d));
+                                }
+                            });
+                    }
+                }
+                else
+                {
+                    foreach (var root in rootEntries)
+                    {
+                        root.TraverseTreePair((p, d) =>
+                            {
+                                if (d.Path.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                                {
+                                    list.Add(new PairDirEntry(p, d));
+                                }
+                            });
+                    }
+                }
+            }
+            return list;
+        }
+
         public static IEnumerable<PairDirEntry> GetSearchHits(IEnumerable<RootEntry> rootEntries, string pattern, bool regexMode, bool includePath)
         {
             var pairDirEntries = CommonEntry.GetPairDirEntries(rootEntries);

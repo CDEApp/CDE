@@ -58,6 +58,7 @@ namespace cdeWin
         TreeNode SetDirectoryTreeViewSelectedNode { set; }
         void SetSearchResultStatus(int i);
         void SetCatalogsLoadedStatus(int i);
+        void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
 
         ListViewHelper SearchResultListViewHelper { get; set; }
@@ -278,6 +279,11 @@ namespace cdeWin
         public void SetCatalogsLoadedStatus(int i)
         {
             catalogsLoadedStatus.Text = "C " + i.ToString();
+        }
+
+        public void SetSearchTimeStatus(string s)
+        {
+            searchTimeStatus.Text = s;
         }
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)

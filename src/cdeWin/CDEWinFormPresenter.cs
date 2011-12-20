@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
@@ -209,8 +210,20 @@ namespace cdeWin
             var searchHelper = _clientForm.SearchResultListViewHelper;
             _clientForm.AddSearchTextBoxAutoComplete(pattern);
 
-            var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
-            _searchResultList = resultEnum.ToList();
+            string trace = string.Empty;
+            var sw = new Stopwatch();
+            //sw.Start();
+            //var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
+            //_searchResultList = resultEnum.ToList();
+            //sw.Stop();
+            //trace = "ST " + sw.ElapsedMilliseconds;
+
+            sw.Start();
+            _searchResultList = Find.GetSearchHitsR(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
+            sw.Stop();
+            trace += " ST " + sw.ElapsedMilliseconds;
+            _clientForm.SetSearchTimeStatus(trace);
+
             _searchResultSortColumn = 0;
             _searchResultSortOrder = SortOrder.Ascending;
 
@@ -520,7 +533,7 @@ namespace cdeWin
             var path = pairDirEntry.FullPath;
             if (pairDirEntry.ExistsOnFileSystem())
             {
-                System.Diagnostics.Process.Start("explorer.exe", @"/select, " + path);
+                Process.Start("explorer.exe", @"/select, " + path);
             }
         }
 
