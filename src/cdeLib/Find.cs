@@ -12,6 +12,12 @@ namespace cdeLib
         public bool IncludePath { get; set; }
         public bool IncludeFiles { get; set; }
         public bool IncludeFolders { get; set; }
+        public int LimitResultCount { get; set; }
+
+        public FindOptions()
+        {
+            LimitResultCount = 10000;
+        }
     }
 
     public static class Find
@@ -31,6 +37,7 @@ namespace cdeLib
 
         public static List<PairDirEntry> GetSearchHitsR(IEnumerable<RootEntry> rootEntries, FindOptions options)
         {
+            int[] limitCount = {options.LimitResultCount};
             var list = new List<PairDirEntry>();
             if (options.RegexMode)
             {
@@ -39,7 +46,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePair((p, d) =>
+                        root.TraverseTreePairF((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -47,8 +54,13 @@ namespace cdeLib
                                     if (regex.IsMatch(p.MakeFullPath(d)))
                                     {
                                         list.Add(new PairDirEntry(p, d));
+                                        if (--limitCount[0] <= 1)
+                                        {
+                                            return false;
+                                        }
                                     }
                                 }
+                                return true;
                             });
                     }
                 }
@@ -56,7 +68,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePair((p, d) =>
+                        root.TraverseTreePairF((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -64,8 +76,13 @@ namespace cdeLib
                                     if (regex.IsMatch(d.Path))
                                     {
                                         list.Add(new PairDirEntry(p, d));
+                                        if (--limitCount[0] <= 1)
+                                        {
+                                            return false;
+                                        }
                                     }
                                 }
+                                return true;
                             });
                     }
                 }
@@ -76,18 +93,22 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePair((p, d) =>
+                        root.TraverseTreePairF((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
                                 {
-                                    if (
-                                        p.MakeFullPath(d).IndexOf(options.Pattern,
-                                                                  StringComparison.InvariantCultureIgnoreCase) >= 0)
+                                    if (p.MakeFullPath(d).IndexOf(options.Pattern,
+                                          StringComparison.InvariantCultureIgnoreCase) >= 0)
                                     {
                                         list.Add(new PairDirEntry(p, d));
+                                        if (--limitCount[0] <= 1)
+                                        {
+                                            return false;
+                                        }
                                     }
                                 }
+                                return true;
                             });
                     }
                 }
@@ -95,17 +116,22 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePair((p, d) =>
+                        root.TraverseTreePairF((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
                                 {
-                                    if (d.Path.IndexOf(options.Pattern, StringComparison.InvariantCultureIgnoreCase) >=
-                                        0)
+                                    if (d.Path.IndexOf(options.Pattern, 
+                                          StringComparison.InvariantCultureIgnoreCase) >= 0)
                                     {
                                         list.Add(new PairDirEntry(p, d));
+                                        if (--limitCount[0] <= 1)
+                                        {
+                                            return false;
+                                        }
                                     }
                                 }
+                                return true;
                             });
                     }
                 }

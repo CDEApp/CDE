@@ -47,8 +47,9 @@ namespace cdeWin
 
         string Pattern { get; set; }
         bool RegexMode { get; set; }
-        bool IncludeFiles { get; set; }
-        bool IncludeFolders { get; set; }
+        bool IncludeFiles { get; }
+        bool IncludeFolders { get; }
+        int FindEntryFilter { get; set; }
         bool IncludePathInSearch { get; set; }
 
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
@@ -119,8 +120,14 @@ namespace cdeWin
             FormClosing += (s, e) => OnMyFormClosing();
             Activated += MyFormActivated;
 
-            whatToSearchComboBox.Items.AddRange(new[] {"Include","Exclude"});
+            whatToSearchComboBox.Items.AddRange(new[] { "Include Path in Search", "Exclude Path from Search" });
+            //whatToSearchComboBox.Items.AddRange(new[] { "Include", "Exclude" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
+            whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            findComboBox.Items.AddRange(new[] { "Files and Folders", "Files Only", "Folders Only" });
+            findComboBox.SelectedIndex = 0; // default Files and Folders
+            findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
             SearchResultListViewHelper = new ListViewHelper(searchResultListView)
                 {
@@ -270,14 +277,18 @@ namespace cdeWin
 
         public bool IncludeFiles
         {
-            get { return filesCheckbox.Checked; }
-            set { filesCheckbox.Checked = value; }
+            get { return findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 1; }
         }
 
         public bool IncludeFolders
         {
-            get { return foldersCheckbox.Checked; }
-            set { foldersCheckbox.Checked = value; }
+            get { return findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 2; }
+        }
+
+        public int FindEntryFilter
+        {
+            get { return findComboBox.SelectedIndex; }
+            set { findComboBox.SelectedIndex = value; }
         }
 
         public bool IncludePathInSearch

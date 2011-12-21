@@ -329,6 +329,11 @@ namespace cdeLib
             base.TraverseTree(apply);
         }
 
+        public void TraverseTreePairF(Func<CommonEntry, DirEntry, bool> apply)
+        {
+            base.TraverseTreePairF(apply);
+        }
+
         public void TraverseTreePair(Action<CommonEntry, DirEntry> apply)
         {
             base.TraverseTreePair(apply);

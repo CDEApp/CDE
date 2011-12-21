@@ -191,6 +191,44 @@ namespace cdeLib
             }
         }
 
+        public void TraverseTreePairF(Func<CommonEntry, DirEntry, bool> action)
+        {
+            bool actionContinue = true;
+            var dirs = new Stack<CommonEntry>();
+            dirs.Push(this);
+
+            while (dirs.Count > 0)
+            {
+                var commonEntry = dirs.Pop();
+
+                if (commonEntry.Children != null)// now that empty directories may not have Children initialized.
+                {
+                    foreach (var dirEntry in commonEntry.Children)
+                    {
+                        if (action != null)
+                        {
+                            actionContinue = action(commonEntry, dirEntry);
+                            if (!actionContinue)
+                            {
+                                break;
+                            }
+                        }
+
+                        if (dirEntry.IsDirectory)
+                        {
+                            dirs.Push(dirEntry);
+                        }
+                    }
+                }
+
+                if (!actionContinue)
+                {
+                    break;
+                }
+            }
+        }
+
+
         public void TraverseTreesCopyHash(CommonEntry destination)
         {
             var dirs = new Stack<Tuple<string, CommonEntry, CommonEntry>>();
