@@ -131,6 +131,10 @@ namespace cdeWin
         public bool RegexMode;
         [ProtoMember(11)]
         public bool IncludePath;
+        [ProtoMember(12)]
+        public bool IncludeFiles;
+        [ProtoMember(13)]
+        public bool IncludeFolders;
 
         public Configuration()
         {
@@ -263,6 +267,8 @@ namespace cdeWin
             Active.Pattern = form.Pattern;
             Active.RegexMode = form.RegexMode;
             Active.IncludePath = form.IncludePathInSearch;
+            Active.IncludeFiles = form.IncludeFiles;
+            Active.IncludeFolders = form.IncludeFolders;
         }
 
         public void RestoreConfig(CDEWinForm form)
@@ -276,6 +282,8 @@ namespace cdeWin
             form.Pattern = Active.Pattern;
             form.RegexMode = Active.RegexMode;
             form.IncludePathInSearch = Active.IncludePath;
+            form.IncludeFiles = Active.IncludeFiles;
+            form.IncludeFolders = Active.IncludeFolders;
         }
     }
 }

@@ -47,6 +47,8 @@ namespace cdeWin
 
         string Pattern { get; set; }
         bool RegexMode { get; set; }
+        bool IncludeFiles { get; set; }
+        bool IncludeFolders { get; set; }
         bool IncludePathInSearch { get; set; }
 
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
@@ -264,6 +266,18 @@ namespace cdeWin
                     directoryTreeView.EndUpdate();
                 }
             }
+        }
+
+        public bool IncludeFiles
+        {
+            get { return filesCheckbox.Checked; }
+            set { filesCheckbox.Checked = value; }
+        }
+
+        public bool IncludeFolders
+        {
+            get { return foldersCheckbox.Checked; }
+            set { foldersCheckbox.Checked = value; }
         }
 
         public bool IncludePathInSearch

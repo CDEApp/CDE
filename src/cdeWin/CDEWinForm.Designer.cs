@@ -42,8 +42,8 @@
             this.patternTextBox = new System.Windows.Forms.TextBox();
             this.labelSearchPath = new System.Windows.Forms.Label();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
-            this.checkboxFolders = new System.Windows.Forms.CheckBox();
-            this.checkboxFiles = new System.Windows.Forms.CheckBox();
+            this.foldersCheckbox = new System.Windows.Forms.CheckBox();
+            this.filesCheckbox = new System.Windows.Forms.CheckBox();
             this.searchButton = new System.Windows.Forms.Button();
             this.regexCheckbox = new System.Windows.Forms.CheckBox();
             this.searchLabel = new System.Windows.Forms.Label();
@@ -60,9 +60,9 @@
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.catalogsLoadedStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
-            this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -169,8 +169,8 @@
             this.searchControlPanel.Controls.Add(this.patternTextBox);
             this.searchControlPanel.Controls.Add(this.labelSearchPath);
             this.searchControlPanel.Controls.Add(this.whatToSearchComboBox);
-            this.searchControlPanel.Controls.Add(this.checkboxFolders);
-            this.searchControlPanel.Controls.Add(this.checkboxFiles);
+            this.searchControlPanel.Controls.Add(this.foldersCheckbox);
+            this.searchControlPanel.Controls.Add(this.filesCheckbox);
             this.searchControlPanel.Controls.Add(this.searchButton);
             this.searchControlPanel.Controls.Add(this.regexCheckbox);
             this.searchControlPanel.Controls.Add(this.searchLabel);
@@ -205,29 +205,29 @@
             this.whatToSearchComboBox.Size = new System.Drawing.Size(80, 21);
             this.whatToSearchComboBox.TabIndex = 6;
             // 
-            // checkboxFolders
+            // foldersCheckbox
             // 
-            this.checkboxFolders.AutoSize = true;
-            this.checkboxFolders.Checked = true;
-            this.checkboxFolders.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkboxFolders.Location = new System.Drawing.Point(346, 45);
-            this.checkboxFolders.Name = "checkboxFolders";
-            this.checkboxFolders.Size = new System.Drawing.Size(60, 17);
-            this.checkboxFolders.TabIndex = 5;
-            this.checkboxFolders.Text = "Folders";
-            this.checkboxFolders.UseVisualStyleBackColor = true;
+            this.foldersCheckbox.AutoSize = true;
+            this.foldersCheckbox.Checked = true;
+            this.foldersCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.foldersCheckbox.Location = new System.Drawing.Point(346, 45);
+            this.foldersCheckbox.Name = "foldersCheckbox";
+            this.foldersCheckbox.Size = new System.Drawing.Size(60, 17);
+            this.foldersCheckbox.TabIndex = 5;
+            this.foldersCheckbox.Text = "Folders";
+            this.foldersCheckbox.UseVisualStyleBackColor = true;
             // 
-            // checkboxFiles
+            // filesCheckbox
             // 
-            this.checkboxFiles.AutoSize = true;
-            this.checkboxFiles.Checked = true;
-            this.checkboxFiles.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.checkboxFiles.Location = new System.Drawing.Point(346, 24);
-            this.checkboxFiles.Name = "checkboxFiles";
-            this.checkboxFiles.Size = new System.Drawing.Size(47, 17);
-            this.checkboxFiles.TabIndex = 4;
-            this.checkboxFiles.Text = "Files";
-            this.checkboxFiles.UseVisualStyleBackColor = true;
+            this.filesCheckbox.AutoSize = true;
+            this.filesCheckbox.Checked = true;
+            this.filesCheckbox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.filesCheckbox.Location = new System.Drawing.Point(346, 24);
+            this.filesCheckbox.Name = "filesCheckbox";
+            this.filesCheckbox.Size = new System.Drawing.Size(47, 17);
+            this.filesCheckbox.TabIndex = 4;
+            this.filesCheckbox.Text = "Files";
+            this.filesCheckbox.UseVisualStyleBackColor = true;
             // 
             // searchButton
             // 
@@ -401,11 +401,18 @@
             this.searchResultsStatus.Text = "SR 0";
             this.searchResultsStatus.ToolTipText = "Search Results Found";
             // 
+            // searchTimeStatus
+            // 
+            this.searchTimeStatus.Name = "searchTimeStatus";
+            this.searchTimeStatus.Size = new System.Drawing.Size(12, 19);
+            this.searchTimeStatus.Text = "*";
+            this.searchTimeStatus.ToolTipText = "Search Time Taken msecs.";
+            // 
             // toolStripStatusLabelRightAlign
             // 
             this.toolStripStatusLabelRightAlign.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.toolStripStatusLabelRightAlign.Name = "toolStripStatusLabelRightAlign";
-            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(351, 19);
+            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(383, 19);
             this.toolStripStatusLabelRightAlign.Spring = true;
             // 
             // toolStripDropDownButton1
@@ -416,12 +423,6 @@
             this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
             this.toolStripDropDownButton1.Size = new System.Drawing.Size(81, 22);
             this.toolStripDropDownButton1.Text = "Test Button";
-            // 
-            // searchTimeStatus
-            // 
-            this.searchTimeStatus.Name = "searchTimeStatus";
-            this.searchTimeStatus.Size = new System.Drawing.Size(12, 19);
-            this.searchTimeStatus.Text = "*";
             // 
             // CDEWinForm
             // 
@@ -486,8 +487,8 @@
         private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelRightAlign;
         private System.Windows.Forms.ToolStripStatusLabel catalogsLoadedStatus;
-        private System.Windows.Forms.CheckBox checkboxFolders;
-        private System.Windows.Forms.CheckBox checkboxFiles;
+        private System.Windows.Forms.CheckBox foldersCheckbox;
+        private System.Windows.Forms.CheckBox filesCheckbox;
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
         private System.Windows.Forms.Label labelSearchPath;
         private System.Windows.Forms.TextBox patternTextBox;

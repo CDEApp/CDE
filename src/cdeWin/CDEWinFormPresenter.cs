@@ -197,6 +197,8 @@ namespace cdeWin
         {
             _clientForm.SearchButtonEnable = false;
             var pattern = _clientForm.Pattern;
+            var includeFiles = _clientForm.IncludeFiles;
+            var includeFolders = _clientForm.IncludeFolders;
             var regexMode = _clientForm.RegexMode;
             if (regexMode)
             {
@@ -218,8 +220,18 @@ namespace cdeWin
             //sw.Stop();
             //trace = "ST " + sw.ElapsedMilliseconds;
 
+            var findOptions = new FindOptions
+                {
+                    Pattern = _clientForm.Pattern,
+                    RegexMode = _clientForm.RegexMode,
+                    IncludePath = _clientForm.IncludePathInSearch,
+                    IncludeFiles = _clientForm.IncludeFiles,
+                    IncludeFolders = _clientForm.IncludeFolders
+                };
+
             sw.Start();
-            _searchResultList = Find.GetSearchHitsR(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
+            //_searchResultList = Find.GetSearchHitsR(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch, includeFiles, includeFolders);
+            _searchResultList = Find.GetSearchHitsR(_rootEntries, findOptions);
             sw.Stop();
             trace += " ST " + sw.ElapsedMilliseconds;
             _clientForm.SetSearchTimeStatus(trace);
@@ -233,10 +245,10 @@ namespace cdeWin
             _clientForm.SearchButtonEnable = true;
         }
 
-        public void SetSearchResultListView()
-        {
-            _clientForm.SetSearchResultStatus(1); // BROKEN TODO FIX
-        }
+        //public void SetSearchResultListView()
+        //{
+        //    _clientForm.SetSearchResultStatus(1); // BROKEN TODO FIX
+        //}
 
         public void SearchResultRetrieveVirtualItem()
         {
