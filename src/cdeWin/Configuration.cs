@@ -129,6 +129,8 @@ namespace cdeWin
         public string Pattern;
         [ProtoMember(10)]
         public bool RegexMode;
+        [ProtoMember(11)]
+        public bool IncludePath;
 
         public Configuration()
         {
@@ -260,6 +262,7 @@ namespace cdeWin
             Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
             Active.Pattern = form.Pattern;
             Active.RegexMode = form.RegexMode;
+            Active.IncludePath = form.IncludePathInSearch;
         }
 
         public void RestoreConfig(CDEWinForm form)
@@ -272,6 +275,7 @@ namespace cdeWin
             form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
             form.Pattern = Active.Pattern;
             form.RegexMode = Active.RegexMode;
+            form.IncludePathInSearch = Active.IncludePath;
         }
     }
 }

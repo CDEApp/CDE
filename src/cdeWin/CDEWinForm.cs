@@ -47,7 +47,7 @@ namespace cdeWin
 
         string Pattern { get; set; }
         bool RegexMode { get; set; }
-        bool IncludePathInSearch { get; }
+        bool IncludePathInSearch { get; set; }
 
         void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
         void AddSearchTextBoxAutoComplete(string pattern);
@@ -269,6 +269,7 @@ namespace cdeWin
         public bool IncludePathInSearch
         {
             get { return whatToSearchComboBox.SelectedIndex == 0; }
+            set { whatToSearchComboBox.SelectedIndex = value ? 0 : 1; }
         }
 
         public void SetSearchResultStatus(int i)
