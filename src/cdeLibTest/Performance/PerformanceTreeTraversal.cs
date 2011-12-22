@@ -230,7 +230,7 @@ namespace cdeLibTest.Performance
             for (var i = 0; i < repeatCount; i++)
             {
                //this code was temporary and showed no real gain.
-               //reC.SetCommonEntryFieldsNoParent();
+               //reC.SetCommonEntryFieldsT();
             }
             sw.Stop();
             totalTraverseTime = sw.ElapsedMilliseconds;

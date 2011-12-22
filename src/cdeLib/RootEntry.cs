@@ -375,16 +375,29 @@ namespace cdeLib
         /// </summary>
         public void SetCommonEntryFields()
         {
-            foreach (var pairDirEntry in GetPairDirEntries(this))
-            {
-                var child = pairDirEntry.ChildDE;
-                var parent = pairDirEntry.ParentDE;
-                if (child.IsDirectory)
+            TraverseTreePair((p, d) =>
                 {
-                    child.FullPath = MakeFullPath(parent, child);
+                    if (d.IsDirectory)
+                    {
+                        d.FullPath = p.MakeFullPath(d);
+                    }
+                    d.ParentCommonEntry = p;
+                });
+        }
+
+        public void SortAllChildrenByPath()
+        {
+            TraverseTreePair((p, d) =>
+            {
+                if (d.IsDirectory)
+                {
+                    if (d.Children != null && d.Children.Count > 1)
+                    {
+                        d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
+                        d.IsDefaultSort = true;
+                    }
                 }
-                child.ParentCommonEntry = parent;
-            }
+            });
         }
 
         public int DescriptionCompareTo(RootEntry re)

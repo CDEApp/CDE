@@ -53,9 +53,6 @@ namespace cdeLib
             _entries = null;
         }
 
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
-
         public bool MoveNext()
         {
             _current = null;
@@ -66,7 +63,6 @@ namespace cdeLib
                     var de = _entries.Pop();
 
                     _parentDirEntry = de;
-                    de.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
                     _childEnumerator = de.Children.GetEnumerator();
                 }
             }
