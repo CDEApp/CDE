@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using NUnit.Framework;
 
@@ -169,41 +168,16 @@ namespace cdeLibTest
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
-                re.TraverseTreePair(DoAction);
+                re.TraverseTreePair((p, d) => ++_fileCount);
             }
             sw.Stop();
             ts = sw.Elapsed;
             elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-            Console.WriteLine("took : {0}", elapsedTime);
-            Console.WriteLine("Total files enumerated : {0}", _fileCount);
-            //Console.WriteLine("Total path length : {0}", _num);
-
-            sw.Start();
-            //_num = 0;
-            _fileCount = 0;
-            for (var i = 0; i < 100; ++i)
-            {
-                re.TraverseTree(DoAction2);
-            }
-            sw.Stop();
-            ts = sw.Elapsed;
-            elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-            Console.WriteLine("took : {0}", elapsedTime);
+            Console.WriteLine("TraverseTreePair took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
             //Console.WriteLine("Total path length : {0}", _num);
         }
 
-        private void DoAction(CommonEntry parentEntry, DirEntry dirEntry)
-        {
-            ++_fileCount;
-            //_num += (ulong)dirEntry.FullPath.Length;
-        }
-
-        private void DoAction2(DirEntry dirEntry)
-        {
-            ++_fileCount;
-            //_num += (ulong)dirEntry.FullPath.Length;
-        }
     }
     // ReSharper restore InconsistentNaming
 }

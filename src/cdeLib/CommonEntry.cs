@@ -95,54 +95,6 @@ namespace cdeLib
             Size = size;
         }
 
-        public static void TraverseAllTrees(IEnumerable<RootEntry> rootEntries, Action<DirEntry> action)
-        {
-            foreach (var rootEntry in rootEntries)
-            {
-                rootEntry.TraverseTree(action);
-            }
-        }
-
-        // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTree(Action<DirEntry> action)
-        {
-            var dirs = new Stack<CommonEntry>();
-            dirs.Push(this);
-
-            while (dirs.Count > 0)
-            {
-                var commonEntry = dirs.Pop();
-
-                if (commonEntry.Children != null) // now that empty directories may not have Children initialized.
-                {
-                    foreach (var dirEntry in commonEntry.Children)
-                    {
-                        if (action != null)
-                        {
-                            action(dirEntry);
-                        }
-
-                        if (dirEntry.IsDirectory)
-                        {
-                            dirs.Push(dirEntry);
-                        }
-
-                        if (Hack.BreakConsoleFlag)
-                        {
-                            Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                            break;
-                        }
-                    }
-                }
-
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
-                    break;
-                }
-            }
-        }
-
         public static void TraverseAllTreesPair(IEnumerable<RootEntry> rootEntries, Action<CommonEntry, DirEntry> action)
         {
             foreach (var rootEntry in rootEntries)

@@ -325,11 +325,6 @@ namespace cdeLib
             return Serializer.Deserialize<RootEntry>(input);
         }
 
-        public void TraverseTree(Action<DirEntry> apply)
-        {
-            base.TraverseTree(apply);
-        }
-
         public void TraverseTreePairF(Func<CommonEntry, DirEntry, bool> apply)
         {
             base.TraverseTreePairF(apply);
