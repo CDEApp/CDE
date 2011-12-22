@@ -43,7 +43,7 @@ namespace cde
             }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
-                Find.FindString2(args[1], param0);
+                Find.Find2(args[1], param0);
             }
             else if (args.Length == 2 && param0 == "--replgreppath")
             {
@@ -136,6 +136,8 @@ namespace cde
             }
         }
 
+
+
         private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
         {
             Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
@@ -147,7 +149,7 @@ namespace cde
         private static void FindRepl(string parmString, string firstPattern)
         {
             Find.GetDirCache();
-            Find.FindString(firstPattern, parmString);
+            Find.Find2(firstPattern, parmString);
             do
             {
                 if (Hack.BreakConsoleFlag) 
@@ -159,7 +161,7 @@ namespace cde
                     Console.WriteLine("Exiting...");
                     break;
                 }
-                Find.FindString(pattern, parmString);
+                Find.Find2(pattern, parmString);
             } while (true);
         }
 
@@ -188,7 +190,7 @@ namespace cde
             Console.WriteLine("Usage: cde --dupes ");
             Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
             Console.WriteLine("Usage: cde --repl");
-            Console.WriteLine("       Enter readline mode.");
+            Console.WriteLine("       Enter readline mode - trying it out not useful yet...");
             Console.WriteLine("Usage: cde --replGreppath <regex>");
             Console.WriteLine("Usage: cde --replGrep <regex>");
             Console.WriteLine("Usage: cde --repFind <regex>");
@@ -230,7 +232,6 @@ namespace cde
                 re.ApplyMd5Checksum();
             }
         }
-
 
         static void CreateCache2(string path)
         {

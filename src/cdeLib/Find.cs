@@ -5,6 +5,8 @@ using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
+    public enum TraverseExit { Complete, LimitCountReached, FoundFuncExit }
+
     public class FindOptions
     {
         public string Pattern { get; set; }
@@ -18,6 +20,11 @@ namespace cdeLib
         {
             LimitResultCount = 10000;
         }
+
+        /// <summary>
+        /// Called for every found entry.
+        /// </summary>
+        public CommonEntry.TraverseFunc FoundFunc { get; set; }
     }
 
     public static class Find
@@ -29,293 +36,155 @@ namespace cdeLib
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamFindpath, ParamGrep, ParamGreppath };
 
         // ReSharper disable InconsistentNaming
-        private static uint _totalFound;
-        private static Regex _regex;
-        private static string _find;
         private static List<RootEntry> _rootEntries;
         // ReSharper restore InconsistentNaming
 
-        public static List<PairDirEntry> GetSearchHitsR(IEnumerable<RootEntry> rootEntries, FindOptions options)
+        public static void Find2(string pattern, string param)
         {
-            int[] limitCount = {options.LimitResultCount};
-            var list = new List<PairDirEntry>();
+            var regexMode = param == ParamGrep || param == ParamGreppath;
+            var includePath = param == ParamGreppath || param == ParamFindpath;
+            Find2(pattern, regexMode, includePath);
+        }
+
+        public static void Find2(string pattern, bool regexMode, bool includePath)
+        {
+            GetDirCache();
+            var totalFound = 0L;
+            var findOptions = new FindOptions
+            {
+                Pattern = pattern,
+                RegexMode = regexMode,
+                IncludePath = includePath,
+                IncludeFiles = true,
+                IncludeFolders = true,
+                LimitResultCount = int.MaxValue,
+                FoundFunc = (p, d) =>
+                {
+                    ++totalFound;
+                    Console.WriteLine(" {0}", p.MakeFullPath(d));
+                    return true;
+                },
+            };
+            TraverseTreeFind(_rootEntries, findOptions);
+            if (totalFound >  0)
+            {
+                Console.WriteLine("Found a total of {0} entries. Matching pattern \"{1}\"", totalFound, pattern);
+            }
+            else
+            {
+                Console.WriteLine("No entries found in cached information.");
+            }
+        }
+
+        public static void TraverseTreeFind(IEnumerable<RootEntry> rootEntries, FindOptions options)
+        {
+            int[] limitCount = { options.LimitResultCount };
+            var foundFunc = options.FoundFunc;
+            CommonEntry.TraverseFunc findFunc;
+            if (foundFunc == null)
+            {
+                return;
+            }
             if (options.RegexMode)
             {
                 var regex = new Regex(options.Pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 if (options.IncludePath)
                 {
-                    foreach (var root in rootEntries)
+                    findFunc = (p, d) =>
                     {
-                        root.TraverseTreePair((p, d) =>
+                        if ((d.IsDirectory && options.IncludeFolders)
+                            || (!d.IsDirectory && options.IncludeFiles))
+                        {
+                            if (regex.IsMatch(p.MakeFullPath(d)))
                             {
-                                if ((d.IsDirectory && options.IncludeFolders)
-                                    || (!d.IsDirectory && options.IncludeFiles))
+                                if (foundFunc(p, d))
                                 {
-                                    if (regex.IsMatch(p.MakeFullPath(d)))
-                                    {
-                                        list.Add(new PairDirEntry(p, d));
-                                        if (--limitCount[0] <= 1)
-                                        {
-                                            return false;
-                                        }
-                                    }
+                                    return false;
                                 }
-                                return true;
-                            });
-                    }
+                                if (--limitCount[0] <= 1)
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    };
                 }
                 else
                 {
-                    foreach (var root in rootEntries)
+                    findFunc = (p, d) =>
                     {
-                        root.TraverseTreePair((p, d) =>
+                        if ((d.IsDirectory && options.IncludeFolders)
+                            || (!d.IsDirectory && options.IncludeFiles))
+                        {
+                            if (regex.IsMatch(d.Path))
                             {
-                                if ((d.IsDirectory && options.IncludeFolders)
-                                    || (!d.IsDirectory && options.IncludeFiles))
+                                if (foundFunc(p, d))
                                 {
-                                    if (regex.IsMatch(d.Path))
-                                    {
-                                        list.Add(new PairDirEntry(p, d));
-                                        if (--limitCount[0] <= 1)
-                                        {
-                                            return false;
-                                        }
-                                    }
+                                    return false;
                                 }
-                                return true;
-                            });
-                    }
+                                if (--limitCount[0] <= 1)
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    };
                 }
             }
             else
             {
                 if (options.IncludePath)  // not sure this is useful to users.
                 {
-                    foreach (var root in rootEntries)
+                    findFunc = (p, d) =>
                     {
-                        root.TraverseTreePair((p, d) =>
+                        if ((d.IsDirectory && options.IncludeFolders)
+                            || (!d.IsDirectory && options.IncludeFiles))
+                        {
+                            if (p.MakeFullPath(d).IndexOf(options.Pattern,
+                                StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
-                                if ((d.IsDirectory && options.IncludeFolders)
-                                    || (!d.IsDirectory && options.IncludeFiles))
+                                if (foundFunc(p, d))
                                 {
-                                    if (p.MakeFullPath(d).IndexOf(options.Pattern,
-                                          StringComparison.InvariantCultureIgnoreCase) >= 0)
-                                    {
-                                        list.Add(new PairDirEntry(p, d));
-                                        if (--limitCount[0] <= 1)
-                                        {
-                                            return false;
-                                        }
-                                    }
+                                    return false;
                                 }
-                                return true;
-                            });
-                    }
+                                if (--limitCount[0] <= 1)
+                                {
+                                    return false;
+                                }
+                            }
+                        }
+                        return true;
+                    };
                 }
                 else
                 {
-                    foreach (var root in rootEntries)
+                    findFunc = (p, d) =>
                     {
-                        root.TraverseTreePair((p, d) =>
+                        if ((d.IsDirectory && options.IncludeFolders)
+                            || (!d.IsDirectory && options.IncludeFiles))
+                        {
+                            if (d.Path.IndexOf(options.Pattern,
+                                StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
-                                if ((d.IsDirectory && options.IncludeFolders)
-                                    || (!d.IsDirectory && options.IncludeFiles))
+                                if (foundFunc(p, d))
                                 {
-                                    if (d.Path.IndexOf(options.Pattern, 
-                                          StringComparison.InvariantCultureIgnoreCase) >= 0)
-                                    {
-                                        list.Add(new PairDirEntry(p, d));
-                                        if (--limitCount[0] <= 1)
-                                        {
-                                            return false;
-                                        }
-                                    }
+                                    return false;
                                 }
-                                return true;
-                            });
-                    }
-                }
-            }
-            return list;
-        }
-
-        public static IEnumerable<PairDirEntry> GetSearchHits(IEnumerable<RootEntry> rootEntries, string pattern, bool regexMode, bool includePath)
-        {
-            var pairDirEntries = CommonEntry.GetPairDirEntries(rootEntries);
-
-            if (regexMode)
-            {
-                var regex = new Regex(pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                if (includePath)
-                {
-                    foreach (var pairDirEntry in pairDirEntries)
-                    {
-                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (regex.IsMatch(pairDirEntry.FullPath))
-                        {
-                            yield return pairDirEntry;
+                                if (--limitCount[0] <= 1)
+                                {
+                                    return false;
+                                }
+                            }
                         }
-                    }
-                }
-                else
-                {
-                    foreach (var pairDirEntry in pairDirEntries)
-                    {
-                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (regex.IsMatch(pairDirEntry.ChildDE.Path))
-                        {
-                            yield return pairDirEntry;
-                        }
-                    }
+                        return true;
+                    };
                 }
             }
-            else
+            foreach (var root in rootEntries)
             {
-                if (includePath)  // not sure this is useful to users.
-                {
-                    foreach (var pairDirEntry in pairDirEntries)
-                    {
-                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (pairDirEntry.FullPath.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                        {
-                            yield return pairDirEntry;
-                        }
-                    }
-                }
-                else
-                {
-                    foreach (var pairDirEntry in pairDirEntries)
-                    {
-                        //if (pairDirEntry.RootDE == null) { throw new Exception("Oops RootDE null "); }
-                        if (pairDirEntry.ChildDE.Path.IndexOf(pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                        {
-                            yield return pairDirEntry;
-                        }
-                    }
-                }
-            }
-            yield break;
-        }
-
-
-        public static void FindString2(string find, string paramString)
-        {
-            GetDirCache();
-            Console.WriteLine("Searching for entries that contain \"{0}\"", find);
-            var totalFound = 0L;
-            var regexMode = paramString == ParamGrep || paramString == ParamGreppath;
-            var includePath = paramString == ParamGreppath || paramString == ParamFindpath;
-
-            var e = GetSearchHits(_rootEntries, find, regexMode, includePath);
-            foreach (var pairDirEntry in e)
-            {
-                ++totalFound;
-                Console.WriteLine("found {0}", pairDirEntry.FullPath);
-            }
-
-            if (totalFound > 0)
-            {
-                Console.WriteLine("Found a total of {0} entries. Matching string \"{1}\"", totalFound, find);
-            }
-            else
-            {
-                Console.WriteLine("No entries found in cached information.");
-            }
-        }
-
-        public static void FindString(string find, string paramString)
-        {
-            _find = find;
-            _regex = null;
-
-            switch (paramString)
-            {
-                case ParamGrep:
-                case ParamGreppath:
-                    var regexError = RegexHelper.GetRegexErrorMessage(find);
-                    if (!string.IsNullOrEmpty(regexError))
-                    {
-                        Console.WriteLine(regexError);
-                        return;
-                    }
-                    _regex = new Regex(find, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                    break;
-            }
-
-            CommonEntry.TraverseFunc matchAction;
-            _totalFound = 0u;
-            switch (paramString)
-            {
-                case ParamFind:
-                    matchAction = (parentEntry, dirEntry) =>
-                                      {
-                                          if (dirEntry.Path.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                                          {
-                                              ++_totalFound;
-                                              var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                                              Console.WriteLine("found {0}", fullPath);
-                                          }
-                                          return true;
-                                      };
-                    break;
-
-                case ParamFindpath:
-                    matchAction = (parentEntry1, dirEntry1) =>
-                                      {
-                                          var fullPath = CommonEntry.MakeFullPath(parentEntry1, dirEntry1);
-                                          if (fullPath.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                                          {
-                                              ++_totalFound;
-                                              Console.WriteLine("found {0}", fullPath);
-                                          }
-                                          return true;
-                                      };
-                    break;
-
-                case ParamGrep:
-                    matchAction = (parentEntry2, dirEntry2) =>
-                                      {
-                                          if (_regex.IsMatch(dirEntry2.Path))
-                                          {
-                                              ++_totalFound;
-                                              var fullPath = CommonEntry.MakeFullPath(parentEntry2, dirEntry2);
-                                              Console.WriteLine("found {0}", fullPath);
-                                          }
-                                          return true;
-                                      };
-                    break;
-
-                case ParamGreppath:
-                    matchAction = (parentEntry3, dirEntry3) =>
-                                      {
-                                          var fullPath = CommonEntry.MakeFullPath(parentEntry3, dirEntry3);
-                                          if (_regex.IsMatch(fullPath))
-                                          {
-                                              ++_totalFound;
-                                              Console.WriteLine("found {0}", fullPath);
-                                          }
-                                          return true;
-                                      };
-                    break;
-
-                default:
-                    throw new ArgumentException(string.Format("Unknown parameter \"{0}\" to FindString", paramString));
-            }
-
-            Console.WriteLine("Searching for entries that contain \"{0}\"", find);
-            GetDirCache();
-            foreach (var rootEntry in _rootEntries)
-            {
-                ((CommonEntry) rootEntry).TraverseTreePair(matchAction);
-            }
-
-            if (_totalFound > 0)
-            {
-                Console.WriteLine("Found a total of {0} entries. Matching string \"{1}\"", _totalFound, find);
-            }
-            else
-            {
-                Console.WriteLine("No entries found in cached information.");
+                root.TraverseTreePair(findFunc);
             }
         }
 

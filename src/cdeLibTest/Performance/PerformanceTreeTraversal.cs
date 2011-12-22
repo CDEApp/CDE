@@ -80,34 +80,39 @@ namespace cdeLibTest.Performance
         {
             long msecs;
 
-            Console.WriteLine("TestName,RepeatCount,EntryCount,TotalTime");
+            Console.WriteLine("TestName,RepeatCount,EntryCount,TotalTime,AverageTime,AverageTime per entry");
 
             msecs = DoPairDirEntryEnumeratorCountTest(TestData.RootSmall, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "PairDirEntryEnumerator Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
+            OutputStatLine("PairDirEntryEnumerator Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoPairDirEntryEnumeratorCountTest(TestData.RootLarge, _repeatLarge);
-            Console.WriteLine("{0},{1},{2},{3}", "PairDirEntryEnumerator Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
+            OutputStatLine("PairDirEntryEnumerator Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
 
             msecs = DoPairDirEntryEnumeratorTest(TestData.RootSmall, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "PairDirEntryEnumerator Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
+            OutputStatLine("PairDirEntryEnumerator Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoPairDirEntryEnumeratorTest(TestData.RootLarge, _repeatLarge);
-            Console.WriteLine("{0},{1},{2},{3}", "PairDirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
+            OutputStatLine("PairDirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
             msecs = DoDirEntryEnumeratorTest(TestData.RootSmall, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "DirEntryEnumerator Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
+            OutputStatLine("DirEntryEnumerator Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoDirEntryEnumeratorTest(TestData.RootLarge, _repeatLarge);
-            Console.WriteLine("{0},{1},{2},{3}", "DirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
+            OutputStatLine("DirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
             _repeatSmall *= 10;
             _repeatLarge *= 10;
             msecs = DoTraverseTreePairTest(TestData.RootSmall, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "TraverseTreePair Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
+            OutputStatLine("TraverseTreePair Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoTraverseTreePairTest(TestData.RootLarge, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "TraverseTreePair Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
+            OutputStatLine("TraverseTreePair Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
             msecs = DoTraverseTreeTest(TestData.RootSmall, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "TraverseTree Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
+            OutputStatLine("TraverseTree Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoTraverseTreeTest(TestData.RootLarge, _repeatSmall);
-            Console.WriteLine("{0},{1},{2},{3}", "TraverseTree Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
+            OutputStatLine("TraverseTree Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
+        }
+
+        private void OutputStatLine(string name, int repeat, int entryCount, long msecs)
+        {
+            Console.WriteLine("{0},{1},{2},{3},{4},{5}", name, repeat, entryCount, msecs, 1.0*msecs/repeat, (1.0*msecs/repeat)/entryCount);
         }
 
         public long DoPairDirEntryEnumeratorCountTest(RootEntry root, int repeatCount)
@@ -196,6 +201,128 @@ namespace cdeLibTest.Performance
             Console.WriteLine("Loaded!");
             Console.WriteLine("loadTime " + loadTime + " msecs");
             return reC;
+        }
+
+        [Ignore("Just a manually run performance test.")]
+        [Test]
+        public void TestFind_CSV()
+        {
+            long msecs;
+
+            Console.WriteLine("TestName,RepeatCount,EntryCount,TotalTime,AverageTime,AverageTime per entry");
+
+            var findOptions = new FindOptions
+            {
+                Pattern = "willxxlliw",
+                RegexMode = false,
+                IncludePath = false,
+                IncludeFiles = true,
+                IncludeFolders = true,
+                LimitResultCount = int.MaxValue,
+            };
+
+            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
+
+            msecs = DoGetSearchHitsRFPairList(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small List Pair", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFPairList(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large List Pair", _repeatLarge, TestData.RootLargeCount, msecs);
+
+            msecs = DoGetSearchHitsRFList(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small List", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFList(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large List", _repeatLarge, TestData.RootLargeCount, msecs);
+
+            findOptions.RegexMode = true;
+            findOptions.IncludePath = true;
+
+            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small Count Regex", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large Count Regex", _repeatLarge, TestData.RootLargeCount, msecs);
+
+            msecs = DoGetSearchHitsRFPairList(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small List Pair Regex", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFPairList(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large List Pair Regex", _repeatLarge, TestData.RootLargeCount, msecs);
+
+            msecs = DoGetSearchHitsRFList(TestData.RootSmall, _repeatSmall, findOptions);
+            OutputStatLine("TraverseTreeFind Small List Regex", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoGetSearchHitsRFList(TestData.RootLarge, _repeatLarge, findOptions);
+            OutputStatLine("TraverseTreeFind Large List Regex", _repeatLarge, TestData.RootLargeCount, msecs);
+        }
+
+        public long DoGetSearchHitsRFCount(RootEntry root, int repeatCount, FindOptions options)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var rootEntries = new List<RootEntry> { root };
+            for (var i = 0; i < repeatCount; i++)
+            {
+                var totalFound = 0L;
+                var findOptions = new FindOptions
+                {
+                    Pattern = "willxxlliw",
+                    RegexMode = false,
+                    IncludePath = false,
+                    IncludeFiles = true,
+                    IncludeFolders = true,
+                    LimitResultCount = int.MaxValue,
+                    FoundFunc = (p, d) =>
+                    {
+                        ++totalFound;
+                        return true;
+                    },
+                };
+                Find.TraverseTreeFind(rootEntries, findOptions);
+            }
+            sw.Stop();
+            return sw.ElapsedMilliseconds;
+        }
+
+        public long DoGetSearchHitsRFPairList(RootEntry root, int repeatCount, FindOptions options)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var rootEntries = new List<RootEntry> { root };
+            for (var i = 0; i < repeatCount; i++)
+            {
+                //var totalFound = 0L;
+                var list = new List<PairDirEntry>();
+                options.FoundFunc = (p, d) =>
+                    {
+                        //++totalFound;
+                        list.Add(new PairDirEntry(p, d));
+                        return true;
+                    };
+                Find.TraverseTreeFind(rootEntries, options);
+            }
+            sw.Stop();
+            return sw.ElapsedMilliseconds;
+        }
+
+        public long DoGetSearchHitsRFList(RootEntry root, int repeatCount, FindOptions options)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var rootEntries = new List<RootEntry> { root };
+            for (var i = 0; i < repeatCount; i++)
+            {
+                //var totalFound = 0L;
+                var list = new List<DirEntry>();
+                options.FoundFunc = (p, d) =>
+                {
+                    //++totalFound;
+                    list.Add(d);
+                    return true;
+                };
+                Find.TraverseTreeFind(rootEntries, options);
+            }
+            sw.Stop();
+            return sw.ElapsedMilliseconds;
         }
 
         [Ignore("Just a manually run performance test.")]

@@ -217,7 +217,7 @@ namespace cdeWin
             string trace = string.Empty;
             var sw = new Stopwatch();
             //sw.Start();
-            //var resultEnum = Find.GetSearchHits(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
+            //var resultEnum = Find.TraverseTreeFind(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
             //_searchResultList = resultEnum.ToList();
             //sw.Stop();
             //trace = "ST " + sw.ElapsedMilliseconds;
@@ -228,12 +228,17 @@ namespace cdeWin
                     RegexMode = _clientForm.RegexMode,
                     IncludePath = _clientForm.IncludePathInSearch,
                     IncludeFiles = _clientForm.IncludeFiles,
-                    IncludeFolders = _clientForm.IncludeFolders
+                    IncludeFolders = _clientForm.IncludeFolders,
+                    FoundFunc = (p, d) =>
+                    {
+                        _searchResultList.Add(new PairDirEntry(p, d));
+                        return true;
+                    },
                 };
 
             sw.Start();
-            //_searchResultList = Find.GetSearchHitsR(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch, includeFiles, includeFolders);
-            _searchResultList = Find.GetSearchHitsR(_rootEntries, findOptions);
+            _searchResultList = new List<PairDirEntry>();
+            Find.TraverseTreeFind(_rootEntries, findOptions);
             sw.Stop();
             trace += " ST " + sw.ElapsedMilliseconds;
             _clientForm.SetSearchTimeStatus(trace);
