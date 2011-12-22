@@ -12,6 +12,8 @@ namespace cdeLib
     ,ProtoInclude(2, typeof(DirEntry))]
     public abstract class CommonEntry
     {
+        public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
+
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         public List<DirEntry> Children { get; set; }
@@ -95,72 +97,33 @@ namespace cdeLib
             Size = size;
         }
 
-        public static void TraverseAllTreesPair(IEnumerable<RootEntry> rootEntries, Action<CommonEntry, DirEntry> action)
+
+        public static void TraverseAllTreesPair(IEnumerable<RootEntry> rootEntries, TraverseFunc func)
         {
             foreach (var rootEntry in rootEntries)
             {
-                rootEntry.TraverseTreePair(action);
+                rootEntry.TraverseTreePair(func);
             }
         }
 
-        // stripped down without fullpath carry along, see if it helps perf, it should some
-        public void TraverseTreePair(Action<CommonEntry, DirEntry> action)
+        public void TraverseTreePair(TraverseFunc func)
         {
+            bool funcContinue = true;
             var dirs = new Stack<CommonEntry>();
             dirs.Push(this);
 
-            while (dirs.Count > 0)
+            while (funcContinue && dirs.Count > 0)
             {
                 var commonEntry = dirs.Pop();
 
-                if (commonEntry.Children != null)// now that empty directories may not have Children initialized.
+                if (commonEntry.Children != null)// empty directories may not have Children initialized.
                 {
                     foreach (var dirEntry in commonEntry.Children)
                     {
-                        if (action != null)
+                        if (func != null)
                         {
-                            action(commonEntry, dirEntry);
-                        }
-
-                        if (dirEntry.IsDirectory)
-                        {
-                            dirs.Push(dirEntry);
-                        }
-
-                        if (Hack.BreakConsoleFlag)
-                        {
-                            Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                            break;
-                        }
-                    }
-                }
-
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\nBreak key detected exiting full TraverseTree outer.");
-                    break;
-                }
-            }
-        }
-
-        public void TraverseTreePairF(Func<CommonEntry, DirEntry, bool> action)
-        {
-            bool actionContinue = true;
-            var dirs = new Stack<CommonEntry>();
-            dirs.Push(this);
-
-            while (dirs.Count > 0)
-            {
-                var commonEntry = dirs.Pop();
-
-                if (commonEntry.Children != null)// now that empty directories may not have Children initialized.
-                {
-                    foreach (var dirEntry in commonEntry.Children)
-                    {
-                        if (action != null)
-                        {
-                            actionContinue = action(commonEntry, dirEntry);
-                            if (!actionContinue)
+                            funcContinue = func(commonEntry, dirEntry);
+                            if (!funcContinue)
                             {
                                 break;
                             }
@@ -171,11 +134,6 @@ namespace cdeLib
                             dirs.Push(dirEntry);
                         }
                     }
-                }
-
-                if (!actionContinue)
-                {
-                    break;
                 }
             }
         }

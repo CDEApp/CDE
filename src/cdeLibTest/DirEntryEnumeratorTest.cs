@@ -168,7 +168,7 @@ namespace cdeLibTest
             _fileCount = 0;
             for (var i = 0; i < 100; ++i)
             {
-                re.TraverseTreePair((p, d) => ++_fileCount);
+                re.TraverseTreePair((p, d) => { ++_fileCount; return true; });
             }
             sw.Stop();
             ts = sw.Elapsed;

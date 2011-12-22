@@ -21,7 +21,7 @@ namespace cdeLibTest
         [Test]
         public void TraverseTree_EmptyTree_ActionNotRun()
         {
-            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<CommonEntry.TraverseFunc>();
             mockAction.Stub(x => x(null, null));
             var de = new DirEntry();
 
@@ -37,7 +37,7 @@ namespace cdeLibTest
             var de2 = new DirEntry { Path = "d2" };
             de1.Children.Add(de2);
 
-            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<CommonEntry.TraverseFunc>();
             mockAction.Stub(x => x(de1, de2));
 
             de1.TraverseTreePair(mockAction);
@@ -55,7 +55,7 @@ namespace cdeLibTest
             DirEntry de4a;
             var re1 = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
-            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<CommonEntry.TraverseFunc>();
             using (mockAction.GetMockRepository().Ordered())
             {
                 mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1);
@@ -106,7 +106,7 @@ namespace cdeLibTest
             // same structure as re1 with a different root path
             re2.Path = "2";
 
-            var mockAction = MockRepository.GenerateMock<Action<CommonEntry, DirEntry>>();
+            var mockAction = MockRepository.GenerateMock<CommonEntry.TraverseFunc>();
             using (mockAction.GetMockRepository().Ordered())
             {
                 mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1);

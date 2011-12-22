@@ -325,12 +325,7 @@ namespace cdeLib
             return Serializer.Deserialize<RootEntry>(input);
         }
 
-        public void TraverseTreePairF(Func<CommonEntry, DirEntry, bool> apply)
-        {
-            base.TraverseTreePairF(apply);
-        }
-
-        public void TraverseTreePair(Action<CommonEntry, DirEntry> apply)
+        public void TraverseTreePair(TraverseFunc apply)
         {
             base.TraverseTreePair(apply);
         }
@@ -377,6 +372,7 @@ namespace cdeLib
                         d.FullPath = p.MakeFullPath(d);
                     }
                     d.ParentCommonEntry = p;
+                    return true;
                 });
         }
 
@@ -392,6 +388,7 @@ namespace cdeLib
                         d.IsDefaultSort = true;
                     }
                 }
+                return true;
             });
         }
 

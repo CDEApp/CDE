@@ -46,7 +46,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePairF((p, d) =>
+                        root.TraverseTreePair((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -68,7 +68,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePairF((p, d) =>
+                        root.TraverseTreePair((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -93,7 +93,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePairF((p, d) =>
+                        root.TraverseTreePair((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -116,7 +116,7 @@ namespace cdeLib
                 {
                     foreach (var root in rootEntries)
                     {
-                        root.TraverseTreePairF((p, d) =>
+                        root.TraverseTreePair((p, d) =>
                             {
                                 if ((d.IsDirectory && options.IncludeFolders)
                                     || (!d.IsDirectory && options.IncludeFiles))
@@ -242,7 +242,7 @@ namespace cdeLib
                     break;
             }
 
-            Action<CommonEntry, DirEntry> matchAction;
+            CommonEntry.TraverseFunc matchAction;
             _totalFound = 0u;
             switch (paramString)
             {
@@ -299,7 +299,7 @@ namespace cdeLib
             }
         }
 
-        private static void MatchSubstringName(CommonEntry parentEntry, DirEntry dirEntry)
+        private static bool MatchSubstringName(CommonEntry parentEntry, DirEntry dirEntry)
         {
             if (dirEntry.Path.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
             {
@@ -307,9 +307,10 @@ namespace cdeLib
                 var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                 Console.WriteLine("found {0}", fullPath);
             }
+            return true;
         }
 
-        private static void MatchSubstringFullPath(CommonEntry parentEntry, DirEntry dirEntry)
+        private static bool MatchSubstringFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
             var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
             if (fullPath.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
@@ -317,9 +318,10 @@ namespace cdeLib
                 ++_totalFound;
                 Console.WriteLine("found {0}", fullPath);
             }
+            return true;
         }
 
-        private static void MatchRegexName(CommonEntry parentEntry, DirEntry dirEntry)
+        private static bool MatchRegexName(CommonEntry parentEntry, DirEntry dirEntry)
         {
             if (_regex.IsMatch(dirEntry.Path))
             {
@@ -327,9 +329,10 @@ namespace cdeLib
                 var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                 Console.WriteLine("found {0}", fullPath);
             }
+            return true;
         }
 
-        private static void MatchRegexFullPath(CommonEntry parentEntry, DirEntry dirEntry)
+        private static bool MatchRegexFullPath(CommonEntry parentEntry, DirEntry dirEntry)
         {
             var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
             if (_regex.IsMatch(fullPath))
@@ -337,6 +340,7 @@ namespace cdeLib
                 ++_totalFound;
                 Console.WriteLine("found {0}", fullPath);
             }
+            return true;
         }
     }
 }

@@ -156,11 +156,11 @@ namespace cdeLib
             return _duplicateFileSize;
         }
 
-        private void FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
+        private bool FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
         {
             if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
             {
-                return;
+                return true;
             }
 
             var flatDirEntry = new PairDirEntry(ce, de);
@@ -172,6 +172,7 @@ namespace cdeLib
             {
                 _duplicateFileSize[de.Size] = new List<PairDirEntry> { flatDirEntry };
             }
+            return true;
         }
 
         private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
@@ -287,14 +288,14 @@ namespace cdeLib
             }
         }
 
-        private void CalculateFullMD5Hash(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool CalculateFullMD5Hash(CommonEntry parentEntry, DirEntry dirEntry)
         {
             //ignore if we already have a hash.
             if (dirEntry.IsHashDone)
             {
                 if (!dirEntry.IsPartialHash)
                 {
-                    return;
+                    return true;
                 }
 
                 if (_duplicateForFullHash.ContainsKey(dirEntry))
@@ -303,14 +304,15 @@ namespace cdeLib
                     CalculateMD5Hash(fullPath, dirEntry, false);
                 }
             }
+            return true;
         }
 
-        private void BuildDuplicateListIncludePartialHash(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool BuildDuplicateListIncludePartialHash(CommonEntry parentEntry, DirEntry dirEntry)
         {
             if (dirEntry.IsDirectory || !dirEntry.IsHashDone || dirEntry.Size == 0)
             {
                 //TODO: how to deal with uncalculated files?
-                return;
+                return true;
             }
 
             var info = new PairDirEntry(parentEntry, dirEntry);
@@ -322,14 +324,16 @@ namespace cdeLib
             {
                 _duplicateFile[dirEntry] = new List<PairDirEntry> { info };
             }
+            return true;
         }
 
-        private void BuildDuplicateList(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool BuildDuplicateList(CommonEntry parentEntry, DirEntry dirEntry)
         {
             if (!dirEntry.IsPartialHash)
             {
                 BuildDuplicateListIncludePartialHash(parentEntry, dirEntry);
             }
+            return true;
         }
 
         public void FindDuplicates(IEnumerable<RootEntry> rootEntries)

@@ -171,6 +171,10 @@ namespace cdeWin
 
         public void CatalogRetrieveVirtualItem()
         {
+            if (_rootEntries == null || _rootEntries.Count == 0)
+            {
+                return; // in case we get called a bit early.
+            }
             var catalogHelper = _clientForm.CatalogListViewHelper;
             var rootEntry = _rootEntries[catalogHelper.ItemIndex];
             var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
@@ -239,13 +243,12 @@ namespace cdeWin
             _clientForm.SearchButtonEnable = true;
         }
 
-        //public void SetSearchResultListView()
-        //{
-        //    _clientForm.SetSearchResultStatus(1); // BROKEN TODO FIX
-        //}
-
         public void SearchResultRetrieveVirtualItem()
         {
+            if (_searchResultList == null || _searchResultList.Count == 0)
+            {
+                return; // in case we get called a bit early.
+            }
             var searchHelper = _clientForm.SearchResultListViewHelper;
             var pairDirEntry = _searchResultList[searchHelper.ItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
@@ -276,6 +279,10 @@ namespace cdeWin
 
         public void DirectoryRetrieveVirtualItem()
         {
+            if (_directoryList == null || _directoryList.Count == 0)
+            {
+                return; // in case we get called a bit early.
+            }
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             var dirEntry = _directoryList[directoryHelper.ItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);

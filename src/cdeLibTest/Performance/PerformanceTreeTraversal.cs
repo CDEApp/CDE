@@ -157,7 +157,11 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var testlist = new List<PairDirEntry>();
-            ((CommonEntry) root).TraverseTreePair((p, d) => testlist.Add(new PairDirEntry(p, d)));
+            ((CommonEntry)root).TraverseTreePair((p, d) =>
+                {
+                    testlist.Add(new PairDirEntry(p, d));
+                    return true;
+                });
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
@@ -167,7 +171,11 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var testlist = new List<DirEntry>();
-            ((CommonEntry) root).TraverseTreePair((p, d) => testlist.Add(d));
+            ((CommonEntry) root).TraverseTreePair((p, d) =>
+                {
+                    testlist.Add(d);
+                    return true;
+                });
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
