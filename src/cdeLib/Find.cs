@@ -97,7 +97,7 @@ namespace cdeLib
                         {
                             if (regex.IsMatch(p.MakeFullPath(d)))
                             {
-                                if (foundFunc(p, d))
+                                if (!foundFunc(p, d))
                                 {
                                     return false;
                                 }
@@ -119,7 +119,7 @@ namespace cdeLib
                         {
                             if (regex.IsMatch(d.Path))
                             {
-                                if (foundFunc(p, d))
+                                if (!foundFunc(p, d))
                                 {
                                     return false;
                                 }
@@ -145,7 +145,7 @@ namespace cdeLib
                             if (p.MakeFullPath(d).IndexOf(options.Pattern,
                                 StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
-                                if (foundFunc(p, d))
+                                if (!foundFunc(p, d))
                                 {
                                     return false;
                                 }
@@ -168,7 +168,7 @@ namespace cdeLib
                             if (d.Path.IndexOf(options.Pattern,
                                 StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
-                                if (foundFunc(p, d))
+                                if (!foundFunc(p, d))
                                 {
                                     return false;
                                 }
