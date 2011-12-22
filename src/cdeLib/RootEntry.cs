@@ -325,11 +325,6 @@ namespace cdeLib
             return Serializer.Deserialize<RootEntry>(input);
         }
 
-        public void TraverseTreePair(TraverseFunc apply)
-        {
-            base.TraverseTreePair(apply);
-        }
-
         public static List<RootEntry> LoadCurrentDirCache()
         {
             var roots = new List<RootEntry>();
