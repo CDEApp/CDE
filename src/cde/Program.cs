@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Autofac;
+using Mono.Terminal;
 using cdeLib;
 using cdeLib.Infrastructure;
 
@@ -92,6 +93,43 @@ namespace cde
                 EntryStore.LoadCurrentDirCache();
                 Console.ReadLine();
             }
+            else if (args.Length == 1 && param0 == "--repl")
+            {
+                var le = new LineEditor(null);
+                string s;
+                var running = true;
+
+                while (running && (s = le.Edit("shell> ", "")) != null)
+                {
+                    Console.WriteLine("----> [{0}]", s);
+                    switch (s)
+                    {
+                    case "quit":
+                        running = false;
+                        break;
+                    case "history":
+                    case "!":
+                        le.CmdHistoryDump();
+                        break;
+                    case "help":
+                    case "?":
+                        Console.WriteLine("Builtin Commands:");
+                        Console.WriteLine("  quit - quit, ");
+                        Console.WriteLine("  help - show help, ? - show help");
+                        Console.WriteLine("  history - show history, ! - show history");
+                        Console.WriteLine("Keystrokes:");
+                        Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
+                        Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
+                        Console.WriteLine("  C-l - clear console to top");
+                        Console.WriteLine("  C-r - reverse seach history");
+                        Console.WriteLine("  A-b - move backward word");
+                        Console.WriteLine("  A-f - move forward word");
+                        Console.WriteLine("  A-d - delete word forward");
+                        Console.WriteLine("  A-Backspace - delete word backward");
+                        break;
+                    }
+                }
+            }
             else
             {
                 ShowHelp();
@@ -149,6 +187,8 @@ namespace cde
             Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
             Console.WriteLine("Usage: cde --dupes ");
             Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
+            Console.WriteLine("Usage: cde --repl");
+            Console.WriteLine("       Enter readline mode.");
             Console.WriteLine("Usage: cde --replGreppath <regex>");
             Console.WriteLine("Usage: cde --replGrep <regex>");
             Console.WriteLine("Usage: cde --repFind <regex>");
