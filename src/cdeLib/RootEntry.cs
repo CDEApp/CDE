@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
@@ -385,6 +386,28 @@ namespace cdeLib
                 child.ParentCommonEntry = parent;
             }
         }
+
+        public int DescriptionCompareTo(RootEntry re)
+        {
+            if (re == null)
+            {
+                return -1; // this before re
+            }
+            if (Description == null && re.Description != null)
+            {
+                return -1; // this before re
+            }
+            if (Description != null && re.Description == null)
+            {
+                return 1; // this after re
+            }
+            return _myCompareInfo.Compare(Description, re.Description, MyCompareOptions);
+        }
+
+        // TODO these need to be centralised.
+        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169

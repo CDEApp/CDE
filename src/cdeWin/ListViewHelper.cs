@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using cdeLib;
 
 namespace cdeWin
 {
@@ -14,7 +16,7 @@ namespace cdeWin
     /// Only ListView events required are enabled.
     /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
-    public class ListViewHelper
+    public class ListViewHelper<T> where T : class
     {
         private readonly ListView _listView;
         // very simple caching of LVI's, just remembers the previous index - its a big win for how simple.
@@ -29,6 +31,9 @@ namespace cdeWin
         public int ColumnClickIndex { get; set; }
         public IEnumerable<int> SelectedIndices { get; set; }
         public int SelectedIndicesCount { get; set; }
+        public SortOrder ColumnSortOrder { get; set; }
+        public int SortColumn { get; set; }
+        public Comparison<T> ColumnSortCompare { get; set; }
 
         /// <summary>
         /// The item under the mouse when context menu launched, ie right mouse button up.
@@ -41,6 +46,14 @@ namespace cdeWin
             _listView.View = View.Details;
             _listView.FullRowSelect = true;
             _listView.Activation = ItemActivation.Standard;
+            _listView.VirtualMode = true;
+            InitSort();
+        }
+
+        public void InitSort()
+        {
+            SortColumn = 0;
+            ColumnSortOrder = SortOrder.Ascending;
         }
 
         /// <summary>
@@ -253,14 +266,43 @@ namespace cdeWin
             }
         }
 
-        public void SetListSize(int value)
+        public int SetList(List<T> list)
         {
-            _listSize = value;
+            if (_columnClick != null && ColumnSortCompare == null)
+            {
+                throw new Exception("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
+            }
+            _listSize = list == null ? 0 : list.Count();
             _listView.VirtualListSize = _listSize;
-            _listView.VirtualMode = true;
-            ForceDraw();
+            SortList(list);
+            return _listSize;
         }
         private int _listSize;
 
+        public void ListViewColumnClick(List<T> list)
+        {
+            var newSortColumn = ColumnClickIndex;
+            if (SortColumn == newSortColumn)
+            {
+                ColumnSortOrder = (ColumnSortOrder == SortOrder.Ascending) 
+                            ? SortOrder.Descending : SortOrder.Ascending;
+            }
+            else
+            {
+                SortColumn = newSortColumn;
+                ColumnSortOrder = SortOrder.Ascending;
+            }
+            SortList(list);
+        }
+
+        public void SortList(List<T> list)
+        {
+            if (list == null)
+            {
+                return;
+            }
+            list.Sort(ColumnSortCompare);
+            ForceDraw();
+        }
     }
 }

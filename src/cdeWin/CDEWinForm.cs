@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using cdeLib;
 
 namespace cdeWin
 {
@@ -18,27 +19,32 @@ namespace cdeWin
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;
         event EventAction OnSearchRoots;
-        event EventAction OnSearchResultRetrieveVirtualItem;
-        void OnSearchResultRetrieveVirtualItemFire();
-        event EventAction OnDirectoryRetrieveVirtualItem;
-        void OnDirectoryRetrieveVirtualItemFire();
-        event EventAction OnCatalogRetrieveVirtualItem;
-        void OnCatalogRetrieveVirtualItemFire();
         event EventAction OnMyFormClosing;
-        event EventAction OnCatalogListViewItemActivate;
-        void OnCatalogListViewItemActivateFire();
-        event EventAction OnDirectoryListViewItemActivate;
-        void OnDirectoryListViewItemActivateFire();
-        event EventAction OnSearchResultListViewItemActivate;
-        void OnSearchResultListViewItemActivateFire();
-        event EventAction OnDirectoryListViewItemSelectionChanged;
-        void OnDirectoryListViewItemSelectionChangedFire();
-        event EventAction OnSearchResultListViewColumnClick;
-        void OnSearchResultListViewColumnClickFire();
-        event EventAction OnDirectoryListViewColumnClick;
-        void OnDirectoryListViewColumnClickFire();
         event EventAction OnExitMenuItem;
         event EventAction OnSearchResultContextMenuExploreClick;
+
+        event EventAction OnDirectoryRetrieveVirtualItem;
+        void OnDirectoryRetrieveVirtualItemFire();
+        event EventAction OnDirectoryListViewItemActivate;
+        void OnDirectoryListViewItemActivateFire();
+        event EventAction OnDirectoryListViewColumnClick;
+        void OnDirectoryListViewColumnClickFire();
+        event EventAction OnDirectoryListViewItemSelectionChanged;
+        void OnDirectoryListViewItemSelectionChangedFire();
+
+        event EventAction OnSearchResultRetrieveVirtualItem;
+        void OnSearchResultRetrieveVirtualItemFire();
+        event EventAction OnSearchResultListViewItemActivate;
+        void OnSearchResultListViewItemActivateFire();
+        event EventAction OnSearchResultListViewColumnClick;
+        void OnSearchResultListViewColumnClickFire();
+
+        event EventAction OnCatalogRetrieveVirtualItem;
+        void OnCatalogRetrieveVirtualItemFire();
+        event EventAction OnCatalogListViewItemActivate;
+        void OnCatalogListViewItemActivateFire();
+        event EventAction OnCatalogListViewColumnClick;
+        void OnCatalogListViewColumnClickFire();
 
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
@@ -64,9 +70,10 @@ namespace cdeWin
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
 
-        ListViewHelper SearchResultListViewHelper { get; set; }
-        ListViewHelper DirectoryListViewHelper { get; set; }
-        ListViewHelper CatalogListViewHelper { get; set; }
+        ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
+        ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+
         //void DirectoryListViewDeselectItems();
         //void SelectDirectoryListViewItem(int index);
     }
@@ -76,34 +83,39 @@ namespace cdeWin
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
         public event EventAction OnSearchRoots;
-        public event EventAction OnSearchResultRetrieveVirtualItem;
-        public virtual void OnSearchResultRetrieveVirtualItemFire() { OnSearchResultRetrieveVirtualItem(); }
-        public event EventAction OnDirectoryRetrieveVirtualItem;
-        public virtual void OnDirectoryRetrieveVirtualItemFire() { OnDirectoryRetrieveVirtualItem(); }
-        public event EventAction OnCatalogRetrieveVirtualItem;
-        public virtual void OnCatalogRetrieveVirtualItemFire() { OnCatalogRetrieveVirtualItem(); }
         public event EventAction OnMyFormClosing;
-        public event EventAction OnCatalogListViewItemActivate;
-        public virtual void OnCatalogListViewItemActivateFire() { OnCatalogListViewItemActivate(); }
-        public event EventAction OnDirectoryListViewItemActivate;
-        public virtual void OnDirectoryListViewItemActivateFire() { OnDirectoryListViewItemActivate(); }
-        public event EventAction OnSearchResultListViewItemActivate;
-        public virtual void OnSearchResultListViewItemActivateFire() { OnSearchResultListViewItemActivate(); }
-        public event EventAction OnDirectoryListViewItemSelectionChanged;
-        public virtual void OnDirectoryListViewItemSelectionChangedFire() { OnDirectoryListViewItemSelectionChanged(); }
-        public event EventAction OnSearchResultListViewColumnClick;
-        public virtual void OnSearchResultListViewColumnClickFire() { OnSearchResultListViewColumnClick(); }
-        public event EventAction OnDirectoryListViewColumnClick;
-        public virtual void OnDirectoryListViewColumnClickFire() { OnDirectoryListViewColumnClick(); }
+        public event EventAction OnCatalogRetrieveVirtualItem;
         public event EventAction OnExitMenuItem;
         public event EventAction OnSearchResultContextMenuExploreClick;
+
+        public event EventAction OnDirectoryRetrieveVirtualItem;
+        public virtual void OnDirectoryRetrieveVirtualItemFire() { OnDirectoryRetrieveVirtualItem(); }
+        public event EventAction OnDirectoryListViewItemActivate;
+        public virtual void OnDirectoryListViewItemActivateFire() { OnDirectoryListViewItemActivate(); }
+        public event EventAction OnDirectoryListViewColumnClick;
+        public virtual void OnDirectoryListViewColumnClickFire() { OnDirectoryListViewColumnClick(); }
+        public event EventAction OnDirectoryListViewItemSelectionChanged;
+        public virtual void OnDirectoryListViewItemSelectionChangedFire() { OnDirectoryListViewItemSelectionChanged(); }
+
+        public event EventAction OnSearchResultRetrieveVirtualItem;
+        public virtual void OnSearchResultRetrieveVirtualItemFire() { OnSearchResultRetrieveVirtualItem(); }
+        public event EventAction OnSearchResultListViewItemActivate;
+        public virtual void OnSearchResultListViewItemActivateFire() { OnSearchResultListViewItemActivate(); }
+        public event EventAction OnSearchResultListViewColumnClick;
+        public virtual void OnSearchResultListViewColumnClickFire() { OnSearchResultListViewColumnClick(); }
+
+        public virtual void OnCatalogRetrieveVirtualItemFire() { OnCatalogRetrieveVirtualItem(); }
+        public event EventAction OnCatalogListViewItemActivate;
+        public virtual void OnCatalogListViewItemActivateFire() { OnCatalogListViewItemActivate(); }
+        public event EventAction OnCatalogListViewColumnClick;
+        public void OnCatalogListViewColumnClickFire() { OnCatalogListViewColumnClick(); }
 
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
-        public ListViewHelper SearchResultListViewHelper { get; set; }
-        public ListViewHelper DirectoryListViewHelper { get; set; }
-        public ListViewHelper CatalogListViewHelper { get; set; }
+        public ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
+        public ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        public ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         public CDEWinForm()
         {
@@ -129,7 +141,7 @@ namespace cdeWin
             findComboBox.SelectedIndex = 0; // default Files and Folders
             findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
-            SearchResultListViewHelper = new ListViewHelper(searchResultListView)
+            SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
                 {
                     RetrieveVirtualItem = OnSearchResultRetrieveVirtualItemFire,
                     ItemActivate = OnSearchResultListViewItemActivateFire,
@@ -137,7 +149,7 @@ namespace cdeWin
                     ContextMenu = CreateSearchResultContextMenu(),
                 };
 
-            DirectoryListViewHelper = new ListViewHelper(directoryListView)
+            DirectoryListViewHelper = new ListViewHelper<DirEntry>(directoryListView)
                 {
                     RetrieveVirtualItem = OnDirectoryRetrieveVirtualItemFire,
                     ItemActivate = OnDirectoryListViewItemActivateFire,
@@ -158,11 +170,12 @@ namespace cdeWin
             patternTextBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternTextBox.LostFocus += (s, e) => AcceptButton = null;
 
-            CatalogListViewHelper = new ListViewHelper(catalogResultListView)
+            CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
                 {
                     MultiSelect = false,
                     RetrieveVirtualItem = OnCatalogRetrieveVirtualItemFire,
                     ItemActivate = OnCatalogListViewItemActivateFire,
+                    ColumnClick = OnCatalogListViewColumnClickFire,
                 };
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?

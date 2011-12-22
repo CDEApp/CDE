@@ -37,10 +37,6 @@ namespace cdeWin
         private List<DirEntry> _directoryList;
         private CommonEntry _directoryListCommonEntry;
 
-        private SortOrder _searchResultSortOrder;
-        private int _searchResultSortColumn;
-        private SortOrder _directorySortOrder;
-        private int _directorySortColumn;
 
         public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
@@ -53,7 +49,22 @@ namespace cdeWin
             _searchVals = new string[cfg.SearchResultListView.Columns.Count];
             _catalogVals = new string[cfg.CatalogListView.Columns.Count];
 
-            SetCatalogListView(rootEntries);
+            RegisterListViewSorters();
+            SetCatalogListView();
+        }
+
+        private void RegisterListViewSorters()
+        {
+            _clientForm.SearchResultListViewHelper.ColumnSortCompare = SearchResultCompare;
+            _clientForm.DirectoryListViewHelper.ColumnSortCompare = DirectoryCompare;
+            _clientForm.CatalogListViewHelper.ColumnSortCompare = RootCompare;
+        }
+
+        private void SetCatalogListView()
+        {
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            var count = catalogHelper.SetList(_rootEntries);
+            _clientForm.SetCatalogsLoadedStatus(count);
         }
 
         public void Display()
@@ -158,15 +169,6 @@ namespace cdeWin
             return itemColor;
         }
 
-        private void SetCatalogListView(IEnumerable<RootEntry> rootEntries)
-        {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = rootEntries.Count();
-            catalogHelper.SetListSize(count);
-            _clientForm.SetCatalogsLoadedStatus(count);
-            _clientForm.CatalogListViewHelper.ForceDraw();
-        }
-
         public void CatalogRetrieveVirtualItem()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
@@ -196,13 +198,9 @@ namespace cdeWin
         public void SearchRoots()
         {
             _clientForm.SearchButtonEnable = false;
-            var pattern = _clientForm.Pattern;
-            var includeFiles = _clientForm.IncludeFiles;
-            var includeFolders = _clientForm.IncludeFolders;
-            var regexMode = _clientForm.RegexMode;
-            if (regexMode)
+            if (_clientForm.RegexMode)
             {
-                var regexError = RegexHelper.GetRegexErrorMessage(pattern);
+                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
                 if (!string.IsNullOrEmpty(regexError))
                 {
                     MessageBox.Show(regexError);
@@ -210,7 +208,7 @@ namespace cdeWin
                 }
             }
             var searchHelper = _clientForm.SearchResultListViewHelper;
-            _clientForm.AddSearchTextBoxAutoComplete(pattern);
+            _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
             string trace = string.Empty;
             var sw = new Stopwatch();
@@ -236,12 +234,8 @@ namespace cdeWin
             trace += " ST " + sw.ElapsedMilliseconds;
             _clientForm.SetSearchTimeStatus(trace);
 
-            _searchResultSortColumn = 0;
-            _searchResultSortOrder = SortOrder.Ascending;
-
-            var listSize = _searchResultList.Count;
-            searchHelper.SetListSize(listSize);
-            _clientForm.SetSearchResultStatus(listSize);
+            var count = searchHelper.SetList(_searchResultList);
+            _clientForm.SetSearchResultStatus(count);
             _clientForm.SearchButtonEnable = true;
         }
 
@@ -266,7 +260,6 @@ namespace cdeWin
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
             var commonEntry = (CommonEntry)selectedNode.Tag;
-            var listSize = 0;
             _directoryList = null;
             _directoryListCommonEntry = null;
             if (commonEntry != null)
@@ -275,12 +268,10 @@ namespace cdeWin
                 if (commonEntry.Children != null)
                 {
                     _directoryList = commonEntry.Children.ToList(); // copy of list
-                    _directoryList.Sort(DirectoryCompare);
-                    listSize = commonEntry.Children.Count;
+                    directoryHelper.SetList(_directoryList);
                 }
                 _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
             }
-            directoryHelper.SetListSize(listSize);
         }
 
         public void DirectoryRetrieveVirtualItem()
@@ -319,8 +310,7 @@ namespace cdeWin
         {
             var newRootNode = BuildRootNode(newRoot);
             _clientForm.DirectoryTreeViewNodes = newRootNode;
-            _directorySortColumn = 0; // TODO changing dirs needs to reset ? sort maybe ?
-            _directorySortOrder = SortOrder.Ascending;
+            _clientForm.DirectoryListViewHelper.InitSort();
             return newRootNode;
         }
 
@@ -423,32 +413,18 @@ namespace cdeWin
 
         public void SearchResultListViewColumnClick()
         {
-            if (_searchResultList == null)
-            {
-                return;
-            }
             var searchHelper = _clientForm.SearchResultListViewHelper;
-            var column = searchHelper.ColumnClickIndex;
-            if (_searchResultSortColumn == column)
-            {
-                _searchResultSortOrder = _searchResultSortOrder == SortOrder.Ascending 
-                            ? SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                _searchResultSortColumn = column;
-                _searchResultSortOrder = SortOrder.Ascending;
-            }
-            _searchResultList.Sort(SearchResultCompare);
-            searchHelper.ForceDraw();
+            searchHelper.ListViewColumnClick(_searchResultList);
         }
 
-        private int SearchResultCompare (PairDirEntry pde1, PairDirEntry pde2)
+        private int SearchResultCompare(PairDirEntry pde1, PairDirEntry pde2)
         {
             int compareResult;
             var de1 = pde1.ChildDE;
             var de2 = pde2.ChildDE;
-            switch (_searchResultSortColumn)
+            var searchResultHelper = _clientForm.SearchResultListViewHelper;
+            var sortColumn = searchResultHelper.SortColumn;
+            switch (sortColumn)
             {
                 case 0: // SearchResult ListView Name column
                     compareResult = de1.PathCompareWithDirTo(de2);
@@ -472,9 +448,9 @@ namespace cdeWin
                     break;
 
                 default:
-                    throw new Exception(string.Format("Problem column {0} not handled for sort.", _searchResultSortColumn));
+                    throw new Exception(string.Format("Problem column {0} not handled for sort.", sortColumn));
             }
-            if (_searchResultSortOrder == SortOrder.Descending)
+            if (searchResultHelper.ColumnSortOrder == SortOrder.Descending)
             {
                 compareResult *= -1;
             }
@@ -483,30 +459,16 @@ namespace cdeWin
 
         public void DirectoryListViewColumnClick()
         {
-            if (_directoryList == null || _directoryList.Count == 0)
-            {
-                return;
-            }
             var directoryHelper = _clientForm.DirectoryListViewHelper;
-            var column = directoryHelper.ColumnClickIndex;
-            if (_directorySortColumn == column)
-            {
-                _directorySortOrder = _directorySortOrder == SortOrder.Ascending 
-                            ? SortOrder.Descending : SortOrder.Ascending;
-            }
-            else
-            {
-                _directorySortColumn = column;
-                _directorySortOrder = SortOrder.Ascending;
-            }
-            _directoryList.Sort(DirectoryCompare);
-            directoryHelper.ForceDraw();
+            directoryHelper.ListViewColumnClick(_directoryList);
         }
 
         private int DirectoryCompare(DirEntry de1, DirEntry de2)
         {
             int compareResult;
-            switch (_directorySortColumn)
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            var column = directoryHelper.SortColumn;
+            switch (column)
             {
                 case 0: // SearchResult ListView Name column
                     compareResult = de1.PathCompareWithDirTo(de2);
@@ -521,9 +483,9 @@ namespace cdeWin
                     break;
 
                 default:
-                    throw new Exception(string.Format("Problem column {0} not handled for sort.", _directorySortColumn));
+                    throw new Exception(string.Format("Problem column {0} not handled for sort.", column));
             }
-            if (_directorySortOrder == SortOrder.Descending)
+            if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
             {
                 compareResult *= -1;
             }
@@ -559,6 +521,73 @@ namespace cdeWin
                 lvItem.SubItems.Add(vals[i]);
             }
             return lvItem;
+        }
+
+        public void CatalogListViewColumnClick()
+        {
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            catalogHelper.ListViewColumnClick(_rootEntries);
+        }
+
+        private int RootCompare(RootEntry re1, RootEntry re2)
+        {
+            int compareResult;
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            var column = catalogHelper.SortColumn;
+            switch (column)
+            {
+                case 0:
+                    compareResult = re1.Path.CompareTo(re2.Path);
+                    break;
+
+                case 1:
+                    compareResult = re1.VolumeName.CompareTo(re2.VolumeName);
+                    break;
+
+                case 2:
+                    compareResult = re1.DirCount.CompareTo(re2.DirCount);
+                    break;
+
+                case 3:
+                    compareResult = re1.FileCount.CompareTo(re2.FileCount);
+                    break;
+
+                case 4:
+                    compareResult = (re1.DirCount+ re1.FileCount).CompareTo(re2.DirCount + re2.FileCount);
+                    break;
+
+                case 5:
+                    compareResult = re1.DriveLetterHint.CompareTo(re2.DriveLetterHint);
+                    break;
+
+                case 6:
+                    compareResult = re1.AvailSpace.CompareTo(re2.AvailSpace);
+                    break;
+
+                case 7:
+                    compareResult = re1.UsedSpace.CompareTo(re2.UsedSpace);
+                    break;
+
+                case 8:
+                    compareResult = re1.ScanStartUTC.CompareTo(re2.ScanStartUTC);
+                    break;
+
+                case 9:
+                    compareResult = re1.DefaultFileName.CompareTo(re2.DefaultFileName);
+                    break;
+
+                case 10:
+                    compareResult = re1.DescriptionCompareTo(re2);
+                    break;
+
+                default:
+                    throw new Exception(string.Format("Problem column {0} not handled for sort.", column));
+            }
+            if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
+            {
+                compareResult *= -1;
+            }
+            return compareResult;
         }
     }
 
