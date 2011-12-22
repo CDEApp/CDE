@@ -247,19 +247,55 @@ namespace cdeLib
             switch (paramString)
             {
                 case ParamFind:
-                    matchAction = MatchSubstringName;
+                    matchAction = (parentEntry, dirEntry) =>
+                                      {
+                                          if (dirEntry.Path.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                                          {
+                                              ++_totalFound;
+                                              var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
+                                              Console.WriteLine("found {0}", fullPath);
+                                          }
+                                          return true;
+                                      };
                     break;
 
                 case ParamFindpath:
-                    matchAction = MatchSubstringFullPath;
+                    matchAction = (parentEntry1, dirEntry1) =>
+                                      {
+                                          var fullPath = CommonEntry.MakeFullPath(parentEntry1, dirEntry1);
+                                          if (fullPath.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
+                                          {
+                                              ++_totalFound;
+                                              Console.WriteLine("found {0}", fullPath);
+                                          }
+                                          return true;
+                                      };
                     break;
 
                 case ParamGrep:
-                    matchAction = MatchRegexName;
+                    matchAction = (parentEntry2, dirEntry2) =>
+                                      {
+                                          if (_regex.IsMatch(dirEntry2.Path))
+                                          {
+                                              ++_totalFound;
+                                              var fullPath = CommonEntry.MakeFullPath(parentEntry2, dirEntry2);
+                                              Console.WriteLine("found {0}", fullPath);
+                                          }
+                                          return true;
+                                      };
                     break;
 
                 case ParamGreppath:
-                    matchAction = MatchRegexFullPath;
+                    matchAction = (parentEntry3, dirEntry3) =>
+                                      {
+                                          var fullPath = CommonEntry.MakeFullPath(parentEntry3, dirEntry3);
+                                          if (_regex.IsMatch(fullPath))
+                                          {
+                                              ++_totalFound;
+                                              Console.WriteLine("found {0}", fullPath);
+                                          }
+                                          return true;
+                                      };
                     break;
 
                 default:
@@ -297,50 +333,6 @@ namespace cdeLib
                     Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirCount + rootEntry.FileCount);
                 }
             }
-        }
-
-        private static bool MatchSubstringName(CommonEntry parentEntry, DirEntry dirEntry)
-        {
-            if (dirEntry.Path.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
-            {
-                ++_totalFound;
-                var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                Console.WriteLine("found {0}", fullPath);
-            }
-            return true;
-        }
-
-        private static bool MatchSubstringFullPath(CommonEntry parentEntry, DirEntry dirEntry)
-        {
-            var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-            if (fullPath.IndexOf(_find, StringComparison.InvariantCultureIgnoreCase) >= 0)
-            {
-                ++_totalFound;
-                Console.WriteLine("found {0}", fullPath);
-            }
-            return true;
-        }
-
-        private static bool MatchRegexName(CommonEntry parentEntry, DirEntry dirEntry)
-        {
-            if (_regex.IsMatch(dirEntry.Path))
-            {
-                ++_totalFound;
-                var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                Console.WriteLine("found {0}", fullPath);
-            }
-            return true;
-        }
-
-        private static bool MatchRegexFullPath(CommonEntry parentEntry, DirEntry dirEntry)
-        {
-            var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-            if (_regex.IsMatch(fullPath))
-            {
-                ++_totalFound;
-                Console.WriteLine("found {0}", fullPath);
-            }
-            return true;
         }
     }
 }
