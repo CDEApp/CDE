@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
-using cdeLib.Infrastructure;
 
 namespace cdeLib
 {
@@ -24,7 +23,7 @@ namespace cdeLib
         /// <summary>
         /// Called for every found entry.
         /// </summary>
-        public CommonEntry.TraverseFunc FoundFunc { get; set; }
+        public TraverseFunc FoundFunc { get; set; }
     }
 
     public static class Find
@@ -80,7 +79,7 @@ namespace cdeLib
         {
             int[] limitCount = { options.LimitResultCount };
             var foundFunc = options.FoundFunc;
-            CommonEntry.TraverseFunc findFunc;
+            TraverseFunc findFunc;
             if (foundFunc == null)
             {
                 return;

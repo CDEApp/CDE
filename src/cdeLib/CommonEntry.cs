@@ -7,13 +7,13 @@ using Filesystem = Alphaleonis.Win32.Filesystem;
 
 namespace cdeLib
 {
+    public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
+
     [ProtoContract
     ,ProtoInclude(1, typeof(RootEntry))
     ,ProtoInclude(2, typeof(DirEntry))]
     public abstract class CommonEntry
     {
-        public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
-
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         public List<DirEntry> Children { get; set; }
