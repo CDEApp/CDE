@@ -83,6 +83,7 @@
     <Compile Include="CDEWinForm.Designer.cs">
       <DependentUpon>CDEWinForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="ContextMenuHelper.cs" />
     <Compile Include="EnumerableStringExtensions.cs" />
     <Compile Include="IPresenter.cs" />
     <Compile Include="ListViewExtensions.cs" />
@@ -92,6 +93,7 @@
     <Compile Include="ScreenUtility.cs" />
     <Compile Include="SplitContainerExtensions.cs" />
     <Compile Include="StringExtension.cs" />
+    <Compile Include="WindowsExplorerUtilities.cs" />
     <EmbeddedResource Include="CDEWinForm.resx">
       <DependentUpon>CDEWinForm.cs</DependentUpon>
     </EmbeddedResource>

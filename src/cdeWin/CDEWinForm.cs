@@ -21,7 +21,16 @@ namespace cdeWin
         event EventAction OnSearchRoots;
         event EventAction OnMyFormClosing;
         event EventAction OnExitMenuItem;
+        event EventAction OnSearchResultContextMenuOpenClick;
         event EventAction OnSearchResultContextMenuExploreClick;
+        event EventAction OnSearchResultContextMenuPropertiesClick;
+        event EventAction OnSearchResultContextMenuSelectAllClick;
+        
+        event EventAction OnDirectoryContextMenuOpenClick;
+        event EventAction OnDirectoryContextMenuExploreClick;
+        event EventAction OnDirectoryContextMenuPropertiesClick;
+        event EventAction OnDirectoryContextMenuSelectAllClick;
+        event EventAction OnDirectoryContextMenuParentClick;
 
         event EventAction OnDirectoryRetrieveVirtualItem;
         void OnDirectoryRetrieveVirtualItemFire();
@@ -80,13 +89,25 @@ namespace cdeWin
 
     public partial class CDEWinForm : Form, ICDEWinForm
     {
+        private const int DirectoryTabIndex = 2;
+
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
         public event EventAction OnSearchRoots;
         public event EventAction OnMyFormClosing;
         public event EventAction OnCatalogRetrieveVirtualItem;
         public event EventAction OnExitMenuItem;
+
+        public event EventAction OnSearchResultContextMenuOpenClick;
         public event EventAction OnSearchResultContextMenuExploreClick;
+        public event EventAction OnSearchResultContextMenuPropertiesClick;
+        public event EventAction OnSearchResultContextMenuSelectAllClick;
+
+        public event EventAction OnDirectoryContextMenuOpenClick;
+        public event EventAction OnDirectoryContextMenuExploreClick;
+        public event EventAction OnDirectoryContextMenuPropertiesClick;
+        public event EventAction OnDirectoryContextMenuSelectAllClick;
+        public event EventAction OnDirectoryContextMenuParentClick;
 
         public event EventAction OnDirectoryRetrieveVirtualItem;
         public virtual void OnDirectoryRetrieveVirtualItemFire() { OnDirectoryRetrieveVirtualItem(); }
@@ -154,7 +175,7 @@ namespace cdeWin
                     RetrieveVirtualItem = OnDirectoryRetrieveVirtualItemFire,
                     ItemActivate = OnDirectoryListViewItemActivateFire,
                     ColumnClick = OnDirectoryListViewColumnClickFire,
-                    //ContextMenu = CreateSearchResultContextMenu(),
+                    ContextMenu = CreateDirectoryContextMenu(),
                     ItemSelectionChanged = OnDirectoryListViewItemSelectionChangedFire
                 };
 
@@ -183,42 +204,43 @@ namespace cdeWin
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
         }
 
-        private ContextMenuStrip CreateSearchResultContextMenu()
+        private ContextMenuStrip CreateDirectoryContextMenu()
         {
-            // remove (space for icons on left) for items.
-            var menu = new ContextMenuStrip {ShowCheckMargin = false, ShowImageMargin = false};
-
-            var viewTree = new ToolStripMenuItem("View Tree");
-            var open = new ToolStripMenuItem("Open");
-            var explore = new ToolStripMenuItem("Explore");
-            var properties = new ToolStripMenuItem("Properties"); // like explorer -- TODO in treeview to ?
-            var selectAll = new ToolStripMenuItem("Select All");
-            var parent = new ToolStripMenuItem("Parent"); // for Directory listview parent ? not useful SearchResult
-
-            viewTree.ShortcutKeyDisplayString = "Enter"; // for documentation of ItemActivate which is Enter.
-            open.ShortcutKeys = Keys.Control | Keys.Enter;
-            explore.ShortcutKeys = Keys.Control | Keys.X;
-            properties.ShortcutKeys = Keys.Alt | Keys.Enter;
-            selectAll.ShortcutKeys = Keys.Control | Keys.A;
-            parent.ShortcutKeys = Keys.Control | Keys.Back;
-
-            viewTree.Click += SearchResultContextMenuViewTreeClick;
-            open.Click += SearchResultContextMenuOpenClick;
-            explore.Click += (s, e) => OnSearchResultContextMenuExploreClick();
-
-            menu.Items.AddRange(new ToolStripItem[] { viewTree, open, explore, properties, selectAll, parent });
-
-            foreach (ToolStripMenuItem menuItem in menu.Items)
-            {
-                menuItem.ShowShortcutKeys = true;
-                menuItem.DisplayStyle = ToolStripItemDisplayStyle.Text;
-            }
-            return menu;
+            var menuHelper = new ContextMenuHelper
+                {
+                    TreeViewHandler = DirectoryContextMenuViewTreeClick,
+                    OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
+                    ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
+                    PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
+                    SelectAllHandler = (s, e) => OnDirectoryContextMenuSelectAllClick(),
+                    //CopyBaseNameHandler = (s, e) => (),
+                    //CopyFullNameHandler = (s, e) => (),
+                    ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                };
+            return menuHelper.GetContextMenuStrip();
         }
 
-        private void SearchResultContextMenuOpenClick(object sender, EventArgs e)
+        private ContextMenuStrip CreateSearchResultContextMenu()
         {
-            Console.WriteLine("SearchResultContextMenuOpenClick");
+            var menuHelper = new ContextMenuHelper
+            {
+                TreeViewHandler = SearchResultContextMenuViewTreeClick,
+                OpenHandler = (s, e) => OnSearchResultContextMenuOpenClick(),
+                ExploreHandler = (s, e) => OnSearchResultContextMenuExploreClick(),
+                PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
+                SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
+                //CopyBaseNameHandler = (s, e) => (),
+                //CopyFullNameHandler = (s, e) => (),
+            };
+            return menuHelper.GetContextMenuStrip();
+        }
+
+        private void DirectoryContextMenuViewTreeClick(object sender, EventArgs e)
+        {
+            // ? should this be conditional if more than one item is selected dont do anything ?
+            // or even disable this menu option if more than one selected ?
+            SearchResultListViewHelper.AfterActivateIndex = DirectoryListViewHelper.ContextItemIndex;
+            OnDirectoryListViewItemActivate();
         }
 
         // this depends on SearchResultListViewHelper for the context item.
@@ -350,7 +372,12 @@ namespace cdeWin
 
         public void SelectDirectoryPane()
         {
-            mainTabControl.SelectTab(2);
+            // ReSharper disable RedundantCheckBeforeAssignment
+            if (mainTabControl.SelectedIndex != DirectoryTabIndex)
+            {
+                mainTabControl.SelectedIndex = DirectoryTabIndex;
+            }
+            // ReSharper restore RedundantCheckBeforeAssignment
         }
 
         public float DirectoryPanelSplitterRatio

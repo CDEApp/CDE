@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
@@ -25,8 +24,12 @@ namespace cdeWin
         //private int _skippedRVI = 0;      // stats on caching just to get a feel.
         //private int _calledRVI = 0;
 
-        public int ItemIndex { get; set; }
+        /// <summary>
+        /// Used by virtual mode ListView
+        /// </summary>
+        public int RetrieveItemIndex { get; set; }
         public ListViewItem RenderItem { get; set; }
+
         public int AfterActivateIndex { get; set; }
         public int ColumnClickIndex { get; set; }
         public IEnumerable<int> SelectedIndices { get; set; }
@@ -37,6 +40,7 @@ namespace cdeWin
 
         /// <summary>
         /// The item under the mouse when context menu launched, ie right mouse button up.
+        /// Need to be reset after use... If set to -1 its not a right click context value.
         /// </summary>
         public int ContextItemIndex { get; set; }
 
@@ -57,7 +61,7 @@ namespace cdeWin
         }
 
         /// <summary>
-        /// Adds CacheVirtualItems, RetrieveVirtualItem handler which sets ItemIndex before EventAction.
+        /// Adds CacheVirtualItems, RetrieveVirtualItem handler which sets RetrieveItemIndex before EventAction.
         /// </summary>
         public EventAction RetrieveVirtualItem
         {
@@ -153,7 +157,7 @@ namespace cdeWin
             //_calledRVI++;
             if (_cacheIndex != itemIndex)
             {
-                ItemIndex = itemIndex;
+                RetrieveItemIndex = itemIndex;
                 _retrieveVirtualItem();
                 _cacheIndex = itemIndex;
                 _cacheListViewItem = RenderItem;
@@ -266,6 +270,18 @@ namespace cdeWin
             }
         }
 
+        public void SelectAllItems()
+        {
+            for (var i = 0; i < _listView.Items.Count; i++)
+            {
+                var listItem = _listView.Items[i];
+                if (!listItem.Selected)
+                {
+                    listItem.Selected = true;
+                }
+            }
+        }
+
         public int SetList(List<T> list)
         {
             if (_columnClick != null && ColumnSortCompare == null)
@@ -303,6 +319,46 @@ namespace cdeWin
             }
             list.Sort(ColumnSortCompare);
             ForceDraw();
+        }
+
+        public void ActionOnContextItem(IList<T> list, Action<T> action)
+        {
+            var contextItem = GetContextItem(list);
+            if (contextItem != null)
+            {
+                action(contextItem);
+            }
+        }
+
+        private T GetContextItem(IList<T> list)
+        {
+            if (!(ContextItemIndex >= 0) || list == null)
+            {
+                return null;
+            }
+            var item = list[ContextItemIndex];
+            ContextItemIndex = -1;
+            return item;
+        }
+
+        public void ActionOnActivateItem(IList<T> list, Action<T> action)
+        {
+            var activateItem = GetActivateItem(list);
+            if (activateItem != null)
+            {
+                action(activateItem);
+            }
+        }
+
+        private T GetActivateItem(IList<T> list)
+        {
+            if (!(AfterActivateIndex >= 0) || list == null)
+            {
+                return null;
+            }
+            var item = list[AfterActivateIndex];
+            AfterActivateIndex = -1;
+            return item;
         }
     }
 }

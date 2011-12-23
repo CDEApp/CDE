@@ -332,7 +332,7 @@
             this.copyPathButton.Name = "copyPathButton";
             this.copyPathButton.Size = new System.Drawing.Size(75, 23);
             this.copyPathButton.TabIndex = 2;
-            this.copyPathButton.Text = "Copy Path";
+            this.copyPathButton.Text = "nothing";
             this.copyPathButton.UseVisualStyleBackColor = true;
             // 
             // directoryPathTextBox

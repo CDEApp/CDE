@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using cdeLib;
 using NUnit.Framework;
 using Rhino.Mocks;
@@ -8,7 +7,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class CommonEntryTest
+    class CommonEntryTest_TraverseTree
     {
         [Test]
         public void Constructor_Minimal_OK()

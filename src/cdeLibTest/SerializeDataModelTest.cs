@@ -27,7 +27,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_RootEntry()
         {
-            re1 = CommonEntryTest.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -42,7 +42,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryMatches()
         {
-            re1 = CommonEntryTest.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -58,7 +58,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryFailsMatches()
         {
-            re1 = CommonEntryTest.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -76,7 +76,7 @@ namespace cdeLibTest
         [Test]
         public void DeSerialize_JustRootEntryThatHasTree()
         {
-            re1 = CommonEntryTest.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             

@@ -340,20 +340,5 @@ namespace cdeLib
             }
         }
 
-        /// <returns>List of CommonEntry, first is RootEntry, rest are DirEntry</returns>
-        public static IEnumerable<CommonEntry> GetListFromRoot(CommonEntry dirEntry)
-        {
-            var activatedDirEntryList = new List<CommonEntry>(10) {dirEntry};
-            // every item in list view has a parent, a highest level possibe it is a RootEntry
-            var parentCommonEntry = dirEntry.ParentCommonEntry;
-            while (parentCommonEntry.ParentCommonEntry != null)
-            {
-                activatedDirEntryList.Add(parentCommonEntry);
-                parentCommonEntry = parentCommonEntry.ParentCommonEntry;
-            }
-            activatedDirEntryList.Add(parentCommonEntry);
-            activatedDirEntryList.Reverse(); // list now contains entries leading from root to our activated DirEntry
-            return activatedDirEntryList;
-        }
     }
 }

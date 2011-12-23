@@ -250,6 +250,20 @@ namespace cdeLib
         {
             return new PairDirEntryEnumerator(rootEntries);
         }
+
+        /// <summary>
+        /// Return List of CommonEntry, first is RootEntry, rest are DirEntry that lead to this.
+        /// </summary>
+        public List<CommonEntry> GetListFromRoot()
+        {
+            var activatedDirEntryList = new List<CommonEntry>(8);
+            for (var entry = this; entry != null; entry = entry.ParentCommonEntry)
+            {
+                activatedDirEntryList.Add(entry);
+            }
+            activatedDirEntryList.Reverse(); // list now from root to this.
+            return activatedDirEntryList;
+        }
     }
 }
 

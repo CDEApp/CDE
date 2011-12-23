@@ -35,6 +35,9 @@ namespace cdeWin
 
         private List<PairDirEntry> _searchResultList;
         private List<DirEntry> _directoryList;
+        /// <summary>
+        /// The entry that is the parent of the Directory List View displayed items.
+        /// </summary>
         private CommonEntry _directoryListCommonEntry;
 
 
@@ -172,11 +175,11 @@ namespace cdeWin
         public void CatalogRetrieveVirtualItem()
         {
             if (_rootEntries == null || _rootEntries.Count == 0)
-            {
-                return; // in case we get called a bit early.
+            {   // in case we get called a bit early.
+                return;
             }
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var rootEntry = _rootEntries[catalogHelper.ItemIndex];
+            var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
             var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
             var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
             catalogHelper.RenderItem = lvi;
@@ -251,11 +254,11 @@ namespace cdeWin
         public void SearchResultRetrieveVirtualItem()
         {
             if (_searchResultList == null || _searchResultList.Count == 0)
-            {
-                return; // in case we get called a bit early.
+            {   // in case we get called a bit early.
+                return;
             }
             var searchHelper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[searchHelper.ItemIndex];
+            var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
@@ -268,16 +271,13 @@ namespace cdeWin
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
             var commonEntry = (CommonEntry)selectedNode.Tag;
-            _directoryList = null;
+            // _directoryList = null; // removed for now - maybe caused Null Exception TODO think ? though if refer wrong data then problem ?
             _directoryListCommonEntry = null;
             if (commonEntry != null)
             {
                 _directoryListCommonEntry = commonEntry;
-                if (commonEntry.Children != null)
-                {
-                    _directoryList = commonEntry.Children.ToList(); // copy of list
-                    directoryHelper.SetList(_directoryList);
-                }
+                _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
+                directoryHelper.SetList(_directoryList);
                 _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
             }
         }
@@ -285,11 +285,11 @@ namespace cdeWin
         public void DirectoryRetrieveVirtualItem()
         {
             if (_directoryList == null || _directoryList.Count == 0)
-            {
-                return; // in case we get called a bit early.
+            {   // in case we get called a bit early.
+                return;
             }
             var directoryHelper = _clientForm.DirectoryListViewHelper;
-            var dirEntry = _directoryList[directoryHelper.ItemIndex];
+            var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
             directoryHelper.RenderItem = lvi;
@@ -303,12 +303,15 @@ namespace cdeWin
 
         public void CatalogListViewItemActivate()
         {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            var newRoot = _rootEntries[catalogHelper.AfterActivateIndex];
+            _clientForm.CatalogListViewHelper.ActionOnActivateItem(_rootEntries, GoToDirectoryRoot);
+        }
+        
+        public void GoToDirectoryRoot(RootEntry newRoot)
+        {
             RootEntry currentRoot = null;
             if (_clientForm.DirectoryTreeViewNodes != null)
             {
-                currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes.Tag;
+                currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes.Tag;
             }
 
             if (currentRoot == null || currentRoot != newRoot)
@@ -330,23 +333,29 @@ namespace cdeWin
         {
             // Have activated on a entry in Directory List View.
             // If its a folder then change the tree view to select this folder.
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            var dirEntry = _directoryList[directoryHelper.AfterActivateIndex];
-            if (dirEntry.IsDirectory)
-            {
-                SetDirectoryWithExpand(dirEntry);
-            }
+            _clientForm.DirectoryListViewHelper.ActionOnActivateItem(_directoryList, d => 
+                {
+                    if (d.IsDirectory)
+                    {
+                        SetDirectoryWithExpand(d);
+                    }
+                });
         }
 
         private void SetDirectoryWithExpand(DirEntry dirEntry)
         {
-            var activatedDirEntryList = DirEntry.GetListFromRoot(dirEntry);
+            var activatedDirEntryList = dirEntry.GetListFromRoot();
 
+            SetDirectoryWithExpand(activatedDirEntryList);
+        }
+
+        private void SetDirectoryWithExpand(IEnumerable<CommonEntry> activatedDirEntryList)
+        {
             var currentRootNode = _clientForm.DirectoryTreeViewNodes;
             RootEntry currentRoot = null;
             if (currentRootNode != null)
             {
-                currentRoot = (RootEntry)currentRootNode.Tag;
+                currentRoot = (RootEntry) currentRootNode.Tag;
             }
             TreeNode workingTreeNode = null;
             RootEntry newRoot = null;
@@ -354,7 +363,7 @@ namespace cdeWin
             {
                 if (newRoot == null)
                 {
-                    newRoot = (RootEntry)entry;
+                    newRoot = (RootEntry) entry;
                     if (currentRoot != newRoot)
                     {
                         currentRootNode = SetNewDirectoryRoot(newRoot);
@@ -364,7 +373,7 @@ namespace cdeWin
                 }
                 else
                 {
-                    if (((DirEntry)entry).IsDirectory && workingTreeNode != null)
+                    if (((DirEntry) entry).IsDirectory && workingTreeNode != null)
                     {
                         CreateNodesPreExpand(workingTreeNode);
                         workingTreeNode.Expand();
@@ -400,11 +409,10 @@ namespace cdeWin
             SetDirectoryWithExpand(dirEntry);
 
             if (!dirEntry.IsDirectory)
-            {   // select the file in list view, do i have to scroll to it as well ???
+            {
                 var index = _directoryList.IndexOf(dirEntry);
                 var directoryHelper = _clientForm.DirectoryListViewHelper;
                 directoryHelper.SelectItem(index);
-                //_clientForm.SelectDirectoryListViewItem(index);
             }
         }
 
@@ -416,7 +424,7 @@ namespace cdeWin
             if (indicesCount > 0)
             {
                 var firstIndex = indices.First();
-                var dirEntry = _directoryList[firstIndex];
+                var dirEntry = _directoryList[firstIndex]; // got a Null on _directoryList TODO ? fix ?
                 _clientForm.SetDirectoryPathTextbox = indicesCount > 1 
                     ? _directoryListCommonEntry.FullPath 
                     : _directoryListCommonEntry.MakeFullPath(dirEntry);
@@ -509,18 +517,79 @@ namespace cdeWin
             _clientForm.Close();
         }
 
+        private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
+        {
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            directoryHelper.ActionOnContextItem(_directoryList, d =>
+                {
+                    var pde = new PairDirEntry(_directoryListCommonEntry, d);
+                    if (pde.ExistsOnFileSystem())
+                    {
+                        gotContextAction(pde);
+                    }
+                });
+        }
+
+        public void DirectoryContextMenuOpenClick()
+        {
+            DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+        }
+
+        public void DirectoryContextMenuExploreClick()
+        {
+            DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+        }
+
+        public void DirectoryContextMenuPropertiesClick()
+        {
+            DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+        }
+
+        public void DirectoryContextMenuSelectAllClick()
+        {
+            _clientForm.DirectoryListViewHelper.SelectAllItems();
+        }
+
+        public void DirectoryContextMenuParentClick()
+        {
+            var entryList = _directoryListCommonEntry.GetListFromRoot();
+            if (entryList.Count > 1)
+            {
+                entryList.RemoveAt(entryList.Count-1);
+                SetDirectoryWithExpand(entryList);
+            }
+        }
+
+        private void SearchResultGetContextMenuDirEntryThatExists(Action<PairDirEntry> gotContextAction)
+        {
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            searchHelper.ActionOnContextItem(_searchResultList, pde =>
+                {
+                    if (pde.ExistsOnFileSystem())
+                    {
+                        gotContextAction(pde);
+                    }
+                });
+        }
+
+        public void SearchResultContextMenuOpenClick()
+        {
+            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+        }
+
         public void SearchResultContextMenuExploreClick()
         {
-            // Does not make sense for multi select.
-            // Explore our entry, select the file if its a file otherwise just open explorer.
+            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+        }
 
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[searchHelper.ContextItemIndex];
-            var path = pairDirEntry.FullPath;
-            if (pairDirEntry.ExistsOnFileSystem())
-            {
-                Process.Start("explorer.exe", @"/select, " + path);
-            }
+        public void SearchResultContextMenuPropertiesClick()
+        {
+            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+        }
+
+        public void SearchResultContextMenuSelectAllClick()
+        {
+            _clientForm.SearchResultListViewHelper.SelectAllItems();
         }
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
@@ -602,5 +671,4 @@ namespace cdeWin
             return compareResult;
         }
     }
-
 }

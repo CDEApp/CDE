@@ -54,10 +54,11 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CommonEntryTest_GetListFromRoot.cs" />
     <Compile Include="EntryEnumeratorTest.cs" />
     <Compile Include="EntryStoreTest_IsValid.cs" />
     <Compile Include="EntryStoreTest.cs" />
-    <Compile Include="CommonEntryTest.cs" />
+    <Compile Include="CommonEntryTest_TraverseTree.cs" />
     <Compile Include="CommonEntryTestStub.cs" />
     <Compile Include="CommonEntryTest_TraverseTreesCopyHash.cs" />
     <Compile Include="CommonEntryTest_TraverseTreesCopyHash_SingleEntry.cs" />
