@@ -41,7 +41,7 @@
             this.searchControlPanel = new System.Windows.Forms.Panel();
             this.findLabel = new System.Windows.Forms.Label();
             this.findComboBox = new System.Windows.Forms.ComboBox();
-            this.patternTextBox = new System.Windows.Forms.TextBox();
+            this.patternComboBox = new System.Windows.Forms.ComboBox();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
             this.searchButton = new System.Windows.Forms.Button();
             this.regexCheckbox = new System.Windows.Forms.CheckBox();
@@ -167,7 +167,7 @@
             // 
             this.searchControlPanel.Controls.Add(this.findLabel);
             this.searchControlPanel.Controls.Add(this.findComboBox);
-            this.searchControlPanel.Controls.Add(this.patternTextBox);
+            this.searchControlPanel.Controls.Add(this.patternComboBox);
             this.searchControlPanel.Controls.Add(this.whatToSearchComboBox);
             this.searchControlPanel.Controls.Add(this.searchButton);
             this.searchControlPanel.Controls.Add(this.regexCheckbox);
@@ -195,12 +195,12 @@
             this.findComboBox.Size = new System.Drawing.Size(96, 21);
             this.findComboBox.TabIndex = 9;
             // 
-            // patternTextBox
+            // patternComboBox
             // 
-            this.patternTextBox.Location = new System.Drawing.Point(78, 2);
-            this.patternTextBox.Name = "patternTextBox";
-            this.patternTextBox.Size = new System.Drawing.Size(262, 20);
-            this.patternTextBox.TabIndex = 8;
+            this.patternComboBox.Location = new System.Drawing.Point(78, 2);
+            this.patternComboBox.Name = "patternComboBox";
+            this.patternComboBox.Size = new System.Drawing.Size(262, 20);
+            this.patternComboBox.TabIndex = 8;
             // 
             // whatToSearchComboBox
             // 
@@ -469,7 +469,7 @@
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelRightAlign;
         private System.Windows.Forms.ToolStripStatusLabel catalogsLoadedStatus;
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
-        private System.Windows.Forms.TextBox patternTextBox;
+        private System.Windows.Forms.ComboBox patternComboBox;
         private System.Windows.Forms.Label labelCatalogPlaceholder;
         private System.Windows.Forms.Panel directoryBottomPanel;
         private System.Windows.Forms.Button copyPathButton;
