@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
-using cdeLib;
 
 namespace cdeWin
 {
@@ -17,12 +16,12 @@ namespace cdeWin
     /// </summary>
     public class ListViewHelper<T> where T : class
     {
+        private int _listSize;
+        private List<T> _list;
         private readonly ListView _listView;
         // very simple caching of LVI's, just remembers the previous index - its a big win for how simple.
         private ListViewItem _cacheListViewItem;
         private int _cacheIndex;
-        //private int _skippedRVI = 0;      // stats on caching just to get a feel.
-        //private int _calledRVI = 0;
 
         /// <summary>
         /// Used by virtual mode ListView
@@ -154,24 +153,13 @@ namespace cdeWin
         private void MyRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             var itemIndex = e.ItemIndex;
-            //_calledRVI++;
             if (_cacheIndex != itemIndex)
             {
                 RetrieveItemIndex = itemIndex;
                 _retrieveVirtualItem();
                 _cacheIndex = itemIndex;
                 _cacheListViewItem = RenderItem;
-                //if (_cacheIndex == 0)
-                //{
-                //    Console.WriteLine("moo");
-                //    _skippedRVI = 0;
-                //    _calledRVI = 0;
-                //}            
             }
-            //else
-            //{
-            //    _skippedRVI++;
-            //}
             e.Item = _cacheListViewItem;
         }
 
@@ -240,14 +228,8 @@ namespace cdeWin
 
         public void SelectItem(int index)
         {
-            //if (_listView.Items == null)
-            //{
-            //    //Console.WriteLine("_listView.Items == null - huh?");
-            //    return;
-            //}
             if (_listView.Items.Count <= index)
             {
-                //Console.WriteLine("_listView.Items.Count <= index - huh?");
                 return;
             }
 
@@ -288,14 +270,14 @@ namespace cdeWin
             {
                 throw new Exception("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
             }
-            _listSize = list == null ? 0 : list.Count();
+            _list = list;
+            _listSize = _list == null ? 0 : _list.Count();
             _listView.VirtualListSize = _listSize;
-            SortList(list);
+            SortList();
             return _listSize;
         }
-        private int _listSize;
 
-        public void ListViewColumnClick(List<T> list)
+        public void ListViewColumnClick()
         {
             var newSortColumn = ColumnClickIndex;
             if (SortColumn == newSortColumn)
@@ -308,55 +290,55 @@ namespace cdeWin
                 SortColumn = newSortColumn;
                 ColumnSortOrder = SortOrder.Ascending;
             }
-            SortList(list);
+            SortList();
         }
 
-        public void SortList(List<T> list)
+        public void SortList()
         {
-            if (list == null)
+            if (_list == null)
             {
                 return;
             }
-            list.Sort(ColumnSortCompare);
+            _list.Sort(ColumnSortCompare);
             ForceDraw();
         }
 
-        public void ActionOnContextItem(IList<T> list, Action<T> action)
+        public void ActionOnContextItem(Action<T> action)
         {
-            var contextItem = GetContextItem(list);
+            var contextItem = GetContextItem();
             if (contextItem != null)
             {
                 action(contextItem);
             }
         }
 
-        private T GetContextItem(IList<T> list)
+        private T GetContextItem()
         {
-            if (!(ContextItemIndex >= 0) || list == null)
+            if (!(ContextItemIndex >= 0) || _list == null)
             {
                 return null;
             }
-            var item = list[ContextItemIndex];
+            var item = _list[ContextItemIndex];
             ContextItemIndex = -1;
             return item;
         }
 
-        public void ActionOnActivateItem(IList<T> list, Action<T> action)
+        public void ActionOnActivateItem(Action<T> action)
         {
-            var activateItem = GetActivateItem(list);
+            var activateItem = GetActivateItem();
             if (activateItem != null)
             {
                 action(activateItem);
             }
         }
 
-        private T GetActivateItem(IList<T> list)
+        private T GetActivateItem()
         {
-            if (!(AfterActivateIndex >= 0) || list == null)
+            if (!(AfterActivateIndex >= 0) || _list == null)
             {
                 return null;
             }
-            var item = list[AfterActivateIndex];
+            var item = _list[AfterActivateIndex];
             AfterActivateIndex = -1;
             return item;
         }

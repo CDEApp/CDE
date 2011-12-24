@@ -303,7 +303,7 @@ namespace cdeWin
 
         public void CatalogListViewItemActivate()
         {
-            _clientForm.CatalogListViewHelper.ActionOnActivateItem(_rootEntries, GoToDirectoryRoot);
+            _clientForm.CatalogListViewHelper.ActionOnActivateItem(GoToDirectoryRoot);
         }
         
         public void GoToDirectoryRoot(RootEntry newRoot)
@@ -331,9 +331,7 @@ namespace cdeWin
 
         public void DirectoryListViewItemActivate()
         {
-            // Have activated on a entry in Directory List View.
-            // If its a folder then change the tree view to select this folder.
-            _clientForm.DirectoryListViewHelper.ActionOnActivateItem(_directoryList, d => 
+            _clientForm.DirectoryListViewHelper.ActionOnActivateItem(d => 
                 {
                     if (d.IsDirectory)
                     {
@@ -403,17 +401,7 @@ namespace cdeWin
 
         public void SearchResultListViewItemActivate()
         {
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            var pairDirEntry = _searchResultList[searchHelper.AfterActivateIndex];
-            var dirEntry = pairDirEntry.ChildDE;
-            SetDirectoryWithExpand(dirEntry);
-
-            if (!dirEntry.IsDirectory)
-            {
-                var index = _directoryList.IndexOf(dirEntry);
-                var directoryHelper = _clientForm.DirectoryListViewHelper;
-                directoryHelper.SelectItem(index);
-            }
+            _clientForm.SearchResultListViewHelper.ActionOnActivateItem(ViewFileInDirectoryTab);
         }
 
         public void DirectoryListViewItemSelectionChanged()
@@ -433,8 +421,7 @@ namespace cdeWin
 
         public void SearchResultListViewColumnClick()
         {
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            searchHelper.ListViewColumnClick(_searchResultList);
+            _clientForm.SearchResultListViewHelper.ListViewColumnClick();
         }
 
         private int SearchResultCompare(PairDirEntry pde1, PairDirEntry pde2)
@@ -479,8 +466,7 @@ namespace cdeWin
 
         public void DirectoryListViewColumnClick()
         {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            directoryHelper.ListViewColumnClick(_directoryList);
+            _clientForm.DirectoryListViewHelper.ListViewColumnClick();
         }
 
         private int DirectoryCompare(DirEntry de1, DirEntry de2)
@@ -519,8 +505,7 @@ namespace cdeWin
 
         private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
         {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            directoryHelper.ActionOnContextItem(_directoryList, d =>
+            _clientForm.DirectoryListViewHelper.ActionOnContextItem(d =>
                 {
                     var pde = new PairDirEntry(_directoryListCommonEntry, d);
                     if (pde.ExistsOnFileSystem())
@@ -528,6 +513,38 @@ namespace cdeWin
                         gotContextAction(pde);
                     }
                 });
+        }
+
+        public void DirectoryContextMenuViewTreeClick()
+        {
+            DirectoryGetContextMenuPairDirEntryThatExists(ViewFolderInDirectoryTab);
+        }
+
+        private void ViewFolderInDirectoryTab(PairDirEntry pde)
+        {
+            var dirEntry = pde.ChildDE;
+            if (dirEntry.IsDirectory)
+            {
+                SetDirectoryWithExpand(dirEntry);
+            }
+        }
+
+        private void ViewFileInDirectoryTab(PairDirEntry pde)
+        {
+            var dirEntry = pde.ChildDE;
+            SetDirectoryWithExpand(dirEntry);
+
+            SelectFileInDirectoryTab(dirEntry);
+        }
+
+        private void SelectFileInDirectoryTab(DirEntry dirEntry)
+        {
+            if (!dirEntry.IsDirectory)
+            {
+                var index = _directoryList.IndexOf(dirEntry);
+                var directoryHelper = _clientForm.DirectoryListViewHelper;
+                directoryHelper.SelectItem(index);
+            }
         }
 
         public void DirectoryContextMenuOpenClick()
@@ -560,10 +577,9 @@ namespace cdeWin
             }
         }
 
-        private void SearchResultGetContextMenuDirEntryThatExists(Action<PairDirEntry> gotContextAction)
+        private void SearchResultGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
         {
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            searchHelper.ActionOnContextItem(_searchResultList, pde =>
+            _clientForm.SearchResultListViewHelper.ActionOnContextItem(pde =>
                 {
                     if (pde.ExistsOnFileSystem())
                     {
@@ -572,19 +588,24 @@ namespace cdeWin
                 });
         }
 
+        public void SearchResultContextMenuViewTreeClick()
+        {
+            SearchResultGetContextMenuPairDirEntryThatExists(ViewFileInDirectoryTab);
+        }
+
         public void SearchResultContextMenuOpenClick()
         {
-            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+            SearchResultGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
         }
 
         public void SearchResultContextMenuExploreClick()
         {
-            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+            SearchResultGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
         }
 
         public void SearchResultContextMenuPropertiesClick()
         {
-            SearchResultGetContextMenuDirEntryThatExists(pde => WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+            SearchResultGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
         }
 
         public void SearchResultContextMenuSelectAllClick()
@@ -606,8 +627,7 @@ namespace cdeWin
 
         public void CatalogListViewColumnClick()
         {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            catalogHelper.ListViewColumnClick(_rootEntries);
+            _clientForm.CatalogListViewHelper.ListViewColumnClick();
         }
 
         private int RootCompare(RootEntry re1, RootEntry re2)

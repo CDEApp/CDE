@@ -21,11 +21,14 @@ namespace cdeWin
         event EventAction OnSearchRoots;
         event EventAction OnMyFormClosing;
         event EventAction OnExitMenuItem;
+
+        event EventAction OnSearchResultContextMenuViewTreeClick;
         event EventAction OnSearchResultContextMenuOpenClick;
         event EventAction OnSearchResultContextMenuExploreClick;
         event EventAction OnSearchResultContextMenuPropertiesClick;
         event EventAction OnSearchResultContextMenuSelectAllClick;
-        
+
+        event EventAction OnDirectoryContextMenuViewTreeClick;
         event EventAction OnDirectoryContextMenuOpenClick;
         event EventAction OnDirectoryContextMenuExploreClick;
         event EventAction OnDirectoryContextMenuPropertiesClick;
@@ -98,11 +101,13 @@ namespace cdeWin
         public event EventAction OnCatalogRetrieveVirtualItem;
         public event EventAction OnExitMenuItem;
 
+        public event EventAction OnSearchResultContextMenuViewTreeClick;
         public event EventAction OnSearchResultContextMenuOpenClick;
         public event EventAction OnSearchResultContextMenuExploreClick;
         public event EventAction OnSearchResultContextMenuPropertiesClick;
         public event EventAction OnSearchResultContextMenuSelectAllClick;
 
+        public event EventAction OnDirectoryContextMenuViewTreeClick;
         public event EventAction OnDirectoryContextMenuOpenClick;
         public event EventAction OnDirectoryContextMenuExploreClick;
         public event EventAction OnDirectoryContextMenuPropertiesClick;
@@ -209,7 +214,7 @@ namespace cdeWin
         {
             var menuHelper = new ContextMenuHelper
                 {
-                    TreeViewHandler = DirectoryContextMenuViewTreeClick,
+                    TreeViewHandler = (s, e) => OnDirectoryContextMenuViewTreeClick(),
                     OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
                     ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
                     PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
@@ -225,7 +230,7 @@ namespace cdeWin
         {
             var menuHelper = new ContextMenuHelper
             {
-                TreeViewHandler = SearchResultContextMenuViewTreeClick,
+                TreeViewHandler = (s,e) => OnSearchResultContextMenuViewTreeClick(),
                 OpenHandler = (s, e) => OnSearchResultContextMenuOpenClick(),
                 ExploreHandler = (s, e) => OnSearchResultContextMenuExploreClick(),
                 PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
@@ -234,27 +239,6 @@ namespace cdeWin
                 //CopyFullNameHandler = (s, e) => (),
             };
             return menuHelper.GetContextMenuStrip();
-        }
-
-        private void DirectoryContextMenuViewTreeClick(object sender, EventArgs e)
-        {
-            // ? should this be conditional if more than one item is selected dont do anything ?
-            // or even disable this menu option if more than one selected ?
-            SearchResultListViewHelper.AfterActivateIndex = DirectoryListViewHelper.ContextItemIndex;
-            OnDirectoryListViewItemActivate();
-        }
-
-        // this depends on SearchResultListViewHelper for the context item.
-        // this is ok since this is a left click after the context menu is shown.
-        private void SearchResultContextMenuViewTreeClick(object sender, EventArgs e)
-        {
-            // ? should this be conditional if more than one item is selected dont do anything ?
-            // or even disable this menu option if more than one selected ?
-
-            // reuse item activate - which navigates to Directory tab and expands selects item
-            // TODO FIx this need to name for Use not its source/dest data.
-            SearchResultListViewHelper.AfterActivateIndex = SearchResultListViewHelper.ContextItemIndex;
-            OnSearchResultListViewItemActivate();
         }
 
         private void MyFormActivated(object sender, EventArgs eventArgs)
