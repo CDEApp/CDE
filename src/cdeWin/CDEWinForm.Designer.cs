@@ -30,14 +30,14 @@
         {
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CDEWinForm));
             this.directoryTreeView = new System.Windows.Forms.TreeView();
-            this.directoryListView = new System.Windows.Forms.ListView();
+            this.directoryListView = new DoubleBufferListView();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainTabControl = new System.Windows.Forms.TabControl();
             this.searchTab = new System.Windows.Forms.TabPage();
             this.searchResultPanel = new System.Windows.Forms.Panel();
-            this.searchResultListView = new System.Windows.Forms.ListView();
+            this.searchResultListView = new DoubleBufferListView();
             this.searchControlPanel = new System.Windows.Forms.Panel();
             this.findLabel = new System.Windows.Forms.Label();
             this.findComboBox = new System.Windows.Forms.ComboBox();
@@ -48,7 +48,7 @@
             this.searchLabel = new System.Windows.Forms.Label();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
-            this.catalogResultListView = new System.Windows.Forms.ListView();
+            this.catalogResultListView = new DoubleBufferListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
@@ -445,7 +445,7 @@
         #endregion
 
         private System.Windows.Forms.TreeView directoryTreeView;
-        private System.Windows.Forms.ListView directoryListView;
+        private DoubleBufferListView directoryListView;
         private System.Windows.Forms.MenuStrip menuStrip1;
         private System.Windows.Forms.ToolStripMenuItem fileToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem exitToolStripMenuItem;
@@ -460,9 +460,9 @@
         private System.Windows.Forms.Panel catalogResultPanel;
         private System.Windows.Forms.Panel catalogControlPanel;
         private System.Windows.Forms.CheckBox regexCheckbox;
-        private System.Windows.Forms.ListView searchResultListView;
+        private DoubleBufferListView searchResultListView;
         private System.Windows.Forms.Button searchButton;
-        private System.Windows.Forms.ListView catalogResultListView;
+        private DoubleBufferListView catalogResultListView;
         private System.Windows.Forms.StatusStrip mainStatusStrip;
         private System.Windows.Forms.ToolStripStatusLabel searchResultsStatus;
         private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;

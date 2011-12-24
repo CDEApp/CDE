@@ -84,9 +84,11 @@
       <DependentUpon>CDEWinForm.cs</DependentUpon>
     </Compile>
     <Compile Include="ContextMenuHelper.cs" />
+    <Compile Include="DoubleBufferListView.cs">
+      <SubType>Component</SubType>
+    </Compile>
     <Compile Include="EnumerableStringExtensions.cs" />
     <Compile Include="IPresenter.cs" />
-    <Compile Include="ListViewExtensions.cs" />
     <Compile Include="ListViewHelper.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

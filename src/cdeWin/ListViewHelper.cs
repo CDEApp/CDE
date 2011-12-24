@@ -18,7 +18,7 @@ namespace cdeWin
     {
         private int _listSize;
         private List<T> _list;
-        private readonly ListView _listView;
+        private readonly DoubleBufferListView _listView;
         // very simple caching of LVI's, just remembers the previous index - its a big win for how simple.
         private ListViewItem _cacheListViewItem;
         private int _cacheIndex;
@@ -43,13 +43,14 @@ namespace cdeWin
         /// </summary>
         public int ContextItemIndex { get; set; }
 
-        public ListViewHelper(ListView listView)
+        public ListViewHelper(DoubleBufferListView listView)
         {
             _listView = listView;
             _listView.View = View.Details;
             _listView.FullRowSelect = true;
             _listView.Activation = ItemActivation.Standard;
             _listView.VirtualMode = true;
+            _listView.GridLines = true;
             InitSort();
         }
 
