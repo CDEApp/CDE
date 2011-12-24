@@ -616,13 +616,15 @@ namespace cdeWin
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
         {
-            var lvItem = new ListViewItem(vals[0]); // not working right with mouse hover FAULTY { UseItemStyleForSubItems = true };
+            var lvItem = new ListViewItem(vals[0]); 
+            // a bug this doesnt work under mouse cursor { UseItemStyleForSubItems = false };
+            // lvItem.SubItems[0].ForeColor = firstColumnForeColor;
             lvItem.ForeColor = firstColumnForeColor;
-            //lvItem.SubItems[0].ForeColor = firstColumnForeColor; // doesnt work right.. with UseItemStyleForSubItems
             lvItem.Tag = tag;
             for (var i = 1; i < vals.Length; ++i)
             {
                 lvItem.SubItems.Add(vals[i]);
+                //lvItem.SubItems[i].ForeColor = _listViewForeColor; // set others to other than item
             }
             return lvItem;
         }
