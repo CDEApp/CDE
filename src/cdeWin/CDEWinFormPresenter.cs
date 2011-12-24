@@ -19,7 +19,7 @@ namespace cdeWin
         private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
         private const string DummyNodeName = "_dummyNode";
         private readonly Color _listViewForeColor = Color.Black;
-        private readonly Color _listViewDirForeColor = Color.Blue;
+        private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         // TODO these need to be centralised.
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
@@ -261,6 +261,7 @@ namespace cdeWin
             var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
+
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             searchHelper.RenderItem = lvi;
@@ -615,8 +616,9 @@ namespace cdeWin
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
         {
-            var lvItem = new ListViewItem(vals[0]) { UseItemStyleForSubItems = false };
-            lvItem.SubItems[0].ForeColor = firstColumnForeColor;
+            var lvItem = new ListViewItem(vals[0]); // not working right with mouse hover FAULTY { UseItemStyleForSubItems = true };
+            lvItem.ForeColor = firstColumnForeColor;
+            //lvItem.SubItems[0].ForeColor = firstColumnForeColor; // doesnt work right.. with UseItemStyleForSubItems
             lvItem.Tag = tag;
             for (var i = 1; i < vals.Length; ++i)
             {
