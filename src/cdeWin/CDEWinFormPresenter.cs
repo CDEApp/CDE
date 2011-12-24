@@ -204,7 +204,6 @@ namespace cdeWin
 
         public void SearchRoots()
         {
-            _clientForm.SearchButtonEnable = false;
             if (_clientForm.RegexMode)
             {
                 var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
@@ -214,6 +213,7 @@ namespace cdeWin
                     return;
                 }
             }
+            _clientForm.SearchButtonEnable = false;
             var searchHelper = _clientForm.SearchResultListViewHelper;
             _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
