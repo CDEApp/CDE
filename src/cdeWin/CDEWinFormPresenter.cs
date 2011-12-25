@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
+using System.Threading;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Infrastructure;
@@ -202,16 +204,11 @@ namespace cdeWin
             return listViewForeColor;
         }
 
-        public void SearchRoots()
+        public void SearchOLD()
         {
-            if (_clientForm.RegexMode)
+            if (RegexIsBad())
             {
-                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
-                if (!string.IsNullOrEmpty(regexError))
-                {
-                    MessageBox.Show(regexError);
-                    return;
-                }
+                return;
             }
             _clientForm.SearchButtonEnable = false;
             var searchHelper = _clientForm.SearchResultListViewHelper;
@@ -249,6 +246,156 @@ namespace cdeWin
             var count = searchHelper.SetList(_searchResultList);
             _clientForm.SetSearchResultStatus(count);
             _clientForm.SearchButtonEnable = true;
+        }
+
+        private bool RegexIsBad()
+        {
+            if (_clientForm.RegexMode)
+            {
+                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
+                if (!string.IsNullOrEmpty(regexError))
+                {
+                    MessageBox.Show(regexError);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public class BgWorkerParam
+        {
+            public FindOptions Options;
+            public List<RootEntry> RootEntries;
+            public BgWorkerState State;
+        }
+
+        public class BgWorkerState
+        {
+            public int ListCount;
+            public List<PairDirEntry> List;
+            public int Counter;
+            public int End;
+        }
+
+        private BackgroundWorker _bgWorker;
+
+        public void Search()
+        {
+            if (RegexIsBad())
+            {
+                return;
+            }
+            _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
+
+            _bgWorker = new BackgroundWorker();
+            _bgWorker.WorkerReportsProgress = true;
+            _bgWorker.WorkerSupportsCancellation = true;
+            _bgWorker.DoWork += BgWorkerDoWork;
+            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
+            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
+
+            var findOptions = new FindOptions
+                {
+                    Pattern = _clientForm.Pattern,
+                    RegexMode = _clientForm.RegexMode,
+                    IncludePath = _clientForm.IncludePathInSearch,
+                    IncludeFiles = _clientForm.IncludeFiles,
+                    IncludeFolders = _clientForm.IncludeFolders,
+                    ProgressModifier = 40000 // This many file system entries before progress
+                };
+
+            var param = new BgWorkerParam
+                {
+                    Options = findOptions,
+                    RootEntries = _rootEntries,
+                    State = new BgWorkerState()
+                };
+
+            _clientForm.CancelSearchButtonEnable = true;
+            _clientForm.SearchButtonEnable = false;
+            _bgWorker.RunWorkerAsync(param);
+        }
+
+        private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
+        {
+            var worker = (BackgroundWorker)sender;
+            var argument = (BgWorkerParam)e.Argument;
+            var options = argument.Options;
+            var rootEntries = argument.RootEntries;
+            var state = argument.State;
+
+            var list = new List<PairDirEntry>(500);
+            state.ListCount = list.Count;   // 0
+            state.List = list;
+            worker.ReportProgress(0, state);
+            options.FoundFunc = (p, d) =>
+                {
+                    //Thread.Sleep(20);
+                    list.Add(new PairDirEntry(p, d));
+                    if (worker.CancellationPending)
+                    {
+                        e.Cancel = true;    // for exit of BgWorkerDoWork()
+                        return false;   // stop our visitor driver.
+                    }
+                    return true;
+                };
+            options.ProgressFunc = (counter, end) =>
+                {
+                    state.ListCount = list.Count;   // concurrency !
+                    state.List = list;   // concurrency !!!!
+                    state.Counter = counter;
+                    state.End = end;
+                    worker.ReportProgress((int)(100.0 * counter / end), state);
+                };
+            Find.TraverseTreeFind(rootEntries, options);// TODO dont like that this is static.
+            state.ListCount = list.Count;
+            state.List = list;
+            worker.ReportProgress(100, state);
+            e.Result = list;
+        }
+
+        private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+        {
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            //_clientForm.SetSearchTimeStatus(trace);
+
+            if (!e.Cancelled)
+            {
+                var resultList = (List<PairDirEntry>) e.Result;
+                _searchResultList = resultList;
+            }
+            var count = searchHelper.SetList(_searchResultList);
+            _clientForm.SetSearchResultStatus(count);
+
+            _clientForm.SearchButtonEnable = true;
+            _clientForm.CancelSearchButtonEnable = false;
+            _bgWorker = null;
+        }
+
+        private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
+        {
+            var state = (BgWorkerState)e.UserState;
+            var p = e.ProgressPercentage;
+            _clientForm.SetSearchTimeStatus("% " + p 
+                + " lc " + state.ListCount
+                + " ctr " + state.Counter
+                + " end " + state.End
+                );
+
+            // think about only sorting when done ???? so a set without sort...
+            _searchResultList = state.List;
+            var searchHelper = _clientForm.SearchResultListViewHelper;
+            var count = searchHelper.SetList(_searchResultList);
+            _clientForm.SetSearchResultStatus(count);
+
+        }
+
+        public void CancelSearch()
+        {
+            if (_bgWorker != null)
+            {
+                _bgWorker.CancelAsync();
+            }
         }
 
         public void SearchResultRetrieveVirtualItem()

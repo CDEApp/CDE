@@ -28,31 +28,31 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CDEWinForm));
             this.directoryTreeView = new System.Windows.Forms.TreeView();
-            this.directoryListView = new DoubleBufferListView();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainTabControl = new System.Windows.Forms.TabControl();
             this.searchTab = new System.Windows.Forms.TabPage();
             this.searchResultPanel = new System.Windows.Forms.Panel();
-            this.searchResultListView = new DoubleBufferListView();
+            this.searchResultListView = new cdeWin.DoubleBufferListView();
             this.searchControlPanel = new System.Windows.Forms.Panel();
+            this.cancelSearchButton = new System.Windows.Forms.Button();
+            this.searchButton = new System.Windows.Forms.Button();
             this.findLabel = new System.Windows.Forms.Label();
             this.findComboBox = new System.Windows.Forms.ComboBox();
             this.patternComboBox = new System.Windows.Forms.ComboBox();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
-            this.searchButton = new System.Windows.Forms.Button();
             this.regexCheckbox = new System.Windows.Forms.CheckBox();
             this.searchLabel = new System.Windows.Forms.Label();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
-            this.catalogResultListView = new DoubleBufferListView();
+            this.catalogResultListView = new cdeWin.DoubleBufferListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
             this.directorySplitContainer = new System.Windows.Forms.SplitContainer();
+            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.directoryBottomPanel = new System.Windows.Forms.Panel();
             this.copyPathButton = new System.Windows.Forms.Button();
             this.directoryPathTextBox = new System.Windows.Forms.TextBox();
@@ -61,7 +61,7 @@
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
-            this.toolStripDropDownButton1 = new System.Windows.Forms.ToolStripDropDownButton();
+            this.backgroundStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -87,15 +87,6 @@
             this.directoryTreeView.Name = "directoryTreeView";
             this.directoryTreeView.Size = new System.Drawing.Size(179, 393);
             this.directoryTreeView.TabIndex = 0;
-            // 
-            // directoryListView
-            // 
-            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.directoryListView.Location = new System.Drawing.Point(0, 0);
-            this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(355, 393);
-            this.directoryListView.TabIndex = 2;
-            this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
             // menuStrip1
             // 
@@ -165,11 +156,12 @@
             // 
             // searchControlPanel
             // 
+            this.searchControlPanel.Controls.Add(this.cancelSearchButton);
+            this.searchControlPanel.Controls.Add(this.searchButton);
             this.searchControlPanel.Controls.Add(this.findLabel);
             this.searchControlPanel.Controls.Add(this.findComboBox);
             this.searchControlPanel.Controls.Add(this.patternComboBox);
             this.searchControlPanel.Controls.Add(this.whatToSearchComboBox);
-            this.searchControlPanel.Controls.Add(this.searchButton);
             this.searchControlPanel.Controls.Add(this.regexCheckbox);
             this.searchControlPanel.Controls.Add(this.searchLabel);
             this.searchControlPanel.Dock = System.Windows.Forms.DockStyle.Top;
@@ -177,6 +169,24 @@
             this.searchControlPanel.Name = "searchControlPanel";
             this.searchControlPanel.Size = new System.Drawing.Size(538, 76);
             this.searchControlPanel.TabIndex = 0;
+            // 
+            // cancelSearchButton
+            // 
+            this.cancelSearchButton.Location = new System.Drawing.Point(437, 23);
+            this.cancelSearchButton.Name = "cancelSearchButton";
+            this.cancelSearchButton.Size = new System.Drawing.Size(96, 23);
+            this.cancelSearchButton.TabIndex = 12;
+            this.cancelSearchButton.Text = "Cancel Search";
+            this.cancelSearchButton.UseVisualStyleBackColor = true;
+            // 
+            // searchButton
+            // 
+            this.searchButton.Location = new System.Drawing.Point(437, 0);
+            this.searchButton.Name = "searchButton";
+            this.searchButton.Size = new System.Drawing.Size(96, 23);
+            this.searchButton.TabIndex = 11;
+            this.searchButton.Text = "&Search";
+            this.searchButton.UseVisualStyleBackColor = true;
             // 
             // findLabel
             // 
@@ -199,7 +209,7 @@
             // 
             this.patternComboBox.Location = new System.Drawing.Point(78, 2);
             this.patternComboBox.Name = "patternComboBox";
-            this.patternComboBox.Size = new System.Drawing.Size(262, 20);
+            this.patternComboBox.Size = new System.Drawing.Size(262, 21);
             this.patternComboBox.TabIndex = 8;
             // 
             // whatToSearchComboBox
@@ -209,15 +219,6 @@
             this.whatToSearchComboBox.Name = "whatToSearchComboBox";
             this.whatToSearchComboBox.Size = new System.Drawing.Size(160, 21);
             this.whatToSearchComboBox.TabIndex = 6;
-            // 
-            // searchButton
-            // 
-            this.searchButton.Location = new System.Drawing.Point(458, -1);
-            this.searchButton.Name = "searchButton";
-            this.searchButton.Size = new System.Drawing.Size(75, 23);
-            this.searchButton.TabIndex = 3;
-            this.searchButton.Text = "&Search";
-            this.searchButton.UseVisualStyleBackColor = true;
             // 
             // regexCheckbox
             // 
@@ -315,6 +316,15 @@
             this.directorySplitContainer.SplitterDistance = 179;
             this.directorySplitContainer.TabIndex = 0;
             // 
+            // directoryListView
+            // 
+            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.directoryListView.Location = new System.Drawing.Point(0, 0);
+            this.directoryListView.Name = "directoryListView";
+            this.directoryListView.Size = new System.Drawing.Size(355, 393);
+            this.directoryListView.TabIndex = 2;
+            this.directoryListView.UseCompatibleStateImageBehavior = false;
+            // 
             // directoryBottomPanel
             // 
             this.directoryBottomPanel.Controls.Add(this.copyPathButton);
@@ -351,7 +361,7 @@
             this.searchResultsStatus,
             this.searchTimeStatus,
             this.toolStripStatusLabelRightAlign,
-            this.toolStripDropDownButton1});
+            this.backgroundStatusLabel});
             this.mainStatusStrip.Location = new System.Drawing.Point(0, 476);
             this.mainStatusStrip.Name = "mainStatusStrip";
             this.mainStatusStrip.ShowItemToolTips = true;
@@ -393,17 +403,19 @@
             // 
             this.toolStripStatusLabelRightAlign.BorderSides = System.Windows.Forms.ToolStripStatusLabelBorderSides.Right;
             this.toolStripStatusLabelRightAlign.Name = "toolStripStatusLabelRightAlign";
-            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(383, 19);
+            this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(373, 19);
             this.toolStripStatusLabelRightAlign.Spring = true;
             // 
-            // toolStripDropDownButton1
+            // backgroundStatusLabel
             // 
-            this.toolStripDropDownButton1.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripDropDownButton1.Image = ((System.Drawing.Image)(resources.GetObject("toolStripDropDownButton1.Image")));
-            this.toolStripDropDownButton1.ImageTransparentColor = System.Drawing.Color.Magenta;
-            this.toolStripDropDownButton1.Name = "toolStripDropDownButton1";
-            this.toolStripDropDownButton1.Size = new System.Drawing.Size(81, 22);
-            this.toolStripDropDownButton1.Text = "Test Button";
+            this.backgroundStatusLabel.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
+            this.backgroundStatusLabel.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenInner;
+            this.backgroundStatusLabel.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.backgroundStatusLabel.Name = "backgroundStatusLabel";
+            this.backgroundStatusLabel.Size = new System.Drawing.Size(91, 19);
+            this.backgroundStatusLabel.Text = "BG: 0 of 0 - X/Y";
             // 
             // CDEWinForm
             // 
@@ -461,11 +473,9 @@
         private System.Windows.Forms.Panel catalogControlPanel;
         private System.Windows.Forms.CheckBox regexCheckbox;
         private DoubleBufferListView searchResultListView;
-        private System.Windows.Forms.Button searchButton;
         private DoubleBufferListView catalogResultListView;
         private System.Windows.Forms.StatusStrip mainStatusStrip;
         private System.Windows.Forms.ToolStripStatusLabel searchResultsStatus;
-        private System.Windows.Forms.ToolStripDropDownButton toolStripDropDownButton1;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusLabelRightAlign;
         private System.Windows.Forms.ToolStripStatusLabel catalogsLoadedStatus;
         private System.Windows.Forms.ComboBox whatToSearchComboBox;
@@ -477,6 +487,9 @@
         private System.Windows.Forms.ToolStripStatusLabel searchTimeStatus;
         private System.Windows.Forms.ComboBox findComboBox;
         private System.Windows.Forms.Label findLabel;
+        private System.Windows.Forms.ToolStripStatusLabel backgroundStatusLabel;
+        private System.Windows.Forms.Button searchButton;
+        private System.Windows.Forms.Button cancelSearchButton;
     }
 }
 

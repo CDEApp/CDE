@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace cdeLib
@@ -13,17 +14,22 @@ namespace cdeLib
         public bool IncludePath { get; set; }
         public bool IncludeFiles { get; set; }
         public bool IncludeFolders { get; set; }
-        public int LimitResultCount { get; set; }
+        public int LimitResultCount { get; set; } // consider making this a multiple of ProgressModifier
+        public int ProgressModifier { get; set; }
+        //public int ProgressEnd { get; set; }
 
         public FindOptions()
         {
             LimitResultCount = 10000;
+            ProgressModifier = int.MaxValue; // huge m0n.
+            //ProgressEnd = int.MaxValue;
         }
 
         /// <summary>
         /// Called for every found entry.
         /// </summary>
         public TraverseFunc FoundFunc { get; set; }
+        public Action<int, int> ProgressFunc { get; set; }
     }
 
     public static class Find
@@ -79,6 +85,19 @@ namespace cdeLib
         {
             int[] limitCount = { options.LimitResultCount };
             var foundFunc = options.FoundFunc;
+            var progressFunc = options.ProgressFunc;
+            var progressModifier = options.ProgressModifier;
+            if (progressFunc == null || progressModifier == 0)
+            {   // dummy func and huge progressModifier so it wont call the progressFunc anyway.
+                progressFunc = delegate { };
+                progressModifier = int.MaxValue;
+            }
+
+            // ReSharper disable PossibleMultipleEnumeration
+            var progressEnd = rootEntries.Sum(rootEntry => (int) rootEntry.DirCount + (int) rootEntry.FileCount);
+            // ReSharper restore PossibleMultipleEnumeration
+            var progressCount = new[] { 0 };
+
             TraverseFunc findFunc;
             if (foundFunc == null)
             {
@@ -91,6 +110,11 @@ namespace cdeLib
                 {
                     findFunc = (p, d) =>
                     {
+                        ++progressCount[0];
+                        if (progressCount[0] % progressModifier == 0)
+                        {
+                            progressFunc(progressCount[0], progressEnd);
+                        }
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
@@ -181,10 +205,12 @@ namespace cdeLib
                     };
                 }
             }
+            // ReSharper disable PossibleMultipleEnumeration
             foreach (var root in rootEntries)
             {
                 root.TraverseTreePair(findFunc);
             }
+            // ReSharper restore PossibleMultipleEnumeration
         }
 
         public static void GetDirCache()

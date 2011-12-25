@@ -18,10 +18,11 @@ namespace cdeWin
     {
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;
-        event EventAction OnSearchRoots;
         event EventAction OnMyFormClosing;
         event EventAction OnExitMenuItem;
-
+        event EventAction OnSearch;
+        event EventAction OnCancelSearch;
+        
         event EventAction OnSearchResultContextMenuViewTreeClick;
         event EventAction OnSearchResultContextMenuOpenClick;
         event EventAction OnSearchResultContextMenuExploreClick;
@@ -81,6 +82,7 @@ namespace cdeWin
         void SetCatalogsLoadedStatus(int i);
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
+        bool CancelSearchButtonEnable { get; set; }
 
         ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
         ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
@@ -96,10 +98,11 @@ namespace cdeWin
 
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
-        public event EventAction OnSearchRoots;
+        public event EventAction OnSearch;
         public event EventAction OnMyFormClosing;
         public event EventAction OnCatalogRetrieveVirtualItem;
         public event EventAction OnExitMenuItem;
+        public event EventAction OnCancelSearch;
 
         public event EventAction OnSearchResultContextMenuViewTreeClick;
         public event EventAction OnSearchResultContextMenuOpenClick;
@@ -187,11 +190,6 @@ namespace cdeWin
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
             directoryTreeView.AfterSelect += DirectoryTreeViewOnAfterSelect;
 
-            searchButton.Click += (s, e) => OnSearchRoots();
-
-            toolStripDropDownButton1.ShowDropDownArrow = false;
-            //toolStripDropDownButton1.Click += (s, e) => OnLoadData();
-
             // Enter in pattern Text Box fires Search Button.
             patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternComboBox.LostFocus += (s, e) => AcceptButton = null;
@@ -208,6 +206,10 @@ namespace cdeWin
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
+
+            searchButton.Click += (s, e) => OnSearch();
+            cancelSearchButton.Click +=  (s, e) => OnCancelSearch();
+            CancelSearchButtonEnable = false;
         }
 
         private ContextMenuStrip CreateDirectoryContextMenu()
@@ -381,16 +383,16 @@ namespace cdeWin
             set { directoryTreeView.SelectedNode = value; }
         }
 
-        public bool SearchButtonEnable {
+        public bool SearchButtonEnable
+        {
             get { return searchButton.Enabled; }
-            set
-            {
-                if (value)
-                {   // Consume any events left from disabled button.
-                    Application.DoEvents();
-                }
-                searchButton.Enabled = value;
-            }
+            set { searchButton.Enabled = value; }
+        }
+
+        public bool CancelSearchButtonEnable
+        {
+            get { return cancelSearchButton.Enabled; }
+            set { cancelSearchButton.Enabled = value; }
         }
     }
 }
