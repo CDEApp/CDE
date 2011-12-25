@@ -204,7 +204,7 @@ namespace cdeWin
             return listViewForeColor;
         }
 
-        public void SearchOLD()
+        public void SearchOld()
         {
             if (RegexIsBad())
             {
@@ -332,7 +332,7 @@ namespace cdeWin
                 {
                     //Thread.Sleep(20);
                     list.Add(new PairDirEntry(p, d));
-                    if (worker.CancellationPending)
+                    if (worker.CancellationPending) // cancel only works on next found item.
                     {
                         e.Cancel = true;    // for exit of BgWorkerDoWork()
                         return false;   // stop our visitor driver.
@@ -359,14 +359,22 @@ namespace cdeWin
             var searchHelper = _clientForm.SearchResultListViewHelper;
             //_clientForm.SetSearchTimeStatus(trace);
 
-            if (!e.Cancelled)
+            if (e.Error != null)
             {
-                var resultList = (List<PairDirEntry>) e.Result;
-                _searchResultList = resultList;
+                MessageBox.Show(e.Error.Message);
             }
-            var count = searchHelper.SetList(_searchResultList);
-            _clientForm.SetSearchResultStatus(count);
-
+            else if (e.Cancelled)
+            {
+                var count = searchHelper.SetList(_searchResultList);
+                _clientForm.SetSearchResultStatus(count);
+            }
+            else
+            {
+                var resultList = (List<PairDirEntry>)e.Result;
+                _searchResultList = resultList;
+                var count = searchHelper.SetList(_searchResultList);
+                _clientForm.SetSearchResultStatus(count);
+            }
             _clientForm.SearchButtonEnable = true;
             _clientForm.CancelSearchButtonEnable = false;
             _bgWorker = null;
@@ -383,11 +391,10 @@ namespace cdeWin
                 );
 
             // think about only sorting when done ???? so a set without sort...
-            _searchResultList = state.List;
+            _searchResultList = state.List; // snag so is avail for Completed
             var searchHelper = _clientForm.SearchResultListViewHelper;
             var count = searchHelper.SetList(_searchResultList);
             _clientForm.SetSearchResultStatus(count);
-
         }
 
         public void CancelSearch()
@@ -400,11 +407,13 @@ namespace cdeWin
 
         public void SearchResultRetrieveVirtualItem()
         {
+            var searchHelper = _clientForm.SearchResultListViewHelper;
             if (_searchResultList == null || _searchResultList.Count == 0)
-            {   // in case we get called a bit early.
+            {   // THIS MUST MUST return an ListViewItem always!!!!!!
+                // had a problem of returning a null with cacheing on only i Release running by itself.
+                searchHelper.RenderItem = new ListViewItem("Empty List");// does this help - YES
                 return;
             }
-            var searchHelper = _clientForm.SearchResultListViewHelper;
             var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
