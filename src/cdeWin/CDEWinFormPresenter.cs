@@ -301,7 +301,10 @@ namespace cdeWin
                     IncludePath = _clientForm.IncludePathInSearch,
                     IncludeFiles = _clientForm.IncludeFiles,
                     IncludeFolders = _clientForm.IncludeFolders,
-                    ProgressModifier = 40000 // This many file system entries before progress
+                    // This many file system entries before progress
+                    // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
+                    ProgressModifier = 5000, 
+                    Worker = _bgWorker
                 };
 
             var param = new BgWorkerParam
@@ -332,11 +335,6 @@ namespace cdeWin
                 {
                     //Thread.Sleep(20);
                     list.Add(new PairDirEntry(p, d));
-                    if (worker.CancellationPending) // cancel only works on next found item.
-                    {
-                        e.Cancel = true;    // for exit of BgWorkerDoWork()
-                        return false;   // stop our visitor driver.
-                    }
                     return true;
                 };
             options.ProgressFunc = (counter, end) =>

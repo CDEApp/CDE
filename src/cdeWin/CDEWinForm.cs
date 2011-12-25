@@ -209,6 +209,8 @@ namespace cdeWin
 
             searchButton.Click += (s, e) => OnSearch();
             cancelSearchButton.Click +=  (s, e) => OnCancelSearch();
+            var cancelSearchTooltip = new ToolTip();
+            cancelSearchTooltip.SetToolTip(cancelSearchButton, "Cancel Search is not immediate, wait for a progress update.");
             CancelSearchButtonEnable = false;
         }
 

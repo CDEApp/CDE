@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
 
 namespace cdeLib
 {
-    public enum TraverseExit { Complete, LimitCountReached, FoundFuncExit }
+    public enum TraverseExit { Complete, LimitCountReached, FoundFuncExit, WorkerCancel }
 
     public class FindOptions
     {
@@ -30,6 +31,7 @@ namespace cdeLib
         /// </summary>
         public TraverseFunc FoundFunc { get; set; }
         public Action<int, int> ProgressFunc { get; set; }
+        public BackgroundWorker Worker { get; set; }
     }
 
     public static class Find
@@ -84,6 +86,8 @@ namespace cdeLib
         public static void TraverseTreeFind(IEnumerable<RootEntry> rootEntries, FindOptions options)
         {
             int[] limitCount = { options.LimitResultCount };
+            var findContinue = true;
+            var worker = options.Worker;
             var foundFunc = options.FoundFunc;
             var progressFunc = options.ProgressFunc;
             var progressModifier = options.ProgressModifier;
@@ -114,6 +118,12 @@ namespace cdeLib
                         if (progressCount[0] % progressModifier == 0)
                         {
                             progressFunc(progressCount[0], progressEnd);
+                            // only check for cancel on progress modifier.
+                            if (worker != null && worker.CancellationPending)
+                            {
+                                findContinue = false;
+                                return false;   // end the find.
+                            }
                         }
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
@@ -122,10 +132,12 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -137,6 +149,17 @@ namespace cdeLib
                 {
                     findFunc = (p, d) =>
                     {
+                        ++progressCount[0];
+                        if (progressCount[0] % progressModifier == 0)
+                        {
+                            progressFunc(progressCount[0], progressEnd);
+                            // only check for cancel on progress modifier.
+                            if (worker != null && worker.CancellationPending)
+                            {
+                                findContinue = false;
+                                return false;   // end the find.
+                            }
+                        }
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
@@ -144,10 +167,12 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -162,6 +187,17 @@ namespace cdeLib
                 {
                     findFunc = (p, d) =>
                     {
+                        ++progressCount[0];
+                        if (progressCount[0] % progressModifier == 0)
+                        {
+                            progressFunc(progressCount[0], progressEnd);
+                            // only check for cancel on progress modifier.
+                            if (worker != null && worker.CancellationPending)
+                            {
+                                findContinue = false;
+                                return false;   // end the find.
+                            }
+                        }
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
@@ -170,10 +206,12 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -185,6 +223,17 @@ namespace cdeLib
                 {
                     findFunc = (p, d) =>
                     {
+                        ++progressCount[0];
+                        if (progressCount[0] % progressModifier == 0)
+                        {
+                            progressFunc(progressCount[0], progressEnd);
+                            // only check for cancel on progress modifier.
+                            if (worker != null && worker.CancellationPending)
+                            {
+                                findContinue = false;
+                                return false;   // end the find.
+                            }
+                        }
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
@@ -193,10 +242,12 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
+                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -208,7 +259,10 @@ namespace cdeLib
             // ReSharper disable PossibleMultipleEnumeration
             foreach (var root in rootEntries)
             {
-                root.TraverseTreePair(findFunc);
+                if (findContinue)
+                {
+                    root.TraverseTreePair(findFunc);
+                }
             }
             // ReSharper restore PossibleMultipleEnumeration
         }
