@@ -227,8 +227,8 @@ namespace cdeLib
         }
 
         // TODO these need to be centralised.
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+        public const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        public static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
         public int SizeCompareWithDirTo(DirEntry de)
         {
@@ -247,7 +247,7 @@ namespace cdeLib
             if (IsDirectory && de.IsDirectory)
             {   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
                 // really cheap to calculate dir size.... i think i should fill it in ?
-                return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+                return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
             }
             // the cast breaks this.
             return Size.CompareTo(de.Size);
@@ -289,7 +289,7 @@ namespace cdeLib
             {
                 return 1; // this after de
             }
-            return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
         public int PathCompareTo(DirEntry de)
@@ -298,7 +298,7 @@ namespace cdeLib
             {
                 return -1; // this before de
             }
-            return _myCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
         public class EqualityComparer : IEqualityComparer<DirEntry>

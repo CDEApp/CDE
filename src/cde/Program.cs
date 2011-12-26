@@ -99,34 +99,34 @@ namespace cde
                 string s;
                 var running = true;
 
-                while (running && (s = le.Edit("shell> ", "")) != null)
+                while (running && (s = le.Edit("shell> ", string.Empty)) != null)
                 {
                     Console.WriteLine("----> [{0}]", s);
                     switch (s)
                     {
-                    case "quit":
-                        running = false;
-                        break;
-                    case "history":
-                    case "!":
-                        le.CmdHistoryDump();
-                        break;
-                    case "help":
-                    case "?":
-                        Console.WriteLine("Builtin Commands:");
-                        Console.WriteLine("  quit - quit, ");
-                        Console.WriteLine("  help - show help, ? - show help");
-                        Console.WriteLine("  history - show history, ! - show history");
-                        Console.WriteLine("Keystrokes:");
-                        Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
-                        Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
-                        Console.WriteLine("  C-l - clear console to top");
-                        Console.WriteLine("  C-r - reverse seach history");
-                        Console.WriteLine("  A-b - move backward word");
-                        Console.WriteLine("  A-f - move forward word");
-                        Console.WriteLine("  A-d - delete word forward");
-                        Console.WriteLine("  A-Backspace - delete word backward");
-                        break;
+                        case "quit":
+                            running = false;
+                            break;
+                        case "history":
+                        case "!":
+                            le.CmdHistoryDump();
+                            break;
+                        case "help":
+                        case "?":
+                            Console.WriteLine("Builtin Commands:");
+                            Console.WriteLine("  quit - quit, ");
+                            Console.WriteLine("  help - show help, ? - show help");
+                            Console.WriteLine("  history - show history, ! - show history");
+                            Console.WriteLine("Keystrokes:");
+                            Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
+                            Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
+                            Console.WriteLine("  C-l - clear console to top");
+                            Console.WriteLine("  C-r - reverse seach history");
+                            Console.WriteLine("  A-b - move backward word");
+                            Console.WriteLine("  A-f - move forward word");
+                            Console.WriteLine("  A-d - delete word forward");
+                            Console.WriteLine("  A-Backspace - delete word backward");
+                            break;
                     }
                 }
             }
@@ -299,7 +299,7 @@ namespace cde
 
         private static void ScanEndofEntries()
         {
-            Console.WriteLine("");
+            Console.WriteLine(string.Empty);
         }
 
         private static void PrintPathsHaveHashEnumerator()

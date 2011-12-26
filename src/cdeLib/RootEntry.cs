@@ -401,18 +401,18 @@ namespace cdeLib
             {
                 return 1; // this after re
             }
-            return _myCompareInfo.Compare(Description, re.Description, MyCompareOptions);
+            return MyCompareInfo.Compare(Description, re.Description, MyCompareOptions);
         }
 
         // TODO these need to be centralised.
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169
         // ReSharper disable InconsistentNaming
-        private List<string> knownUAEpattern = new List<string>(100)
+        private static List<string> knownUAEpattern = new List<string>(100)
             {
                 @"%windows%\System32\LogFiles\WMI\RtBackup",
                 @"%windows%\CSC\v2.0.6",
@@ -450,7 +450,7 @@ namespace cdeLib
                 @"C:\Documents and Settings",                                                   
             };
 
-        private List<string> knownUAE = new List<string>(100)
+        private static List<string> knownUAE = new List<string>(100)
             {
                 @"C:\Windows\System32\LogFiles\WMI\RtBackup",
                 @"C:\Windows\CSC\v2.0.6",

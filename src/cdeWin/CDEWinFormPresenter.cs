@@ -25,7 +25,7 @@ namespace cdeWin
 
         // TODO these need to be centralised.
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private readonly CompareInfo _myCompareInfo = CompareInfo.GetCompareInfo("en-US");
+        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
         private readonly ICDEWinForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
@@ -602,10 +602,10 @@ namespace cdeWin
 
                 case 3: // SearchResult ListView Path column
                     //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
-                    compareResult = _myCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, MyCompareOptions);
+                    compareResult = MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, MyCompareOptions);
                     if (compareResult == 0)
                     {
-                        compareResult = _myCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                        compareResult = MyCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
                     }
                     break;
 

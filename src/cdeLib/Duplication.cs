@@ -69,7 +69,7 @@ namespace cdeLib
 
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
-            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FullPath));
+            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FullPath)); // TODO use the root of the DirEntry not the file system....
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parralel at the grouping level, hopefully this is one group per disk.
@@ -123,7 +123,7 @@ namespace cdeLib
             {
                 CheckDupesAndCompleteFullHash(rootEntries);
             }
-            _logger.LogInfo("");
+            _logger.LogInfo(string.Empty);
             timer.Stop();
             var perf = string.Format("{0:F2} MB/s",
                     ((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/
@@ -190,7 +190,7 @@ namespace cdeLib
 
         private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
         {
-            _logger.LogDebug("");
+            _logger.LogDebug(string.Empty);
             _logger.LogDebug("Checking duplicates and completing full hash.");
             CommonEntry.TraverseAllTreesPair(rootEntries, BuildDuplicateListIncludePartialHash);
 
