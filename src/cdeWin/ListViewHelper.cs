@@ -14,7 +14,7 @@ namespace cdeWin
     /// Only ListView events required are enabled.
     /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
-    public class ListViewHelper<T> where T : class
+    public class ListViewHelper<T> :IDisposable where T : class
     {
         private int _listSize;
         private List<T> _list;
@@ -342,6 +342,32 @@ namespace cdeWin
             var item = _list[AfterActivateIndex];
             AfterActivateIndex = -1;
             return item;
+        }
+
+        public void Dispose()
+        {
+            if (_retrieveVirtualItem != null)
+            {
+                _listView.CacheVirtualItems -= MyCacheVirtualItems;
+                _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
+            } if (_columnClick != null)
+            {
+                _listView.ColumnClick -= MyColumnClick;
+            }
+            if (_itemActivate != null)
+            {
+                _listView.ItemActivate -= MyItemActivate;
+            }
+            if (_contextMenu != null)
+            {
+                _listView.MouseUp -= MyMouseUp;
+                _contextMenu.Dispose();
+            }
+            if (_itemSelectionChanged != null)
+            {
+                _listView.SelectedIndexChanged -= MySelectedIndexChanged;
+                _listView.VirtualItemsSelectionRangeChanged -= MyVirtualItemsSelectionRangeChanged;
+            }
         }
     }
 }

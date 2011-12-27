@@ -16,7 +16,7 @@ namespace cdeWin
     /// var myContextMenuStrip = helper.GetContextMenuStrip();
     /// 
     /// </summary>
-    public class ContextMenuHelper
+    public class ContextMenuHelper : IDisposable
     {
         // Fields set on ContextMenuStrip remove space for icons on left of menu for items.
         private readonly ContextMenuStrip _menu = new ContextMenuStrip { ShowCheckMargin = false, ShowImageMargin = false };
@@ -146,6 +146,42 @@ namespace cdeWin
                 menuItem.DisplayStyle = ToolStripItemDisplayStyle.Text;
             }
             return _menu;
+        }
+
+        public void Dispose()
+        {
+            if (_viewTreeHandler != null)
+            {
+                _viewTree.Click -= _viewTreeHandler;
+            }
+            if (_openHandler != null)
+            {
+                _open.Click -= _openHandler;
+            }
+            if (_exploreHandler != null)
+            {
+                _explore.Click -= _exploreHandler;
+            }
+            if (_propertiesHandler != null)
+            {
+                _properties.Click -= _propertiesHandler;
+            }
+            if (_selectAllHandler != null)
+            {
+                _selectAll.Click -= _selectAllHandler;
+            }
+            if (_copyBaseNameHandler != null)
+            {
+                _copyBaseName.Click -= _copyBaseNameHandler;
+            }
+            if (_copyFullNameHandler != null)
+            {
+                _copyFullName.Click -= _copyFullNameHandler;
+            }
+            if (_parentHandler != null)
+            {
+                _parent.Click += _parentHandler;
+            }
         }
     }
 }

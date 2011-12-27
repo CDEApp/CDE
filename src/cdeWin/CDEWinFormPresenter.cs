@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Infrastructure;
@@ -41,7 +40,6 @@ namespace cdeWin
         /// The entry that is the parent of the Directory List View displayed items.
         /// </summary>
         private CommonEntry _directoryListCommonEntry;
-
 
         public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, Config config) : base(form)
         {
@@ -375,6 +373,7 @@ namespace cdeWin
             }
             _clientForm.SearchButtonEnable = true;
             _clientForm.CancelSearchButtonEnable = false;
+            _bgWorker.Dispose();
             _bgWorker = null;
         }
 
@@ -454,6 +453,7 @@ namespace cdeWin
         public void MyFormClosing()
         {
             _config.RecordConfig(_clientForm);
+            _clientForm.CleanUp();
         }
 
         public void CatalogListViewItemActivate()

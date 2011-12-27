@@ -88,8 +88,7 @@ namespace cdeWin
         ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
         ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
-        //void DirectoryListViewDeselectItems();
-        //void SelectDirectoryListViewItem(int index);
+        void CleanUp();
     }
 
     public partial class CDEWinForm : Form, ICDEWinForm
@@ -156,9 +155,25 @@ namespace cdeWin
             RegisterClientEvents();
         }
 
+        public void CleanUp()
+        {
+            SearchResultListViewHelper.Dispose();
+            DirectoryListViewHelper.Dispose();
+            CatalogListViewHelper.Dispose();
+            UnregisterClientEvents();
+        }
+
+        public void UnregisterClientEvents()
+        {
+            FormClosing -= MyFormClosing;
+            Activated -= MyFormActivated;
+            directoryTreeView.BeforeExpand -= DirectoryTreeViewOnBeforeExpand;
+            directoryTreeView.AfterSelect -= DirectoryTreeViewOnAfterSelect;
+        }
+
         private void RegisterClientEvents()
         {
-            FormClosing += (s, e) => OnMyFormClosing();
+            FormClosing += MyFormClosing;
             Activated += MyFormActivated;
 
             whatToSearchComboBox.Items.AddRange(new[] { "Include Path in Search", "Exclude Path from Search" });
@@ -212,6 +227,11 @@ namespace cdeWin
             var cancelSearchTooltip = new ToolTip();
             cancelSearchTooltip.SetToolTip(cancelSearchButton, "Cancel Search is not immediate, wait for a progress update.");
             CancelSearchButtonEnable = false;
+        }
+
+        private void MyFormClosing(object s, FormClosingEventArgs e)
+        {
+            OnMyFormClosing();
         }
 
         private ContextMenuStrip CreateDirectoryContextMenu()
