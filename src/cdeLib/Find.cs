@@ -86,7 +86,6 @@ namespace cdeLib
         public static void TraverseTreeFind(IEnumerable<RootEntry> rootEntries, FindOptions options)
         {
             int[] limitCount = { options.LimitResultCount };
-            var findContinue = true;
             var worker = options.Worker;
             var foundFunc = options.FoundFunc;
             var progressFunc = options.ProgressFunc;
@@ -121,7 +120,6 @@ namespace cdeLib
                             // only check for cancel on progress modifier.
                             if (worker != null && worker.CancellationPending)
                             {
-                                findContinue = false;
                                 return false;   // end the find.
                             }
                         }
@@ -132,12 +130,10 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -156,7 +152,6 @@ namespace cdeLib
                             // only check for cancel on progress modifier.
                             if (worker != null && worker.CancellationPending)
                             {
-                                findContinue = false;
                                 return false;   // end the find.
                             }
                         }
@@ -167,12 +162,10 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -194,7 +187,6 @@ namespace cdeLib
                             // only check for cancel on progress modifier.
                             if (worker != null && worker.CancellationPending)
                             {
-                                findContinue = false;
                                 return false;   // end the find.
                             }
                         }
@@ -206,12 +198,10 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -230,7 +220,6 @@ namespace cdeLib
                             // only check for cancel on progress modifier.
                             if (worker != null && worker.CancellationPending)
                             {
-                                findContinue = false;
                                 return false;   // end the find.
                             }
                         }
@@ -242,12 +231,10 @@ namespace cdeLib
                             {
                                 if (!foundFunc(p, d))
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                                 if (--limitCount[0] <= 1)
                                 {
-                                    findContinue = false;
                                     return false;
                                 }
                             }
@@ -257,13 +244,7 @@ namespace cdeLib
                 }
             }
             // ReSharper disable PossibleMultipleEnumeration
-            foreach (var root in rootEntries)
-            {
-                if (findContinue)
-                {
-                    root.TraverseTreePair(findFunc);
-                }
-            }
+            CommonEntry.TraverseTreePair(rootEntries, findFunc);
             // ReSharper restore PossibleMultipleEnumeration
         }
 

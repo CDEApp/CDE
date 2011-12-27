@@ -145,7 +145,7 @@ namespace cdeLibTest
                 mockAction.Expect(x => x(bde3a, bde4a)).Repeat.Times(1).Return(true);
             }
 
-            CommonEntry.TraverseAllTreesPair(new List<RootEntry> { re1, re2 }, mockAction);
+            CommonEntry.TraverseTreePair(new List<RootEntry> { re1, re2 }, mockAction);
 
             mockAction.VerifyAllExpectations();
         }

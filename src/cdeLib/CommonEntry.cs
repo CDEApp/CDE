@@ -97,20 +97,15 @@ namespace cdeLib
             Size = size;
         }
 
-
-        public static void TraverseAllTreesPair(IEnumerable<RootEntry> rootEntries, TraverseFunc func)
-        {
-            foreach (var rootEntry in rootEntries)
-            {
-                rootEntry.TraverseTreePair(func);
-            }
-        }
-
         public void TraverseTreePair(TraverseFunc func)
         {
-            bool funcContinue = true;
-            var dirs = new Stack<CommonEntry>();
-            dirs.Push(this);
+            TraverseTreePair(new List<CommonEntry>() { this }, func);
+        }
+
+        public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func)
+        {
+            var funcContinue = true;
+            var dirs = new Stack<CommonEntry>(rootEntries.Reverse());
 
             while (funcContinue && dirs.Count > 0)
             {
@@ -137,7 +132,6 @@ namespace cdeLib
                 }
             }
         }
-
 
         public void TraverseTreesCopyHash(CommonEntry destination)
         {
