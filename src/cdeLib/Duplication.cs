@@ -96,16 +96,16 @@ namespace cdeLib
                                     CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
                                     if (Hack.BreakConsoleFlag)
                                     {
-                                        //Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
+                                        Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
                                         cts.Cancel();
                                         parallelOptions.CancellationToken.ThrowIfCancellationRequested();
                                     }
 
-                                    if (Hack.BreakConsoleFlag)
-                                    {
-                                        //Console.WriteLine ("\nBreak key detected exiting hashing phase outer.");
-                                        cts.Cancel();
-                                    }
+                                    //if (Hack.BreakConsoleFlag)
+                                    //{
+                                    //    Console.WriteLine("\nBreak key detected exiting hashing phase outer.");
+                                    //    cts.Cancel();
+                                    //}
                                 });
                     });
             }
@@ -177,11 +177,7 @@ namespace cdeLib
 
         private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
         {
-            if (de.IsDirectory)
-                return;
-
-            //ignore if we already have a hash.
-            if (de.IsHashDone)
+            if (de.IsDirectory || de.IsHashDone)
             {
                 return;
             }
