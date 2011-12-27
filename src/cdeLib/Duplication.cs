@@ -69,10 +69,10 @@ namespace cdeLib
 
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
-            var groupedByDirectoryRoot = flatList.GroupBy(x => FileSystemHelper.GetDirectoryRoot(x.FullPath)); // TODO use the root of the DirEntry not the file system....
+            var groupedByDirectoryRoot = flatList.GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
-            //parralel at the grouping level, hopefully this is one group per disk.
+            //parrallel at the grouping level, hopefully this is one group per disk.
             _logger.LogDebug("Beging Hashing...");
             _logger.LogDebug(String.Format("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
             

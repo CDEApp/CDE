@@ -92,7 +92,6 @@
     <Compile Include="Infrastructure\ByteArrayHelper.cs" />
     <Compile Include="Infrastructure\Configuration.cs" />
     <Compile Include="Infrastructure\ApplicationDiagnostics.cs" />
-    <Compile Include="Infrastructure\FileSystemHelper.cs" />
     <Compile Include="Infrastructure\Hash16.cs" />
     <Compile Include="Infrastructure\Hashing\HashHelper.cs" />
     <Compile Include="Infrastructure\Hashing\IHashAlgorithm.cs" />
