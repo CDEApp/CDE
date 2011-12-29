@@ -191,7 +191,7 @@ namespace cdeWin
             },
             DirectoryPaneSplitterRatio = -1f,
             Pattern = string.Empty,
-            RegexMode = true
+            RegexMode = false
         };
 
         public Configuration Loaded;
