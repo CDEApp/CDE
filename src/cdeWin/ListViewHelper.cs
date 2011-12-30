@@ -67,10 +67,15 @@ namespace cdeWin
         {
             get { return _retrieveVirtualItem; } 
             set
-            {
+            {   // not adding retrieve virtual item events here as _list may not be set
+                // was getting some odd errors earlier, this may address the null 
+                // ListViewItem we go outside of visual studio in release builds.
                 _retrieveVirtualItem = value;
-                _listView.CacheVirtualItems += MyCacheVirtualItems;
-                _listView.RetrieveVirtualItem += MyRetrieveVirtualItem;
+                if (_retrieveVirtualItem != null)
+                {
+                    _listView.CacheVirtualItems += MyCacheVirtualItems;
+                    _listView.RetrieveVirtualItem += MyRetrieveVirtualItem;
+                }
             }
         }
         private EventAction _retrieveVirtualItem;
@@ -84,7 +89,10 @@ namespace cdeWin
             set
             {
                 _columnClick = value;
-                _listView.ColumnClick += MyColumnClick;
+                if (_columnClick != null)
+                {
+                    _listView.ColumnClick += MyColumnClick;
+                }
             }
         }
         private EventAction _columnClick;
@@ -98,7 +106,10 @@ namespace cdeWin
             set
             {
                 _itemActivate = value;
-                _listView.ItemActivate += MyItemActivate;
+                if (_itemActivate != null)
+                {
+                    _listView.ItemActivate += MyItemActivate;
+                }
             }
         }
         private EventAction _itemActivate;
@@ -112,8 +123,11 @@ namespace cdeWin
             set
             {
                 _contextMenu = value;
-                _listView.MouseUp += MyMouseUp;
-                _listView.ContextMenuStrip = _contextMenu;
+                if (_contextMenu != null)
+                {
+                    _listView.MouseUp += MyMouseUp;
+                    _listView.ContextMenuStrip = _contextMenu;
+                }
             }
         }
         private ContextMenuStrip _contextMenu;
@@ -127,8 +141,11 @@ namespace cdeWin
             set
             {
                 _itemSelectionChanged = value;
-                _listView.SelectedIndexChanged += MySelectedIndexChanged;
-                _listView.VirtualItemsSelectionRangeChanged += MyVirtualItemsSelectionRangeChanged;
+                if (_itemSelectionChanged != null)
+                {
+                    _listView.SelectedIndexChanged += MySelectedIndexChanged;
+                    _listView.VirtualItemsSelectionRangeChanged += MyVirtualItemsSelectionRangeChanged;
+                }
             }
         }
         private EventAction _itemSelectionChanged;
@@ -154,7 +171,9 @@ namespace cdeWin
         private void MyRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
         {
             var itemIndex = e.ItemIndex;
-            if (_cacheIndex != itemIndex)
+            // _cacheListViewItem null check is required...
+            // its possible its null when _cacheIndex == itemIndex.
+            if (_cacheIndex != itemIndex || _cacheListViewItem == null)
             {
                 RetrieveItemIndex = itemIndex;
                 _retrieveVirtualItem();
@@ -350,7 +369,8 @@ namespace cdeWin
             {
                 _listView.CacheVirtualItems -= MyCacheVirtualItems;
                 _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
-            } if (_columnClick != null)
+            }
+            if (_columnClick != null)
             {
                 _listView.ColumnClick -= MyColumnClick;
             }

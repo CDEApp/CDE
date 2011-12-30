@@ -17,6 +17,7 @@ namespace cdeWin
 
     public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
+        private static string[] EmptyColumnValues = new[] { "Empty List", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10", "e11", "e12" };
         private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
         private const string DummyNodeName = "_dummyNode";
         private readonly Color _listViewForeColor = Color.Black;
@@ -174,11 +175,13 @@ namespace cdeWin
 
         public void CatalogRetrieveVirtualItem()
         {
+            var catalogHelper = _clientForm.CatalogListViewHelper;
             if (_rootEntries == null || _rootEntries.Count == 0)
             {   // in case we get called a bit early.
+                // THIS MUST MUST return an ListViewItem always!!!!!!
+                catalogHelper.RenderItem = new ListViewItem(EmptyColumnValues);
                 return;
             }
-            var catalogHelper = _clientForm.CatalogListViewHelper;
             var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
             var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
             var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
@@ -406,9 +409,10 @@ namespace cdeWin
         {
             var searchHelper = _clientForm.SearchResultListViewHelper;
             if (_searchResultList == null || _searchResultList.Count == 0)
-            {   // THIS MUST MUST return an ListViewItem always!!!!!!
+            {
+                // THIS MUST MUST return an ListViewItem always!!!!!!
                 // had a problem of returning a null with cacheing on only i Release running by itself.
-                searchHelper.RenderItem = new ListViewItem("Empty List");// does this help - YES
+                searchHelper.RenderItem = new ListViewItem(EmptyColumnValues);
                 return;
             }
             var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
@@ -438,11 +442,13 @@ namespace cdeWin
 
         public void DirectoryRetrieveVirtualItem()
         {
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
             if (_directoryList == null || _directoryList.Count == 0)
             {   // in case we get called a bit early.
+                // THIS MUST MUST return an ListViewItem always!!!!!!
+                directoryHelper.RenderItem = new ListViewItem(EmptyColumnValues);
                 return;
             }
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
             var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
             var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
