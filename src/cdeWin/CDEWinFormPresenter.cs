@@ -198,7 +198,7 @@ namespace cdeWin
             vals[5] = rootEntry.DriveLetterHint;
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
-            vals[8] = string.Format(ModifiedFieldFormat, rootEntry.ScanStartUTC);
+            vals[8] = string.Format(ModifiedFieldFormat, rootEntry.ScanStartUTC.ToLocalTime());
             vals[9] = rootEntry.DefaultFileName; // todo give full path ? or actual file name ?
             vals[10] = rootEntry.Description;
 

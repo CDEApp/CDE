@@ -105,6 +105,11 @@ namespace cdeLib
 
         public void SetInMemoryFields()
         {
+            // protobuf does not retain DateKind.
+            // So just handle it here
+            ScanStartUTC = new DateTime(ScanStartUTC.Ticks, DateTimeKind.Utc);
+            ScanEndUTC = new DateTime(ScanEndUTC.Ticks, DateTimeKind.Utc);
+
             FullPath = Path;
             SetCommonEntryFields();
             SetSummaryFields();

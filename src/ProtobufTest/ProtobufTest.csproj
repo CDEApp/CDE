@@ -73,6 +73,7 @@
     <Compile Include="MiscTest.cs" />
     <Compile Include="ProtobufTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="ProtobufTest_DateTime.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
