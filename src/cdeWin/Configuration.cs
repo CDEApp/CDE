@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
@@ -142,7 +143,10 @@ namespace cdeWin
 
     public class Config
     {
-        private readonly string _configFileName;
+        private readonly string _configSubPath = "cde";
+        private string _configFileName;
+        private string _configPath;
+        private string _configFullFileName;
 
         public Configuration Default = new Configuration
         {
@@ -200,9 +204,18 @@ namespace cdeWin
 
         public Config(string configFileName)
         {
-            _configFileName = configFileName;
-            Loaded = Read(_configFileName);
+            BuildConfigPath(configFileName);
+            Loaded = Read(_configFullFileName);
             Active = Loaded ?? Default;
+        }
+
+        private void BuildConfigPath(string configFileName)
+        {
+            _configPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+            _configFileName = configFileName;
+            var justPath = Path.Combine(_configPath, _configSubPath);
+            Directory.CreateDirectory(justPath);
+            _configFullFileName = Path.Combine(justPath, _configFileName);
         }
 
         private Configuration Read(string fileName)
@@ -225,7 +238,7 @@ namespace cdeWin
 
         public bool Save()
         {
-            return Save(_configFileName);
+            return Save(_configFullFileName);
         }
 
         public bool Save(string fileName)
