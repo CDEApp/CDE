@@ -268,9 +268,8 @@ namespace cdeWin
             Active.FindEntryFilter = form.FindEntryFilter;
         }
 
-        public void RestoreConfig(CDEWinForm form)
+        public void RestoreConfig(ICDEWinForm form)
         {
-            Active.MainWindowConfig.RestoreForm(form);
             form.DirectoryListViewHelper.SetColumnConfigs(Active.DirectoryListView.Columns);
             form.SearchResultListViewHelper.SetColumnConfigs(Active.SearchResultListView.Columns);
             form.CatalogListViewHelper.SetColumnConfigs(Active.CatalogListView.Columns);

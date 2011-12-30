@@ -22,11 +22,12 @@ namespace cdeWin
             var mainForm = new CDEWinForm();
             config.RestoreConfig(mainForm);
 
+            var active = config.Active;
+            active.MainWindowConfig.RestoreForm(mainForm);
             var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);
             //mainPresenter.Display();
             Application.Run(mainForm); // Trying, as Application.DoEvents() is used elsewhere.
 
-            var active = config.Active;
             active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
         }
