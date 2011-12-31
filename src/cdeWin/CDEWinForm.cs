@@ -59,6 +59,15 @@ namespace cdeWin
         event EventAction OnCatalogListViewColumnClick;
         void OnCatalogListViewColumnClickFire();
 
+        event EventAction OnFromDateCheckboxChanged;
+        event EventAction OnToDateCheckboxChanged;
+        event EventAction OnFromHourCheckboxChanged;
+        event EventAction OnToHourCheckboxChanged;
+        event EventAction OnNotOlderThanCheckboxChanged;
+        event EventAction OnAdvancedSearchButtonClick;
+        event EventAction OnFromSizeCheckboxChanged;
+        event EventAction OnToSizeCheckboxChanged;
+
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
         TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
@@ -82,13 +91,28 @@ namespace cdeWin
         void SetCatalogsLoadedStatus(int i);
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
-        bool CancelSearchButtonEnable { get; set; }
-
+        bool FromDateEnable { get; set; }
+        bool ToDateEnable { get; set; }
+        bool FromHourEnable { get; set; }
+        bool ToHourEnable { get; set; }
+        bool NotOlderThanCheckboxEnable { get; set; }
+        string SearchButtonText { get; set; }
+        bool IsAdvancedSearchMode { get; set; }
+        bool FromSizeCheckboxEnable { get; set; }
+        bool ToSizeCheckboxEnable { get; set; }
+        
         ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
         ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
         ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         void CleanUp();
+
+        // improve test easy on CDEWinFormPresenter.
+        void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class;
+        // improve test easy on CDEWinFormPresenter.
+        int SetList<T>(ListViewHelper<T> lvh, List<T> list) where T : class;
+        // improve test easy on CDEWinFormPresenter.
+        void SortList<T>(ListViewHelper<T> lvh) where T : class;
     }
 
     public partial class CDEWinForm : Form, ICDEWinForm
@@ -138,7 +162,19 @@ namespace cdeWin
         public event EventAction OnCatalogListViewColumnClick;
         public void OnCatalogListViewColumnClickFire() { OnCatalogListViewColumnClick(); }
 
-        public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+        public event EventAction OnFromDateCheckboxChanged;
+        public event EventAction OnToDateCheckboxChanged;
+        public event EventAction OnFromHourCheckboxChanged;
+        public event EventAction OnToHourCheckboxChanged;
+        public event EventAction OnNotOlderThanCheckboxChanged;
+        public event EventAction OnAdvancedSearchButtonClick;
+        public event EventAction OnFromSizeCheckboxChanged;
+        public event EventAction OnToSizeCheckboxChanged;
+            
+        private bool _isAdvancedSearchMode;
+        private const int AdvancedSearchSizeChange = 80;
+        private int _normalSearchPanelSize;
+        private int _advancedSearchPanelSize;public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
         public ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
@@ -177,7 +213,6 @@ namespace cdeWin
             Activated += MyFormActivated;
 
             whatToSearchComboBox.Items.AddRange(new[] { "Include Path in Search", "Exclude Path from Search" });
-            //whatToSearchComboBox.Items.AddRange(new[] { "Include", "Exclude" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
             whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
@@ -223,10 +258,55 @@ namespace cdeWin
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
 
             searchButton.Click += (s, e) => OnSearch();
-            cancelSearchButton.Click +=  (s, e) => OnCancelSearch();
-            var cancelSearchTooltip = new ToolTip();
-            cancelSearchTooltip.SetToolTip(cancelSearchButton, "Cancel Search is not immediate, wait for a progress update.");
-            CancelSearchButtonEnable = false;
+            var searchTooltip = new ToolTip();
+            searchTooltip.SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
+
+            fromDateTimePicker.Format = DateTimePickerFormat.Custom;
+            fromDateTimePicker.CustomFormat = Config.DateCustomFormatYMD;
+            fromDateCheckbox.CheckedChanged += (s, e) => OnFromDateCheckboxChanged();
+            FromDateEnable = false;
+
+            toDateTimePicker.Format = DateTimePickerFormat.Custom;
+            toDateTimePicker.CustomFormat = Config.DateCustomFormatYMD;
+            toDateCheckbox.CheckedChanged += (s, e) => OnToDateCheckboxChanged();
+            ToDateEnable = false;
+
+            fromHourTimePicker.ShowUpDown = true;
+            fromHourTimePicker.Format = DateTimePickerFormat.Custom;
+            fromHourTimePicker.CustomFormat = Config.DateCustomFormatHMS;
+            fromHourCheckbox.CheckedChanged += (s, e) => OnFromHourCheckboxChanged();
+            FromHourEnable = false;
+
+            fromHourTimePicker.ShowUpDown = true;
+            toHourTimePicker.Format = DateTimePickerFormat.Custom;
+            toHourTimePicker.CustomFormat = Config.DateCustomFormatHMS;
+            toHourCheckbox.CheckedChanged += (s, e) => OnToHourCheckboxChanged();
+            ToHourEnable = false;
+
+            notOlderThanCheckbox.CheckedChanged += (s, e) => OnNotOlderThanCheckboxChanged();
+            NotOlderThanCheckboxEnable = false;
+
+            notOlderThanDropDown.Items.AddRange(new[] { "Minute(s)", "Hour(s)", "Day(s)", "Week(s)", "Month(s)", "Year(s)" });
+            notOlderThanDropDown.SelectedIndex = 1; // default Hour(s)
+            notOlderThanDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
+
+            var byteSizeStrings = new[] {"bytes", "KB", "KiB", "MB", "MiB", "GB", "GIB"};
+            fromSizeDropDown.Items.AddRange(byteSizeStrings);
+            fromSizeDropDown.SelectedIndex = 4;
+            fromSizeCheckbox.CheckedChanged += (s, e) => OnFromSizeCheckboxChanged();
+            FromSizeCheckboxEnable = false;
+
+            toSizeDropDown.Items.AddRange(byteSizeStrings);
+            toSizeDropDown.SelectedIndex = 4;
+            toSizeCheckbox.CheckedChanged += (s, e) => OnToSizeCheckboxChanged();
+            ToSizeCheckboxEnable = false;
+
+            if (_advancedSearchPanelSize == 0)
+            {
+                _advancedSearchPanelSize = searchControlPanel.Height;
+                _normalSearchPanelSize = _advancedSearchPanelSize - AdvancedSearchSizeChange;
+            }
+            advancedSearchButton.Click += (s, e) => OnAdvancedSearchButtonClick();
         }
 
         private void MyFormClosing(object s, FormClosingEventArgs e)
@@ -411,10 +491,109 @@ namespace cdeWin
             set { searchButton.Enabled = value; }
         }
 
-        public bool CancelSearchButtonEnable
+        public bool FromDateEnable
         {
-            get { return cancelSearchButton.Enabled; }
-            set { cancelSearchButton.Enabled = value; }
+            get { return fromDateCheckbox.Checked; }
+            set
+            {
+                fromDateCheckbox.Checked = value;
+                fromDateTimePicker.Enabled = value;
+            }
+        }
+
+        public bool ToDateEnable
+        {
+            get { return toDateCheckbox.Checked; }
+            set
+            {
+                toDateCheckbox.Checked = value;
+                toDateTimePicker.Enabled = value;
+            }
+        }
+
+        public bool FromHourEnable
+        {
+            get { return fromHourCheckbox.Checked; }
+            set
+            {
+                fromHourCheckbox.Checked = value;
+                fromHourTimePicker.Enabled = value;
+            }
+        }
+
+        public bool ToHourEnable
+        {
+            get { return toHourCheckbox.Checked; }
+            set
+            {
+                toHourCheckbox.Checked = value;
+                toHourTimePicker.Enabled = value;
+            }
+        }
+
+        public bool NotOlderThanCheckboxEnable
+        {
+            get { return notOlderThanCheckbox.Checked; }
+            set
+            {
+                notOlderThanCheckbox.Checked = value;
+                notOlderThanUpDown.Enabled = value;
+                notOlderThanDropDown.Enabled = value;
+            }
+        }
+
+        public string SearchButtonText
+        {
+            get { return searchButton.Text; }
+            set { searchButton.Text = value; }
+        }
+
+        public bool IsAdvancedSearchMode
+        {
+            get { return _isAdvancedSearchMode; }
+            set
+            {
+                _isAdvancedSearchMode = value;
+                searchControlPanel.Height = _isAdvancedSearchMode 
+                    ? _advancedSearchPanelSize : _normalSearchPanelSize;
+            }
+        }
+
+        public bool FromSizeCheckboxEnable
+        {
+            get { return fromSizeCheckbox.Checked; }
+            set
+            {
+                fromSizeCheckbox.Checked = value;
+                fromSizeUpDown.Enabled = value;
+                fromSizeDropDown.Enabled = value;
+            }
+        }
+
+        public bool ToSizeCheckboxEnable
+        {
+            get { return toSizeCheckbox.Checked; }
+            set
+            {
+                toSizeCheckbox.Checked = value;
+                toSizeUpDown.Enabled = value;
+                toSizeDropDown.Enabled = value;
+            }
+        }
+
+        public void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class
+        {
+            lvh.ColumnSortCompare = compare;
+        }
+
+        public int SetList<T>(ListViewHelper<T> lvh, List<T> list) where T : class
+        {
+            return lvh.SetList(list);
+        }
+
+        public void SortList<T>(ListViewHelper<T> lvh) where T : class
+        {
+            lvh.SortList();
         }
     }
 }

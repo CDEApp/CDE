@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
@@ -134,6 +135,8 @@ namespace cdeWin
         public bool IncludePath;
         [ProtoMember(12)]
         public int FindEntryFilter;
+        [ProtoMember(13)]
+        public bool IsAdvancedSearchMode;
 
         public Configuration()
         {
@@ -141,8 +144,26 @@ namespace cdeWin
         }
     }
 
-    public class Config
+    public interface IConfig
     {
+        Configuration Active { get; set; }
+        void RecordConfig(ICDEWinForm form);
+        int SearchResultColumnCount { get; }
+        int DirectoryColumnCount { get; }
+        int CatalogColumnCount { get; }
+    }
+
+    public class Config : IConfig
+    {
+        // ReSharper disable InconsistentNaming
+        public const string DateFormatYMDHMS = "{0:yyyy/MM/dd HH:mm:ss}";
+        public const string DateCustomFormatYMD = "yyyy/MM/dd";
+        public const string DateCustomFormatHMS = "HH:mm:ss";
+        // ReSharper restore InconsistentNaming
+
+        public const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        public static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
+
         private readonly string _configSubPath = "cde";
         private string _configFileName;
         private string _configPath;
@@ -195,12 +216,13 @@ namespace cdeWin
             },
             DirectoryPaneSplitterRatio = -1f,
             Pattern = string.Empty,
-            RegexMode = false
+            RegexMode = false,
+            IsAdvancedSearchMode = false,
         };
 
         public Configuration Loaded;
 
-        public Configuration Active;
+        public Configuration Active { get; set; }
 
         public Config(string configFileName)
         {
@@ -279,6 +301,7 @@ namespace cdeWin
             Active.RegexMode = form.RegexMode;
             Active.IncludePath = form.IncludePathInSearch;
             Active.FindEntryFilter = form.FindEntryFilter;
+            Active.IsAdvancedSearchMode = form.IsAdvancedSearchMode;
         }
 
         public void RestoreConfig(ICDEWinForm form)
@@ -292,6 +315,30 @@ namespace cdeWin
             form.RegexMode = Active.RegexMode;
             form.IncludePathInSearch = Active.IncludePath;
             form.FindEntryFilter = Active.FindEntryFilter;
+            form.IsAdvancedSearchMode = Active.IsAdvancedSearchMode;
+        }
+
+        // improve test easy on CDEWinFormPresenter.
+        public int SearchResultColumnCount
+        {
+            get { return Active != null ? ColumnCount(Active.SearchResultListView) : 0; }
+        }
+
+        // improve test easy on CDEWinFormPresenter.
+        public int DirectoryColumnCount
+        {
+            get { return Active != null ? ColumnCount(Active.DirectoryListView) : 0; }
+        }
+
+        // improve test easy on CDEWinFormPresenter.
+        public int CatalogColumnCount
+        {
+            get { return Active != null ? ColumnCount(Active.CatalogListView) : 0; }
+        }
+
+        private static int ColumnCount(ListViewConfig lvc)
+        {
+            return lvc != null && lvc.Columns != null ? lvc.Columns.Count : 0;
         }
     }
 }

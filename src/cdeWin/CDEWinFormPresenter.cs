@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
@@ -17,19 +16,15 @@ namespace cdeWin
 
     public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
-        private static string[] EmptyColumnValues = new[] { "Empty List", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10", "e11", "e12" };
-        private const string ModifiedFieldFormat = "{0:yyyy/MM/dd HH:mm:ss}";
         private const string DummyNodeName = "_dummyNode";
         private readonly Color _listViewForeColor = Color.Black;
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         // TODO these need to be centralised.
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
         private readonly ICDEWinForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
-        private readonly Config _config;
+        private readonly IConfig _config;
 
         private readonly string[] _directoryVals;
         private readonly string[] _searchVals;
@@ -42,33 +37,44 @@ namespace cdeWin
         /// </summary>
         private CommonEntry _directoryListCommonEntry;
 
-        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, Config config) : base(form)
+        private BackgroundWorker _bgWorker;
+        private bool _isSearchButton;
+
+        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config) : base(form)
         {
             _clientForm = form;
             _rootEntries = rootEntries;
             _config = config;
 
-            var cfg = _config.Active;
-            _directoryVals = new string[cfg.DirectoryListView.Columns.Count];
-            _searchVals = new string[cfg.SearchResultListView.Columns.Count];
-            _catalogVals = new string[cfg.CatalogListView.Columns.Count];
+            _searchVals = new string[_config.SearchResultColumnCount];
+            _directoryVals = new string[_config.DirectoryColumnCount];
+            _catalogVals = new string[_config.CatalogColumnCount];
 
+            SetSearchButton(true);
             RegisterListViewSorters();
             SetCatalogListView();
         }
 
         private void RegisterListViewSorters()
         {
-            _clientForm.SearchResultListViewHelper.ColumnSortCompare = SearchResultCompare;
-            _clientForm.DirectoryListViewHelper.ColumnSortCompare = DirectoryCompare;
-            _clientForm.CatalogListViewHelper.ColumnSortCompare = RootCompare;
+            _clientForm.SetColumnSortCompare(_clientForm.SearchResultListViewHelper, SearchResultCompare);
+            _clientForm.SetColumnSortCompare(_clientForm.DirectoryListViewHelper, DirectoryCompare);
+            _clientForm.SetColumnSortCompare(_clientForm.CatalogListViewHelper, RootCompare);
         }
 
         private void SetCatalogListView()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = catalogHelper.SetList(_rootEntries);
+            var count = _clientForm.SetList(catalogHelper, _rootEntries);
+            _clientForm.SortList(catalogHelper);
             _clientForm.SetCatalogsLoadedStatus(count);
+        }
+
+
+        private void SetSearchButton(bool search)
+        {
+            _isSearchButton = search;
+            _clientForm.SearchButtonText = _isSearchButton ? "Search" : "Cancel Search";
         }
 
         public void Display()
@@ -169,7 +175,7 @@ namespace cdeWin
                     vals[1] = val + ">";
                 }
             }
-            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(ModifiedFieldFormat, dirEntry.Modified);
+            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(Config.DateFormatYMDHMS, dirEntry.Modified);
             return itemColor;
         }
 
@@ -177,9 +183,7 @@ namespace cdeWin
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
             if (_rootEntries == null || _rootEntries.Count == 0)
-            {   // in case we get called a bit early.
-                // THIS MUST MUST return an ListViewItem always!!!!!!
-                catalogHelper.RenderItem = new ListViewItem(EmptyColumnValues);
+            {
                 return;
             }
             var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
@@ -198,7 +202,7 @@ namespace cdeWin
             vals[5] = rootEntry.DriveLetterHint;
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
-            vals[8] = string.Format(ModifiedFieldFormat, rootEntry.ScanStartUTC.ToLocalTime());
+            vals[8] = string.Format(Config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
             vals[9] = rootEntry.DefaultFileName; // todo give full path ? or actual file name ?
             vals[10] = rootEntry.Description;
 
@@ -211,7 +215,6 @@ namespace cdeWin
             {
                 return;
             }
-            _clientForm.SearchButtonEnable = false;
             var searchHelper = _clientForm.SearchResultListViewHelper;
             _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
@@ -246,7 +249,6 @@ namespace cdeWin
 
             var count = searchHelper.SetList(_searchResultList);
             _clientForm.SetSearchResultStatus(count);
-            _clientForm.SearchButtonEnable = true;
         }
 
         private bool RegexIsBad()
@@ -278,10 +280,15 @@ namespace cdeWin
             public int End;
         }
 
-        private BackgroundWorker _bgWorker;
-
         public void Search()
         {
+            if (!_isSearchButton)
+            {
+                CancelSearch();
+                SetSearchButton(true);
+                return;
+            }
+
             if (RegexIsBad())
             {
                 return;
@@ -295,9 +302,11 @@ namespace cdeWin
             _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
             _bgWorker.ProgressChanged += BgWorkerProgressChanged;
 
+            var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
+
             var findOptions = new FindOptions
                 {
-                    Pattern = _clientForm.Pattern,
+                    Pattern = optimisedPattern,
                     RegexMode = _clientForm.RegexMode,
                     IncludePath = _clientForm.IncludePathInSearch,
                     IncludeFiles = _clientForm.IncludeFiles,
@@ -315,9 +324,33 @@ namespace cdeWin
                     State = new BgWorkerState()
                 };
 
-            _clientForm.CancelSearchButtonEnable = true;
-            _clientForm.SearchButtonEnable = false;
+            SetSearchButton(false);
             _bgWorker.RunWorkerAsync(param);
+        }
+
+        // Assumes well formed regex pattern input.
+        // As search is substring match remove leading and trailing wildcards.
+        protected string OptimiseRegexPattern(string pattern)
+        {
+            if (_clientForm.RegexMode && pattern != null)
+            {
+                bool changeMade;
+                do
+                {
+                    changeMade = false;
+                    if (pattern.StartsWith(".*"))
+                    {
+                        pattern = pattern.Substring(2);
+                        changeMade = true;
+                    }
+                    if (pattern.EndsWith(".*"))
+                    {
+                        pattern = pattern.Substring(0,pattern.Length - 2);
+                        changeMade = true;
+                    }
+                } while (changeMade);
+            }
+            return pattern;
         }
 
         private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
@@ -349,33 +382,39 @@ namespace cdeWin
             Find.TraverseTreeFind(rootEntries, options);// TODO dont like that this is static.
             state.ListCount = list.Count;
             state.List = list;
-            worker.ReportProgress(100, state);
+            var completePercent = (int) (100.0*state.Counter/state.End);
+            if (state.End - state.Counter < options.ProgressModifier)
+            {
+                completePercent = 100;
+            }
+            worker.ReportProgress(completePercent, state);
+            //worker.ReportProgress(100, state);
             e.Result = list;
         }
 
         private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
         {
             var searchHelper = _clientForm.SearchResultListViewHelper;
-            //_clientForm.SetSearchTimeStatus(trace);
+            int count;
 
             if (e.Error != null)
             {
                 MessageBox.Show(e.Error.Message);
+                count = 0;
             }
             else if (e.Cancelled)
             {
-                var count = searchHelper.SetList(_searchResultList);
-                _clientForm.SetSearchResultStatus(count);
+                count = searchHelper.SetList(_searchResultList);
             }
             else
             {
                 var resultList = (List<PairDirEntry>)e.Result;
                 _searchResultList = resultList;
-                var count = searchHelper.SetList(_searchResultList);
-                _clientForm.SetSearchResultStatus(count);
+                count = searchHelper.SetList(_searchResultList);
             }
-            _clientForm.SearchButtonEnable = true;
-            _clientForm.CancelSearchButtonEnable = false;
+            _clientForm.SetSearchResultStatus(count);
+            _clientForm.SortList(searchHelper);
+            SetSearchButton(true);
             _bgWorker.Dispose();
             _bgWorker = null;
         }
@@ -410,9 +449,6 @@ namespace cdeWin
             var searchHelper = _clientForm.SearchResultListViewHelper;
             if (_searchResultList == null || _searchResultList.Count == 0)
             {
-                // THIS MUST MUST return an ListViewItem always!!!!!!
-                // had a problem of returning a null with cacheing on only i Release running by itself.
-                searchHelper.RenderItem = new ListViewItem(EmptyColumnValues);
                 return;
             }
             var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
@@ -444,9 +480,7 @@ namespace cdeWin
         {
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             if (_directoryList == null || _directoryList.Count == 0)
-            {   // in case we get called a bit early.
-                // THIS MUST MUST return an ListViewItem always!!!!!!
-                directoryHelper.RenderItem = new ListViewItem(EmptyColumnValues);
+            { 
                 return;
             }
             var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
@@ -608,10 +642,10 @@ namespace cdeWin
 
                 case 3: // SearchResult ListView Path column
                     //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
-                    compareResult = MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, MyCompareOptions);
+                    compareResult = Config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, Config.MyCompareOptions);
                     if (compareResult == 0)
                     {
-                        compareResult = MyCompareInfo.Compare(de1.Path, de2.Path, MyCompareOptions);
+                        compareResult = Config.MyCompareInfo.Compare(de1.Path, de2.Path, Config.MyCompareOptions);
                     }
                     break;
 
@@ -854,5 +888,99 @@ namespace cdeWin
             }
             return compareResult;
         }
+    
+        public void FromDateCheckboxChanged()
+        {
+            var enable =_clientForm.FromDateEnable;
+            if (enable)
+            {
+                DisableNotOlderThan();
+            }
+            _clientForm.FromDateEnable = enable;
+        }
+
+        public void ToDateCheckboxChanged()
+        {
+            var enable =_clientForm.ToDateEnable;
+            if (enable)
+            {
+                DisableNotOlderThan();
+            }
+            _clientForm.ToDateEnable = enable; // side effects hmm ?? ick
+        }
+
+        public void FromHourCheckboxChanged()
+        {
+            var enable =_clientForm.FromHourEnable;
+            if (enable)
+            {
+                DisableNotOlderThan();
+            }
+            _clientForm.FromHourEnable = enable;
+        }
+
+        public void ToHourCheckboxChanged()
+        {
+            var enable =_clientForm.ToHourEnable;
+            if (enable)
+            {
+                DisableNotOlderThan();
+            }
+            _clientForm.ToHourEnable = enable;
+        }
+
+        private void DisableNotOlderThan()
+        {
+            _clientForm.NotOlderThanCheckboxEnable = false;
+        }
+
+        public void NotOlderThanCheckboxChanged()
+        {
+            var enable =_clientForm.NotOlderThanCheckboxEnable;
+            if (enable)
+            {
+                DisableFromToFields();
+            }
+            _clientForm.NotOlderThanCheckboxEnable = enable;
+        }
+
+        private void DisableFromToFields()
+        {
+            _clientForm.FromDateEnable = false;
+            _clientForm.ToDateEnable = false;
+            _clientForm.FromHourEnable = false;
+            _clientForm.ToHourEnable = false;
+        }
+
+        public void AdvancedSearchButtonClick()
+        {
+            SetAdvancedSearch(!_clientForm.IsAdvancedSearchMode);
+        }
+
+        private void SetAdvancedSearch(bool value)
+        {
+            _clientForm.IsAdvancedSearchMode = value;
+        }
+
+        public void FromSizeCheckboxChanged()
+        {
+            var enable = _clientForm.FromSizeCheckboxEnable;
+            //if (enable)
+            //{
+            //    DisableFromToFields();
+            //}
+            _clientForm.FromSizeCheckboxEnable = enable;
+        }
+
+        public void ToSizeCheckboxChanged()
+        {
+            var enable = _clientForm.ToSizeCheckboxEnable;
+            //if (enable)
+            //{
+            //    DisableFromToFields();
+            //}
+            _clientForm.ToSizeCheckboxEnable = enable;
+        }
+
     }
 }
