@@ -36,6 +36,7 @@
             this.mainTabControl = new System.Windows.Forms.TabControl();
             this.searchTab = new System.Windows.Forms.TabPage();
             this.searchResultPanel = new System.Windows.Forms.Panel();
+            this.searchResultListView = new cdeWin.DoubleBufferListView();
             this.searchControlPanel = new System.Windows.Forms.Panel();
             this.advancedSearchButton = new System.Windows.Forms.Button();
             this.toSizeDropDown = new System.Windows.Forms.ComboBox();
@@ -64,10 +65,12 @@
             this.searchLabel = new System.Windows.Forms.Label();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
+            this.catalogResultListView = new cdeWin.DoubleBufferListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
             this.directorySplitContainer = new System.Windows.Forms.SplitContainer();
+            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.directoryBottomPanel = new System.Windows.Forms.Panel();
             this.copyPathButton = new System.Windows.Forms.Button();
             this.directoryPathTextBox = new System.Windows.Forms.TextBox();
@@ -82,9 +85,6 @@
             this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
             this.backgroundStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.searchResultListView = new cdeWin.DoubleBufferListView();
-            this.catalogResultListView = new cdeWin.DoubleBufferListView();
-            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -158,7 +158,7 @@
             this.mainTabControl.Name = "mainTabControl";
             this.mainTabControl.SelectedIndex = 0;
             this.mainTabControl.Size = new System.Drawing.Size(684, 452);
-            this.mainTabControl.TabIndex = 6;
+            this.mainTabControl.TabIndex = 0;
             // 
             // searchTab
             // 
@@ -180,6 +180,15 @@
             this.searchResultPanel.Name = "searchResultPanel";
             this.searchResultPanel.Size = new System.Drawing.Size(670, 280);
             this.searchResultPanel.TabIndex = 1;
+            // 
+            // searchResultListView
+            // 
+            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
+            this.searchResultListView.Name = "searchResultListView";
+            this.searchResultListView.Size = new System.Drawing.Size(670, 280);
+            this.searchResultListView.TabIndex = 0;
+            this.searchResultListView.UseCompatibleStateImageBehavior = false;
             // 
             // searchControlPanel
             // 
@@ -219,7 +228,7 @@
             this.advancedSearchButton.Location = new System.Drawing.Point(566, 28);
             this.advancedSearchButton.Name = "advancedSearchButton";
             this.advancedSearchButton.Size = new System.Drawing.Size(96, 23);
-            this.advancedSearchButton.TabIndex = 30;
+            this.advancedSearchButton.TabIndex = 7;
             this.advancedSearchButton.Text = "Advanced Mode";
             this.advancedSearchButton.UseVisualStyleBackColor = true;
             // 
@@ -230,7 +239,7 @@
             this.toSizeDropDown.Location = new System.Drawing.Point(566, 87);
             this.toSizeDropDown.Name = "toSizeDropDown";
             this.toSizeDropDown.Size = new System.Drawing.Size(75, 21);
-            this.toSizeDropDown.TabIndex = 29;
+            this.toSizeDropDown.TabIndex = 21;
             // 
             // fromSizeDropDown
             // 
@@ -239,21 +248,21 @@
             this.fromSizeDropDown.Location = new System.Drawing.Point(566, 61);
             this.fromSizeDropDown.Name = "fromSizeDropDown";
             this.fromSizeDropDown.Size = new System.Drawing.Size(75, 21);
-            this.fromSizeDropDown.TabIndex = 28;
+            this.fromSizeDropDown.TabIndex = 18;
             // 
             // toSizeUpDown
             // 
             this.toSizeUpDown.Location = new System.Drawing.Point(491, 87);
             this.toSizeUpDown.Name = "toSizeUpDown";
             this.toSizeUpDown.Size = new System.Drawing.Size(69, 20);
-            this.toSizeUpDown.TabIndex = 27;
+            this.toSizeUpDown.TabIndex = 20;
             // 
             // fromSizeUpDown
             // 
             this.fromSizeUpDown.Location = new System.Drawing.Point(491, 61);
             this.fromSizeUpDown.Name = "fromSizeUpDown";
             this.fromSizeUpDown.Size = new System.Drawing.Size(69, 20);
-            this.fromSizeUpDown.TabIndex = 26;
+            this.fromSizeUpDown.TabIndex = 17;
             // 
             // toSizeCheckbox
             // 
@@ -262,7 +271,7 @@
             this.toSizeCheckbox.Location = new System.Drawing.Point(423, 90);
             this.toSizeCheckbox.Name = "toSizeCheckbox";
             this.toSizeCheckbox.Size = new System.Drawing.Size(62, 17);
-            this.toSizeCheckbox.TabIndex = 25;
+            this.toSizeCheckbox.TabIndex = 19;
             this.toSizeCheckbox.Text = "To Size";
             this.toSizeCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -273,7 +282,7 @@
             this.fromSizeCheckbox.Location = new System.Drawing.Point(413, 64);
             this.fromSizeCheckbox.Name = "fromSizeCheckbox";
             this.fromSizeCheckbox.Size = new System.Drawing.Size(72, 17);
-            this.fromSizeCheckbox.TabIndex = 24;
+            this.fromSizeCheckbox.TabIndex = 16;
             this.fromSizeCheckbox.Text = "From Size";
             this.fromSizeCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -284,14 +293,14 @@
             this.notOlderThanDropDown.Location = new System.Drawing.Point(195, 109);
             this.notOlderThanDropDown.Name = "notOlderThanDropDown";
             this.notOlderThanDropDown.Size = new System.Drawing.Size(75, 21);
-            this.notOlderThanDropDown.TabIndex = 23;
+            this.notOlderThanDropDown.TabIndex = 24;
             // 
             // notOlderThanUpDown
             // 
             this.notOlderThanUpDown.Location = new System.Drawing.Point(110, 110);
             this.notOlderThanUpDown.Name = "notOlderThanUpDown";
             this.notOlderThanUpDown.Size = new System.Drawing.Size(79, 20);
-            this.notOlderThanUpDown.TabIndex = 22;
+            this.notOlderThanUpDown.TabIndex = 23;
             // 
             // notOlderThanCheckbox
             // 
@@ -300,7 +309,7 @@
             this.notOlderThanCheckbox.Location = new System.Drawing.Point(5, 113);
             this.notOlderThanCheckbox.Name = "notOlderThanCheckbox";
             this.notOlderThanCheckbox.Size = new System.Drawing.Size(99, 17);
-            this.notOlderThanCheckbox.TabIndex = 21;
+            this.notOlderThanCheckbox.TabIndex = 22;
             this.notOlderThanCheckbox.Text = "Not Older Than";
             this.notOlderThanCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -312,7 +321,7 @@
             this.toHourTimePicker.Name = "toHourTimePicker";
             this.toHourTimePicker.ShowUpDown = true;
             this.toHourTimePicker.Size = new System.Drawing.Size(88, 20);
-            this.toHourTimePicker.TabIndex = 20;
+            this.toHourTimePicker.TabIndex = 15;
             // 
             // fromHourTimePicker
             // 
@@ -322,7 +331,7 @@
             this.fromHourTimePicker.Name = "fromHourTimePicker";
             this.fromHourTimePicker.ShowUpDown = true;
             this.fromHourTimePicker.Size = new System.Drawing.Size(88, 20);
-            this.fromHourTimePicker.TabIndex = 19;
+            this.fromHourTimePicker.TabIndex = 13;
             // 
             // toHourCheckbox
             // 
@@ -331,7 +340,7 @@
             this.toHourCheckbox.Location = new System.Drawing.Point(229, 90);
             this.toHourCheckbox.Name = "toHourCheckbox";
             this.toHourCheckbox.Size = new System.Drawing.Size(65, 17);
-            this.toHourCheckbox.TabIndex = 18;
+            this.toHourCheckbox.TabIndex = 14;
             this.toHourCheckbox.Text = "To Hour";
             this.toHourCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -342,7 +351,7 @@
             this.fromHourCheckbox.Location = new System.Drawing.Point(219, 64);
             this.fromHourCheckbox.Name = "fromHourCheckbox";
             this.fromHourCheckbox.Size = new System.Drawing.Size(75, 17);
-            this.fromHourCheckbox.TabIndex = 17;
+            this.fromHourCheckbox.TabIndex = 12;
             this.fromHourCheckbox.Text = "From Hour";
             this.fromHourCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -353,7 +362,7 @@
             this.toDateCheckbox.Location = new System.Drawing.Point(39, 90);
             this.toDateCheckbox.Name = "toDateCheckbox";
             this.toDateCheckbox.Size = new System.Drawing.Size(65, 17);
-            this.toDateCheckbox.TabIndex = 16;
+            this.toDateCheckbox.TabIndex = 10;
             this.toDateCheckbox.Text = "To Date";
             this.toDateCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -364,7 +373,7 @@
             this.fromDateCheckbox.Location = new System.Drawing.Point(29, 64);
             this.fromDateCheckbox.Name = "fromDateCheckbox";
             this.fromDateCheckbox.Size = new System.Drawing.Size(75, 17);
-            this.fromDateCheckbox.TabIndex = 15;
+            this.fromDateCheckbox.TabIndex = 8;
             this.fromDateCheckbox.Text = "From Date";
             this.fromDateCheckbox.UseVisualStyleBackColor = true;
             // 
@@ -375,7 +384,7 @@
             this.toDateTimePicker.Location = new System.Drawing.Point(110, 87);
             this.toDateTimePicker.Name = "toDateTimePicker";
             this.toDateTimePicker.Size = new System.Drawing.Size(103, 20);
-            this.toDateTimePicker.TabIndex = 14;
+            this.toDateTimePicker.TabIndex = 11;
             // 
             // fromDateTimePicker
             // 
@@ -384,14 +393,14 @@
             this.fromDateTimePicker.Location = new System.Drawing.Point(110, 61);
             this.fromDateTimePicker.Name = "fromDateTimePicker";
             this.fromDateTimePicker.Size = new System.Drawing.Size(103, 20);
-            this.fromDateTimePicker.TabIndex = 13;
+            this.fromDateTimePicker.TabIndex = 9;
             // 
             // searchButton
             // 
             this.searchButton.Location = new System.Drawing.Point(566, 4);
             this.searchButton.Name = "searchButton";
             this.searchButton.Size = new System.Drawing.Size(96, 23);
-            this.searchButton.TabIndex = 11;
+            this.searchButton.TabIndex = 3;
             this.searchButton.Text = "&Search";
             this.searchButton.UseVisualStyleBackColor = true;
             // 
@@ -401,7 +410,7 @@
             this.findLabel.Location = new System.Drawing.Point(45, 28);
             this.findLabel.Name = "findLabel";
             this.findLabel.Size = new System.Drawing.Size(27, 13);
-            this.findLabel.TabIndex = 10;
+            this.findLabel.TabIndex = 4;
             this.findLabel.Text = "Find";
             // 
             // findComboBox
@@ -410,14 +419,14 @@
             this.findComboBox.Location = new System.Drawing.Point(78, 25);
             this.findComboBox.Name = "findComboBox";
             this.findComboBox.Size = new System.Drawing.Size(96, 21);
-            this.findComboBox.TabIndex = 9;
+            this.findComboBox.TabIndex = 5;
             // 
             // patternComboBox
             // 
             this.patternComboBox.Location = new System.Drawing.Point(78, 2);
             this.patternComboBox.Name = "patternComboBox";
             this.patternComboBox.Size = new System.Drawing.Size(262, 21);
-            this.patternComboBox.TabIndex = 8;
+            this.patternComboBox.TabIndex = 1;
             // 
             // whatToSearchComboBox
             // 
@@ -467,6 +476,15 @@
             this.catalogResultPanel.Size = new System.Drawing.Size(670, 339);
             this.catalogResultPanel.TabIndex = 1;
             // 
+            // catalogResultListView
+            // 
+            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
+            this.catalogResultListView.Name = "catalogResultListView";
+            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
+            this.catalogResultListView.TabIndex = 0;
+            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
+            // 
             // catalogControlPanel
             // 
             this.catalogControlPanel.Controls.Add(this.labelCatalogPlaceholder);
@@ -513,6 +531,15 @@
             this.directorySplitContainer.Size = new System.Drawing.Size(670, 393);
             this.directorySplitContainer.SplitterDistance = 222;
             this.directorySplitContainer.TabIndex = 0;
+            // 
+            // directoryListView
+            // 
+            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.directoryListView.Location = new System.Drawing.Point(0, 0);
+            this.directoryListView.Name = "directoryListView";
+            this.directoryListView.Size = new System.Drawing.Size(444, 393);
+            this.directoryListView.TabIndex = 2;
+            this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
             // directoryBottomPanel
             // 
@@ -653,33 +680,6 @@
             this.backgroundStatusLabel.Name = "backgroundStatusLabel";
             this.backgroundStatusLabel.Size = new System.Drawing.Size(91, 19);
             this.backgroundStatusLabel.Text = "BG: 0 of 0 - X/Y";
-            // 
-            // searchResultListView
-            // 
-            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
-            this.searchResultListView.Name = "searchResultListView";
-            this.searchResultListView.Size = new System.Drawing.Size(670, 280);
-            this.searchResultListView.TabIndex = 0;
-            this.searchResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // catalogResultListView
-            // 
-            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
-            this.catalogResultListView.Name = "catalogResultListView";
-            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
-            this.catalogResultListView.TabIndex = 0;
-            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // directoryListView
-            // 
-            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.directoryListView.Location = new System.Drawing.Point(0, 0);
-            this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(444, 393);
-            this.directoryListView.TabIndex = 2;
-            this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
             // CDEWinForm
             // 
