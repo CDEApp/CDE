@@ -70,7 +70,6 @@ namespace cdeWin
             _clientForm.SetCatalogsLoadedStatus(count);
         }
 
-
         private void SetSearchButton(bool search)
         {
             _isSearchButton = search;
@@ -952,9 +951,10 @@ namespace cdeWin
             _clientForm.ToHourEnable = false;
         }
 
-        public void AdvancedSearchButtonClick()
+        public void AdvancedSearchCheckboxChanged()
         {
-            SetAdvancedSearch(!_clientForm.IsAdvancedSearchMode);
+            var isAdvanced = _clientForm.IsAdvancedSearchMode;
+            SetAdvancedSearch(isAdvanced);
         }
 
         private void SetAdvancedSearch(bool value)

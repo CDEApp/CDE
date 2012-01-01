@@ -36,9 +36,11 @@
             this.mainTabControl = new System.Windows.Forms.TabControl();
             this.searchTab = new System.Windows.Forms.TabPage();
             this.searchResultPanel = new System.Windows.Forms.Panel();
+            this.searchResultListView = new cdeWin.DoubleBufferListView();
             this.searchControlPanel = new System.Windows.Forms.TableLayoutPanel();
             this.searchControlUpperPanel = new System.Windows.Forms.Panel();
-            this.advancedSearchButton = new System.Windows.Forms.Button();
+            this.advancedSearchCheckBox = new System.Windows.Forms.CheckBox();
+            this.limitResultDropDown = new System.Windows.Forms.ComboBox();
             this.searchButton = new System.Windows.Forms.Button();
             this.findLabel = new System.Windows.Forms.Label();
             this.findComboBox = new System.Windows.Forms.ComboBox();
@@ -66,10 +68,12 @@
             this.notOlderThanDropDown = new System.Windows.Forms.ComboBox();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
+            this.catalogResultListView = new cdeWin.DoubleBufferListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
             this.directorySplitContainer = new System.Windows.Forms.SplitContainer();
+            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.directoryBottomPanel = new System.Windows.Forms.Panel();
             this.copyPathButton = new System.Windows.Forms.Button();
             this.directoryPathTextBox = new System.Windows.Forms.TextBox();
@@ -84,10 +88,6 @@
             this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
             this.backgroundStatusLabel = new System.Windows.Forms.ToolStripStatusLabel();
-            this.limitResultDropDown = new System.Windows.Forms.ComboBox();
-            this.searchResultListView = new cdeWin.DoubleBufferListView();
-            this.catalogResultListView = new cdeWin.DoubleBufferListView();
-            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -186,6 +186,15 @@
             this.searchResultPanel.Size = new System.Drawing.Size(670, 276);
             this.searchResultPanel.TabIndex = 1;
             // 
+            // searchResultListView
+            // 
+            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
+            this.searchResultListView.Name = "searchResultListView";
+            this.searchResultListView.Size = new System.Drawing.Size(670, 276);
+            this.searchResultListView.TabIndex = 0;
+            this.searchResultListView.UseCompatibleStateImageBehavior = false;
+            // 
             // searchControlPanel
             // 
             this.searchControlPanel.AutoSize = true;
@@ -202,8 +211,8 @@
             // 
             // searchControlUpperPanel
             // 
+            this.searchControlUpperPanel.Controls.Add(this.advancedSearchCheckBox);
             this.searchControlUpperPanel.Controls.Add(this.limitResultDropDown);
-            this.searchControlUpperPanel.Controls.Add(this.advancedSearchButton);
             this.searchControlUpperPanel.Controls.Add(this.searchButton);
             this.searchControlUpperPanel.Controls.Add(this.findLabel);
             this.searchControlUpperPanel.Controls.Add(this.findComboBox);
@@ -216,18 +225,28 @@
             this.searchControlUpperPanel.Size = new System.Drawing.Size(664, 50);
             this.searchControlUpperPanel.TabIndex = 0;
             // 
-            // advancedSearchButton
+            // advancedSearchCheckBox
             // 
-            this.advancedSearchButton.Location = new System.Drawing.Point(476, 25);
-            this.advancedSearchButton.Name = "advancedSearchButton";
-            this.advancedSearchButton.Size = new System.Drawing.Size(96, 23);
-            this.advancedSearchButton.TabIndex = 7;
-            this.advancedSearchButton.Text = "Advanced Mode";
-            this.advancedSearchButton.UseVisualStyleBackColor = true;
+            this.advancedSearchCheckBox.AutoSize = true;
+            this.advancedSearchCheckBox.Location = new System.Drawing.Point(346, 27);
+            this.advancedSearchCheckBox.Name = "advancedSearchCheckBox";
+            this.advancedSearchCheckBox.Size = new System.Drawing.Size(112, 17);
+            this.advancedSearchCheckBox.TabIndex = 26;
+            this.advancedSearchCheckBox.Text = "&Advanced Search";
+            this.advancedSearchCheckBox.UseVisualStyleBackColor = true;
+            // 
+            // limitResultDropDown
+            // 
+            this.limitResultDropDown.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.limitResultDropDown.FormattingEnabled = true;
+            this.limitResultDropDown.Location = new System.Drawing.Point(464, 25);
+            this.limitResultDropDown.Name = "limitResultDropDown";
+            this.limitResultDropDown.Size = new System.Drawing.Size(124, 21);
+            this.limitResultDropDown.TabIndex = 25;
             // 
             // searchButton
             // 
-            this.searchButton.Location = new System.Drawing.Point(476, 0);
+            this.searchButton.Location = new System.Drawing.Point(464, 0);
             this.searchButton.Name = "searchButton";
             this.searchButton.Size = new System.Drawing.Size(96, 23);
             this.searchButton.TabIndex = 3;
@@ -497,6 +516,15 @@
             this.catalogResultPanel.Size = new System.Drawing.Size(670, 339);
             this.catalogResultPanel.TabIndex = 1;
             // 
+            // catalogResultListView
+            // 
+            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
+            this.catalogResultListView.Name = "catalogResultListView";
+            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
+            this.catalogResultListView.TabIndex = 0;
+            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
+            // 
             // catalogControlPanel
             // 
             this.catalogControlPanel.Controls.Add(this.labelCatalogPlaceholder);
@@ -543,6 +571,15 @@
             this.directorySplitContainer.Size = new System.Drawing.Size(670, 393);
             this.directorySplitContainer.SplitterDistance = 222;
             this.directorySplitContainer.TabIndex = 0;
+            // 
+            // directoryListView
+            // 
+            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.directoryListView.Location = new System.Drawing.Point(0, 0);
+            this.directoryListView.Name = "directoryListView";
+            this.directoryListView.Size = new System.Drawing.Size(444, 393);
+            this.directoryListView.TabIndex = 2;
+            this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
             // directoryBottomPanel
             // 
@@ -684,42 +721,6 @@
             this.backgroundStatusLabel.Size = new System.Drawing.Size(91, 19);
             this.backgroundStatusLabel.Text = "BG: 0 of 0 - X/Y";
             // 
-            // limitResultDropDown
-            // 
-            this.limitResultDropDown.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.limitResultDropDown.FormattingEnabled = true;
-            this.limitResultDropDown.Location = new System.Drawing.Point(346, 25);
-            this.limitResultDropDown.Name = "limitResultDropDown";
-            this.limitResultDropDown.Size = new System.Drawing.Size(124, 21);
-            this.limitResultDropDown.TabIndex = 25;
-            // 
-            // searchResultListView
-            // 
-            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
-            this.searchResultListView.Name = "searchResultListView";
-            this.searchResultListView.Size = new System.Drawing.Size(670, 276);
-            this.searchResultListView.TabIndex = 0;
-            this.searchResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // catalogResultListView
-            // 
-            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
-            this.catalogResultListView.Name = "catalogResultListView";
-            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
-            this.catalogResultListView.TabIndex = 0;
-            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // directoryListView
-            // 
-            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.directoryListView.Location = new System.Drawing.Point(0, 0);
-            this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(444, 393);
-            this.directoryListView.TabIndex = 2;
-            this.directoryListView.UseCompatibleStateImageBehavior = false;
-            // 
             // CDEWinForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -825,10 +826,10 @@
         private System.Windows.Forms.ComboBox fromSizeDropDown;
         private System.Windows.Forms.NumericUpDown toSizeUpDown;
         private System.Windows.Forms.NumericUpDown fromSizeUpDown;
-        private System.Windows.Forms.Button advancedSearchButton;
         private System.Windows.Forms.Panel searchControlAdvancedPanel;
         private System.Windows.Forms.TableLayoutPanel searchControlPanel;
         private System.Windows.Forms.ComboBox limitResultDropDown;
+        private System.Windows.Forms.CheckBox advancedSearchCheckBox;
     }
 }
 

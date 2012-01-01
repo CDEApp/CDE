@@ -64,7 +64,7 @@ namespace cdeWin
         event EventAction OnFromHourCheckboxChanged;
         event EventAction OnToHourCheckboxChanged;
         event EventAction OnNotOlderThanCheckboxChanged;
-        event EventAction OnAdvancedSearchButtonClick;
+        event EventAction OnAdvancedSearchCheckboxChanged;
         event EventAction OnFromSizeCheckboxChanged;
         event EventAction OnToSizeCheckboxChanged;
 
@@ -167,14 +167,10 @@ namespace cdeWin
         public event EventAction OnFromHourCheckboxChanged;
         public event EventAction OnToHourCheckboxChanged;
         public event EventAction OnNotOlderThanCheckboxChanged;
-        public event EventAction OnAdvancedSearchButtonClick;
+        public event EventAction OnAdvancedSearchCheckboxChanged;
         public event EventAction OnFromSizeCheckboxChanged;
         public event EventAction OnToSizeCheckboxChanged;
             
-        private bool _isAdvancedSearchMode;
-        //private const int AdvancedSearchSizeChange = 80;
-        //private int _normalSearchPanelSize;
-        //private int _advancedSearchPanelSize;
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
@@ -336,8 +332,8 @@ namespace cdeWin
             limitResultDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
             SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isnt usually useful.");
 
-            advancedSearchButton.Click += (s, e) => OnAdvancedSearchButtonClick();
-            SetToolTip(advancedSearchButton, "Enable or Disable advanced search options to include Date and Size filtering.");
+            advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
+            SetToolTip(advancedSearchCheckBox, "Enable or Disable advanced search options to include Date and Size filtering.");
         }
 
         private void SetToolTip(Control c, string s)
@@ -587,12 +583,12 @@ namespace cdeWin
 
         public bool IsAdvancedSearchMode
         {
-            get { return _isAdvancedSearchMode; }
+            get { return advancedSearchCheckBox.Checked; }
             set
             {
-                _isAdvancedSearchMode = value;
-                searchControlAdvancedPanel.Visible = _isAdvancedSearchMode;
-                searchControlAdvancedPanel.Enabled = _isAdvancedSearchMode;
+                advancedSearchCheckBox.Checked = value;
+                searchControlAdvancedPanel.Visible = value;
+                searchControlAdvancedPanel.Enabled = value;
             }
         }
 

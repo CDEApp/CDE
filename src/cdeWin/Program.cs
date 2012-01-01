@@ -20,15 +20,13 @@ namespace cdeWin
             RootEntries = RootEntry.LoadCurrentDirCache();
 
             var mainForm = new CDEWinForm();
-            config.RestoreConfig(mainForm);
-
-            var active = config.Active;
-            active.MainWindowConfig.RestoreForm(mainForm);
             var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);
+            config.Active.MainWindowConfig.RestoreForm(mainForm);
+            config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
             Application.Run(mainForm); // Trying, as Application.DoEvents() is used elsewhere.
 
-            active.MainWindowConfig.RecordForm(mainForm);
+            config.Active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
         }
     }
