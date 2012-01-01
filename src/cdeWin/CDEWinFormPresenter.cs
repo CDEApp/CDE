@@ -700,7 +700,7 @@ namespace cdeWin
 
         private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
         {
-            _clientForm.DirectoryListViewHelper.ActionOnContextItem(d =>
+            _clientForm.DirectoryListViewHelper.ActionOnSelectedItem(d =>
                 {
                     var pde = new PairDirEntry(_directoryListCommonEntry, d);
                     if (pde.ExistsOnFileSystem())
@@ -774,7 +774,7 @@ namespace cdeWin
 
         private void SearchResultGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
         {
-            _clientForm.SearchResultListViewHelper.ActionOnContextItem(pde =>
+            _clientForm.SearchResultListViewHelper.ActionOnSelectedItem(pde =>
                 {
                     if (pde.ExistsOnFileSystem())
                     {

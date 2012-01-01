@@ -44,12 +44,6 @@ namespace cdeWin
         public int SortColumn { get; set; }
         public Comparison<T> ColumnSortCompare { get; set; }
 
-        /// <summary>
-        /// The item under the mouse when context menu launched, ie right mouse button up.
-        /// Need to be reset after use... If set to -1 its not a right click context value.
-        /// </summary>
-        public int ContextItemIndex { get; set; }
-
         public ListViewHelper(DoubleBufferListView listView)
         {
             _listView = listView;
@@ -121,9 +115,6 @@ namespace cdeWin
         }
         private EventAction _itemActivate;
 
-        /// <summary>
-        /// Adds MouseUp handler which sets ContextItemIndex on right mouse button up.
-        /// </summary>
         public ContextMenuStrip ContextMenu
         {
             get { return _contextMenu; }
@@ -132,7 +123,6 @@ namespace cdeWin
                 _contextMenu = value;
                 if (_contextMenu != null)
                 {
-                    _listView.MouseUp += MyMouseUp;
                     _listView.ContextMenuStrip = _contextMenu;
                 }
             }
@@ -209,18 +199,6 @@ namespace cdeWin
             {
                 AfterActivateIndex = _listView.SelectedIndices[0];
                 _itemActivate();
-            }
-        }
-
-        private void MyMouseUp(object sender, MouseEventArgs e)
-        {
-            if (e.Button == MouseButtons.Right)
-            {
-                var item = _listView.HitTest(e.Location).Item;
-                if (item != null)
-                {
-                    ContextItemIndex = item.Index;
-                }
             }
         }
 
@@ -335,23 +313,27 @@ namespace cdeWin
             ForceDraw();
         }
 
-        public void ActionOnContextItem(Action<T> action)
+        public void ActionOnSelectedItem(Action<T> action)
         {
-            var contextItem = GetContextItem();
-            if (contextItem != null)
+            var selectedItem = GetSelectedItem();
+            if (selectedItem != null)
             {
-                action(contextItem);
+                action(selectedItem);
             }
         }
 
-        private T GetContextItem()
+        /// <summary>
+        /// single item only for now.
+        /// </summary>
+        private T GetSelectedItem()
         {
-            if (!(ContextItemIndex >= 0) || _list == null)
+            if (_list == null
+                || _listView.SelectedIndices.Count != 1)
             {
                 return null;
             }
-            var item = _list[ContextItemIndex];
-            ContextItemIndex = -1;
+            var itemIndex = _listView.SelectedIndices[0];
+            var item = _list[itemIndex];
             return item;
         }
 
@@ -392,7 +374,6 @@ namespace cdeWin
             }
             if (_contextMenu != null)
             {
-                _listView.MouseUp -= MyMouseUp;
                 _contextMenu.Dispose();
             }
             if (_itemSelectionChanged != null)
