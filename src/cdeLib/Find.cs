@@ -132,7 +132,7 @@ namespace cdeLib
                                 {
                                     return false;
                                 }
-                                if (--limitCount[0] <= 1)
+                                if (--limitCount[0] <= 0)
                                 {
                                     return false;
                                 }
