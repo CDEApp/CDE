@@ -172,9 +172,10 @@ namespace cdeWin
         public event EventAction OnToSizeCheckboxChanged;
             
         private bool _isAdvancedSearchMode;
-        private const int AdvancedSearchSizeChange = 80;
-        private int _normalSearchPanelSize;
-        private int _advancedSearchPanelSize;public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+        //private const int AdvancedSearchSizeChange = 80;
+        //private int _normalSearchPanelSize;
+        //private int _advancedSearchPanelSize;
+        public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
         public ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
@@ -212,9 +213,11 @@ namespace cdeWin
             FormClosing += MyFormClosing;
             Activated += MyFormActivated;
 
+            SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
             whatToSearchComboBox.Items.AddRange(new[] { "Include Path in Search", "Exclude Path from Search" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
             whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+            SetToolTip(whatToSearchComboBox, "Excluding Path so that only entry Names are searched makes search faster.");
 
             findComboBox.Items.AddRange(new[] { "Files and Folders", "Files Only", "Folders Only" });
             findComboBox.SelectedIndex = 0; // default Files and Folders
@@ -258,9 +261,13 @@ namespace cdeWin
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
 
             searchButton.Click += (s, e) => OnSearch();
-            var searchTooltip = new ToolTip();
-            searchTooltip.SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
+            SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
 
+            RegisterAdvancedSearchControls();
+        }
+
+        private void RegisterAdvancedSearchControls()
+        {
             fromDateTimePicker.Format = DateTimePickerFormat.Custom;
             fromDateTimePicker.CustomFormat = Config.DateCustomFormatYMD;
             fromDateCheckbox.CheckedChanged += (s, e) => OnFromDateCheckboxChanged();
@@ -283,30 +290,60 @@ namespace cdeWin
             toHourCheckbox.CheckedChanged += (s, e) => OnToHourCheckboxChanged();
             ToHourEnable = false;
 
+            var durationUnits = new[]
+                {
+                    new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
+                    new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
+                    new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
+                    new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
+                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear),
+                };
+            notOlderThanDropDown.Items.AddRange(durationUnits);
+            notOlderThanDropDown.SelectedIndex = 1; // default Hour(s) // TODO Config
+            notOlderThanDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
             notOlderThanCheckbox.CheckedChanged += (s, e) => OnNotOlderThanCheckboxChanged();
             NotOlderThanCheckboxEnable = false;
 
-            notOlderThanDropDown.Items.AddRange(new[] { "Minute(s)", "Hour(s)", "Day(s)", "Week(s)", "Month(s)", "Year(s)" });
-            notOlderThanDropDown.SelectedIndex = 1; // default Hour(s)
-            notOlderThanDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
-
-            var byteSizeStrings = new[] {"bytes", "KB", "KiB", "MB", "MiB", "GB", "GIB"};
-            fromSizeDropDown.Items.AddRange(byteSizeStrings);
-            fromSizeDropDown.SelectedIndex = 4;
+            var byteSizeUnits = new[]
+                {
+                    new ComboBoxItem<int>("byte(s)", 1),
+                    new ComboBoxItem<int>("KB(s)", 1000),
+                    new ComboBoxItem<int>("KiB(s)", 1024),
+                    new ComboBoxItem<int>("MB(s)", 1000*1000),
+                    new ComboBoxItem<int>("MiB(s)", 1024*1024),
+                    new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
+                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024),
+                };
+            fromSizeDropDown.Items.AddRange(byteSizeUnits);
+            fromSizeDropDown.SelectedIndex = 4; // default MB // TODO Config
             fromSizeCheckbox.CheckedChanged += (s, e) => OnFromSizeCheckboxChanged();
             FromSizeEnable = false;
 
-            toSizeDropDown.Items.AddRange(byteSizeStrings);
-            toSizeDropDown.SelectedIndex = 4;
+            toSizeDropDown.Items.AddRange(byteSizeUnits);
+            toSizeDropDown.SelectedIndex = 4; // default MB // TODO Config
             toSizeCheckbox.CheckedChanged += (s, e) => OnToSizeCheckboxChanged();
             ToSizeEnable = false;
 
-            if (_advancedSearchPanelSize == 0)
-            {
-                _advancedSearchPanelSize = searchControlPanel.Height;
-                _normalSearchPanelSize = _advancedSearchPanelSize - AdvancedSearchSizeChange;
-            }
+            var limitResultValues = new[]
+                {
+                    new ComboBoxItem<int>("Max Results 1000", 1000),
+                    new ComboBoxItem<int>("Max Results 10000", 10000),
+                    new ComboBoxItem<int>("Max Results 100000", 100000),
+                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue),
+                };
+            limitResultDropDown.Items.AddRange(limitResultValues);
+            limitResultDropDown.SelectedIndex = 1; // default 10000 // TODO Config
+            limitResultDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
+            SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isnt usually useful.");
+
             advancedSearchButton.Click += (s, e) => OnAdvancedSearchButtonClick();
+            SetToolTip(advancedSearchButton, "Enable or Disable advanced search options to include Date and Size filtering.");
+        }
+
+        private void SetToolTip(Control c, string s)
+        {
+            var tip = new ToolTip();
+            tip.SetToolTip(c, s);
         }
 
         private void MyFormClosing(object s, FormClosingEventArgs e)
@@ -554,8 +591,8 @@ namespace cdeWin
             set
             {
                 _isAdvancedSearchMode = value;
-                searchControlPanel.Height = _isAdvancedSearchMode 
-                    ? _advancedSearchPanelSize : _normalSearchPanelSize;
+                searchControlAdvancedPanel.Visible = _isAdvancedSearchMode;
+                searchControlAdvancedPanel.Enabled = _isAdvancedSearchMode;
             }
         }
 
