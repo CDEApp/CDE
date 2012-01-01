@@ -98,8 +98,8 @@ namespace cdeWin
         bool NotOlderThanCheckboxEnable { get; set; }
         string SearchButtonText { get; set; }
         bool IsAdvancedSearchMode { get; set; }
-        bool FromSizeCheckboxEnable { get; set; }
-        bool ToSizeCheckboxEnable { get; set; }
+        bool FromSizeEnable { get; set; }
+        bool ToSizeEnable { get; set; }
         
         ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
         ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
@@ -294,12 +294,12 @@ namespace cdeWin
             fromSizeDropDown.Items.AddRange(byteSizeStrings);
             fromSizeDropDown.SelectedIndex = 4;
             fromSizeCheckbox.CheckedChanged += (s, e) => OnFromSizeCheckboxChanged();
-            FromSizeCheckboxEnable = false;
+            FromSizeEnable = false;
 
             toSizeDropDown.Items.AddRange(byteSizeStrings);
             toSizeDropDown.SelectedIndex = 4;
             toSizeCheckbox.CheckedChanged += (s, e) => OnToSizeCheckboxChanged();
-            ToSizeCheckboxEnable = false;
+            ToSizeEnable = false;
 
             if (_advancedSearchPanelSize == 0)
             {
@@ -559,7 +559,7 @@ namespace cdeWin
             }
         }
 
-        public bool FromSizeCheckboxEnable
+        public bool FromSizeEnable
         {
             get { return fromSizeCheckbox.Checked; }
             set
@@ -570,7 +570,7 @@ namespace cdeWin
             }
         }
 
-        public bool ToSizeCheckboxEnable
+        public bool ToSizeEnable
         {
             get { return toSizeCheckbox.Checked; }
             set

@@ -964,22 +964,22 @@ namespace cdeWin
 
         public void FromSizeCheckboxChanged()
         {
-            var enable = _clientForm.FromSizeCheckboxEnable;
+            var enable = _clientForm.FromSizeEnable;
             //if (enable)
             //{
             //    DisableFromToFields();
             //}
-            _clientForm.FromSizeCheckboxEnable = enable;
+            _clientForm.FromSizeEnable = enable;
         }
 
         public void ToSizeCheckboxChanged()
         {
-            var enable = _clientForm.ToSizeCheckboxEnable;
+            var enable = _clientForm.ToSizeEnable;
             //if (enable)
             //{
             //    DisableFromToFields();
             //}
-            _clientForm.ToSizeCheckboxEnable = enable;
+            _clientForm.ToSizeEnable = enable;
         }
 
     }
