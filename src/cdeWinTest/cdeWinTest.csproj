@@ -68,6 +68,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestCDEWinPresenter_OptimiseRegexPattern.cs" />
+    <Compile Include="TestDecimal.cs" />
     <Compile Include="TestDisplayTreeFromRootPresenter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TestEnumerable.cs" />
