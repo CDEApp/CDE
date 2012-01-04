@@ -171,9 +171,9 @@ namespace cdeWin
     {
         Configuration Active { get; set; }
         void RecordConfig(ICDEWinForm form);
-        int SearchResultColumnCount { get; }
-        int DirectoryColumnCount { get; }
-        int CatalogColumnCount { get; }
+        int DefaultSearchResultColumnCount { get; }
+        int DefaultDirectoryColumnCount { get; }
+        int DefaultCatalogColumnCount { get; }
     }
 
     public class Config : IConfig
@@ -234,6 +234,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Created", Width=130 }, // NOTE convert from UTC ?
                     new ColumnConfig { Name="Catalog File", Width=150 },
+                    new ColumnConfig { Name="Source Path", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }
             },
@@ -262,9 +263,14 @@ namespace cdeWin
         {
             _configPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _configFileName = configFileName;
-            var justPath = Path.Combine(_configPath, _configSubPath);
-            Directory.CreateDirectory(justPath);
-            _configFullFileName = Path.Combine(justPath, _configFileName);
+            _configPath = Path.Combine(_configPath, _configSubPath);
+            Directory.CreateDirectory(_configPath);
+            _configFullFileName = Path.Combine(_configPath, _configFileName);
+        }
+
+        public string ConfigPath
+        {
+            get { return _configPath; }
         }
 
         private Configuration Read(string fileName)
@@ -344,9 +350,17 @@ namespace cdeWin
 
         public void RestoreConfig(ICDEWinForm form)
         {
-            form.DirectoryListViewHelper.SetColumnConfigs(Active.DirectoryListView.Columns);
-            form.SearchResultListViewHelper.SetColumnConfigs(Active.SearchResultListView.Columns);
-            form.CatalogListViewHelper.SetColumnConfigs(Active.CatalogListView.Columns);
+            //var a = Default.CatalogListView.Columns.Count;
+            //var b = Active.CatalogListView.Columns.Count;
+            
+
+            form.DirectoryListViewHelper.SetColumnConfigs(
+                RestoreColumnConfig(Default.DirectoryListView, Active.DirectoryListView));
+            form.SearchResultListViewHelper.SetColumnConfigs(
+                RestoreColumnConfig(Default.SearchResultListView, Active.SearchResultListView));
+            form.CatalogListViewHelper.SetColumnConfigs(
+                RestoreColumnConfig(Default.CatalogListView, Active.CatalogListView));
+
             form.SetSearchTextBoxAutoComplete(Active.PreviousPatternHistory);
             form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
             form.Pattern = Active.Pattern;
@@ -367,22 +381,41 @@ namespace cdeWin
             form.ToHourValue = Active.ToHourValue;
         }
 
-        // improve test easy on CDEWinFormPresenter.
-        public int SearchResultColumnCount
+        public List<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
         {
-            get { return Active != null ? ColumnCount(Active.SearchResultListView) : 0; }
+            var columnMismatch = false;
+            if (initial.Columns.Count == active.Columns.Count)
+            {
+                var comparer = new StrictKeyEqualityComparer<ColumnConfig, string>(x => x.Name);
+                columnMismatch = !initial.Columns.SequenceEqual(active.Columns, comparer);
+            }
+
+            // if column count miss match or column missmatch replace columns with initial.
+            if (initial.Columns.Count != active.Columns.Count
+                || columnMismatch)
+            {
+                active.Columns = initial.Columns.ToList(); // copy initial columns to active.
+            }
+            return active.Columns;
+        }
+
+
+        // improve test easy on CDEWinFormPresenter.
+        public int DefaultSearchResultColumnCount
+        {
+            get { return Active != null ? ColumnCount(Default.SearchResultListView) : 0; }
         }
 
         // improve test easy on CDEWinFormPresenter.
-        public int DirectoryColumnCount
+        public int DefaultDirectoryColumnCount
         {
-            get { return Active != null ? ColumnCount(Active.DirectoryListView) : 0; }
+            get { return Active != null ? ColumnCount(Default.DirectoryListView) : 0; }
         }
 
         // improve test easy on CDEWinFormPresenter.
-        public int CatalogColumnCount
+        public int DefaultCatalogColumnCount
         {
-            get { return Active != null ? ColumnCount(Active.CatalogListView) : 0; }
+            get { return Active != null ? ColumnCount(Default.CatalogListView) : 0; }
         }
 
         private static int ColumnCount(ListViewConfig lvc)

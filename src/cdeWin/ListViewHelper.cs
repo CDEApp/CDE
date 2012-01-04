@@ -9,19 +9,12 @@ namespace cdeWin
     // and hookup events to them as well with matching names ?
     // encapsulate ListView in VirtualMode handling
 
-    public class ListViewHelper
-    {
-        // must have enough columns for maximum used by ListViewHelper in operation.
-        //protected static readonly string[] EmptyColumnValues = new[] { "Empty List", "e2", "e3", "e4", "e5", "e6", "e7", "e8", "e9", "e10", "e11", "e12" };
-        //protected static readonly ListViewItem EmptyListViewItem = new ListViewItem(EmptyColumnValues);
-    }
-
     /// <summary>
     /// Consolidated code for Listview operation in VirtualMode.
     /// Only ListView events required are enabled.
     /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
-    public class ListViewHelper<T> : ListViewHelper, IDisposable where T : class
+    public class ListViewHelper<T> : IDisposable where T : class
     {
         private int _listSize;
         private List<T> _list;

@@ -79,6 +79,7 @@
     <Compile Include="CheckBoxDependentControlHelper.cs" />
     <Compile Include="ColumnHeaderCollectionExtension.cs" />
     <Compile Include="ComboBoxItem.cs" />
+    <Compile Include="KeyEqualityComparer.cs" />
     <Compile Include="Configuration.cs" />
     <Compile Include="CDEWinForm.cs">
       <SubType>Form</SubType>

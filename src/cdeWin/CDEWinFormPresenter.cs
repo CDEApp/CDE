@@ -46,9 +46,9 @@ namespace cdeWin
             _rootEntries = rootEntries;
             _config = config;
 
-            _searchVals = new string[_config.SearchResultColumnCount];
-            _directoryVals = new string[_config.DirectoryColumnCount];
-            _catalogVals = new string[_config.CatalogColumnCount];
+            _searchVals = new string[_config.DefaultSearchResultColumnCount];
+            _directoryVals = new string[_config.DefaultDirectoryColumnCount];
+            _catalogVals = new string[_config.DefaultCatalogColumnCount];
 
             SetSearchButton(true);
             RegisterListViewSorters();
@@ -204,7 +204,8 @@ namespace cdeWin
             vals[7] = rootEntry.UsedSpace.ToHRString();
             vals[8] = string.Format(Config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
             vals[9] = rootEntry.DefaultFileName; // todo give full path ? or actual file name ?
-            vals[10] = rootEntry.Description;
+            vals[10] = rootEntry.SourcePath;
+            vals[11] = rootEntry.Description;
 
             return listViewForeColor;
         }
@@ -907,6 +908,10 @@ namespace cdeWin
                     break;
 
                 case 10:
+                    compareResult = re1.SourcePath.CompareTo(re2.SourcePath);
+                    break;
+
+                case 11:
                     compareResult = re1.DescriptionCompareTo(re2);
                     break;
 

@@ -63,6 +63,11 @@ namespace cdeLib
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         public int RootIndex;  // hackery with Entry and EntryStore
 
+        /// <summary>
+        /// What path the catalog was loaded from.
+        /// </summary>
+        public string SourcePath { get; set; }
+
         public RootEntry ()
         {
             Children = new List<DirEntry>();
@@ -332,13 +337,30 @@ namespace cdeLib
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
+            return LoadCacheAtPath(".");
+        }
+
+        public static List<RootEntry> LoadMultiDirCache(string[] paths)
+        {
+            var allRoots = new List<RootEntry>();
+            foreach (var path in paths)
+            {
+                var roots = LoadCacheAtPath(path);
+                allRoots.AddRange(roots);
+            }
+            return allRoots;
+        }
+
+        public static List<RootEntry> LoadCacheAtPath(string path)
+        {
             var roots = new List<RootEntry>();
-            var files = AlphaFSHelper.GetFilesWithExtension("cde");
+            var files = AlphaFSHelper.GetFilesWithExtension(path, "cde");
             foreach (var file in files)
             {
                 var re = LoadDirCache(file);
                 if (re != null)
                 {
+                    re.SourcePath = path;
                     roots.Add(re);
                 }
             }

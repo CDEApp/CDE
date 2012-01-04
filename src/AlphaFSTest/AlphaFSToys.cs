@@ -171,7 +171,7 @@ namespace AlphaFSTest
             f1.Close();
             f2.Close();
             //var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
-            var files = AlphaFSHelper.GetFilesWithExtension("cde");
+            var files = AlphaFSHelper.GetFilesWithExtension(".", "cde");
 
             foreach (var file in files)
             {

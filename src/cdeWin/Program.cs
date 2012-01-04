@@ -17,7 +17,7 @@ namespace cdeWin
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            RootEntries = RootEntry.LoadCurrentDirCache();
+            RootEntries = RootEntry.LoadMultiDirCache(new[] {".", config.ConfigPath});
 
             var mainForm = new CDEWinForm();
             var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);

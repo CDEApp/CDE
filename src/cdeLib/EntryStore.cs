@@ -263,7 +263,7 @@ namespace cdeLib
         public static List<EntryStore> LoadCurrentDirCache()
         {
             var roots = new List<EntryStore>();
-            var files = AlphaFSHelper.GetFilesWithExtension("cde");
+            var files = AlphaFSHelper.GetFilesWithExtension(".", "cde");
             foreach (var file in files)
             {
                 var re = Read(file);
