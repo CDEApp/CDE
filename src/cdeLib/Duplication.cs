@@ -19,8 +19,8 @@ namespace cdeLib
         private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateFile =
             new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
 
-        private readonly Dictionary<ulong, List<PairDirEntry>> _duplicateFileSize =
-            new Dictionary<ulong, List<PairDirEntry>>();
+        private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize =
+            new Dictionary<long, List<PairDirEntry>>();
 
         private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateForFullHash =
             new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
@@ -145,7 +145,7 @@ namespace cdeLib
             }
         }
 
-        public IDictionary<ulong, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
+        public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));

@@ -141,9 +141,9 @@ namespace cdeLibTest
             Console.WriteLine("Number of Dupe Pairs {0}", dupePairEnum.Count);
         }
 
-        private static ulong GetSumOfUniqueHashesForEachSize_ExcludePartialHash(IEnumerable<KeyValuePair<ulong, List<PairDirEntry>>> sizePairDictionary)
+        private static long GetSumOfUniqueHashesForEachSize_ExcludePartialHash(IEnumerable<KeyValuePair<long, List<PairDirEntry>>> sizePairDictionary)
         {
-            var sumOfUniqueHashesForEachSize = 0ul;
+            var sumOfUniqueHashesForEachSize = 0L;
             foreach (var list in sizePairDictionary)
             {
                 var fdeListOfSize = list.Value;
@@ -164,7 +164,7 @@ namespace cdeLibTest
                         }
                     }
                 }
-                sumOfUniqueHashesForEachSize = sumOfUniqueHashesForEachSize + (ulong)seenHash.Count;
+                sumOfUniqueHashesForEachSize = sumOfUniqueHashesForEachSize + seenHash.Count;
             }
             return sumOfUniqueHashesForEachSize;
         }

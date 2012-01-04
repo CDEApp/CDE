@@ -14,107 +14,6 @@ namespace cdeWin
      * Alternate presenter setup in cdeWinForm - need to review it again.
      */
 
-    public interface ICDEWinForm : IView
-    {
-        event EventAction OnDirectoryTreeViewBeforeExpandNode;
-        event EventAction OnDirectoryTreeViewAfterSelect;
-        event EventAction OnMyFormClosing;
-        event EventAction OnExitMenuItem;
-        event EventAction OnSearch;
-        event EventAction OnCancelSearch;
-        
-        event EventAction OnSearchResultContextMenuViewTreeClick;
-        event EventAction OnSearchResultContextMenuOpenClick;
-        event EventAction OnSearchResultContextMenuExploreClick;
-        event EventAction OnSearchResultContextMenuPropertiesClick;
-        event EventAction OnSearchResultContextMenuSelectAllClick;
-
-        event EventAction OnDirectoryContextMenuViewTreeClick;
-        event EventAction OnDirectoryContextMenuOpenClick;
-        event EventAction OnDirectoryContextMenuExploreClick;
-        event EventAction OnDirectoryContextMenuPropertiesClick;
-        event EventAction OnDirectoryContextMenuSelectAllClick;
-        event EventAction OnDirectoryContextMenuParentClick;
-
-        event EventAction OnDirectoryRetrieveVirtualItem;
-        void OnDirectoryRetrieveVirtualItemFire();
-        event EventAction OnDirectoryListViewItemActivate;
-        void OnDirectoryListViewItemActivateFire();
-        event EventAction OnDirectoryListViewColumnClick;
-        void OnDirectoryListViewColumnClickFire();
-        event EventAction OnDirectoryListViewItemSelectionChanged;
-        void OnDirectoryListViewItemSelectionChangedFire();
-
-        event EventAction OnSearchResultRetrieveVirtualItem;
-        void OnSearchResultRetrieveVirtualItemFire();
-        event EventAction OnSearchResultListViewItemActivate;
-        void OnSearchResultListViewItemActivateFire();
-        event EventAction OnSearchResultListViewColumnClick;
-        void OnSearchResultListViewColumnClickFire();
-
-        event EventAction OnCatalogRetrieveVirtualItem;
-        void OnCatalogRetrieveVirtualItemFire();
-        event EventAction OnCatalogListViewItemActivate;
-        void OnCatalogListViewItemActivateFire();
-        event EventAction OnCatalogListViewColumnClick;
-        void OnCatalogListViewColumnClickFire();
-
-        event EventAction OnFromDateCheckboxChanged;
-        event EventAction OnToDateCheckboxChanged;
-        event EventAction OnFromHourCheckboxChanged;
-        event EventAction OnToHourCheckboxChanged;
-        event EventAction OnNotOlderThanCheckboxChanged;
-        event EventAction OnAdvancedSearchCheckboxChanged;
-        event EventAction OnFromSizeCheckboxChanged;
-        event EventAction OnToSizeCheckboxChanged;
-
-        TreeNode DirectoryTreeViewNodes { get;  set; }
-
-        TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
-        TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
-
-        string Pattern { get; set; }
-        bool RegexMode { get; set; }
-        bool IncludeFiles { get; }
-        bool IncludeFolders { get; }
-        int FindEntryFilter { get; set; }
-        bool IncludePathInSearch { get; set; }
-
-        void SetSearchTextBoxAutoComplete(IEnumerable<string> history);
-        void AddSearchTextBoxAutoComplete(string pattern);
-        List<string> GetSearchTextBoxAutoComplete();
-        void SelectDirectoryPane();
-        float DirectoryPanelSplitterRatio { get; set; }
-        string SetDirectoryPathTextbox { set; }
-        TreeNode SetDirectoryTreeViewSelectedNode { set; }
-        void SetSearchResultStatus(int i);
-        void SetCatalogsLoadedStatus(int i);
-        void SetSearchTimeStatus(string s);
-        bool SearchButtonEnable { get; set; }
-        bool FromDateEnable { get; set; }
-        bool ToDateEnable { get; set; }
-        bool FromHourEnable { get; set; }
-        bool ToHourEnable { get; set; }
-        bool NotOlderThanCheckboxEnable { get; set; }
-        string SearchButtonText { get; set; }
-        bool IsAdvancedSearchMode { get; set; }
-        bool FromSizeEnable { get; set; }
-        bool ToSizeEnable { get; set; }
-        
-        ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
-        ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
-        ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
-
-        void CleanUp();
-
-        // improve test easy on CDEWinFormPresenter.
-        void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class;
-        // improve test easy on CDEWinFormPresenter.
-        int SetList<T>(ListViewHelper<T> lvh, List<T> list) where T : class;
-        // improve test easy on CDEWinFormPresenter.
-        void SortList<T>(ListViewHelper<T> lvh) where T : class;
-    }
-
     public partial class CDEWinForm : Form, ICDEWinForm
     {
         private const int DirectoryTabIndex = 2;
@@ -162,14 +61,7 @@ namespace cdeWin
         public event EventAction OnCatalogListViewColumnClick;
         public void OnCatalogListViewColumnClickFire() { OnCatalogListViewColumnClick(); }
 
-        public event EventAction OnFromDateCheckboxChanged;
-        public event EventAction OnToDateCheckboxChanged;
-        public event EventAction OnFromHourCheckboxChanged;
-        public event EventAction OnToHourCheckboxChanged;
-        public event EventAction OnNotOlderThanCheckboxChanged;
         public event EventAction OnAdvancedSearchCheckboxChanged;
-        public event EventAction OnFromSizeCheckboxChanged;
-        public event EventAction OnToSizeCheckboxChanged;
             
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
@@ -177,6 +69,51 @@ namespace cdeWin
         public ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
         public ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
         public ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+
+        public CheckBoxDependentControlHelper FromDate { get; set; }
+        public CheckBoxDependentControlHelper ToDate { get; set; }
+        public CheckBoxDependentControlHelper FromHour { get; set; }
+        public CheckBoxDependentControlHelper ToHour { get; set; }
+        public CheckBoxDependentControlHelper FromSize { get; set; }
+        public CheckBoxDependentControlHelper ToSize { get; set; }
+        public CheckBoxDependentControlHelper NotOlderThan { get; set; }
+
+        public DropDownHelper<int> LimitResultHelper { get; set; }
+        public DropDownHelper<int> FromSizeDropDownHelper { get; set; }
+        public DropDownHelper<int> ToSizeDropDownHelper { get; set; }
+        public DropDownHelper<AddTimeUnitFunc> NotOlderThanDropDownHelper { get; set; }
+
+        public UpDownHelper<int> FromSizeValue { get; set; }
+        public UpDownHelper<int> ToSizeValue { get; set; }
+        public UpDownHelper<AddTimeUnitFunc> NotOlderThanValue { get; set; }
+
+        private readonly ComboBoxItem<int>[] _byteSizeUnits = new[]
+                {
+                    new ComboBoxItem<int>("byte(s)", 1),
+                    new ComboBoxItem<int>("KB(s)", 1000),
+                    new ComboBoxItem<int>("KiB(s)", 1024),
+                    new ComboBoxItem<int>("MB(s)", 1000*1000),
+                    new ComboBoxItem<int>("MiB(s)", 1024*1024),
+                    new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
+                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024),
+                };
+
+        private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = new[]
+                {
+                    new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
+                    new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
+                    new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
+                    new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
+                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear),
+                };
+
+        private readonly ComboBoxItem<int>[] _limitResultValues = new[]
+                {
+                    new ComboBoxItem<int>("Max Results 1000", 1000),
+                    new ComboBoxItem<int>("Max Results 10000", 10000),
+                    new ComboBoxItem<int>("Max Results 100000", 100000),
+                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue),
+                };
 
         public CDEWinForm()
         {
@@ -262,78 +199,63 @@ namespace cdeWin
             RegisterAdvancedSearchControls();
         }
 
+        // ReSharper disable UseObjectOrCollectionInitializer
         private void RegisterAdvancedSearchControls()
         {
-            fromDateTimePicker.Format = DateTimePickerFormat.Custom;
-            fromDateTimePicker.CustomFormat = Config.DateCustomFormatYMD;
-            fromDateCheckbox.CheckedChanged += (s, e) => OnFromDateCheckboxChanged();
-            FromDateEnable = false;
+            SetTimePickerYMD(fromDateTimePicker);
+            FromDate = new CheckBoxDependentControlHelper(fromDateCheckbox, new Control[] { fromDateTimePicker }, new[] { notOlderThanCheckbox });
+            FromDate.Checked = false;
 
-            toDateTimePicker.Format = DateTimePickerFormat.Custom;
-            toDateTimePicker.CustomFormat = Config.DateCustomFormatYMD;
-            toDateCheckbox.CheckedChanged += (s, e) => OnToDateCheckboxChanged();
-            ToDateEnable = false;
+            SetTimePickerYMD(toDateTimePicker);
+            ToDate = new CheckBoxDependentControlHelper(toDateCheckbox, new Control[] { toDateTimePicker }, new[] { notOlderThanCheckbox });
+            ToDate.Checked = false;
 
-            fromHourTimePicker.ShowUpDown = true;
-            fromHourTimePicker.Format = DateTimePickerFormat.Custom;
-            fromHourTimePicker.CustomFormat = Config.DateCustomFormatHMS;
-            fromHourCheckbox.CheckedChanged += (s, e) => OnFromHourCheckboxChanged();
-            FromHourEnable = false;
+            SetTimePickerHMS(fromHourTimePicker);
+            FromHour = new CheckBoxDependentControlHelper(fromHourCheckbox, new Control[] { fromHourTimePicker }, new[] { notOlderThanCheckbox });
+            FromHour.Checked = false;
 
-            fromHourTimePicker.ShowUpDown = true;
-            toHourTimePicker.Format = DateTimePickerFormat.Custom;
-            toHourTimePicker.CustomFormat = Config.DateCustomFormatHMS;
-            toHourCheckbox.CheckedChanged += (s, e) => OnToHourCheckboxChanged();
-            ToHourEnable = false;
+            SetTimePickerHMS(toHourTimePicker);
+            ToHour = new CheckBoxDependentControlHelper(toHourCheckbox, new Control[] { toHourTimePicker }, new[] { notOlderThanCheckbox });
+            ToHour.Checked = false;
 
-            var durationUnits = new[]
-                {
-                    new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
-                    new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
-                    new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
-                    new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
-                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear),
-                };
-            notOlderThanDropDown.Items.AddRange(durationUnits);
-            notOlderThanDropDown.SelectedIndex = 1; // default Hour(s) // TODO Config
-            notOlderThanDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
-            notOlderThanCheckbox.CheckedChanged += (s, e) => OnNotOlderThanCheckboxChanged();
-            NotOlderThanCheckboxEnable = false;
+            NotOlderThanValue = new UpDownHelper<AddTimeUnitFunc>(notOlderThanUpDown, 0);
+            NotOlderThanDropDownHelper = new DropDownHelper<AddTimeUnitFunc>(notOlderThanDropDown, _durationUnits, 1); // todo config
 
-            var byteSizeUnits = new[]
-                {
-                    new ComboBoxItem<int>("byte(s)", 1),
-                    new ComboBoxItem<int>("KB(s)", 1000),
-                    new ComboBoxItem<int>("KiB(s)", 1024),
-                    new ComboBoxItem<int>("MB(s)", 1000*1000),
-                    new ComboBoxItem<int>("MiB(s)", 1024*1024),
-                    new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
-                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024),
-                };
-            fromSizeDropDown.Items.AddRange(byteSizeUnits);
-            fromSizeDropDown.SelectedIndex = 4; // default MB // TODO Config
-            fromSizeCheckbox.CheckedChanged += (s, e) => OnFromSizeCheckboxChanged();
-            FromSizeEnable = false;
+            NotOlderThan = new CheckBoxDependentControlHelper(notOlderThanCheckbox,
+                            new Control[] {notOlderThanUpDown, notOlderThanDropDown},
+                            new [] { fromDateCheckbox, toDateCheckbox, fromHourCheckbox, toHourCheckbox });
+            NotOlderThan.Checked = false;
 
-            toSizeDropDown.Items.AddRange(byteSizeUnits);
-            toSizeDropDown.SelectedIndex = 4; // default MB // TODO Config
-            toSizeCheckbox.CheckedChanged += (s, e) => OnToSizeCheckboxChanged();
-            ToSizeEnable = false;
+            FromSizeValue = new UpDownHelper<int>(fromSizeUpDown);
+            FromSizeDropDownHelper = new DropDownHelper<int>(fromSizeDropDown, _byteSizeUnits, 4); // todo config
+            FromSize = new CheckBoxDependentControlHelper(fromSizeCheckbox, new Control[] { fromSizeUpDown, fromSizeDropDown }, null);
+            FromSize.Checked = false;
 
-            var limitResultValues = new[]
-                {
-                    new ComboBoxItem<int>("Max Results 1000", 1000),
-                    new ComboBoxItem<int>("Max Results 10000", 10000),
-                    new ComboBoxItem<int>("Max Results 100000", 100000),
-                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue),
-                };
-            limitResultDropDown.Items.AddRange(limitResultValues);
-            limitResultDropDown.SelectedIndex = 1; // default 10000 // TODO Config
-            limitResultDropDown.DropDownStyle = ComboBoxStyle.DropDownList;
+            ToSizeValue = new UpDownHelper<int>(toSizeUpDown);
+            ToSizeDropDownHelper = new DropDownHelper<int>(toSizeDropDown, _byteSizeUnits, 4); // todo config
+            ToSize = new CheckBoxDependentControlHelper(toSizeCheckbox, new Control[] { toSizeUpDown, toSizeDropDown }, null);
+            ToSize.Checked = false;
+
+            LimitResultHelper = new DropDownHelper<int>(limitResultDropDown, _limitResultValues, 1);
             SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isnt usually useful.");
 
             advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
             SetToolTip(advancedSearchCheckBox, "Enable or Disable advanced search options to include Date and Size filtering.");
+        }
+        // ReSharper restore UseObjectOrCollectionInitializer
+
+        private void SetTimePickerHMS(DateTimePicker picker)
+        {
+            picker.ShowUpDown = true;
+            picker.Format = DateTimePickerFormat.Custom;
+            picker.CustomFormat = Config.DateCustomFormatHMS;
+        }
+
+        private void SetTimePickerYMD(DateTimePicker picker)
+        {
+            picker.Format = DateTimePickerFormat.Custom;
+            picker.CustomFormat = Config.DateCustomFormatYMD;
+
         }
 
         private void SetToolTip(Control c, string s)
@@ -524,57 +446,6 @@ namespace cdeWin
             set { searchButton.Enabled = value; }
         }
 
-        public bool FromDateEnable
-        {
-            get { return fromDateCheckbox.Checked; }
-            set
-            {
-                fromDateCheckbox.Checked = value;
-                fromDateTimePicker.Enabled = value;
-            }
-        }
-
-        public bool ToDateEnable
-        {
-            get { return toDateCheckbox.Checked; }
-            set
-            {
-                toDateCheckbox.Checked = value;
-                toDateTimePicker.Enabled = value;
-            }
-        }
-
-        public bool FromHourEnable
-        {
-            get { return fromHourCheckbox.Checked; }
-            set
-            {
-                fromHourCheckbox.Checked = value;
-                fromHourTimePicker.Enabled = value;
-            }
-        }
-
-        public bool ToHourEnable
-        {
-            get { return toHourCheckbox.Checked; }
-            set
-            {
-                toHourCheckbox.Checked = value;
-                toHourTimePicker.Enabled = value;
-            }
-        }
-
-        public bool NotOlderThanCheckboxEnable
-        {
-            get { return notOlderThanCheckbox.Checked; }
-            set
-            {
-                notOlderThanCheckbox.Checked = value;
-                notOlderThanUpDown.Enabled = value;
-                notOlderThanDropDown.Enabled = value;
-            }
-        }
-
         public string SearchButtonText
         {
             get { return searchButton.Text; }
@@ -592,28 +463,6 @@ namespace cdeWin
             }
         }
 
-        public bool FromSizeEnable
-        {
-            get { return fromSizeCheckbox.Checked; }
-            set
-            {
-                fromSizeCheckbox.Checked = value;
-                fromSizeUpDown.Enabled = value;
-                fromSizeDropDown.Enabled = value;
-            }
-        }
-
-        public bool ToSizeEnable
-        {
-            get { return toSizeCheckbox.Checked; }
-            set
-            {
-                toSizeCheckbox.Checked = value;
-                toSizeUpDown.Enabled = value;
-                toSizeDropDown.Enabled = value;
-            }
-        }
-
         public void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class
         {
             lvh.ColumnSortCompare = compare;
@@ -627,6 +476,30 @@ namespace cdeWin
         public void SortList<T>(ListViewHelper<T> lvh) where T : class
         {
             lvh.SortList();
+        }
+
+        public DateTime FromDateValue
+        {
+            get { return fromDateTimePicker.Value; }
+            set { fromDateTimePicker.Value = value; }
+        }
+
+        public DateTime ToDateValue
+        {
+            get { return toDateTimePicker.Value; }
+            set { toDateTimePicker.Value = value; }
+        }
+
+        public DateTime FromHourValue
+        {
+            get { return fromHourTimePicker.Value; }
+            set { fromHourTimePicker.Value = value; }
+        }
+
+        public DateTime ToHourValue
+        {
+            get { return toHourTimePicker.Value; }
+            set { toHourTimePicker.Value = value; }
         }
     }
 }

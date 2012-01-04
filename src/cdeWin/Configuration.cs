@@ -137,11 +137,34 @@ namespace cdeWin
         public int FindEntryFilter;
         [ProtoMember(13)]
         public bool IsAdvancedSearchMode;
+        [ProtoMember(14)]
+        public int LimitResultCountIndex;
+        [ProtoMember(15)]
+        public int FromSizeDropDownIndex;
+        [ProtoMember(16)]
+        public int ToSizeDropDownIndex;
+        [ProtoMember(17)]
+        public int NotOlderThanDropDownIndex;
+        [ProtoMember(18)]
+        public decimal FromSizeField;
+        [ProtoMember(19)]
+        public decimal ToSizeField;
+        [ProtoMember(20)]
+        public decimal NotOlderThanField;
+        [ProtoMember(21)]
+        public DateTime FromDateValue;
+        [ProtoMember(22)]
+        public DateTime ToDateValue;
+        [ProtoMember(23)]
+        public DateTime FromHourValue;
+        [ProtoMember(24)]
+        public DateTime ToHourValue;
 
         public Configuration()
         {
             PreviousPatternHistory = new List<string>(DefaultPatternHistoryLength);
         }
+
     }
 
     public interface IConfig
@@ -218,6 +241,10 @@ namespace cdeWin
             Pattern = string.Empty,
             RegexMode = false,
             IsAdvancedSearchMode = false,
+            LimitResultCountIndex = -1, // initial default value is set by win forms configuratoin code
+            FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
+            ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
+            NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
         };
 
         public Configuration Loaded;
@@ -302,6 +329,17 @@ namespace cdeWin
             Active.IncludePath = form.IncludePathInSearch;
             Active.FindEntryFilter = form.FindEntryFilter;
             Active.IsAdvancedSearchMode = form.IsAdvancedSearchMode;
+            Active.LimitResultCountIndex = form.LimitResultHelper.SelectedIndex;
+            Active.FromSizeDropDownIndex = form.FromSizeDropDownHelper.SelectedIndex;
+            Active.ToSizeDropDownIndex = form.ToSizeDropDownHelper.SelectedIndex;
+            Active.NotOlderThanDropDownIndex = form.NotOlderThanDropDownHelper.SelectedIndex;
+            Active.FromSizeField = form.FromSizeValue.Field;
+            Active.ToSizeField = form.ToSizeValue.Field;
+            Active.NotOlderThanField = form.NotOlderThanValue.Field;
+            Active.FromDateValue = form.FromDateValue;
+            Active.ToDateValue = form.ToDateValue;
+            Active.FromHourValue = form.FromHourValue;
+            Active.ToHourValue = form.ToHourValue;
         }
 
         public void RestoreConfig(ICDEWinForm form)
@@ -316,6 +354,17 @@ namespace cdeWin
             form.IncludePathInSearch = Active.IncludePath;
             form.FindEntryFilter = Active.FindEntryFilter;
             form.IsAdvancedSearchMode = Active.IsAdvancedSearchMode;
+            form.LimitResultHelper.SelectedIndex = Active.LimitResultCountIndex;
+            form.FromSizeDropDownHelper.SelectedIndex = Active.FromSizeDropDownIndex;
+            form.ToSizeDropDownHelper.SelectedIndex = Active.ToSizeDropDownIndex;
+            form.NotOlderThanDropDownHelper.SelectedIndex = Active.NotOlderThanDropDownIndex;
+            form.FromSizeValue.Field = Active.FromSizeField;
+            form.ToSizeValue.Field = Active.ToSizeField;
+            form.NotOlderThanValue.Field = Active.NotOlderThanField;
+            form.FromDateValue = Active.FromDateValue;
+            form.ToDateValue = Active.ToDateValue;
+            form.FromHourValue = Active.FromHourValue;
+            form.ToHourValue = Active.ToHourValue;
         }
 
         // improve test easy on CDEWinFormPresenter.

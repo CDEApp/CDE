@@ -162,7 +162,8 @@ namespace cdeWin
                 itemColor = _listViewDirForeColor;
                 if (dirEntry.IsDirectory)
                 {
-                    var val = "<Dir";
+                    var val = dirEntry.Size.ToHRString()
+                        + " <Dir";
                     if (dirEntry.IsReparsePoint)
                     {
                         val += " R";
@@ -208,62 +209,6 @@ namespace cdeWin
             return listViewForeColor;
         }
 
-        public void SearchOld()
-        {
-            if (RegexIsBad())
-            {
-                return;
-            }
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
-
-            string trace = string.Empty;
-            var sw = new Stopwatch();
-            //sw.Start();
-            //var resultEnum = Find.TraverseTreeFind(_rootEntries, pattern, regexMode, _clientForm.IncludePathInSearch);
-            //_searchResultList = resultEnum.ToList();
-            //sw.Stop();
-            //trace = "ST " + sw.ElapsedMilliseconds;
-
-            var findOptions = new FindOptions
-                {
-                    Pattern = _clientForm.Pattern,
-                    RegexMode = _clientForm.RegexMode,
-                    IncludePath = _clientForm.IncludePathInSearch,
-                    IncludeFiles = _clientForm.IncludeFiles,
-                    IncludeFolders = _clientForm.IncludeFolders,
-                    FoundFunc = (p, d) =>
-                    {
-                        _searchResultList.Add(new PairDirEntry(p, d));
-                        return true;
-                    },
-                };
-
-            sw.Start();
-            _searchResultList = new List<PairDirEntry>();
-            Find.TraverseTreeFind(_rootEntries, findOptions);
-            sw.Stop();
-            trace += " ST " + sw.ElapsedMilliseconds;
-            _clientForm.SetSearchTimeStatus(trace);
-
-            var count = searchHelper.SetList(_searchResultList);
-            _clientForm.SetSearchResultStatus(count);
-        }
-
-        private bool RegexIsBad()
-        {
-            if (_clientForm.RegexMode)
-            {
-                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
-                if (!string.IsNullOrEmpty(regexError))
-                {
-                    MessageBox.Show(regexError);
-                    return true;
-                }
-            }
-            return false;
-        }
-
         public class BgWorkerParam
         {
             public FindOptions Options;
@@ -288,23 +233,20 @@ namespace cdeWin
                 return;
             }
 
-            if (RegexIsBad())
+            if (RegexIsBad() 
+                || FromToSizeInvalid()
+                || FromToDateInvalid()
+                || FromToHourInvalid())
             {
                 return;
             }
             _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
-            _bgWorker = new BackgroundWorker();
-            _bgWorker.WorkerReportsProgress = true;
-            _bgWorker.WorkerSupportsCancellation = true;
-            _bgWorker.DoWork += BgWorkerDoWork;
-            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
-            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
-
             var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
 
             var findOptions = new FindOptions
                 {
+                    LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
                     Pattern = optimisedPattern,
                     RegexMode = _clientForm.RegexMode,
                     IncludePath = _clientForm.IncludePathInSearch,
@@ -313,18 +255,108 @@ namespace cdeWin
                     // This many file system entries before progress
                     // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
                     ProgressModifier = 5000, 
-                    Worker = _bgWorker
+                    Worker = _bgWorker,
+                    FromSizeEnable = _clientForm.FromSize.Checked,
+                    FromSize = FromSizeValue(),
+                    ToSizeEnable = _clientForm.ToSize.Checked,
+                    ToSize = ToSizeValue(),
+                    FromDateEnable = _clientForm.FromDate.Checked,
+                    FromDate = _clientForm.FromDateValue.Date,
+                    ToDateEnable = _clientForm.ToDate.Checked,
+                    ToDate = _clientForm.ToDateValue.Date,
+                    FromHourEnable = _clientForm.FromHour.Checked,
+                    FromHour = _clientForm.FromHourValue.TimeOfDay,
+                    ToHourEnable = _clientForm.ToHour.Checked,
+                    ToHour = _clientForm.ToHourValue.TimeOfDay,
+                    NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
+                    NotOlderThan = NotOlderThanValue(),
                 };
 
+            SetSearchButton(false);
+
+            _bgWorker = new BackgroundWorker();
+            _bgWorker.WorkerReportsProgress = true;
+            _bgWorker.WorkerSupportsCancellation = true;
+            _bgWorker.DoWork += BgWorkerDoWork;
+            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
+            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
             var param = new BgWorkerParam
                 {
                     Options = findOptions,
                     RootEntries = _rootEntries,
                     State = new BgWorkerState()
                 };
-
-            SetSearchButton(false);
             _bgWorker.RunWorkerAsync(param);
+        }
+
+        private bool FromToDateInvalid()
+        {
+            if (_clientForm.FromDate.Checked
+                && _clientForm.ToDate.Checked
+                && _clientForm.FromDateValue.Date >= _clientForm.ToDateValue.Date)
+            {
+                MyMessageBox.MyShow((Form)_clientForm, "The From Date Field is greater than the To Date field no search results possible.");
+                return true;
+            }
+            return false;
+        }
+
+        private bool FromToHourInvalid()
+        {
+            if (_clientForm.FromHour.Checked
+                && _clientForm.ToHour.Checked
+                && _clientForm.FromHourValue.TimeOfDay.TotalSeconds >= _clientForm.ToHourValue.TimeOfDay.TotalSeconds)
+            {
+                MyMessageBox.MyShow((Form)_clientForm, "The From Hour Field is greater than the To Hour field no search results possible.");
+                return true;
+            }
+            return false;
+        }
+
+        private bool RegexIsBad()
+        {
+            if (_clientForm.RegexMode)
+            {
+                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
+                if (!string.IsNullOrEmpty(regexError))
+                {
+                    MyMessageBox.MyShow((Form)_clientForm, regexError);
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private bool FromToSizeInvalid()
+        {
+            if (_clientForm.FromSize.Checked
+                && _clientForm.ToSize.Checked
+                && FromSizeValue() > ToSizeValue())
+            {
+                MyMessageBox.MyShow((Form)_clientForm, "The From Size Field is greater than the To Size field no search results possible.");
+                return true;
+            }
+            return false;
+        }
+
+        public long FromSizeValue()
+        {
+            var value = _clientForm.FromSizeDropDownHelper.SelectedValue;
+            return (long)(_clientForm.FromSizeValue.Field * value);
+        }
+
+        public long ToSizeValue()
+        {
+            var value = _clientForm.ToSizeDropDownHelper.SelectedValue;
+            return (long)(_clientForm.ToSizeValue.Field * value);
+        }
+
+        public DateTime NotOlderThanValue()
+        {
+            var dropDownValueFunc = _clientForm.NotOlderThanDropDownHelper.SelectedValue;
+            var fieldValue = (int)_clientForm.NotOlderThanValue.Field;
+            var now = DateTime.Now; // Option to set this to date of newest scanned Catalog
+            return dropDownValueFunc(now, -fieldValue); // subtract as we are going back in time.
         }
 
         // Assumes well formed regex pattern input.
@@ -398,7 +430,7 @@ namespace cdeWin
 
             if (e.Error != null)
             {
-                MessageBox.Show(e.Error.Message);
+                MyMessageBox.MyShow((Form)_clientForm, e.Error.Message);
                 count = 0;
             }
             else if (e.Cancelled)
@@ -887,69 +919,6 @@ namespace cdeWin
             }
             return compareResult;
         }
-    
-        public void FromDateCheckboxChanged()
-        {
-            var enable =_clientForm.FromDateEnable;
-            if (enable)
-            {
-                DisableNotOlderThan();
-            }
-            _clientForm.FromDateEnable = enable;
-        }
-
-        public void ToDateCheckboxChanged()
-        {
-            var enable =_clientForm.ToDateEnable;
-            if (enable)
-            {
-                DisableNotOlderThan();
-            }
-            _clientForm.ToDateEnable = enable; // side effects hmm ?? ick
-        }
-
-        public void FromHourCheckboxChanged()
-        {
-            var enable =_clientForm.FromHourEnable;
-            if (enable)
-            {
-                DisableNotOlderThan();
-            }
-            _clientForm.FromHourEnable = enable;
-        }
-
-        public void ToHourCheckboxChanged()
-        {
-            var enable =_clientForm.ToHourEnable;
-            if (enable)
-            {
-                DisableNotOlderThan();
-            }
-            _clientForm.ToHourEnable = enable;
-        }
-
-        private void DisableNotOlderThan()
-        {
-            _clientForm.NotOlderThanCheckboxEnable = false;
-        }
-
-        public void NotOlderThanCheckboxChanged()
-        {
-            var enable =_clientForm.NotOlderThanCheckboxEnable;
-            if (enable)
-            {
-                DisableFromToFields();
-            }
-            _clientForm.NotOlderThanCheckboxEnable = enable;
-        }
-
-        private void DisableFromToFields()
-        {
-            _clientForm.FromDateEnable = false;
-            _clientForm.ToDateEnable = false;
-            _clientForm.FromHourEnable = false;
-            _clientForm.ToHourEnable = false;
-        }
 
         public void AdvancedSearchCheckboxChanged()
         {
@@ -961,26 +930,5 @@ namespace cdeWin
         {
             _clientForm.IsAdvancedSearchMode = value;
         }
-
-        public void FromSizeCheckboxChanged()
-        {
-            var enable = _clientForm.FromSizeEnable;
-            //if (enable)
-            //{
-            //    DisableFromToFields();
-            //}
-            _clientForm.FromSizeEnable = enable;
-        }
-
-        public void ToSizeCheckboxChanged()
-        {
-            var enable = _clientForm.ToSizeEnable;
-            //if (enable)
-            //{
-            //    DisableFromToFields();
-            //}
-            _clientForm.ToSizeEnable = enable;
-        }
-
     }
 }

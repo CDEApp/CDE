@@ -17,13 +17,26 @@ namespace cdeLib
         public bool IncludeFolders { get; set; }
         public int LimitResultCount { get; set; } // consider making this a multiple of ProgressModifier
         public int ProgressModifier { get; set; }
-        //public int ProgressEnd { get; set; }
+
+        public bool FromSizeEnable { get; set; }
+        public long FromSize { get; set; }
+        public bool ToSizeEnable { get; set; }
+        public long ToSize { get; set; }
+        public bool FromDateEnable { get; set; }
+        public DateTime FromDate { get; set; }
+        public bool ToDateEnable { get; set; }
+        public DateTime ToDate { get; set; }
+        public bool FromHourEnable { get; set; }
+        public TimeSpan FromHour { get; set; }
+        public bool ToHourEnable { get; set; }
+        public TimeSpan ToHour { get; set; }
+        public bool NotOlderThanEnable { get; set; }
+        public DateTime NotOlderThan { get; set; }
 
         public FindOptions()
         {
             LimitResultCount = 10000;
             ProgressModifier = int.MaxValue; // huge m0n.
-            //ProgressEnd = int.MaxValue;
         }
 
         /// <summary>
@@ -100,6 +113,7 @@ namespace cdeLib
             var progressEnd = rootEntries.Sum(rootEntry => (int) rootEntry.DirCount + (int) rootEntry.FileCount);
             // ReSharper restore PossibleMultipleEnumeration
             var progressCount = new[] { 0 };
+            progressFunc(progressCount[0], progressEnd);        // first progress right at start.
 
             TraverseFunc findFunc;
             if (foundFunc == null)
@@ -126,7 +140,16 @@ namespace cdeLib
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
-                            if (regex.IsMatch(p.MakeFullPath(d)))
+                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
+                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
+                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
+                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
+                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
+                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
+                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
+                                && regex.IsMatch(p.MakeFullPath(d)))
                             {
                                 if (!foundFunc(p, d))
                                 {
@@ -158,7 +181,16 @@ namespace cdeLib
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
-                            if (regex.IsMatch(d.Path))
+                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
+                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
+                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
+                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
+                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
+                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
+                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
+                                && regex.IsMatch(d.Path))
                             {
                                 if (!foundFunc(p, d))
                                 {
@@ -193,8 +225,16 @@ namespace cdeLib
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
-                            if (p.MakeFullPath(d).IndexOf(options.Pattern,
-                                StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
+                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
+                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
+                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
+                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
+                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
+                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
+                                && p.MakeFullPath(d).IndexOf(options.Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
                                 if (!foundFunc(p, d))
                                 {
@@ -226,8 +266,16 @@ namespace cdeLib
                         if ((d.IsDirectory && options.IncludeFolders)
                             || (!d.IsDirectory && options.IncludeFiles))
                         {
-                            if (d.Path.IndexOf(options.Pattern,
-                                StringComparison.InvariantCultureIgnoreCase) >= 0)
+                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
+                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
+                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
+                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
+                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
+                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
+                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
+                                && d.Path.IndexOf(options.Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
                             {
                                 if (!foundFunc(p, d))
                                 {

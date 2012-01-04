@@ -222,7 +222,7 @@ namespace cdeLib
             }
             else
             {
-                Size = (ulong)fs.FileSize;
+                Size = fs.FileSize;
             }
         }
 
@@ -244,13 +244,18 @@ namespace cdeLib
             {
                 return 1; // this after de
             }
-            if (IsDirectory && de.IsDirectory)
-            {   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
-                // really cheap to calculate dir size.... i think i should fill it in ?
+            //if (IsDirectory && de.IsDirectory)
+            //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+            //    // really cheap to calculate dir size.... i think i should fill it in ?
+            //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+            //}
+            // the cast breaks this.
+            var sizeCompare = Size.CompareTo(de.Size);
+            if (sizeCompare == 0)
+            {
                 return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
             }
-            // the cast breaks this.
-            return Size.CompareTo(de.Size);
+            return sizeCompare;
         }
 
         public int ModifiedCompareTo(DirEntry de)

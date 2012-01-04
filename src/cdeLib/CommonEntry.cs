@@ -20,7 +20,7 @@ namespace cdeLib
         // ReSharper restore MemberCanBePrivate.Global
 
         [ProtoMember(4, IsRequired = true)]
-        public ulong Size { get; set; }
+        public long Size { get; set; }
 
         /// <summary>
         /// RootEntry this is the root path, DirEntry this is the entry name.
@@ -77,7 +77,7 @@ namespace cdeLib
         // can this be done with TraverseTree ?
         public void SetSummaryFields(DirStats dirStats)
         {
-            var size = 0ul;
+            var size = 0L;
             if (Children != null)   // now that empty directories may not have Children initialized.
             {
                 foreach (var dirEntry in Children)
