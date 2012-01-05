@@ -335,7 +335,7 @@ namespace cdeWin
         public TreeNode DirectoryTreeViewNodes
         {
             get
-            {   // we only use one root node at the moment.
+            {   // Directory Tab only holds one root node.
                 return directoryTreeView.Nodes.Count == 1 ? directoryTreeView.Nodes[0] : null;
             }
 
