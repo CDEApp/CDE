@@ -51,6 +51,9 @@
     <ErrorReport>prompt</ErrorReport>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="AlphaFS">
+      <HintPath>..\..\lib\AlphaFS-1.5\Release\AlphaFS.dll</HintPath>
+    </Reference>
     <Reference Include="nunit.framework">
       <HintPath>..\..\lib\NUnit-2.5.10..11092\bin\net-2.0\nunit.framework.dll</HintPath>
     </Reference>
@@ -68,11 +71,8 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="TestCDEWinPresenter_OptimiseRegexPattern.cs" />
-    <Compile Include="TestDecimal.cs" />
     <Compile Include="TestDisplayTreeFromRootPresenter.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="TestEnumerable.cs" />
-    <Compile Include="TestNullEquality.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
