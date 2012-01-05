@@ -99,7 +99,7 @@ namespace cdeLib
 
         public void TraverseTreePair(TraverseFunc func)
         {
-            TraverseTreePair(new List<CommonEntry>() { this }, func);
+            TraverseTreePair(new List<CommonEntry> { this }, func);
         }
 
         public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func)
