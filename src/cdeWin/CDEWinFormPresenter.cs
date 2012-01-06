@@ -614,7 +614,7 @@ namespace cdeWin
             {
                 CreateNodesPreExpand(workingTreeNode);
                 workingTreeNode.Expand();
-                _clientForm.SetDirectoryTreeViewSelectedNode = workingTreeNode;
+                _clientForm.DirectoryTreeViewSelectedNode = workingTreeNode;
 
                 // This is required or item under cursor after double click is selected.
                 // not sure why ? some sort of left over click on new ListView content.

@@ -70,8 +70,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="TestCDEWinPresenterBase.cs" />
     <Compile Include="TestCDEWinPresenter_OptimiseRegexPattern.cs" />
-    <Compile Include="TestDisplayTreeFromRootPresenter.cs" />
+    <Compile Include="CDEWinFormPresenter_ConstructorTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

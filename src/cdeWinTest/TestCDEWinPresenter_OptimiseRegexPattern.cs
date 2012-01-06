@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using NUnit.Framework;
-using Rhino.Mocks;
 using cdeLib;
 using cdeWin;
 
@@ -9,21 +8,18 @@ namespace cdeWinTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class TestCDEWinPresenter_OptimiseRegexPattern
+    class TestCDEWinPresenter : TestCDEWinPresenterBase
     {
-        private TestOptimise _presenter;
-        private ICDEWinForm _stubForm;
-        private IConfig _stubConfig;
+        protected TestOptimise _presenter;
 
         [SetUp]
-        public void RunBeforeEveryTest()
+        override public void RunBeforeEveryTest()
         {
-            _stubForm = MockRepository.GenerateStub<ICDEWinForm>();
-            _stubConfig = MockRepository.GenerateStub<IConfig>();
-            _stubForm.RegexMode = true;
-            _presenter = new TestOptimise(_stubForm, new List<RootEntry>(), _stubConfig);  
+            base.RunBeforeEveryTest();
+            _mockForm.RegexMode = true;
+            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig);
         }
-
+        
         [Test]
         public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenRegexMode()
         {
@@ -35,7 +31,7 @@ namespace cdeWinTest
         [Test]
         public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenNotRegexMode()
         {
-            _stubForm.RegexMode = false;
+            _mockForm.RegexMode = false;
 
             var result = _presenter.TestOptimiseRegexPattern(null);
 
@@ -53,7 +49,7 @@ namespace cdeWinTest
         [Test]
         public void OptimiseRegexPattern_EmptyInput_ReturnsEmpty_WhenNotRegexMode()
         {
-            _stubForm.RegexMode = false;
+            _mockForm.RegexMode = false;
 
             var result = _presenter.TestOptimiseRegexPattern(string.Empty);
 
@@ -71,7 +67,7 @@ namespace cdeWinTest
         [Test]
         public void OptimiseRegexPattern_LeadingWild_ReturnsUnchanged_WhenNotRegexMode()
         {
-            _stubForm.RegexMode = false;
+            _mockForm.RegexMode = false;
 
             var result = _presenter.TestOptimiseRegexPattern(".*moo");
 
@@ -89,7 +85,7 @@ namespace cdeWinTest
         [Test]
         public void OptimiseRegexPattern_TrailingWild_ReturnsUnchanged_WhenNotRegexMode()
         {
-            _stubForm.RegexMode = false;
+            _mockForm.RegexMode = false;
 
             var result = _presenter.TestOptimiseRegexPattern("moo.*");
 

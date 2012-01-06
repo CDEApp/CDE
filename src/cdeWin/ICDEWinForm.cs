@@ -69,8 +69,8 @@ namespace cdeWin
         List<string> GetSearchTextBoxAutoComplete();
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
-        string SetDirectoryPathTextbox { set; }
-        TreeNode SetDirectoryTreeViewSelectedNode { set; }
+        string SetDirectoryPathTextbox { get; set; }
+        TreeNode DirectoryTreeViewSelectedNode { get; set; }
         void SetSearchResultStatus(int i);
         void SetCatalogsLoadedStatus(int i);
         void SetSearchTimeStatus(string s);
@@ -82,9 +82,9 @@ namespace cdeWin
         DateTime FromHourValue { get; set; }
         DateTime ToHourValue { get; set; }
 
-        ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
-        ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
-        ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+        IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
+        IListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         CheckBoxDependentControlHelper FromDate { get; set; }
         CheckBoxDependentControlHelper ToDate { get; set; }
@@ -106,10 +106,10 @@ namespace cdeWin
         void CleanUp();
 
         // improve test easy on CDEWinFormPresenter.
-        void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class;
+        void SetColumnSortCompare<T>(IListViewHelper<T> lvh, Comparison<T> compare) where T : class;
         // improve test easy on CDEWinFormPresenter.
-        int SetList<T>(ListViewHelper<T> lvh, List<T> list) where T : class;
+        int SetList<T>(IListViewHelper<T> lvh, List<T> list) where T : class;
         // improve test easy on CDEWinFormPresenter.
-        void SortList<T>(ListViewHelper<T> lvh) where T : class;
+        void SortList<T>(IListViewHelper<T> lvh) where T : class;
     }
 }

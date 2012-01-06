@@ -9,12 +9,66 @@ namespace cdeWin
     // and hookup events to them as well with matching names ?
     // encapsulate ListView in VirtualMode handling
 
+    public interface IListViewHelper<T> : IDisposable where T : class
+    {
+        /// <summary>
+        /// Used by virtual mode ListView
+        /// </summary>
+        int RetrieveItemIndex { get; set; }
+
+        ListViewItem RenderItem { get; set; }
+        int AfterActivateIndex { get; set; }
+        int ColumnClickIndex { get; set; }
+        IEnumerable<int> SelectedIndices { get; set; }
+        int SelectedIndicesCount { get; set; }
+        SortOrder ColumnSortOrder { get; set; }
+        int SortColumn { get; set; }
+        Comparison<T> ColumnSortCompare { get; set; }
+
+        /// <summary>
+        /// Adds CacheVirtualItems, RetrieveVirtualItem handler which sets RetrieveItemIndex before EventAction.
+        /// </summary>
+        EventAction RetrieveVirtualItem { get; set; }
+
+        /// <summary>
+        /// Adds ColumnClick handler which sets ColumnClickIndex before EventAction..
+        /// </summary>
+        EventAction ColumnClick { get; set; }
+
+        /// <summary>
+        /// Adds ItemActivate handler which sets AfterActivateIndex before EventAction..
+        /// </summary>
+        EventAction ItemActivate { get; set; }
+
+        ContextMenuStrip ContextMenu { get; set; }
+
+        /// <summary>
+        /// Adds SelectedIndexChanged, VirtualItemsSelectionRangeChanged handlers.
+        /// </summary>
+        EventAction ItemSelectionChanged { get; set; }
+
+        bool MultiSelect { get; set; }
+
+        void InitSort();
+        IEnumerable<ColumnConfig> ColumnConfigs();
+        void SetColumnConfigs(IEnumerable<ColumnConfig> columns);
+        void ForceDraw();
+        void SelectItem(int index);
+        void DeselectItems();
+        void SelectAllItems();
+        int SetList(List<T> list);
+        void ListViewColumnClick();
+        void SortList();
+        void ActionOnSelectedItem(Action<T> action);
+        void ActionOnActivateItem(Action<T> action);
+    }
+
     /// <summary>
     /// Consolidated code for Listview operation in VirtualMode.
     /// Only ListView events required are enabled.
     /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
-    public class ListViewHelper<T> : IDisposable where T : class
+    public class ListViewHelper<T> : IListViewHelper<T> where T : class
     {
         private int _listSize;
         private List<T> _list;

@@ -66,9 +66,9 @@ namespace cdeWin
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
-        public ListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
-        public ListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
-        public ListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+        public IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
+        public IListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        public IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         public CheckBoxDependentControlHelper FromDate { get; set; }
         public CheckBoxDependentControlHelper ToDate { get; set; }
@@ -432,11 +432,13 @@ namespace cdeWin
 
         public string SetDirectoryPathTextbox
         {
+            get { return directoryPathTextBox.Text; }
             set { directoryPathTextBox.Text = value; }
         }
 
-        public TreeNode SetDirectoryTreeViewSelectedNode
+        public TreeNode DirectoryTreeViewSelectedNode
         {
+            get { return directoryTreeView.SelectedNode; }
             set { directoryTreeView.SelectedNode = value; }
         }
 
@@ -463,17 +465,17 @@ namespace cdeWin
             }
         }
 
-        public void SetColumnSortCompare<T>(ListViewHelper<T> lvh, Comparison<T> compare) where T : class
+        public void SetColumnSortCompare<T>(IListViewHelper<T> lvh, Comparison<T> compare) where T : class
         {
             lvh.ColumnSortCompare = compare;
         }
 
-        public int SetList<T>(ListViewHelper<T> lvh, List<T> list) where T : class
+        public int SetList<T>(IListViewHelper<T> lvh, List<T> list) where T : class
         {
             return lvh.SetList(list);
         }
 
-        public void SortList<T>(ListViewHelper<T> lvh) where T : class
+        public void SortList<T>(IListViewHelper<T> lvh) where T : class
         {
             lvh.SortList();
         }
