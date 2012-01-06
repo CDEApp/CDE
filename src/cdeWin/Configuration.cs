@@ -375,10 +375,21 @@ namespace cdeWin
             form.FromSizeValue.Field = Active.FromSizeField;
             form.ToSizeValue.Field = Active.ToSizeField;
             form.NotOlderThanValue.Field = Active.NotOlderThanField;
-            form.FromDateValue = Active.FromDateValue;
-            form.ToDateValue = Active.ToDateValue;
-            form.FromHourValue = Active.FromHourValue;
-            form.ToHourValue = Active.ToHourValue;
+
+            form.FromDateValue = DateOrDefault(Active.FromDateValue);
+            form.ToDateValue = DateOrDefault(Active.ToDateValue);
+            form.FromHourValue = DateOrDefault(Active.FromHourValue);
+            form.ToHourValue = DateOrDefault(Active.ToHourValue);
+        }
+
+        private DateTime DateOrDefault(DateTime dateValue)
+        {
+            if (dateValue <= DateTime.MinValue
+                || dateValue >= DateTime.MinValue)
+            {
+                return DateTime.Now;
+            }
+            return dateValue;
         }
 
         public List<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
