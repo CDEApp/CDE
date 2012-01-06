@@ -376,13 +376,13 @@ namespace cdeWin
             form.ToSizeValue.Field = Active.ToSizeField;
             form.NotOlderThanValue.Field = Active.NotOlderThanField;
 
-            form.FromDateValue = DateOrDefault(Active.FromDateValue);
-            form.ToDateValue = DateOrDefault(Active.ToDateValue);
-            form.FromHourValue = DateOrDefault(Active.FromHourValue);
-            form.ToHourValue = DateOrDefault(Active.ToHourValue);
+            form.FromDateValue = DateOrNow(Active.FromDateValue);
+            form.ToDateValue = DateOrNow(Active.ToDateValue);
+            form.FromHourValue = DateOrNow(Active.FromHourValue);
+            form.ToHourValue = DateOrNow(Active.ToHourValue);
         }
 
-        private DateTime DateOrDefault(DateTime dateValue)
+        private DateTime DateOrNow(DateTime dateValue)
         {
             if (dateValue <= DateTime.MinValue
                 || dateValue >= DateTime.MinValue)
