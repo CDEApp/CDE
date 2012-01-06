@@ -188,16 +188,16 @@ namespace cdeWinTest
         [Test]
         public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_OK()
         {
-            // Directory ListView gets children of root.
+            // Directory ListView gets children of root
             Object listViewList = null;
             _mockDirectoryListViewHelper.Stub(x => x.SetList(Arg<List<DirEntry>>.Is.Anything))
                 .Return(1).WhenCalled(a => listViewList = a.Arguments[0]);
 
-            // Select the item in list view happens.
+            // Select the item in list view
             _mockDirectoryListViewHelper.Stub(x => x.SelectItem(Arg<int>.Is.Anything))
                 .Repeat.Times(1);
 
-            // When the TreeView node is selected ensure the AfterSelect event happens as it does in gui.
+            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
             var selectedNode = (TreeNode)null;
             _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
                 .WhenCalled(a =>
@@ -209,25 +209,20 @@ namespace cdeWinTest
                         _sutPresenter.DirectoryTreeViewAfterSelect();
                     });
 
-            // Switcg to Directory pane happens.
+            // Go to Directory pane
             _mockForm.Stub(x => x.SelectDirectoryPane())
                 .Repeat.Times(1);
 
+            //TracePresenterAction(_stubSearchResultListViewHelper);
+
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with SearchResultListView our activated item is the _pairDirEntry provided.
             _sutPresenter.SearchResultListViewItemActivate();
-
-            // Capture the public method implementation method.
-            var args = _stubSearchResultListViewHelper.GetArgumentsForCallsMadeOn(x => x.ActionOnActivateItem(Arg<Action<PairDirEntry>>.Is.Anything));
-            Assert.That(args.Count, Is.EqualTo(1));
-            Assert.That(args[0].Length, Is.EqualTo(1));
-            var action = (Action<PairDirEntry>)(args[0][0]); // this will be ViewFileInDirectoryTab(PairDirEntry pde)
-
-            // ACTIVATE action ViewFileInDirectoryTab(PairDirEntry pde)
-            action(_pairDirEntry);   // as if ActionOnActivateItem() called through to ListViewHelper to set Directory 
+            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            action(_pairDirEntry);
 
             _mockDirectoryListViewHelper.VerifyAllExpectations();
             _mockForm.VerifyAllExpectations();
-
             Assert.That(selectedNode.Text, Is.EqualTo(@"T:\"));
 
             var list = (List<DirEntry>)listViewList;

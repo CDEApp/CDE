@@ -1,3 +1,4 @@
+using System;
 using NUnit.Framework;
 using Rhino.Mocks;
 using cdeLib;
@@ -44,6 +45,21 @@ namespace cdeWinTest
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+        }
+
+        protected Action<T> GetPresenterAction<T>(IListViewHelper<T> lvh) where T : class
+        {
+            var args = lvh.GetArgumentsForCallsMadeOn(
+                x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything));
+            Assert.That(args.Count, Is.EqualTo(1));
+            Assert.That(args[0].Length, Is.EqualTo(1));
+            return (Action<T>)(args[0][0]); // extract the ActivateOnItem action 
+        }
+
+        protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
+        {
+            lvh.Stub(x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything))
+                .WhenCalled(a => Console.WriteLine("called ActionOnActivateItem()."));
         }
     }
     // ReSharper restore InconsistentNaming
