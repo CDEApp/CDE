@@ -43,6 +43,9 @@ namespace cdeLib
         /// Called for every found entry.
         /// </summary>
         public TraverseFunc FoundFunc { get; set; }
+        /// <summary>
+        /// Called for reporting progress to caller.
+        /// </summary>
         public Action<int, int> ProgressFunc { get; set; }
         public BackgroundWorker Worker { get; set; }
     }

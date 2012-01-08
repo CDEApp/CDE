@@ -503,5 +503,10 @@ namespace cdeWin
             get { return toHourTimePicker.Value; }
             set { toHourTimePicker.Value = value; }
         }
+
+        public void MessageBox(string message)
+        {
+            MyMessageBox.MyShow(this, message);
+        }
     }
 }

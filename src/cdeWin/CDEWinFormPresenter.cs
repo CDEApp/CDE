@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
@@ -19,8 +18,6 @@ namespace cdeWin
         private const string DummyNodeName = "_dummyNode";
         private readonly Color _listViewForeColor = Color.Black;
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
-
-        // TODO these need to be centralised.
 
         private readonly ICDEWinForm _clientForm;
         private readonly List<RootEntry> _rootEntries;
@@ -203,7 +200,7 @@ namespace cdeWin
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
             vals[8] = string.Format(Config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[9] = rootEntry.DefaultFileName; // todo give full path ? or actual file name ?
+            vals[9] = rootEntry.DefaultFileName; // todo actual file name ? not field stored default.
             vals[10] = rootEntry.SourcePath;
             vals[11] = rootEntry.Description;
 
@@ -296,7 +293,7 @@ namespace cdeWin
                 && _clientForm.ToDate.Checked
                 && _clientForm.FromDateValue.Date >= _clientForm.ToDateValue.Date)
             {
-                MyMessageBox.MyShow((Form)_clientForm, "The From Date Field is greater than the To Date field no search results possible.");
+                _clientForm.MessageBox("The From Date Field is greater than the To Date field no search results possible.");
                 return true;
             }
             return false;
@@ -308,7 +305,7 @@ namespace cdeWin
                 && _clientForm.ToHour.Checked
                 && _clientForm.FromHourValue.TimeOfDay.TotalSeconds >= _clientForm.ToHourValue.TimeOfDay.TotalSeconds)
             {
-                MyMessageBox.MyShow((Form)_clientForm, "The From Hour Field is greater than the To Hour field no search results possible.");
+                _clientForm.MessageBox("The From Hour Field is greater than the To Hour field no search results possible.");
                 return true;
             }
             return false;
@@ -321,7 +318,7 @@ namespace cdeWin
                 var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
                 if (!string.IsNullOrEmpty(regexError))
                 {
-                    MyMessageBox.MyShow((Form)_clientForm, regexError);
+                    _clientForm.MessageBox(regexError);
                     return true;
                 }
             }
@@ -334,7 +331,7 @@ namespace cdeWin
                 && _clientForm.ToSize.Checked
                 && FromSizeValue() > ToSizeValue())
             {
-                MyMessageBox.MyShow((Form)_clientForm, "The From Size Field is greater than the To Size field no search results possible.");
+                _clientForm.MessageBox("The From Size Field is greater than the To Size field no search results possible.");
                 return true;
             }
             return false;
@@ -431,7 +428,7 @@ namespace cdeWin
 
             if (e.Error != null)
             {
-                MyMessageBox.MyShow((Form)_clientForm, e.Error.Message);
+                _clientForm.MessageBox(e.Error.Message);
                 count = 0;
             }
             else if (e.Cancelled)

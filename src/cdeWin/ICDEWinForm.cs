@@ -111,5 +111,7 @@ namespace cdeWin
         int SetList<T>(IListViewHelper<T> lvh, List<T> list) where T : class;
         // improve test easy on CDEWinFormPresenter.
         void SortList<T>(IListViewHelper<T> lvh) where T : class;
+
+        void MessageBox(string message);
     }
 }
