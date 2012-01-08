@@ -19,6 +19,7 @@ namespace cdeWin
         void Close();
     }
 
+    // from http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view
     public abstract class Presenter<TView> where TView : class, IView
     {
         protected Presenter(TView view)
