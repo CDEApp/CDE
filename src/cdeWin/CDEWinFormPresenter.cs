@@ -533,9 +533,10 @@ namespace cdeWin
         public void GoToDirectoryRoot(RootEntry newRoot)
         {
             RootEntry currentRoot = null;
-            if (_clientForm.DirectoryTreeViewNodes != null)
+            var directoryTreeViewNodes = _clientForm.DirectoryTreeViewNodes;
+            if (directoryTreeViewNodes != null)
             {
-                currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes.Tag;
+                currentRoot = (RootEntry)directoryTreeViewNodes.Tag;
             }
 
             if (currentRoot == null || currentRoot != newRoot)
