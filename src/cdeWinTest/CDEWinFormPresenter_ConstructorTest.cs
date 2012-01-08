@@ -15,8 +15,19 @@ namespace cdeWinTest
 {
     public static class RootEntryTestSource
     {
-        public const string testRootPath = @"C:\Testing";
-        public const string testDirName = @"TestDir";
+        //
+        // holding on to this for now as it was hard to figure out :).....
+        //
+        //// this was working -- adding a getter to property breaks this 
+        //// BROKE cause it was Stub not Mock - odd it breaks only once add getter though.
+        //_stubForm.AssertWasCalled(x => x.DirectoryTreeViewNodes
+        //    = Arg<TreeNode>.Matches( new PredicateConstraint<TreeNode>(
+        //            y => y.Text == testRootPath
+        //                 && y.Nodes.Count == 1
+        //                 && y.Nodes[0].Text == DummyNodeName )));
+
+        public const string TestRootPath = @"C:\Testing";
+        public const string TestDirName = @"TestDir";
         public const string DummyNodeName = @"_dummyNode";
 
         public static readonly List<RootEntry> RootList = new List<RootEntry> { CreateTestRoot() };
@@ -24,10 +35,10 @@ namespace cdeWinTest
 
         public static RootEntry CreateTestRoot()
         {
-            var rootEntry = new RootEntry { Path = testRootPath };
+            var rootEntry = new RootEntry { Path = TestRootPath };
             var dirEntry1 = new DirEntry(true)
             {
-                Path = testDirName,
+                Path = TestDirName,
                 Modified = new DateTime(2011, 04, 14, 21, 09, 04, DateTimeKind.Local)
             };
             var dirEntry2 = new DirEntry
@@ -47,17 +58,6 @@ namespace cdeWinTest
     [TestFixture]
     public class CDEWinFormPresenter_ConstructorTest : TestCDEWinPresenterBase
     {
-        //
-        // holding on to this for now as it was hard to figure out :).....
-        //
-        //// this was working -- adding a getter to property breaks this 
-        //// BROKE cause it was Stub not Mock - odd it breaks only once add getter though.
-        //_stubForm.AssertWasCalled(x => x.DirectoryTreeViewNodes
-        //    = Arg<TreeNode>.Matches( new PredicateConstraint<TreeNode>(
-        //            y => y.Text == testRootPath
-        //                 && y.Nodes.Count == 1
-        //                 && y.Nodes[0].Text == DummyNodeName )));
-
         [SetUp]
         override public void RunBeforeEveryTest()
         {
@@ -182,32 +182,37 @@ namespace cdeWinTest
         //   this one woudl test CreateNodesPreExpand() 
         //   and Expand() behaviour of node... ? which doesnt matter to listview so maybe irrelevant
         //       but stopping at a tree - without a listview file select is ok. ? 
-        // NOTE not faking .Tag setting on TreeNodes, cause its part of presenter ?
-        // NOTE not faking BuildRootNode()
-        // NOTE not stubbing _mockForm.DirectoryTreeViewNodes - it will be null due to default stub behaviour.
+        //
+        // Real values of .Tag setting on TreeNodes etc, as part of presenter.
+        // Using real BuildRootNode() as part of presenter.
+        //
+        //
+        // Hmmm this is asserting a lot in one [Test].
+        // - break it up into multiple tests 1 assert each ?
+        //
+        //
         [Test]
         public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_OK()
         {
+            Object treeViewRootNodeArg = null;
+            Object listViewListArg = null;
+
+            // Directory TreeView gets a new root node, since there is no previous one loaded.
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
+                .Repeat.Times(1)
+                .WhenCalled(a => treeViewRootNodeArg = a.Arguments[0]);
+
+            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
+            MockTreeViewAfterSelect(_sutPresenter);
+
             // Directory ListView gets children of root
-            Object listViewList = null;
             _mockDirectoryListViewHelper.Stub(x => x.SetList(Arg<List<DirEntry>>.Is.Anything))
-                .Return(1).WhenCalled(a => listViewList = a.Arguments[0]);
+                .Repeat.Times(1)
+                .Return(1).WhenCalled(a => listViewListArg = a.Arguments[0]);
 
             // Select the item in list view
             _mockDirectoryListViewHelper.Stub(x => x.SelectItem(Arg<int>.Is.Anything))
                 .Repeat.Times(1);
-
-            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
-            var selectedNode = (TreeNode)null;
-            _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
-                .WhenCalled(a =>
-                    {
-                        selectedNode = (TreeNode) a.Arguments[0];
-                        _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
-                            .Repeat.Times(1)
-                            .Return(selectedNode);
-                        _sutPresenter.DirectoryTreeViewAfterSelect();
-                    });
 
             // Go to Directory pane
             _mockForm.Stub(x => x.SelectDirectoryPane())
@@ -216,18 +221,166 @@ namespace cdeWinTest
             //TracePresenterAction(_stubSearchResultListViewHelper);
 
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-            // with SearchResultListView our activated item is the _pairDirEntry provided.
+            // with SearchResultListView our activated item is a PairDirEntry.
             _sutPresenter.SearchResultListViewItemActivate();
             var action = GetPresenterAction(_stubSearchResultListViewHelper);
             action(_pairDirEntry);
 
             _mockDirectoryListViewHelper.VerifyAllExpectations();
             _mockForm.VerifyAllExpectations();
-            Assert.That(selectedNode.Text, Is.EqualTo(@"T:\"));
+            Assert.That(_treeViewAfterSelectNode.Text, Is.EqualTo(@"T:\"), "ListView selected node text value not expected.");
 
-            var list = (List<DirEntry>)listViewList;
-            Assert.That(list.Count, Is.EqualTo(1));
-            Assert.That(list[0].Path, Is.EqualTo("Test"));
+            var treeViewRootNode = (TreeNode) treeViewRootNodeArg;
+            Assert.That(treeViewRootNode.Text, Is.EqualTo(@"T:\"), "TreeView root node Text value not expected");
+
+            var list = (List<DirEntry>)listViewListArg;
+            Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasnt expected");
+            Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasnt expected");
+        }
+
+        [Test]
+        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_On_Same_RootEntry_Does_Not_Set_Root()
+        {
+            var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes)
+                .Repeat.Times(1)    // enforcing repeat makes this a fragile test ?
+                .Return(testRootTreeNode);
+
+            // verify does not set DirectoryTreeViewNodes
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
+                .WhenCalled(a => Assert.Fail("GoToDirectoryRoot tried to set DirectoryTreeViewNodes"));
+
+            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
+            MockTreeViewAfterSelect(_sutPresenter);
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with SearchResultListView our activated item is a PairDirEntry.
+            _sutPresenter.SearchResultListViewItemActivate();
+            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            action(_pairDirEntry);
+
+            _mockForm.VerifyAllExpectations();
+        }
+
+        protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
+        {
+            _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
+                .WhenCalled(a =>
+                {
+                    _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
+                    _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
+                        .Repeat.Times(1)
+                        .Return(_treeViewAfterSelectNode);
+                    presenter.DirectoryTreeViewAfterSelect();
+                });
+        }
+    }
+    // ReSharper restore InconsistentNaming
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class CDEWinFormPresenter_CatalogListViewItemActivate : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, RootEntryTestSource.RootList, _stubConfig);
+            InitRoot();
+        }
+
+        [Test]
+        public void CatalogListViewItemActivate_Callback__GoToDirectoryRoot_On_Same_RootEntry_Does_Not_Set_Root()
+        {
+            var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes)
+                .Repeat.Times(1)    // enforcing repeat makes this a fragile test ?
+                .Return(testRootTreeNode);
+
+            // verify does not set DirectoryTreeViewNodes
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
+                .WhenCalled(a => Assert.Fail("GoToDirectoryRoot tried to set DirectoryTreeViewNodes"));
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with CatalogListView our activated item is a RootEntry.
+            _sutPresenter.CatalogListViewItemActivate();
+            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            action(_rootEntry);
+
+            _mockForm.VerifyAllExpectations();
+        }
+
+        [Test]
+        public void CatalogListViewItemActivate_Callback__GoToDirectoryRoot_On_Different_RootEntry_Sets_New_Root()
+        {
+            var alternateRootEntry = new RootEntry { Path = "alternate" };
+            var testRootTreeNode = new TreeNode("Moo") { Tag = alternateRootEntry };
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes)
+                .Repeat.Times(1) // enforcing repeat makes this a fragile test ?
+                .Return(testRootTreeNode);
+
+            // verify does set DirectoryTreeViewNodes
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
+                .Repeat.Times(1);
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with CatalogListView our activated item is a RootEntry.
+            _sutPresenter.CatalogListViewItemActivate();
+            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            action(_rootEntry);
+
+            _mockForm.VerifyAllExpectations();
+        }
+
+        [Test]
+        public void CatalogListViewItemActivate_Callback__GoToDirectoryRoot_On_Null_RootNode_Sets_New_Root()
+        {
+            // verify does set DirectoryTreeViewNodes
+            _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
+                .Repeat.Times(1);
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with CatalogListView our activated item is a RootEntry.
+            _sutPresenter.CatalogListViewItemActivate();
+            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            action(_rootEntry);
+
+            _mockForm.VerifyAllExpectations();
+        }
+
+        [Test]
+        public void CatalogListViewItemActivate_Callback__GoToDirectoryRoot_Sets_Directory_Pane()
+        {
+            // Go to Directory pane
+            _mockForm.Stub(x => x.SelectDirectoryPane())
+                .Repeat.Times(1);
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with CatalogListView our activated item is a RootEntry.
+            _sutPresenter.CatalogListViewItemActivate();
+            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            action(_rootEntry);
+
+            _mockForm.VerifyAllExpectations();
+        }
+
+        [Test]
+        public void CatalogListViewItemActivate_Callback__GoToDirectoryRoot_On_Null_RootNode_Calls_InitSort()
+        {
+            // Initialise Sort on ListView when Root Set.
+            _mockDirectoryListViewHelper.Stub(x => x.InitSort())
+                .Repeat.Times(1);
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with CatalogListView our activated item is a RootEntry.
+            _sutPresenter.CatalogListViewItemActivate();
+            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            action(_rootEntry);
+
+            _mockForm.VerifyAllExpectations();
+            _mockDirectoryListViewHelper.VerifyAllExpectations();
         }
     }
     // ReSharper restore InconsistentNaming

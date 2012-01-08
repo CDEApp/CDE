@@ -1,6 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using NUnit.Framework;
+using Rhino.Mocks;
 using cdeLib;
 using cdeWin;
 
@@ -8,20 +8,20 @@ namespace cdeWinTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class TestCDEWinPresenter : TestCDEWinPresenterBase
+    public class TestCDEWinPresenter_OptimiseRegexPattern_NotRegex : TestCDEWinPresenterBase
     {
         protected TestOptimise _presenter;
 
         [SetUp]
-        override public void RunBeforeEveryTest()
+        public override void RunBeforeEveryTest()
         {
             base.RunBeforeEveryTest();
-            _mockForm.RegexMode = true;
+            _mockForm.Stub(x => x.RegexMode).Return(false);
             _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig);
         }
-        
+
         [Test]
-        public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenRegexMode()
+        public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenNotRegexMode()
         {
             var result = _presenter.TestOptimiseRegexPattern(null);
 
@@ -29,10 +29,48 @@ namespace cdeWinTest
         }
 
         [Test]
-        public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenNotRegexMode()
+        public void OptimiseRegexPattern_EmptyInput_ReturnsEmpty_WhenNotRegexMode()
         {
-            _mockForm.RegexMode = false;
+            var result = _presenter.TestOptimiseRegexPattern(string.Empty);
 
+            Assert.That(result, Is.Empty);
+        }
+
+        [Test]
+        public void OptimiseRegexPattern_LeadingWild_ReturnsUnchanged_WhenNotRegexMode()
+        {
+            var result = _presenter.TestOptimiseRegexPattern(".*moo");
+
+            Assert.That(result, Is.EqualTo(".*moo"));
+        }
+
+        [Test]
+        public void OptimiseRegexPattern_TrailingWild_ReturnsUnchanged_WhenNotRegexMode()
+        {
+            var result = _presenter.TestOptimiseRegexPattern("moo.*");
+
+            Assert.That(result, Is.EqualTo("moo.*"));
+        }
+    }
+
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class TestCDEWinPresenter_OptimiseRegexPattern_Regex : TestCDEWinPresenterBase
+    {
+        protected TestOptimise _presenter;
+
+        [SetUp]
+        override public void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            _mockForm.Stub(x => x.RegexMode).Return(true);
+            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig);
+        }
+        
+        [Test]
+        public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenRegexMode()
+        {
             var result = _presenter.TestOptimiseRegexPattern(null);
 
             Assert.That(result, Is.Null);
@@ -47,16 +85,6 @@ namespace cdeWinTest
         }
 
         [Test]
-        public void OptimiseRegexPattern_EmptyInput_ReturnsEmpty_WhenNotRegexMode()
-        {
-            _mockForm.RegexMode = false;
-
-            var result = _presenter.TestOptimiseRegexPattern(string.Empty);
-
-            Assert.That(result, Is.Empty);
-        }
-
-        [Test]
         public void OptimiseRegexPattern_LeadingWild_ReturnsWithout_WhenRegexMode()
         {
             var result = _presenter.TestOptimiseRegexPattern(".*moo");
@@ -64,15 +92,6 @@ namespace cdeWinTest
             Assert.That(result, Is.EqualTo("moo"));
         }
 
-        [Test]
-        public void OptimiseRegexPattern_LeadingWild_ReturnsUnchanged_WhenNotRegexMode()
-        {
-            _mockForm.RegexMode = false;
-
-            var result = _presenter.TestOptimiseRegexPattern(".*moo");
-
-            Assert.That(result, Is.EqualTo(".*moo"));
-        }
 
         [Test]
         public void OptimiseRegexPattern_TrailingWild_ReturnsWithout_WhenRegexMode()
@@ -83,35 +102,26 @@ namespace cdeWinTest
         }
 
         [Test]
-        public void OptimiseRegexPattern_TrailingWild_ReturnsUnchanged_WhenNotRegexMode()
-        {
-            _mockForm.RegexMode = false;
-
-            var result = _presenter.TestOptimiseRegexPattern("moo.*");
-
-            Assert.That(result, Is.EqualTo("moo.*"));
-        }
-
-        [Test]
         public void OptimiseRegexPattern_MultipleWildInMiddle_ReturnsWithout_WhenRegexMode()
         {
             var result = _presenter.TestOptimiseRegexPattern(".*m.*oo.*");
 
             Assert.That(result, Is.EqualTo("m.*oo"));
         }
+    }
 
-        public class TestOptimise : CDEWinFormPresenter
+    public class TestOptimise : CDEWinFormPresenter
+    {
+        public TestOptimise(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config) : base(form, rootEntries, config)
         {
-            public TestOptimise(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config) : base(form, rootEntries, config)
-            {
-            }
+        }
 
-            public string TestOptimiseRegexPattern(string pattern)
-            {
-                return OptimiseRegexPattern(pattern);
-            }
+        public string TestOptimiseRegexPattern(string pattern)
+        {
+            return OptimiseRegexPattern(pattern);
         }
     }
+
     // ReSharper restore InconsistentNaming
 }
 
