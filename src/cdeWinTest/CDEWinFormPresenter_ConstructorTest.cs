@@ -477,6 +477,10 @@ namespace cdeWinTest
             InitRootWithFile();
         }
 
+        /// <summary>
+        /// This is not something that should happen as listview wont ask for 
+        /// an Item Index that is outside bounds of the setup ListView.
+        /// </summary>
         [ExpectedException(typeof(ArgumentOutOfRangeException))]
         [Test]
         public void CatalogRetrieveVirtualItem_Of_Invalid_ItemIndex_KABOOM()
@@ -510,6 +514,11 @@ namespace cdeWinTest
                     "Test Root Entry Description"
                 };
 
+            AssertListViewSubItemEqualValues(listViewItem, expectedValues);
+        }
+
+        private static void AssertListViewSubItemEqualValues(ListViewItem listViewItem, string[] expectedValues)
+        {
             for (var i = 0; i < expectedValues.Length; i++)
             {
                 var expect = expectedValues[i];
