@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows.Forms;
 using NUnit.Framework;
 using Rhino.Mocks;
@@ -378,7 +379,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with CatalogListView our activated item is a RootEntry.
             _sutPresenter.CatalogListViewItemActivate();
-            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            var action = GetPresenterAction(_mockCatalogListViewHelper);
             action(_rootEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -400,7 +401,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with CatalogListView our activated item is a RootEntry.
             _sutPresenter.CatalogListViewItemActivate();
-            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            var action = GetPresenterAction(_mockCatalogListViewHelper);
             action(_rootEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -416,7 +417,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with CatalogListView our activated item is a RootEntry.
             _sutPresenter.CatalogListViewItemActivate();
-            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            var action = GetPresenterAction(_mockCatalogListViewHelper);
             action(_rootEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -432,7 +433,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with CatalogListView our activated item is a RootEntry.
             _sutPresenter.CatalogListViewItemActivate();
-            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            var action = GetPresenterAction(_mockCatalogListViewHelper);
             action(_rootEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -448,7 +449,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with CatalogListView our activated item is a RootEntry.
             _sutPresenter.CatalogListViewItemActivate();
-            var action = GetPresenterAction(_stubCatalogListViewHelper);
+            var action = GetPresenterAction(_mockCatalogListViewHelper);
             action(_rootEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -456,6 +457,72 @@ namespace cdeWinTest
         }
     }
     // ReSharper restore InconsistentNaming
+
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class CDEWinFormPresenter_CatalogRetrieveVirtualItem : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+
+            _stubConfig.Stub(x => x.DefaultCatalogColumnCount)
+                .Return(12); // enough spaces for catalog list view items.
+            InitRootWithFile();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig);
+            InitRootWithFile();
+        }
+
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [Test]
+        public void CatalogRetrieveVirtualItem_Of_Invalid_ItemIndex_KABOOM()
+        {
+            _mockCatalogListViewHelper.Stub(x => x.RetrieveItemIndex)
+                .Return(1);
+
+            _sutPresenter.CatalogRetrieveVirtualItem();
+        }
+
+        [Test]
+        public void CatalogRetrieveVirtualItem_Produces_ListView_Field()
+        {
+            // dont forget there is a ToLocalTime() call in catalog rendering....
+            _mockCatalogListViewHelper.Stub(x => x.RetrieveItemIndex)
+                .Return(0);
+
+            _sutPresenter.CatalogRetrieveVirtualItem();
+
+            var args = _mockCatalogListViewHelper
+                .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
+            var listViewItem = (ListViewItem)(args[0][0]);
+
+            var expectedValues = new []
+                {   
+                    @"T:\","TestVolume","0","1","1",
+                    "Z","736.6 KB","639 KB",
+                    "2011/12/02 03:15:13",  // Fragile, this depends on time zone of test machine at moment.
+                    "TestRootEntry.cde",
+                    @"C:\Users\testuser\AppData\Local\cde",
+                    "Test Root Entry Description"
+                };
+
+            for (var i = 0; i < expectedValues.Length; i++)
+            {
+                var expect = expectedValues[i];
+                var got = listViewItem.SubItems[i].Text;
+                if (expect != got)
+                {
+                    Assert.Fail("At index {0} expected item \"{1}\" did not match \"{2}\"", i, expect, got);
+                }
+            }
+        }
+    }
+    // ReSharper restore InconsistentNaming
+
 }
 
 //namespace Test.Fohjin.DDD.Scenarios.Opening_the_bank_application

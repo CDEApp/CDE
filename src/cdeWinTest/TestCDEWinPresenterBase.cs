@@ -13,7 +13,7 @@ namespace cdeWinTest
         protected IConfig _stubConfig;
         protected IListViewHelper<PairDirEntry> _stubSearchResultListViewHelper;
         protected IListViewHelper<DirEntry> _mockDirectoryListViewHelper;
-        protected IListViewHelper<RootEntry> _stubCatalogListViewHelper;
+        protected IListViewHelper<RootEntry> _mockCatalogListViewHelper;
 
         protected RootEntry _rootEntry;
         protected DirEntry _dirEntry;
@@ -33,14 +33,27 @@ namespace cdeWinTest
             _mockForm.Stub(x => x.DirectoryListViewHelper)
                 .Return(_mockDirectoryListViewHelper);
 
-            _stubCatalogListViewHelper = MockRepository.GenerateStub<IListViewHelper<RootEntry>>();
+            _mockCatalogListViewHelper = MockRepository.GenerateMock<IListViewHelper<RootEntry>>();
             _mockForm.Stub(x => x.CatalogListViewHelper)
-                .Return(_stubCatalogListViewHelper);
+                .Return(_mockCatalogListViewHelper);
         }
 
         protected void InitRootWithFile()
         {
-            _rootEntry = new RootEntry {Path = @"T:\"};
+            _rootEntry = new RootEntry {
+                Path = @"T:\",
+                VolumeName = "TestVolume",
+                DirCount = 1,
+                FileCount = 0,
+                DriveLetterHint = @"Z",
+                AvailSpace = 754321,
+                UsedSpace = 654321,
+                ScanStartUTC = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc),
+                DefaultFileName = "TestRootEntry.cde",
+                SourcePath= @"C:\Users\testuser\AppData\Local\cde",
+                Description = "Test Root Entry Description",
+            };
+
             _dirEntry = new DirEntry {Path = @"Test"};
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();

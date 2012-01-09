@@ -85,25 +85,6 @@ namespace cdeWin
             }
         }
 
-        private static TreeNode BuildRootNode(RootEntry rootEntry)
-        {
-            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.Path);
-            SetDummyChildNode(rootTreeNode, rootEntry);
-            return rootTreeNode;
-        }
-
-        /// <summary>
-        /// A node with children gets a dummy child node to display as an expandable node.
-        /// </summary>
-        private static void SetDummyChildNode(TreeNode treeNode, CommonEntry commonEntry)
-        {
-            if (commonEntry.Children !=null 
-                && commonEntry.Children.Any(entry => entry.IsDirectory))
-            {
-                treeNode.Nodes.Add(NewTreeNode(null, DummyNodeName));
-            }
-        }
-
         public void DirectoryTreeViewBeforeExpandNode()
         {
             CreateNodesPreExpand(_clientForm.DirectoryTreeViewActiveBeforeExpandNode);
@@ -142,38 +123,24 @@ namespace cdeWin
             }
         }
 
+        /// <summary>
+        /// A node with children gets a dummy child node so Treeview shows node as expandable.
+        /// </summary>
+        private static void SetDummyChildNode(TreeNode treeNode, CommonEntry commonEntry)
+        {
+            if (commonEntry.Children !=null 
+                && commonEntry.Children.Any(entry => entry.IsDirectory))
+            {
+                treeNode.Nodes.Add(NewTreeNode(null, DummyNodeName));
+            }
+        }
+
         private static TreeNode NewTreeNode(object tag, string name)
         {
             return new TreeNode(name) {
                 //ImageIndex = 0, 
                 Tag = tag
             };
-        }
-
-        private Color CreateRowValuesForDirEntry(IList<string> vals, DirEntry dirEntry, Color itemColor)
-        {
-            vals[0] = dirEntry.Path;
-            vals[1] = dirEntry.Size.ToString();
-            if (dirEntry.IsDirectory)
-            {
-                itemColor = _listViewDirForeColor;
-                if (dirEntry.IsDirectory)
-                {
-                    var val = dirEntry.Size.ToHRString()
-                        + " <Dir";
-                    if (dirEntry.IsReparsePoint)
-                    {
-                        val += " R";
-                    }
-                    if (dirEntry.IsSymbolicLink)
-                    {
-                        val += " S";
-                    }
-                    vals[1] = val + ">";
-                }
-            }
-            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(Config.DateFormatYMDHMS, dirEntry.Modified);
-            return itemColor;
         }
 
         public void CatalogRetrieveVirtualItem()
@@ -482,7 +449,7 @@ namespace cdeWin
             }
             var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
             var dirEntry = pairDirEntry.ChildDE;
-            var itemColor = CreateRowValuesForDirEntry(_searchVals, dirEntry, _listViewForeColor);
+            var itemColor = CreateRowValuesForDirectory(_searchVals, dirEntry, _listViewForeColor);
 
             _searchVals[3] = pairDirEntry.ParentDE.FullPath;
             var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
@@ -513,9 +480,36 @@ namespace cdeWin
                 return;
             }
             var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
-            var itemColor = CreateRowValuesForDirEntry(_directoryVals, dirEntry, _listViewForeColor);
+            var itemColor = CreateRowValuesForDirectory(_directoryVals, dirEntry, _listViewForeColor);
             var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
             directoryHelper.RenderItem = lvi;
+        }
+
+
+        private Color CreateRowValuesForDirectory(IList<string> vals, DirEntry dirEntry, Color itemColor)
+        {
+            vals[0] = dirEntry.Path;
+            vals[1] = dirEntry.Size.ToString();
+            if (dirEntry.IsDirectory)
+            {
+                itemColor = _listViewDirForeColor;
+                if (dirEntry.IsDirectory)
+                {
+                    var val = dirEntry.Size.ToHRString()
+                        + " <Dir";
+                    if (dirEntry.IsReparsePoint)
+                    {
+                        val += " R";
+                    }
+                    if (dirEntry.IsSymbolicLink)
+                    {
+                        val += " S";
+                    }
+                    vals[1] = val + ">";
+                }
+            }
+            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(Config.DateFormatYMDHMS, dirEntry.Modified);
+            return itemColor;
         }
 
         // before form closes capture any changed configuration.
@@ -552,6 +546,13 @@ namespace cdeWin
             _clientForm.DirectoryTreeViewNodes = newRootNode;
             _clientForm.DirectoryListViewHelper.InitSort();
             return newRootNode;
+        }
+
+        private static TreeNode BuildRootNode(RootEntry rootEntry)
+        {
+            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.Path);
+            SetDummyChildNode(rootTreeNode, rootEntry);
+            return rootTreeNode;
         }
 
         public void DirectoryListViewItemActivate()
