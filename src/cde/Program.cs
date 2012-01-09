@@ -43,7 +43,7 @@ namespace cde
             }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
-                Find.Find2(args[1], param0);
+                Find.StaticFind(args[1], param0);
             }
             else if (args.Length == 2 && param0 == "--replgreppath")
             {
@@ -149,7 +149,7 @@ namespace cde
         private static void FindRepl(string parmString, string firstPattern)
         {
             Find.GetDirCache();
-            Find.Find2(firstPattern, parmString);
+            Find.StaticFind(firstPattern, parmString);
             do
             {
                 if (Hack.BreakConsoleFlag) 
@@ -161,7 +161,7 @@ namespace cde
                     Console.WriteLine("Exiting...");
                     break;
                 }
-                Find.Find2(pattern, parmString);
+                Find.StaticFind(pattern, parmString);
             } while (true);
         }
 

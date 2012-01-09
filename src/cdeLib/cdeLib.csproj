@@ -86,6 +86,7 @@
     <Compile Include="EntryEnumerator.cs" />
     <Compile Include="EntryStore.cs" />
     <Compile Include="Find.cs" />
+    <Compile Include="FindOptions.cs" />
     <Compile Include="Hack.cs" />
     <Compile Include="Infrastructure\AlphaFSHelper.cs" />
     <Compile Include="Infrastructure\Comparer\ByteArrayComparer.cs" />

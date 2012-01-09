@@ -277,13 +277,13 @@ namespace cdeLibTest.Performance
                         return true;
                     },
                 };
-                Find.TraverseTreeFind(rootEntries, findOptions);
+                findOptions.Find(rootEntries);
             }
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
 
-        public long DoGetSearchHitsRFPairList(RootEntry root, int repeatCount, FindOptions options)
+        public long DoGetSearchHitsRFPairList(RootEntry root, int repeatCount, FindOptions findOptions)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -292,19 +292,19 @@ namespace cdeLibTest.Performance
             {
                 //var totalFound = 0L;
                 var list = new List<PairDirEntry>();
-                options.FoundFunc = (p, d) =>
+                findOptions.FoundFunc = (p, d) =>
                     {
                         //++totalFound;
                         list.Add(new PairDirEntry(p, d));
                         return true;
                     };
-                Find.TraverseTreeFind(rootEntries, options);
+                findOptions.Find(rootEntries);
             }
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
 
-        public long DoGetSearchHitsRFList(RootEntry root, int repeatCount, FindOptions options)
+        public long DoGetSearchHitsRFList(RootEntry root, int repeatCount, FindOptions findOptions)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -313,13 +313,13 @@ namespace cdeLibTest.Performance
             {
                 //var totalFound = 0L;
                 var list = new List<DirEntry>();
-                options.FoundFunc = (p, d) =>
+                findOptions.FoundFunc = (p, d) =>
                 {
                     //++totalFound;
                     list.Add(d);
                     return true;
                 };
-                Find.TraverseTreeFind(rootEntries, options);
+                findOptions.Find(rootEntries);
             }
             sw.Stop();
             return sw.ElapsedMilliseconds;

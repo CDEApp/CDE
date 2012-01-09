@@ -53,7 +53,7 @@ namespace Finder.ViewModels
         public void DoSearch()
         {
             Find.GetDirCache();
-            Find.Find2("document", "--greppath");
+            Find.StaticFind("document", "--greppath");
         }
 
         public string Name

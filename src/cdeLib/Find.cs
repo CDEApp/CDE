@@ -1,55 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Text.RegularExpressions;
 
 namespace cdeLib
 {
-    public enum TraverseExit { Complete, LimitCountReached, FoundFuncExit, WorkerCancel }
-
-    public class FindOptions
-    {
-        public string Pattern { get; set; }
-        public bool RegexMode { get; set; }
-        public bool IncludePath { get; set; }
-        public bool IncludeFiles { get; set; }
-        public bool IncludeFolders { get; set; }
-        public int LimitResultCount { get; set; } // consider making this a multiple of ProgressModifier
-        public int ProgressModifier { get; set; }
-
-        public bool FromSizeEnable { get; set; }
-        public long FromSize { get; set; }
-        public bool ToSizeEnable { get; set; }
-        public long ToSize { get; set; }
-        public bool FromDateEnable { get; set; }
-        public DateTime FromDate { get; set; }
-        public bool ToDateEnable { get; set; }
-        public DateTime ToDate { get; set; }
-        public bool FromHourEnable { get; set; }
-        public TimeSpan FromHour { get; set; }
-        public bool ToHourEnable { get; set; }
-        public TimeSpan ToHour { get; set; }
-        public bool NotOlderThanEnable { get; set; }
-        public DateTime NotOlderThan { get; set; }
-
-        public FindOptions()
-        {
-            LimitResultCount = 10000;
-            ProgressModifier = int.MaxValue; // huge m0n.
-        }
-
-        /// <summary>
-        /// Called for every found entry.
-        /// </summary>
-        public TraverseFunc FoundFunc { get; set; }
-        /// <summary>
-        /// Called for reporting progress to caller.
-        /// </summary>
-        public Action<int, int> ProgressFunc { get; set; }
-        public BackgroundWorker Worker { get; set; }
-    }
-
     public static class Find
     {
         public const string ParamFind = "--find";
@@ -62,14 +15,14 @@ namespace cdeLib
         private static List<RootEntry> _rootEntries;
         // ReSharper restore InconsistentNaming
 
-        public static void Find2(string pattern, string param)
+        public static void StaticFind(string pattern, string param)
         {
             var regexMode = param == ParamGrep || param == ParamGreppath;
             var includePath = param == ParamGreppath || param == ParamFindpath;
-            Find2(pattern, regexMode, includePath);
+            StaticFind(pattern, regexMode, includePath);
         }
 
-        public static void Find2(string pattern, bool regexMode, bool includePath)
+        public static void StaticFind(string pattern, bool regexMode, bool includePath)
         {
             GetDirCache();
             var totalFound = 0L;
@@ -88,7 +41,7 @@ namespace cdeLib
                     return true;
                 },
             };
-            TraverseTreeFind(_rootEntries, findOptions);
+            findOptions.Find(_rootEntries);
             if (totalFound >  0)
             {
                 Console.WriteLine("Found a total of {0} entries. Matching pattern \"{1}\"", totalFound, pattern);
@@ -97,206 +50,6 @@ namespace cdeLib
             {
                 Console.WriteLine("No entries found in cached information.");
             }
-        }
-
-        public static void TraverseTreeFind(IEnumerable<RootEntry> rootEntries, FindOptions options)
-        {
-            int[] limitCount = { options.LimitResultCount };
-            var worker = options.Worker;
-            var foundFunc = options.FoundFunc;
-            var progressFunc = options.ProgressFunc;
-            var progressModifier = options.ProgressModifier;
-            if (progressFunc == null || progressModifier == 0)
-            {   // dummy func and huge progressModifier so it wont call the progressFunc anyway.
-                progressFunc = delegate { };
-                progressModifier = int.MaxValue;
-            }
-
-            // ReSharper disable PossibleMultipleEnumeration
-            var progressEnd = rootEntries.Sum(rootEntry => (int) rootEntry.DirCount + (int) rootEntry.FileCount);
-            // ReSharper restore PossibleMultipleEnumeration
-            var progressCount = new[] { 0 };
-            progressFunc(progressCount[0], progressEnd);        // first progress right at start.
-
-            TraverseFunc findFunc;
-            if (foundFunc == null)
-            {
-                return;
-            }
-            if (options.RegexMode)
-            {
-                var regex = new Regex(options.Pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-                if (options.IncludePath)
-                {
-                    findFunc = (p, d) =>
-                    {
-                        ++progressCount[0];
-                        if (progressCount[0] % progressModifier == 0)
-                        {
-                            progressFunc(progressCount[0], progressEnd);
-                            // only check for cancel on progress modifier.
-                            if (worker != null && worker.CancellationPending)
-                            {
-                                return false;   // end the find.
-                            }
-                        }
-                        if ((d.IsDirectory && options.IncludeFolders)
-                            || (!d.IsDirectory && options.IncludeFiles))
-                        {
-                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
-                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
-                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
-                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
-                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
-                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
-                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
-                                && regex.IsMatch(p.MakeFullPath(d)))
-                            {
-                                if (!foundFunc(p, d))
-                                {
-                                    return false;
-                                }
-                                if (--limitCount[0] <= 0)
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        return true;
-                    };
-                }
-                else
-                {
-                    findFunc = (p, d) =>
-                    {
-                        ++progressCount[0];
-                        if (progressCount[0] % progressModifier == 0)
-                        {
-                            progressFunc(progressCount[0], progressEnd);
-                            // only check for cancel on progress modifier.
-                            if (worker != null && worker.CancellationPending)
-                            {
-                                return false;   // end the find.
-                            }
-                        }
-                        if ((d.IsDirectory && options.IncludeFolders)
-                            || (!d.IsDirectory && options.IncludeFiles))
-                        {
-                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
-                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
-                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
-                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
-                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
-                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
-                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
-                                && regex.IsMatch(d.Path))
-                            {
-                                if (!foundFunc(p, d))
-                                {
-                                    return false;
-                                }
-                                if (--limitCount[0] <= 1)
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        return true;
-                    };
-                }
-            }
-            else
-            {
-                if (options.IncludePath)  // not sure this is useful to users.
-                {
-                    findFunc = (p, d) =>
-                    {
-                        ++progressCount[0];
-                        if (progressCount[0] % progressModifier == 0)
-                        {
-                            progressFunc(progressCount[0], progressEnd);
-                            // only check for cancel on progress modifier.
-                            if (worker != null && worker.CancellationPending)
-                            {
-                                return false;   // end the find.
-                            }
-                        }
-                        if ((d.IsDirectory && options.IncludeFolders)
-                            || (!d.IsDirectory && options.IncludeFiles))
-                        {
-                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
-                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
-                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
-                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
-                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
-                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
-                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
-                                && p.MakeFullPath(d).IndexOf(options.Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                            {
-                                if (!foundFunc(p, d))
-                                {
-                                    return false;
-                                }
-                                if (--limitCount[0] <= 1)
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        return true;
-                    };
-                }
-                else
-                {
-                    findFunc = (p, d) =>
-                    {
-                        ++progressCount[0];
-                        if (progressCount[0] % progressModifier == 0)
-                        {
-                            progressFunc(progressCount[0], progressEnd);
-                            // only check for cancel on progress modifier.
-                            if (worker != null && worker.CancellationPending)
-                            {
-                                return false;   // end the find.
-                            }
-                        }
-                        if ((d.IsDirectory && options.IncludeFolders)
-                            || (!d.IsDirectory && options.IncludeFiles))
-                        {
-                            if (   (!options.FromSizeEnable || (options.FromSizeEnable && d.Size >= options.FromSize))
-                                && (!options.ToSizeEnable || (options.ToSizeEnable && d.Size <= options.ToSize))
-                                && (!options.FromDateEnable || (options.FromDateEnable && !d.IsModifiedBad && d.Modified >= options.FromDate))
-                                && (!options.ToDateEnable || (options.ToDateEnable && !d.IsModifiedBad && d.Modified <= options.ToDate))
-                                && (!options.FromHourEnable || (options.FromHourEnable && !d.IsModifiedBad 
-                                        && options.FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.ToHourEnable || (options.ToHourEnable && !d.IsModifiedBad 
-                                        && options.ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                                && (!options.NotOlderThanEnable || (options.NotOlderThanEnable && !d.IsModifiedBad && d.Modified >= options.NotOlderThan))
-                                && d.Path.IndexOf(options.Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0)
-                            {
-                                if (!foundFunc(p, d))
-                                {
-                                    return false;
-                                }
-                                if (--limitCount[0] <= 1)
-                                {
-                                    return false;
-                                }
-                            }
-                        }
-                        return true;
-                    };
-                }
-            }
-            // ReSharper disable PossibleMultipleEnumeration
-            CommonEntry.TraverseTreePair(rootEntries, findFunc);
-            // ReSharper restore PossibleMultipleEnumeration
         }
 
         public static void GetDirCache()

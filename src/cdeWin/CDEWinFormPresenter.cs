@@ -353,7 +353,7 @@ namespace cdeWin
         {
             var worker = (BackgroundWorker)sender;
             var argument = (BgWorkerParam)e.Argument;
-            var options = argument.Options;
+            var findOptions = argument.Options;
             var rootEntries = argument.RootEntries;
             var state = argument.State;
 
@@ -361,13 +361,13 @@ namespace cdeWin
             state.ListCount = list.Count;   // 0
             state.List = list;
             worker.ReportProgress(0, state);
-            options.FoundFunc = (p, d) =>
+            findOptions.FoundFunc = (p, d) =>
                 {
                     //Thread.Sleep(20);
                     list.Add(new PairDirEntry(p, d));
                     return true;
                 };
-            options.ProgressFunc = (counter, end) =>
+            findOptions.ProgressFunc = (counter, end) =>
                 {
                     state.ListCount = list.Count;   // concurrency !
                     state.List = list;   // concurrency !!!!
@@ -375,11 +375,11 @@ namespace cdeWin
                     state.End = end;
                     worker.ReportProgress((int)(100.0 * counter / end), state);
                 };
-            Find.TraverseTreeFind(rootEntries, options);// TODO dont like that this is static.
+            findOptions.Find(rootEntries);
             state.ListCount = list.Count;
             state.List = list;
             var completePercent = (int) (100.0*state.Counter/state.End);
-            if (state.End - state.Counter < options.ProgressModifier)
+            if (state.End - state.Counter < findOptions.ProgressModifier)
             {
                 completePercent = 100;
             }

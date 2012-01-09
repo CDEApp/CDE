@@ -105,7 +105,7 @@ namespace cdeLib
         public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func)
         {
             var funcContinue = true;
-            var dirs = new Stack<CommonEntry>(rootEntries.Reverse());
+            var dirs = new Stack<CommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
 
             while (funcContinue && dirs.Count > 0)
             {
