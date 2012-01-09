@@ -139,6 +139,7 @@ namespace cdeWinTest
     [TestFixture]
     public class CDEWinFormPresenter_DirectoryTreeViewBeforeExpandNode : TestCDEWinPresenterBase
     {
+        private static string ChildrenPendingDummyNodeName = "_dummyNode";
         private CDEWinFormPresenter _sutPresenter;
 
         [SetUp]
@@ -148,18 +149,71 @@ namespace cdeWinTest
             _sutPresenter = new CDEWinFormPresenter(_mockForm, RootEntryTestSource.RootList, _stubConfig);
         }
 
-        // this shouldnt happen.
+        [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
+        [ExpectedException(typeof(NullReferenceException))]
         [Test]
-        public void DirectoryTreeViewBeforeExpandNode_WithNoTreeNodeSet_DoesNothing_DoesNotFail()
+        public void DirectoryTreeViewBeforeExpandNode_WIthTreeViewRoot_Null_Throws_Exception()
         {
             _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
-                .Repeat.Times(1)
-                .Return(new TreeNode("testTreeNode"));
+                .Return(null);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+        }
+
+        [Test]
+        public void DirectoryTreeViewBeforeExpandNode_With_Out_Dummy_Child_Does_Nothing()
+        {
+            var testTreeNode = new TreeNode("testTreeNode");
+            _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
+                .Return(testTreeNode);
 
             _sutPresenter.DirectoryTreeViewBeforeExpandNode();
 
-            _mockForm.VerifyAllExpectations();
-            Assert.Fail("unfinished, thinking of how to test all the private methods hmmm or if i treat as blob ?");
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(0), "It appears child nodes were added thats wrong for a test node with no dummy children marking children needed.");
+            Assert.That(testTreeNode.Text, Is.EqualTo("testTreeNode"), "Node text changed values thats wrong.");
+        }
+
+        [Test]
+        public void DirectoryTreeViewBeforeExpandNode_With_Dummy_Child_Replaces_Dummy_With_Children()
+        {
+            InitRootWithDir();
+            var testTreeNode = new TreeNode("testTreeNode");
+            testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry which has its own children.
+            var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
+            testTreeNode.Nodes.Add(dummyChildNode);
+
+            _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
+                .Return(testTreeNode);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(1), "It appears a child node was not added.");
+            var child = testTreeNode.Nodes[0];
+            Assert.That(child.Text, Is.EqualTo("Test1"), "Dummy child node was not converted to child of our CommonEntry.");
+            Assert.That(child.Nodes.Count, Is.EqualTo(0), "A CommonEntry with no children appears to have had one added.");
+        }
+
+        [Test]
+        public void DirectoryTreeViewBeforeExpandNode_Dummy_Converted_To_Children_Files_Not_Added_To_TreeView()
+        {
+            InitRootWithDirDirFileWithDir();
+            var testTreeNode = new TreeNode("testTreeNode");
+            testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry with children.
+            var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
+            testTreeNode.Nodes.Add(dummyChildNode);
+
+            _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
+                .Return(testTreeNode);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(2), "Two child nodes were expected one for each Entry that is a directory.");
+            var child1 = testTreeNode.Nodes[0];
+            var child2 = testTreeNode.Nodes[1];
+            Assert.That(child1.Text, Is.EqualTo("Test1"), "First Child has not got expected name.");
+            Assert.That(child2.Text, Is.EqualTo("Test3"), "Second Child has not got expected name.");
+            var childOfChild = child1.Nodes[0];
+            Assert.That(childOfChild.Text, Is.EqualTo(ChildrenPendingDummyNodeName), "New Child with children did not get dummy child created for its Children.");
         }
     }
     // ReSharper restore InconsistentNaming
@@ -175,7 +229,6 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _sutPresenter = new CDEWinFormPresenter(_mockForm, RootEntryTestSource.RootList, _stubConfig);
-            InitRoot();
         }
 
         // TODO another test, but  Root -> DIR -> DIR - to hit antoher part of SetDiretoryWithExpand(). so complex.
@@ -192,17 +245,17 @@ namespace cdeWinTest
         //
         //
         [Test]
-        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_OK()
+        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_With_File_OK()
         {
             Object treeViewRootNodeArg = null;
             Object listViewListArg = null;
+            InitRootWithFile();
 
             // Directory TreeView gets a new root node, since there is no previous one loaded.
             _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
                 .Repeat.Times(1)
                 .WhenCalled(a => treeViewRootNodeArg = a.Arguments[0]);
 
-            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
             MockTreeViewAfterSelect(_sutPresenter);
 
             // Directory ListView gets children of root
@@ -239,8 +292,10 @@ namespace cdeWinTest
         }
 
         [Test]
-        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab_On_Same_RootEntry_Does_Not_Set_Root()
+        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab__With_File_On_Same_RootEntry_Does_Not_Set_Root()
         {
+            InitRootWithFile();
+
             var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
             _mockForm.Stub(x => x.DirectoryTreeViewNodes)
                 .Repeat.Times(1)    // enforcing repeat makes this a fragile test ?
@@ -250,7 +305,6 @@ namespace cdeWinTest
             _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
                 .WhenCalled(a => Assert.Fail("GoToDirectoryRoot tried to set DirectoryTreeViewNodes"));
 
-            // When the TreeView node is selected ensure the AfterSelect event occurs as it does in gui.
             MockTreeViewAfterSelect(_sutPresenter);
 
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
@@ -260,6 +314,23 @@ namespace cdeWinTest
             action(_pairDirEntry);
 
             _mockForm.VerifyAllExpectations();
+        }
+
+        [Test]
+        public void SearchResultListViewItemActivate_Callback__ViewFileInDirectoryTab__With_Directory_Does_Not_Select_File_In_ListView()
+        {
+            InitRootWithDir();
+            //MockTreeViewAfterSelect(_sutPresenter); // as we dont try to select file we dont need to mock AfterSelect behaviour.
+
+            // Select the item in list view
+            _mockDirectoryListViewHelper.Stub(x => x.SelectItem(Arg<int>.Is.Anything))
+                .WhenCalled(a => Assert.Fail("Select Item was called on ListView for viewin a File Entry in Directory Tab."));
+
+            // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
+            // with SearchResultListView our activated item is a PairDirEntry.
+            _sutPresenter.SearchResultListViewItemActivate();
+            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            action(_pairDirEntry);
         }
 
         protected TreeNode _treeViewAfterSelectNode;
@@ -289,7 +360,7 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _sutPresenter = new CDEWinFormPresenter(_mockForm, RootEntryTestSource.RootList, _stubConfig);
-            InitRoot();
+            InitRootWithFile();
         }
 
         [Test]
