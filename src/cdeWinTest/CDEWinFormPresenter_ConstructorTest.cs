@@ -262,6 +262,7 @@ namespace cdeWinTest
             _mockForm.VerifyAllExpectations();
         }
 
+        protected TreeNode _treeViewAfterSelectNode;
         protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
         {
             _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
