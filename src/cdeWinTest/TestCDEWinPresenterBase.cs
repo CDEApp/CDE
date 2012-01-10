@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using Rhino.Mocks;
 using cdeLib;
@@ -18,6 +19,9 @@ namespace cdeWinTest
         protected RootEntry _rootEntry;
         protected DirEntry _dirEntry;
         protected PairDirEntry _pairDirEntry;
+
+        protected static readonly List<RootEntry> _emptyRootList = new List<RootEntry>();
+        protected static List<RootEntry> _rootList = new List<RootEntry>();
 
         [SetUp]
         public virtual void RunBeforeEveryTest()
@@ -63,6 +67,8 @@ namespace cdeWinTest
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+
+            _rootList.Add(_rootEntry);
         }
 
         protected void InitRootWithDir()
@@ -72,18 +78,33 @@ namespace cdeWinTest
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+
+            _rootList.Add(_rootEntry);
         }
 
         protected void InitRootWithDirDirFileWithDir()
         {
             InitRootWithDir();
             var dirEntry2 = new DirEntry(true) { Path = @"Test2" };
-            var dirEntry3 = new DirEntry(true) { Path = @"Test3" };
-            var dirEntry4 = new DirEntry { Path = @"Test4" };
+            var dirEntry3 = new DirEntry(true) 
+            {
+                Path = @"Test3",
+                Size = 12312,
+                Modified = new DateTime(2009, 10, 03, 19, 17, 13, DateTimeKind.Unspecified),
+            };
+            var dirEntry4 = new DirEntry
+            {
+                Path = @"Test4",
+                Size = 32312,
+                Modified = new DateTime(2008, 10, 04, 20, 18, 14, DateTimeKind.Unspecified),
+            };
             _dirEntry.Children.Add(dirEntry2);
             _rootEntry.Children.Add(dirEntry3);
             _rootEntry.Children.Add(dirEntry4);
             _rootEntry.SetInMemoryFields();
+            _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+
+            _rootList.Add(_rootEntry);
         }
 
         protected Action<T> GetPresenterAction<T>(IListViewHelper<T> lvh) where T : class
