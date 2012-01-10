@@ -28,52 +28,54 @@ namespace cdeWinTest
             [Test]
             public void Always_Set_Search_Button()
             {
-                _mockForm.Stub(x => x.SearchButtonText = Arg<string>.Is.NotEqual("Search"))
-                    .WhenCalled(a => Assert.Fail("SearchButtonText is not the expected \"Search\"."));
-
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SearchButtonText = Arg<string>.Is.Anything);
+                var comparisonParam = args.Count > 0 ? (string)(args[0][0]) : "ValueWasNotSetItAppears";
+                Assert.That(comparisonParam, Is.EqualTo("Search"), "SearchButtonText is not the expected \"Search\".");
             }
 
             [Test]
             public void Always_Catalog_SortList()
             {
-                _mockForm.Stub(x => x.SortList(Arg<ListViewHelper<RootEntry>>.Is.NotEqual(_mockCatalogListViewHelper)))
-                    .WhenCalled(a => Assert.Fail("SortList for catalog was not called."));
-
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SortList(Arg<IListViewHelper<RootEntry>>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (IListViewHelper<RootEntry>)(args[0][0]) : null;
+                Assert.That(comparisonParam, Is.Not.Null, "SortList for catalog does not appear to be set.");
             }
 
             [Test]
             public void Always_Register_SearchResult_Sorter()
             {
-                _mockForm.Stub(x => x.SetColumnSortCompare(
-                    Arg<ListViewHelper<PairDirEntry>>.Is.NotEqual(_mockSearchResultListViewHelper),
-                    Arg<Comparison<PairDirEntry>>.Is.Anything))
-                        .WhenCalled(a => Assert.Fail("SetColumnSortCompare with SearchResultListHelper was not called."));
-
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
+                    Arg<ListViewHelper<PairDirEntry>>.Is.Anything, Arg<Comparison<PairDirEntry>>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (Comparison<PairDirEntry>)(args[0][1]) : null;
+                Assert.That(comparisonParam, Is.Not.Null, "Comparison for SearchResultListViewHelper was not set.");
             }
 
             [Test]
             public void Always_Register_Catalog_Sorter()
             {
-                _mockForm.Stub(x => x.SetColumnSortCompare(
-                    Arg<ListViewHelper<RootEntry>>.Is.NotEqual(_mockCatalogListViewHelper),
-                    Arg<Comparison<RootEntry>>.Is.Anything))
-                        .WhenCalled(a => Assert.Fail("SetColumnSortCompare with CatalogListHelper was not called."));
-
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
+                    Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<Comparison<RootEntry>>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (Comparison<RootEntry>)(args[0][1]) : null;
+                Assert.That(comparisonParam, Is.Not.Null, "Comparison for CatalogListViewHelper was not set.");
             }
 
             [Test]
             public void Always_Register_Directory_Sorter()
             {
-                _mockForm.Stub(x => x.SetColumnSortCompare(
-                    Arg<ListViewHelper<DirEntry>>.Is.NotEqual(_mockDirectoryListViewHelper),
-                    Arg<Comparison<DirEntry>>.Is.Anything))
-                        .WhenCalled(a => Assert.Fail("SetColumnSortCompare with DirectoryListHelper was not called."));
-
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
+                    Arg<ListViewHelper<DirEntry>>.Is.Anything, Arg<Comparison<DirEntry>>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (Comparison<DirEntry>)(args[0][1]) : null;
+                Assert.That(comparisonParam, Is.Not.Null, "Comparison for DirectoryListViewHelper was not set.");
             }
 
             [Ignore("This test is not a valid scenario for production, as null root entry list should not happen.")]
@@ -82,10 +84,12 @@ namespace cdeWinTest
             {
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(null)))
                     .Return(3);
-                _mockForm.Stub(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.NotEqual(3)))
-                    .WhenCalled(a => Assert.Fail("SetCatalogsLoadedStatus is not the expected 3 result from SetList()"));
 
                 new CDEWinFormPresenter(_mockForm, null, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
+                Assert.That(comparisonParam, Is.EqualTo(3), "SetCatalogsLoadedStatus expected same as result of SetList 3.");
             }
 
             [Test]
@@ -93,10 +97,12 @@ namespace cdeWinTest
             {
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(_emptyRootList)))
                     .Return(0);
-                _mockForm.Stub(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.NotEqual(0)))
-                    .WhenCalled(a => Assert.Fail("SetCatalogsLoadedStatus is not the expected 0 result from SetList()"));
 
                 new CDEWinFormPresenter(_mockForm, _emptyRootList, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
+                Assert.That(comparisonParam, Is.EqualTo(0), "SetCatalogsLoadedStatus expected same as result of SetList 0.");
             }
 
             [Test]
@@ -105,10 +111,12 @@ namespace cdeWinTest
                 InitRootWithDir();
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(_rootList)))
                     .Return(1);
-                _mockForm.Stub(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.NotEqual(1)))
-                    .WhenCalled(a => Assert.Fail("SetCatalogsLoadedStatus is not the expected 1 result from SetList()"));
 
                 new CDEWinFormPresenter(_mockForm, _rootList, _stubConfig);
+
+                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
+                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
+                Assert.That(comparisonParam, Is.EqualTo(1), "SetCatalogsLoadedStatus expected same as result of SetList 1.");
             }
         }
 
