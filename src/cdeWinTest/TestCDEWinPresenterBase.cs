@@ -11,7 +11,7 @@ namespace cdeWinTest
     {
         protected ICDEWinForm _mockForm;
         protected IConfig _stubConfig;
-        protected IListViewHelper<PairDirEntry> _stubSearchResultListViewHelper;
+        protected IListViewHelper<PairDirEntry> _mockSearchResultListViewHelper;
         protected IListViewHelper<DirEntry> _mockDirectoryListViewHelper;
         protected IListViewHelper<RootEntry> _mockCatalogListViewHelper;
 
@@ -25,9 +25,9 @@ namespace cdeWinTest
             _mockForm = MockRepository.GenerateMock<ICDEWinForm>();
             _stubConfig = MockRepository.GenerateStub<IConfig>();
 
-            _stubSearchResultListViewHelper = MockRepository.GenerateStub<IListViewHelper<PairDirEntry>>();
+            _mockSearchResultListViewHelper = MockRepository.GenerateMock<IListViewHelper<PairDirEntry>>();
             _mockForm.Stub(x => x.SearchResultListViewHelper)
-                .Return(_stubSearchResultListViewHelper);
+                .Return(_mockSearchResultListViewHelper);
 
             _mockDirectoryListViewHelper = MockRepository.GenerateMock<IListViewHelper<DirEntry>>();
             _mockForm.Stub(x => x.DirectoryListViewHelper)
@@ -54,7 +54,12 @@ namespace cdeWinTest
                 Description = "Test Root Entry Description",
             };
 
-            _dirEntry = new DirEntry {Path = @"Test"};
+            _dirEntry = new DirEntry
+            {
+                Path = @"Test",
+                Size = 531,
+                Modified = new DateTime(2010, 11, 02, 18, 16, 12, DateTimeKind.Unspecified),
+            };
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);

@@ -405,8 +405,7 @@ namespace cdeWin
             else
             {
                 var resultList = (List<PairDirEntry>)e.Result;
-                _searchResultList = resultList;
-                count = searchHelper.SetList(_searchResultList);
+                count = SetSearchResultList(resultList);
             }
             _clientForm.SetSearchResultStatus(count);
             _clientForm.SortList(searchHelper);
@@ -425,11 +424,14 @@ namespace cdeWin
                 + " end " + state.End
                 );
 
-            // think about only sorting when done ???? so a set without sort...
-            _searchResultList = state.List; // snag so is avail for Completed
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            var count = searchHelper.SetList(_searchResultList);
+            var count = SetSearchResultList(state.List);
             _clientForm.SetSearchResultStatus(count);
+        }
+
+        protected int SetSearchResultList(List<PairDirEntry> list)
+        {
+            _searchResultList = list;
+            return _clientForm.SearchResultListViewHelper.SetList(list);
         }
 
         public void CancelSearch()

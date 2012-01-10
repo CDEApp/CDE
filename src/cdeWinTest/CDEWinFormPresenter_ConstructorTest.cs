@@ -272,12 +272,12 @@ namespace cdeWinTest
             _mockForm.Stub(x => x.SelectDirectoryPane())
                 .Repeat.Times(1);
 
-            //TracePresenterAction(_stubSearchResultListViewHelper);
+            //TracePresenterAction(_mockSearchResultListViewHelper);
 
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with SearchResultListView our activated item is a PairDirEntry.
             _sutPresenter.SearchResultListViewItemActivate();
-            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            var action = GetPresenterAction(_mockSearchResultListViewHelper);
             action(_pairDirEntry);
 
             _mockDirectoryListViewHelper.VerifyAllExpectations();
@@ -311,7 +311,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with SearchResultListView our activated item is a PairDirEntry.
             _sutPresenter.SearchResultListViewItemActivate();
-            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            var action = GetPresenterAction(_mockSearchResultListViewHelper);
             action(_pairDirEntry);
 
             _mockForm.VerifyAllExpectations();
@@ -330,7 +330,7 @@ namespace cdeWinTest
             // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
             // with SearchResultListView our activated item is a PairDirEntry.
             _sutPresenter.SearchResultListViewItemActivate();
-            var action = GetPresenterAction(_stubSearchResultListViewHelper);
+            var action = GetPresenterAction(_mockSearchResultListViewHelper);
             action(_pairDirEntry);
         }
 
@@ -458,7 +458,6 @@ namespace cdeWinTest
     }
     // ReSharper restore InconsistentNaming
 
-
     // ReSharper disable InconsistentNaming
     [TestFixture]
     public class CDEWinFormPresenter_CatalogRetrieveVirtualItem : TestCDEWinPresenterBase
@@ -474,7 +473,6 @@ namespace cdeWinTest
                 .Return(12); // enough spaces for catalog list view items.
             InitRootWithFile();
             _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig);
-            InitRootWithFile();
         }
 
         /// <summary>
@@ -503,7 +501,6 @@ namespace cdeWinTest
             var args = _mockCatalogListViewHelper
                 .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
             var listViewItem = (ListViewItem)(args[0][0]);
-
             var expectedValues = new []
                 {   
                     @"T:\","TestVolume","0","1","1",
@@ -513,11 +510,14 @@ namespace cdeWinTest
                     @"C:\Users\testuser\AppData\Local\cde",
                     "Test Root Entry Description"
                 };
-
-            AssertListViewSubItemEqualValues(listViewItem, expectedValues);
+            listViewItem.AssertListViewSubItemEqualValues(expectedValues);
         }
+    }
+    // ReSharper restore InconsistentNaming
 
-        private static void AssertListViewSubItemEqualValues(ListViewItem listViewItem, string[] expectedValues)
+    public static class ListViewExtension
+    {
+        public static void AssertListViewSubItemEqualValues(this ListViewItem listViewItem, string[] expectedValues)
         {
             for (var i = 0; i < expectedValues.Length; i++)
             {
@@ -530,8 +530,98 @@ namespace cdeWinTest
             }
         }
     }
+
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class CDEWinFormPresenter_SearchResultRetrieveVirtualItem : TestCDEWinPresenterBase
+    {
+        private TestPresenterSetSearch _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+
+            _stubConfig.Stub(x => x.DefaultSearchResultColumnCount)
+                .Return(4); // enough spaces for search result list view items.
+            InitRootWithFile();
+            _sutPresenter = new TestPresenterSetSearch(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig);
+        }
+
+        [Test]
+        public void SearchResultRetrieveVirtualItem_Of_Invalid_ItemIndex_Does_Nothing_If_No_ListViewEntries()
+        {
+            //_mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
+            //    .Return(1);
+            _sutPresenter.TestSetSearchResultList(null);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+        }
+
+        [Test]
+        public void SearchResultRetrieveVirtualItem_Of_Invalid_ItemIndex_With_List_Empty_Does_Nothing()
+        {
+            var pairDirList = new List<PairDirEntry>();
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+
+            //_mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
+            //    .Return(1);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+        }
+
+        /// <summary>
+        /// This is not something that should happen as listview wont ask for 
+        /// an Item Index that is outside bounds of the setup ListView.
+        /// </summary>
+        [ExpectedException(typeof(ArgumentOutOfRangeException))]
+        [Test]
+        public void SearchResultRetrieveVirtualItem_Of_Invalid_ItemIndex_With_List_Wrong_Index_Kaboom()
+        {
+            var pairDirList = new List<PairDirEntry>{ _pairDirEntry };
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+
+            _mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
+                .Return(1);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+        }
+
+        [Test]
+        public void SearchResultRetrieveVirtualItem_Valid_DirEntry()
+        {
+            var pairDirList = new List<PairDirEntry> { _pairDirEntry };
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+            _mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
+                .Return(0);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+
+
+            var args = _mockSearchResultListViewHelper
+                .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
+            var listViewItem = (ListViewItem)(args[0][0]);
+            var expectedValues = new[]
+                {   // Fragile, this depends on time zone of test machine at moment.
+                    "Test", "531", "2010/11/02 18:16:12", @"T:\"
+                };
+            listViewItem.AssertListViewSubItemEqualValues(expectedValues);
+        }
+    }
     // ReSharper restore InconsistentNaming
 
+    public class TestPresenterSetSearch : CDEWinFormPresenter
+    {
+        public TestPresenterSetSearch(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config)
+            : base(form, rootEntries, config)
+        {
+        }
+
+        public int TestSetSearchResultList(List<PairDirEntry> list)
+        {
+            return SetSearchResultList(list);
+        }
+    }
 }
 
 //namespace Test.Fohjin.DDD.Scenarios.Opening_the_bank_application
