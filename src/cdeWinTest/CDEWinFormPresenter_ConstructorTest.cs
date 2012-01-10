@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows.Forms;
 using NUnit.Framework;
 using Rhino.Mocks;
@@ -551,8 +550,6 @@ namespace cdeWinTest
         [Test]
         public void SearchResultRetrieveVirtualItem_Of_Invalid_ItemIndex_Does_Nothing_If_No_ListViewEntries()
         {
-            //_mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
-            //    .Return(1);
             _sutPresenter.TestSetSearchResultList(null);
 
             _sutPresenter.SearchResultRetrieveVirtualItem();
@@ -563,9 +560,6 @@ namespace cdeWinTest
         {
             var pairDirList = new List<PairDirEntry>();
             _sutPresenter.TestSetSearchResultList(pairDirList);
-
-            //_mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
-            //    .Return(1);
 
             _sutPresenter.SearchResultRetrieveVirtualItem();
         }
@@ -597,7 +591,6 @@ namespace cdeWinTest
 
             _sutPresenter.SearchResultRetrieveVirtualItem();
 
-
             var args = _mockSearchResultListViewHelper
                 .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
             var listViewItem = (ListViewItem)(args[0][0]);
@@ -607,21 +600,64 @@ namespace cdeWinTest
                 };
             listViewItem.AssertListViewSubItemEqualValues(expectedValues);
         }
+
+        public class TestPresenterSetSearch : CDEWinFormPresenter
+        {
+            public TestPresenterSetSearch(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config)
+                : base(form, rootEntries, config)
+            {
+            }
+
+            public int TestSetSearchResultList(List<PairDirEntry> list)
+            {
+                return SetSearchResultList(list);
+            }
+        }
     }
     // ReSharper restore InconsistentNaming
 
-    public class TestPresenterSetSearch : CDEWinFormPresenter
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class CDEWinFormPresenter_DirectoryTreeViewAfterSelect : TestCDEWinPresenterBase
     {
-        public TestPresenterSetSearch(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config)
-            : base(form, rootEntries, config)
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
         {
+            base.RunBeforeEveryTest();
+            InitRootWithFile();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig);
         }
 
-        public int TestSetSearchResultList(List<PairDirEntry> list)
+        [Test]
+        public void DirectoryTreeViewAfterSelect_Set_ListView_List()
         {
-            return SetSearchResultList(list);
+            var testRootTreeNode = new TreeNode("MyTestNode") { Tag = _rootEntry };
+            _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
+                .Return(testRootTreeNode);
+
+            // Directory ListView gets children of root
+            object listViewListArg = null;
+            _mockDirectoryListViewHelper.Stub(x => x.SetList(Arg<List<DirEntry>>.Is.Anything))
+                .Return(1)
+                .WhenCalled(a => listViewListArg = a.Arguments[0]);
+
+            _sutPresenter.DirectoryTreeViewAfterSelect();
+
+            var list = (List<DirEntry>)listViewListArg;
+            Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasnt expected");
+            Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasnt expected");
+
+            var args = _mockForm
+                 .GetArgumentsForCallsMadeOn(x => x.SetDirectoryPathTextbox = Arg<string>.Is.Anything);
+            var pathTextBoxValue = (string)(args[0][0]);
+
+            Assert.That(pathTextBoxValue, Is.EqualTo(@"T:\"));
         }
     }
+    // ReSharper restore InconsistentNaming
+
 }
 
 //namespace Test.Fohjin.DDD.Scenarios.Opening_the_bank_application
