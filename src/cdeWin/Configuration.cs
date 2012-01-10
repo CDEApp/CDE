@@ -385,7 +385,7 @@ namespace cdeWin
         private DateTime DateOrNow(DateTime dateValue)
         {
             if (dateValue <= DateTime.MinValue
-                || dateValue >= DateTime.MinValue)
+                || dateValue >= DateTime.MaxValue)
             {
                 return DateTime.Now;
             }
