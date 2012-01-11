@@ -72,7 +72,7 @@
   <ItemGroup>
     <Compile Include="TestCDEWinPresenterBase.cs" />
     <Compile Include="TestCDEWinPresenter_OptimiseRegexPattern.cs" />
-    <Compile Include="CDEWinFormPresenter.cs" />
+    <Compile Include="CDEWinFormPresenterTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

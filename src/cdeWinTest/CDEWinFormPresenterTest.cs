@@ -305,20 +305,6 @@ namespace cdeWinTest
                 var action = GetPresenterAction(_mockSearchResultListViewHelper);
                 action(_pairDirEntry);
             }
-
-            protected TreeNode _treeViewAfterSelectNode;
-            protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
-            {
-                _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
-                    .WhenCalled(a =>
-                    {
-                        _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
-                        _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
-                            .Repeat.Times(1)
-                            .Return(_treeViewAfterSelectNode);
-                        presenter.DirectoryTreeViewAfterSelect();
-                    });
-            }
         }
 
         [TestFixture]
@@ -500,7 +486,7 @@ namespace cdeWinTest
             }
 
             [Test]
-            public void Invalid_ItemIndex_Does_Nothing_If_No_ListViewEntries()
+            public void Nothing_Bombs_If_No_ListViewEntries()
             {
                 _sutPresenter.TestSetSearchResultList(null);
 
@@ -508,7 +494,7 @@ namespace cdeWinTest
             }
 
             [Test]
-            public void Invalid_ItemIndex_With_List_Empty_Does_Nothing()
+            public void Nothing_Bombs_With_List_Empty_Does_Nothing()
             {
                 var pairDirList = new List<PairDirEntry>();
                 _sutPresenter.TestSetSearchResultList(pairDirList);
@@ -522,7 +508,7 @@ namespace cdeWinTest
             /// </summary>
             [ExpectedException(typeof(ArgumentOutOfRangeException))]
             [Test]
-            public void Invalid_ItemIndex_With_List_Wrong_Index_Kaboom()
+            public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
             {
                 var pairDirList = new List<PairDirEntry> { _pairDirEntry };
                 _sutPresenter.TestSetSearchResultList(pairDirList);
@@ -606,6 +592,42 @@ namespace cdeWinTest
                 Assert.That(pathTextBoxValue, Is.EqualTo(@"T:\"));
             }
         }
+
+        [TestFixture]
+        public class DirectoryRetrieveVirtualItem : TestCDEWinPresenterBase
+        {
+            private CDEWinFormPresenter _sutPresenter;
+
+            [SetUp]
+            public override void RunBeforeEveryTest()
+            {
+                base.RunBeforeEveryTest();
+
+                _stubConfig.Stub(x => x.DefaultDirectoryColumnCount)
+                    .Return(3); // enough spaces for directory list view items.
+                InitRootWithFile();
+                _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> {_rootEntry}, _stubConfig);
+            }
+
+            [Test]
+            public void Nothing_Bombs_If_No_ListViewEntries()
+            {
+                //_sutPresenter.TestSetSearchResultList(null);
+
+                _sutPresenter.DirectoryRetrieveVirtualItem();
+            }
+
+            [Test]
+            public void Nothing_Bombs_With_List_Empty_Does_Nothing()
+            {
+                //_sutPresenter.TestSetSearchResultList(null);
+                //
+                MockTreeViewAfterSelect(_sutPresenter);
+
+                _sutPresenter.DirectoryRetrieveVirtualItem();
+            }
+        }
+
         // ReSharper restore InconsistentNaming
     }
 

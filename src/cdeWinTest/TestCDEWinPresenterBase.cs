@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Windows.Forms;
 using NUnit.Framework;
 using Rhino.Mocks;
 using cdeLib;
@@ -22,6 +23,7 @@ namespace cdeWinTest
 
         protected static readonly List<RootEntry> _emptyRootList = new List<RootEntry>();
         protected static List<RootEntry> _rootList = new List<RootEntry>();
+        protected TreeNode _treeViewAfterSelectNode;
 
         [SetUp]
         public virtual void RunBeforeEveryTest()
@@ -123,6 +125,20 @@ namespace cdeWinTest
                 .WhenCalled(a => Console.WriteLine("called ActionOnActivateItem()."));
         }
         // ReSharper restore LocalizableElement
+
+        protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
+        {
+            _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
+                .WhenCalled(a =>
+                                {
+                                    _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
+                                    _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
+                                        .Repeat.Times(1)
+                                        .Return(_treeViewAfterSelectNode);
+                                    presenter.DirectoryTreeViewAfterSelect();
+                                });
+        }
     }
+
     // ReSharper restore InconsistentNaming
 }
