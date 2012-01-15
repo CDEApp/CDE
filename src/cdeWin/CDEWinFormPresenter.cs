@@ -465,13 +465,11 @@ namespace cdeWin
             var commonEntry = (CommonEntry)selectedNode.Tag;
             // _directoryList = null; // removed for now - maybe caused Null Exception TODO think ? though if refer wrong data then problem ?
             _directoryListCommonEntry = null;
-            if (commonEntry != null)
-            {
-                _directoryListCommonEntry = commonEntry;
-                _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
-                directoryHelper.SetList(_directoryList);
-                _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
-            }
+            _directoryListCommonEntry = commonEntry;
+            _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
+            directoryHelper.SetList(_directoryList);
+            directoryHelper.ForceDraw();
+            _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
         }
 
         public void DirectoryRetrieveVirtualItem()
