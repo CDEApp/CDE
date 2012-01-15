@@ -379,13 +379,4 @@ namespace cdeLibTest.Performance
         // ReSharper restore JoinDeclarationAndInitializer
         // ReSharper restore InconsistentNaming
     }
-
-
-    // 
-    // TODO.... test load without set ParentCommonEntry begin done
-    // i think its pretty slow, load of D: 1.2M feels slower than i remember.
-    // can probaly do it lazilly in PairDirEnum if its not set ?
-    // -- field only used DirEntry.GetListFromRoot()
-    //     which could be done by using fullpath - and walking down from root.
-    //
 }
