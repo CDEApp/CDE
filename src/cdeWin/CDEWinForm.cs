@@ -219,7 +219,7 @@ namespace cdeWin
             ToHour.Checked = false;
 
             NotOlderThanValue = new UpDownHelper<AddTimeUnitFunc>(notOlderThanUpDown, 0);
-            NotOlderThanDropDownHelper = new DropDownHelper<AddTimeUnitFunc>(notOlderThanDropDown, _durationUnits, 1); // todo config
+            NotOlderThanDropDownHelper = new DropDownHelper<AddTimeUnitFunc>(notOlderThanDropDown, _durationUnits, 1);
 
             NotOlderThan = new CheckBoxDependentControlHelper(notOlderThanCheckbox,
                             new Control[] {notOlderThanUpDown, notOlderThanDropDown},
@@ -227,12 +227,12 @@ namespace cdeWin
             NotOlderThan.Checked = false;
 
             FromSizeValue = new UpDownHelper<int>(fromSizeUpDown);
-            FromSizeDropDownHelper = new DropDownHelper<int>(fromSizeDropDown, _byteSizeUnits, 4); // todo config
+            FromSizeDropDownHelper = new DropDownHelper<int>(fromSizeDropDown, _byteSizeUnits, 4);
             FromSize = new CheckBoxDependentControlHelper(fromSizeCheckbox, new Control[] { fromSizeUpDown, fromSizeDropDown }, null);
             FromSize.Checked = false;
 
             ToSizeValue = new UpDownHelper<int>(toSizeUpDown);
-            ToSizeDropDownHelper = new DropDownHelper<int>(toSizeDropDown, _byteSizeUnits, 4); // todo config
+            ToSizeDropDownHelper = new DropDownHelper<int>(toSizeDropDown, _byteSizeUnits, 4);
             ToSize = new CheckBoxDependentControlHelper(toSizeCheckbox, new Control[] { toSizeUpDown, toSizeDropDown }, null);
             ToSize.Checked = false;
 

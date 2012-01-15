@@ -635,7 +635,7 @@ namespace cdeWin
             if (indicesCount > 0)
             {
                 var firstIndex = indices.First();
-                var dirEntry = _directoryList[firstIndex]; // got a Null on _directoryList TODO ? fix ?
+                var dirEntry = _directoryList[firstIndex];
                 _clientForm.SetDirectoryPathTextbox = indicesCount > 1 
                     ? _directoryListCommonEntry.FullPath 
                     : _directoryListCommonEntry.MakeFullPath(dirEntry);
