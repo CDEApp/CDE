@@ -468,7 +468,6 @@ namespace cdeWin
             _directoryListCommonEntry = commonEntry;
             _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
             directoryHelper.SetList(_directoryList);
-            directoryHelper.ForceDraw();
             _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
         }
 
