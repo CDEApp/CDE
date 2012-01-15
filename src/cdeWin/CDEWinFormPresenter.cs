@@ -463,8 +463,6 @@ namespace cdeWin
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
             var commonEntry = (CommonEntry)selectedNode.Tag;
-            // _directoryList = null; // removed for now - maybe caused Null Exception TODO think ? though if refer wrong data then problem ?
-            _directoryListCommonEntry = null;
             _directoryListCommonEntry = commonEntry;
             _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
             directoryHelper.SetList(_directoryList);
