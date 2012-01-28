@@ -83,9 +83,9 @@ namespace cdeWin
         public DropDownHelper<int> ToSizeDropDownHelper { get; set; }
         public DropDownHelper<AddTimeUnitFunc> NotOlderThanDropDownHelper { get; set; }
 
-        public UpDownHelper<int> FromSizeValue { get; set; }
-        public UpDownHelper<int> ToSizeValue { get; set; }
-        public UpDownHelper<AddTimeUnitFunc> NotOlderThanValue { get; set; }
+        public UpDownHelper FromSizeValue { get; set; }
+        public UpDownHelper ToSizeValue { get; set; }
+        public UpDownHelper NotOlderThanValue { get; set; }
 
         private readonly ComboBoxItem<int>[] _byteSizeUnits = new[]
                 {
@@ -218,7 +218,7 @@ namespace cdeWin
             ToHour = new CheckBoxDependentControlHelper(toHourCheckbox, new Control[] { toHourTimePicker }, new[] { notOlderThanCheckbox });
             ToHour.Checked = false;
 
-            NotOlderThanValue = new UpDownHelper<AddTimeUnitFunc>(notOlderThanUpDown, 0);
+            NotOlderThanValue = new UpDownHelper(notOlderThanUpDown, 0);
             NotOlderThanDropDownHelper = new DropDownHelper<AddTimeUnitFunc>(notOlderThanDropDown, _durationUnits, 1);
 
             NotOlderThan = new CheckBoxDependentControlHelper(notOlderThanCheckbox,
@@ -226,12 +226,12 @@ namespace cdeWin
                             new [] { fromDateCheckbox, toDateCheckbox, fromHourCheckbox, toHourCheckbox });
             NotOlderThan.Checked = false;
 
-            FromSizeValue = new UpDownHelper<int>(fromSizeUpDown);
+            FromSizeValue = new UpDownHelper(fromSizeUpDown);
             FromSizeDropDownHelper = new DropDownHelper<int>(fromSizeDropDown, _byteSizeUnits, 4);
             FromSize = new CheckBoxDependentControlHelper(fromSizeCheckbox, new Control[] { fromSizeUpDown, fromSizeDropDown }, null);
             FromSize.Checked = false;
 
-            ToSizeValue = new UpDownHelper<int>(toSizeUpDown);
+            ToSizeValue = new UpDownHelper(toSizeUpDown);
             ToSizeDropDownHelper = new DropDownHelper<int>(toSizeDropDown, _byteSizeUnits, 4);
             ToSize = new CheckBoxDependentControlHelper(toSizeCheckbox, new Control[] { toSizeUpDown, toSizeDropDown }, null);
             ToSize.Checked = false;

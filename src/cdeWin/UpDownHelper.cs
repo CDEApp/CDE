@@ -3,7 +3,7 @@ using System.Windows.Forms;
 
 namespace cdeWin
 {
-    public class UpDownHelper<T>
+    public class UpDownHelper
     {
         private readonly NumericUpDown _upDown;
 

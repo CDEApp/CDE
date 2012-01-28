@@ -99,9 +99,9 @@ namespace cdeWin
         DropDownHelper<int> ToSizeDropDownHelper { get; set; }
         DropDownHelper<AddTimeUnitFunc> NotOlderThanDropDownHelper { get; set; }
 
-        UpDownHelper<int> FromSizeValue { get; set; }
-        UpDownHelper<int> ToSizeValue { get; set; }
-        UpDownHelper<AddTimeUnitFunc> NotOlderThanValue { get; set; }
+        UpDownHelper FromSizeValue { get; set; }
+        UpDownHelper ToSizeValue { get; set; }
+        UpDownHelper NotOlderThanValue { get; set; }
 
         void CleanUp();
 
