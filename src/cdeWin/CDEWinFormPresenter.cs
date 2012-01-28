@@ -209,6 +209,15 @@ namespace cdeWin
 
             var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
 
+            SetSearchButton(false);
+
+            _bgWorker = new BackgroundWorker();
+            _bgWorker.WorkerReportsProgress = true;
+            _bgWorker.WorkerSupportsCancellation = true;
+            _bgWorker.DoWork += BgWorkerDoWork;
+            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
+            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
+
             var findOptions = new FindOptions
                 {
                     LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
@@ -237,14 +246,6 @@ namespace cdeWin
                     NotOlderThan = NotOlderThanValue(),
                 };
 
-            SetSearchButton(false);
-
-            _bgWorker = new BackgroundWorker();
-            _bgWorker.WorkerReportsProgress = true;
-            _bgWorker.WorkerSupportsCancellation = true;
-            _bgWorker.DoWork += BgWorkerDoWork;
-            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
-            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
             var param = new BgWorkerParam
                 {
                     Options = findOptions,
@@ -304,19 +305,19 @@ namespace cdeWin
             return false;
         }
 
-        public long FromSizeValue()
+        private long FromSizeValue()
         {
             var value = _clientForm.FromSizeDropDownHelper.SelectedValue;
             return (long)(_clientForm.FromSizeValue.Field * value);
         }
 
-        public long ToSizeValue()
+        private long ToSizeValue()
         {
             var value = _clientForm.ToSizeDropDownHelper.SelectedValue;
             return (long)(_clientForm.ToSizeValue.Field * value);
         }
 
-        public DateTime NotOlderThanValue()
+        private DateTime NotOlderThanValue()
         {
             var dropDownValueFunc = _clientForm.NotOlderThanDropDownHelper.SelectedValue;
             var fieldValue = (int)_clientForm.NotOlderThanValue.Field;
@@ -393,19 +394,27 @@ namespace cdeWin
             var searchHelper = _clientForm.SearchResultListViewHelper;
             int count;
 
-            if (e.Error != null)
+            if (e == null)
             {
                 _clientForm.MessageBox(e.Error.Message);
                 count = 0;
             }
-            else if (e.Cancelled)
-            {
-                count = searchHelper.SetList(_searchResultList);
-            }
             else
             {
-                var resultList = (List<PairDirEntry>)e.Result;
-                count = SetSearchResultList(resultList);
+                if (e.Error != null)
+                {
+                    _clientForm.MessageBox(e.Error.Message);
+                    count = 0;
+                }
+                else if (e.Cancelled)
+                {
+                    count = searchHelper.SetList(_searchResultList);
+                }
+                else
+                {
+                    var resultList = (List<PairDirEntry>)e.Result;
+                    count = SetSearchResultList(resultList);
+                }
             }
             _clientForm.SetSearchResultStatus(count);
             _clientForm.SortList(searchHelper);

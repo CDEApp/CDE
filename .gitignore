@@ -34,3 +34,13 @@ lib/*/Documentation
 lib/*/[Dd]oc
 lib/*/[Ss]amples
 *.svn/
+
+test/*.cde
+test/*.cds
+test/*.7z
+lib/*.zip
+lib/*.tar.gz
+lib/OBjectListViewFull*/*
+lib/CustomMessageBox_Sample*/*
+
+bin/*
