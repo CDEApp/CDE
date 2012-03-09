@@ -27,8 +27,6 @@ del cdeWin\bin\Release\*.pdb
 %msbuildpath% /t:Rebuild /p:Configuration=Release /p:Platform="Any CPU" cde.sln
 cd ..
 
-
-
 @echo Merging Any CPU
 set tbin=%t%\bin\AnyCPU
 cd src\cde\bin\Release
@@ -57,12 +55,12 @@ cd ..
 @echo Merging x86
 set tbin=%t%\bin\x86
 cd src\cde\bin\Release
-"c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe" /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+%ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 copy cde.exe.config %tbin%
 cd %t%
 
 cd src\cdeWin\bin\Release
-"c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe" /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
+%ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
 cd %t%
 
 rem @ECHO Running Unit Tests
