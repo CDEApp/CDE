@@ -244,6 +244,7 @@ namespace cdeLib
         {
             var entryCount = 0;
             var dirs = new Stack<Tuple<CommonEntry,string>>();
+            startPath = new PathInfo(startPath).GetLongPath();
             dirs.Push(Tuple.Create((CommonEntry)this, startPath));
             while (dirs.Count > 0)
             {
