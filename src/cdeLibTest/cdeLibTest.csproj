@@ -62,7 +62,10 @@
     <Reference Include="nunit.framework">
       <HintPath>..\..\lib\NUnit-2.5.10..11092\bin\net-2.0\nunit.framework.dll</HintPath>
     </Reference>
-    <Reference Include="protobuf-net, Version=2.0.0.280, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL" />
+    <Reference Include="protobuf-net, Version=2.0.0.280, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\..\lib\protobuf-net r480\net40\protobuf-net.dll</HintPath>
+    </Reference>
     <Reference Include="Rhino.Mocks">
       <HintPath>..\..\lib\Rhino.Mocks-3.6\Rhino.Mocks.dll</HintPath>
     </Reference>
