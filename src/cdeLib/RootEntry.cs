@@ -68,6 +68,8 @@ namespace cdeLib
         /// </summary>
         public string SourcePath { get; set; }
 
+        public string ActualFileName { get; set; }
+
         public RootEntry ()
         {
             Children = new List<DirEntry>();

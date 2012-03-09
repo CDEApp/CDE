@@ -167,7 +167,7 @@ namespace cdeWin
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
             vals[8] = string.Format(Config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[9] = rootEntry.DefaultFileName; // todo actual file name ? not field stored default.
+            vals[9] = rootEntry.ActualFileName;
             vals[10] = rootEntry.SourcePath;
             vals[11] = rootEntry.Description;
 
