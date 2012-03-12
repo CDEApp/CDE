@@ -343,6 +343,23 @@ namespace cdeLib
             return LoadCacheAtPath(".");
         }
 
+        public static List<RootEntry> LoadMultiDirCacheWithChildren(string[] paths)
+        {
+            var allRoots = new List<RootEntry>();
+            foreach (var path in paths)
+            {
+                var roots = LoadCacheAtPath(path);
+                allRoots.AddRange(roots);
+                var childDirs = Directory.GetDirectories(path);
+                foreach (var child in childDirs)
+                {
+                    var childRoots = LoadCacheAtPath(child);
+                    allRoots.AddRange(childRoots);
+                }
+            }
+            return allRoots;
+        }
+
         public static List<RootEntry> LoadMultiDirCache(string[] paths)
         {
             var allRoots = new List<RootEntry>();

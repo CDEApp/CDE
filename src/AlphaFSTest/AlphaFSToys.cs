@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using cdeLib.Infrastructure;
@@ -229,6 +230,18 @@ namespace AlphaFSTest
             Console.WriteLine();
 
             Assert.Fail();
+        }
+
+        [Test]
+        public void Directory_GetDirectories_OK()
+        {
+            Directory.SetCurrentDirectory("../../../../..");
+            var dirs = Directory.GetDirectories(".");
+            var m = dirs.Contains("bin");
+            Console.WriteLine(string.Join(",", dirs));
+            Assert.That(dirs.Contains(@".\bin"));
+            Assert.That(dirs.Contains(@".\lib"));
+            Assert.That(dirs.Contains(@".\src"));
         }
         // ReSharper restore InconsistentNaming
     }
