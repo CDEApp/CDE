@@ -253,7 +253,6 @@ namespace cdeLib
                 var t = dirs.Pop();
                 var commonEntry = t.Item1;
                 var directory = t.Item2;
-
                 var fsEntries = Directory.GetFullFileSystemEntries
                     (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
                 foreach (var fsEntry in fsEntries)
@@ -335,7 +334,15 @@ namespace cdeLib
 
         public static RootEntry Read(Stream input)
         {
-            return Serializer.Deserialize<RootEntry>(input);
+            try
+            {
+                var rootEntry = Serializer.Deserialize<RootEntry>(input);
+                return rootEntry;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
         }
 
         public static List<RootEntry> LoadCurrentDirCache()
@@ -394,7 +401,11 @@ namespace cdeLib
                 using (var fs = File.Open(file, FileMode.Open))
                 {
                     var re = Read(fs);
-                    re.SetInMemoryFields();
+                    if (re != null)
+                    {
+                        re.ActualFileName = file;
+                        re.SetInMemoryFields();
+                    }
                     return re;
                 }
             }

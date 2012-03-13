@@ -142,7 +142,9 @@ namespace cdeLib
     {
         public static int TotalFileEntries(this IEnumerable<RootEntry> rootEntries)
         {
-            return rootEntries.Sum(rootEntry => (int)rootEntry.DirCount + (int)rootEntry.FileCount);
+            return rootEntries != null
+                       ? rootEntries.Sum(rootEntry => (int) rootEntry.DirCount + (int) rootEntry.FileCount)
+                       : 0;
         }
     }
     // ReSharper restore InconsistentNaming
