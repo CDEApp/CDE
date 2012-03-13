@@ -72,6 +72,7 @@ namespace cdeWin
         string SetDirectoryPathTextbox { get; set; }
         TreeNode DirectoryTreeViewSelectedNode { get; set; }
         void SetSearchResultStatus(int i);
+        void SetTotalFileEntriesLoadedStatus(int i);
         void SetCatalogsLoadedStatus(int i);
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }

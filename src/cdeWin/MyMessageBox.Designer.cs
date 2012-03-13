@@ -31,9 +31,9 @@
             this.okButton = new System.Windows.Forms.Button();
             this.messageTextBox = new System.Windows.Forms.TextBox();
             this.topPanel = new System.Windows.Forms.Panel();
-            this.panel1 = new System.Windows.Forms.Panel();
+            this.bottomPanel = new System.Windows.Forms.Panel();
             this.topPanel.SuspendLayout();
-            this.panel1.SuspendLayout();
+            this.bottomPanel.SuspendLayout();
             this.SuspendLayout();
             // 
             // okButton
@@ -69,14 +69,14 @@
             this.topPanel.Size = new System.Drawing.Size(327, 93);
             this.topPanel.TabIndex = 2;
             // 
-            // panel1
+            // bottomPanel
             // 
-            this.panel1.Controls.Add(this.okButton);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Bottom;
-            this.panel1.Location = new System.Drawing.Point(0, 93);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(327, 42);
-            this.panel1.TabIndex = 3;
+            this.bottomPanel.Controls.Add(this.okButton);
+            this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
+            this.bottomPanel.Location = new System.Drawing.Point(0, 93);
+            this.bottomPanel.Name = "bottomPanel";
+            this.bottomPanel.Size = new System.Drawing.Size(327, 42);
+            this.bottomPanel.TabIndex = 3;
             // 
             // MyMessageBox
             // 
@@ -85,14 +85,14 @@
             this.ClientSize = new System.Drawing.Size(327, 135);
             this.ControlBox = false;
             this.Controls.Add(this.topPanel);
-            this.Controls.Add(this.panel1);
+            this.Controls.Add(this.bottomPanel);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedSingle;
             this.Name = "MyMessageBox";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Message Box";
             this.topPanel.ResumeLayout(false);
             this.topPanel.PerformLayout();
-            this.panel1.ResumeLayout(false);
+            this.bottomPanel.ResumeLayout(false);
             this.ResumeLayout(false);
 
         }
@@ -102,6 +102,6 @@
         private System.Windows.Forms.Button okButton;
         private System.Windows.Forms.TextBox messageTextBox;
         private System.Windows.Forms.Panel topPanel;
-        private System.Windows.Forms.Panel panel1;
+        private System.Windows.Forms.Panel bottomPanel;
     }
 }

@@ -65,6 +65,7 @@ namespace cdeWin
             var count = _clientForm.SetList(catalogHelper, _rootEntries);
             _clientForm.SortList(catalogHelper);
             _clientForm.SetCatalogsLoadedStatus(count);
+            _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
         }
 
         private void SetSearchButton(bool search)
@@ -428,9 +429,9 @@ namespace cdeWin
             var state = (BgWorkerState)e.UserState;
             var p = e.ProgressPercentage;
             _clientForm.SetSearchTimeStatus("% " + p 
-                + " lc " + state.ListCount
-                + " ctr " + state.Counter
-                + " end " + state.End
+                //+ " lc " + state.ListCount
+                //+ " ctr " + state.Counter
+                //+ " end " + state.End
                 );
 
             var count = SetSearchResultList(state.List);

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
@@ -378,12 +379,17 @@ namespace cdeWin
 
         public void SetSearchResultStatus(int i)
         {
-            searchResultsStatus.Text = "SR " + i.ToString();
+            searchResultsStatus.Text = "Search Results " + i.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public void SetTotalFileEntriesLoadedStatus(int i)
+        {
+            totalFileEntriesStatus.Text = "Entries " + i.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetCatalogsLoadedStatus(int i)
         {
-            catalogsLoadedStatus.Text = "C " + i.ToString();
+            catalogsLoadedStatus.Text = "Catalogs " + i.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetSearchTimeStatus(string s)

@@ -64,7 +64,7 @@ namespace cdeLib
             }
 
             // ReSharper disable PossibleMultipleEnumeration
-            var progressEnd = rootEntries.Sum(rootEntry => (int)rootEntry.DirCount + (int)rootEntry.FileCount);
+            var progressEnd = rootEntries.TotalFileEntries();
             // ReSharper restore PossibleMultipleEnumeration
             var progressCount = new[] { 0 };
             ProgressFunc(progressCount[0], progressEnd);        // Start of process Progress report.
@@ -136,4 +136,14 @@ namespace cdeLib
             // ReSharper restore PossibleMultipleEnumeration
         }
     }
+
+    // ReSharper disable InconsistentNaming
+    public static class IEnumerableRootEntryExtension
+    {
+        public static int TotalFileEntries(this IEnumerable<RootEntry> rootEntries)
+        {
+            return rootEntries.Sum(rootEntry => (int)rootEntry.DirCount + (int)rootEntry.FileCount);
+        }
+    }
+    // ReSharper restore InconsistentNaming
 }
