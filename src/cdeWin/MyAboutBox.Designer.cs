@@ -60,6 +60,7 @@
             this.okButton.TabIndex = 0;
             this.okButton.Text = "OK";
             this.okButton.UseVisualStyleBackColor = true;
+            this.okButton.Click += new System.EventHandler(this.OkButtonClick);
             // 
             // topPanel
             // 
@@ -103,8 +104,8 @@
             this.messageTextBox.ReadOnly = true;
             this.messageTextBox.Size = new System.Drawing.Size(270, 64);
             this.messageTextBox.TabIndex = 1;
-            this.messageTextBox.Text = "cdeWin vX.XX\r\nThis application is a viewer for catalog files created by the comma" +
-    "nd line utility \"cde\".\r\nYou can contact me at rob@somedomain.com\r\n";
+            this.messageTextBox.Text = "cdeWin vX.XX\r\nThis is a viewer for catalog files created with \"cde\".\r\nYou can con" +
+    "tact me at rob@somedomain.com\r\n";
             // 
             // MyAboutBox
             // 
@@ -115,6 +116,7 @@
             this.Controls.Add(this.bottomPanel);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.Name = "MyAboutBox";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "About cdeWin";
             this.bottomPanel.ResumeLayout(false);
             this.topPanel.ResumeLayout(false);

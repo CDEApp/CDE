@@ -25,7 +25,7 @@ namespace cdeWin
         public event EventAction OnMyFormClosing;
         public event EventAction OnCatalogRetrieveVirtualItem;
         public event EventAction OnExitMenuItem;
-        public event EventAction OnCancelSearch;
+        public event EventAction OnAboutMenuItem;
 
         public event EventAction OnSearchResultContextMenuViewTreeClick;
         public event EventAction OnSearchResultContextMenuOpenClick;
@@ -193,6 +193,7 @@ namespace cdeWin
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
+            aboutToolStripMenuItem.Click += (s, e) => OnAboutMenuItem();
 
             searchButton.Click += (s, e) => OnSearch();
             SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
@@ -513,6 +514,11 @@ namespace cdeWin
         public void MessageBox(string message)
         {
             MyMessageBox.MyShow(this, message);
+        }
+
+        public void AboutDialog()
+        {
+            MyAboutBox.MyShow(this);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Windows.Forms;
+﻿using System;
+using System.Windows.Forms;
 
 namespace cdeWin
 {
@@ -7,6 +8,17 @@ namespace cdeWin
         public MyAboutBox()
         {
             InitializeComponent();
+        }
+
+        public static void MyShow(Form parentForm)
+        {
+            var m = new MyAboutBox();
+            m.ShowDialog(parentForm);
+        }
+
+        private void OkButtonClick(object sender, EventArgs e)
+        {
+            Close();
         }
     }
 }

@@ -736,6 +736,11 @@ namespace cdeWin
             _clientForm.Close();
         }
 
+        public void AboutMenuItem()
+        {
+            _clientForm.AboutDialog();
+        }
+
         private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
         {
             _clientForm.DirectoryListViewHelper.ActionOnSelectedItem(d =>

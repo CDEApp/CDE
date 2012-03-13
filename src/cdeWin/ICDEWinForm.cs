@@ -12,7 +12,7 @@ namespace cdeWin
         event EventAction OnMyFormClosing;
         event EventAction OnExitMenuItem;
         event EventAction OnSearch;
-        event EventAction OnCancelSearch;
+        event EventAction OnAboutMenuItem;
         
         event EventAction OnSearchResultContextMenuViewTreeClick;
         event EventAction OnSearchResultContextMenuOpenClick;
@@ -114,5 +114,6 @@ namespace cdeWin
         void SortList<T>(IListViewHelper<T> lvh) where T : class;
 
         void MessageBox(string message);
+        void AboutDialog();
     }
 }
