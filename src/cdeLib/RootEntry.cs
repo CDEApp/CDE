@@ -9,6 +9,7 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using FileAcces = Alphaleonis.Win32.Filesystem.FileAccess;
 using Filesystem = Alphaleonis.Win32.Filesystem;
 using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
@@ -400,7 +401,7 @@ namespace cdeLib
             {
                 try
                 {
-                    using (var fs = File.Open(file, FileMode.Open))
+                    using (var fs = File.Open(file, FileMode.Open, FileAcces.Read))
                     {
                         var re = Read(fs);
                         if (re != null)
