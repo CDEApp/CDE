@@ -100,6 +100,12 @@
     <Compile Include="ICDEWinForm.cs" />
     <Compile Include="IPresenter.cs" />
     <Compile Include="ListViewHelper.cs" />
+    <Compile Include="MyAboutBox.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="MyAboutBox.Designer.cs">
+      <DependentUpon>MyAboutBox.cs</DependentUpon>
+    </Compile>
     <Compile Include="MyMessageBox.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -115,6 +121,9 @@
     <Compile Include="WindowsExplorerUtilities.cs" />
     <EmbeddedResource Include="CDEWinForm.resx">
       <DependentUpon>CDEWinForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="MyAboutBox.resx">
+      <DependentUpon>MyAboutBox.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MyMessageBox.resx">
       <DependentUpon>MyMessageBox.cs</DependentUpon>
@@ -170,6 +179,8 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="CDE-logo-02_GFI.ico" />
+    <None Include="Resources\CDE-logo-02.png" />
+    <None Include="Resources\heron_200_black.png" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
