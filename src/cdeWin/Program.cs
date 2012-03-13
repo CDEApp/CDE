@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 using System.Windows.Forms;
 using cdeLib;
 
@@ -12,6 +13,10 @@ namespace cdeWin
         [STAThread]
         static void Main()
         {
+            Application.ThreadException += UIThreadException;
+            Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+            AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
+
             // TODO consider using (var config = new Config()) { } - with Save built in.
             var config = new Config("cdeWinView.cfg"); // pickup from current directory for now.
 
@@ -28,6 +33,41 @@ namespace cdeWin
 
             config.Active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
+        }
+
+        private static void UIThreadException(object sender, ThreadExceptionEventArgs t)
+        {
+            var result = DialogResult.Cancel;
+
+            try
+            {
+                MessageBox.Show("OnThreadException: " + t.Exception, "Thread Exception Caught");
+                result = MessageBox.Show("UIThreadException caught", "Error", MessageBoxButtons.AbortRetryIgnore);
+            }
+            catch
+            {
+                Application.Exit();
+            }
+
+            // Exits the program when the user clicks Abort.
+            if (result == DialogResult.Abort)
+            {
+                Application.Exit();
+            }
+        }
+
+        private static void CurrentDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
+        {
+            try
+            {
+                var ex = e.ExceptionObject as Exception;
+                MessageBox.Show("CurrentDomain_UnhandledException: " + ex, "Unhandled Exception Caught");
+                MessageBox.Show("CurrentDomainUnhandledException caught", "Error", MessageBoxButtons.OK);
+            }
+            finally
+            {
+                Application.Exit();
+            }
         }
     }
 }
