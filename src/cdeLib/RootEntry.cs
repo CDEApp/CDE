@@ -398,15 +398,23 @@ namespace cdeLib
         {
             if (File.Exists(file))
             {
-                using (var fs = File.Open(file, FileMode.Open))
+                try
                 {
-                    var re = Read(fs);
-                    if (re != null)
+                    using (var fs = File.Open(file, FileMode.Open))
                     {
-                        re.ActualFileName = file;
-                        re.SetInMemoryFields();
+                        var re = Read(fs);
+                        if (re != null)
+                        {
+                            re.ActualFileName = file;
+                            re.SetInMemoryFields();
+                        }
+                        return re;
                     }
-                    return re;
+                }
+                // ReSharper disable EmptyGeneralCatchClause
+                catch (Exception)
+                // ReSharper restore EmptyGeneralCatchClause
+                {
                 }
             }
             return null;
