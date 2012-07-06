@@ -11,9 +11,8 @@ namespace cdeWin
         {
             InitializeComponent();
         	_config = config;
-        	linkEmail.Text = config.ContactEmail;
-			tbVersion.Text = String.Format("{0} v{1}", config.ProductName, config.Version);
-			Text = String.Format("About {0} v{1}", config.ProductName, config.Version);
+			linkEmail.Text = _config.ContactEmail;
+			tbVersion.Text = String.Format("{0} v{1}", _config.ProductName, _config.Version);
         }
 
         public static void MyShow(Form parentForm, IConfig config)
@@ -34,6 +33,11 @@ namespace cdeWin
 					_config.ContactEmail, _config.ProductName, _config.Version);
 			proc.Start();
 
+		}
+
+		private void MyAboutBox_Load(object sender, EventArgs e)
+		{
+			Text = String.Format("About {0} v{1}", _config.ProductName, _config.Version);
 		}
 
     }

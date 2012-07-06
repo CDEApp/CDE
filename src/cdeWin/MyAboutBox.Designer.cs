@@ -143,6 +143,7 @@
 			this.ShowInTaskbar = false;
 			this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
 			this.Text = "About cdeWin";
+			this.Load += new System.EventHandler(this.MyAboutBox_Load);
 			this.bottomPanel.ResumeLayout(false);
 			this.topPanel.ResumeLayout(false);
 			this.topPanel.PerformLayout();
