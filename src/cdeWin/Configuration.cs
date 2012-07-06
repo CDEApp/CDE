@@ -183,6 +183,7 @@ namespace cdeWin
         int DefaultCatalogColumnCount { get; }
 
 		string Version { get; }
+		string ProductName { get; }
     }
 
     public class Config : IConfig
@@ -200,6 +201,7 @@ namespace cdeWin
         private string _configFullFileName;
 
 		public string Version { get; private set; }
+		public string ProductName { get; private set; }
 
         public Configuration Default = new Configuration
         {
@@ -261,12 +263,13 @@ namespace cdeWin
 
         public Configuration Active { get; set; }
 
-        public Config(string configFileName, string version)
+        public Config(string configFileName, string productName, string version)
         {
             BuildConfigPath(configFileName);
             Loaded = Read(_configFullFileName);
             Active = Loaded ?? Default;
-        	Version = version;
+			ProductName = productName;
+			Version = version;
         }
 
         private void BuildConfigPath(string configFileName)

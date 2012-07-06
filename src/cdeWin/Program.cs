@@ -15,6 +15,11 @@ namespace cdeWin
 			get { return Application.ProductVersion; }
 		}
 
+		public static string ProductName
+		{
+			get { return Application.ProductName; }
+		}
+
         [STAThread]
         static void Main()
         {
@@ -23,7 +28,7 @@ namespace cdeWin
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
 
             // TODO consider using (var config = new Config()) { } - with Save built in.
-            var config = new Config("cdeWinView.cfg", Version);
+			var config = new Config("cdeWinView.cfg", ProductName, Version);
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);

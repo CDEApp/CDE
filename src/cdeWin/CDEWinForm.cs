@@ -521,7 +521,7 @@ namespace cdeWin
 
         public void AboutDialog()
         {
-            MyAboutBox.MyShow(this);
+            MyAboutBox.MyShow(this, _config);
         }
     }
 }

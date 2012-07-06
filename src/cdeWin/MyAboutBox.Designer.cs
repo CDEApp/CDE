@@ -32,10 +32,11 @@
 			this.bottomPanel = new System.Windows.Forms.Panel();
 			this.okButton = new System.Windows.Forms.Button();
 			this.topPanel = new System.Windows.Forms.Panel();
+			this.tbVersion = new System.Windows.Forms.TextBox();
+			this.linkEmail = new System.Windows.Forms.LinkLabel();
 			this.pictureCDEIcon = new System.Windows.Forms.PictureBox();
 			this.pictureHeronLogo = new System.Windows.Forms.PictureBox();
 			this.messageTextBox = new System.Windows.Forms.TextBox();
-			this.linkEmail = new System.Windows.Forms.LinkLabel();
 			this.bottomPanel.SuspendLayout();
 			this.topPanel.SuspendLayout();
 			((System.ComponentModel.ISupportInitialize)(this.pictureCDEIcon)).BeginInit();
@@ -46,7 +47,7 @@
 			// 
 			this.bottomPanel.Controls.Add(this.okButton);
 			this.bottomPanel.Dock = System.Windows.Forms.DockStyle.Bottom;
-			this.bottomPanel.Location = new System.Drawing.Point(0, 381);
+			this.bottomPanel.Location = new System.Drawing.Point(0, 388);
 			this.bottomPanel.Name = "bottomPanel";
 			this.bottomPanel.Size = new System.Drawing.Size(294, 42);
 			this.bottomPanel.TabIndex = 4;
@@ -66,6 +67,7 @@
 			// topPanel
 			// 
 			this.topPanel.BackColor = System.Drawing.Color.White;
+			this.topPanel.Controls.Add(this.tbVersion);
 			this.topPanel.Controls.Add(this.linkEmail);
 			this.topPanel.Controls.Add(this.pictureCDEIcon);
 			this.topPanel.Controls.Add(this.pictureHeronLogo);
@@ -73,8 +75,26 @@
 			this.topPanel.Dock = System.Windows.Forms.DockStyle.Fill;
 			this.topPanel.Location = new System.Drawing.Point(0, 0);
 			this.topPanel.Name = "topPanel";
-			this.topPanel.Size = new System.Drawing.Size(294, 381);
+			this.topPanel.Size = new System.Drawing.Size(294, 388);
 			this.topPanel.TabIndex = 5;
+			// 
+			// tbVersion
+			// 
+			this.tbVersion.Location = new System.Drawing.Point(12, 305);
+			this.tbVersion.Name = "tbVersion";
+			this.tbVersion.Size = new System.Drawing.Size(153, 20);
+			this.tbVersion.TabIndex = 5;
+			// 
+			// linkEmail
+			// 
+			this.linkEmail.AutoSize = true;
+			this.linkEmail.Location = new System.Drawing.Point(12, 365);
+			this.linkEmail.Name = "linkEmail";
+			this.linkEmail.Size = new System.Drawing.Size(69, 13);
+			this.linkEmail.TabIndex = 4;
+			this.linkEmail.TabStop = true;
+			this.linkEmail.Text = "emailAddress";
+			this.linkEmail.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkEmail_LinkClicked);
 			// 
 			// pictureCDEIcon
 			// 
@@ -100,30 +120,20 @@
 			// 
 			this.messageTextBox.BackColor = System.Drawing.Color.White;
 			this.messageTextBox.BorderStyle = System.Windows.Forms.BorderStyle.None;
-			this.messageTextBox.Location = new System.Drawing.Point(12, 304);
+			this.messageTextBox.Location = new System.Drawing.Point(12, 329);
 			this.messageTextBox.Multiline = true;
 			this.messageTextBox.Name = "messageTextBox";
 			this.messageTextBox.ReadOnly = true;
-			this.messageTextBox.Size = new System.Drawing.Size(270, 44);
+			this.messageTextBox.Size = new System.Drawing.Size(270, 33);
 			this.messageTextBox.TabIndex = 1;
-			this.messageTextBox.Text = "cdeWin vX.XX\r\nThis is a viewer for catalog files created with \"cde\".\r\nYou can con" +
-    "tact me at the address below.";
-			// 
-			// linkEmail
-			// 
-			this.linkEmail.AutoSize = true;
-			this.linkEmail.Location = new System.Drawing.Point(213, 351);
-			this.linkEmail.Name = "linkEmail";
-			this.linkEmail.Size = new System.Drawing.Size(69, 13);
-			this.linkEmail.TabIndex = 4;
-			this.linkEmail.TabStop = true;
-			this.linkEmail.Text = "emailAddress";
+			this.messageTextBox.Text = "This is a viewer for catalog files created with \"cde\".\r\nYou can contact me by cli" +
+    "cking on the address below.";
 			// 
 			// MyAboutBox
 			// 
 			this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
 			this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-			this.ClientSize = new System.Drawing.Size(294, 423);
+			this.ClientSize = new System.Drawing.Size(294, 430);
 			this.Controls.Add(this.topPanel);
 			this.Controls.Add(this.bottomPanel);
 			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
@@ -151,5 +161,6 @@
         private System.Windows.Forms.PictureBox pictureHeronLogo;
         private System.Windows.Forms.PictureBox pictureCDEIcon;
 		private System.Windows.Forms.LinkLabel linkEmail;
+		private System.Windows.Forms.TextBox tbVersion;
     }
 }
