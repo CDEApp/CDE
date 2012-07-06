@@ -5,7 +5,7 @@ namespace cdeWin
 {
     public partial class MyAboutBox : Form
     {
-		private IConfig _config;
+		private readonly IConfig _config;
 
         public MyAboutBox(IConfig config)
         {
@@ -13,7 +13,7 @@ namespace cdeWin
         	_config = config;
 			linkEmail.Text = _config.ContactEmail;
 			tbVersion.Text = String.Format("{0} v{1}", _config.ProductName, _config.Version);
-        }
+		}
 
         public static void MyShow(Form parentForm, IConfig config)
         {

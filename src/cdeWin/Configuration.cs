@@ -193,10 +193,10 @@ namespace cdeWin
 		public string DateCustomFormatHMS { get { return "HH:mm:ss"; } }
 		public string ContactEmail { get { return "rob@queenofblad.es"; } }
 		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
-		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } } 
+		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
 
-        private readonly string _configSubPath = "cde";
-        private string _configFileName;
+	    private const string CdeConfigPath = "cde";
+	    private string _configFileName;
         private string _configPath;
         private string _configFullFileName;
 
@@ -276,7 +276,7 @@ namespace cdeWin
         {
             _configPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
             _configFileName = configFileName;
-            _configPath = Path.Combine(_configPath, _configSubPath);
+            _configPath = Path.Combine(_configPath, CdeConfigPath);
             Directory.CreateDirectory(_configPath);
             _configFullFileName = Path.Combine(_configPath, _configFileName);
         }

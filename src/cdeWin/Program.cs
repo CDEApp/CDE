@@ -8,8 +8,6 @@ namespace cdeWin
 {
     static class Program
     {
-        private static List<RootEntry> RootEntries;
-
 		public static string Version
 		{
 			get { return Application.ProductVersion; }
@@ -32,10 +30,10 @@ namespace cdeWin
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            RootEntries = RootEntry.LoadMultiDirCacheWithChildren(new[] { ".", config.ConfigPath });
+            var rootEntries = RootEntry.LoadMultiDirCacheWithChildren(new[] { ".", config.ConfigPath });
 
             var mainForm = new CDEWinForm(config);
-            var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);
+            var mainPresenter = new CDEWinFormPresenter(mainForm, rootEntries, config);
             config.Active.MainWindowConfig.RestoreForm(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
