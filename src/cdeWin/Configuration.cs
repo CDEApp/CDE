@@ -194,14 +194,13 @@ namespace cdeWin
 		public string ContactEmail { get { return "rob@queenofblad.es"; } }
 		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
 		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
+		public string Version { get; private set; }
+		public string ProductName { get; private set; }
 
 	    private const string CdeConfigPath = "cde";
 	    private string _configFileName;
         private string _configPath;
         private string _configFullFileName;
-
-		public string Version { get; private set; }
-		public string ProductName { get; private set; }
 
         public Configuration Default = new Configuration
         {

@@ -260,7 +260,6 @@ namespace cdeWin
         {
             picker.Format = DateTimePickerFormat.Custom;
 			picker.CustomFormat = _config.DateCustomFormatYMD;
-
         }
 
         private void SetToolTip(Control c, string s)
