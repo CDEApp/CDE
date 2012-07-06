@@ -169,28 +169,37 @@ namespace cdeWin
 
     public interface IConfig
     {
+		string DateFormatYMDHMS { get; }
+		string DateCustomFormatYMD { get; }
+		string DateCustomFormatHMS { get; }
+		string ContactEmail { get; }
+		CompareInfo MyCompareInfo { get; }
+		CompareOptions MyCompareOptions { get; }
+
         Configuration Active { get; set; }
         void RecordConfig(ICDEWinForm form);
         int DefaultSearchResultColumnCount { get; }
         int DefaultDirectoryColumnCount { get; }
         int DefaultCatalogColumnCount { get; }
+
+		string Version { get; }
     }
 
     public class Config : IConfig
     {
-        // ReSharper disable InconsistentNaming
-        public const string DateFormatYMDHMS = "{0:yyyy/MM/dd HH:mm:ss}";
-        public const string DateCustomFormatYMD = "yyyy/MM/dd";
-        public const string DateCustomFormatHMS = "HH:mm:ss";
-        // ReSharper restore InconsistentNaming
-
-        public const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        public static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
+		public string DateFormatYMDHMS { get { return "{0:yyyy/MM/dd HH:mm:ss}"; } }
+		public string DateCustomFormatYMD { get { return "yyyy/MM/dd"; } }
+		public string DateCustomFormatHMS { get { return "HH:mm:ss"; } }
+		public string ContactEmail { get { return "rob@queenofblad.es"; } }
+		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
+		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } } 
 
         private readonly string _configSubPath = "cde";
         private string _configFileName;
         private string _configPath;
         private string _configFullFileName;
+
+		public string Version { get; private set; }
 
         public Configuration Default = new Configuration
         {
@@ -252,11 +261,12 @@ namespace cdeWin
 
         public Configuration Active { get; set; }
 
-        public Config(string configFileName)
+        public Config(string configFileName, string version)
         {
             BuildConfigPath(configFileName);
             Loaded = Read(_configFullFileName);
             Active = Loaded ?? Default;
+        	Version = version;
         }
 
         private void BuildConfigPath(string configFileName)
@@ -433,5 +443,6 @@ namespace cdeWin
         {
             return lvc != null && lvc.Columns != null ? lvc.Columns.Count : 0;
         }
+
     }
 }

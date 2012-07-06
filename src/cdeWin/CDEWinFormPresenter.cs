@@ -167,7 +167,7 @@ namespace cdeWin
             vals[5] = rootEntry.DriveLetterHint;
             vals[6] = rootEntry.AvailSpace.ToHRString();
             vals[7] = rootEntry.UsedSpace.ToHRString();
-            vals[8] = string.Format(Config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
+            vals[8] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
             vals[9] = rootEntry.ActualFileName;
             vals[10] = rootEntry.SourcePath;
             vals[11] = rootEntry.Description;
@@ -515,7 +515,7 @@ namespace cdeWin
                     vals[1] = val + ">";
                 }
             }
-            vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(Config.DateFormatYMDHMS, dirEntry.Modified);
+			vals[2] = dirEntry.IsModifiedBad ? "<Bad Date>" : string.Format(_config.DateFormatYMDHMS, dirEntry.Modified);
             return itemColor;
         }
 
@@ -680,10 +680,10 @@ namespace cdeWin
 
                 case 3: // SearchResult ListView Path column
                     //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
-                    compareResult = Config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, Config.MyCompareOptions);
+                    compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, _config.MyCompareOptions);
                     if (compareResult == 0)
                     {
-                        compareResult = Config.MyCompareInfo.Compare(de1.Path, de2.Path, Config.MyCompareOptions);
+						compareResult = _config.MyCompareInfo.Compare(de1.Path, de2.Path, _config.MyCompareOptions);
                     }
                     break;
 

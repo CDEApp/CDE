@@ -10,6 +10,11 @@ namespace cdeWin
     {
         private static List<RootEntry> RootEntries;
 
+		public static string Version
+		{
+			get { return Application.ProductVersion; }
+		}
+
         [STAThread]
         static void Main()
         {
@@ -18,18 +23,18 @@ namespace cdeWin
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
 
             // TODO consider using (var config = new Config()) { } - with Save built in.
-            var config = new Config("cdeWinView.cfg"); // pickup from current directory for now.
+            var config = new Config("cdeWinView.cfg", Version);
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             RootEntries = RootEntry.LoadMultiDirCacheWithChildren(new[] { ".", config.ConfigPath });
 
-            var mainForm = new CDEWinForm();
+            var mainForm = new CDEWinForm(config);
             var mainPresenter = new CDEWinFormPresenter(mainForm, RootEntries, config);
             config.Active.MainWindowConfig.RestoreForm(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
-            Application.Run(mainForm); // Trying, as Application.DoEvents() is used elsewhere.
+            Application.Run(mainForm);
 
             config.Active.MainWindowConfig.RecordForm(mainForm);
             config.Save();

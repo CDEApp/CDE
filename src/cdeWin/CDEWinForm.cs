@@ -116,8 +116,11 @@ namespace cdeWin
                     new ComboBoxItem<int>("Unlimited Results", int.MaxValue),
                 };
 
-        public CDEWinForm()
+    	private readonly IConfig _config;
+
+        public CDEWinForm(IConfig config)
         {
+        	_config = config;
             InitializeComponent();
             AutoWaitCursor.Cursor = Cursors.WaitCursor;
             AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
@@ -250,13 +253,13 @@ namespace cdeWin
         {
             picker.ShowUpDown = true;
             picker.Format = DateTimePickerFormat.Custom;
-            picker.CustomFormat = Config.DateCustomFormatHMS;
+			picker.CustomFormat = _config.DateCustomFormatHMS;
         }
 
         private void SetTimePickerYMD(DateTimePicker picker)
         {
             picker.Format = DateTimePickerFormat.Custom;
-            picker.CustomFormat = Config.DateCustomFormatYMD;
+			picker.CustomFormat = _config.DateCustomFormatYMD;
 
         }
 
