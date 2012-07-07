@@ -100,6 +100,12 @@
     <Compile Include="ICDEWinForm.cs" />
     <Compile Include="IPresenter.cs" />
     <Compile Include="ListViewHelper.cs" />
+    <Compile Include="LoaderForm.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="LoaderForm.Designer.cs">
+      <DependentUpon>LoaderForm.cs</DependentUpon>
+    </Compile>
     <Compile Include="MyAboutBox.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -121,6 +127,9 @@
     <Compile Include="WindowsExplorerUtilities.cs" />
     <EmbeddedResource Include="CDEWinForm.resx">
       <DependentUpon>CDEWinForm.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="LoaderForm.resx">
+      <DependentUpon>LoaderForm.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="MyAboutBox.resx">
       <DependentUpon>MyAboutBox.cs</DependentUpon>
@@ -153,6 +162,10 @@
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
       <Project>{38066FCE-1EE4-4B6C-BA94-2A526DF7B3ED}</Project>
       <Name>cdeLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Util\Util.csproj">
+      <Project>{27847DBD-65B6-489D-A600-89D4FF5151E8}</Project>
+      <Name>Util</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

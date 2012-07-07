@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
+using Util;
 using cdeLib;
 
 namespace cdeWin
@@ -20,20 +22,42 @@ namespace cdeWin
         [STAThread]
         static void Main()
         {
+	        var timeIt = new TimeIt();
             Application.ThreadException += UIThreadException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
 
-            // TODO consider using (var config = new Config()) { } - with Save built in.
-			var config = new Config("cdeWinView.cfg", ProductName, Version);
-
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            var rootEntries = RootEntry.LoadMultiDirCacheWithChildren(new[] { ".", config.ConfigPath });
+
+			// TODO consider using (var config = new Config()) { } - with Save built in.
+			var config = new Config("cdeWinView.cfg", ProductName, Version);
+	        var cachePathList = new[] {".", config.ConfigPath};
+			var loaderForm = new LoaderForm(config, cachePathList, timeIt);
+
+	        List<RootEntry> rootEntries = null;
+
+			try
+			{
+				//var cacheFiles = RootEntry.GetCacheFileList(cachePathList);
+				//var cacheFiles = RootEntry.GetCacheFileList(cachePathList);
+				//rootEntries = RootEntry.Load(cacheFiles);
+				loaderForm.AutoCloseLoaderFlag = config.Active.AutoCloseLoader;
+				loaderForm.ShowDialog();
+			}
+			finally
+			{
+				config.Active.AutoCloseLoader = loaderForm.AutoCloseLoaderFlag;
+				rootEntries = loaderForm.RootEntries;
+				loaderForm.Dispose();
+			}
+
+
+			//var ArootEntries = RootEntry.LoadMultiDirCacheWithChildren(cachePathList);
 
             var mainForm = new CDEWinForm(config);
             var mainPresenter = new CDEWinFormPresenter(mainForm, rootEntries, config);
-            config.Active.MainWindowConfig.RestoreForm(mainForm);
+			config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
             Application.Run(mainForm);

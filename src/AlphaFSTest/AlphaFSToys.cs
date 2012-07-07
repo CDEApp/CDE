@@ -184,7 +184,7 @@ namespace AlphaFSTest
             File.Delete(name1);
             File.Delete(name2);
 
-            Assert.That(files.Length, Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
+            Assert.That(files.Count, Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
         }
 
         [Ignore("Example problem with alphaFS")]

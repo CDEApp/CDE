@@ -56,7 +56,6 @@ namespace cdeWinTest
                 UsedSpace = 654321,
                 ScanStartUTC = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc),
                 DefaultFileName = "TestRootEntry.cde",
-                SourcePath= @"C:\Users\testuser\AppData\Local\cde",
                 Description = "Test Root Entry Description",
             };
 

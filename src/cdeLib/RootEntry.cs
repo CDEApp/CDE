@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
+using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -63,11 +63,6 @@ namespace cdeLib
 
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         public int RootIndex;  // hackery with Entry and EntryStore
-
-        /// <summary>
-        /// What path the catalog was loaded from.
-        /// </summary>
-        public string SourcePath { get; set; }
 
         public string ActualFileName { get; set; }
 
@@ -348,52 +343,13 @@ namespace cdeLib
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
-            return LoadCacheAtPath(".");
+	        return Load(GetCacheFileList(new[] {"."}));
         }
 
-        public static List<RootEntry> LoadMultiDirCacheWithChildren(string[] paths)
-        {
-            var allRoots = new List<RootEntry>();
-            foreach (var path in paths)
-            {
-                var roots = LoadCacheAtPath(path);
-                allRoots.AddRange(roots);
-                var childDirs = Directory.GetDirectories(path);
-                foreach (var child in childDirs)
-                {
-                    var childRoots = LoadCacheAtPath(child);
-                    allRoots.AddRange(childRoots);
-                }
-            }
-            return allRoots;
-        }
-
-        public static List<RootEntry> LoadMultiDirCache(string[] paths)
-        {
-            var allRoots = new List<RootEntry>();
-            foreach (var path in paths)
-            {
-                var roots = LoadCacheAtPath(path);
-                allRoots.AddRange(roots);
-            }
-            return allRoots;
-        }
-
-        public static List<RootEntry> LoadCacheAtPath(string path)
-        {
-            var roots = new List<RootEntry>();
-            var files = AlphaFSHelper.GetFilesWithExtension(path, "cde");
-            foreach (var file in files)
-            {
-                var re = LoadDirCache(file);
-                if (re != null)
-                {
-                    re.SourcePath = path;
-                    roots.Add(re);
-                }
-            }
-            return roots;
-        }
+		public static List<RootEntry> Load(IEnumerable<string> cdeList)
+		{
+			return cdeList.Select(LoadDirCache).ToList();
+		}
 
         public static RootEntry LoadDirCache(string file)
         {
@@ -413,11 +369,9 @@ namespace cdeLib
                     }
                 }
                 // ReSharper disable EmptyGeneralCatchClause
-                catch (Exception)
-                // ReSharper restore EmptyGeneralCatchClause
-                {
-                }
-            }
+                catch (Exception) { }
+				// ReSharper restore EmptyGeneralCatchClause
+			}
             return null;
         }
 
@@ -454,7 +408,7 @@ namespace cdeLib
             });
         }
 
-        public int DescriptionCompareTo(RootEntry re)
+		public int DescriptionCompareTo(RootEntry re, IConfigCdeLib config)
         {
             if (re == null)
             {
@@ -468,13 +422,29 @@ namespace cdeLib
             {
                 return 1; // this after re
             }
-            return MyCompareInfo.Compare(Description, re.Description, MyCompareOptions);
+			return config.CompareWithInfo(Description, re.Description);
         }
 
-        // TODO these need to be centralised.
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
+		public static IList<string> GetCacheFileList(IEnumerable<string> paths)
+		{
+			var cacheFilePaths = new List<string>();
+			foreach (var path in paths)
+			{
+				cacheFilePaths.AddRange(GetCdeFiles(path));
 
+				var childDirs = Directory.GetDirectories(path);
+				foreach (var childPath in childDirs)
+				{
+					cacheFilePaths.AddRange(GetCdeFiles(childPath));
+				}
+			}
+			return cacheFilePaths;
+		}
+
+		private static IEnumerable<string> GetCdeFiles(string path)
+		{
+			return AlphaFSHelper.GetFilesWithExtension(path, "cde");
+		}
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169

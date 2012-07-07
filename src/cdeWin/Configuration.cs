@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using ProtoBuf;
+using cdeLib;
 
 namespace cdeWin
 {
@@ -34,11 +35,18 @@ namespace cdeWin
         [ProtoMember(5)]
         public FormWindowState WindowState;
 
+        public void RestoreFormTopLeft(Form form)
+        {
+			if (Left != -1 && Top != -1)
+			{
+				form.StartPosition = FormStartPosition.Manual;
+				form.Location = new Point(Left, Top);
+			}
+        }
+
         public void RestoreForm(Form form)
         {
-            var left = Left;
-            var top = Top;
-            var restoreRect = new Rectangle(left, top, Width, Height);
+	        var restoreRect = new Rectangle(Left, Top, Width, Height);
 
             if (Left != -1 && Top != -1 && restoreRect.IsVisibleOnAnyScreen())
             {   // Position sanity check before we allow manual restore.
@@ -159,6 +167,8 @@ namespace cdeWin
         public DateTime FromHourValue;
         [ProtoMember(24)]
         public DateTime ToHourValue;
+		[ProtoMember(25)]
+		public bool AutoCloseLoader;
 
         public Configuration()
         {
@@ -167,14 +177,14 @@ namespace cdeWin
 
     }
 
-    public interface IConfig
+
+
+	public interface IConfig : IConfigCdeLib
     {
 		string DateFormatYMDHMS { get; }
 		string DateCustomFormatYMD { get; }
 		string DateCustomFormatHMS { get; }
 		string ContactEmail { get; }
-		CompareInfo MyCompareInfo { get; }
-		CompareOptions MyCompareOptions { get; }
 
         Configuration Active { get; set; }
         void RecordConfig(ICDEWinForm form);
@@ -184,6 +194,9 @@ namespace cdeWin
 
 		string Version { get; }
 		string ProductName { get; }
+		void RestoreConfigFormTopLeft(Form form);
+		void RestoreConfigFormBase(Form form);
+		void RestoreConfig(ICDEWinForm form);
     }
 
     public class Config : IConfig
@@ -192,8 +205,7 @@ namespace cdeWin
 		public string DateCustomFormatYMD { get { return "yyyy/MM/dd"; } }
 		public string DateCustomFormatHMS { get { return "HH:mm:ss"; } }
 		public string ContactEmail { get { return "rob@queenofblad.es"; } }
-		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
-		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
+
 		public string Version { get; private set; }
 		public string ProductName { get; private set; }
 
@@ -244,7 +256,6 @@ namespace cdeWin
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Created", Width=130 }, // NOTE convert from UTC ?
                     new ColumnConfig { Name="Catalog File", Width=150 },
-                    new ColumnConfig { Name="Source Path", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }
             },
@@ -256,6 +267,7 @@ namespace cdeWin
             FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
+			AutoCloseLoader = false,
         };
 
         public Configuration Loaded;
@@ -360,6 +372,16 @@ namespace cdeWin
             Active.ToHourValue = form.ToHourValue;
         }
 
+		public void RestoreConfigFormTopLeft(Form form)
+		{
+			Active.MainWindowConfig.RestoreFormTopLeft(form);
+		}
+
+		public void RestoreConfigFormBase(Form form)
+        {
+			Active.MainWindowConfig.RestoreForm(form);
+        }
+
         public void RestoreConfig(ICDEWinForm form)
         {
             //var a = Default.CatalogListView.Columns.Count;
@@ -446,5 +468,11 @@ namespace cdeWin
             return lvc != null && lvc.Columns != null ? lvc.Columns.Count : 0;
         }
 
+		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
+		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
+		public int CompareWithInfo(string s1, string s2)
+		{
+			return MyCompareInfo.Compare(s1, s2, MyCompareOptions);
+		}
     }
 }

@@ -1,4 +1,5 @@
 ﻿
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
@@ -8,11 +9,11 @@ namespace cdeLib.Infrastructure
     public static class AlphaFSHelper
     {
         // Bug in either AlphaFS or the Win32 either way here is a work around.
-        public static string[] GetFilesWithExtension(string path, string extension)
+        public static IList<string> GetFilesWithExtension(string path, string extension)
         {
             var pattern = "*." + extension;
             var files = Directory.GetFiles(path, pattern, SearchOption.TopDirectoryOnly);
-            var checkedExtensionEndFiles = files.Where(val => val.EndsWith(extension)).ToArray();
+            var checkedExtensionEndFiles = files.Where(val => val.EndsWith(extension)).ToList();
             return checkedExtensionEndFiles;
         }
 

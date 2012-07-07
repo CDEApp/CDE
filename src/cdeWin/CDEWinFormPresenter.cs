@@ -169,8 +169,7 @@ namespace cdeWin
             vals[7] = rootEntry.UsedSpace.ToHRString();
             vals[8] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
             vals[9] = rootEntry.ActualFileName;
-            vals[10] = rootEntry.SourcePath;
-            vals[11] = rootEntry.Description;
+            vals[10] = rootEntry.Description;
 
             return listViewForeColor;
         }
@@ -919,11 +918,7 @@ namespace cdeWin
                     break;
 
                 case 10:
-                    compareResult = re1.SourcePath.CompareTo(re2.SourcePath);
-                    break;
-
-                case 11:
-                    compareResult = re1.DescriptionCompareTo(re2);
+                    compareResult = re1.DescriptionCompareTo(re2, _config);
                     break;
 
                 default:
