@@ -1,3 +1,6 @@
+mkdir bin\AnyCPU
+mkdir bin\x86
+
 del bin\AnyCPU\*.exe
 del bin\AnyCPU\*.dll
 del bin\AnyCPU\*.pdb
@@ -11,13 +14,12 @@ del bin\x86\*.config
 set t=..\..\..\..
 REM OLD set ilmerge="c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe"
 set ilmerge=%t%\lib\ILMerge\ILMerge.exe
-
-@ECHO Building Any CPU
-cd src
 set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
 
 goto BUILD86
 
+@ECHO Building Any CPU
+cd src
 REM manual deletes cause /Rebuild really doesnt work right
 del cde\bin\Release\*.exe
 del cde\bin\Release\*.dll
