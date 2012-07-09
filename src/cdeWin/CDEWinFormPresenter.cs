@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Windows.Forms;
+using Util;
 using cdeLib;
 using cdeLib.Infrastructure;
 
@@ -37,7 +38,7 @@ namespace cdeWin
         private BackgroundWorker _bgWorker;
         private bool _isSearchButton;
 
-        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config) : base(form)
+        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config, TimeIt timeIt) : base(form)
         {
             _clientForm = form;
             _rootEntries = rootEntries;
@@ -50,7 +51,13 @@ namespace cdeWin
             SetSearchButton(true);
             RegisterListViewSorters();
             SetCatalogListView();
-        }
+
+			_clientForm.Addline("{0} v{1}", _config.ProductName, _config.Version);
+	        foreach (var labelElapsed in timeIt.ElapsedList) {
+				_clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+	        }
+			_clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(), timeIt.TotalMsec);
+		}
 
         private void RegisterListViewSorters()
         {

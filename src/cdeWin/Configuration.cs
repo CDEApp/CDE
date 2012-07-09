@@ -167,8 +167,6 @@ namespace cdeWin
         public DateTime FromHourValue;
         [ProtoMember(24)]
         public DateTime ToHourValue;
-		[ProtoMember(25)]
-		public bool AutoCloseLoader;
 
         public Configuration()
         {
@@ -267,7 +265,6 @@ namespace cdeWin
             FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
-			AutoCloseLoader = false,
         };
 
         public Configuration Loaded;

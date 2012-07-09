@@ -36,27 +36,19 @@ namespace cdeWin
 			var loaderForm = new LoaderForm(config, cachePathList, timeIt);
 
 	        List<RootEntry> rootEntries = null;
-
 			try
 			{
-				//var cacheFiles = RootEntry.GetCacheFileList(cachePathList);
-				//var cacheFiles = RootEntry.GetCacheFileList(cachePathList);
-				//rootEntries = RootEntry.Load(cacheFiles);
-				loaderForm.AutoCloseLoaderFlag = config.Active.AutoCloseLoader;
 				loaderForm.ShowDialog();
 			}
 			finally
 			{
-				config.Active.AutoCloseLoader = loaderForm.AutoCloseLoaderFlag;
 				rootEntries = loaderForm.RootEntries;
 				loaderForm.Dispose();
 			}
 
-
 			//var ArootEntries = RootEntry.LoadMultiDirCacheWithChildren(cachePathList);
-
             var mainForm = new CDEWinForm(config);
-            var mainPresenter = new CDEWinFormPresenter(mainForm, rootEntries, config);
+            var mainPresenter = new CDEWinFormPresenter(mainForm, rootEntries, config, timeIt);
 			config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();

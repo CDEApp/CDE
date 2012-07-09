@@ -114,6 +114,7 @@ namespace cdeWin
         void SortList<T>(IListViewHelper<T> lvh) where T : class;
 
         void MessageBox(string message);
-        void AboutDialog();
+		void AboutDialog();
+		void Addline(string format, params object[] args);
     }
 }

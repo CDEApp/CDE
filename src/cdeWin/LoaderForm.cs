@@ -22,7 +22,7 @@ namespace cdeWin
 			_cdeList = cdeList;
 			_timeIt = timeIt;
 
-			// Duplicate the App location if its set for this loader form
+			// Set to top left of application if it is available.
 			_config.RestoreConfigFormTopLeft(this);
 
 			AutoWaitCursor.Cursor = Cursors.WaitCursor;
@@ -31,49 +31,36 @@ namespace cdeWin
 			AutoWaitCursor.Start();
 		}
 
-		private void btnOK_Click(object sender, System.EventArgs e)
-		{
-			Close();
-		}
-
 		private void LoaderForm_Shown(object sender, System.EventArgs e)
 		{
+			lblProgressMessage.Text = string.Empty;
 			Application.DoEvents(); // Make sure controls render before we do something.
-			// Not doing a real background thread for progress, this is simple as it is.
-			Addline("{0} v{1}", _config.ProductName, _config.Version);
-			var cacheFiles = RootEntry.GetCacheFileList(_cdeList);
 
+			var cacheFiles = RootEntry.GetCacheFileList(_cdeList);
+			var totalFiles = cacheFiles.Count();
+			var fileCounter = 0;
+			barLoading.Step = totalFiles;
+			barLoading.Maximum = totalFiles;
+
+			// Not doing a background worker.
 			_rootEntries = cacheFiles.Select(s =>
 			{
-				//Addline("Loading {0}", s);
 				_timeIt.Start(s);
 				var re = RootEntry.LoadDirCache(s);
-				var label = _timeIt.Stop();
-				Addline("Catalog load {0} in {1} msec", label.Label, label.ElapsedMsec);
+				_timeIt.Stop();
+				++fileCounter;
+				lblProgressMessage.Text = string.Format("Loading catalog {0} of {1}", fileCounter, totalFiles);
+				barLoading.Value = fileCounter;
+				Application.DoEvents(); // Get label to update.
 				return re;
 			}).ToList();
-			Addline("Total load time for {0} files was {1} msec", cacheFiles.Count, _timeIt.TotalMsec);
 
-			if (AutoCloseLoaderFlag)
-			{
-				Close();
-			}
-		}
-
-		private void Addline(string format, params object[] args)
-		{
-			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
+			Close();
 		}
 
 		public List<RootEntry> RootEntries
 		{
 			get { return _rootEntries; }
 		}
-
-		public bool AutoCloseLoaderFlag { 
-			get { return cbAutoCloseLoader.Checked; } 
-			set { cbAutoCloseLoader.Checked = value; } 
-		}
-
 	}
 }

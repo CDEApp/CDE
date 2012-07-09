@@ -522,5 +522,10 @@ namespace cdeWin
         {
             MyAboutBox.MyShow(this, _config);
         }
+
+		public void Addline(string format, params object[] args)
+		{
+			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
+		}
     }
 }
