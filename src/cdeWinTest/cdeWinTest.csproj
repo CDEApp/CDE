@@ -84,6 +84,10 @@
       <Project>{AC6AD3DF-47A6-4A55-8EF5-3872E75D6A36}</Project>
       <Name>cdeWin</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Util\Util.csproj">
+      <Project>{27847DBD-65B6-489D-A600-89D4FF5151E8}</Project>
+      <Name>Util</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

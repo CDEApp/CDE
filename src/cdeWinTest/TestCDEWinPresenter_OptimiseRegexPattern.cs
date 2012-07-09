@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using NUnit.Framework;
 using Rhino.Mocks;
+using Util;
 using cdeLib;
 using cdeWin;
 
@@ -17,7 +18,7 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _mockForm.Stub(x => x.RegexMode).Return(false);
-            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig);
+            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig, null);
         }
 
         [Test]
@@ -65,7 +66,7 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _mockForm.Stub(x => x.RegexMode).Return(true);
-            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig);
+            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig, null);
         }
         
         [Test]
@@ -112,7 +113,7 @@ namespace cdeWinTest
 
     public class TestOptimise : CDEWinFormPresenter
     {
-        public TestOptimise(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config) : base(form, rootEntries, config)
+        public TestOptimise(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config, TimeIt timeIt) : base(form, rootEntries, config, timeIt)
         {
         }
 

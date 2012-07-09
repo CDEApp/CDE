@@ -53,10 +53,13 @@ namespace cdeWin
             SetCatalogListView();
 
 			_clientForm.Addline("{0} v{1}", _config.ProductName, _config.Version);
-	        foreach (var labelElapsed in timeIt.ElapsedList) {
-				_clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+	        if (timeIt != null) {
+				foreach (var labelElapsed in timeIt.ElapsedList)
+				{
+					_clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+				}
+				_clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(), timeIt.TotalMsec);
 	        }
-			_clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(), timeIt.TotalMsec);
 		}
 
         private void RegisterListViewSorters()
