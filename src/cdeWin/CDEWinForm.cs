@@ -424,6 +424,7 @@ namespace cdeWin
                 items.TruncateList(_config.Active.PatternHistoryMaximum);
                 items.Insert(0, pattern);	// allways to front.
                 patternComboBox.SelectedIndex = 0; // set value we added to combobox.
+                patternComboBox.Select(0, pattern.Length);
             }
         }
 
