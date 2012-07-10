@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using Util;
 using cdeLib;
 
 namespace cdeWin
@@ -419,8 +421,9 @@ namespace cdeWin
                 {
                     items.Remove(pattern);
                 }
+                items.TruncateList(_config.Active.PatternHistoryMaximum);
                 items.Insert(0, pattern);	// allways to front.
-                patternComboBox.SelectedIndex = 0; // makes current value stay combobox on search
+                patternComboBox.SelectedIndex = 0; // set value we added to combobox.
             }
         }
 

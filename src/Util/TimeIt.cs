@@ -5,6 +5,7 @@ using System.Linq;
 
 namespace Util
 {
+    // TODO think about capturing start and end time.
 	public class TimeIt
 	{
 		public struct LabelElapsed

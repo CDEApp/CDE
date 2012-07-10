@@ -128,9 +128,7 @@ namespace cdeWin
         [ProtoMember(5)]
         public ListViewConfig CatalogListView;
 
-        public const int DefaultPatternHistoryLength = 20;
-        [ProtoMember(6)]
-        public int PatternHistoryLength = DefaultPatternHistoryLength;
+        // [ProtoMember(6)] public int PatternHistoryLength = DefaultPatternHistoryLength;
         [ProtoMember(7)]
         public List<string> PreviousPatternHistory;
         [ProtoMember(8)]
@@ -172,7 +170,6 @@ namespace cdeWin
 
         public Configuration()
         {
-            PreviousPatternHistory = new List<string>(DefaultPatternHistoryLength);
         }
 
     }
@@ -267,7 +264,7 @@ namespace cdeWin
             FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
-			PatternHistoryMaximum = 30,
+			PatternHistoryMaximum = 50,
         };
 
         public Configuration Loaded;
@@ -407,6 +404,11 @@ namespace cdeWin
             form.ToDateValue = DateOrNow(Active.ToDateValue);
             form.FromHourValue = DateOrNow(Active.FromHourValue);
             form.ToHourValue = DateOrNow(Active.ToHourValue);
+
+            if (Active.PatternHistoryMaximum <= 0)
+            {
+                Active.PatternHistoryMaximum = Default.PatternHistoryMaximum;
+            }
         }
 
         private DateTime DateOrNow(DateTime dateValue)
