@@ -96,7 +96,7 @@ namespace cdeWin
                     new ComboBoxItem<int>("MB(s)", 1000*1000),
                     new ComboBoxItem<int>("MiB(s)", 1024*1024),
                     new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
-                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024),
+                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024)
                 };
 
         private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = new[]
@@ -105,7 +105,7 @@ namespace cdeWin
                     new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
                     new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
                     new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
-                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear),
+                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear)
                 };
 
         private readonly ComboBoxItem<int>[] _limitResultValues = new[]
@@ -113,7 +113,7 @@ namespace cdeWin
                     new ComboBoxItem<int>("Max Results 1000", 1000),
                     new ComboBoxItem<int>("Max Results 10000", 10000),
                     new ComboBoxItem<int>("Max Results 100000", 100000),
-                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue),
+                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue)
                 };
 
     	private readonly IConfig _config;
@@ -151,12 +151,12 @@ namespace cdeWin
             Activated += MyFormActivated;
 
             SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
-            whatToSearchComboBox.Items.AddRange(new[] { "Include Path in Search", "Exclude Path from Search" });
+            whatToSearchComboBox.Items.AddRange(new object[] { "Include Path in Search", "Exclude Path from Search" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
             whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
             SetToolTip(whatToSearchComboBox, "Excluding Path so that only entry Names are searched makes search faster.");
 
-            findComboBox.Items.AddRange(new[] { "Files and Folders", "Files Only", "Folders Only" });
+            findComboBox.Items.AddRange(new object[] { "Files and Folders", "Files Only", "Folders Only" });
             findComboBox.SelectedIndex = 0; // default Files and Folders
             findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
@@ -183,7 +183,6 @@ namespace cdeWin
             // Enter in pattern Text Box fires Search Button.
             patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternComboBox.LostFocus += (s, e) => AcceptButton = null;
-            patternComboBox.DropDownHeight = 1;
 
             CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
                 {
@@ -403,24 +402,35 @@ namespace cdeWin
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
         {
             patternComboBox.AutoCompleteMode = AutoCompleteMode.Suggest;
-            patternComboBox.AutoCompleteSource = AutoCompleteSource.CustomSource;
-            patternComboBox.AutoCompleteCustomSource = history.ToAutoCompleteStringCollection();
+            patternComboBox.AutoCompleteSource = AutoCompleteSource.ListItems;
+            foreach (var h in history.Where(h => !string.IsNullOrEmpty(h)))
+            {
+	            patternComboBox.Items.Add(h);
+	        }
+			patternComboBox.DropDownStyle = ComboBoxStyle.DropDown;
         }
 
         public void AddSearchTextBoxAutoComplete(string pattern)
         {
-            var ac = patternComboBox.AutoCompleteCustomSource;
-            if (!ac.Contains(pattern))
+            if (!string.IsNullOrEmpty(pattern.Trim()))
             {
-                ac.Add(pattern);
+                var items = patternComboBox.Items;
+                if (items.Contains(pattern))
+                {
+                    items.Remove(pattern);
+                }
+                items.Insert(0, pattern);	// allways to front.
+                patternComboBox.SelectedIndex = 0; // makes current value stay combobox on search
             }
         }
 
         public List<string> GetSearchTextBoxAutoComplete()
         {
-            var list = new List<string>(20);
-            list.AddRange(patternComboBox.AutoCompleteCustomSource.Cast<string>());
-            return list;
+            return patternComboBox
+                .Items
+                .Cast<string>()
+                .Where(s => !string.IsNullOrEmpty(s))
+                .ToList();
         }
 
         public void SelectDirectoryPane()

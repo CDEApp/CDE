@@ -167,6 +167,8 @@ namespace cdeWin
         public DateTime FromHourValue;
         [ProtoMember(24)]
         public DateTime ToHourValue;
+		[ProtoMember(25)]
+		public int PatternHistoryMaximum;
 
         public Configuration()
         {
@@ -252,7 +254,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Drive Hint", Width=60},
                     new ColumnConfig { Name="Space", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Created", Width=130 }, // NOTE convert from UTC ?
+                    new ColumnConfig { Name="Created", Width=130 }, // todo NOTE convert from UTC ?
                     new ColumnConfig { Name="Catalog File", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }
@@ -265,6 +267,7 @@ namespace cdeWin
             FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
             NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
+			PatternHistoryMaximum = 30,
         };
 
         public Configuration Loaded;
@@ -318,19 +321,12 @@ namespace cdeWin
         }
 
         public bool Save(string fileName)
-        {
-            try
-            {
-                using (var newFs = File.Open(fileName, FileMode.Create))
-                {
-                    Write(newFs);
-                    return true;
-                }
-            }
-            // ReSharper disable EmptyGeneralCatchClause
-            catch { }
-            // ReSharper restore EmptyGeneralCatchClause
-            return false;
+        {   // we do want exception to percolate out if there is a problem.
+	        using (var newFs = File.Open(fileName, FileMode.Create))
+	        {
+		        Write(newFs);
+		        return true;
+	        }
         }
 
         private Configuration Read(Stream input)
