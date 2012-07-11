@@ -406,7 +406,6 @@ namespace cdeWin
 
             if (e == null)
             {
-                _clientForm.MessageBox(e.Error.Message);
                 count = 0;
             }
             else

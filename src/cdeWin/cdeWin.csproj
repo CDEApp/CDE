@@ -99,6 +99,7 @@
     <Compile Include="EnumerableStringExtensions.cs" />
     <Compile Include="ICDEWinForm.cs" />
     <Compile Include="IPresenter.cs" />
+    <Compile Include="ListViewExtensions.cs" />
     <Compile Include="ListViewHelper.cs" />
     <Compile Include="LoaderForm.cs">
       <SubType>Form</SubType>

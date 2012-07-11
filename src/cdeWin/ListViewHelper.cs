@@ -353,12 +353,20 @@ namespace cdeWin
 
         public void SortList()
         {
-            if (_list == null)
+            SetColumnSortArrow();
+            if (_list != null)
             {
-                return;
+                _list.Sort(ColumnSortCompare);
+                ForceDraw();
             }
-            _list.Sort(ColumnSortCompare);
-            ForceDraw();
+        }
+
+        private void SetColumnSortArrow()
+        {
+            _listView.SetSortIcon(SortColumn,
+                                  (ColumnSortOrder == SortOrder.Ascending)
+                                      ? SortOrder.Descending
+                                      : SortOrder.Ascending); // i am inverted some how.
         }
 
         public void ActionOnSelectedItem(Action<T> action)

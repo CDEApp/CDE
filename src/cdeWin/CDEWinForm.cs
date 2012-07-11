@@ -541,5 +541,13 @@ namespace cdeWin
 		{
 			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
 		}
+
+        private void CDEWinForm_Shown(object sender, EventArgs e)
+        {
+            // setup our sort arrow icons, this doesnt work right early in setup.
+            SortList(CatalogListViewHelper);
+            SortList(SearchResultListViewHelper);
+            SortList(DirectoryListViewHelper);
+        }
     }
 }
