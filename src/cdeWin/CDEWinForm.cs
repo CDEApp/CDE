@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
@@ -544,7 +543,7 @@ namespace cdeWin
 
         private void CDEWinForm_Shown(object sender, EventArgs e)
         {
-            // setup our sort arrow icons, this doesnt work right early in setup.
+            // setup our sort arrow icons, this requires windows message loop afaik.
             SortList(CatalogListViewHelper);
             SortList(SearchResultListViewHelper);
             SortList(DirectoryListViewHelper);

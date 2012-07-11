@@ -366,7 +366,7 @@ namespace cdeWin
             _listView.SetSortIcon(SortColumn,
                                   (ColumnSortOrder == SortOrder.Ascending)
                                       ? SortOrder.Descending
-                                      : SortOrder.Ascending); // i am inverted some how.
+                                      : SortOrder.Ascending); // column state is inverted some how ?
         }
 
         public void ActionOnSelectedItem(Action<T> action)
