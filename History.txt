@@ -1,0 +1,36 @@
+2012/07/12 cdeWin v1.2.2.0
+Directory Tree view now has context menu.
+Context menus dont appear unless an item is under cursor now.
+
+2012/07/11 cdeWin v1.2.1.0 
+Shows column sort order arrows now, really bugged me I didnt have them.
+
+2012/07/11 cdeWin v1.2.0.0
+Much much improved auto complete on the Pattern entry field.
+up down arrow now navigates back/forward through history, drop down arrow now shows history.
+It limits itself to remembering 50 patterns
+
+2012/07/09 cdeWin v1.1.0.0
+About box, contact link.
+Loader window at startup, with logging.
+
+2012/03/13 cdeWin 
+Read lock cde files.
+Fixed build for .Net 4 references even with .Net 4.5 installed.
+Icon.
+Load cde files one directory down as well as current dir.
+
+2012/01/15 cdeWin 
+Fixed a redraw problem in Directory pane list view.
+
+2012/01/04 cdeWin
+Added advanced search
+Moved configuration file to profile storage.
+Loads catalogs from current dir and profile dir.
+
+2011/12/30 cdeWin
+Fixed list view render crashes in caching.
+
+2011/12/26 cdeWin
+Initial gui viewer version.
+
