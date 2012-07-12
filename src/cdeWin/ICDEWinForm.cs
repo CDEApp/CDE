@@ -52,6 +52,10 @@ namespace cdeWin
 
         event EventAction OnAdvancedSearchCheckboxChanged;
 
+        event EventAction OnDirectoryTreeContextMenuOpenClick;
+        event EventAction OnDirectoryTreeContextMenuExploreClick;
+        event EventAction OnDirectoryTreeContextMenuPropertiesClick;
+
         TreeNode DirectoryTreeViewNodes { get;  set; }
 
         TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
@@ -116,5 +120,6 @@ namespace cdeWin
         void MessageBox(string message);
 		void AboutDialog();
 		void Addline(string format, params object[] args);
+        CommonEntry GetSelectedTreeItem();
     }
 }

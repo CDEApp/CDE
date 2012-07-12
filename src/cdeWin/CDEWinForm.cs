@@ -64,7 +64,11 @@ namespace cdeWin
         public void OnCatalogListViewColumnClickFire() { OnCatalogListViewColumnClick(); }
 
         public event EventAction OnAdvancedSearchCheckboxChanged;
-            
+
+        public event EventAction OnDirectoryTreeContextMenuOpenClick;
+        public event EventAction OnDirectoryTreeContextMenuExploreClick;
+        public event EventAction OnDirectoryTreeContextMenuPropertiesClick;
+
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
@@ -180,6 +184,7 @@ namespace cdeWin
 
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
             directoryTreeView.AfterSelect += DirectoryTreeViewOnAfterSelect;
+            directoryTreeView.ContextMenuStrip = CreateDirectoryTreeContextMenu();
 
             // Enter in pattern Text Box fires Search Button.
             patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
@@ -203,6 +208,7 @@ namespace cdeWin
 
             RegisterAdvancedSearchControls();
         }
+
 
         // ReSharper disable UseObjectOrCollectionInitializer
         private void RegisterAdvancedSearchControls()
@@ -271,6 +277,49 @@ namespace cdeWin
         private void MyFormClosing(object s, FormClosingEventArgs e)
         {
             OnMyFormClosing();
+        }
+
+        private ContextMenuStrip CreateDirectoryTreeContextMenu()
+        {
+            var menuHelper = new ContextMenuHelper
+            {
+                //TreeViewHandler not useful in tree
+                OpenHandler = (s, e) => OnDirectoryTreeContextMenuOpenClick(),
+                ExploreHandler = (s, e) => OnDirectoryTreeContextMenuExploreClick(),
+                PropertiesHandler = (s, e) => OnDirectoryTreeContextMenuPropertiesClick(),
+                //SelectAllHandler = not useful in tree
+                //CopyBaseNameHandler = (s, e) => (),
+                //CopyFullNameHandler = (s, e) => (),
+                ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+            };
+
+            var directoryTreeContextMenu = menuHelper.GetContextMenuStrip();
+            directoryTreeContextMenu.Opening += DirectoryTreeContextMenuOpening;
+            return directoryTreeContextMenu;
+        }
+
+        void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            var treeNodeAtMousePosition = directoryTreeView.GetNodeAt(directoryTreeView.PointToClient(Control.MousePosition));
+            var selectedTreeNode = directoryTreeView.SelectedNode;
+
+            if (treeNodeAtMousePosition == null)
+            {   // cancel context menu if no node at right click.
+                e.Cancel = true;
+            }
+            else
+            {   // right click selects the node and shows context menu.
+                if (treeNodeAtMousePosition != selectedTreeNode)
+                    directoryTreeView.SelectedNode = treeNodeAtMousePosition;
+            }
+        }
+
+        public CommonEntry GetSelectedTreeItem()
+        {
+            // any visible tree node has a valid Tag
+            return (CommonEntry) (directoryTreeView.SelectedNode != null
+                    ? directoryTreeView.SelectedNode.Tag
+                    : null);
         }
 
         private ContextMenuStrip CreateDirectoryContextMenu()

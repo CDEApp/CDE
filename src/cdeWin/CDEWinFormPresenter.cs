@@ -128,7 +128,7 @@ namespace cdeWin
         {
             if (dirEntry.IsDirectory)
             {
-                var newTreeNode = NewTreeNode(dirEntry, dirEntry.Path);
+                var newTreeNode = NewTreeNode(dirEntry);
                 treeNode.Nodes.Add(newTreeNode);
                 SetDummyChildNode(newTreeNode, dirEntry);
             }
@@ -142,11 +142,16 @@ namespace cdeWin
             if (commonEntry.Children !=null 
                 && commonEntry.Children.Any(entry => entry.IsDirectory))
             {
-                treeNode.Nodes.Add(NewTreeNode(null, DummyNodeName));
+                treeNode.Nodes.Add(NewTreeNode(DummyNodeName));
             }
         }
 
-        private static TreeNode NewTreeNode(object tag, string name)
+        private static TreeNode NewTreeNode(CommonEntry commonEntry)
+        {
+            return NewTreeNode(commonEntry.Path, commonEntry);
+        }
+
+        private static TreeNode NewTreeNode(string name, object tag = null)
         {
             return new TreeNode(name) {
                 //ImageIndex = 0, 
@@ -565,7 +570,7 @@ namespace cdeWin
 
         private static TreeNode BuildRootNode(RootEntry rootEntry)
         {
-            var rootTreeNode = NewTreeNode(rootEntry, rootEntry.Path);
+            var rootTreeNode = NewTreeNode(rootEntry);
             SetDummyChildNode(rootTreeNode, rootEntry);
             return rootTreeNode;
         }
@@ -747,6 +752,30 @@ namespace cdeWin
         public void AboutMenuItem()
         {
             _clientForm.AboutDialog();
+        }
+
+        private void DirectoryTreeGetContextMenuPairDirEntryThatExists(Action<CommonEntry> gotContextAction)
+        {
+            var selectedCommonEntry = _clientForm.GetSelectedTreeItem();
+            if (selectedCommonEntry.ExistsOnFileSystem())
+            {
+                gotContextAction(selectedCommonEntry);
+            }
+        }
+
+        public void DirectoryTreeContextMenuOpenClick()
+        {
+            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ExplorerOpen(ce.FullPath));
+        }
+
+        public void DirectoryTreeContextMenuExploreClick()
+        {
+            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
+        }
+
+        public void DirectoryTreeContextMenuPropertiesClick()
+        {
+            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ShowFileProperties(ce.FullPath));
         }
 
         private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)

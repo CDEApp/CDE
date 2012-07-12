@@ -258,6 +258,11 @@ namespace cdeLib
             activatedDirEntryList.Reverse(); // list now from root to this.
             return activatedDirEntryList;
         }
+
+        public bool ExistsOnFileSystem()
+        {   // CommonEntry is always a directory ? - not really.
+            return Filesystem.Directory.Exists(FullPath);
+        }
     }
 }
 
