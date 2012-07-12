@@ -291,11 +291,10 @@ namespace cdeWin
                 //CopyBaseNameHandler = (s, e) => (),
                 //CopyFullNameHandler = (s, e) => (),
                 ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                CancelOpeningEventHandler = (s, e) => DirectoryTreeContextMenuOpening(s, e),
             };
 
-            var directoryTreeContextMenu = menuHelper.GetContextMenuStrip();
-            directoryTreeContextMenu.Opening += DirectoryTreeContextMenuOpening;
-            return directoryTreeContextMenu;
+            return menuHelper.GetContextMenuStrip();
         }
 
         void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
@@ -334,6 +333,7 @@ namespace cdeWin
                     //CopyBaseNameHandler = (s, e) => (),
                     //CopyFullNameHandler = (s, e) => (),
                     ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                    CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
                 };
             return menuHelper.GetContextMenuStrip();
         }
@@ -349,6 +349,7 @@ namespace cdeWin
                 SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
                 //CopyBaseNameHandler = (s, e) => (),
                 //CopyFullNameHandler = (s, e) => (),
+                CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e),
             };
             return menuHelper.GetContextMenuStrip();
         }
@@ -590,7 +591,7 @@ namespace cdeWin
 			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
 		}
 
-        private void CDEWinForm_Shown(object sender, EventArgs e)
+        private void CDEWinFormShown(object sender, EventArgs e)
         {
             // setup our sort arrow icons, this requires windows message loop afaik.
             SortList(CatalogListViewHelper);

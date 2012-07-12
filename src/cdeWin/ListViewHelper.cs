@@ -61,6 +61,7 @@ namespace cdeWin
         void SortList();
         void ActionOnSelectedItem(Action<T> action);
         void ActionOnActivateItem(Action<T> action);
+        void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e);
     }
 
     /// <summary>
@@ -81,6 +82,9 @@ namespace cdeWin
         /// Used by virtual mode ListView
         /// </summary>
         public int RetrieveItemIndex { get; set; }
+        /// <summary>
+        /// Used by virtual mode ListView
+        /// </summary>
         public ListViewItem RenderItem { get; set; }
 
         public int AfterActivateIndex { get; set; }
@@ -436,6 +440,22 @@ namespace cdeWin
             {
                 _listView.SelectedIndexChanged -= MySelectedIndexChanged;
                 _listView.VirtualItemsSelectionRangeChanged -= MyVirtualItemsSelectionRangeChanged;
+            }
+        }
+
+        private ListViewItem GetListViewItemAtMouse()
+        {
+            var mouseLoc = _listView.PointToClient(Control.MousePosition);
+            var listNodeAtMousePosition = _listView.GetItemAt(mouseLoc.X, mouseLoc.Y);
+            return listNodeAtMousePosition;
+        } 
+
+        public void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
+        {
+            var listViewItem = GetListViewItemAtMouse();
+            if (listViewItem == null)
+            {   // cancel context menu if no list view item at right click.
+                e.Cancel = true;
             }
         }
     }

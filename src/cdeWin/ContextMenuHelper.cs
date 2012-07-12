@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using System.Windows.Forms;
 
 namespace cdeWin
@@ -125,6 +126,20 @@ namespace cdeWin
             }
         }
         private EventHandler _parentHandler;
+
+        /// <summary>
+        /// Set Opening event handler for context menu.
+        /// </summary>
+        public CancelEventHandler CancelOpeningEventHandler
+        {
+            get { return _cancelOpeningEventHandler; }
+            set
+            {
+                _cancelOpeningEventHandler = value;
+                _menu.Opening += value;
+            }
+        }
+        private CancelEventHandler _cancelOpeningEventHandler;
 
         public ContextMenuHelper()
         {   // set all keys here rather than in individual setters for handlers.

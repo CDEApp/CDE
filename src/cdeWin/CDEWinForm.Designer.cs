@@ -726,7 +726,7 @@
             this.MinimumSize = new System.Drawing.Size(400, 300);
             this.Name = "CDEWinForm";
             this.Text = "cdeWinView";
-            this.Shown += new System.EventHandler(this.CDEWinForm_Shown);
+            this.Shown += new System.EventHandler(this.CDEWinFormShown);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.mainTabControl.ResumeLayout(false);
