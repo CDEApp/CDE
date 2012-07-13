@@ -454,11 +454,14 @@ namespace cdeWin
         {
             patternComboBox.AutoCompleteMode = AutoCompleteMode.Suggest;
             patternComboBox.AutoCompleteSource = AutoCompleteSource.ListItems;
-            foreach (var h in history.Where(h => !string.IsNullOrEmpty(h)))
+            if (history != null)
             {
-	            patternComboBox.Items.Add(h);
-	        }
-			patternComboBox.DropDownStyle = ComboBoxStyle.DropDown;
+                foreach (var h in history.Where(h => !string.IsNullOrEmpty(h)))
+                {
+                    patternComboBox.Items.Add(h);
+                }
+            }
+            patternComboBox.DropDownStyle = ComboBoxStyle.DropDown;
         }
 
         public void AddSearchTextBoxAutoComplete(string pattern)
