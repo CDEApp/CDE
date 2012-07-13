@@ -1,6 +1,8 @@
-2012/07/12 cdeWin v1.2.2.0
+
+2012/07/13 cdeWin v1.2.2.0
 Directory Tree view now has context menu.
 Context menus dont appear unless an item is under cursor now.
+Fixed NPE starting cdeWin with no profile config.
 
 2012/07/11 cdeWin v1.2.1.0 
 Shows column sort order arrows now, really bugged me I didnt have them.
