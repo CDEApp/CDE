@@ -249,8 +249,9 @@ namespace cdeWin
                     new ColumnConfig { Name="Files", Width=60, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="D+F", Width=60, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Drive Hint", Width=60},
-                    new ColumnConfig { Name="Space", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Available", Width=70, Alignment = HorizontalAlignment.Right },
+                    new ColumnConfig { Name="Size", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Created", Width=130 }, // todo NOTE convert from UTC ?
                     new ColumnConfig { Name="Catalog File", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },

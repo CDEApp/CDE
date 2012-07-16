@@ -53,7 +53,7 @@ namespace cdeLib
         public ulong AvailSpace { get; set; }
 
         [ProtoMember(7, IsRequired = true)]
-        public ulong UsedSpace { get; set; }
+        public ulong TotalSpace { get; set; }
 
         [ProtoMember(8, IsRequired = true)]
         public DateTime ScanStartUTC { get; set; }
@@ -102,7 +102,7 @@ namespace cdeLib
 
             var dsi = Volume.GetDiskFreeSpace(Path);
             AvailSpace = dsi.FreeBytesAvailable;
-            UsedSpace = dsi.TotalNumberOfBytes;
+            TotalSpace = dsi.TotalNumberOfBytes;
             return startPath;
         }
 

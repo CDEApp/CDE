@@ -180,11 +180,12 @@ namespace cdeWin
             vals[3] = rootEntry.FileCount.ToString();
             vals[4] = (rootEntry.DirCount + rootEntry.FileCount).ToString();
             vals[5] = rootEntry.DriveLetterHint;
-            vals[6] = rootEntry.AvailSpace.ToHRString();
-            vals[7] = rootEntry.UsedSpace.ToHRString();
-            vals[8] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[9] = rootEntry.ActualFileName;
-            vals[10] = rootEntry.Description;
+            vals[6] = rootEntry.Size.ToHRString();
+            vals[7] = rootEntry.AvailSpace.ToHRString();
+            vals[8] = rootEntry.TotalSpace.ToHRString();
+            vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
+            vals[10] = rootEntry.ActualFileName;
+            vals[11] = rootEntry.Description;
 
             return listViewForeColor;
         }
@@ -944,7 +945,7 @@ namespace cdeWin
                     break;
 
                 case 7:
-                    compareResult = re1.UsedSpace.CompareTo(re2.UsedSpace);
+                    compareResult = re1.TotalSpace.CompareTo(re2.TotalSpace);
                     break;
 
                 case 8:
