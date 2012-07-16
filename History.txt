@@ -1,3 +1,7 @@
+2012/07/16 20:35 v1.2.3.0
+Renamed the Space and Used columns in catalog list view to "Available" "Size".
+Added a Used Column which shows Size of catalog.
+These fields previously were previously miss labelled.
 
 2012/07/13 cdeWin v1.2.2.0
 Directory Tree view now has context menu.
