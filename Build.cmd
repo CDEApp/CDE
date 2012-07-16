@@ -32,7 +32,9 @@ del cdeWin\bin\Release\*.pdb
 cd ..
 
 @echo Merging Any CPU
-set tbin=%t%\bin\AnyCPU
+set sTbin =bin\AnyCPU
+set tbin=%t%\%sTbin%
+copy History.txt %sTbin%
 cd src\cde\bin\Release
 rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
@@ -61,12 +63,15 @@ cd ..
 rem goto END
 
 @echo Merging x86
-set tbin=%t%\bin\x86
+set sTbin=bin\x86
+set tbin=%t%\%sTbin%
+copy History.txt %sTbin%
 cd src\cde\bin\Release
 rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 %ilmerge% /targetplatform:"v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 copy cde.exe.config %tbin%
+
 cd %t%
 
 cd src\cdeWin\bin\Release
