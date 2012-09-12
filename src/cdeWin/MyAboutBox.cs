@@ -28,11 +28,16 @@ namespace cdeWin
 
 		private void linkEmail_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
 		{
-			var proc = new System.Diagnostics.Process();
-			proc.StartInfo.FileName = string.Format("mailto:{0}?subject=About {1} v{2}",
-					_config.ContactEmail, _config.ProductName, _config.Version);
-			proc.Start();
-
+		    try
+		    {
+                var proc = new System.Diagnostics.Process();
+                proc.StartInfo.FileName = string.Format("mailto:{0}?subject=About {1} v{2}",
+                        _config.ContactEmail, _config.ProductName, _config.Version);
+                proc.Start();
+		    }
+		    catch (Exception)
+		    {
+		    }
 		}
 
 		private void MyAboutBox_Load(object sender, EventArgs e)

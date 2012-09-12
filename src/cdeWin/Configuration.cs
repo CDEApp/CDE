@@ -252,7 +252,8 @@ namespace cdeWin
                     new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Available", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Size", Width=70, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Created", Width=130 }, // todo NOTE convert from UTC ?
+                    new ColumnConfig { Name="Created", Width=130 },
+                    new ColumnConfig { Name="Scan Duration", Width=70 }, 
                     new ColumnConfig { Name="Catalog File", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }

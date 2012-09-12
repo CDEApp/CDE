@@ -184,8 +184,9 @@ namespace cdeWin
             vals[7] = rootEntry.AvailSpace.ToHRString();
             vals[8] = rootEntry.TotalSpace.ToHRString();
             vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[10] = rootEntry.ActualFileName;
-            vals[11] = rootEntry.Description;
+            vals[10] = string.Format("{0:0.} msec", rootEntry.ScanDurationMilliseconds);
+            vals[11] = rootEntry.ActualFileName;
+            vals[12] = rootEntry.Description;
 
             return listViewForeColor;
         }
@@ -941,22 +942,30 @@ namespace cdeWin
                     break;
 
                 case 6:
-                    compareResult = re1.AvailSpace.CompareTo(re2.AvailSpace);
+                    compareResult = re1.Size.CompareTo(re2.Size);
                     break;
 
                 case 7:
-                    compareResult = re1.TotalSpace.CompareTo(re2.TotalSpace);
+                    compareResult = re1.AvailSpace.CompareTo(re2.AvailSpace);
                     break;
 
                 case 8:
-                    compareResult = re1.ScanStartUTC.CompareTo(re2.ScanStartUTC);
+                    compareResult = re1.TotalSpace.CompareTo(re2.TotalSpace);
                     break;
 
                 case 9:
-                    compareResult = re1.DefaultFileName.CompareTo(re2.DefaultFileName);
+                    compareResult = re1.ScanStartUTC.CompareTo(re2.ScanStartUTC);
                     break;
 
                 case 10:
+                    compareResult = re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds);
+                    break;
+
+                case 11:
+                    compareResult = re1.ActualFileName.CompareTo(re2.ActualFileName);
+                    break;
+
+                case 12:
                     compareResult = re1.DescriptionCompareTo(re2, _config);
                     break;
 

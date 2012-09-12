@@ -66,6 +66,11 @@ namespace cdeLib
 
         public string ActualFileName { get; set; }
 
+        public double ScanDurationMilliseconds
+        {
+            get { return (ScanEndUTC - ScanStartUTC).TotalMilliseconds; }
+        }
+
         public RootEntry ()
         {
             Children = new List<DirEntry>();
