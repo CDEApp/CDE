@@ -2,6 +2,7 @@
 Fixing sorty by column For columns > 6 in Catalog tab.
 Added new column to Catalog tab for Scan Duration.
 Fixed a thrown exception in contact author in about box if mailto: was setup.
+Added a Reload catalogs button to the Catalog tab. It will use more ram using it.
 
 2012/07/16 20:35 v1.2.3.0
 Renamed the Space and Used columns in catalog list view to "Available" "Size".

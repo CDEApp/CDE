@@ -37,6 +37,7 @@
             this.mainTabControl = new System.Windows.Forms.TabControl();
             this.searchTab = new System.Windows.Forms.TabPage();
             this.searchResultPanel = new System.Windows.Forms.Panel();
+            this.searchResultListView = new cdeWin.DoubleBufferListView();
             this.searchControlPanel = new System.Windows.Forms.TableLayoutPanel();
             this.searchControlUpperPanel = new System.Windows.Forms.Panel();
             this.advancedSearchCheckBox = new System.Windows.Forms.CheckBox();
@@ -68,10 +69,13 @@
             this.notOlderThanDropDown = new System.Windows.Forms.ComboBox();
             this.catalogTab = new System.Windows.Forms.TabPage();
             this.catalogResultPanel = new System.Windows.Forms.Panel();
+            this.catalogResultListView = new cdeWin.DoubleBufferListView();
             this.catalogControlPanel = new System.Windows.Forms.Panel();
+            this.reloadCatalogsButton = new System.Windows.Forms.Button();
             this.labelCatalogPlaceholder = new System.Windows.Forms.Label();
             this.directoryTab = new System.Windows.Forms.TabPage();
             this.directorySplitContainer = new System.Windows.Forms.SplitContainer();
+            this.directoryListView = new cdeWin.DoubleBufferListView();
             this.directoryBottomPanel = new System.Windows.Forms.Panel();
             this.copyPathButton = new System.Windows.Forms.Button();
             this.directoryPathTextBox = new System.Windows.Forms.TextBox();
@@ -85,10 +89,6 @@
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
-            this.searchResultListView = new cdeWin.DoubleBufferListView();
-            this.catalogResultListView = new cdeWin.DoubleBufferListView();
-            this.directoryListView = new cdeWin.DoubleBufferListView();
-            this.reloadCatalogsButton = new System.Windows.Forms.Button();
             this.menuStrip1.SuspendLayout();
             this.mainTabControl.SuspendLayout();
             this.searchTab.SuspendLayout();
@@ -186,6 +186,15 @@
             this.searchResultPanel.Name = "searchResultPanel";
             this.searchResultPanel.Size = new System.Drawing.Size(670, 276);
             this.searchResultPanel.TabIndex = 1;
+            // 
+            // searchResultListView
+            // 
+            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
+            this.searchResultListView.Name = "searchResultListView";
+            this.searchResultListView.Size = new System.Drawing.Size(670, 276);
+            this.searchResultListView.TabIndex = 0;
+            this.searchResultListView.UseCompatibleStateImageBehavior = false;
             // 
             // searchControlPanel
             // 
@@ -508,6 +517,15 @@
             this.catalogResultPanel.Size = new System.Drawing.Size(670, 339);
             this.catalogResultPanel.TabIndex = 1;
             // 
+            // catalogResultListView
+            // 
+            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
+            this.catalogResultListView.Name = "catalogResultListView";
+            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
+            this.catalogResultListView.TabIndex = 0;
+            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
+            // 
             // catalogControlPanel
             // 
             this.catalogControlPanel.Controls.Add(this.reloadCatalogsButton);
@@ -517,6 +535,15 @@
             this.catalogControlPanel.Name = "catalogControlPanel";
             this.catalogControlPanel.Size = new System.Drawing.Size(670, 81);
             this.catalogControlPanel.TabIndex = 0;
+            // 
+            // reloadCatalogsButton
+            // 
+            this.reloadCatalogsButton.Location = new System.Drawing.Point(4, 4);
+            this.reloadCatalogsButton.Name = "reloadCatalogsButton";
+            this.reloadCatalogsButton.Size = new System.Drawing.Size(133, 23);
+            this.reloadCatalogsButton.TabIndex = 1;
+            this.reloadCatalogsButton.Text = "Reload Catalogs";
+            this.reloadCatalogsButton.UseVisualStyleBackColor = true;
             // 
             // labelCatalogPlaceholder
             // 
@@ -555,6 +582,15 @@
             this.directorySplitContainer.Size = new System.Drawing.Size(670, 393);
             this.directorySplitContainer.SplitterDistance = 222;
             this.directorySplitContainer.TabIndex = 0;
+            // 
+            // directoryListView
+            // 
+            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.directoryListView.Location = new System.Drawing.Point(0, 0);
+            this.directoryListView.Name = "directoryListView";
+            this.directoryListView.Size = new System.Drawing.Size(444, 393);
+            this.directoryListView.TabIndex = 2;
+            this.directoryListView.UseCompatibleStateImageBehavior = false;
             // 
             // directoryBottomPanel
             // 
@@ -603,6 +639,7 @@
             this.tbLog.Location = new System.Drawing.Point(0, 0);
             this.tbLog.Multiline = true;
             this.tbLog.Name = "tbLog";
+            this.tbLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
             this.tbLog.Size = new System.Drawing.Size(676, 397);
             this.tbLog.TabIndex = 0;
             // 
@@ -687,42 +724,6 @@
             this.toolStripStatusLabelRightAlign.Name = "toolStripStatusLabelRightAlign";
             this.toolStripStatusLabelRightAlign.Size = new System.Drawing.Size(441, 19);
             this.toolStripStatusLabelRightAlign.Spring = true;
-            // 
-            // searchResultListView
-            // 
-            this.searchResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.searchResultListView.Location = new System.Drawing.Point(0, 0);
-            this.searchResultListView.Name = "searchResultListView";
-            this.searchResultListView.Size = new System.Drawing.Size(670, 276);
-            this.searchResultListView.TabIndex = 0;
-            this.searchResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // catalogResultListView
-            // 
-            this.catalogResultListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.catalogResultListView.Location = new System.Drawing.Point(0, 0);
-            this.catalogResultListView.Name = "catalogResultListView";
-            this.catalogResultListView.Size = new System.Drawing.Size(670, 339);
-            this.catalogResultListView.TabIndex = 0;
-            this.catalogResultListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // directoryListView
-            // 
-            this.directoryListView.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.directoryListView.Location = new System.Drawing.Point(0, 0);
-            this.directoryListView.Name = "directoryListView";
-            this.directoryListView.Size = new System.Drawing.Size(444, 393);
-            this.directoryListView.TabIndex = 2;
-            this.directoryListView.UseCompatibleStateImageBehavior = false;
-            // 
-            // reloadCatalogsButton
-            // 
-            this.reloadCatalogsButton.Location = new System.Drawing.Point(4, 4);
-            this.reloadCatalogsButton.Name = "reloadCatalogsButton";
-            this.reloadCatalogsButton.Size = new System.Drawing.Size(133, 23);
-            this.reloadCatalogsButton.TabIndex = 1;
-            this.reloadCatalogsButton.Text = "Reload Catalogs";
-            this.reloadCatalogsButton.UseVisualStyleBackColor = true;
             // 
             // CDEWinForm
             // 
