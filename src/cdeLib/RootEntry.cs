@@ -397,6 +397,22 @@ namespace cdeLib
                 });
         }
 
+        /// <summary>
+        /// Testing to see if this helps gc reuse mem on reload.
+        /// </summary>
+        public void ClearCommonEntryFields()
+        {
+            TraverseTreePair((p, d) =>
+            {
+                if (d.IsDirectory)
+                {
+                    d.FullPath = null;
+                }
+                d.ParentCommonEntry = null;
+                return true;
+            });
+        }
+
         public void SortAllChildrenByPath()
         {
             TraverseTreePair((p, d) =>

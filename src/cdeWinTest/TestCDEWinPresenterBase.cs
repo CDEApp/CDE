@@ -46,6 +46,7 @@ namespace cdeWinTest
 
         protected void InitRootWithFile()
         {
+            var nowUtc = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc);
             _rootEntry = new RootEntry {
                 Path = @"T:\",
                 VolumeName = "TestVolume",
@@ -54,8 +55,10 @@ namespace cdeWinTest
                 DriveLetterHint = @"Z",
                 AvailSpace = 754321,
                 TotalSpace = 654321,
-                ScanStartUTC = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc),
+                ScanStartUTC = nowUtc,
+                ScanEndUTC = nowUtc.AddMilliseconds(34),
                 DefaultFileName = "TestRootEntry.cde",
+                ActualFileName = @".\TestRootEntry.cde",
                 Description = "Test Root Entry Description",
             };
 

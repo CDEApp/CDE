@@ -21,7 +21,7 @@ namespace cdeWin
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         private readonly ICDEWinForm _clientForm;
-        private readonly List<RootEntry> _rootEntries;
+        protected List<RootEntry> _rootEntries;
         private readonly IConfig _config;
 
         private readonly string[] _directoryVals;
@@ -37,12 +37,15 @@ namespace cdeWin
 
         private BackgroundWorker _bgWorker;
         private bool _isSearchButton;
+        private readonly ILoadCatalogService _loadCatalogService;
 
-        public CDEWinFormPresenter(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config, TimeIt timeIt) : base(form)
+        public CDEWinFormPresenter(ICDEWinForm form, IConfig config, ILoadCatalogService loadCatalogService = null) : base(form)
         {
+            var timeIt = new TimeIt();
             _clientForm = form;
-            _rootEntries = rootEntries;
             _config = config;
+            _loadCatalogService = loadCatalogService;
+            _rootEntries = LoadRootEntries(config, timeIt);
 
             _searchVals = new string[_config.DefaultSearchResultColumnCount];
             _directoryVals = new string[_config.DefaultDirectoryColumnCount];
@@ -52,15 +55,35 @@ namespace cdeWin
             RegisterListViewSorters();
             SetCatalogListView();
 
-			_clientForm.Addline("{0} v{1}", _config.ProductName, _config.Version);
-	        if (timeIt != null) {
-				foreach (var labelElapsed in timeIt.ElapsedList)
-				{
-					_clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
-				}
-				_clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(), timeIt.TotalMsec);
-	        }
-		}
+			InitialiseLog(timeIt);
+        }
+
+        virtual protected List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        {
+            if (_loadCatalogService != null)
+            {
+                return _loadCatalogService.LoadRootEntries(config, timeIt);
+            }
+            return null;
+        }
+
+        private void InitialiseLog(TimeIt timeIt)
+        {
+            _clientForm.Addline("{0} v{1}", _config.ProductName, _config.Version);
+            LogTimeIt(timeIt);
+        }
+
+        private void LogTimeIt(TimeIt timeIt)
+        {
+            if (timeIt != null)
+            {
+                foreach (var labelElapsed in timeIt.ElapsedList)
+                {
+                    _clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+                }
+                _clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(), timeIt.TotalMsec);
+            }
+        }
 
         private void RegisterListViewSorters()
         {
@@ -988,6 +1011,38 @@ namespace cdeWin
         private void SetAdvancedSearch(bool value)
         {
             _clientForm.IsAdvancedSearchMode = value;
+        }
+
+        public void ReloadCatalogs()
+        {
+            // clear all current list views and tree views.
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            _clientForm.SetList(catalogHelper, null);
+            var searchResultHelper = _clientForm.SearchResultListViewHelper;
+            _clientForm.SetList(searchResultHelper, null);
+            var directoryListHelper = _clientForm.DirectoryListViewHelper;
+            _clientForm.SetList(directoryListHelper, null);
+
+            var previousRootEntries = _rootEntries;
+            foreach (var rootEntry in previousRootEntries)
+            {
+                rootEntry.ClearCommonEntryFields();
+            }
+
+            var timeIt = new TimeIt();
+            var newRootEntries = LoadRootEntries(_config, timeIt);
+            _rootEntries = newRootEntries;
+            if (_rootEntries.Count > 1)
+            {   // this resets the tree view and directory list view
+                SetNewDirectoryRoot(_rootEntries.First());
+            }
+
+            // set root entries.
+            SetCatalogListView();
+
+            _clientForm.Addline(string.Empty);
+            _clientForm.Addline("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
+            LogTimeIt(timeIt);
         }
     }
 }

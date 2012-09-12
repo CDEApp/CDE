@@ -18,7 +18,7 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _mockForm.Stub(x => x.RegexMode).Return(false);
-            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig, null);
+            _presenter = new TestOptimise(_mockForm, _stubConfig);
         }
 
         [Test]
@@ -66,7 +66,7 @@ namespace cdeWinTest
         {
             base.RunBeforeEveryTest();
             _mockForm.Stub(x => x.RegexMode).Return(true);
-            _presenter = new TestOptimise(_mockForm, new List<RootEntry>(), _stubConfig, null);
+            _presenter = new TestOptimise(_mockForm, _stubConfig);
         }
         
         [Test]
@@ -113,7 +113,7 @@ namespace cdeWinTest
 
     public class TestOptimise : CDEWinFormPresenter
     {
-        public TestOptimise(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config, TimeIt timeIt) : base(form, rootEntries, config, timeIt)
+        public TestOptimise(ICDEWinForm form, IConfig config) : base(form, config, null)
         {
         }
 

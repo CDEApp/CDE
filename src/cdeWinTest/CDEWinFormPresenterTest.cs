@@ -29,7 +29,7 @@ namespace cdeWinTest
             [Test]
             public void Always_Set_Search_Button()
             {
-                new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SearchButtonText = Arg<string>.Is.Anything);
                 var comparisonParam = args.Count > 0 ? (string)(args[0][0]) : "ValueWasNotSetItAppears";
@@ -39,7 +39,7 @@ namespace cdeWinTest
             [Test]
             public void Always_Catalog_SortList()
             {
-				new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SortList(Arg<IListViewHelper<RootEntry>>.Is.Anything));
                 var comparisonParam = args.Count > 0 ? (IListViewHelper<RootEntry>)(args[0][0]) : null;
@@ -49,7 +49,7 @@ namespace cdeWinTest
             [Test]
             public void Always_Register_SearchResult_Sorter()
             {
-				new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
                     Arg<ListViewHelper<PairDirEntry>>.Is.Anything, Arg<Comparison<PairDirEntry>>.Is.Anything));
@@ -60,7 +60,7 @@ namespace cdeWinTest
             [Test]
             public void Always_Register_Catalog_Sorter()
             {
-				new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
                     Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<Comparison<RootEntry>>.Is.Anything));
@@ -71,7 +71,7 @@ namespace cdeWinTest
             [Test]
             public void Always_Register_Directory_Sorter()
             {
-				new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetColumnSortCompare(
                     Arg<ListViewHelper<DirEntry>>.Is.Anything, Arg<Comparison<DirEntry>>.Is.Anything));
@@ -86,7 +86,7 @@ namespace cdeWinTest
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(null)))
                     .Return(3);
 
-				new CDEWinFormPresenter(_mockForm, null, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
                 var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
@@ -99,7 +99,7 @@ namespace cdeWinTest
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(_emptyRootList)))
                     .Return(0);
 
-				new CDEWinFormPresenter(_mockForm, _emptyRootList, _stubConfig, null);
+                new CDEWinFormPresenter(_mockForm, _stubConfig);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
                 var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
@@ -113,7 +113,11 @@ namespace cdeWinTest
                 _mockForm.Stub(x => x.SetList(Arg<ListViewHelper<RootEntry>>.Is.Anything, Arg<List<RootEntry>>.Is.Same(_rootList)))
                     .Return(1);
 
-				new CDEWinFormPresenter(_mockForm, _rootList, _stubConfig, null);
+                var _loadCatalogsService = MockRepository.GenerateStub<ILoadCatalogService>();
+                _loadCatalogsService.Stub(x => x.LoadRootEntries(Arg<IConfig>.Is.Anything, Arg<TimeIt>.Is.Anything))
+                    .Return(_rootList);
+
+                new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
 
                 var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
                 var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
@@ -132,7 +136,7 @@ namespace cdeWinTest
             {
                 base.RunBeforeEveryTest();
                 InitRootWithDir();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, _rootList, _stubConfig, null);
+				_sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
             }
 
             [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
@@ -213,7 +217,7 @@ namespace cdeWinTest
             {
                 base.RunBeforeEveryTest();
                 InitRootWithDir();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, _rootList, _stubConfig, null);
+				_sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
             }
 
             [Test]
@@ -318,7 +322,7 @@ namespace cdeWinTest
             {
                 base.RunBeforeEveryTest();
                 InitRootWithDir();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, _rootList, _stubConfig, null);
+                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
                 InitRootWithFile();
             }
 
@@ -426,9 +430,17 @@ namespace cdeWinTest
                 base.RunBeforeEveryTest();
 
                 _stubConfig.Stub(x => x.DefaultCatalogColumnCount)
-                    .Return(12); // enough spaces for catalog list view items.
+                    .Return(13); // enough spaces for catalog list view items.
+                _stubConfig.Stub(x => x.DateFormatYMDHMS)
+                    .Return("{0:yyyy/MM/dd HH:mm:ss}");
+
                 InitRootWithFile();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig, null);
+
+                var _loadCatalogsService = MockRepository.GenerateStub<ILoadCatalogService>();
+                _loadCatalogsService.Stub(x => x.LoadRootEntries(Arg<IConfig>.Is.Anything, Arg<TimeIt>.Is.Anything))
+                    .Return(_rootList);
+
+                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
             }
 
             /// <summary>
@@ -460,10 +472,10 @@ namespace cdeWinTest
                 var expectedValues = new[]
                 {   
                     @"T:\","TestVolume","0","1","1",
-                    "Z","736.6 KB","639 KB",
+                    "Z","531 B","736.6 KB","639 KB",
                     "2011/12/02 03:15:13",  // Fragile, this depends on time zone of test machine at moment.
-                    "TestRootEntry.cde",
-                    @"C:\Users\testuser\AppData\Local\cde",
+                    "34 msec",
+                    @".\TestRootEntry.cde",
                     "Test Root Entry Description"
                 };
                 listViewItem.AssertListViewSubItemEqualValues(expectedValues);
@@ -482,8 +494,11 @@ namespace cdeWinTest
 
                 _stubConfig.Stub(x => x.DefaultSearchResultColumnCount)
                     .Return(4); // enough spaces for search result list view items.
+                _stubConfig.Stub(x => x.DateFormatYMDHMS)
+                    .Return("{0:yyyy/MM/dd HH:mm:ss}");
+
                 InitRootWithFile();
-                _sutPresenter = new TestPresenterSetSearch(_mockForm, new List<RootEntry> { _rootEntry }, _stubConfig, null);
+                _sutPresenter = new TestPresenterSetSearch(_mockForm, _stubConfig);
             }
 
             [Test]
@@ -542,7 +557,7 @@ namespace cdeWinTest
 
             public class TestPresenterSetSearch : CDEWinFormPresenter
             {
-                public TestPresenterSetSearch(ICDEWinForm form, List<RootEntry> rootEntries, IConfig config, TimeIt timeIt): base(form, rootEntries, config, timeIt)
+                public TestPresenterSetSearch(ICDEWinForm form, IConfig config): base(form, config, null)
                 {
                 }
 
@@ -563,7 +578,7 @@ namespace cdeWinTest
             {
                 base.RunBeforeEveryTest();
                 InitRootWithFile();
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> {_rootEntry}, _stubConfig, null);
+                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
             }
 
             [Test]
@@ -606,7 +621,7 @@ namespace cdeWinTest
                 _stubConfig.Stub(x => x.DefaultDirectoryColumnCount)
                     .Return(3); // enough spaces for directory list view items.
                 InitRootWithFile();
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, new List<RootEntry> {_rootEntry}, _stubConfig, null);
+                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
             }
 
             [Test]
@@ -642,6 +657,10 @@ namespace cdeWinTest
                 if (expect != got)
                 {
                     Assert.Fail("At index {0} expected item \"{1}\" did not match \"{2}\"", i, expect, got);
+                }
+                else
+                {
+                    Console.WriteLine("{0} {1}", i, expect);
                 }
             }
         }

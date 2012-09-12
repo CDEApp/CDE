@@ -101,6 +101,7 @@
     <Compile Include="IPresenter.cs" />
     <Compile Include="ListViewExtensions.cs" />
     <Compile Include="ListViewHelper.cs" />
+    <Compile Include="LoadCatalogService.cs" />
     <Compile Include="LoaderForm.cs">
       <SubType>Form</SubType>
     </Compile>

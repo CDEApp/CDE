@@ -93,6 +93,8 @@ namespace cdeWin
         public UpDownHelper ToSizeValue { get; set; }
         public UpDownHelper NotOlderThanValue { get; set; }
 
+        public event EventAction OnReloadCatalogs;
+
         private readonly ComboBoxItem<int>[] _byteSizeUnits = new[]
                 {
                     new ComboBoxItem<int>("byte(s)", 1),
@@ -155,6 +157,9 @@ namespace cdeWin
             FormClosing += MyFormClosing;
             Activated += MyFormActivated;
 
+            SetToolTip(reloadCatalogsButton, "Using reload catalogs will use more memory than quitting and starting again.");
+
+            
             SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
             whatToSearchComboBox.Items.AddRange(new object[] { "Include Path in Search", "Exclude Path from Search" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
@@ -205,6 +210,8 @@ namespace cdeWin
 
             searchButton.Click += (s, e) => OnSearch();
             SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
+
+            reloadCatalogsButton.Click += (s, e) => OnReloadCatalogs();
 
             RegisterAdvancedSearchControls();
         }

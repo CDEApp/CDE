@@ -22,7 +22,6 @@ namespace cdeWin
         [STAThread]
         static void Main()
         {
-	        var timeIt = new TimeIt();
             Application.ThreadException += UIThreadException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
@@ -32,23 +31,9 @@ namespace cdeWin
 
 			// TODO consider using (var config = new Config()) { } - with Save built in.
 			var config = new Config("cdeWinView.cfg", ProductName, Version);
-	        var cachePathList = new[] {".", config.ConfigPath};
-			var loaderForm = new LoaderForm(config, cachePathList, timeIt);
 
-	        List<RootEntry> rootEntries = null;
-			try
-			{
-				loaderForm.ShowDialog();
-			}
-			finally
-			{
-				rootEntries = loaderForm.RootEntries;
-				loaderForm.Dispose();
-			}
-
-			//var ArootEntries = RootEntry.LoadMultiDirCacheWithChildren(cachePathList);
             var mainForm = new CDEWinForm(config);
-            var mainPresenter = new CDEWinFormPresenter(mainForm, rootEntries, config, timeIt);
+            var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService());
 			config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();

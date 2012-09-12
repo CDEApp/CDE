@@ -108,6 +108,8 @@ namespace cdeWin
         UpDownHelper ToSizeValue { get; set; }
         UpDownHelper NotOlderThanValue { get; set; }
 
+        event EventAction OnReloadCatalogs;
+
         void CleanUp();
 
         // improve test easy on CDEWinFormPresenter.

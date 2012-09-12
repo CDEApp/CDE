@@ -194,6 +194,8 @@ namespace cdeWin
 		void RestoreConfigFormTopLeft(Form form);
 		void RestoreConfigFormBase(Form form);
 		void RestoreConfig(ICDEWinForm form);
+
+	    string ConfigPath { get; }
     }
 
     public class Config : IConfig
