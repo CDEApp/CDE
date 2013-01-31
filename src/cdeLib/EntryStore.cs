@@ -334,7 +334,7 @@ namespace cdeLib
         public void SetSummaryFields()
         {
             //var dirStats = new CommonEntry.DirStats();
-            SetSummaryFieldsXX(dirStats);
+            //SetSummaryFieldsXX(dirStats);
             //Root.DirCount = dirStats.DirCount;
             //Root.FileCount = dirStats.FileCount;
         }
