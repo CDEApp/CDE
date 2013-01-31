@@ -356,9 +356,8 @@ namespace cdeLib
             }
         }
 
-        // set DirCount FileCount DirSize
         // can this be done with TraverseTree ?
-        public void SetSummaryFields(/*DirStats dirStats*/)
+        public void SetSummaryFields()
         {
             var size = 0L;
             var dirEntryCount = 0L;
@@ -371,14 +370,9 @@ namespace cdeLib
                 {
                     if (dirEntry.IsDirectory)
                     {
-                        dirEntry.SetSummaryFields(/*dirStats*/);
-                        //dirStats.DirCount += 1;
+                        dirEntry.SetSummaryFields();
                         ++dirEntryCount;
                     }
-                    //else
-                    //{
-                    //    dirStats.FileCount += 1;
-                    //}
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
                     childrenDirEntryCount += dirEntry.DirEntryCount;

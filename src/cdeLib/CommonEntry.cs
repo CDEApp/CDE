@@ -67,13 +67,6 @@ namespace cdeLib
         //    return this;
         //}
 
-        [DebuggerDisplay("FileCount = {FileCount}, DirCount = {DirCount}")]
-        public class DirStats
-        {
-            public uint DirCount;
-            public uint FileCount;
-        }
-
         public void TraverseTreePair(TraverseFunc func)
         {
             TraverseTreePair(new List<CommonEntry> { this }, func);

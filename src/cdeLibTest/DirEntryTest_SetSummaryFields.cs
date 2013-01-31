@@ -7,14 +7,12 @@ namespace cdeLibTest
     // ReSharper disable InconsistentNaming
     class DirEntryTest_SetSummaryFields //: RootEntryTestBase
     {
-        private CommonEntry.DirStats dirStats;
         private DirEntry emptyDirEntry;
 
         [SetUp]
         public void BeforeEveryTest()
         {
             emptyDirEntry = new DirEntry(true);
-            dirStats = new CommonEntry.DirStats();
         }
 
         [Test]
@@ -69,7 +67,6 @@ namespace cdeLibTest
         DirEntry de3a;
         DirEntry de4a;
         private RootEntry re;
-        CommonEntry.DirStats dirStats;
 
         [SetUp]
         public void BeforeEveryTest()

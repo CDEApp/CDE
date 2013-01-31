@@ -339,7 +339,7 @@ namespace cdeLib
             //Root.FileCount = dirStats.FileCount;
         }
 
-        public void SetSummaryFieldsXX(CommonEntry.DirStats dirStats)
+        public void SetSummaryFieldsXX()
         {
             // do i need a recursive version here can i use iterator ?
             // if i check path changes iterator might work ? 
