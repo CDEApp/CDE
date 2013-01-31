@@ -35,6 +35,7 @@ namespace cdeLib
         /// </summary>
         public string FullPath { get; set; }
 
+
         //public CommonEntry FindClosestParentDir(string relativePath)
         //{
         //    if (string.IsNullOrWhiteSpace(relativePath))
@@ -71,30 +72,6 @@ namespace cdeLib
         {
             public uint DirCount;
             public uint FileCount;
-        }
-
-        // set DirCount FileCount DirSize
-        // can this be done with TraverseTree ?
-        public void SetSummaryFields(DirStats dirStats)
-        {
-            var size = 0L;
-            if (Children != null)   // now that empty directories may not have Children initialized.
-            {
-                foreach (var dirEntry in Children)
-                {
-                    if (dirEntry.IsDirectory)
-                    {
-                        dirEntry.SetSummaryFields(dirStats);
-                        dirStats.DirCount += 1;
-                    }
-                    else
-                    {
-                        dirStats.FileCount += 1;
-                    }
-                    size += dirEntry.Size;
-                }
-            }
-            Size = size;
         }
 
         public void TraverseTreePair(TraverseFunc func)

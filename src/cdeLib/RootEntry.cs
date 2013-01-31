@@ -22,14 +22,10 @@ namespace cdeLib
 
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
-    public class RootEntry : CommonEntry
+    public class RootEntry : DirEntry//CommonEntry
     {
         private readonly IConfiguration _configuration;
         const string MatchAll = "*";
-
-        public uint DirCount { get; set; }
-
-        public uint FileCount { get; set; }
 
         [ProtoMember(1, IsRequired = true)]
         public string VolumeName { get; set; }
@@ -64,6 +60,9 @@ namespace cdeLib
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         public int RootIndex;  // hackery with Entry and EntryStore
 
+        [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
+        public int Version= 2;
+
         public string ActualFileName { get; set; }
 
         public double ScanDurationMilliseconds
@@ -71,7 +70,7 @@ namespace cdeLib
             get { return (ScanEndUTC - ScanStartUTC).TotalMilliseconds; }
         }
 
-        public RootEntry ()
+        public RootEntry () : base(true)
         {
             Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
@@ -121,14 +120,6 @@ namespace cdeLib
             FullPath = Path;
             SetCommonEntryFields();
             SetSummaryFields();
-        }
-
-        public void SetSummaryFields()
-        {
-            var dirStats = new DirStats();
-            SetSummaryFields(dirStats);
-            DirCount = dirStats.DirCount;
-            FileCount = dirStats.FileCount;
         }
 
         public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot, out string volumeName)

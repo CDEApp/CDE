@@ -170,6 +170,17 @@ namespace cdeLib
         }
         #endregion
 
+
+        /// <summary>
+        /// if this is a directory number of files contained in its heirarchy
+        /// </summary>
+        public long FileEntryCount;
+
+        /// <summary>
+        /// if this is a directory number of dirs contained in its heirarchy
+        /// </summary>
+        public long DirEntryCount;
+
         public void SetHash(byte[] hash)
         {
             Hash.SetHash(hash);
@@ -343,6 +354,41 @@ namespace cdeLib
                 return (int)(obj.Size >> 32) * 31 +
                        (int)(obj.Size & 0xFFFFFFFF);
             }
+        }
+
+        // set DirCount FileCount DirSize
+        // can this be done with TraverseTree ?
+        public void SetSummaryFields(/*DirStats dirStats*/)
+        {
+            var size = 0L;
+            var dirEntryCount = 0L;
+            var fileEntryCount = 0L;
+
+            if (IsDirectory && Children != null)
+            {
+                var childrenDirEntryCount = 0L;
+                foreach (var dirEntry in Children)
+                {
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirEntry.SetSummaryFields(/*dirStats*/);
+                        //dirStats.DirCount += 1;
+                        ++dirEntryCount;
+                    }
+                    //else
+                    //{
+                    //    dirStats.FileCount += 1;
+                    //}
+                    size += dirEntry.Size;
+                    fileEntryCount += dirEntry.FileEntryCount;
+                    childrenDirEntryCount += dirEntry.DirEntryCount;
+                }
+                fileEntryCount += Children.Count - dirEntryCount;
+                dirEntryCount += childrenDirEntryCount;
+            }
+            FileEntryCount = fileEntryCount;
+            DirEntryCount = dirEntryCount;
+            Size = size;
         }
 
     }

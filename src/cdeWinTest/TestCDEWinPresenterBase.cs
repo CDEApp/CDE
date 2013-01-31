@@ -50,8 +50,8 @@ namespace cdeWinTest
             _rootEntry = new RootEntry {
                 Path = @"T:\",
                 VolumeName = "TestVolume",
-                DirCount = 1,
-                FileCount = 0,
+                DirEntryCount = 1,
+                FileEntryCount = 0,
                 DriveLetterHint = @"Z",
                 AvailSpace = 754321,
                 TotalSpace = 654321,

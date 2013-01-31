@@ -143,7 +143,7 @@ namespace cdeLib
         public static int TotalFileEntries(this IEnumerable<RootEntry> rootEntries)
         {
             return rootEntries != null
-                       ? rootEntries.Sum(rootEntry => (int) rootEntry.DirCount + (int) rootEntry.FileCount)
+                       ? rootEntries.Sum(rootEntry => (int) rootEntry.DirEntryCount + (int) rootEntry.FileEntryCount)
                        : 0;
         }
     }

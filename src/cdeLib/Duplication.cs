@@ -48,7 +48,7 @@ namespace cdeLib
             var newMatches = GetSizePairs(rootEntries);
             _logger.LogDebug(String.Format("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
-            var totalFilesInRootEntries = rootEntries.Sum(x => x.FileCount);
+            var totalFilesInRootEntries = rootEntries.Sum(x => x.FileEntryCount);
             var totalEntriesInSizeDupes = newMatches.Sum(x => x.Value.Count);
             var longestListLength = newMatches.Count > 0 ? newMatches.Max(x => x.Value.Count) : -1;
             var longestListSize = newMatches.Count > 0

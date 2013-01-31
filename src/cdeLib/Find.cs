@@ -63,7 +63,7 @@ namespace cdeLib
                 Console.WriteLine("Loaded {0} file(s) in {1:0.00} msecs", _rootEntries.Count, loadTimeSpan.TotalMilliseconds);
                 foreach (var rootEntry in _rootEntries)
                 {
-                    Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirCount + rootEntry.FileCount);
+                    Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirEntryCount + rootEntry.FileEntryCount);
                 }
             }
         }

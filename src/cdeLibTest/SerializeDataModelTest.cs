@@ -35,7 +35,7 @@ namespace cdeLibTest
 
             Console.WriteLine("b.Length {0}", b.Length);
             Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
-            Assert.That(b.Length, Is.EqualTo(116));
+            Assert.That(b.Length, Is.EqualTo(118));
         }
 
         // just a sanity check - shouldnt ever fail and only checking rootpath and name field.

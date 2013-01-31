@@ -333,13 +333,13 @@ namespace cdeLib
 
         public void SetSummaryFields()
         {
-            var dirStats = new CommonEntry.DirStats();
-            SetSummaryFields(dirStats);
-            Root.DirCount = dirStats.DirCount;
-            Root.FileCount = dirStats.FileCount;
+            //var dirStats = new CommonEntry.DirStats();
+            SetSummaryFieldsXX(dirStats);
+            //Root.DirCount = dirStats.DirCount;
+            //Root.FileCount = dirStats.FileCount;
         }
 
-        public void SetSummaryFields(CommonEntry.DirStats dirStats)
+        public void SetSummaryFieldsXX(CommonEntry.DirStats dirStats)
         {
             // do i need a recursive version here can i use iterator ?
             // if i check path changes iterator might work ? 

@@ -199,9 +199,9 @@ namespace cdeWin
         {
             vals[0] = rootEntry.Path;
             vals[1] = rootEntry.VolumeName;
-            vals[2] = rootEntry.DirCount.ToString();
-            vals[3] = rootEntry.FileCount.ToString();
-            vals[4] = (rootEntry.DirCount + rootEntry.FileCount).ToString();
+            vals[2] = rootEntry.DirEntryCount.ToString();
+            vals[3] = rootEntry.FileEntryCount.ToString();
+            vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();
             vals[5] = rootEntry.DriveLetterHint;
             vals[6] = rootEntry.Size.ToHRString();
             vals[7] = rootEntry.AvailSpace.ToHRString();
@@ -949,15 +949,15 @@ namespace cdeWin
                     break;
 
                 case 2:
-                    compareResult = re1.DirCount.CompareTo(re2.DirCount);
+                    compareResult = re1.DirEntryCount.CompareTo(re2.DirEntryCount);
                     break;
 
                 case 3:
-                    compareResult = re1.FileCount.CompareTo(re2.FileCount);
+                    compareResult = re1.FileEntryCount.CompareTo(re2.FileEntryCount);
                     break;
 
                 case 4:
-                    compareResult = (re1.DirCount+ re1.FileCount).CompareTo(re2.DirCount + re2.FileCount);
+                    compareResult = (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount);
                     break;
 
                 case 5:

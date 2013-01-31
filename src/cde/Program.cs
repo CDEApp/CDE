@@ -279,7 +279,7 @@ namespace cde
                 Console.WriteLine("Scanned Path {0}", re.Path);
                 Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
                 Console.WriteLine("Saved Scanned Path {0}", re.DefaultFileName);
-                Console.WriteLine("Files {0:0,0} Dirs {1:0,0} Total Size of Files {2:0,0}", re.FileCount, re.DirCount, re.Size);
+                Console.WriteLine("Files {0:0,0} Dirs {1:0,0} Total Size of Files {2:0,0}", re.FileEntryCount, re.DirEntryCount, re.Size);
             }
             catch (ArgumentException aex)
             {
