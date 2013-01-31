@@ -7,7 +7,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class CommonEntryTest_TraverseTree
+    class CommonEntryTest_TraverseTree : RootEntryTestBase
     {
         [Test]
         public void Constructor_Minimal_OK()
@@ -91,23 +91,6 @@ namespace cdeLibTest
             ((CommonEntry)re1).TraverseTreePair(mockAction);
 
             mockAction.VerifyAllExpectations();
-        }
-
-        public static RootEntry NewTestRootEntry(out DirEntry de2a, out DirEntry de2b, out DirEntry de2c, out DirEntry de3a, out DirEntry de4a)
-        {
-            var re1 = new RootEntry {Path = @"Z:\" };
-            de2a = new DirEntry {Path = "d2a" };
-            de2b = new DirEntry(true) {Path = "d2b" };
-            de2c = new DirEntry {Path = "d2c"};
-            re1.Children.Add(de2a);
-            re1.Children.Add(de2b);
-            re1.Children.Add(de2c);
-            de3a = new DirEntry(true) { Path = "d3a" };
-            de2b.Children.Add(de3a);
-            de4a = new DirEntry {Path = "d4a"};
-            de3a.Children.Add(de4a);
-            re1.SetInMemoryFields();
-            return re1;
         }
 
         [Test]

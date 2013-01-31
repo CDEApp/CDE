@@ -79,6 +79,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CommonEntryTest_GetListFromRoot.cs" />
+    <Compile Include="CommonEntryTest_SetSummaryFields.cs" />
     <Compile Include="EntryEnumeratorTest.cs" />
     <Compile Include="EntryStoreTest_IsValid.cs" />
     <Compile Include="EntryStoreTest.cs" />
@@ -99,6 +100,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootEntryTest.cs" />
     <Compile Include="CommonEntryTest_FindClosestParentDir.cs" />
+    <Compile Include="RootEntryTestBase.cs" />
     <Compile Include="SerializeDataModelTest.cs" />
     <Compile Include="StringExtensionTest.cs" />
   </ItemGroup>
