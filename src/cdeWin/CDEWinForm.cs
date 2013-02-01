@@ -33,6 +33,7 @@ namespace cdeWin
         public event EventAction OnSearchResultContextMenuExploreClick;
         public event EventAction OnSearchResultContextMenuPropertiesClick;
         public event EventAction OnSearchResultContextMenuSelectAllClick;
+        public event EventAction OnSearchResultContextMenuCopyFullPathClick;
 
         public event EventAction OnDirectoryContextMenuViewTreeClick;
         public event EventAction OnDirectoryContextMenuOpenClick;
@@ -355,7 +356,7 @@ namespace cdeWin
                 PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
                 SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
                 //CopyBaseNameHandler = (s, e) => (),
-                //CopyFullNameHandler = (s, e) => (),
+                CopyFullNameHandler = (s, e) => OnSearchResultContextMenuCopyFullPathClick(),
                 CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e),
             };
             return menuHelper.GetContextMenuStrip();

@@ -25,10 +25,10 @@ namespace cdeWin
         private readonly ToolStripMenuItem _viewTree = new ToolStripMenuItem("View Tree");
         private readonly ToolStripMenuItem _open = new ToolStripMenuItem("Open");
         private readonly ToolStripMenuItem _explore = new ToolStripMenuItem("Explore");
-        private readonly ToolStripMenuItem _properties = new ToolStripMenuItem("Properties"); // like explorer -- TODO in treeview to ?
+        private readonly ToolStripMenuItem _properties = new ToolStripMenuItem("Properties"); // like explorer
         private readonly ToolStripMenuItem _selectAll = new ToolStripMenuItem("Select All");
-        private readonly ToolStripMenuItem _copyBaseName = new ToolStripMenuItem("Copy Base Names");
-        private readonly ToolStripMenuItem _copyFullName = new ToolStripMenuItem("Copy Full Qualified Name");
+        //private readonly ToolStripMenuItem _copyBaseName = new ToolStripMenuItem("Copy Base Names");
+        private readonly ToolStripMenuItem _copyFullName = new ToolStripMenuItem("Copy Full Path to Clipboard");
         private readonly ToolStripMenuItem _parent = new ToolStripMenuItem("Parent"); // for Directory listview parent ? not useful SearchResult
 
         public EventHandler TreeViewHandler
@@ -91,17 +91,17 @@ namespace cdeWin
         }
         private EventHandler _selectAllHandler;
 
-        public EventHandler CopyBaseNameHandler
-        {
-            get { return _copyBaseNameHandler; }
-            set
-            {
-                _copyBaseNameHandler = value;
-                _copyBaseName.Click += _copyBaseNameHandler;
-                _menu.Items.Add(_copyBaseName);
-            }
-        }
-        private EventHandler _copyBaseNameHandler;
+        //public EventHandler CopyBaseNameHandler
+        //{
+        //    get { return _copyBaseNameHandler; }
+        //    set
+        //    {
+        //        _copyBaseNameHandler = value;
+        //        _copyBaseName.Click += _copyBaseNameHandler;
+        //        _menu.Items.Add(_copyBaseName);
+        //    }
+        //}
+        //private EventHandler _copyBaseNameHandler;
 
         public EventHandler CopyFullNameHandler
         {
@@ -149,7 +149,7 @@ namespace cdeWin
             _properties.ShortcutKeys = Keys.Alt | Keys.Enter;
             _selectAll.ShortcutKeys = Keys.Control | Keys.A;
             _parent.ShortcutKeys = Keys.Control | Keys.Back;
-            _copyBaseName.ShortcutKeys = Keys.Control | Keys.N;
+            //_copyBaseName.ShortcutKeys = Keys.Control | Keys.N;
             _copyFullName.ShortcutKeys = Keys.Control | Keys.C;
         }
 
@@ -185,10 +185,10 @@ namespace cdeWin
             {
                 _selectAll.Click -= _selectAllHandler;
             }
-            if (_copyBaseNameHandler != null)
-            {
-                _copyBaseName.Click -= _copyBaseNameHandler;
-            }
+            //if (_copyBaseNameHandler != null)
+            //{
+            //    _copyBaseName.Click -= _copyBaseNameHandler;
+            //}
             if (_copyFullNameHandler != null)
             {
                 _copyFullName.Click -= _copyFullNameHandler;

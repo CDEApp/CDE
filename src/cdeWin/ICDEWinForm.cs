@@ -19,6 +19,7 @@ namespace cdeWin
         event EventAction OnSearchResultContextMenuExploreClick;
         event EventAction OnSearchResultContextMenuPropertiesClick;
         event EventAction OnSearchResultContextMenuSelectAllClick;
+        event EventAction OnSearchResultContextMenuCopyFullPathClick;
 
         event EventAction OnDirectoryContextMenuViewTreeClick;
         event EventAction OnDirectoryContextMenuOpenClick;

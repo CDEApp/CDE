@@ -30,8 +30,6 @@ namespace cdeLibTest
             de2b.Children.Add(de3a);
 
             de4a = new DirEntry {Path = "d4a", Size = 17};
-            var de4b = new DirEntry { Path = "d4b", Size = 19 };
-            de3a.Children.Add(de4b);
             de3a.Children.Add(de4a);
 
             return re1;

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
+using System.Text;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
@@ -58,7 +59,7 @@ namespace cdeWin
 			InitialiseLog(timeIt);
         }
 
-        virtual protected List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        protected List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
             if (_loadCatalogService != null)
             {
@@ -888,6 +889,11 @@ namespace cdeWin
                 });
         }
 
+        private void SearchResultGetContextMenuPairDirEntrys(Action<IEnumerable<PairDirEntry>> gotContextAction)
+        {
+            _clientForm.SearchResultListViewHelper.ActionOnSelectedItems(gotContextAction);
+        }
+
         public void SearchResultContextMenuViewTreeClick()
         {
             SearchResultGetContextMenuPairDirEntryThatExists(ViewFileInDirectoryTab);
@@ -911,6 +917,19 @@ namespace cdeWin
         public void SearchResultContextMenuSelectAllClick()
         {
             _clientForm.SearchResultListViewHelper.SelectAllItems();
+        }
+
+        public void SearchResultContextMenuCopyFullPathClick()
+        {
+            SearchResultGetContextMenuPairDirEntrys(listPDE  =>
+                {
+                    var s = new StringBuilder();
+                    foreach (var pairDirEntry in listPDE)
+                    {
+                        s.Append(pairDirEntry.FullPath + Environment.NewLine);
+                    }
+                    Clipboard.SetText(s.ToString());
+                });
         }
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)

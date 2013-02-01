@@ -59,6 +59,7 @@ namespace cdeWin
         int SetList(List<T> list);
         void ListViewColumnClick();
         void SortList();
+        void ActionOnSelectedItems(Action<IEnumerable<T>> action);
         void ActionOnSelectedItem(Action<T> action);
         void ActionOnActivateItem(Action<T> action);
         void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e);
@@ -373,6 +374,21 @@ namespace cdeWin
                                       : SortOrder.Ascending); // column state is inverted some how ?
         }
 
+        public void ActionOnSelectedItems(Action<IEnumerable<T>> action)
+        {
+            var selectedItems = GetSelectedItems();
+            if (selectedItems != null)
+            {
+                action(selectedItems);
+            }
+        }
+
+        private IEnumerable<T> GetSelectedItems()
+        {
+            return (from int ind in _listView.SelectedIndices 
+                    select _list[ind]);
+        }
+
         public void ActionOnSelectedItem(Action<T> action)
         {
             var selectedItem = GetSelectedItem();
@@ -382,9 +398,6 @@ namespace cdeWin
             }
         }
 
-        /// <summary>
-        /// single item only for now.
-        /// </summary>
         private T GetSelectedItem()
         {
             if (_list == null

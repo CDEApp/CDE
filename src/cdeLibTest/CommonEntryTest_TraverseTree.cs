@@ -57,9 +57,9 @@ namespace cdeLibTest
             var mockAction = MockRepository.GenerateMock<TraverseFunc>();
             using (mockAction.GetMockRepository().Ordered())
             {
+                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1).Return(true);
-                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(de2b, de3a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(de3a, de4a)).Repeat.Times(1).Return(true);
             }
@@ -83,9 +83,9 @@ namespace cdeLibTest
             var mockAction = MockRepository.GenerateMock<TraverseFunc>();
             using (mockAction.GetMockRepository().Ordered())
             {
+                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1).Return(true);
-                mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1).Return(true);
-                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(false);
+                mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1).Return(false);
             }
 
             ((CommonEntry)re1).TraverseTreePair(mockAction);
@@ -115,15 +115,15 @@ namespace cdeLibTest
             var mockAction = MockRepository.GenerateMock<TraverseFunc>();
             using (mockAction.GetMockRepository().Ordered())
             {
+                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re1, de2a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re1, de2b)).Repeat.Times(1).Return(true);
-                mockAction.Expect(x => x(re1, de2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(de2b, de3a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(de3a, de4a)).Repeat.Times(1).Return(true);
 
+                mockAction.Expect(x => x(re2, bde2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re2, bde2a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(re2, bde2b)).Repeat.Times(1).Return(true);
-                mockAction.Expect(x => x(re2, bde2c)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(bde2b, bde3a)).Repeat.Times(1).Return(true);
                 mockAction.Expect(x => x(bde3a, bde4a)).Repeat.Times(1).Return(true);
             }

@@ -73,7 +73,7 @@ namespace cdeLibTest
             var testEntry = re;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.FileEntryCount, Is.EqualTo(4));
+            Assert.That(testEntry.FileEntryCount, Is.EqualTo(3));
         }
 
         [Test]
@@ -91,7 +91,7 @@ namespace cdeLibTest
             var testEntry = re;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.Size, Is.EqualTo(47));
+            Assert.That(testEntry.Size, Is.EqualTo(28));
         }
 
         [Test]
@@ -100,7 +100,7 @@ namespace cdeLibTest
             var testEntry = de3a;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.Size, Is.EqualTo(36));
+            Assert.That(testEntry.Size, Is.EqualTo(17));
         }
 
         [Test]
@@ -120,7 +120,7 @@ namespace cdeLibTest
             testEntry.DirEntryCount = -1;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.FileEntryCount, Is.EqualTo(2));
+            Assert.That(testEntry.FileEntryCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace cdeLibTest
             var testEntry = de3a;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.Size, Is.EqualTo(36));
+            Assert.That(testEntry.Size, Is.EqualTo(17));
         }
 
         [Test]
@@ -147,7 +147,7 @@ namespace cdeLibTest
             var testEntry = de2b;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.FileEntryCount, Is.EqualTo(2));
+            Assert.That(testEntry.FileEntryCount, Is.EqualTo(1));
         }
 
         [Test]
@@ -156,7 +156,7 @@ namespace cdeLibTest
             var testEntry = de2b;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.Size, Is.EqualTo(36));
+            Assert.That(testEntry.Size, Is.EqualTo(17));
         }
 
         [Test]
@@ -174,7 +174,7 @@ namespace cdeLibTest
             var testEntry = re;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.FileEntryCount, Is.EqualTo(4));
+            Assert.That(testEntry.FileEntryCount, Is.EqualTo(3));
         }
 
         [Test]
@@ -183,7 +183,7 @@ namespace cdeLibTest
             var testEntry = re;
             testEntry.SetSummaryFields();
 
-            Assert.That(testEntry.Size, Is.EqualTo(47));
+            Assert.That(testEntry.Size, Is.EqualTo(28));
         }
     }
     // ReSharper restore InconsistentNaming
