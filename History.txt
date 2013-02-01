@@ -1,3 +1,6 @@
+2013/02/01 13:20 v.1.2.5.0
+Fixed a bug catlogs were not sorted at first level directory. (old bug)
+
 2012/09/12 15:13 v1.2.4.0
 Fixing sorty by column For columns > 6 in Catalog tab.
 Added new column to Catalog tab for Scan Duration.
