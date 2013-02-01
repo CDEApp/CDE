@@ -406,6 +406,9 @@ namespace cdeLib
 
         public void SortAllChildrenByPath()
         {
+            Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2)); // Sort root entries first.
+            IsDefaultSort = true;
+
             TraverseTreePair((p, d) =>
             {
                 if (d.IsDirectory)

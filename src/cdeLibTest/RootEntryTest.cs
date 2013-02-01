@@ -337,4 +337,32 @@ namespace cdeLibTest
         }
     }
     // ReSharper restore InconsistentNaming
+
+    // ReSharper disable InconsistentNaming
+    public class RootEntryTest_SortAllChildrenByPath : RootEntryTestBase
+    {
+        DirEntry de2a;
+        DirEntry de2b;
+        DirEntry de2c;
+        DirEntry de3a;
+        DirEntry de4a;
+        private RootEntry re;
+
+        [SetUp]
+        public void BeforeEveryTest()
+        {
+            re = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+        }
+
+        [Test]
+        public void SortAllChildrenByPaths_Sorts_Top_Level_InRoot()
+        {
+            re.SortAllChildrenByPath();
+
+            Assert.That(re.Children[0].Path, Is.EqualTo("d2b")); //dirs first.
+            Assert.That(re.Children[1].Path, Is.EqualTo("d2a"));
+            Assert.That(re.Children[2].Path, Is.EqualTo("d2c"));
+        }
+    }
+    // ReSharper restore InconsistentNaming
 }
