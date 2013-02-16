@@ -44,3 +44,4 @@ lib/OBjectListViewFull*/*
 lib/CustomMessageBox_Sample*/*
 
 bin/*
+packages/
