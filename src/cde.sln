@@ -28,6 +28,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{01F495
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWeb", "cdeWeb\cdeWeb.csproj", "{CE39D9B5-4209-40CF-BB15-86E622A0F52F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -145,6 +147,16 @@ Global
 		{27847DBD-65B6-489D-A600-89D4FF5151E8}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{27847DBD-65B6-489D-A600-89D4FF5151E8}.Release|x86.ActiveCfg = Release|x86
 		{27847DBD-65B6-489D-A600-89D4FF5151E8}.Release|x86.Build.0 = Release|x86
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{CE39D9B5-4209-40CF-BB15-86E622A0F52F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
