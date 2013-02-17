@@ -1,0 +1,43 @@
+﻿<!DOCTYPE html>
+<html ng-app="cdeweb">
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="copyright" content="&copy; Robin 2013" />
+    <meta name="author " content="Robin Luiten" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="description" content="web iterface to search cde catalogs, trial!" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>cdeWeb v1.0 alpha</title>
+    <link rel="stylesheet" href="/Content/bootstrap.css" media="screen" />
+    <!--<style>-->
+        <!--div[contentEditable] {-->
+              <!--cursor: pointer;-->
+              <!--background-color: #D0D0D0;-->
+              <!--margin-bottom: 1em;-->
+              <!--padding: 1em;-->
+            <!--}-->
+    <!--</style>-->
+    <style type="text/css">
+        body {
+            padding-top: 50px;
+            padding-bottom: 50px;
+        }
+        .cdeLogo {
+            width: 24px;
+        }
+    </style>
+
+    <!--<script type="text/javascriptx" src="/Scripts/modernizr-2.5.3.js"></script>-->
+</head>
+<body>
+    <div class="container-fluid">
+        <div ng-view>
+        </div>
+    </div>
+
+    <script src="/Scripts/angular.js"></script>
+    <script src="/Scripts/angular-resource.js"></script>
+    <script src="/Scripts/app.js"></script>
+</body>
+</html>

@@ -45,3 +45,4 @@ lib/CustomMessageBox_Sample*/*
 
 bin/*
 packages/
+.idea/

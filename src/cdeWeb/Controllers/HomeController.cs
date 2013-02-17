@@ -12,10 +12,5 @@ namespace cdeWeb.Controllers
         {
             return View();
         }
-
-        public ActionResult CDEWeb()
-        {
-            return View();
-        }
     }
 }
