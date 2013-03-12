@@ -23,14 +23,16 @@ var cdeWebApp = angular.module('cdeweb', [
             when('/copyPath/:path', { controller: cdeWebCopy, templateUrl: 'partials/copyPath.html' }).
             otherwise({ redirectTo: '/about' });
     }).
-    directive('selectall', ['$timeout', '$interpolate', function ($timeout, $interpolate) {
+    directive('mySelectall', ['$timeout', '$interpolate', function ($timeout, $interpolate) {
         return {
             restrict: 'A',
             link: function (scope, element, attrs) {
-                element.focus(); // requires jquery
-                scope.$watch(function() { return element.text(); }, function(value) {
-                    //console.log('Watched element.text: ' + value);
-                    element.select(); // requires jquery
+                element.focus(); // requires jquery = element[0].focus() for no jquery.
+                scope.$watch(function() { return element.val(); }, function(newVal, oldVal) {
+                    // only on initialize, or it does it for new typed input.
+                    if (oldVal === newVal) {
+                        element.select(); // requires jquery = element[0].select() for no jquery.
+                    }
                 });
             }
         };
