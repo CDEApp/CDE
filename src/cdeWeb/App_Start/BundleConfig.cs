@@ -23,7 +23,19 @@ namespace cdeWeb
             bundles.Add(new ScriptBundle("~/bundles/modernizr").Include(
                         "~/Scripts/modernizr-*"));
 
-            bundles.Add(new StyleBundle("~/Content/css").Include("~/Content/site.css"));
+            bundles.Add(new ScriptBundle("~/bundles/app")
+                .Include("~/Scripts/app.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/angular")
+                .Include("~/Scripts/angular.js")
+                .Include("~/Scripts/angular-resource.js"));
+
+            bundles.Add(new ScriptBundle("~/bundles/twitterbootstrap")
+                .Include("~/Scripts/bootstrap.js"));
+
+            bundles.Add(new StyleBundle("~/Content/css")
+                //.Include("~/Content/site.css")
+                .Include("~/Content/bootstrap.css"));
 
             bundles.Add(new StyleBundle("~/Content/themes/base/css").Include(
                         "~/Content/themes/base/jquery.ui.core.css",

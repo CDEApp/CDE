@@ -14,6 +14,13 @@ namespace cdeWeb
                 routeTemplate: "api/{controller}/{id}",
                 defaults: new { id = RouteParameter.Optional }
             );
+            DisableXMLMediaType(config);
+        }
+
+        private static void DisableXMLMediaType(HttpConfiguration config)
+        {
+            config.Formatters.XmlFormatter.SupportedMediaTypes.Remove(
+                config.Formatters.XmlFormatter.SupportedMediaTypes.FirstOrDefault(t => t.MediaType == "application/xml"));
         }
     }
 }
