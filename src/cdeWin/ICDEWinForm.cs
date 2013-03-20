@@ -26,6 +26,7 @@ namespace cdeWin
         event EventAction OnDirectoryContextMenuExploreClick;
         event EventAction OnDirectoryContextMenuPropertiesClick;
         event EventAction OnDirectoryContextMenuSelectAllClick;
+        event EventAction OnDirectoryContextMenuCopyFullPathClick;
         event EventAction OnDirectoryContextMenuParentClick;
 
         event EventAction OnDirectoryRetrieveVirtualItem;

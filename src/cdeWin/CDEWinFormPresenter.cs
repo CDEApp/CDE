@@ -816,6 +816,11 @@ namespace cdeWin
                 });
         }
 
+        private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<DirEntry>> gotContextAction)
+        {
+            _clientForm.DirectoryListViewHelper.ActionOnSelectedItems(gotContextAction);
+        }
+
         public void DirectoryContextMenuViewTreeClick()
         {
             DirectoryGetContextMenuPairDirEntryThatExists(ViewFolderInDirectoryTab);
@@ -876,6 +881,21 @@ namespace cdeWin
                 entryList.RemoveAt(entryList.Count-1);
                 SetDirectoryWithExpand(entryList);
             }
+        }
+
+        public void DirectoryContextMenuCopyFullPathClick()
+        {
+            DirectoryGetContextMenuPairDirEntrys(enumerableDirEntry =>
+            {
+                // we dont have parent dir entry here ... 
+                var s = new StringBuilder();
+                foreach (var dirEntry in enumerableDirEntry)
+                {
+                    var pde = new PairDirEntry(_directoryListCommonEntry, dirEntry);
+                    s.Append(pde.FullPath + Environment.NewLine);
+                }
+                Clipboard.SetText(s.ToString());
+            });
         }
 
         private void SearchResultGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)

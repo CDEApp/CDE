@@ -40,6 +40,7 @@ namespace cdeWin
         public event EventAction OnDirectoryContextMenuExploreClick;
         public event EventAction OnDirectoryContextMenuPropertiesClick;
         public event EventAction OnDirectoryContextMenuSelectAllClick;
+        public event EventAction OnDirectoryContextMenuCopyFullPathClick;
         public event EventAction OnDirectoryContextMenuParentClick;
 
         public event EventAction OnDirectoryRetrieveVirtualItem;
@@ -339,7 +340,7 @@ namespace cdeWin
                     PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
                     SelectAllHandler = (s, e) => OnDirectoryContextMenuSelectAllClick(),
                     //CopyBaseNameHandler = (s, e) => (),
-                    //CopyFullNameHandler = (s, e) => (),
+                    CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
                     ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
                     CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
                 };
