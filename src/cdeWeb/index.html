@@ -6,7 +6,7 @@
     <meta name="copyright" content="&copy; Robin 2013" />
     <meta name="author " content="Robin Luiten" />
     <meta name="viewport" content="width=device-width" />
-    <meta name="description" content="web iterface to search cde catalogs, trial!" />
+    <meta name="description" content="web interface to search cde catalogs, trial!" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>cdeWeb v1.0 alpha</title>
     <link rel="stylesheet" href="/Content/bootstrap.css" media="screen" />
@@ -30,17 +30,14 @@
             height: 25px;
         }
 
-        /*.ui-reset {*/
-            /*background-color: hotpink;*/
-        /*}*/
-
         /* dont show delete only on hover, show it always. if it has value */
-        .ui-resetwrap .ui-reset {
+        /*.ui-resetwrap .ui-reset {
             display: block;
-        }
+        }*/
 
+        /* remove hover underline */
         .hascontent:hover {
-            text-decoration: none; /* remove hover underline */
+            text-decoration: none; 
         }
 
         .hascontent:before {
@@ -67,25 +64,13 @@
             font-size: 1.3em;
             margin-left: -18px;
             line-height: 40px; /* this works but icky */
+            z-index: 5;
 
             /*Xbackground-color: greenyellow;*/
             /*Xmargin-top: 18px;*/
             /*Xpadding-top: 18px;*/
 
         }
-
-        /* from http://angular-ui.github.com/ works but dont want to use image. */
-        /*.ui-reset {*/
-            /*width: 14px;*/
-            /*height: 14px;*/
-            /*margin: 5px;*/
-            /*line-height: 14px;*/
-            /*vertical-align: text-top;*/
-            /*background-image: url("http://twitter.github.com/bootstrap/assets/img/glyphicons-halflings.png");*/
-            /*background-position: 14px 14px;*/
-            /*background-repeat: no-repeat;*/
-            /*background-position: -48px -96px;*/
-        /*}*/
 
     </style>
 
@@ -94,10 +79,10 @@
 <body>
     <div class="container-fluid" ng-view></div>
 
+    <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
     <script src="/Scripts/angular.js"></script>
     <script src="/Scripts/angular-resource.js"></script>
     <script src="/Scripts/angular-ui.js"></script>
-    <script src="/Scripts/jquery-1.9.1.js"></script>
     <script src="/Scripts/bootstrap.js"></script>
     <script src="/Scripts/app.js"></script>
 </body>

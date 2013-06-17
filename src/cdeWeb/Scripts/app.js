@@ -17,72 +17,108 @@ var cdeWebApp = angular.module('cdeweb', [
     ]).
     config(function($routeProvider) {
         $routeProvider.
-            when('/', { controller: cdeWebCtrl, templateUrl: 'partials/cdeWeb.html' }).
-            when('/', { controller: cdeWebCtrl, templateUrl: 'partials/cdeWeb.html' }).
-            when('/search/:query', { controller: cdeWebSearchCtrl, templateUrl: 'partials/cdeWebSearch.html' }).
-            when('/copyPath/:path', { controller: cdeWebCopy, templateUrl: 'partials/copyPath.html' }).
-            otherwise({ redirectTo: '/about' });
+            when('/', {
+                controller: cdeWebCtrl,
+                templateUrl: 'partials/cdeWeb.html',
+                header: 'partials/navbar.html'
+            }).
+            when('/search/:query', {
+                controller: cdeWebSearchCtrl,
+                templateUrl: 'partials/cdeWebSearch.html',
+                header: 'partials/navbar.html'
+            }).
+            when('/copyPath/:path', {
+                controller: cdeWebCopyCtrl,
+                templateUrl: 'partials/copyPath.html',
+                header: 'partials/navbar.html'
+            }).
+            otherwise({ redirectTo: '/' });
     }).
-    directive('mySelectall', ['$timeout', '$interpolate', function ($timeout, $interpolate) {
+    directive('selectall', function () {
         return {
             restrict: 'A',
-            link: function (scope, element, attrs) {
-                element.focus(); // requires jquery = element[0].focus() for no jquery.
+            link: function (scope, element) {
+                element.focus(); //element[0].focus(); // not require jquery
+                // be careful of slow $watch - dom isnt fast usually
                 scope.$watch(function() { return element.val(); }, function(newVal, oldVal) {
                     // only on initialize, or it does it for new typed input.
                     if (oldVal === newVal) {
-                        element.select(); // requires jquery = element[0].select() for no jquery.
+                        element.select(); //element[0].select(); // not require jquery
                     }
                 });
             }
         };
-    }]);
+    }).
+    run(function($rootScope, $route, $location) {
+        $rootScope.layoutPartial = function (partialName) {
+            console.log('$route.current', $route.current);
+            console.log('partialName', partialName);
+            console.log('$route.current[partialName]', $route.current[partialName]);
 
-var cdeWebCopy = function($scope, $location, $routeParams) {
+            return $route.current[partialName];
+        };
+    });
+
+var cdeWebCopyCtrl = function($scope, $location, $routeParams) {
     $scope.resultPath = $routeParams.path;
-    window.prompt("Copy to clipboard: Ctrl+C, Enter", $scope.resultPath);
-    /// controlelr time
-
-    //    $(document).ready(function() { // wrong this is in controller.. :(
-    //        $('#copyField').focus(function() {
-    //            debugger;
-    //            $(this).select(); }
-    //        );
-    //    });
-    //    $('#copyField')
-    //        .focus();
-    $location('/#');
+    console.log('$location', $location);
+    console.log('$routeParams.path', $routeParams.path);
+    //window.prompt("Copy to clipboard: Ctrl+C, Enter", $scope.resultPath);
+    //after copy leave ? //$location.path('/#');
 };
 
-var cdeWebSearchCtrl = function($scope, $location, version) {
+var cdeWebSearchCtrl = function ($scope, $routeParams, $location, version) {
+    console.log('cdeWebSearchCtrl setup', $routeParams.query);
+    $scope.data.query = $routeParams.query;
+    $scope.data.searchResult = searchResultTest;
+
+    $scope.clearResult = function () {
+        $scope.data.searchResult = [];
+    };
+    
+    $scope.clearQuery = function () {
+        $scope.data.query = '';
+    };
+
+    $scope.search = function () {
+        console.log('search [' + $scope.data.query + ']');
+        //$location.path('/search/' + $scope.data.query);
+        $scope.data.searchResult = searchResultTest;
+    };
+    
+    $scope.showClearResult = function () { // TODO modify to go back to no path.
+        return $scope.data.searchResult.length !== 0;
+    };
 };
 
 var cdeWebCtrl = function ($scope, $location, version) {
     $scope.clearResult = function() {
-        $scope.searchResult = [];
+        $scope.data.searchResult = [];
     };
 
     $scope.clearQuery = function() {
-        $scope.query = "";
+        $scope.data.query = '';
     };
 
-    $scope.search = function() {
-        console.log('search ' + $scope.query);
-        $scope.searchResult = searchResultTest;
+    $scope.search = function () {
+        console.log('search query', $scope.data.query);
+        //$location.path('/search/' + $scope.data.query);
+        $scope.data.searchResult = searchResultTest;
     };
 
     $scope.hideClear = function() {
-        return !$scope.query;
+        return !$scope.data.query;
     };
 
     $scope.showClearResult = function() {
-        return $scope.searchResult.length !== 0;
+        return $scope.data.searchResult.length !== 0;
     };
 
-    $scope.copyPathDialog = function(pZath) {
+    $scope.copyPathDialog = function(path) {
         //var s = $scope;
         //var rs = $scope.resultPath;
         //var p = path;
+        console.log('path ' + path)
         $('#copyPathDialog').modal({});
     };
 
@@ -94,24 +130,26 @@ var cdeWebCtrl = function ($scope, $location, version) {
     // - then just create an extra watch hmm :) :) :)
 
     // modify ui-reset to only have remove icon visible if input has content.
-    $scope.$watch('query', function queryWatch() {
-        if ($scope.query === null || $scope.query === "") {
-            $('form a.hascontent').removeClass('hascontent');
+    $scope.$watch('data.query', function queryWatch() {
+        if ($scope.model === null || $scope.data.query === null || $scope.data.query === "") {
+            $('a.hascontent').removeClass('hascontent');
         } else {
-            $('form a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
+            $('a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
         }
-        //console.log("$scope.query:" + $scope.query);
+        //console.log("$scope.data.query:" + $scope.data.query);
     });
 
     // TODO make Escape key in input - clear it... or maybe two escapes clears it ?
 
-    $scope.version = version;
-    $scope.name = 'cdeWeb';
-    $scope.queryOptions = {};
+    var data = {};
+    $scope.data = data;
+    data.query = '';
+    data.version = version;
+    data.name = 'cdeWeb';
+    data.queryOptions = {};
     $scope.clearQuery();
     $scope.clearResult();
 };
-
 
 var searchResultTest = [
     {Name: 'moo1', Size: 10, Modified: 'adate1', Path: 'C:\\Here'},

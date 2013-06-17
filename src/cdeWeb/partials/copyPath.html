@@ -1,3 +1,4 @@
+<header ng-include="layoutPartial('header')"></header> 
 <div class="container-fluid">
     <form class="">
         <fieldset>
@@ -5,7 +6,7 @@
             <div class="control-group">
                 <label class="control-label">Path</label>
                 <div class="controls">
-                    <input id="copyField" type="text" ng-model="resultPath" class="span10">
+                    <input id="copyField" type="text" ng-model="resultPath" class="span10" selectall>
                 </div>
             </div>
             <button type="submit" class="btn btn-primary">Go Back</button>
