@@ -1,9 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Linq;
 using System.Web.Http;
+using System.Web.Http.OData.Builder;
+using cdeWeb.Models;
 
-namespace cdeWeb
+namespace cdeWeb.App_Start
 {
     public static class WebApiConfig
     {
@@ -21,6 +21,23 @@ namespace cdeWeb
         {
             config.Formatters.XmlFormatter.SupportedMediaTypes.Remove(
                 config.Formatters.XmlFormatter.SupportedMediaTypes.FirstOrDefault(t => t.MediaType == "application/xml"));
+        }
+
+        // references
+        // http://www.asp.net/web-api/overview/odata-support-in-aspnet-web-api/supporting-odata-query-options
+        // http://blogs.msdn.com/b/webdev/archive/2013/01/29/getting-started-with-asp-net-webapi-odata-in-3-simple-steps.aspx
+        public static void RegisterOData(HttpConfiguration config)
+        {
+            config.EnableQuerySupport(); // enable OData
+
+            var modelBuilder = new ODataConventionModelBuilder();
+            modelBuilder.EntitySet<DirEntry>("DirEntries");
+            var model = modelBuilder.GetEdmModel();
+
+            config.Routes.MapODataRoute(
+                routeName: "OData",
+                routePrefix: "odata",
+                model: model);
         }
     }
 }

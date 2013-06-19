@@ -1,59 +1,80 @@
 ﻿'use strict';
+// ReSharper disable InconsistentNaming
 
-angular.module('cdeweb.service', [])
-    .value('version', '0.1');
+angular.module('cdeweb.service', ['restangular']);
 
 angular.module('cdeweb.directive', []);
 
 angular.module('cdeweb.filter', []);
 
-
 var cdeWebApp = angular.module('cdeweb', [
-        'ngResource',
-        'cdeweb.service',
-        'cdeweb.directive',
-        'cdeweb.filter',
-        'ui.directives'
-    ]).
-    config(function($routeProvider) {
-        $routeProvider.
-            when('/', {
-                controller: cdeWebCtrl,
-                templateUrl: 'partials/cdeWeb.html',
-                header: 'partials/navbar.html'
-            }).
-            when('/search/:query', {
-                controller: cdeWebSearchCtrl,
-                templateUrl: 'partials/cdeWebSearch.html',
-                header: 'partials/navbar.html'
-            }).
-            when('/copyPath/:path', {
-                controller: cdeWebCopyCtrl,
-                templateUrl: 'partials/copyPath.html',
-                header: 'partials/navbar.html'
-            }).
-            otherwise({ redirectTo: '/' });
-    }).
-    directive('selectall', function () {
-        return {
-            restrict: 'A',
-            link: function (scope, element) {
-                element.focus(); //element[0].focus(); // not require jquery
-                // be careful of slow $watch - dom isnt fast usually
-                scope.$watch(function() { return element.val(); }, function(newVal, oldVal) {
-                    // only on initialize, or it does it for new typed input.
-                    if (oldVal === newVal) {
-                        element.select(); //element[0].select(); // not require jquery
-                    }
-                });
-            }
-        };
-    }).
-    run(function($rootScope, $route, $location) {
+    'ngResource',
+    'cdeweb.service',
+    'cdeweb.directive',
+    'cdeweb.filter',
+    'ui.directives'
+]);
+
+cdeWebApp.config(function($routeProvider) {
+    $routeProvider.
+        when('/', {
+            controller: cdeWebCtrl,
+            templateUrl: 'partials/cdeWeb.html',
+            header: 'partials/navbar.html'
+        }).
+        when('/search/:query', {
+            controller: cdeWebSearchCtrl,
+            templateUrl: 'partials/cdeWebSearch.html',
+            header: 'partials/navbar.html'
+        }).
+        when('/copyPath/:path', {
+            controller: cdeWebCopyCtrl,
+            templateUrl: 'partials/copyPath.html',
+            header: 'partials/navbar.html'
+        }).
+        otherwise({ redirectTo: '/' });
+});
+
+cdeWebApp.config(function (RestangularProvider) {
+    var r = RestangularProvider;
+    r.setBaseUrl('/odata');
+    r.setListTypeIsArray(false); // odata returns an object with a value field for list.
+    
+    // Not sure want to muck with response object format...
+    //r.setResponseExtractor(function(response, operation, what, url) {
+    //    if (operation === 'getList') {
+    //        // rearrange odata response.
+    //        var newResponse = response.value;
+    //        newResponse['odata.metadata'] = response['odata.metadata'];
+    //        newResponse['odata.nextLink'] = response['odata.nextLink'];
+    //        return newResponse;
+    //    } else {
+    //        return response;
+    //    }
+    //});
+});
+
+cdeWebApp.directive('selectall', function () {
+    return {
+        restrict: 'A',
+        link: function (scope, element) {
+            element.focus(); //element[0].focus(); // not require jquery
+            // be careful of slow $watch - dom isnt fast usually
+            scope.$watch(function() { return element.val(); }, function(newVal, oldVal) {
+                // only on initialize, or it does it for new typed input.
+                if (oldVal === newVal) {
+                    element.select(); //element[0].select(); // not require jquery
+                }
+            });
+        }
+    };
+});
+
+cdeWebApp.run(function($rootScope, $route, $location) {
         $rootScope.layoutPartial = function (partialName) {
-            console.log('$route.current', $route.current);
-            console.log('partialName', partialName);
-            console.log('$route.current[partialName]', $route.current[partialName]);
+            //console.log('$route.current', $route.current);
+            //console.log('partialName', partialName);
+            //console.log('$route.current[partialName]', $route.current[partialName]);
 
             return $route.current[partialName];
         };
@@ -83,6 +104,7 @@ var cdeWebSearchCtrl = function ($scope, $routeParams, $location, version) {
     $scope.search = function () {
         console.log('search [' + $scope.data.query + ']');
         //$location.path('/search/' + $scope.data.query);
+
         $scope.data.searchResult = searchResultTest;
     };
     
@@ -91,7 +113,7 @@ var cdeWebSearchCtrl = function ($scope, $routeParams, $location, version) {
     };
 };
 
-var cdeWebCtrl = function ($scope, $location, version) {
+var cdeWebCtrl = function ($scope, $location, version, DirEntryRepository) {
     $scope.clearResult = function() {
         $scope.data.searchResult = [];
     };
@@ -102,8 +124,13 @@ var cdeWebCtrl = function ($scope, $location, version) {
 
     $scope.search = function () {
         console.log('search query', $scope.data.query);
-        //$location.path('/search/' + $scope.data.query);
-        $scope.data.searchResult = searchResultTest;
+        DirEntryRepository.get($scope.data.query)
+            .then(function (blah) {
+                console.log('nextLink', blah['odata.nextLink']);
+                $scope.data.metadata = blah['odata.metadata'];
+                $scope.data.nextLink = blah['odata.nextLink'];
+                $scope.data.searchResult = blah.value;
+            });
     };
 
     $scope.hideClear = function() {
@@ -118,7 +145,7 @@ var cdeWebCtrl = function ($scope, $location, version) {
         //var s = $scope;
         //var rs = $scope.resultPath;
         //var p = path;
-        console.log('path ' + path)
+        console.log('path ' + path);
         $('#copyPathDialog').modal({});
     };
 
@@ -162,9 +189,22 @@ var searchResultTest = [
 ];
 // pull Contact from web.config - so roy can setup to him ?
 
+angular.module('cdeweb.service')
+    .value('version', '0.1')
+    .service('DirEntryRepository', function (Restangular) {
+        return {
+            get: function (substring) {
+                var baseDE = Restangular.all("DirEntries" + substringFilter(substring, 'Name'));
+                return baseDE.getList();
+            }
+        };
+    });
 
+function substringFilter(query, field) {
+    var notNullQuery = query || '';
+    return "?$filter=substringof('" + notNullQuery + "'," + field + ")";
+}
 
-
-
+// ReSharper restore InconsistentNaming
 
 

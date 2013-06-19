@@ -30,10 +30,10 @@
             height: 25px;
         }
 
-        /* dont show delete only on hover, show it always. if it has value */
-        /*.ui-resetwrap .ui-reset {
+        /* show delete always [not just on hover] */
+        .ui-resetwrap .ui-reset {
             display: block;
-        }*/
+        }
 
         /* remove hover underline */
         .hascontent:hover {
@@ -78,10 +78,11 @@
 </head>
 <body>
     <div class="container-fluid" ng-view></div>
-
+    <script src="/Scripts/lodash.js"></script>
     <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
     <script src="/Scripts/angular.js"></script>
     <script src="/Scripts/angular-resource.js"></script>
+    <script src="/Scripts/restangular.js"></script>
     <script src="/Scripts/angular-ui.js"></script>
     <script src="/Scripts/bootstrap.js"></script>
     <script src="/Scripts/app.js"></script>

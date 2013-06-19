@@ -19,6 +19,9 @@
 
         </tbody>
     </table>
+    <div ng-show="data.nextLink">
+        <a href="{{data.nextLink}}">More Results</a>
+    </div>
 
     <div ng-show="!showClearResult()" class="alert alert-info row">
         <div class="span2">
@@ -34,12 +37,13 @@
                 <li><a href="http://twitter.github.com/bootstrap/">Twitter Bootstrap</a></li>
                 <li><a href="http://fortawesome.github.com/Font-Awesome/">Font Awesome</a></li>
                 <li><a href="http://www.asp.net/mvc">ASP.NET MVC</a></li>
+                <li><a href="http://code.google.com/p/autofac/">autofac</a></li>
             </ul>
         </div>
     </div>
 
     <footer>
-        A Moo!.
+        Footer.
     </footer>
 </div>
 
