@@ -1,26 +1,21 @@
-﻿<div class="navbar navbar-fixed-top">
+﻿<div class="navbar navbar-static-top" data-ng-controller="navbarCtrl">
     <div class="navbar-inner">
-        <button type="button" class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-            <span class="icon-bar"></span>
-        </button>
-        <a class="brand" href="#">&nbsp;</a>
-        <img class="brand cdeLogo" src="Images/CDE-logo-badge-01.png" alt="cde logo" />
-        <a class="brand" href="#">{{ data.name }} v{{ data.version }}</a>
         <ul class="nav">
             <li class="divider-vertical"></li>
-            <li><a href="/#config">Config</a></li>
+            <li><img class="brand cdeLogo" src="Images/CDE-logo-badge-01.png" alt="cde logo" /></li>
+            <li><a class="brand" href="#">{{ data.name }} v{{ data.version }}</a></li>
             <li class="divider-vertical"></li>
         </ul>
-        <form class="navbar-form xnavbar-search xform-inline pull-right">
-        <ul class="nav">
-            <li><input type="text" ng-model="data.query" class="search-query span4" placeholder="Search" ui-reset ></li>
-            <li><button ng-click="search()" type="submit" class="btn"><i class="icon-search"></i></button></li>
-            <li><button ng-click="search()" type="submit" class="btn"><i class="icon-ambulance"></i></button></li>
-            <li><button ng-click="" type="submit" class="btn">Options</button></li>
+        <form class="navbar-form navbar-search form-inline pull-right">
+        <ul class="nav" >
+            <li data-ng-show="haveResults()">
+                <button data-ng-click="clearResult()" type="button" class="btn btn-info">Clear Results <i class="icon-remove"></i></button>
+            </li>
+            <li class="divider-vertical"></li>
+            <li><input id="search" type="text" data-ng-model="data.query" class="search-query span4" placeholder="Search" data-ui-reset="" data-focussearch=""></li>
+            <li><button data-ng-click="search()" type="submit" class="btn btn-primary">Search</button></li>
+            <li><button data-ng-click="" type="button" class="btn">Options</button></li>
         </ul>
         </form>
-        <button ng-click="clearResult()" ng-show="showClearResult()" class="btn btn-info pull-right">Clear Results <i class="icon-remove"></i></button>
     </div>
 </div>

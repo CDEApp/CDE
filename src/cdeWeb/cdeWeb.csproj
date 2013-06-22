@@ -257,6 +257,7 @@
     <Content Include="Content\themes\base\minified\jquery.ui.tooltip.min.css" />
     <Content Include="Images\CDE-logo-01.png" />
     <Content Include="Images\CDE-logo-badge-01.png" />
+    <Content Include="partials\about.html" />
     <Content Include="partials\cdeWeb.html" />
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
@@ -594,6 +595,7 @@
     <Content Include="Scripts\jstd-scenario-adapter-config.js" />
     <Content Include="Scripts\knockout-2.2.1.debug.js" />
     <Content Include="Scripts\knockout-2.2.1.js" />
+    <Content Include="Scripts\lodash.js" />
     <Content Include="Scripts\modernizr-2.6.2.js" />
     <Content Include="Scripts\restangular.js" />
     <Content Include="Scripts\select2.js" />

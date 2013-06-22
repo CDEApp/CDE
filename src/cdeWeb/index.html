@@ -1,5 +1,5 @@
 ﻿<!DOCTYPE html>
-<html lang="en" ng-app="cdeweb">
+<html lang="en" data-ng-app="cdeweb">
 <head>
     <meta charset="utf-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
@@ -9,7 +9,9 @@
     <meta name="description" content="web interface to search cde catalogs, trial!" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>cdeWeb v1.0 alpha</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="/Content/bootstrap.css" media="screen" />
+    <link rel="stylesheet" href="/Content/bootstrap-responsive.css" media="screen" />
     <link rel="stylesheet" href="/Content/angular-ui.css" media="screen" />
     <link rel="stylesheet" href="/Content/font-awesome.css" media="screen" />
     <!--<style>-->
@@ -21,11 +23,6 @@
             <!--}-->
     <!--</style>-->
     <style type="text/css">
-        body {
-            padding-top: 50px;
-            padding-bottom: 50px;
-        }
-
         .cdeLogo {
             height: 25px;
         }
@@ -64,7 +61,7 @@
             font-size: 1.3em;
             margin-left: -18px;
             line-height: 40px; /* this works but icky */
-            z-index: 5;
+            z-index: 105;
 
             /*Xbackground-color: greenyellow;*/
             /*Xmargin-top: 18px;*/
@@ -72,19 +69,26 @@
 
         }
 
+        .mt-em {
+            margin-top: -0.8em;
+        }
     </style>
 
     <!--<script type="text/javascriptx" src="/Scripts/modernizr-2.5.3.js"></script>-->
 </head>
-<body>
-    <div class="container-fluid" ng-view></div>
-    <script src="/Scripts/lodash.js"></script>
-    <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
-    <script src="/Scripts/angular.js"></script>
-    <script src="/Scripts/angular-resource.js"></script>
-    <script src="/Scripts/restangular.js"></script>
-    <script src="/Scripts/angular-ui.js"></script>
-    <script src="/Scripts/bootstrap.js"></script>
-    <script src="/Scripts/app.js"></script>
-</body>
+    <body>
+        <!--        <div class="container-fluid" data-ng-view=""></div>-->
+        <!-- undoing the left right padidn gof cointainer-fluid at top leve -->
+        <!--<div class="container-fluid" data-ng-view style="padding-left:0; padding-right:0;"></div>-->
+        <div data-ng-view></div>
+        <script src="/Scripts/lodash.js"></script>
+        <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
+        <script src="/Scripts/angular.js"></script>
+        <script src="/Scripts/angular-resource.js"></script>
+        <script src="/Scripts/angular-cookies.js"></script>
+        <script src="/Scripts/restangular.js"></script>
+        <script src="/Scripts/angular-ui.js"></script>
+        <script src="/Scripts/bootstrap.js"></script>
+        <script src="/Scripts/app.js"></script>
+    </body>
 </html>

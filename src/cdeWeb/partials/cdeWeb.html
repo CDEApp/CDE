@@ -1,51 +1,43 @@
-﻿<header ng-include="layoutPartial('header')"></header> 
+﻿<header data-ng-include="layoutPartial('header')"></header>
 
-<div class="container-fluid clear-fix" >  <!-- Depending on style to push top margin down on body :( -->
-
-    <table class="table table-striped table-condensed table-hover" ng-show="showClearResult()">
+<div class="row-fluid">
+    <div data-ng-show="!haveResults()" class="alert alert-info">
+        <strong><p>There are currently no Search Results to display.</p></strong>
+    </div>
+        
+    <table data-ng-show="haveResults()" class="table table-striped table-condensed table-hover">
         <thead>
-            <th sorted="Name">Name</th>
-            <th sorted="Size">Size</th>
-            <th sorted="Modified">Modified</th>
-            <th sorted="Path">Path</th>
+            <tr>
+                <th data-sorted="Name">Name</th>
+                <th data-sorted="Size">Size</th>
+                <th data-sorted="Modified">Modified</th>
+                <th data-sorted="Path">Path</th>
+            </tr>
         </thead>
         <tbody>
-            <tr ng-repeat="result in data.searchResult" id="{{$index}}">
+            <tr data-ng-repeat="result in data.searchResult" id="{{$index}}">
                 <td>{{result.Name}}</td>
                 <td>{{result.Size}}</td>
                 <td>{{result.Modified | date:'yyyy/MM/dd'}}</td>
-                <td><a class="" href="#/copyPath/{{result.Path}}" ng-model="resultPath">{{result.Path}}</a></td>
+                <td><a class="" href="#/copyPath/{{result.Path}}" data-ng-model="resultPath">{{result.Path}}</a></td>
             </tr>
-
         </tbody>
     </table>
-    <div ng-show="data.nextLink">
+    <div data-ng-show="data.nextLink">
         <a href="{{data.nextLink}}">More Results</a>
-    </div>
-
-    <div ng-show="!showClearResult()" class="alert alert-info row">
-        <div class="span2">
-            <img class="brand" src="Images/heron_200_black.png" alt="logo" />
-        </div>
-        <div class="offset2">
-            <strong><p>There are currently no Search Results to display.</p></strong>
-            <p>Welcome to cdeWeb. &copy; Robin Luiten 2013</p>
-            <p>This application contains goodness from the following development resources</p>
-            <ul>
-                <li><a href="http://angularjs.org/">AngularJS</a></li>
-                <li><a href="http://angular-ui.github.com/">AngularUI</a></li>
-                <li><a href="http://twitter.github.com/bootstrap/">Twitter Bootstrap</a></li>
-                <li><a href="http://fortawesome.github.com/Font-Awesome/">Font Awesome</a></li>
-                <li><a href="http://www.asp.net/mvc">ASP.NET MVC</a></li>
-                <li><a href="http://code.google.com/p/autofac/">autofac</a></li>
-            </ul>
-        </div>
     </div>
 
     <footer>
         Footer.
     </footer>
 </div>
-
-
-
+<!--<div class="navbar">
+    <div class="navbar-inner">
+        <ul class="nav">
+            <li class="divider-verticalx"></li>
+            <li>Items</li>
+            <li class="divider-verticalx"></li>
+            <li>Items</li>
+        </ul>
+    </div>
+</div>-->
