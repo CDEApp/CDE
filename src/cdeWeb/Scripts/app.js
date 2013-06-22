@@ -8,21 +8,27 @@ var cdeWebApp = angular.module('cdeweb', [
     'restangular'
 ]);
 
-cdeWebApp.config(function($routeProvider) {
+// todo consider a version tag appended for when version bumps for load partials ?
+cdeWebApp.config(function ($routeProvider) {
     $routeProvider
         .when('/about', {
             controller: 'cdeWebAboutCtrl',
             templateUrl: 'partials/about.html',
             header: 'partials/navbar.html'
-            // hack ensure it grabs a new one when loaded, 
-            // todo consider a version tag appended for when version bumps ?
-            // and just make sure expire app.js, or version.js hourly... ?
-            //header: 'partials/navbar.html?r='+Math.random()
         })
         .when('/search/:query', {
             controller: 'cdeWebCtrl',
             templateUrl: 'partials/cdeWeb.html',
-            header: 'partials/navbar.html'
+            header: 'partials/navbar.html',
+            nosearch: false,
+            noResultsMessage: 'No Search Results to display.'
+        })
+        .when('/nosearch/:query', {
+            controller: 'cdeWebCtrl',
+            templateUrl: 'partials/cdeWeb.html',
+            header: 'partials/navbar.html',
+            nosearch: true,
+            noResultsMessage: 'Search not performed. No Results to display.'
         })
         .when('/copyPath/:path', {
             controller: 'cdeWebCopyCtrl',
@@ -41,14 +47,11 @@ cdeWebApp.config(function (RestangularProvider) {
     // NOTE: possibly should make a modified response which returns an object
     //       with 3 fields as below, possibly should make each field a promise
     //       so fields can be assigned immediately rather than waiting on promise resolve.
-    //
-    
+
     //r.setResponseExtractor(function(response, operation, what, url) {
     //    if (operation === 'getList') {
     //        // rearrange odata response.
     //        var newResponse = response.value;
-    //        newResponse['odata.metadata'] = response['odata.metadata'];
-    //        newResponse['odata.nextLink'] = response['odata.nextLink'];
     //        return newResponse;
     //    } else {
     //        return response;
@@ -56,63 +59,24 @@ cdeWebApp.config(function (RestangularProvider) {
     //});
 });
 
-cdeWebApp.directive('selectall', function () {
-    return {
-        restrict: 'A',
-        link: function (scope, element) {
-            element.focus(); //element[0].focus(); // not require jquery
-            // be careful of slow $watch - dom isnt fast usually
-            scope.$watch(function() { return element.val(); }, function(newVal, oldVal) {
-                // only on initialize, or it does it for new typed input.
-                if (oldVal === newVal) {
-                    element.select(); //element[0].select(); // not require jquery
-                }
-            });
-        }
-    };
-});
-
 cdeWebApp.run(function($rootScope, $route) {
     $rootScope.layoutPartial = function (partialName) {
         //console.log('$route.current[partialName]', $route.current[partialName]);
         return $route.current[partialName];
     };
-
-    // $routeChangeStart
-    // $routeChangeSuccess
-
-    $rootScope.$on('$routeChangeSuccess', function(next, current) {
-        // if route changed ? cause a search - this is to cause a search on route load to happen ?
-    });
 });
 
-
-//cdeWebApp.run(function ($rootScope, $templateCache) {
-//    //// helps on not caching partials, not sure why as browser is caching not js code.
-//    //// but this runs on ever time view content is loaded - far to often.
-//    //$rootScope.$on('$viewContentLoaded', function () {
-//    //    // this addresses cached partials not refreshing with edits..
-//    //    console.log('ker-flush!');
-//    //    $templateCache.removeAll();
-//    //});
-//    
-//    //$templateCache.removeAll();  // see if just on app load it does its thing.. doesnt work
-//});
-
-var controllers = {};
-
-controllers.cdeWebCopyCtrl = function($scope, $location, $routeParams) {
+cdeWebApp.controller('cdeWebCopyCtrl', function($scope, $location, $routeParams) {
     $scope.resultPath = $routeParams.path;
     console.log('$location', $location);
     console.log('$routeParams.path', $routeParams.path);
     //window.prompt("Copy to clipboard: Ctrl+C, Enter", $scope.resultPath);
     //after copy leave ? //$location.path('/#');
-};
+});
 
-controllers.navbarCtrl = function ($scope, $location, DataModel, DirEntryRepository) {
-    console.log('navbarCtrl init');
+cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel) {
+    //console.log('navbarCtrl init');
     $scope.data = DataModel;
-
 
     // modify ui-reset to only have remove icon visible if input has content.
     // This logic could be pushed back into uiReset possibly ? makes for easier styling control ?
@@ -122,15 +86,15 @@ controllers.navbarCtrl = function ($scope, $location, DataModel, DirEntryReposit
         } else {
             $('a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
         }
-        //console.log("$scope.data.query:" + $scope.data.query);
     });
     
     $scope.clearResult = function () {
+        // want to remove results, change route but not search again and /search/  will search all.
         $scope.data.searchResult = [];
-    };
-
-    $scope.clearQuery = function () {
-        $scope.data.query = '';
+        $scope.data.nextLink = undefined;
+        var query = $scope.data.query || '';
+        var path = '/nosearch/' + query;
+        $location.path(path);
     };
 
     $scope.searchInputActive = function() {
@@ -138,51 +102,66 @@ controllers.navbarCtrl = function ($scope, $location, DataModel, DirEntryReposit
     };
     
     $scope.search = function () {
-        console.log('navbarCtrl.search [' + $scope.data.query + ']');
-        //console.log(document.activeElement, document.activeElement.id);
+        //console.log('navbarCtrl.search [' + $scope.data.query + ']');
         $scope.data.searchInputActive = $scope.searchInputActive();
-        $scope.clearResult();
-        $location.path('/search/' + $scope.data.query);
-
-        DirEntryRepository.get($scope.data.query)
-            .then(function (blah) {
-                $scope.data.metadata = blah['odata.metadata'];
-                $scope.data.nextLink = blah['odata.nextLink'];
-                $scope.data.searchResult = blah.value;
-                //console.log('nextLink', $scope.data.nextLink);
-                //console.log('value', $scope.data.searchResult.length);
-            });
+        var query = $scope.data.query || '';
+        $location.path('/search/' + query);
     };
     
     $scope.haveResults = function () {
         return $scope.data.searchResult.length !== 0;
     };
-};
+});
 
-cdeWebApp.controller(controllers);
-
-cdeWebApp.controller('cdeWebAboutCtrl', function ($rootScope, $scope, $location, DataModel) {
-    console.log('cdeWebAboutCtrl init');
+cdeWebApp.controller('cdeWebAboutCtrl', function ($scope, DataModel) {
+    //console.log('cdeWebAboutCtrl init');
     $scope.data = DataModel;
-
 });
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
-cdeWebApp.controller('cdeWebCtrl', function ($scope, $location, DataModel) {
-    console.log('cdeWebCtrl init');
+cdeWebApp.controller('cdeWebCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+    //console.log('cdeWebCtrl init');
     $scope.data = DataModel;
-    console.log('$scope.data.query', $scope.data.query);
-    console.log('$scope.data.searchResult.length', $scope.data.searchResult.length);
-    //$scope.search();
+    var query = $routeParams.query;
+    if (!$scope.data.query) {
+        $scope.data.query = query;
+    }
+    var current = $route.current;
+    $scope.data.noResultsMessage = current.noResultsMessage;
     
+    if (!current.nosearch) {
+        $location.path('/search/' + query);
+        DirEntryRepository.get(query)
+            .then(function (results) {
+                $scope.data.metadata = results['odata.metadata'];
+                $scope.data.nextLink = results['odata.nextLink'];
+                $scope.data.searchResult = results.value;
+            });
+    }
+
     $scope.haveResults = function () {
         return $scope.data.searchResult.length !== 0;
     };
     
-    // use web browser modal dialog for clipboard copy hackery. ABONDONED at moment.
+    // use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
     $scope.copyPathDialog = function (path) {
         console.log('path ' + path);
         $('#copyPathDialog').modal({});
+    };
+});
+
+cdeWebApp.directive('selectall', function () {
+    return {
+        restrict: 'A',
+        link: function (scope, element) {
+            element[0].focus();
+            scope.$watch(function () { return element.val(); }, function (newVal, oldVal) {
+                // only on initialize, or it does it for new typed input.
+                if (oldVal === newVal) {
+                    element[0].select();
+                }
+            });
+        }
     };
 });
 
@@ -190,22 +169,22 @@ cdeWebApp.directive('restoresearchfocus', function() {
     return function (scope, element) {
         if (scope.data.searchInputActive && !scope.searchInputActive()) {
             element[0].focus();
-            scope.data.searchInputActive = false;
         }
+        scope.data.searchInputActive = false;
     };
 });
 
-cdeWebApp.service('DirEntryRepository', function (Restangular) {
-        this.get = function(substring) {
-            console.log('DirEntryRepository.get()');
-            var baseDE = Restangular.all("DirEntries" + substringFilter(substring, 'Name'));
-            return baseDE.getList();
-        };
-    })
-    .factory('DataModel', function($rootScope, $cookies) {
+cdeWebApp.service('DirEntryRepository', function(Restangular) {
+    this.get = function(substring) {
+        var baseDE = Restangular.all("DirEntries" + substringFilter(substring, 'Name'));
+        return baseDE.getList();
+    };
+});
+
+cdeWebApp.factory('DataModel', function ($rootScope) {
         var data = $rootScope.data;;
         if (!data) {
-            console.log('DataModel new');
+            //console.log('DataModel new');
             data = {
                 email: 'rob@queenofblad.es',
                 name: 'cdeWeb',
