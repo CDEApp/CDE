@@ -13,19 +13,16 @@ namespace cdeWeb.Models
         public DateTime Modified { get; set; }
         //public Flags BitFields; // need ? not yet maybe not ever.
 
+        public DirEntry()
+        {
+        }
+
+        public DirEntry(cdeLib.CommonEntry parent, cdeLib.DirEntry e)
+        {
+            Size = e.Size;
+            Name = e.Path;
+            Path = parent.FullPath;
+            Modified = e.Modified;
+        }
     }
 }
-
-/*
-
- * var searchResultTest = [
-    {Name: 'moo1', Size: 10, Modified: 'adate1', Path: 'C:\\Here'},
-    {Name: 'moo2', Size: 12, Modified: 'adate2', Path: 'C:\\'},
-    {Name: 'Here', Size: 10, Modified: 'adate3', Path: 'C:\\'},
-    {Name: 'Deep1', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate'},
-    {Name: 'Deep2 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate'},
-    {Name: 'Deep3 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate'},
-    {Name: 'Deep4 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate'}
-];
-
-*/

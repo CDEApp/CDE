@@ -46,3 +46,6 @@ lib/CustomMessageBox_Sample*/*
 bin/*
 packages/
 .idea/
+*.cde
+*.cde.off
+

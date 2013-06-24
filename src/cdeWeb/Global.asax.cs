@@ -1,12 +1,10 @@
-﻿using System.Linq;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
 using Autofac;
-using Autofac.Integration.Mvc;
 using Autofac.Integration.WebApi;
 using cdeWeb.App_Start;
 
@@ -21,7 +19,8 @@ namespace cdeWeb
 
         protected void Application_Start()
         {
-            RegisterContainer();
+            var appDataPath = Server.MapPath("~/App_Data");
+            RegisterContainer(appDataPath);
 
             AreaRegistration.RegisterAllAreas();
 
@@ -30,9 +29,10 @@ namespace cdeWeb
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
         }
 
-        private static void RegisterContainer()
+        private void RegisterContainer(string appDataPath)
         {
             var builder = new ContainerBuilder();
 
@@ -44,10 +44,22 @@ namespace cdeWeb
                 .AsImplementedInterfaces();
 
             //builder.RegisterWebApiFilterProvider(GlobalConfiguration.Configuration);
+            
+            RegisterCDEData(builder, appDataPath);
 
             var container = builder.Build();
             var resolver = new AutofacWebApiDependencyResolver(container);
             GlobalConfiguration.Configuration.DependencyResolver = resolver; // Web API resolver
         }
+
+        private void RegisterCDEData(ContainerBuilder builder, string basePath)
+        {
+            builder.RegisterType<DataStore>()
+                .As<IDataStore>()
+                .WithParameter("basePath", basePath);
+        }
+
     }
+
+
 }

@@ -75,7 +75,7 @@ namespace cdeWeb.Controllers
             };
 
             var results = opts.ApplyTo(_dirEntryRepository
-                                           .GetAll()
+                                           .GetQuery(string.Empty)
                                            .AsQueryable(), settings);
             return new PageResult<DirEntry>(results as IEnumerable<DirEntry>,
                                             Request.GetNextPageLink(), // null ?

@@ -127,18 +127,22 @@ cdeWebApp.controller('cdeWebCtrl', function ($scope, $routeParams, $location, $r
         $scope.data.query = query;
     }
     var current = $route.current;
-    $scope.data.noResultsMessage = current.noResultsMessage;
+    $scope.data.searchResult = [];
     
     if (!current.nosearch) {
+        $scope.data.noResultsMessage = "Waiting for search results.";
         $location.path('/search/' + query);
         DirEntryRepository.get(query)
-            .then(function (results) {
+            .then(function(results) {
                 $scope.data.metadata = results['odata.metadata'];
                 $scope.data.nextLink = results['odata.nextLink'];
                 $scope.data.searchResult = results.value;
+                $scope.data.noResultsMessage = current.noResultsMessage;
             });
+    } else {
+        $scope.data.noResultsMessage = current.noResultsMessage;
     }
-
+     
     $scope.haveResults = function () {
         return $scope.data.searchResult.length !== 0;
     };

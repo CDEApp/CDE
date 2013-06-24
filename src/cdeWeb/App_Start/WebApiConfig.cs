@@ -30,8 +30,18 @@ namespace cdeWeb.App_Start
         {
             config.EnableQuerySupport(); // enable OData
 
+            //
+            // todo Add my own result for query.. ?
+            //  return   class with   metrics field and EntitySet<DirEntry>
+            //
+
             var modelBuilder = new ODataConventionModelBuilder();
             modelBuilder.EntitySet<DirEntry>("DirEntries");
+
+            //var myQuery = modelBuilder.Entity<DirEntry>().Action("q");
+            //myQuery.Parameter<string>("query");
+            //myQuery.Returns<SearchResult>();
+
             var model = modelBuilder.GetEdmModel();
 
             config.Routes.MapODataRoute(
