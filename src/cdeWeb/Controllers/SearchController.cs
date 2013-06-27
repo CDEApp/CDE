@@ -14,6 +14,7 @@ namespace cdeWeb.Controllers
 
         public Results<DirEntry> Get(string query = "")
         {
+            query = query ?? string.Empty;
             return _dirEntryRepository.GetQuery(query);
         }
 
