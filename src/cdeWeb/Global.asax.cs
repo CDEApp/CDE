@@ -56,10 +56,8 @@ namespace cdeWeb
         {
             builder.RegisterType<DataStore>()
                 .As<IDataStore>()
-                .WithParameter("basePath", basePath);
+                .WithParameter("basePath", basePath)
+                .SingleInstance();
         }
-
     }
-
-
 }

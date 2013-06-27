@@ -1,5 +1,4 @@
 ﻿'use strict';
-// ReSharper disable InconsistentNaming
 
 var cdeWebApp = angular.module('cdeweb', [
     'ngResource',
@@ -8,30 +7,32 @@ var cdeWebApp = angular.module('cdeweb', [
     'restangular'
 ]);
 
+// get Contact from web.config - so can be configured for site ?
+// todo hitting search of same string doesnt do the search... ? force it ?
+// todo support back navigation ? without doing a search ? ? 
 // todo consider a version tag appended for when version bumps for load partials ?
 cdeWebApp.config(function ($routeProvider) {
     $routeProvider
         .when('/about', {
-            controller: 'cdeWebAboutCtrl',
+            controller: 'aboutCtrl',
             templateUrl: 'partials/about.html',
             header: 'partials/navbar.html'
         })
         .when('/search/:query', {
-            controller: 'cdeWebCtrl',
+            controller: 'searchCtrl',
             templateUrl: 'partials/cdeWeb.html',
             header: 'partials/navbar.html',
-            nosearch: false,
-            noResultsMessage: 'No Search Results to display.'
+            noResultsMessage: 'No Search Results to display.',
+            reloadOnSearch: false
         })
         .when('/nosearch/:query', {
-            controller: 'cdeWebCtrl',
+            controller: 'nosearchCtrl',
             templateUrl: 'partials/cdeWeb.html',
             header: 'partials/navbar.html',
-            nosearch: true,
             noResultsMessage: 'Search not performed. No Results to display.'
         })
         .when('/copyPath/:path', {
-            controller: 'cdeWebCopyCtrl',
+            controller: 'copyCtrl',
             templateUrl: 'partials/copyPath.html',
             header: 'partials/navbar.html'
         })
@@ -40,7 +41,7 @@ cdeWebApp.config(function ($routeProvider) {
 
 cdeWebApp.config(function (RestangularProvider) {
     var r = RestangularProvider;
-    r.setBaseUrl('/odata');
+    r.setBaseUrl('/api');
     r.setListTypeIsArray(false); // odata returns an object with a value field for list.
     
     // Not modifying the response format for now. but this is how it culd be modified
@@ -59,14 +60,23 @@ cdeWebApp.config(function (RestangularProvider) {
     //});
 });
 
-cdeWebApp.run(function($rootScope, $route) {
+cdeWebApp.run(function ($rootScope, $route, DataModel) {
+    $rootScope.data = DataModel;
+
     $rootScope.layoutPartial = function (partialName) {
         //console.log('$route.current[partialName]', $route.current[partialName]);
         return $route.current[partialName];
     };
+
+    $rootScope.resetSearchResult = function () {
+        $rootScope.data.searchResult = [];
+        $rootScope.data.nextLink = undefined;
+        $rootScope.data.metrics = undefined;
+        $rootScope.data.totalMsec = undefined;
+    };
 });
 
-cdeWebApp.controller('cdeWebCopyCtrl', function($scope, $location, $routeParams) {
+cdeWebApp.controller('copyCtrl', function($scope, $location, $routeParams) {
     $scope.resultPath = $routeParams.path;
     console.log('$location', $location);
     console.log('$routeParams.path', $routeParams.path);
@@ -74,7 +84,8 @@ cdeWebApp.controller('cdeWebCopyCtrl', function($scope, $location, $routeParams)
     //after copy leave ? //$location.path('/#');
 });
 
-cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel) {
+// todo make Escape key in input query - clear it... or maybe two escapes clears it ?
+cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel, $route) {
     //console.log('navbarCtrl init');
     $scope.data = DataModel;
 
@@ -87,11 +98,10 @@ cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel) {
             $('a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
         }
     });
-    
+
     $scope.clearResult = function () {
         // want to remove results, change route but not search again and /search/  will search all.
-        $scope.data.searchResult = [];
-        $scope.data.nextLink = undefined;
+        $scope.resetSearchResult();
         var query = $scope.data.query || '';
         var path = '/nosearch/' + query;
         $location.path(path);
@@ -106,6 +116,9 @@ cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel) {
         $scope.data.searchInputActive = $scope.searchInputActive();
         var query = $scope.data.query || '';
         $location.path('/search/' + query);
+
+        $scope.resetSearchResult();
+        $route.reload();
     };
     
     $scope.haveResults = function () {
@@ -113,13 +126,12 @@ cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel) {
     };
 });
 
-cdeWebApp.controller('cdeWebAboutCtrl', function ($scope, DataModel) {
-    //console.log('cdeWebAboutCtrl init');
+cdeWebApp.controller('aboutCtrl', function ($scope, DataModel) {
+    //console.log('aboutCtrl init');
     $scope.data = DataModel;
 });
 
-// todo make Escape key in input query - clear it... or maybe two escapes clears it ?
-cdeWebApp.controller('cdeWebCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+cdeWebApp.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
     //console.log('cdeWebCtrl init');
     $scope.data = DataModel;
     var query = $routeParams.query;
@@ -127,21 +139,31 @@ cdeWebApp.controller('cdeWebCtrl', function ($scope, $routeParams, $location, $r
         $scope.data.query = query;
     }
     var current = $route.current;
-    $scope.data.searchResult = [];
+
+    $scope.resetSearchResult();
+    $scope.data.noResultsMessage = "Waiting for search results.";
+    $location.path('/search/' + query);
+    var getList = DirEntryRepository.getList(query);
+
+    // restangular promise of field value.
+    //$scope.data.searchResult = getList.get('Value'); //now this is a promise means my 'searching' message isnt displayed.
     
-    if (!current.nosearch) {
-        $scope.data.noResultsMessage = "Waiting for search results.";
-        $location.path('/search/' + query);
-        DirEntryRepository.get(query)
-            .then(function(results) {
-                $scope.data.metadata = results['odata.metadata'];
-                $scope.data.nextLink = results['odata.nextLink'];
-                $scope.data.searchResult = results.value;
-                $scope.data.noResultsMessage = current.noResultsMessage;
-            });
-    } else {
+    getList.then(function(results) {
+        //$scope.data.metadata = results['odata.metadata'];
+        //$scope.data.nextLink = results['odata.nextLink'];
+        $scope.data.searchResult = results.Value;
+        $scope.data.metrics = results.ElapsedList;
+        $scope.data.totalMsec = results.TotalMsec;
         $scope.data.noResultsMessage = current.noResultsMessage;
-    }
+    }, function (response) {
+        console.log('getList() fail.')
+        if (response.status === 404) { // NotFound
+            $scope.data.noResultsMessage = current.noResultsMessage;
+        } else {
+            $scope.data.noResultsMessage = "Error occurred searching. (Error Code " + response.statusf + ")";
+        }
+    });
+    //$route.reload(); // force reload even if url not changed, search again.
      
     $scope.haveResults = function () {
         return $scope.data.searchResult.length !== 0;
@@ -151,6 +173,21 @@ cdeWebApp.controller('cdeWebCtrl', function ($scope, $routeParams, $location, $r
     $scope.copyPathDialog = function (path) {
         console.log('path ' + path);
         $('#copyPathDialog').modal({});
+    };
+});
+
+cdeWebApp.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+    $scope.data = DataModel;
+    var query = $routeParams.query;
+    if (!$scope.data.query) {
+        $scope.data.query = query;
+    }
+    var current = $route.current;
+    $scope.data.searchResult = [];
+    $scope.data.noResultsMessage = current.noResultsMessage;
+    
+    $scope.haveResults = function () {
+        return false;
     };
 });
 
@@ -179,8 +216,8 @@ cdeWebApp.directive('restoresearchfocus', function() {
 });
 
 cdeWebApp.service('DirEntryRepository', function(Restangular) {
-    this.get = function(substring) {
-        var baseDE = Restangular.all("DirEntries" + substringFilter(substring, 'Name'));
+    this.getList = function(substring) {
+        var baseDE = Restangular.all("Search?query=" + (query || ''));
         return baseDE.getList();
     };
 });
@@ -195,28 +232,9 @@ cdeWebApp.factory('DataModel', function ($rootScope) {
                 version: '0.1',
                 query: '',
                 queryOptions: {},
-                searchResult: []
+                searchResult: [],
+                metrics: []
             };
         }
         return data;
-    });
-
-function substringFilter(query, field) {
-    var notNullQuery = query || '';
-    return "?$filter=substringof('" + notNullQuery + "'," + field + ")";
-}
-
-
-var searchResultTest = [
-    { Name: 'moo1', Size: 10, Modified: 'adate1', Path: 'C:\\Here' },
-    { Name: 'moo2', Size: 12, Modified: 'adate2', Path: 'C:\\' },
-    { Name: 'Here', Size: 10, Modified: 'adate3', Path: 'C:\\' },
-    { Name: 'Deep1', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate' },
-    { Name: 'Deep2 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate' },
-    { Name: 'Deep3 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate' },
-    { Name: 'Deep4 Six', Size: 13, Modified: 'adate3', Path: 'C:\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate\\BigLong\\Stuff\\With\\A\\Longis\\Long\\Path\\To\\Demonstrate' }
-];
-// pull Contact from web.config - so roy can setup to him ?
-// ReSharper restore InconsistentNaming
-
-
+});

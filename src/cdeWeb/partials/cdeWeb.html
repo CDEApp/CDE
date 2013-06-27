@@ -1,7 +1,7 @@
 ﻿<header data-ng-include="layoutPartial('header')"></header>
 
 <div class="row-fluid">
-    <div data-ng-show="!haveResults()" class="alert alert-info">
+    <div data-ng-show="!haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>
     </div>
         
@@ -28,7 +28,14 @@
     </div>
 
     <footer>
-        Footer:
+        <div data-ng-show="data.totalMsec">Metrics {{ data.totalMsec }}msec</div>
+        <table>
+            <tbody>
+                <tr data-ng-repeat="r in data.metrics">
+                    <td >{{r.Label}} {{r.ElapsedMsec}} msec</td>
+                </tr>
+            </tbody>
+        </table>
     </footer>
 </div>
 <!--<div class="navbar">

@@ -263,7 +263,6 @@
     <Content Include="favicon.ico" />
     <Content Include="Global.asax" />
     <Content Include="index.html" />
-    <Content Include="partials\cdeWebSearch.html" />
     <Content Include="partials\copyPath.html" />
     <Content Include="partials\navbar.html" />
     <Content Include="Scripts\angular-bootstrap-prettify.js" />
@@ -641,6 +640,10 @@
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
       <Project>{38066FCE-1EE4-4B6C-BA94-2A526DF7B3ED}</Project>
       <Name>cdeLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Util\Util.csproj">
+      <Project>{27847DBD-65B6-489D-A600-89D4FF5151E8}</Project>
+      <Name>Util</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

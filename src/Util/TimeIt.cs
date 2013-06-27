@@ -16,7 +16,7 @@ namespace Util
 
 		private string _runningLabel;
 		private readonly Stopwatch _watch;
-		private readonly List<LabelElapsed> _elapsedList;
+		protected readonly List<LabelElapsed> _elapsedList;
 
 		public TimeIt()
 		{
@@ -47,7 +47,6 @@ namespace Util
 					Label = _runningLabel,
 					ElapsedMsec = _watch.ElapsedMilliseconds
 				};
-				TotalMsec += _watch.ElapsedMilliseconds;
 				_runningLabel = String.Empty;
 				_elapsedList.Add(nameElapsed);
 				return nameElapsed;
@@ -56,9 +55,12 @@ namespace Util
 		}
 
 		public IEnumerable<LabelElapsed> ElapsedList { get { return _elapsedList; } }
-		public float TotalMsec { get; private set; }
+	    public float TotalMsec
+	    {
+            get { return _elapsedList.Sum(x => x.ElapsedMsec); }
+	    }
 
-		public new string ToString()
+	    public new string ToString()
 		{
 			var str = _elapsedList
 				.Aggregate(string.Empty,
