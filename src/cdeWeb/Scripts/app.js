@@ -216,7 +216,7 @@ cdeWebApp.directive('restoresearchfocus', function() {
 });
 
 cdeWebApp.service('DirEntryRepository', function(Restangular) {
-    this.getList = function(substring) {
+    this.getList = function(query) {
         var baseDE = Restangular.all("Search?query=" + (query || ''));
         return baseDE.getList();
     };
