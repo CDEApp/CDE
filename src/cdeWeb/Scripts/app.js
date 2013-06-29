@@ -394,8 +394,7 @@ cdeWebApp.filter('change', function () {
 
 cdeWebApp.directive('flash', function ($) {
     return function(scope, elem, attrs) {
-        var flag = elem.attr('data-flash');
-        console.log('flash', flag);
+        var flag = attrs.flash;
         var $elem = $(elem);
 
         function flashRow() {
@@ -421,7 +420,7 @@ cdeWebApp.directive('flash', function ($) {
 cdeWebApp.directive('scrollTicker', function ($) {
     return function(scope, elem, attrs) {
         var $scrollTickerUI = $(elem);
-        var flag = elem.attr('data-scroll-ticker');
+        var flag = attrs.scrollTicker;
         scroll();
 
         function scroll() {
