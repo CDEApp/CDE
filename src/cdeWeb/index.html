@@ -61,7 +61,7 @@
 
             color: darkred; /* my stuff */
             font-size: 1.3em;
-            margin-left: -18px;
+            margin-left: -22px;
             line-height: 40px; /* this works but icky */
             z-index: 105;
 
@@ -83,49 +83,67 @@
 
     <!--<script type="text/javascriptx" src="/Scripts/modernizr-2.5.3.js"></script>-->
 </head>
-    <body>
-        <!--        <div class="container-fluid" data-ng-view=""></div>-->
-        <!-- undoing the left right padidn gof cointainer-fluid at top leve -->
-        <!--<div class="container-fluid" data-ng-view style="padding-left:0; padding-right:0;"></div>-->
-        <div data-ng-view></div>
+<body>
+    <div data-ng-view=""></div>
         
-        
-        
-<div>
-    <h1>ASP.NET SignalR Stock Ticker Sample</h1>
-
-    <input type="button" id="open" value="Open Market" />
-    <input type="button" id="close" value="Close Market" disabled="disabled" />
-    <input type="button" id="reset" value="Reset" />
-
-    <h2>Live Stock Table</h2>
-    <div id="stockTable">
-        <table border="1">
-            <thead>
-                <tr><th>Symbol</th><th>Price</th><th>Open</th><th>High</th><th>Low</th><th>Change</th><th>%</th></tr>
-            </thead>
-            <tbody>
-                <tr class="loading"><td colspan="7">loading...</td></tr>
-            </tbody>
-        </table>
-    </div>
-
-    <h2>Live Stock Ticker</h2>
-    <div id="stockTicker">
-        <div class="inner">
-            <ul>
-                <li class="loading">loading...</li>
-            </ul>
+    <div data-ng-controller="StockTickerCtrl">
+        <h1>ASP.NET SignalR Stock Ticker Sample</h1>
+        <input type="button" id="open" value="Open Market" data-ng-click="openMarket()" data-ng-disabled="marketIsOpen"/>
+        <input type="button" id="close" value="Close Market" data-ng-click="closeMarket()"  data-ng-disabled="!marketIsOpen"/>
+        <input type="button" id="reset" value="Reset" data-ng-click="reset()"  data-ng-disabled="marketIsOpen"/>
+ 
+        <h2>Live Stock Table</h2>
+        <div id="stockTable">
+            <table border="1">
+                <thead>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Price</th>
+                        <th>Open</th>
+                        <th>High</th>
+                        <th>Low</th>
+                        <th>Change</th>
+                        <th>%</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="loading" data-ng-show="stocks.length==0">
+                        <td colspan="7">
+                            loading...
+                        </td>
+                    </tr>
+                    <tr data-ng-repeat="stock in stocks" data-flash="marketIsOpen">
+                        <td>{{stock.Symbol}}</td>
+                        <td>{{stock.Price | number:2}}</td>
+                        <td>{{stock.DayOpen | number:2}}</td>
+                        <td>{{stock.DayHigh | number:2}}</td>
+                        <td>{{stock.DayLow | number:2}}</td>
+                        <td>{{stock.Change | change}}</td>
+                        <td>{{stock.PercentChange | percentage}}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <h2>Live Stock Ticker</h2>
+        <div id="stockTicker">
+            <div class="inner">
+                    <ul data-scroll-ticker="marketIsOpen">
+                        <li class="loading" data-ng-show="stocks.length==0">loading...</li>
+                        <li data-ng-repeat="stock in stocks" data-symbol="{{stock.Symbol}}" data-flash="marketIsOpen">
+                            <span class="symbol">{{stock.Symbol}}</span> 
+                            <span class="price">{{stock.Price | number:2}}</span>
+                            <span class="change">{{stock.Change}} ({{stock.PercentChange}})</span>
+                        </li>
+                    </ul>
+            </div>
         </div>
     </div>
-</div>
+        
 
         <script src="/Scripts/lodash.js"></script>
         <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
         <script src="/Scripts/jquery.color-2.1.2.js"></script>
         <script src="/Scripts/jquery.signalR-1.1.2.js"></script>
-        <script src="/signalr/hubs"></script>
-        <script src="/SignalR.Sample/SignalR.StockTicker.js"></script>
 
         <script src="/Scripts/angular.js"></script>
         <script src="/Scripts/angular-resource.js"></script>

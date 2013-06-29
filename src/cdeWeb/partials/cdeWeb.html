@@ -29,13 +29,11 @@
 
     <footer>
         <div data-ng-show="data.totalMsec">Metrics {{ data.totalMsec }}msec</div>
-        <table>
-            <tbody>
-                <tr data-ng-repeat="r in data.metrics">
+        <ul>
+            <li data-ng-repeat="r in data.metrics">
                     <td >{{r.Label}} {{r.ElapsedMsec}} msec</td>
-                </tr>
-            </tbody>
-        </table>
+            </li>
+        </ul>
     </footer>
 </div>
 <!--<div class="navbar">

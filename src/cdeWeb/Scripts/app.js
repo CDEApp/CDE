@@ -39,6 +39,15 @@ cdeWebApp.config(function ($routeProvider) {
         .otherwise({ redirectTo: '/about' });
 });
 
+cdeWebApp.value('$', $); // jQuery
+
+// A simple background color flash effect that uses jQuery Color plugin
+$.fn.flash = function(color, duration) {
+    var current = this.css('backgroundColor');
+    this.animate({ backgroundColor: 'rgb(' + color + ')' }, duration / 2)
+        .animate({ backgroundColor: current }, duration / 2);
+};
+
 cdeWebApp.config(function (RestangularProvider) {
     var r = RestangularProvider;
     r.setBaseUrl('/api');
@@ -237,4 +246,195 @@ cdeWebApp.factory('DataModel', function ($rootScope) {
             };
         }
         return data;
+});
+
+
+cdeWebApp.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope) {
+    function stockTickerOperations() {
+        var connection;
+        var proxy;
+
+        //To set values to fields in the controller
+        var setMarketState;
+        var setValues;
+        var updateStocks;
+
+        //This function will be called by controller to set callback functions
+        var setCallbacks = function (setMarketStateCallback, setValuesCallback, updateStocksCallback) {
+            setMarketState = setMarketStateCallback;
+            setValues = setValuesCallback;
+            updateStocks = updateStocksCallback;
+        };
+
+        var initializeClient = function () {
+            connection = $.hubConnection();
+            proxy = connection.createHubProxy('stockTicker');
+            configureProxyClientFunctions();
+            start();
+        };
+
+        var configureProxyClientFunctions = function () {
+            proxy.on('marketOpened', function () {
+                $rootScope.$apply(setMarketState(true));
+            });
+
+            proxy.on('marketClosed', function () {
+                $rootScope.$apply(setMarketState(false));
+            });
+
+            proxy.on('marketReset', function () {
+                initializeStockMarket();
+            });
+
+            proxy.on('updateStockPrice', function (stock) {
+                $rootScope.$apply(updateStocks(stock));
+            });
+        };
+
+        var initializeStockMarket = function () {
+            //Getting values of stocks from the hub and setting it to controllers field
+            proxy.invoke('getAllStocks').done(function (data) {
+                $rootScope.$apply(setValues(data));
+            }).pipe(function () {
+                //Setting market state to field in controller based on the current state
+                proxy.invoke('getMarketState').done(function (state) {
+                    if (state == 'Open')
+                        $rootScope.$apply(setMarketState(true));
+                    else
+                        $rootScope.$apply(setMarketState(false));
+                });
+            });
+        };
+
+        var start = function () {
+            connection.start().pipe(function () {
+                initializeStockMarket();
+            });
+        };
+
+        var openMarket = function () {
+            proxy.invoke('openMarket');
+        };
+
+        var closeMarket = function () {
+            proxy.invoke('closeMarket');
+        };
+
+        var reset = function () {
+            proxy.invoke('reset');
+        };
+
+        return {
+            initializeClient: initializeClient,
+            openMarket: openMarket,
+            closeMarket: closeMarket,
+            reset: reset,
+            setCallbacks: setCallbacks
+        };
+    };
+
+    return stockTickerOperations;
+}]);
+
+cdeWebApp.controller('StockTickerCtrl', function($scope, stockTickerData) {
+    $scope.stocks = [];
+    $scope.marketIsOpen = false;
+
+    $scope.openMarket = function() {
+        ops.openMarket();
+    };
+
+    $scope.closeMarket = function() {
+        ops.closeMarket();
+    };
+
+    $scope.reset = function() {
+        ops.reset();
+    };
+
+    function assignStocks(stocks) {
+        $scope.stocks = stocks;
+    }
+
+    function replaceStock(stock) {
+        for (var count = 0; count < $scope.stocks.length; count++) {
+            if ($scope.stocks[count].Symbol == stock.Symbol) {
+                $scope.stocks[count] = stock;
+            }
+        }
+    }
+
+    function setMarketState(isOpen) {
+        $scope.marketIsOpen = isOpen;
+    }
+
+    var ops = stockTickerData();
+    ops.setCallbacks(setMarketState, assignStocks, replaceStock);
+    ops.initializeClient();
+});
+
+
+cdeWebApp.filter('percentage', function () {
+    return function(changeFraction) {
+        return (changeFraction * 100).toFixed(2) + "%";
+    };
+});
+
+cdeWebApp.filter('change', function () {
+    return function(changeAmount) {
+        if (changeAmount > 0) {
+            return "▲ " + changeAmount.toFixed(2);
+        } else if (changeAmount < 0) {
+            return "▼ " + changeAmount.toFixed(2);
+        } else {
+            return changeAmount.toFixed(2);
+        }
+    };
+});
+
+cdeWebApp.directive('flash', function ($) {
+    return function(scope, elem, attrs) {
+        var flag = elem.attr('data-flash');
+        console.log('flash', flag);
+        var $elem = $(elem);
+
+        function flashRow() {
+            var value = scope.stock.LastChange;
+            var changeStatus = scope.$eval(flag);
+            if (changeStatus) {
+                var bg = value === 0
+                    ? '255,216,0' // yellow
+                    : value > 0
+                        ? '154,240,117' // green
+                        : '255,148,148'; // red
+
+                $elem.flash(bg, 1000);
+            }
+        }
+
+        scope.$watch(flag, function(value) {
+            flashRow();
+        });
+    };
+});
+
+cdeWebApp.directive('scrollTicker', function ($) {
+    return function(scope, elem, attrs) {
+        var $scrollTickerUI = $(elem);
+        var flag = elem.attr('data-scroll-ticker');
+        scroll();
+
+        function scroll() {
+            if (scope.$eval(flag)) {
+                var w = $scrollTickerUI.width();
+                $scrollTickerUI.css({ marginLeft: w });
+                $scrollTickerUI.animate({ marginLeft: -w }, 15000, 'linear', scroll);
+            } else
+                $scrollTickerUI.stop();
+        }
+
+        scope.$watch(flag, function(value) {
+            scroll();
+        });
+    };
 });
