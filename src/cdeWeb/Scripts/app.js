@@ -1,17 +1,20 @@
 ﻿'use strict';
 
-var cdeWebApp = angular.module('cdeweb', [
+var app = angular.module('cdeweb', [
     'ngResource',
     'ngCookies',
     'ui.directives',
     'restangular'
 ]);
+app.value('$', $); // jQuery
+// Specify SignalR server URL here for supporting CORS
+app.value('signalRServer', '');
 
 // get Contact from web.config - so can be configured for site ?
 // todo hitting search of same string doesnt do the search... ? force it ?
 // todo support back navigation ? without doing a search ? ? 
 // todo consider a version tag appended for when version bumps for load partials ?
-cdeWebApp.config(function ($routeProvider) {
+app.config(function ($routeProvider) {
     $routeProvider
         .when('/about', {
             controller: 'aboutCtrl',
@@ -39,7 +42,6 @@ cdeWebApp.config(function ($routeProvider) {
         .otherwise({ redirectTo: '/about' });
 });
 
-cdeWebApp.value('$', $); // jQuery
 
 // A simple background color flash effect that uses jQuery Color plugin
 $.fn.flash = function(color, duration) {
@@ -48,7 +50,7 @@ $.fn.flash = function(color, duration) {
         .animate({ backgroundColor: current }, duration / 2);
 };
 
-cdeWebApp.config(function (RestangularProvider) {
+app.config(function (RestangularProvider) {
     var r = RestangularProvider;
     r.setBaseUrl('/api');
     r.setListTypeIsArray(false); // odata returns an object with a value field for list.
@@ -69,7 +71,7 @@ cdeWebApp.config(function (RestangularProvider) {
     //});
 });
 
-cdeWebApp.run(function ($rootScope, $route, DataModel) {
+app.run(function ($rootScope, $route, DataModel) {
     $rootScope.data = DataModel;
 
     $rootScope.layoutPartial = function (partialName) {
@@ -85,7 +87,7 @@ cdeWebApp.run(function ($rootScope, $route, DataModel) {
     };
 });
 
-cdeWebApp.controller('copyCtrl', function($scope, $location, $routeParams) {
+app.controller('copyCtrl', function($scope, $location, $routeParams) {
     $scope.resultPath = $routeParams.path;
     console.log('$location', $location);
     console.log('$routeParams.path', $routeParams.path);
@@ -94,7 +96,7 @@ cdeWebApp.controller('copyCtrl', function($scope, $location, $routeParams) {
 });
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
-cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel, $route) {
+app.controller('navbarCtrl', function ($scope, $location, DataModel, $route) {
     //console.log('navbarCtrl init');
     $scope.data = DataModel;
 
@@ -135,12 +137,12 @@ cdeWebApp.controller('navbarCtrl', function ($scope, $location, DataModel, $rout
     };
 });
 
-cdeWebApp.controller('aboutCtrl', function ($scope, DataModel) {
+app.controller('aboutCtrl', function ($scope, DataModel) {
     //console.log('aboutCtrl init');
     $scope.data = DataModel;
 });
 
-cdeWebApp.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
     //console.log('cdeWebCtrl init');
     $scope.data = DataModel;
     var query = $routeParams.query;
@@ -185,7 +187,7 @@ cdeWebApp.controller('searchCtrl', function ($scope, $routeParams, $location, $r
     };
 });
 
-cdeWebApp.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
     $scope.data = DataModel;
     var query = $routeParams.query;
     if (!$scope.data.query) {
@@ -200,7 +202,7 @@ cdeWebApp.controller('nosearchCtrl', function ($scope, $routeParams, $location, 
     };
 });
 
-cdeWebApp.directive('selectall', function () {
+app.directive('selectall', function () {
     return {
         restrict: 'A',
         link: function (scope, element) {
@@ -215,7 +217,7 @@ cdeWebApp.directive('selectall', function () {
     };
 });
 
-cdeWebApp.directive('restoresearchfocus', function() {
+app.directive('restoresearchfocus', function() {
     return function (scope, element) {
         if (scope.data.searchInputActive && !scope.searchInputActive()) {
             element[0].focus();
@@ -224,14 +226,14 @@ cdeWebApp.directive('restoresearchfocus', function() {
     };
 });
 
-cdeWebApp.service('DirEntryRepository', function(Restangular) {
+app.service('DirEntryRepository', function(Restangular) {
     this.getList = function(query) {
         var baseDE = Restangular.all("Search?query=" + (query || ''));
         return baseDE.getList();
     };
 });
 
-cdeWebApp.factory('DataModel', function ($rootScope) {
+app.factory('DataModel', function ($rootScope) {
         var data = $rootScope.data;;
         if (!data) {
             //console.log('DataModel new');
@@ -249,7 +251,7 @@ cdeWebApp.factory('DataModel', function ($rootScope) {
 });
 
 
-cdeWebApp.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope) {
+app.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope) {
     function stockTickerOperations() {
         var connection;
         var proxy;
@@ -336,7 +338,7 @@ cdeWebApp.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope
     return stockTickerOperations;
 }]);
 
-cdeWebApp.controller('StockTickerCtrl', function($scope, stockTickerData) {
+app.controller('StockTickerCtrl', function($scope, stockTickerData) {
     $scope.stocks = [];
     $scope.marketIsOpen = false;
 
@@ -374,13 +376,13 @@ cdeWebApp.controller('StockTickerCtrl', function($scope, stockTickerData) {
 });
 
 
-cdeWebApp.filter('percentage', function () {
+app.filter('percentage', function () {
     return function(changeFraction) {
         return (changeFraction * 100).toFixed(2) + "%";
     };
 });
 
-cdeWebApp.filter('change', function () {
+app.filter('change', function () {
     return function(changeAmount) {
         if (changeAmount > 0) {
             return "▲ " + changeAmount.toFixed(2);
@@ -392,7 +394,7 @@ cdeWebApp.filter('change', function () {
     };
 });
 
-cdeWebApp.directive('flash', function ($) {
+app.directive('flash', function ($) {
     return function(scope, elem, attrs) {
         var flag = attrs.flash;
         var $elem = $(elem);
@@ -417,7 +419,7 @@ cdeWebApp.directive('flash', function ($) {
     };
 });
 
-cdeWebApp.directive('scrollTicker', function ($) {
+app.directive('scrollTicker', function ($) {
     return function(scope, elem, attrs) {
         var $scrollTickerUI = $(elem);
         var flag = attrs.scrollTicker;
@@ -434,6 +436,69 @@ cdeWebApp.directive('scrollTicker', function ($) {
 
         scope.$watch(flag, function(value) {
             scroll();
+        });
+    };
+});
+
+// reference if get stuck alternate angular hubs factory
+// https://stuff2share.codeplex.com/SourceControl/latest#angular-signalr.js
+
+// from http://henriquat.re/server-integration/signalr/integrateWithSignalRHubs.html
+app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
+    function($rootScope, signalRServer) {
+
+        function signalRHubProxyFactory(serverUrl, hubName, startOptions) {
+            var connection = $.hubConnection(signalRServer);
+            var proxy = connection.createHubProxy(hubName);
+            connection.start(startOptions);//.done(function() {});
+
+            function proxyOnApplyCallback(eventName, callback) {
+                proxy.on(eventName, function(result) {
+                    $rootScope.$apply(function() {
+                        if (callback) {
+                            callback(result);
+                        }
+                    });
+                });
+            }
+            
+            function proxyInvokeApplyCallback(methodName, callback) {
+                proxy.invoke(methodName).done(function (result) {
+                    $rootScope.$apply(function () {
+                        if (callback) {
+                            callback(result);
+                        }
+                    });
+                });
+            }
+            
+            return {
+                on: proxyOnApplyCallback,
+                off: proxyOnApplyCallback,
+                invoke: proxyInvokeApplyCallback,
+                connection: connection
+            };
+        }
+
+        return signalRHubProxyFactory;
+    }]);
+
+app.controller('ServerTimeController', function ($scope, signalRHubProxy) {
+    debugger;
+    var clientPushHubProxy = signalRHubProxy(
+        signalRHubProxy.defaultServer, 'clientPushHub',
+            { logging: true });
+    var serverTimeHubProxy = signalRHubProxy(
+        signalRHubProxy.defaultServer, 'serverTimeHub');
+
+    clientPushHubProxy.on('serverTime', function (data) {
+        $scope.currentServerTime = data;
+        var x = clientPushHubProxy.connection.id;
+    });
+
+    $scope.getServerTime = function () {
+        serverTimeHubProxy.invoke('getServerTime', function (data) {
+            $scope.currentServerTimeManually = data;
         });
     };
 });

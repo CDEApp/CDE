@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System;
+using System.Globalization;
+using System.Reflection;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
@@ -6,6 +8,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using Autofac;
 using Autofac.Integration.WebApi;
+using Microsoft.AspNet.SignalR;
 using cdeWeb.App_Start;
 
 namespace cdeWeb
@@ -15,10 +18,14 @@ namespace cdeWeb
 
     public class WebApiApplication : HttpApplication
     {
+        private BackgroundServerTimeTimer bstt;
+
         // maybe automapper ?
 
         protected void Application_Start()
         {
+            bstt = new BackgroundServerTimeTimer();
+
             var appDataPath = Server.MapPath("~/App_Data");
             RegisterContainer(appDataPath);
 
@@ -59,5 +66,17 @@ namespace cdeWeb
                 .WithParameter("basePath", basePath)
                 .SingleInstance();
         }
+    }
+
+    public class ServerTimeHub : Hub
+    {
+        public string GetServerTime()
+        {
+            return DateTime.UtcNow.ToString();
+        }
+    }
+
+    public class ClientPushHub : Hub
+    {
     }
 }

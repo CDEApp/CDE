@@ -139,18 +139,33 @@
         </div>
     </div>
         
+    <div data-ng-controller="ServerTimeController">
+        <div>
+            <h3>Time from server (being pushed every 5 seconds):</h3>
+            <h4 data-ng-bind="currentServerTime">Server Push Time</h4>
+        </div>
 
-        <script src="/Scripts/lodash.js"></script>
-        <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
-        <script src="/Scripts/jquery.color-2.1.2.js"></script>
-        <script src="/Scripts/jquery.signalR-1.1.2.js"></script>
+        <div>
+            <button data-ng-click="getServerTime()">Get time from server</button>
 
-        <script src="/Scripts/angular.js"></script>
-        <script src="/Scripts/angular-resource.js"></script>
-        <script src="/Scripts/angular-cookies.js"></script>
-        <script src="/Scripts/restangular.js"></script>
-        <script src="/Scripts/angular-ui.js"></script>
-        <script src="/Scripts/bootstrap.js"></script>
-        <script src="/Scripts/app.js"></script>
-    </body>
+            <div>
+                <h3>Manual time from server:</h3>
+                <h4 data-ng-bind="currentServerTimeManually">Manual Get Time</h4>
+            </div>
+        </div>
+    </div>
+
+    <script src="/Scripts/lodash.js"></script>
+    <script src="/Scripts/jquery-2.0.2.js"></script> <!-- before angular -->
+    <script src="/Scripts/jquery.color-2.1.2.js"></script>
+    <script src="/Scripts/jquery.signalR-1.1.2.js"></script>
+
+    <script src="/Scripts/angular.js"></script>
+    <script src="/Scripts/angular-resource.js"></script>
+    <script src="/Scripts/angular-cookies.js"></script>
+    <script src="/Scripts/restangular.js"></script>
+    <script src="/Scripts/angular-ui.js"></script>
+    <script src="/Scripts/bootstrap.js"></script>
+    <script src="/Scripts/app.js"></script>
+</body>
 </html>
