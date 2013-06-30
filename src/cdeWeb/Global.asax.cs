@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 using System.Web;
@@ -9,7 +10,9 @@ using System.Web.Routing;
 using Autofac;
 using Autofac.Integration.WebApi;
 using Microsoft.AspNet.SignalR;
+using cdeLib;
 using cdeWeb.App_Start;
+using DirEntry = cdeWeb.Models.DirEntry;
 
 namespace cdeWeb
 {
@@ -78,5 +81,32 @@ namespace cdeWeb
 
     public class ClientPushHub : Hub
     {
+    }
+
+    public class SearchHub: Hub
+    {
+        private enum FindState
+        {
+            StartLoad,
+            EndFileLoaded,
+            EndLoad,
+            StartSearch,
+            EndSearch
+        };
+
+        private readonly IHubContext _hub;
+
+        public SearchHub()
+        {
+            _hub = GlobalHost.ConnectionManager.GetHubContext<SearchHub>();
+        }
+
+        public int Query(string query, string moo)
+        {
+            Debug.WriteLine(string.Format("Query parameters: \"{0}\" {1}", query, moo));
+            //hub.Clients.All.filesToLoadFred(23, "drifty...!");
+            _hub.Clients.Client(Context.ConnectionId).filesToLoadFred(23, "drifty...!");
+            return 7;
+        }
     }
 }

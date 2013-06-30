@@ -1,6 +1,10 @@
 ﻿<header data-ng-include="layoutPartial('header')"></header>
 
 <div class="row-fluid">
+    <div>
+        filesToLoad: [{{data.filesToLoad}}]
+        <button data-ng-click="doQuery('graaaar', 'average bear')" data-ng-disabled="!data.hubActive">Click Me! 3</button>
+    </div>
     <div data-ng-show="!haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>
     </div>
@@ -31,7 +35,7 @@
         <div data-ng-show="data.totalMsec">Metrics {{ data.totalMsec }}msec</div>
         <ul>
             <li data-ng-repeat="r in data.metrics">
-                    <td >{{r.Label}} {{r.ElapsedMsec}} msec</td>
+                <td >{{r.Label}} {{r.ElapsedMsec}} msec</td>
             </li>
         </ul>
     </footer>

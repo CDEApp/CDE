@@ -6,9 +6,8 @@ var app = angular.module('cdeweb', [
     'ui.directives',
     'restangular'
 ]);
-app.value('$', $); // jQuery
-// Specify SignalR server URL here for supporting CORS
-app.value('signalRServer', '');
+app.value('$', $); // jQuery - seems a good idea.
+app.value('signalRServer', ''); // Specify SignalR server URL here for supporting CORS
 
 // get Contact from web.config - so can be configured for site ?
 // todo hitting search of same string doesnt do the search... ? force it ?
@@ -96,7 +95,7 @@ app.controller('copyCtrl', function($scope, $location, $routeParams) {
 });
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
-app.controller('navbarCtrl', function ($scope, $location, DataModel, $route) {
+app.controller('navbarCtrl', function ($scope, $location, $route, DataModel) {
     //console.log('navbarCtrl init');
     $scope.data = DataModel;
 
@@ -135,6 +134,8 @@ app.controller('navbarCtrl', function ($scope, $location, DataModel, $route) {
     $scope.haveResults = function () {
         return $scope.data.searchResult.length !== 0;
     };
+
+
 });
 
 app.controller('aboutCtrl', function ($scope, DataModel) {
@@ -142,7 +143,7 @@ app.controller('aboutCtrl', function ($scope, DataModel) {
     $scope.data = DataModel;
 });
 
-app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository, signalRHubProxy) {
     //console.log('cdeWebCtrl init');
     $scope.data = DataModel;
     var query = $routeParams.query;
@@ -187,8 +188,9 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
     };
 });
 
-app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository, signalRHubProxy) {
     $scope.data = DataModel;
+    $scope.data.hubActive = false;
     var query = $routeParams.query;
     if (!$scope.data.query) {
         $scope.data.query = query;
@@ -199,6 +201,25 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     
     $scope.haveResults = function () {
         return false;
+    };
+    
+    var searchHubProxy = signalRHubProxy(signalRHubProxy.defaultServer,
+        'searchHub', { logging: true });
+    searchHubProxy.hubStartPromise.done(function () {
+            $scope.data.hubActive = true;
+            console.log('connection id', searchHubProxy.connection.id);
+        });
+
+    searchHubProxy.on('filesToLoadFred', function (data, extra) {
+        $scope.data.filesToLoad = data;
+        console.log('filesToLoadFred', data, extra);
+    });
+
+    $scope.doQuery = function (search, more) {
+        console.log('doQuery');
+        searchHubProxy.invoke('query', search, more, function (data) {
+            console.log('doQuery data', data);
+        });
     };
 });
 
@@ -249,7 +270,6 @@ app.factory('DataModel', function ($rootScope) {
         }
         return data;
 });
-
 
 app.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope) {
     function stockTickerOperations() {
@@ -375,7 +395,6 @@ app.controller('StockTickerCtrl', function($scope, stockTickerData) {
     ops.initializeClient();
 });
 
-
 app.filter('percentage', function () {
     return function(changeFraction) {
         return (changeFraction * 100).toFixed(2) + "%";
@@ -444,39 +463,54 @@ app.directive('scrollTicker', function ($) {
 // https://stuff2share.codeplex.com/SourceControl/latest#angular-signalr.js
 
 // from http://henriquat.re/server-integration/signalr/integrateWithSignalRHubs.html
+// Slight rerrange to reduce code duplicate of proxyOnApplyCallback code.
+// Modified to allow parameters to be forwarded to invoked server side functions.
+// Modified to allow events parameters to be passed back to handling function.
 app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
     function($rootScope, signalRServer) {
 
         function signalRHubProxyFactory(serverUrl, hubName, startOptions) {
             var connection = $.hubConnection(signalRServer);
             var proxy = connection.createHubProxy(hubName);
-            connection.start(startOptions);//.done(function() {});
+            var hubStartPromise = connection.start(startOptions);
 
             function proxyOnApplyCallback(eventName, callback) {
-                proxy.on(eventName, function(result) {
-                    $rootScope.$apply(function() {
-                        if (callback) {
-                            callback(result);
-                        }
-                    });
+                proxy.on(eventName, function () {
+                    var eventNameArguments = arguments;
+                    if (callback) {
+                        $rootScope.$apply(function() {
+                            callback.apply(callback, eventNameArguments);
+                        });
+                    }
                 });
             }
             
-            function proxyInvokeApplyCallback(methodName, callback) {
-                proxy.invoke(methodName).done(function (result) {
-                    $rootScope.$apply(function () {
-                        if (callback) {
-                            callback(result);
-                        }
-                    });
-                });
+            // first parameter is methodName.
+            // last parameter is always callback if argument length > 1.
+            // rest of parameters are parameters to methodName.
+            function proxyInvokeApplyCallback() {
+                var len = arguments.length;
+                var args = Array.prototype.slice.call(arguments); // convert to real array
+                var callback = undefined;
+                if (len > 1) {
+                    callback = args.pop();
+                }
+                proxy.invoke.apply(proxy, args)
+                    .done(function (result) {
+                        $rootScope.$apply(function () {
+                                if (callback) {
+                                    callback(result);
+                                }
+                            });
+                        });
             }
             
             return {
                 on: proxyOnApplyCallback,
                 off: proxyOnApplyCallback,
                 invoke: proxyInvokeApplyCallback,
-                connection: connection
+                connection: connection,
+                hubStartPromise: hubStartPromise
             };
         }
 
@@ -484,12 +518,12 @@ app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
     }]);
 
 app.controller('ServerTimeController', function ($scope, signalRHubProxy) {
-    debugger;
     var clientPushHubProxy = signalRHubProxy(
         signalRHubProxy.defaultServer, 'clientPushHub',
             { logging: true });
     var serverTimeHubProxy = signalRHubProxy(
-        signalRHubProxy.defaultServer, 'serverTimeHub');
+        signalRHubProxy.defaultServer, 'serverTimeHub',
+            { logging: true });
 
     clientPushHubProxy.on('serverTime', function (data) {
         $scope.currentServerTime = data;
