@@ -86,71 +86,12 @@
 <body>
     <div data-ng-view=""></div>
         
-    <div data-ng-controller="StockTickerCtrl">
-        <h1>ASP.NET SignalR Stock Ticker Sample</h1>
-        <input type="button" id="open" value="Open Market" data-ng-click="openMarket()" data-ng-disabled="marketIsOpen"/>
-        <input type="button" id="close" value="Close Market" data-ng-click="closeMarket()"  data-ng-disabled="!marketIsOpen"/>
-        <input type="button" id="reset" value="Reset" data-ng-click="reset()"  data-ng-disabled="marketIsOpen"/>
- 
-        <h2>Live Stock Table</h2>
-        <div id="stockTable">
-            <table border="1">
-                <thead>
-                    <tr>
-                        <th>Symbol</th>
-                        <th>Price</th>
-                        <th>Open</th>
-                        <th>High</th>
-                        <th>Low</th>
-                        <th>Change</th>
-                        <th>%</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="loading" data-ng-show="stocks.length==0">
-                        <td colspan="7">
-                            loading...
-                        </td>
-                    </tr>
-                    <tr data-ng-repeat="stock in stocks" data-flash="marketIsOpen">
-                        <td>{{stock.Symbol}}</td>
-                        <td>{{stock.Price | number:2}}</td>
-                        <td>{{stock.DayOpen | number:2}}</td>
-                        <td>{{stock.DayHigh | number:2}}</td>
-                        <td>{{stock.DayLow | number:2}}</td>
-                        <td>{{stock.Change | change}}</td>
-                        <td>{{stock.PercentChange | percentage}}</td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
-        <h2>Live Stock Ticker</h2>
-        <div id="stockTicker">
-            <div class="inner">
-                    <ul data-scroll-ticker="marketIsOpen">
-                        <li class="loading" data-ng-show="stocks.length==0">loading...</li>
-                        <li data-ng-repeat="stock in stocks" data-symbol="{{stock.Symbol}}" data-flash="marketIsOpen">
-                            <span class="symbol">{{stock.Symbol}}</span> 
-                            <span class="price">{{stock.Price | number:2}}</span>
-                            <span class="change">{{stock.Change}} ({{stock.PercentChange}})</span>
-                        </li>
-                    </ul>
-            </div>
-        </div>
-    </div>
-        
     <div data-ng-controller="ServerTimeController">
         <div>
-            <h3>Time from server (being pushed every 5 seconds):</h3>
-            <h4 data-ng-bind="currentServerTime">Server Push Time</h4>
-        </div>
-
-        <div>
             <button data-ng-click="getServerTime()">Get time from server</button>
-
             <div>
-                <h3>Manual time from server:</h3>
-                <h4 data-ng-bind="currentServerTimeManually">Manual Get Time</h4>
+                <div>5 sec server: <span data-ng-bind="currentServerTime">Server Push Time</span></div>
+                <div>Manual time: <span data-ng-bind="currentServerTimeManually">Manual Get Time</span></div>
             </div>
         </div>
     </div>
@@ -163,6 +104,7 @@
     <script src="/Scripts/angular.js"></script>
     <script src="/Scripts/angular-resource.js"></script>
     <script src="/Scripts/angular-cookies.js"></script>
+    <script src="/Scripts/ngSignalR.js"></script>
     <script src="/Scripts/restangular.js"></script>
     <script src="/Scripts/angular-ui.js"></script>
     <script src="/Scripts/bootstrap.js"></script>

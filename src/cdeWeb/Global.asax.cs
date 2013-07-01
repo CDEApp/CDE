@@ -101,11 +101,18 @@ namespace cdeWeb
             _hub = GlobalHost.ConnectionManager.GetHubContext<SearchHub>();
         }
 
-        public int Query(string query, string moo)
+        public int Query(string query, string param)
         {
-            Debug.WriteLine(string.Format("Query parameters: \"{0}\" {1}", query, moo));
+            Debug.WriteLine(string.Format("Query parameters: \"{0}\" {1}", query, param));
             //hub.Clients.All.filesToLoadFred(23, "drifty...!");
-            _hub.Clients.Client(Context.ConnectionId).filesToLoadFred(23, "drifty...!");
+            _hub.Clients.Client(Context.ConnectionId).filesToLoad(27, "drifty...!");
+            _hub.Clients.Client(Context.ConnectionId).addDirEntry(
+                new DirEntry {
+                    Modified = new DateTime(2013,01,02,09,10,11, DateTimeKind.Utc),
+                    Name = "Moo",
+                    Path = @"D:\Fro\Moo",
+                    Size = 321
+                });
             return 7;
         }
     }
