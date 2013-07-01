@@ -207,7 +207,7 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
         'searchHub', { logging: true });
     searchHubProxy.hubStartPromise.done(function () {
             $scope.data.hubActive = true;
-            console.log('connection id', searchHubProxy.connection.id);
+            //console.log('connection id', searchHubProxy.connection.id);
         });
 
     searchHubProxy.on('filesToLoadFred', function (data, extra) {
@@ -216,7 +216,6 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     });
 
     $scope.doQuery = function (search, more) {
-        console.log('doQuery');
         searchHubProxy.invoke('query', search, more, function (data) {
             console.log('doQuery data', data);
         });
@@ -271,108 +270,34 @@ app.factory('DataModel', function ($rootScope) {
         return data;
 });
 
-app.factory('stockTickerData', ['$', '$rootScope', function ($, $rootScope) {
-    function stockTickerOperations() {
-        var connection;
-        var proxy;
-
-        //To set values to fields in the controller
-        var setMarketState;
-        var setValues;
-        var updateStocks;
-
-        //This function will be called by controller to set callback functions
-        var setCallbacks = function (setMarketStateCallback, setValuesCallback, updateStocksCallback) {
-            setMarketState = setMarketStateCallback;
-            setValues = setValuesCallback;
-            updateStocks = updateStocksCallback;
-        };
-
-        var initializeClient = function () {
-            connection = $.hubConnection();
-            proxy = connection.createHubProxy('stockTicker');
-            configureProxyClientFunctions();
-            start();
-        };
-
-        var configureProxyClientFunctions = function () {
-            proxy.on('marketOpened', function () {
-                $rootScope.$apply(setMarketState(true));
-            });
-
-            proxy.on('marketClosed', function () {
-                $rootScope.$apply(setMarketState(false));
-            });
-
-            proxy.on('marketReset', function () {
-                initializeStockMarket();
-            });
-
-            proxy.on('updateStockPrice', function (stock) {
-                $rootScope.$apply(updateStocks(stock));
-            });
-        };
-
-        var initializeStockMarket = function () {
-            //Getting values of stocks from the hub and setting it to controllers field
-            proxy.invoke('getAllStocks').done(function (data) {
-                $rootScope.$apply(setValues(data));
-            }).pipe(function () {
-                //Setting market state to field in controller based on the current state
-                proxy.invoke('getMarketState').done(function (state) {
-                    if (state == 'Open')
-                        $rootScope.$apply(setMarketState(true));
-                    else
-                        $rootScope.$apply(setMarketState(false));
-                });
-            });
-        };
-
-        var start = function () {
-            connection.start().pipe(function () {
-                initializeStockMarket();
-            });
-        };
-
-        var openMarket = function () {
-            proxy.invoke('openMarket');
-        };
-
-        var closeMarket = function () {
-            proxy.invoke('closeMarket');
-        };
-
-        var reset = function () {
-            proxy.invoke('reset');
-        };
-
-        return {
-            initializeClient: initializeClient,
-            openMarket: openMarket,
-            closeMarket: closeMarket,
-            reset: reset,
-            setCallbacks: setCallbacks
-        };
-    };
-
-    return stockTickerOperations;
-}]);
-
-app.controller('StockTickerCtrl', function($scope, stockTickerData) {
+// replacing guts using signalRHubProxy.
+app.controller('StockTickerCtrl', function ($scope, signalRHubProxy) {
     $scope.stocks = [];
     $scope.marketIsOpen = false;
+    var stockTickerProxy = signalRHubProxy(signalRHubProxy.defaultServer,
+        'stockTicker', { logging: true });
+    stockTickerProxy.hubStartPromise.done(function () {
+        initializeStockMarket();
+    });
 
-    $scope.openMarket = function() {
-        ops.openMarket();
-    };
+    $scope.openMarket = function () { stockTickerProxy.invoke('openMarket'); };
+    $scope.closeMarket = function () { stockTickerProxy.invoke('closeMarket'); };
+    $scope.reset = function () { stockTickerProxy.invoke('reset'); };
+    stockTickerProxy.on('marketOpened', function () { setMarketState(true); });
+    stockTickerProxy.on('marketClosed', function () { setMarketState(false); });
+    stockTickerProxy.on('marketReset', function () { initializeStockMarket(); });
+    stockTickerProxy.on('updateStockPrice', function (stock) { replaceStock(stock); });
 
-    $scope.closeMarket = function() {
-        ops.closeMarket();
-    };
-
-    $scope.reset = function() {
-        ops.reset();
-    };
+    function initializeStockMarket() {
+        stockTickerProxy.invoke('getAllStocks', assignStocks);
+        // todo this prob should chain with promises. after getAllStocks - ick callbacks at moment
+        stockTickerProxy.invoke('getMarketState', function(state) {
+            if (state == 'Open')
+                setMarketState(true);
+            else
+                setMarketState(false);
+        });
+    }
 
     function assignStocks(stocks) {
         $scope.stocks = stocks;
@@ -389,10 +314,6 @@ app.controller('StockTickerCtrl', function($scope, stockTickerData) {
     function setMarketState(isOpen) {
         $scope.marketIsOpen = isOpen;
     }
-
-    var ops = stockTickerData();
-    ops.setCallbacks(setMarketState, assignStocks, replaceStock);
-    ops.initializeClient();
 });
 
 app.filter('percentage', function () {
@@ -466,6 +387,10 @@ app.directive('scrollTicker', function ($) {
 // Slight rerrange to reduce code duplicate of proxyOnApplyCallback code.
 // Modified to allow parameters to be forwarded to invoked server side functions.
 // Modified to allow events parameters to be passed back to handling function.
+//
+// this is still to callbacky...
+// each of the on/off/invoke should be returning promises [and angular ones not jquery ones ?]
+//
 app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
     function($rootScope, signalRServer) {
 
@@ -474,7 +399,7 @@ app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
             var proxy = connection.createHubProxy(hubName);
             var hubStartPromise = connection.start(startOptions);
 
-            function proxyOnApplyCallback(eventName, callback) {
+            function proxyEventOn(eventName, callback) {
                 proxy.on(eventName, function () {
                     var eventNameArguments = arguments;
                     if (callback) {
@@ -485,17 +410,30 @@ app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
                 });
             }
             
+            function proxyEventOff(eventName, callback) {
+                proxy.off(eventName, function () {
+                    var eventNameArguments = arguments;
+                    if (callback) {
+                        $rootScope.$apply(function () {
+                            callback.apply(callback, eventNameArguments);
+                        });
+                    }
+                });
+            }
+            
             // first parameter is methodName.
             // last parameter is always callback if argument length > 1.
             // rest of parameters are parameters to methodName.
-            function proxyInvokeApplyCallback() {
+            // now returns the promise (jquery) from the invoke. 
+            //      Drawback down chain needs $apply using the promise... ick
+            function proxyInvoke() {
                 var len = arguments.length;
                 var args = Array.prototype.slice.call(arguments); // convert to real array
                 var callback = undefined;
                 if (len > 1) {
                     callback = args.pop();
                 }
-                proxy.invoke.apply(proxy, args)
+                return proxy.invoke.apply(proxy, args)
                     .done(function (result) {
                         $rootScope.$apply(function () {
                                 if (callback) {
@@ -506,9 +444,9 @@ app.factory('signalRHubProxy', ['$rootScope', 'signalRServer',
             }
             
             return {
-                on: proxyOnApplyCallback,
-                off: proxyOnApplyCallback,
-                invoke: proxyInvokeApplyCallback,
+                on: proxyEventOn,
+                off: proxyEventOff,
+                invoke: proxyInvoke,
                 connection: connection,
                 hubStartPromise: hubStartPromise
             };
@@ -534,5 +472,12 @@ app.controller('ServerTimeController', function ($scope, signalRHubProxy) {
         serverTimeHubProxy.invoke('getServerTime', function (data) {
             $scope.currentServerTimeManually = data;
         });
+        
+        //serverTimeHubProxy.invoke('getServerTime') 
+        //    .done(function (data) {
+        //        $scope.$apply(function() { /// must apply. or not inside angular.
+        //            $scope.currentServerTimeManually = data;
+        //        });
+        //    });
     };
 });
