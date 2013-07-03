@@ -167,7 +167,7 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
         $scope.data.totalMsec = results.TotalMsec;
         $scope.data.noResultsMessage = current.noResultsMessage;
     }, function (response) {
-        console.log('getList() fail.')
+        console.log('getList() fail.');
         if (response.status === 404) { // NotFound
             $scope.data.noResultsMessage = current.noResultsMessage;
         } else {

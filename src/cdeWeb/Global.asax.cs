@@ -8,6 +8,7 @@ using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
 using Autofac;
+using Autofac.Integration.SignalR;
 using Autofac.Integration.WebApi;
 using Microsoft.AspNet.SignalR;
 using cdeLib;
@@ -23,14 +24,15 @@ namespace cdeWeb
     {
         private BackgroundServerTimeTimer bstt;
 
-        // maybe automapper ?
+        // todo maybe automapper ?
 
         protected void Application_Start()
         {
-            bstt = new BackgroundServerTimeTimer();
-
             var appDataPath = Server.MapPath("~/App_Data");
             RegisterContainer(appDataPath);
+            bstt = new BackgroundServerTimeTimer();
+
+            RegisterHubs.Start(RouteTable.Routes);
 
             AreaRegistration.RegisterAllAreas();
 
@@ -44,20 +46,22 @@ namespace cdeWeb
 
         private void RegisterContainer(string appDataPath)
         {
-            var builder = new ContainerBuilder();
-
             var controllerAssembly = Assembly.GetExecutingAssembly();
-            builder.RegisterApiControllers(controllerAssembly);
-
+            var builder = new ContainerBuilder();
+            builder.RegisterHubs(controllerAssembly); // SignalR (todo this doesnt seem to be required)
+            builder.RegisterApiControllers(controllerAssembly); // MVC API
             builder.RegisterAssemblyTypes(controllerAssembly)
                 .Where(t => t.Name.EndsWith("Repository"))
                 .AsImplementedInterfaces();
 
             //builder.RegisterWebApiFilterProvider(GlobalConfiguration.Configuration);
-            
             RegisterCDEData(builder, appDataPath);
 
             var container = builder.Build();
+
+            var resolverSignalR = new AutofacDependencyResolver(container);
+            GlobalHost.DependencyResolver = resolverSignalR; // SignalR resolver
+
             var resolver = new AutofacWebApiDependencyResolver(container);
             GlobalConfiguration.Configuration.DependencyResolver = resolver; // Web API resolver
         }
@@ -99,21 +103,30 @@ namespace cdeWeb
         public SearchHub()
         {
             _hub = GlobalHost.ConnectionManager.GetHubContext<SearchHub>();
+
+            // load catalogs -- ensure no concurrency issue ? by using autofac single instance
+            // capture total run time, and send events to hub for each loaded file.
+            //var catalogFiles = RootEntry.GetCacheFileList(paths);
+
+
         }
 
         public int Query(string query, string param)
         {
             Debug.WriteLine(string.Format("Query parameters: \"{0}\" {1}", query, param));
+
             //hub.Clients.All.filesToLoadFred(23, "drifty...!");
             _hub.Clients.Client(Context.ConnectionId).filesToLoad(27, "drifty...!");
             _hub.Clients.Client(Context.ConnectionId).addDirEntry(
                 new DirEntry {
                     Modified = new DateTime(2013,01,02,09,10,11, DateTimeKind.Utc),
-                    Name = "Moo",
+                    Name = "Moo0",
                     Path = @"D:\Fro\Moo",
                     Size = 321
                 });
+
             return 7;
         }
+
     }
 }
