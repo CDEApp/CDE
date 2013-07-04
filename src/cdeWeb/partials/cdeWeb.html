@@ -3,7 +3,7 @@
 <div class="row-fluid">
     <div>
         <div>Status: {{data.statusMessage}}</div>
-        <button data-ng-click="doQuery('graaaar', 'average bear')" data-ng-disabled="!data.hubActive">Test Query</button>
+        <button data-ng-click="doQuery()" data-ng-disabled="!data.hubActive">Test Query</button>
     </div>
     <div data-ng-show="!haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>

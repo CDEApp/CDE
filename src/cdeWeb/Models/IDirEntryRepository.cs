@@ -15,6 +15,7 @@ namespace cdeWeb.Models
         public DirEntryRepository(IDataStore dataStore)
         {
             _dataStore = dataStore;
+            _dataStore.LoadData(null);
         }
 
         public Results<DirEntry> GetQuery(string query)

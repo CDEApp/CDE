@@ -2,6 +2,7 @@
 using System;
 using System.Threading;
 using System.Web.Hosting;
+using cdeWeb.Hubs;
 
 namespace cdeWeb
 {

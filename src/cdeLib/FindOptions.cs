@@ -133,6 +133,7 @@ namespace cdeLib
             };
             // ReSharper disable PossibleMultipleEnumeration
             CommonEntry.TraverseTreePair(rootEntries, findFunc);
+            ProgressFunc(progressCount[0], progressEnd);        // end of Progress
             // ReSharper restore PossibleMultipleEnumeration
         }
     }

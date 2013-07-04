@@ -197,24 +197,47 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     
     var searchHubProxy = hubProxy(hubProxy.defaultServer, 'searchHub');
     searchHubProxy.start({ logging: true }).done(function () {
-        $scope.data.hubActive = true;
-        $scope.data.statusMessage = 'Connected to server';
+        $scope.$apply(function() {
+            $scope.data.hubActive = true;
+            $scope.data.statusMessage = 'Connected to server';
+        });
         console.log('connection id', searchHubProxy.connection.id);
     });
 
     searchHubProxy.on('filesToLoad', function (data, extra) {
-        console.log('fileToLoad', data, extra);
+        //console.log('fileToLoad', data, extra);
         $scope.data.filesToLoad = data;
         $scope.data.statusMessage = 'Catalog files to load ' + $scope.data.filesToLoad;
     });
     
-    searchHubProxy.on('addDirEntry', function (dirEntry) {
-        console.log('addDirEntry', dirEntry);
-        $scope.data.searchResult.push(dirEntry);
+    searchHubProxy.on('searchProgress', function (count, progressEnd) {
+        //console.log('searchProgress', count, progressEnd);
+        $scope.data.searchCurrent = count;
+        $scope.data.searchEnd = progressEnd;
+        $scope.data.statusMessage = 'Searched ' + count + ' of ' + progressEnd;
+    });
+    
+    searchHubProxy.on('searchStart', function (dirEntry) {
+        console.log('searchStart', dirEntry);
+        $scope.resetSearchResult();
+    });
+    
+    searchHubProxy.on('searchDone', function (dirEntry) {
+        console.log('searchDone', dirEntry);
+        $scope.data.statusMessage =
+            'Found ' + $scope.data.searchResult.length + ' entries. '
+            + 'Searched ' + $scope.data.searchCurrent
+            + ' entries. This is ' + ((100.0 * $scope.data.searchCurrent) / $scope.data.searchEnd).toFixed(1)
+            + '% of the searchable entries.';
     });
 
-    $scope.doQuery = function (search, more) {
-        searchHubProxy.invoke('query', search, more, function (data) {
+    searchHubProxy.on('addDirEntry', function (dirEntry) {
+        //console.log('addDirEntry', dirEntry);
+        $scope.data.searchResult.push(dirEntry);
+    });
+    
+    $scope.doQuery = function () {
+        searchHubProxy.invoke('query', $scope.data.query, function (data) {
             console.log('doQuery data', data);
         });
     };

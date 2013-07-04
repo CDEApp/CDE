@@ -1,7 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.Globalization;
-using System.Reflection;
+﻿using System.Reflection;
 using System.Web;
 using System.Web.Http;
 using System.Web.Mvc;
@@ -11,9 +8,7 @@ using Autofac;
 using Autofac.Integration.SignalR;
 using Autofac.Integration.WebApi;
 using Microsoft.AspNet.SignalR;
-using cdeLib;
 using cdeWeb.App_Start;
-using DirEntry = cdeWeb.Models.DirEntry;
 
 namespace cdeWeb
 {
@@ -30,7 +25,7 @@ namespace cdeWeb
         {
             var appDataPath = Server.MapPath("~/App_Data");
             RegisterContainer(appDataPath);
-            bstt = new BackgroundServerTimeTimer();
+            //bstt = new BackgroundServerTimeTimer();
 
             RegisterHubs.Start(RouteTable.Routes);
 
@@ -75,58 +70,4 @@ namespace cdeWeb
         }
     }
 
-    public class ServerTimeHub : Hub
-    {
-        public string GetServerTime()
-        {
-            return DateTime.UtcNow.ToString();
-        }
-    }
-
-    public class ClientPushHub : Hub
-    {
-    }
-
-    public class SearchHub: Hub
-    {
-        private enum FindState
-        {
-            StartLoad,
-            EndFileLoaded,
-            EndLoad,
-            StartSearch,
-            EndSearch
-        };
-
-        private readonly IHubContext _hub;
-
-        public SearchHub()
-        {
-            _hub = GlobalHost.ConnectionManager.GetHubContext<SearchHub>();
-
-            // load catalogs -- ensure no concurrency issue ? by using autofac single instance
-            // capture total run time, and send events to hub for each loaded file.
-            //var catalogFiles = RootEntry.GetCacheFileList(paths);
-
-
-        }
-
-        public int Query(string query, string param)
-        {
-            Debug.WriteLine(string.Format("Query parameters: \"{0}\" {1}", query, param));
-
-            //hub.Clients.All.filesToLoadFred(23, "drifty...!");
-            _hub.Clients.Client(Context.ConnectionId).filesToLoad(27, "drifty...!");
-            _hub.Clients.Client(Context.ConnectionId).addDirEntry(
-                new DirEntry {
-                    Modified = new DateTime(2013,01,02,09,10,11, DateTimeKind.Utc),
-                    Name = "Moo0",
-                    Path = @"D:\Fro\Moo",
-                    Size = 321
-                });
-
-            return 7;
-        }
-
-    }
-}
+};
