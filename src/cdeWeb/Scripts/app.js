@@ -7,8 +7,9 @@ var app = angular.module('cdeweb', [
     'restangular',
     'ngSignalR'
 ]);
-app.value('$', $); // jQuery - seems a good idea.
+//app.value('$', $); // jQuery - seems a good idea. not used at moment.
 app.value('signalRServer', ''); // Specify SignalR server URL here for supporting CORS
+app.value('hubStartOptions', { logging: true, transport: 'longPolling' }); // Specify SignalR server URL here for supporting CORS
 
 // get Contact from web.config - so can be configured for site ?
 // todo hitting search of same string doesnt do the search... ? force it ?
@@ -41,14 +42,6 @@ app.config(function ($routeProvider) {
         })
         .otherwise({ redirectTo: '/about' });
 });
-
-
-// A simple background color flash effect that uses jQuery Color plugin
-$.fn.flash = function(color, duration) {
-    var current = this.css('backgroundColor');
-    this.animate({ backgroundColor: 'rgb(' + color + ')' }, duration / 2)
-        .animate({ backgroundColor: current }, duration / 2);
-};
 
 app.config(function (RestangularProvider) {
     var r = RestangularProvider;
@@ -133,7 +126,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, DataModel) {
         $location.path('/search/' + query);
 
         $scope.resetSearchResult();
-        $route.reload();
+        $route.reload(); // let it reload even if path not changed, just cause user clicked search again.
     };
 });
 
@@ -142,7 +135,52 @@ app.controller('aboutCtrl', function ($scope, DataModel) {
     $scope.data = DataModel;
 });
 
-app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository) {
+app.factory('searchHubProxyXX', function ($scope, hubProxy, hubStartOptions) {
+    var proxy = hubProxy(hubProxy.defaultServer, 'searchHub');
+    proxy.start(hubStartOptions).done(function () {
+        $scope.$apply(function () {
+            $scope.data.hubActive = true;
+            $scope.data.statusMessage = 'Connected to server';
+        });
+        console.log('connection id', proxy.connection.id);
+    });
+
+    proxy.on('filesToLoad', function (data, extra) {
+        //console.log('fileToLoad', data, extra);
+        $scope.data.filesToLoad = data;
+        $scope.data.statusMessage = 'Catalog files to load ' + $scope.data.filesToLoad;
+    });
+
+    proxy.on('searchProgress', function (count, progressEnd) {
+        //console.log('searchProgress', count, progressEnd);
+        $scope.data.searchCurrent = count;
+        $scope.data.searchEnd = progressEnd;
+        $scope.data.statusMessage = 'Searched ' + count + ' of ' + progressEnd;
+    });
+
+    proxy.on('searchStart', function (dirEntry) {
+        console.log('searchStart', dirEntry);
+        $scope.resetSearchResult();
+    });
+
+    proxy.on('searchDone', function (dirEntry) {
+        console.log('searchDone', dirEntry);
+        $scope.data.statusMessage =
+            'Found ' + $scope.data.searchResult.length + ' entries. '
+            + 'Searched ' + $scope.data.searchCurrent
+            + ' entries. This is ' + ((100.0 * $scope.data.searchCurrent) / $scope.data.searchEnd).toFixed(1)
+            + '% of the searchable entries.';
+    });
+
+    proxy.on('addDirEntry', function (dirEntry) {
+        //console.log('addDirEntry', dirEntry);
+        $scope.data.searchResult.push(dirEntry);
+    });
+
+    return proxy;
+});
+
+app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository, hubProxy, hubStartOptions, searchHubProxyXX) {
     //console.log('cdeWebCtrl init');
     $scope.data = DataModel;
     var query = $routeParams.query;
@@ -154,26 +192,37 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
     $scope.resetSearchResult();
     $scope.data.noResultsMessage = "Waiting for search results.";
     $location.path('/search/' + query);
-    var getList = DirEntryRepository.getList(query);
+    
+    $scope.doQuery = function () {
+        // todo, if click again, this just starts 'another' search
+        //   inside client if click again cancel, then start search...
+        searchHubProxyXX.invoke('Search', $scope.data.query, function (data) {
+            console.log('doQuery data', data);
+        });
+    };
+
+
+    //var getList = DirEntryRepository.getList(query);
 
     // restangular promise of field value.
     //$scope.data.searchResult = getList.get('Value'); //now this is a promise means my 'searching' message isnt displayed.
     
-    getList.then(function(results) {
-        //$scope.data.metadata = results['odata.metadata'];
-        //$scope.data.nextLink = results['odata.nextLink'];
-        $scope.data.searchResult = results.Value;
-        $scope.data.metrics = results.ElapsedList;
-        $scope.data.totalMsec = results.TotalMsec;
-        $scope.data.noResultsMessage = current.noResultsMessage;
-    }, function (response) {
-        console.log('getList() fail.');
-        if (response.status === 404) { // NotFound
-            $scope.data.noResultsMessage = current.noResultsMessage;
-        } else {
-            $scope.data.noResultsMessage = "Error occurred searching. (Error Code " + response.statusf + ")";
-        }
-    });
+    // Disable old 'Search' for now.
+    //getList.then(function(results) {
+    //    //$scope.data.metadata = results['odata.metadata'];
+    //    //$scope.data.nextLink = results['odata.nextLink'];
+    //    $scope.data.searchResult = results.Value;
+    //    $scope.data.metrics = results.ElapsedList;
+    //    $scope.data.totalMsec = results.TotalMsec;
+    //    $scope.data.noResultsMessage = current.noResultsMessage;
+    //}, function (response) {
+    //    console.log('getList() fail.');
+    //    if (response.status === 404) { // NotFound
+    //        $scope.data.noResultsMessage = current.noResultsMessage;
+    //    } else {
+    //        $scope.data.noResultsMessage = "Error occurred searching. (Error Code " + response.statusf + ")";
+    //    }
+    //});
     //$route.reload(); // force reload even if url not changed, search again.
      
     // use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
@@ -183,7 +232,7 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
     };
 });
 
-app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository, hubProxy) {
+app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, DataModel, DirEntryRepository, hubProxy, hubStartOptions) {
     $scope.data = DataModel;
     $scope.data.statusMessage = 'Connecting to server';
     $scope.data.hubActive = false;
@@ -196,7 +245,7 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     $scope.data.noResultsMessage = current.noResultsMessage;
     
     var searchHubProxy = hubProxy(hubProxy.defaultServer, 'searchHub');
-    searchHubProxy.start({ logging: true }).done(function () {
+    searchHubProxy.start(hubStartOptions).done(function () {
         $scope.$apply(function() {
             $scope.data.hubActive = true;
             $scope.data.statusMessage = 'Connected to server';
@@ -237,11 +286,14 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     });
     
     $scope.doQuery = function () {
-        searchHubProxy.invoke('query', $scope.data.query, function (data) {
+        // todo, if click again, this just starts 'another' search
+        //   inside client if click again cancel, then start search...
+        searchHubProxy.invoke('Search', $scope.data.query, function (data) {
             console.log('doQuery data', data);
         });
     };
 });
+
 
 app.directive('selectall', function () {
     return {
@@ -291,11 +343,11 @@ app.factory('DataModel', function ($rootScope) {
         return data;
 });
 
-app.controller('ServerTimeController', function ($scope, hubProxy) {
+app.controller('ServerTimeController', function ($scope, hubProxy, hubStartOptions) {
     var clientPushHubProxy = hubProxy(hubProxy.defaultServer, 'clientPushHub');
-    clientPushHubProxy.start({ logging: true });
+    clientPushHubProxy.start(hubStartOptions);
     var serverTimeHubProxy = hubProxy(hubProxy.defaultServer, 'serverTimeHub');
-    serverTimeHubProxy.start({ logging: true });
+    serverTimeHubProxy.start(hubStartOptions);
         
     clientPushHubProxy.on('serverTime', function (data) {
         $scope.currentServerTime = data;

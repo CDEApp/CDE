@@ -25,7 +25,7 @@ namespace cdeWeb
         {
             var appDataPath = Server.MapPath("~/App_Data");
             RegisterContainer(appDataPath);
-            //bstt = new BackgroundServerTimeTimer();
+            bstt = new BackgroundServerTimeTimer();
 
             RegisterHubs.Start(RouteTable.Routes);
 

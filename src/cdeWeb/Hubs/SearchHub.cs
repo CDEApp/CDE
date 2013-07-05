@@ -42,12 +42,12 @@ namespace cdeWeb.Hubs
             //var catalogFiles = RootEntry.GetCacheFileList(paths);
         }
 
-        public int Query(string query)
+        public int Search(string pattern)
         {
             _dataStore.LoadDataEnsureOnce(NotifyLoadFileCount);
-            Debug.WriteLine(string.Format("Query parameters: \"{0}\"", query));
+            Debug.WriteLine(string.Format("Query parameters: \"{0}\"", pattern));
             NotifySearchStart();
-            _dataStore.Search(query, NotifySearchProgress, AddDirEntry);
+            _dataStore.Search(pattern, NotifySearchProgress, AddDirEntry);
             NotifySearchDone();
             return 7;
         }
