@@ -23,7 +23,8 @@ namespace cdeWeb.Controllers
             Debug.WriteLine(string.Format("Top \"{0}\"", opts.RawValues.Top));
             Debug.WriteLine(string.Format("Filter \"{0}\"", opts.RawValues.Filter));
             System.Threading.Thread.Sleep(1000);
-            return _dirEntryRepository.GetQuery(string.Empty).AsQueryable();
+            //return _dirEntryRepository.GetQuery(string.Empty).AsQueryable();
+            return null;
         }
     }
 }
