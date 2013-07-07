@@ -9,7 +9,7 @@ var app = angular.module('cdeweb', [
 ]);
 //app.value('$', $); // jQuery - seems a good idea. not used at moment.
 app.value('signalRServer', ''); // Specify SignalR server URL here for supporting CORS
-app.value('hubStartOptions', { logging: true, transport: 'longPolling' }); // Specify SignalR server URL here for supporting CORS
+app.value('hubStartOptions' );//, { logging: true, transport: 'longPolling' }); // Specify SignalR server URL here for supporting CORS
 
 // get Contact from web.config - so can be configured for site ?
 // todo hitting search of same string doesnt do the search... ? force it ?
@@ -66,6 +66,8 @@ app.config(function (RestangularProvider) {
 
 app.run(function ($rootScope, $route, DataModel) {
     $rootScope.data = DataModel;
+    
+    // manage all hubs and the open connection for them.
 
     $rootScope.layoutPartial = function (partialName) {
         //console.log('$route.current[partialName]', $route.current[partialName]);
@@ -142,7 +144,7 @@ app.factory('searchHubProxyXX', function ($scope, hubProxy, hubStartOptions) {
             $scope.data.hubActive = true;
             $scope.data.statusMessage = 'Connected to server';
         });
-        console.log('connection id', proxy.connection.id);
+        console.log('connection id (searchHubProxy)', proxy.connection.id);
     });
 
     proxy.on('filesToLoad', function (data, extra) {
@@ -250,7 +252,7 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
             $scope.data.hubActive = true;
             $scope.data.statusMessage = 'Connected to server';
         });
-        console.log('connection id', searchHubProxy.connection.id);
+        console.log('connection id (searchHubProxy)', searchHubProxy.connection.id);
     });
 
     searchHubProxy.on('filesToLoad', function (data, extra) {
@@ -345,10 +347,14 @@ app.factory('DataModel', function ($rootScope) {
 
 app.controller('ServerTimeController', function ($scope, hubProxy, hubStartOptions) {
     var clientPushHubProxy = hubProxy(hubProxy.defaultServer, 'clientPushHub');
-    clientPushHubProxy.start(hubStartOptions);
+    clientPushHubProxy.start(hubStartOptions).done(function () {
+        console.log('connection id (clientPushHubProxy)', clientPushHubProxy.connection.id);
+    });
     var serverTimeHubProxy = hubProxy(hubProxy.defaultServer, 'serverTimeHub');
-    serverTimeHubProxy.start(hubStartOptions);
-        
+    serverTimeHubProxy.start(hubStartOptions).done(function () {
+        console.log('connection id (serverTimeHubProxy)', serverTimeHubProxy.connection.id);
+    });
+
     clientPushHubProxy.on('serverTime', function (data) {
         $scope.currentServerTime = data;
     });

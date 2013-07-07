@@ -19,9 +19,11 @@ namespace cdeWeb
             taskTimer = new Timer(OnTimerElapsed, null, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(5));
         }
 
+        private int count = 1;
         private void OnTimerElapsed(object sender)
         {
-            hub.Clients.All.serverTime(DateTime.UtcNow.ToString());
+            hub.Clients.All.serverTime(
+                string.Format("{0} {1}", DateTime.UtcNow.ToString(), count++));
         }
 
         public void Stop(bool immediate)

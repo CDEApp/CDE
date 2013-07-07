@@ -8,9 +8,11 @@ namespace cdeWeb.Hubs
 
     public class ServerTimeHub : Hub
     {
+        private static int count = 1;
+
         public string GetServerTime()
         {
-            return DateTime.UtcNow.ToString();
+            return string.Format("{0} {1}", DateTime.UtcNow.ToString(), count++);
         }
     }
 
