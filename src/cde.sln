@@ -11,6 +11,11 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ProtobufTest", "ProtobufTest\ProtobufTest.csproj", "{B0503673-6BE6-4A94-AC49-C1761113EF0B}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{20643019-F008-42C5-A559-28655EEE69EF}"
+	ProjectSection(SolutionItems) = preProject
+		tests\jasmine.js = tests\jasmine.js
+		tests\karma.conf.js = tests\karma.conf.js
+		tests\ngSignalR_tests.js = tests\ngSignalR_tests.js
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWin", "cdeWin\cdeWin.csproj", "{AC6AD3DF-47A6-4A55-8EF5-3872E75D6A36}"
 EndProject

@@ -54,6 +54,8 @@ namespace cdeWeb.Hubs
             return 7;
         }
 
+        // todo consider sending every X00 msec, a set not one at time. [100 msec].
+        // setup search to report even 100msec not on count...
         private void AddDirEntry(DirEntry de)
         {
             _hub.Clients.Client(Context.ConnectionId).addDirEntry(de);

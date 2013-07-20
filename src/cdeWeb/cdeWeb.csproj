@@ -630,6 +630,7 @@
     <Content Include="Scripts\restangular.js" />
     <Content Include="Scripts\select2.js" />
     <Content Include="Scripts\select2.min.js" />
+    <Content Include="Scripts\signalrAngular.js" />
     <Content Include="Web.config">
       <SubType>Designer</SubType>
     </Content>
