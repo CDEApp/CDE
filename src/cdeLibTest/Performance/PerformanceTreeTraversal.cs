@@ -20,7 +20,7 @@ namespace cdeLibTest.Performance
     class PerformanceTreeTraversal
     {
         private const string PathToTest = @"..\..\..\..\test\";
-        private const string TestCatalog200K = PathToTest + "C-Vertex3.cde";
+        private const string TestCatalog200K = PathToTest + "C-V3Win7.cde";
         private const string TestCatalog1_2M = PathToTest + "D-SM15T_2_1.cde";
 
         // ReSharper disable InconsistentNaming

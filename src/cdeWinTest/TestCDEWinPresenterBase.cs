@@ -21,13 +21,16 @@ namespace cdeWinTest
         protected DirEntry _dirEntry;
         protected PairDirEntry _pairDirEntry;
 
-        protected static readonly List<RootEntry> _emptyRootList = new List<RootEntry>();
+        protected static List<RootEntry> _emptyRootList = new List<RootEntry>();
         protected static List<RootEntry> _rootList = new List<RootEntry>();
         protected TreeNode _treeViewAfterSelectNode;
 
         [SetUp]
         public virtual void RunBeforeEveryTest()
         {
+             _emptyRootList = new List<RootEntry>();
+             _rootList = new List<RootEntry>();
+
             _mockForm = MockRepository.GenerateMock<ICDEWinForm>();
             _stubConfig = MockRepository.GenerateStub<IConfig>();
 

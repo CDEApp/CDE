@@ -235,7 +235,7 @@ namespace AlphaFSTest
         [Test]
         public void Directory_GetDirectories_OK()
         {
-            Directory.SetCurrentDirectory("../../../../..");
+            Directory.SetCurrentDirectory("../../../..");
             var dirs = Directory.GetDirectories(".");
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
