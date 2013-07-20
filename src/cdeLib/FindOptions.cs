@@ -95,6 +95,15 @@ namespace cdeLib
                 } 
             }
 
+            var findFunc = GetFindFunc(progressCount, progressEnd, limitCount);
+            // ReSharper disable PossibleMultipleEnumeration
+            CommonEntry.TraverseTreePair(rootEntries, findFunc);
+            ProgressFunc(progressCount[0], progressEnd);        // end of Progress
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
+        public TraverseFunc GetFindFunc(int[] progressCount, int progressEnd, int[] limitCount)
+        {
             TraverseFunc findFunc = (p, d) =>
             {
                 ++progressCount[0];
@@ -131,10 +140,7 @@ namespace cdeLib
                 }
                 return true;
             };
-            // ReSharper disable PossibleMultipleEnumeration
-            CommonEntry.TraverseTreePair(rootEntries, findFunc);
-            ProgressFunc(progressCount[0], progressEnd);        // end of Progress
-            // ReSharper restore PossibleMultipleEnumeration
+            return findFunc;
         }
     }
 
