@@ -8,7 +8,7 @@ basePath = '../cdeWeb';
 files = [
   JASMINE,
   JASMINE_ADAPTER,
-  'Scripts/jquery-2.0.2.js',
+  'Scripts/jquery-2.0.3.js',
   'Scripts/angular.js',
   'Scripts/angular-mocks.js',
   'Scripts/signalrAngular.js',

@@ -1,5 +1,5 @@
 /// <reference path="jasmine.js"/>
-/// <reference path="../cdeWeb/Scripts/jquery-2.0.2.js"/>
+/// <reference path="../cdeWeb/Scripts/jquery-2.0.3.js"/>
 /// <reference path="../cdeWeb/Scripts/angular.js"/>
 /// <reference path="../cdeWeb/Scripts/angular-mocks.js"/>
 /// <reference path="../cdeWeb/Scripts/signalrAngular.js"/>
