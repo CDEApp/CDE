@@ -5,8 +5,15 @@ using System.Linq;
 using ProtoBuf;
 using Filesystem = Alphaleonis.Win32.Filesystem;
 
+
+/// <returns></returns>
+
+
 namespace cdeLib
 {
+    /// <summary>
+    /// Returns true if FindOptions conditions are satisfied.
+    /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
 
     [ProtoContract

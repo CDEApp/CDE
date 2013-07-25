@@ -37,6 +37,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWebTest", "cdeWebTest\cd
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NUnit.Should", "NUnit.Should\NUnit.Should.csproj", "{650431E1-34A1-45BF-ABB5-DC77AF235AD8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeLibSpec", "cdeLibSpec\cdeLibSpec.csproj", "{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -184,6 +186,16 @@ Global
 		{650431E1-34A1-45BF-ABB5-DC77AF235AD8}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{650431E1-34A1-45BF-ABB5-DC77AF235AD8}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{650431E1-34A1-45BF-ABB5-DC77AF235AD8}.Release|x86.ActiveCfg = Release|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Release|Any CPU.Build.0 = Release|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{21ED1638-F0E7-4DC7-9D24-17FC9FB13857}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

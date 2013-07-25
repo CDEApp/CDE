@@ -21,8 +21,8 @@ namespace cdeWinTest
         protected DirEntry _dirEntry;
         protected PairDirEntry _pairDirEntry;
 
-        protected static List<RootEntry> _emptyRootList = new List<RootEntry>();
-        protected static List<RootEntry> _rootList = new List<RootEntry>();
+        protected List<RootEntry> _emptyRootList = new List<RootEntry>();
+        protected List<RootEntry> _rootList = new List<RootEntry>();
         protected TreeNode _treeViewAfterSelectNode;
 
         [SetUp]

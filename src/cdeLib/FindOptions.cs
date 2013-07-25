@@ -30,7 +30,7 @@ namespace cdeLib
         public TimeSpan ToHour { get; set; }
         public bool NotOlderThanEnable { get; set; }
         public DateTime NotOlderThan { get; set; }
-
+        public int ProgressEnd { get; set; }
 
         /// <summary>
         /// Called for every found entry.
@@ -47,6 +47,8 @@ namespace cdeLib
         {
             LimitResultCount = 10000;
             ProgressModifier = int.MaxValue; // huge m0n.
+            IncludeFiles = true;
+            IncludeFolders = true;
         }
 
         public void Find(IEnumerable<RootEntry> rootEntries)
@@ -64,52 +66,50 @@ namespace cdeLib
             }
 
             // ReSharper disable PossibleMultipleEnumeration
-            var progressEnd = rootEntries.TotalFileEntries();
+            ProgressEnd = rootEntries.TotalFileEntries();
             // ReSharper restore PossibleMultipleEnumeration
             var progressCount = new[] { 0 };
-            ProgressFunc(progressCount[0], progressEnd);        // Start of process Progress report.
+            ProgressFunc(progressCount[0], ProgressEnd);        // Start of process Progress report.
+            PatternMatcher = GetPatternMatcher();
 
+            var findFunc = GetFindFunc(progressCount, limitCount);
+            // ReSharper disable PossibleMultipleEnumeration
+            CommonEntry.TraverseTreePair(rootEntries, findFunc);
+            ProgressFunc(progressCount[0], ProgressEnd);        // end of Progress
+            // ReSharper restore PossibleMultipleEnumeration
+        }
+
+        public Func<CommonEntry, DirEntry, bool> GetPatternMatcher()
+        {
+            Func<CommonEntry, DirEntry, bool> matcher;
             if (RegexMode)
             {
                 var regex = new Regex(Pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                matcher = (p, d) => regex.IsMatch(d.Path);
                 if (IncludePath)
                 {
-                    PatternMatcher = (p, d) => regex.IsMatch(p.MakeFullPath(d));
-                }
-                else
-                {
-                    PatternMatcher = (p, d) => regex.IsMatch(d.Path);
+                    matcher = (p, d) => regex.IsMatch(p.MakeFullPath(d));
                 }
             }
             else
             {
+                matcher = (p, d) => d.Path.IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
                 if (IncludePath)
                 {
-                    PatternMatcher = (p, d) => 
-                        p.MakeFullPath(d).IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
+                    matcher = (p, d) => p.MakeFullPath(d).IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
                 }
-                else
-                {
-                    PatternMatcher = (p, d) =>
-                        d.Path.IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
-                } 
             }
-
-            var findFunc = GetFindFunc(progressCount, progressEnd, limitCount);
-            // ReSharper disable PossibleMultipleEnumeration
-            CommonEntry.TraverseTreePair(rootEntries, findFunc);
-            ProgressFunc(progressCount[0], progressEnd);        // end of Progress
-            // ReSharper restore PossibleMultipleEnumeration
+            return matcher;
         }
 
-        public TraverseFunc GetFindFunc(int[] progressCount, int progressEnd, int[] limitCount)
+        public TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
         {
             TraverseFunc findFunc = (p, d) =>
             {
                 ++progressCount[0];
                 if (progressCount[0] % ProgressModifier == 0)
                 {
-                    ProgressFunc(progressCount[0], progressEnd);
+                    ProgressFunc(progressCount[0], ProgressEnd);
                     // only check for cancel on progress modifier.
                     if (Worker != null && Worker.CancellationPending)
                     {
