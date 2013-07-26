@@ -1,7 +1,9 @@
 ﻿using System;
 using NSpec;
+using NSubstitute.Experimental;
 using cdeLib;
 using NSubstitute;
+using cdeLibTest;
 
 namespace cdeLibSpec
 {
@@ -18,30 +20,26 @@ namespace cdeLibSpec
             Console.WriteLine(str, values);
         }
 
-        public void given_new_FindOptions()
+        public void given_default_findOptions()
         {
             FindOptions findOptions = null;
             before = () => {
                 findOptions = new FindOptions();
             };
 
-            it["default LimitResult is 10000"] =
-                () => findOptions.LimitResultCount.should_be(10000);
+            specify = () => findOptions.LimitResultCount.should_be(10000);
 
-            it["default ProgressModifier is int.MaxValue"] =
-                () => findOptions.ProgressModifier.should_be(int.MaxValue);
+            specify = () => findOptions.SkipCount.should_be(0);
 
-            it["default IncludeFiles is true"] =
-                () => findOptions.IncludeFiles.should_be_true();
+            specify = () => findOptions.ProgressModifier.should_be(int.MaxValue);
 
-            it["default IncludeFolders is true"] =
-                () => findOptions.IncludeFolders.should_be_true();
+            specify = () => findOptions.IncludeFiles.should_be_true();
 
-            it["default IncludePath is false"] =
-                () => findOptions.IncludePath.should_be_false();
+            specify = () => findOptions.IncludeFolders.should_be_true();
 
-            it["default RegexMode is false"] =
-                () => findOptions.RegexMode.should_be_false();
+            specify = () => findOptions.IncludePath.should_be_false();
+
+            specify = () => findOptions.RegexMode.should_be_false();
         }
 
         public void given_FindOptions_with_matcherAll()
@@ -66,6 +64,8 @@ namespace cdeLibSpec
                 testFile = new DirEntry(false) { Path = @"TestFile1" };
                 testDir = new DirEntry(true) { Path = @"TestDir" };
             };
+
+
 
             describe["with test entry \"TestFile1\""] = () => {
 
@@ -106,7 +106,7 @@ namespace cdeLibSpec
                     };
                 };
 
-                context["given find excludes Files"] = () => {
+                describe["given find excludes Files"] = () => {
                     before = () => {
                         findOptions.IncludeFiles = false;
                         findFunc = findOptions.GetFindFunc(new[] {0}, new[] {int.MaxValue});
@@ -118,7 +118,7 @@ namespace cdeLibSpec
                     };
                 };
 
-                context["given find excludes Folders"] = () => {
+                describe["given find excludes Folders"] = () => {
                     before = () => {
                         findOptions.IncludeFolders = false;
                         findFunc = findOptions.GetFindFunc(new[] {0}, new[] {int.MaxValue});
@@ -133,7 +133,7 @@ namespace cdeLibSpec
 
             describe["with test entry \"TestDir1\""] = () => {
 
-                context["given find excludes Files"] = () => {
+                describe["given find excludes Files"] = () => {
                     before = () => {
                         findOptions.IncludeFiles = false;
                         findFunc = findOptions.GetFindFunc(new[] {0}, new[] {int.MaxValue});
@@ -145,7 +145,7 @@ namespace cdeLibSpec
                     };
                 };
 
-                context["given find excludes Folders"] = () => {
+                describe["given find excludes Folders"] = () => {
                     before = () => {
                         findOptions.IncludeFolders = false;
                         findFunc = findOptions.GetFindFunc(new[] {0}, new[] {int.MaxValue});
@@ -173,7 +173,7 @@ namespace cdeLibSpec
 
             describe["with test entry \"TestFile1\""] = () => {
 
-                context["given that matcher excludes path"] = () => {
+                describe["given that matcher excludes path"] = () => {
 
                     it["can't find \"x\""] = () => {
                         findOptions.Pattern = "x";
@@ -200,7 +200,7 @@ namespace cdeLibSpec
                     };
                 };
 
-                context["given that matcher includes path"] = () => {
+                describe["given that matcher includes path"] = () => {
                     before = () => {
                         findOptions.IncludePath = true;
                     };
@@ -219,15 +219,8 @@ namespace cdeLibSpec
         // terms may be matched in any order as long as they dont overlap [as long as they arnt adjacent]
         // * in a term means wildcard... so term is split to two terms that must match adjacent. [or fudge with regex]
         // * at start or end of term is redundant as terms sub string match within constraints produced by other terms.
-        public void FindFunc_Spec_for_extended_matcher()
+        public void FindFunc_Spec_for_extended_matcher_zaza()
         {
-    
-        }
-    }
-            //context["when extended matching"] = () => {
-            //    // words seperate by white space are terms in search
-            //    // each term must be found to return true - no overlap of terms
-            //    // * in a term means wildcard..
             //    // new mode - not written yet.
             //    context["given test entry \"testfile1\""] = () => {
             //    };
@@ -253,7 +246,160 @@ namespace cdeLibSpec
             //    it["can find \"t*t f*e\" on file"] = () => {
 
             //    };
-            //};
+        }
+
+        public void FindFunc_Spec_for_limit()
+        {
+
+            describe["given test entry tree"] = () =>
+            {
+                // ReSharper disable TooWideLocalVariableScope
+                DirEntry de2a;
+                DirEntry de2b;
+                DirEntry de2c;
+                DirEntry de3a = null;
+                DirEntry de4a = null;
+                // ReSharper restore TooWideLocalVariableScope
+                RootEntry re = null;
+                FindOptions findOptions = null;
+                Func<CommonEntry, DirEntry, bool> matcherAll = null;
+
+                before = () =>
+                {
+                    // NOTE: test tree entry entry  is de2c,de2a,de2b,de3a,de4a
+                    re = RootEntryTestBase.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+                    re.SetInMemoryFields();
+                    matcherAll = Substitute.For<Func<CommonEntry, DirEntry, bool>>();
+                    matcherAll(null, null).ReturnsForAnyArgs(true);
+                    findOptions = new FindOptions();
+
+                };
+
+                describe["with FindOptions matching all entries"] = () =>
+                {
+                    TraverseFunc foundFunc = null;
+
+                    before = () =>
+                    {
+                        foundFunc = Substitute.For<TraverseFunc>();
+                        foundFunc(null, null).ReturnsForAnyArgs(x => true);
+                        findOptions.Pattern = string.Empty;
+                        findOptions.PatternMatcher = matcherAll;
+                        findOptions.FoundFunc = foundFunc;
+                    };
+
+                    describe["given find limit 2"] = () =>
+                    {
+                        before = () =>
+                        {
+                            findOptions.LimitResultCount = 2;
+                            findOptions.Find(new[] { re });
+                        };
+
+                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+
+                        specify = () => findOptions.ProgressCount.should_be(2);
+                    };
+
+                    describe["given find limit 4"] = () =>
+                    {
+                        before = () =>
+                        {
+                            findOptions.LimitResultCount = 4;
+                            findOptions.Find(new[] { re });
+                        };
+
+                        specify = () => foundFunc.ReceivedWithAnyArgs(4).Invoke(null, null);
+
+                        specify = () => findOptions.ProgressCount.should_be(4);
+                    };
+
+                    describe["given large limit"] = () =>
+                    {
+                        before = () =>
+                        {
+                            findOptions.LimitResultCount = int.MaxValue;
+                        };
+
+                        describe["will find all"] = () =>
+                        {
+                            before = () => findOptions.Find(new[] { re });
+
+                            specify = () => foundFunc.ReceivedWithAnyArgs(5).Invoke(null, null);
+
+                            specify = () => findOptions.ProgressCount.should_be(5);
+                        };
+
+                        describe["and given SkipCount 5"] = () =>
+                        {
+                            before = () =>
+                            {
+                                findOptions.SkipCount = 5;
+                                findOptions.Find(new[] { re });
+                            };
+
+                            specify = () => foundFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
+
+                            specify = () => findOptions.ProgressCount.should_be(5);
+                        };
+
+                        describe["and given SkipCount 6"] = () =>
+                        {
+                            before = () =>
+                            {
+                                findOptions.SkipCount = 6;
+                                findOptions.Find(new[] { re });
+                            };
+
+                            specify = () => foundFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
+
+                            specify = () => findOptions.ProgressCount.should_be(5);
+                        };
+
+                    };
+
+                    describe["When find limit 2, pattern \"a\""] = () =>
+                    {
+                        before = () =>
+                        {
+                            findOptions.Pattern = "a";
+                            findOptions.LimitResultCount = 2;
+                            findOptions.Find(new[] { re });
+                        };
+
+                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+
+                        specify = () => findOptions.ProgressCount.should_be(4);
+                    };
+
+                    describe["When find limit 2, pattern \"a\" with Skip count 2"] = () =>
+                    {
+                        before = () =>
+                        {
+                            findOptions.LimitResultCount = 2;
+                            findOptions.SkipCount = 2;
+                            findOptions.Pattern = "a";
+                            findOptions.Find(new[] { re });
+                        };
+
+                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+
+                        specify = () => findOptions.ProgressCount.Is(5);
+
+                        it["found received in expected order"] =
+                            () => Received.InOrder(() =>
+                            {
+                                foundFunc.Received().Invoke(Arg.Any<CommonEntry>(), de3a);
+                                foundFunc.Received().Invoke(Arg.Any<CommonEntry>(), de4a);
+                            });
+                    };
+                };
+            };
+            // TODO - capture SkipCount and interface and pass it back later ? [ProgressCount from findOptions]
+            //        maybe this involves holding onto FindOptions on serverside in Web ?
+            // TODO - if SkipCount >= Limit then dont do any work return empty.
+        }
+    }
 
     // ReSharper restore InconsistentNaming
     // ReSharper restore ImplicitlyCapturedClosure

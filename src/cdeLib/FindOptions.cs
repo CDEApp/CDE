@@ -31,6 +31,9 @@ namespace cdeLib
         public bool NotOlderThanEnable { get; set; }
         public DateTime NotOlderThan { get; set; }
         public int ProgressEnd { get; set; }
+        public int ProgressCount { get { return _progressCount[0]; } }
+        private int[] _progressCount = new [] { 0 };
+        public int SkipCount { get; set; }
 
         /// <summary>
         /// Called for every found entry.
@@ -68,14 +71,13 @@ namespace cdeLib
             // ReSharper disable PossibleMultipleEnumeration
             ProgressEnd = rootEntries.TotalFileEntries();
             // ReSharper restore PossibleMultipleEnumeration
-            var progressCount = new[] { 0 };
-            ProgressFunc(progressCount[0], ProgressEnd);        // Start of process Progress report.
+            ProgressFunc(_progressCount[0], ProgressEnd);        // Start of process Progress report.
             PatternMatcher = GetPatternMatcher();
 
-            var findFunc = GetFindFunc(progressCount, limitCount);
+            var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
             CommonEntry.TraverseTreePair(rootEntries, findFunc);
-            ProgressFunc(progressCount[0], ProgressEnd);        // end of Progress
+            ProgressFunc(_progressCount[0], ProgressEnd);        // end of Progress
             // ReSharper restore PossibleMultipleEnumeration
         }
 
@@ -107,6 +109,11 @@ namespace cdeLib
             TraverseFunc findFunc = (p, d) =>
             {
                 ++progressCount[0];
+                if (progressCount[0] <= SkipCount)
+                {   // skip enforced
+                    return true;
+                }
+
                 if (progressCount[0] % ProgressModifier == 0)
                 {
                     ProgressFunc(progressCount[0], ProgressEnd);

@@ -59,6 +59,10 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\cdeLibTest\cdeLibTest.csproj">
+      <Project>{937FD4F3-1173-4A23-8DFA-2ABC2C3B27C9}</Project>
+      <Name>cdeLibTest</Name>
+    </ProjectReference>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
       <Project>{38066FCE-1EE4-4B6C-BA94-2A526DF7B3ED}</Project>
       <Name>cdeLib</Name>
