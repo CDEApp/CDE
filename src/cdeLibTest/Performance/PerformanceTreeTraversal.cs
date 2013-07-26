@@ -92,6 +92,11 @@ namespace cdeLibTest.Performance
             msecs = DoPairDirEntryEnumeratorTest(TestData.RootLarge, _repeatLarge);
             OutputStatLine("PairDirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
+            msecs = DoDirEntryEnumeratorCountTest(TestData.RootSmall, _repeatSmall);
+            OutputStatLine("DirEntryEnumerator Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
+            msecs = DoDirEntryEnumeratorCountTest(TestData.RootLarge, _repeatLarge);
+            OutputStatLine("DirEntryEnumerator Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
+
             msecs = DoDirEntryEnumeratorTest(TestData.RootSmall, _repeatSmall);
             OutputStatLine("DirEntryEnumerator Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoDirEntryEnumeratorTest(TestData.RootLarge, _repeatLarge);
@@ -148,10 +153,24 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
-            var pairDirEntries = CommonEntry.GetDirEntries(rootEntries);
+            var dirEntries = CommonEntry.GetDirEntries(rootEntries);
             for (var i = 0; i < repeatCount; i++)
             {
-                pairDirEntries.ToList();
+                dirEntries.ToList();
+            }
+            sw.Stop();
+            return sw.ElapsedMilliseconds;
+        }
+
+        public long DoDirEntryEnumeratorCountTest(RootEntry root, int repeatCount)
+        {
+            var sw = new Stopwatch();
+            sw.Start();
+            var rootEntries = new List<RootEntry> { root };
+            var dirEntries = CommonEntry.GetDirEntries(rootEntries);
+            for (var i = 0; i < repeatCount; i++)
+            {
+                dirEntries.Count();
             }
             sw.Stop();
             return sw.ElapsedMilliseconds;
