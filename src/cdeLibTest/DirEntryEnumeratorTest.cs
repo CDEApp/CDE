@@ -136,33 +136,34 @@ namespace cdeLibTest
         public void PerformanceTest_Compare_TraverseTree_With_DirEntryEnumerator()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-
+            System.Threading.Thread.Sleep(200); // msec
             //_num = 0;
             _fileCount = 0;
             var sw = new Stopwatch();
             sw.Start();
             for (var i = 0; i < 100; ++i)
             {
-                //var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
-                //foreach (var dirEntry in deEnumerator)
+                var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
+                foreach (var dirEntry in deEnumerator)
                 {
                     //_num += (ulong)dirEntry.FullPath.Length;
                     ++_fileCount;
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
-                        break;
-                    }
+                    //if (Hack.BreakConsoleFlag)
+                    //{
+                    //    Console.WriteLine("\nBreak key detected exiting full TraverseTree inner.");
+                    //    break;
+                    //}
                 }
             }
             sw.Stop();
             var ts = sw.Elapsed;
             var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
-            Console.WriteLine("took : {0}", elapsedTime);
+            Console.WriteLine("Enumerator took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
             //Console.WriteLine("Total path length : {0}", _num);
 
             var re = rootEntries.First();
+            sw.Reset();
             sw.Start();
             //_num = 0;
             _fileCount = 0;
