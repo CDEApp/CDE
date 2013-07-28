@@ -6,6 +6,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using LZ4;
+using Lz4Net;
 using NSpec;
 using cdeLib;
 
@@ -34,6 +35,10 @@ namespace cdeLibSpec
             public long writtenSize;
             public long writeDuration;
             public long readDuration;
+            public long writeFileDuration;
+            public long readFileDuration;
+            public long writeFileSSDDuration;
+            public long readFileSSDDuration;
             public string fqFileName;
             public long sampleCount;
 
@@ -60,8 +65,12 @@ namespace cdeLibSpec
 
             public void printer()
             {
-                Console.WriteLine("\"{0}\", {1}, {2}, {3}, {4}, {5}, {6}, {7}",
-                    desc, compressCode, sampleCount, count, originalSize, writtenSize, writeDuration, readDuration);
+                if (sampleCount > 0)
+                {
+                    Console.WriteLine("\"{0}\", {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}",
+                        desc, compressCode, sampleCount, count, originalSize, writtenSize,
+                        writeDuration, readDuration, writeFileDuration, readFileDuration, writeFileSSDDuration, readFileSSDDuration);
+                }
             }
         }
 
@@ -69,7 +78,7 @@ namespace cdeLibSpec
         private const string TestCatalog32K = PathToTest + "G-SN750B_02_S13UJ1NQ221583.cde";
         private const string TestCatalog200K = PathToTest + "C-V3Win7.cde";
         private const string TestCatalog1_2M = PathToTest + "D-SM15T_2_1.cde";
-        public const int SampleCount = 10;
+        public const int SampleCount = 5;
         public const int OneHundredMB = 100*1024*1024; // 100 MB is big enough for test files i have.
 
         public byte[] buffer = new byte[OneHundredMB];
@@ -133,24 +142,25 @@ namespace cdeLibSpec
                         read = readGzipStream
                     },
 
-                new scenario {
-                        desc = "Serialize tiny to Deflate MemStream", fqFileName = "tinyDefl.cde",
-                        isSerialising = true, compressCode = "Defl",
-                        write = writeDeflateStream, root = tiny,
-                        read = readDeflateStream
-                    },
-                new scenario {
-                        desc = "Serialize small to Deflate MemStream", fqFileName = "smallDefl.cde",
-                        isSerialising = true, compressCode = "Defl",
-                        write = writeDeflateStream, root = small,
-                        read = readDeflateStream
-                    },
-                new scenario {
-                        desc = "Serialize large to Deflate MemStream", fqFileName = "largeDefl.cde",
-                        isSerialising = true, compressCode = "Defl",
-                        write = writeDeflateStream, root = large,
-                        read = readDeflateStream
-                    },
+                // to similar to Gzip to bother testing
+                //new scenario {
+                //        desc = "Serialize tiny to Deflate MemStream", fqFileName = "tinyDefl.cde",
+                //        isSerialising = true, compressCode = "Defl",
+                //        write = writeDeflateStream, root = tiny,
+                //        read = readDeflateStream
+                //    },
+                //new scenario {
+                //        desc = "Serialize small to Deflate MemStream", fqFileName = "smallDefl.cde",
+                //        isSerialising = true, compressCode = "Defl",
+                //        write = writeDeflateStream, root = small,
+                //        read = readDeflateStream
+                //    },
+                //new scenario {
+                //        desc = "Serialize large to Deflate MemStream", fqFileName = "largeDefl.cde",
+                //        isSerialising = true, compressCode = "Defl",
+                //        write = writeDeflateStream, root = large,
+                //        read = readDeflateStream
+                //    },
 
                 new scenario {
                         desc = "Serialize tiny to LZ4 MemStream",
@@ -188,7 +198,45 @@ namespace cdeLibSpec
                         isSerialising = true, compressCode = "lz4h", fqFileName = "largeLZ4H.cde",
                         write = writeLZ4HStream, root = large,
                         read = readLZ4Stream
-                    },        
+                    },    
+    
+                new scenario {
+                        desc = "Serialize tiny to LZ4N MemStream",
+                        isSerialising = true, compressCode = "lz4N", fqFileName = "tinyLZ4N.cde",
+                        write = writeLZ4NStream, root = tiny,
+                        read = readLZ4NStream
+                    },
+                new scenario {
+                        desc = "Serialize small to LZ4N MemStream",
+                        isSerialising = true, compressCode = "lz4N", fqFileName = "smallLZ4N.cde",
+                        write = writeLZ4NStream, root = small,
+                        read = readLZ4NStream
+                    },
+                new scenario {
+                        desc = "Serialize large to LZ4N MemStream",
+                        isSerialising = true, compressCode = "lz4N", fqFileName = "largeLZ4N.cde",
+                        write = writeLZ4NStream, root = large,
+                        read = readLZ4NStream
+                    },  
+ 
+                new scenario {
+                        desc = "Serialize tiny to LZ4NH MemStream",
+                        isSerialising = true, compressCode = "lz4NH", fqFileName = "tinyLZ4NH.cde",
+                        write = writeLZ4NHStream, root = tiny,
+                        read = readLZ4NStream
+                    },
+                new scenario {
+                        desc = "Serialize small to LZ4NH MemStream",
+                        isSerialising = true, compressCode = "lz4NH", fqFileName = "smallLZ4NH.cde",
+                        write = writeLZ4NHStream, root = small,
+                        read = readLZ4NStream
+                    },
+                new scenario {
+                        desc = "Serialize large to LZ4NH MemStream",
+                        isSerialising = true, compressCode = "lz4NH", fqFileName = "largeLZ4NH.cde",
+                        write = writeLZ4NHStream, root = large,
+                        read = readLZ4NStream
+                    },  
 
                 //new scenario
                 //    {
@@ -282,6 +330,11 @@ namespace cdeLibSpec
             MemoryStream memStream = null;
             var times = new List<long>(SampleCount);
             var timesRead = new List<long>(SampleCount);
+            var timesFileWrite = new List<long>(SampleCount);
+            var timesFileRead = new List<long>(SampleCount);
+            var timesFileSSDWrite = new List<long>(SampleCount);
+            var timesFileSSDRead = new List<long>(SampleCount);
+
             var sw = new Stopwatch();
             long streamLength = 0;
 
@@ -302,7 +355,7 @@ namespace cdeLibSpec
                 times.Add(sw.ElapsedMilliseconds);
 
                 var writtenBuffer = memStream.ToArray();
-                Console.WriteLine("writtenBuffer.Length {0}", writtenBuffer.Length);
+                //Console.WriteLine("writtenBuffer.Length {0}", writtenBuffer.Length);
                 streamLength = writtenBuffer.Length;
 
                 //var b = memStream.GetBuffer();
@@ -324,6 +377,58 @@ namespace cdeLibSpec
                     timesRead.Add(sw.ElapsedMilliseconds);
                 }
 
+                if (!string.IsNullOrEmpty(sce.fqFileName))
+                {
+                    //Console.WriteLine(sce.fqFileName);
+
+                    // write file test
+                    sw.Reset();
+                    sw.Start();
+                    using (var fs = File.Open(sce.fqFileName, FileMode.Create))
+                    {
+                        sce.writer(fs);
+                    }
+                    sw.Stop();
+                    timesFileWrite.Add(sw.ElapsedMilliseconds);
+
+                    if (sce.read != null)
+                    {
+                        // read file test
+                        sw.Reset();
+                        sw.Start();
+                        using (var fs = new FileStream(sce.fqFileName, FileMode.Open, FileAccess.Read))
+                        {
+                            sce.read(fs);
+                        }
+                        sw.Stop();
+                        timesFileRead.Add(sw.ElapsedMilliseconds);
+                    }
+
+                    var ssdFile = @"C:\" + sce.fqFileName;
+                    // write file test
+                    sw.Reset();
+                    sw.Start();
+                    using (var fs = File.Open(ssdFile, FileMode.Create))
+                    {
+                        sce.writer(fs);
+                    }
+                    sw.Stop();
+                    timesFileSSDWrite.Add(sw.ElapsedMilliseconds);
+
+                    if (sce.read != null)
+                    {
+                        // read file test
+                        sw.Reset();
+                        sw.Start();
+                        using (var fs = new FileStream(ssdFile, FileMode.Open, FileAccess.Read))
+                        {
+                            sce.read(fs);
+                        }
+                        sw.Stop();
+                        timesFileSSDRead.Add(sw.ElapsedMilliseconds);
+                    }
+
+                }
             }
             //Console.WriteLine("memStream.Length");
             //Console.WriteLine(memStream.Length);
@@ -334,7 +439,10 @@ namespace cdeLibSpec
             {
                 sce.readDuration = (long)Math.Floor(timesRead.Average());
             }
-
+            sce.writeFileDuration = (long)Math.Floor(timesFileWrite.Average());
+            sce.readFileDuration = (long)Math.Floor(timesFileRead.Average());
+            sce.writeFileSSDDuration = (long)Math.Floor(timesFileSSDWrite.Average());
+            sce.readFileSSDDuration = (long)Math.Floor(timesFileSSDRead.Average());
             sce.sampleCount = SampleCount;
         }
 
@@ -387,6 +495,18 @@ namespace cdeLibSpec
             return result;
         }
 
+        public Result readLZ4NStream(Stream s)
+        {
+            var xFs = new Lz4DecompressionStream(s);
+            var result = new Result { stream = xFs };
+            var root = RootEntry.Read(xFs);
+            if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
+            root.ActualFileName = "gumby";
+            root.SetInMemoryFields();
+            result.root = root;
+            return result;
+        }
+
         public void writeStream(RootEntry root, Stream s)
         {
             using (s)
@@ -427,6 +547,21 @@ namespace cdeLibSpec
             }
         }
 
+        public void writeLZ4NStream(RootEntry root, Stream s)
+        {
+            using (var xFs = new Lz4CompressionStream(s, 1<<18, Lz4Mode.Fast))
+            {
+                root.Write(xFs);
+            }
+        }
+
+        public void writeLZ4NHStream(RootEntry root, Stream s)
+        {
+            using (var xFs = new Lz4CompressionStream(s, 1 << 18, Lz4Mode.HighCompression))
+            {
+                root.Write(xFs);
+            }
+        }
 
 
         private void write(RootEntry small, string fileName)
