@@ -10,7 +10,7 @@ namespace cdeLibSpec
     // ReSharper disable ImplicitlyCapturedClosure
     // ReSharper disable InconsistentNaming
 
-    [Tag("describe_test")]
+    [Tag("describe_testx")]
     public class FindOptions_Spec : nspec
     {
         // System.Diagnostics.Debugger.Launch();

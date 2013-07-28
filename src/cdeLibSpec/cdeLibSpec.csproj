@@ -35,6 +35,9 @@
     <Reference Include="AlphaFS">
       <HintPath>..\..\lib\AlphaFS-1.5\Release\AlphaFS.dll</HintPath>
     </Reference>
+    <Reference Include="LZ4">
+      <HintPath>..\packages\lz4net.1.0.2.93\lib\net40-client\LZ4.dll</HintPath>
+    </Reference>
     <Reference Include="NSpec">
       <HintPath>..\packages\nspec.0.9.67\lib\NSpec.dll</HintPath>
     </Reference>
@@ -56,6 +59,7 @@
   <ItemGroup>
     <Compile Include="FindOptionsSpec.cs" />
     <Compile Include="nspec_as_nunit.cs" />
+    <Compile Include="performance_load_save_spec.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
