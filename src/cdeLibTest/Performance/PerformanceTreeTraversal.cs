@@ -102,8 +102,8 @@ namespace cdeLibTest.Performance
             msecs = DoDirEntryEnumeratorTest(TestData.RootLarge, _repeatLarge);
             OutputStatLine("DirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
-            _repeatSmall *= 10;
-            _repeatLarge *= 10;
+            //_repeatSmall *= 10;
+            //_repeatLarge *= 10;
             msecs = DoTraverseTreePairTest(TestData.RootSmall, _repeatSmall);
             OutputStatLine("TraverseTreePair Small Make List", _repeatSmall, TestData.RootSmallCount, msecs);
             msecs = DoTraverseTreePairTest(TestData.RootLarge, _repeatSmall);
@@ -180,12 +180,15 @@ namespace cdeLibTest.Performance
         {
             var sw = new Stopwatch();
             sw.Start();
-            var testlist = new List<PairDirEntry>();
-            ((CommonEntry)root).TraverseTreePair((p, d) =>
+            for (var i = 0; i < repeatCount; i++)
+            {
+                var testlist = new List<PairDirEntry>();
+                ((CommonEntry)root).TraverseTreePair((p, d) =>
                 {
                     testlist.Add(new PairDirEntry(p, d));
                     return true;
                 });
+            }
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
@@ -194,12 +197,15 @@ namespace cdeLibTest.Performance
         {
             var sw = new Stopwatch();
             sw.Start();
-            var testlist = new List<DirEntry>();
-            ((CommonEntry) root).TraverseTreePair((p, d) =>
+            for (var i = 0; i < repeatCount; i++)
+            {
+                var testlist = new List<DirEntry>();
+                ((CommonEntry)root).TraverseTreePair((p, d) =>
                 {
                     testlist.Add(d);
                     return true;
                 });
+            }
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
