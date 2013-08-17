@@ -17,7 +17,7 @@ namespace cdeLibSpec
         public void Execute()
         {
             // from https://github.com/mattflo/NSpec/blob/master/NSpecSpecs/DebuggerShim.cs
-            const string tagOrClassName = "describe_test";
+            const string tagOrClassName = "describe_core_test";
 
             var types = GetType().Assembly.GetTypes();
             // OR

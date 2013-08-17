@@ -19,8 +19,8 @@ namespace cdeLibSpec
     /// try builtin gzip ? zlib stuff of .Net - did this before it wasnt so good.
     /// try lz4 [claimed fastest out there[
     /// </summary>
-    [Tag("describe_test")]
-    class loadsave_cde_performance : nspec
+    [Tag("performance_test")]
+    class loadsave_cde_performance //: nspec
     {
         public class Result
         {
@@ -91,9 +91,18 @@ namespace cdeLibSpec
             public long durationMsec;
         }
 
-        public void create_test_files_for_loading()
+        public void describe_performance_test_compression_of_cde()
         {
             //wtf();
+            //specify = () => "gumby".should_be("gumby");
+
+            //describe["long perf test"] = () => {
+            Action tempo = () => {
+
+            //it["runs performance tests"] = () => { 
+            //    Console.WriteLine("performance testing.");
+            //    specify = () => "gumby".should_be("gumby");
+            //};
 
             RootEntry tiny = null;
             tiny = RootEntry.LoadDirCache(TestCatalog32K);
@@ -267,19 +276,7 @@ namespace cdeLibSpec
             {
                 Scenarios[i].printer();
             }
-
-            //write(small, "small.cde");
-            //writeLZ4(small, "smallLZ4.cde");
-            //writeDeflate(small, "smallDeflate.cde");
-            //writeGzip(small, "smallGzip.cde");
-            //writeMemGzip(small);
-
-            //write(large, "large.cde");
-            //writeLZ4(large, "largeLZ4.cde");
-            //writeDeflate(large, "largeDeflate.cde");
-            //writeGzip(large, "largeGzip.cde");
-            //writeMemGzip(large);
-
+            };
         }
 
         public void wtf()
@@ -322,6 +319,7 @@ namespace cdeLibSpec
 
         public void measureThis(ref scenario sce)
         {
+            Console.WriteLine("measureThis " + sce.desc);
             if (sce.root == null)
             {
                 return;
@@ -453,7 +451,6 @@ namespace cdeLibSpec
             var result = new Result { stream = s };
             var root = RootEntry.Read(s);
             if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
-            root.ActualFileName = "gumby";
             root.SetInMemoryFields();
             result.root = root;
             return result;
@@ -465,7 +462,6 @@ namespace cdeLibSpec
             var result = new Result { stream = xFs };
             var root = RootEntry.Read(xFs);
             if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
-            root.ActualFileName = "gumby";
             root.SetInMemoryFields();
             result.root = root;
             return result;
@@ -477,7 +473,6 @@ namespace cdeLibSpec
             var result = new Result { stream = xFs };
             var root = RootEntry.Read(xFs);
             if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
-            root.ActualFileName = "gumby";
             root.SetInMemoryFields();
             result.root = root;
             return result;
@@ -489,7 +484,6 @@ namespace cdeLibSpec
             var result = new Result { stream = xFs };
             var root = RootEntry.Read(xFs);
             if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
-            root.ActualFileName = "gumby";
             root.SetInMemoryFields();
             result.root = root;
             return result;
@@ -501,7 +495,6 @@ namespace cdeLibSpec
             var result = new Result { stream = xFs };
             var root = RootEntry.Read(xFs);
             if (root == null) { throw new Exception("root is null ERROR !!!!!!!!!!!!!!!"); }
-            root.ActualFileName = "gumby";
             root.SetInMemoryFields();
             result.root = root;
             return result;
@@ -562,83 +555,8 @@ namespace cdeLibSpec
                 root.Write(xFs);
             }
         }
-
-
-        private void write(RootEntry small, string fileName)
-        {
-            using (var newFs = File.Open(fileName, FileMode.Create))
-            {
-                small.Write(newFs);
-            }
-        }
-        private void writeLZ4(RootEntry small, string fileName)
-        {
-            using (var newFs = File.Open(fileName, FileMode.Create))
-            using (var xFs = new LZ4Stream(newFs, CompressionMode.Compress))
-            {
-                small.Write(xFs);
-            }
-        }
-        private void writeDeflate(RootEntry small, string fileName)
-        {
-            using (var newFs = File.Open(fileName, FileMode.Create))
-            using (var xFs = new DeflateStream(newFs, CompressionMode.Compress))
-            {
-                small.Write(xFs);
-            }
-        }
-        private void writeGzip(RootEntry small, string fileName)
-        {
-            using (var newFs = File.Open(fileName, FileMode.Create))
-            {
-                writeGzipStream(small, newFs);
-            }
-        }
-
-        private void writeMemGzip(RootEntry small)
-        {
-            using (var newFs = new MemoryStream(buffer))
-            {
-                writeGzipStream(small, newFs);
-            }
-        }
         #endregion
-
-        public Info LoadIt(string fqFileName)
-        {
-            var times = new long[SampleCount];
-            var i = new Info();
-
-            Console.WriteLine("LoadIt");
-            for (int j = 0; j < SampleCount; j++)
-            {
-                var sw = new Stopwatch();
-                {   // trying to make benchmark a little more consistent.
-                    GC.Collect();
-                    System.Threading.Thread.Sleep(100);
-                }
-
-                sw.Start();
-                i.root = RootEntry.LoadDirCache(fqFileName);
-                sw.Stop();
-
-                i.count = CommonEntry.GetDirEntries(i.root).Count();
-                times[j] = sw.ElapsedMilliseconds;
-                Console.Write(".");
-                //System.Console.WriteLine("{0}msecs", sw.ElapsedMilliseconds);
-            }
-            i.durationMsec = (long)Math.Floor(times.Average());
-            Console.WriteLine("#{0} {1}msecs \"{2}\"", i.count, i.durationMsec, fqFileName);
-            return i;
-        }
     }
-
-    // test write buffer, not serialize ? as test. as well.
-    // save and load to ssd and to hd.
-    // save and load uncompressed.
-    // save and load zlib ? gzip?
-    // save and load lz4
-
 }
 // ReSharper restore InconsistentNaming
 

@@ -10,8 +10,8 @@ namespace cdeLibSpec
     // ReSharper disable ImplicitlyCapturedClosure
     // ReSharper disable InconsistentNaming
 
-    [Tag("describe_testx")]
-    public class FindOptions_Spec : nspec
+    [Tag("describe_core_test")]
+    public class find_options_spec : nspec
     {
         // System.Diagnostics.Debugger.Launch();
 
@@ -76,7 +76,8 @@ namespace cdeLibSpec
 
                     it["find calls found"] = () => {
                         findFunc(rootEntry, testFile);
-                        findOptions.FoundFunc.Received().Invoke(rootEntry, testFile);
+                        //findOptions.FoundFunc.Received().Invoke(rootEntry, testFile);
+                        findOptions.FoundFunc.Received()(rootEntry, testFile);
                     };
 
                     it["find returns true if found returns true"] = () => {
