@@ -20,6 +20,7 @@ namespace cdeWin
     {
         private const int DirectoryTabIndex = 2;
 
+        public event EventAction OnFormActivated;
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
         public event EventAction OnSearch;
@@ -365,7 +366,7 @@ namespace cdeWin
 
         private void MyFormActivated(object sender, EventArgs eventArgs)
         {
-            patternComboBox.Focus();
+            OnFormActivated();
         }
 
         private void DirectoryTreeViewOnAfterSelect(object s, TreeViewEventArgs e)

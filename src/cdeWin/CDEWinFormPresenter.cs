@@ -120,6 +120,10 @@ namespace cdeWin
             }
         }
 
+        public void FormActivated()
+        {
+        }
+
         public void DirectoryTreeViewBeforeExpandNode()
         {
             CreateNodesPreExpand(_clientForm.DirectoryTreeViewActiveBeforeExpandNode);

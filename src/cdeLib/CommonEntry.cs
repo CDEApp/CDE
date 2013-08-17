@@ -12,7 +12,7 @@ using Filesystem = Alphaleonis.Win32.Filesystem;
 namespace cdeLib
 {
     /// <summary>
-    /// Returns true if FindOptions conditions are satisfied.
+    /// Returns true if want traversal to continue after this returns.
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
 
