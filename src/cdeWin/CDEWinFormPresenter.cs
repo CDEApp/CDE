@@ -513,12 +513,17 @@ namespace cdeWin
 
         public void DirectoryTreeViewAfterSelect()
         {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            var commonEntry = (CommonEntry)selectedNode.Tag;
+            SetDirectoryListView((CommonEntry)selectedNode.Tag);
+        }
+
+        public void SetDirectoryListView(CommonEntry commonEntry)
+        {
             _directoryListCommonEntry = commonEntry;
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
             _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
-            directoryHelper.SetList(_directoryList);
+            _clientForm.SetList(directoryHelper, _directoryList);
+            _clientForm.SortList(directoryHelper);
             _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
         }
 
