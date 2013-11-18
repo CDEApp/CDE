@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Windows.Forms;
 using cdeLib;
 
@@ -84,6 +85,7 @@ namespace cdeWin
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
         string SearchButtonText { get; set; }
+        Color SearchButtonBackColor { get; set; }
         bool IsAdvancedSearchMode { get; set; }
         DateTime FromDateValue { get; set; }
         DateTime ToDateValue { get; set; }

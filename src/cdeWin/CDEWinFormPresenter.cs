@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
@@ -106,6 +107,7 @@ namespace cdeWin
         {
             _isSearchButton = search;
             _clientForm.SearchButtonText = _isSearchButton ? "Search" : "Cancel Search";
+            _clientForm.SearchButtonBackColor = _isSearchButton ? default(Color) : Color.LightCoral;
         }
 
         public void Display()
@@ -273,7 +275,7 @@ namespace cdeWin
                     IncludeFolders = _clientForm.IncludeFolders,
                     // This many file system entries before progress
                     // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
-                    ProgressModifier = 5000, 
+                    ProgressModifier = 50000, 
                     Worker = _bgWorker,
                     FromSizeEnable = _clientForm.FromSize.Checked,
                     FromSize = FromSizeValue(),

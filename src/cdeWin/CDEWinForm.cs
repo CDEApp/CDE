@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
@@ -537,6 +538,12 @@ namespace cdeWin
         {
             get { return searchButton.Text; }
             set { searchButton.Text = value; }
+        }
+
+        public Color SearchButtonBackColor
+        {
+            get { return searchButton.BackColor; }
+            set { searchButton.BackColor = value; }
         }
 
         public bool IsAdvancedSearchMode
