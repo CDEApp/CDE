@@ -1,3 +1,6 @@
+2013/12/17 17:42 v1.2.8.0
+Modified progress reporting, search button turns pinkish while searching now as well.
+
 2013/11/11 16:03 v1.2.7.0
 No longer focuses pattern search box whenever window activated. Was to annoying.
 Now sorts Directory Tab list view columns consistently.
