@@ -58,6 +58,9 @@
     <Reference Include="AlphaFS">
       <HintPath>..\..\lib\AlphaFS-1.5\Release\AlphaFS.dll</HintPath>
     </Reference>
+    <Reference Include="DocoptNet">
+      <HintPath>..\packages\docopt.net.0.6.1.4\lib\net40\DocoptNet.dll</HintPath>
+    </Reference>
     <Reference Include="LZ4">
       <HintPath>..\packages\lz4net.1.0.2.93\lib\net40-client\LZ4.dll</HintPath>
     </Reference>
@@ -83,6 +86,7 @@
   <ItemGroup>
     <Compile Include="CommonEntryTest_GetListFromRoot.cs" />
     <Compile Include="DirEntryTest_SetSummaryFields.cs" />
+    <Compile Include="DocoptTest.cs" />
     <Compile Include="EntryEnumeratorTest.cs" />
     <Compile Include="EntryStoreTest_IsValid.cs" />
     <Compile Include="EntryStoreTest.cs" />
@@ -93,6 +97,7 @@
     <Compile Include="DirEntryEnumeratorTest.cs" />
     <Compile Include="DuplicationTest.cs" />
     <Compile Include="Hash16_Test.cs" />
+    <Compile Include="IdeaStructNode.cs" />
     <Compile Include="Infrastructure\ConfigurationTests.cs" />
     <Compile Include="Infrastructure\Crc32.cs" />
     <Compile Include="Infrastructure\DuplicationPerfTest.cs" />
@@ -111,6 +116,10 @@
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
       <Project>{38066FCE-1EE4-4B6C-BA94-2A526DF7B3ED}</Project>
       <Name>cdeLib</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\cde\cde.csproj">
+      <Project>{b66e72a2-73b3-4100-b933-3c1bb86c0a6d}</Project>
+      <Name>cde</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

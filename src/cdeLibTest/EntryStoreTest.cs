@@ -156,6 +156,7 @@ namespace cdeLibTest
         // -  16384 entries =   1 billion entries per tree. 130KB overhead 
         // can split any tree up into pieces - but.. icky
         //
+        [Ignore("Depends on a cde file in test folder.")]
         [Test]
         public void Read_ASavedFile_OK()
         {

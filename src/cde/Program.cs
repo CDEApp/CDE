@@ -9,8 +9,92 @@ using cdeLib.Infrastructure;
 
 namespace cde
 {
-    static class Program
+    public static class Program
     {
+        public const string Usage = @"cde - catalog directory entries.
+
+Usage:
+  cde --scan <path>...
+  cde --hash [options]
+  cde --hash2
+  cde --dupes [options]
+  cde --find <pattern> [options]
+  cde --findPath <pattern> [options]
+  cde --grep <pattern> [options]
+  cde --grepPath <pattern> [options]
+  cde --replFind <pattern> [options]
+  cde --replGrep <pattern> [options]
+  cde --replGrepPath <pattern> [options]
+  cde --repl
+  cde --treedump1
+  cde --treedump2
+  cde --loadwait
+  cde --loadwait2
+  cde (-h | --help)
+  cde (-v | --version)
+
+Options:
+  --scan  <path>...
+        Creates a cde catalog file for each given path.
+        Copies hashes from old catalogs into new
+        one as long as entries match size, date and path.
+  --hash    Calculate hash (MD5) for entries.
+            Only create MD5 for required entries.
+  --dupes   Find duplicate entries, requires hash.
+
+        Find catalog entries.
+        (read-eval-print) prefix repl version
+        Enter blank pattern in interactive to exit.
+        Performs first search with given pattern, then prompts.
+
+  --find <pattern>        entry name substring matches pattern.
+  --findPath <pattern>    entry path substring matches pattern.
+  --grep <pattern>        entry name regex matches pattern.
+  --grepPath <pattern>    entry path regex matches pattern.
+  --replFind <pattern>       
+  --replGrep <pattern>
+  --replGrepPath <pattern>
+
+        Include or exclude files, paths and catalogs.
+
+  --includefiles <incfile>...     default all files
+  --includeCatalogs <incCat>...   default all catalogs
+  --excludeCatalogs <exclCat>...
+  --excludepaths <exclPath>
+  --excludefiles <exclfile>...
+
+  --startpaths <startPath>...
+        For --hash and --dupes, use specified paths only.
+        Defaults to root of all catalogs.
+
+        Extra matching rule for entry.
+  --filter <filter>          regex pattern to entry name
+  --filterpath <filterpath>  regex pattern to entry path
+
+  --treedump1    debug output entry tree
+  --treedump2    debug output entry tree
+  --loadwait     debug load performance
+  --loadwait2    debug load performance
+  -h --help   Show this help screen.
+  -v --version   Show version.
+
+  (--filter | --filterPath)
+  (--find | --grep | --findPath | --grepPath | --replfind | --replgrep | --replgreppath)
+
+  naval_fate.exe ship <name> move <x> <y> [--speed=<kn>]
+  naval_fate.exe ship shoot <x> <y>
+  naval_fate.exe mine (set|remove) <x> <y> [--moored | --drifting]
+  naval_fate.exe (-h | --help)
+  naval_fate.exe --version
+
+Options:
+  -h --help     Show this screen.
+  --version     Show version.
+  --speed=<kn>  Speed in knots [default: 10].
+  --moored      Moored (anchored) mine.
+  --drifting    Drifting mine.
+";
+
         public static IContainer Container;
         public static string Version
         {
