@@ -105,13 +105,8 @@ app.factory('resetSearchResult', function(dataModel) {
     };
 });
 
-app.controller('copyCtrl', function($scope, $location, $routeParams, $window) {
+app.controller('copyCtrl', function($scope, $routeParams, $window) {
     $scope.resultPath = $routeParams.path;
-    console.log('$location', $location);
-    console.log('$routeParams.path', $routeParams.path);
-    //window.prompt("Copy to clipboard: Ctrl+C, Enter", $scope.resultPath);
-    //after copy leave ? //$location.path('/#');
-
     $scope.goBack = function () {
         $window.history.back();
     }
@@ -145,12 +140,9 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     
     $scope.search = function () {
         //console.log('navbarCtrl.search [' + $scope.data.query + ']');
-        console.log('navabarCtrl calling resetSearchResult($scope)', $scope.$id);
         dataModel.searchInputActive = $scope.searchInputActive();
         var query = dataModel.query || '';
         $location.path('/search/' + query);
-
-        resetSearchResult($scope);
         $route.reload(); // let it reload even if path not changed, just cause user clicked search again.
     };
 });
@@ -158,7 +150,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
 app.controller('aboutCtrl', function ($scope) {
 });
 
-app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, myHubFactory, resetSearchResult, searchHubInit, startHubs, dataModel) {
+app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
     dataModel.hubActive = true;
 
     var query = $routeParams.query;
@@ -168,14 +160,6 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
     var current = $route.current;
     dataModel.noResultsMessage = current.noResultsMessage;
     resetSearchResult($scope);
-    //$location.path('/search/' + query);
-
-    //// use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
-    //$scope.copyPathDialog = function (path) {
-    //    console.log('path ' + path);
-    //    $('#copyPathDialog').modal({});
-    //};
-
     searchHubInit($scope);
     startHubs($scope);
     console.log('$scope.doQuery();');
@@ -183,7 +167,7 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
 });
 
 
-app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connectionStateMap, dataModel) {
+app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataModel) {
 
     function addProxyEventListeners(proxy, scope) {
         if (!dataModel.hasOwnProperty('proxyEventListenersConfigured')){
@@ -202,7 +186,7 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connecti
             });
 
             proxy.on('searchStart', function() {
-                resetSearchResult(scope);
+               resetSearchResult(scope);
             });
 
             proxy.on('searchDone', function() {
@@ -214,7 +198,6 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connecti
             });
 
             proxy.on('addDirEntry', function(dirEntry) {
-                //console.log('addDirEntry', dirEntry);
                 dataModel.searchResult.push(dirEntry);
             });
 
@@ -225,11 +208,6 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connecti
     return function(scope) {
         var proxy = myHubFactory.getHubProxy('searchHub');
         addProxyEventListeners(proxy, scope);
-
-        //myHubFactory.stateChanged(function (evt) {
-        //    console.log('startHubs connection id ()', evt);
-        //    console.log('searchHubInit stateChanged to ', connectionStateMap[evt.newState]);
-        //});
 
         scope.doQuery = function() {
             // This now only invokes Search when next connected, this might.
@@ -250,8 +228,8 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connecti
     };
 });
 
-app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, resetSearchResult, searchHubInit, startHubs, dataModel) {
-    dataModel.hubActive = true; // for now we are allowing hub to be active.... in nosearch
+app.controller('nosearchCtrl', function ($routeParams, $route, dataModel) {
+    dataModel.hubActive = true;
 
     var query = $routeParams.query;
     if (!dataModel.query) {
@@ -259,13 +237,7 @@ app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route
     }
     var current = $route.current;
     dataModel.noResultsMessage = current.noResultsMessage;
-    resetSearchResult($scope);
-
-    /*var searchHubProxy = */
-    searchHubInit($scope);
-    startHubs($scope);
 });
-
 
 app.directive('selectall', function () {
     return {
@@ -314,16 +286,16 @@ app.factory('myHubFactory', function (dataModel, signalrHubFactory, ngModuleOpti
         console.log('__ stateChanged ' + connectionStateMap[evt.oldState] + ' -> ' + connectionStateMap[evt.newState]);
         dataModel.connectionStatusManager(evt);
     });
-    factory.error(function (error) {
-        console.log('__ eek error = ' + error);
-        console.log(error);
-    });
-    factory.disconnected(function () {
-        console.log('__ disconnected');
-    });
-    factory.connectionSlow(function () {
-        console.log('__ connectionSlow');
-    });
+    //factory.error(function (error) {
+    //    console.log('__ eek error = ' + error);
+    //    console.log(error);
+    //});
+    //factory.disconnected(function () {
+    //    console.log('__ disconnected');
+    //});
+    //factory.connectionSlow(function () {
+    //    console.log('__ connectionSlow');
+    //});
     //factory.reconnecting(function (d) {
     //    console.log('__ reconnecting = ' + d);
     //});
