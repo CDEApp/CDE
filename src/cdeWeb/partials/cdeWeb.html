@@ -4,6 +4,9 @@
     <div>
         <div class="alert-info">Status: {{data.statusMessage}}</div>
     </div>
+    <div>
+        <div class="alert-error" data-ng-show="data.errorMessage" >Status: {{data.errorMessage}}</div>
+    </div>
     <div data-ng-show="!data.haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>
     </div>

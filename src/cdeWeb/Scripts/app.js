@@ -39,18 +39,17 @@ app.config(function ($routeProvider) {
             noResultsMessage: 'No Search Results to display.',
             reloadOnSearch: false
         })
-        .when('/nosearch/:query', {
-            controller: 'nosearchCtrl',
-            templateUrl: 'partials/cdeWeb.html',
-            header: 'partials/navbar.html',
-            noResultsMessage: 'Search not performed. No Results to display.'
+        .when('/copyPath', {
+            controller: 'copyCtrl',
+            templateUrl: 'partials/copyPath.html',
+            header: 'partials/navbar.html'
         })
         .when('/copyPath/:path', {
             controller: 'copyCtrl',
             templateUrl: 'partials/copyPath.html',
             header: 'partials/navbar.html'
         })
-        .otherwise({ redirectTo: '/about' });
+        .otherwise({ redirectTo: '/about/' });
 });
 
 app.run(function ($rootScope, $route, dataModel) {
@@ -125,14 +124,6 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
         }
     });
 
-    $scope.navClearResult = function () {
-        // clear results, and change route to nosearch so it doesnt search.
-        resetSearchResult($scope);
-        var query = dataModel.query || '';
-        var path = '/nosearch/' + query;
-        $location.path(path);
-    };
-
     $scope.searchInputActive = function() {
         return document.activeElement.id === 'search';
     };
@@ -145,7 +136,9 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     };
 
     $scope.navAbout = function () {
+        // clear results, and change route to about so it doesnt search, but saves search
         var query = dataModel.query || '';
+        resetSearchResult($scope);
         $location.path('/about/' + query);
     }
 });
@@ -196,7 +189,8 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
 
             proxy.on('searchDone', function() {
                 dataModel.statusMessage =
-                    'Found ' + dataModel.searchResult.length + ' entries. '
+                    'For pattern "' + dataModel.query + '" found'
+                    + dataModel.searchResult.length + ' entries. '
                     + 'Searched ' + dataModel.searchCurrent
                     + ' entries. This is ' + ((100.0 * dataModel.searchCurrent) / dataModel.searchEnd).toFixed(1)
                     + '% of the searchable entries.';
@@ -215,22 +209,23 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
         addProxyEventListeners(proxy, scope);
 
         scope.doSearch = function() {
-            // This invokes Search when next connected, or now if allready connected.
-            // TODO consider disconnect behaviour further?
-            myHubFactory.start().done(function() {
-                proxy.invoke('Search', dataModel.query, function(data) {
-                    console.log('doSearch', data);
-                    console.log('doSearch total server side time (msec)', data.TotalMsec, 'nextUri "' + data.NextUri + '"');
-                    dataModel.metrics = data.ElapsedList;
-                    console.log('metrics', dataModel.metrics);
+            dataModel.errorMessage = '';
+            if (dataModel.query) {
+                // This invokes Search when next connected, or now if allready connected.
+                // TODO consider disconnect behaviour further?
+                myHubFactory.start().done(function() {
+                    proxy.invoke('Search', dataModel.query, function(data) {
+                        console.log('doSearch', data);
+                        console.log('doSearch total server side time (msec)', data.TotalMsec, 'nextUri "' + data.NextUri + '"');
+                        dataModel.metrics = data.ElapsedList;
+                        console.log('metrics', dataModel.metrics);
+                    });
                 });
-            });
+            } else {
+                dataModel.errorMessage = "Search not executed, pattern string empty."
+            }
         };
     };
-});
-
-app.controller('nosearchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
-    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
 });
 
 app.directive('selectall', function () {
@@ -318,7 +313,6 @@ app.factory('serverTimeHubInit', function(myHubFactory) {
 });
 
 app.factory('clientPushHubInit', function(myHubFactory) {
-    //console.log('__ clientPushHubInit');
     return function(scope) {
         //console.log('_| clientPushHubInit');
         var proxy = myHubFactory.getHubProxy('clientPushHub');
@@ -351,9 +345,6 @@ app.factory('testButtonStuff', function (myHubFactory) {
         scope.stopConnection = function() {
             console.log('stopConnection function');
             myHubFactory.stop();
-            //setTimeout(function () {
-            //    myHubFactory.stop(); // try get it out of $apply scope. and it does
-            //, 100);
         };
     };
 });
