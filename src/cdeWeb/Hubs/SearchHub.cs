@@ -44,14 +44,14 @@ namespace cdeWeb.Hubs
             //var catalogFiles = RootEntry.GetCacheFileList(paths);
         }
 
-        public int Search(string pattern)
+        public cdeWeb.Results<DirEntry> Search(string pattern)
         {
             _dataStore.LoadDataEnsureOnce(NotifyLoadFileCount);
             Debug.WriteLine(string.Format("Query parameters: \"{0}\"", pattern));
             NotifySearchStart();
-            _dataStore.Search(pattern, NotifySearchProgress, AddDirEntry);
+            var result = _dataStore.Search(pattern, NotifySearchProgress, AddDirEntry);
             NotifySearchDone();
-            return 7;
+            return result;
         }
 
         // todo consider sending every X00 msec, a set not one at time. [100 msec].

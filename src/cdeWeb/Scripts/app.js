@@ -8,11 +8,16 @@ var app = angular.module('cdeweb', [
     'signalrAngular'
 ]);
 
-//app.value('signalRServer', ''); // Specify SignalR server URL here for supporting CORS
+app.constant('connectionStateMap', {
+    0: 'connecting',
+    1: 'connected',
+    2: 'reconnecting',
+    4: 'disconnected'
+});
 
 app.value('ngModuleOptions', {
-    moduleLogging: true,
-    signalrClientLogging: true,
+    moduleLogging: false,
+    //signalrClientLogging: true,
     serverUrl: ''
 });
 
@@ -48,27 +53,6 @@ app.config(function ($routeProvider) {
         .otherwise({ redirectTo: '/about' });
 });
 
-app.config(function(RestangularProvider) {
-    var r = RestangularProvider;
-    r.setBaseUrl('/api');
-    r.setListTypeIsArray(false); // odata returns an object with a value field for list.
-
-    // Not modifying the response format for now. but this is how it culd be modified
-    // NOTE: possibly should make a modified response which returns an object
-    //       with 3 fields as below, possibly should make each field a promise
-    //       so fields can be assigned immediately rather than waiting on promise resolve.
-
-    //r.setResponseExtractor(function(response, operation, what, url) {
-    //    if (operation === 'getList') {
-    //        // rearrange odata response.
-    //        var newResponse = response.value;
-    //        return newResponse;
-    //    } else {
-    //        return response;
-    //    }
-    //});
-});
-
 app.run(function ($rootScope, $route, dataModel) {
     $rootScope.data = dataModel;
 
@@ -76,32 +60,48 @@ app.run(function ($rootScope, $route, dataModel) {
         //console.log('$route.current[partialName]', $route.current[partialName]);
         return $route.current[partialName];
     };
-
-    $rootScope.haveResults = function () { // todo not good form to put code on $rootScope it seems
-        return $rootScope.data.searchResult.length !== 0;
-    };
 });
 
-app.factory('dataModel', function () {
-    var data = {
+app.factory('dataModel', function (connectionStateMap) {
+  //noinspection UnnecessaryLocalVariableJS
+  var data = {
         email: 'rob@queenofblad.es',
         name: 'cdeWeb',
         version: '0.1',
         query: '',
         queryOptions: {},
         searchResult: [],
-        metrics: []
+        metrics: [],
+        totalMsec: 0,
+        hubActive: false,
+        connected: false,
+        canQuery: function() {
+          return this.hubActive && this.connected;
+        },
+        connectionStatusManager: function(evt) {
+            this.connected = connectionStateMap[evt.newState] === 'connected';
+            if (this.connected) {
+                this.statusMessage = 'Connected to server';
+            } else {
+                this.statusMessage = "No Server available for search";
+            }
+        },
+        haveResults: function () {
+            return this.searchResult.length !== 0;
+        }
     };
     return data;
 });
 
 
-app.factory('resetSearchResult', function() {
+app.factory('resetSearchResult', function(dataModel) {
     return function (scope) {
-        scope.data.searchResult = [];
-        scope.data.nextLink = undefined;
-        scope.data.metrics = undefined;
-        scope.data.totalMsec = undefined;
+        console.log('resetSearchResult() scope.$id', scope.$id);
+        dataModel.searchResult = [];
+        dataModel.nextLink = undefined;
+        dataModel.metrics = undefined;
+        dataModel.totalMsec = undefined;
+        dataModel.statusMessage = 'Results Reset';
     };
 });
 
@@ -114,13 +114,13 @@ app.controller('copyCtrl', function($scope, $location, $routeParams) {
 });
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
-app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchResult) {
+app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchResult, dataModel) {
     //console.log('navbarCtrl init');
 
     // modify ui-reset to only have remove icon visible if input has content.
     // This logic could be pushed back into uiReset possibly ? makes for easier styling control ?
     $scope.$watch('data.query', function queryWatch() {
-        if ($scope.data === null || $scope.data.query === null || $scope.data.query === "") {
+        if (dataModel === null || dataModel.query === null || dataModel.query === "") {
             $('a.hascontent').removeClass('hascontent');
         } else {
             $('a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
@@ -130,7 +130,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     $scope.clearResult = function () {
         // want to remove results, change route but not search again and /search/  will search all.
         resetSearchResult($scope);
-        var query = $scope.data.query || '';
+        var query = dataModel.query || '';
         var path = '/nosearch/' + query;
         $location.path(path);
     };
@@ -141,8 +141,9 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     
     $scope.search = function () {
         //console.log('navbarCtrl.search [' + $scope.data.query + ']');
-        $scope.data.searchInputActive = $scope.searchInputActive();
-        var query = $scope.data.query || '';
+        console.log('navabarCtrl calling resetSearchResult($scope)', $scope.$id);
+        dataModel.searchInputActive = $scope.searchInputActive();
+        var query = dataModel.query || '';
         $location.path('/search/' + query);
 
         resetSearchResult($scope);
@@ -154,115 +155,111 @@ app.controller('aboutCtrl', function ($scope) {
     //console.log('aboutCtrl init');
 });
 
-app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, myHubFactory, resetSearchResult) {
-    //console.log('searchCtrl init');
+app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, myHubFactory, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    dataModel.hubActive = true;
+
     var query = $routeParams.query;
-    if (!$scope.data.query) {
-        $scope.data.query = query;
+    if (!dataModel.query) {
+        dataModel.query = query;
     }
-//    var current = $route.current;
-
+    var current = $route.current;
+    dataModel.noResultsMessage = current.noResultsMessage;
     resetSearchResult($scope);
-    $scope.data.noResultsMessage = "Waiting for search results.";
     $location.path('/search/' + query);
-    
-    //$scope.doQuery = function () {
-    //    // todo, if click again, this just starts 'another' search
-    //    //   inside client if click again cancel, then start search...
-    //    searchHubProxyXX.invoke('Search', $scope.data.query, function (data) {
-    //        console.log('doQuery data', data);
-    //    });
-    //};
 
-
-    //var getList = dirEntryRepository.getList(query);
-
-    // restangular promise of field value.
-    //$scope.data.searchResult = getList.get('Value'); //now this is a promise means my 'searching' message isnt displayed.
-    
-    // Disable old 'Search' for now.
-    //getList.then(function(results) {
-    //    //$scope.data.metadata = results['odata.metadata'];
-    //    //$scope.data.nextLink = results['odata.nextLink'];
-    //    $scope.data.searchResult = results.Value;
-    //    $scope.data.metrics = results.ElapsedList;
-    //    $scope.data.totalMsec = results.TotalMsec;
-    //    $scope.data.noResultsMessage = current.noResultsMessage;
-    //}, function (response) {
-    //    console.log('getList() fail.');
-    //    if (response.status === 404) { // NotFound
-    //        $scope.data.noResultsMessage = current.noResultsMessage;
-    //    } else {
-    //        $scope.data.noResultsMessage = "Error occurred searching. (Error Code " + response.statusf + ")";
-    //    }
-    //});
-    //$route.reload(); // force reload even if url not changed, search again.
-     
     // use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
     $scope.copyPathDialog = function (path) {
         console.log('path ' + path);
         $('#copyPathDialog').modal({});
     };
+
+    searchHubInit($scope);
+    startHubs($scope);
+    console.log('$scope.doQuery();');
+    $scope.doQuery();  // do the query.
 });
 
-app.factory('searchHubInit', function (myHubFactory, resetSearchResult) {
+
+app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connectionStateMap, dataModel) {
+
+    function addProxyEventListeners(proxy, scope) {
+        if (!dataModel.hasOwnProperty('proxyEventListenersConfigured')){
+
+            proxy.on('filesToLoad', function(data) {
+                dataModel.filesToLoad = data;
+                dataModel.statusMessage = 'Catalog files to load ' + data;
+                console.log('Catalog files to load', data);
+            });
+
+            proxy.on('searchProgress', function(count, progressEnd) {
+                //console.log('searchProgress', count, progressEnd);
+                dataModel.searchCurrent = count;
+                dataModel.searchEnd = progressEnd;
+                dataModel.statusMessage = 'Searched ' + count + ' of ' + progressEnd;
+            });
+
+            proxy.on('searchStart', function() {
+                resetSearchResult(scope);
+            });
+
+            proxy.on('searchDone', function() {
+                dataModel.statusMessage =
+                    'Found ' + dataModel.searchResult.length + ' entries. '
+                    + 'Searched ' + dataModel.searchCurrent
+                    + ' entries. This is ' + ((100.0 * dataModel.searchCurrent) / dataModel.searchEnd).toFixed(1)
+                    + '% of the searchable entries.';
+            });
+
+            proxy.on('addDirEntry', function(dirEntry) {
+                //console.log('addDirEntry', dirEntry);
+                dataModel.searchResult.push(dirEntry);
+            });
+
+            dataModel.proxyEventListenersConfigured = true;
+        }
+    }
+
     return function(scope) {
         var proxy = myHubFactory.getHubProxy('searchHub');
+        addProxyEventListeners(proxy, scope);
 
-        proxy.on('filesToLoad', function(data) {
-            scope.data.filesToLoad = data;
-            scope.data.statusMessage = 'Catalog files to load ' + data;
-        });
-
-        proxy.on('searchProgress', function(count, progressEnd) {
-            //console.log('searchProgress', count, progressEnd);
-            scope.data.searchCurrent = count;
-            scope.data.searchEnd = progressEnd;
-            scope.data.statusMessage = 'Searched ' + count + ' of ' + progressEnd;
-        });
-
-        proxy.on('searchStart', function() {
-            resetSearchResult(scope);
-        });
-
-        proxy.on('searchDone', function() {
-            var data = scope.data;
-            data.statusMessage =
-                'Found ' + data.searchResult.length + ' entries. '
-                    + 'Searched ' + data.searchCurrent
-                    + ' entries. This is ' + ((100.0 * data.searchCurrent) / data.searchEnd).toFixed(1)
-                    + '% of the searchable entries.';
-        });
-
-        proxy.on('addDirEntry', function(dirEntry) {
-            //console.log('addDirEntry', dirEntry);
-            scope.data.searchResult.push(dirEntry);
+        myHubFactory.stateChanged(function (evt) {
+            console.log('startHubs connection id ()', evt);
+            console.log('searchHubInit stateChanged to ', connectionStateMap[evt.newState]);
         });
 
         scope.doQuery = function() {
-            console.log('scope.doQuery()');
-            // todo, if click again, this just starts 'another' search
-            //   inside client if click again cancel, then start search...
-            proxy.invoke('Search', scope.data.query, function(data) {
-                console.log('doQuery data', data);
+            // This now only invokes Search when next connected, this might.
+            // TODO consider disconnect behaviour further?
+            myHubFactory.start().done(function() {
+                proxy.invoke('Search', dataModel.query, function(data) {
+                    console.log('doQuery', data);
+                    console.log('doQuery total server side time (msec)', data.TotalMsec, 'nextUri "' + data.NextUri + '"');
+                    dataModel.metrics = data.ElapsedList;
+                    console.log('metrics', dataModel.metrics);
+                });
             });
         };
+
+        scope.doLog1 = function() {
+          console.log('manamana');
+        }
     };
 });
 
-app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, resetSearchResult, searchHubInit, startHubs) {
-    $scope.data.statusMessage = 'Connecting to server';
-    $scope.data.hubActive = false;
-    
+app.controller('nosearchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    dataModel.hubActive = true; // for now we are allowing hub to be active.... in nosearch
+
     var query = $routeParams.query;
-    if (!$scope.data.query) {
-        $scope.data.query = query;
+    if (!dataModel.query) {
+        dataModel.query = query;
     }
     var current = $route.current;
-    $scope.data.searchResult = [];
-    $scope.data.noResultsMessage = current.noResultsMessage;
+    dataModel.noResultsMessage = current.noResultsMessage;
+    resetSearchResult($scope);
 
-    /*var searchHubProxy = */searchHubInit($scope);
+    /*var searchHubProxy = */
+    searchHubInit($scope);
     startHubs($scope);
 });
 
@@ -282,12 +279,12 @@ app.directive('selectall', function () {
     };
 });
 
-app.directive('restoresearchfocus', function() {
+app.directive('restoresearchfocus', function(dataModel) {
     return function (scope, element) {
-        if (scope.data.searchInputActive && !scope.searchInputActive()) {
+        if (dataModel.searchInputActive && !scope.searchInputActive()) {
             element[0].focus();
         }
-        scope.data.searchInputActive = false;
+        dataModel.searchInputActive = false;
     };
 });
 
@@ -298,7 +295,7 @@ app.service('dirEntryRepository', function(Restangular) {
     };
 });
 
-app.factory('myHubFactory', function (signalrHubFactory, ngModuleOptions) {
+app.factory('myHubFactory', function (dataModel, signalrHubFactory, ngModuleOptions, connectionStateMap) {
     console.log('__ myHubFactory');
 
     var factory = signalrHubFactory(ngModuleOptions);
@@ -311,11 +308,12 @@ app.factory('myHubFactory', function (signalrHubFactory, ngModuleOptions) {
     //    console.log(d);
     //});
     factory.stateChanged(function (evt) {
-        var stateConversion = {0: 'connecting', 1: 'connected', 2: 'reconnecting', 4: 'disconnected'};
-        console.log('__ stateChanged ' + stateConversion[evt.oldState] + ' -> ' + stateConversion[evt.newState]);
+        console.log('__ stateChanged ' + connectionStateMap[evt.oldState] + ' -> ' + connectionStateMap[evt.newState]);
+        dataModel.connectionStatusManager(evt);
     });
     factory.error(function (error) {
         console.log('__ eek error = ' + error);
+        console.log(error);
     });
     factory.disconnected(function () {
         console.log('__ disconnected');
@@ -366,12 +364,8 @@ app.factory('clientPushHubInit', function(myHubFactory) {
 app.factory('startHubs', function(myHubFactory) {
     console.log('__ startHub');
     return function (scope) {
-        console.log('_! startHub');
-        console.log(myHubFactory.start().state());
+        console.log('_! startHub', myHubFactory.start().state());
         myHubFactory.start().then(function () {
-            scope.data.hubActive = true;
-            scope.data.statusMessage = 'Connected to server';
-            console.log('startHubs connection id ()', myHubFactory.connection.id);
         });
     };
 });
@@ -411,17 +405,16 @@ app.controller('ServerTimeController', function ($scope, serverTimeHubInit, clie
     var trialCounter = 0;
 
     myHubFactory.disconnected(function (d) {
-        console.log('__ received - trial = ' + d);
+        console.log('__ disconnected - trial = ' + d);
         console.log(d);
         $scope.trace = 'disconnected trial ' + trialCounter++;
     });//, $scope);
 
     myHubFactory.received(function (d) {
-        console.log('__ received = ' + d);
-        console.log(d);
+        //console.log('__ received = ' + trialCounter);
+        //console.log(d);
         $scope.trace = 'received trial ' + trialCounter++;
     });
-
 
     console.log('__ ServerTimeController');
     /*var serverTimeHubProxy = */serverTimeHubInit($scope);

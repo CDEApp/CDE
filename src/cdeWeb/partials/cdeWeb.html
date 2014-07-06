@@ -3,13 +3,14 @@
 <div class="row-fluid">
     <div>
         <div>Status: {{data.statusMessage}}</div>
-        <button data-ng-click="doQuery()" data-ng-disabled="!data.hubActive">Test Query</button>
+        <button data-ng-click="doQuery()" data-ng-disabled="!data.canQuery()">Test Query</button>
+        <button data-ng-click="doLog1()">Test Log</button>
     </div>
-    <div data-ng-show="!haveResults()" class="alert">
+    <div data-ng-show="!data.haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>
     </div>
         
-    <table data-ng-show="haveResults()" class="table table-striped table-condensed table-hover">
+    <table data-ng-show="data.haveResults()" class="table table-striped table-condensed table-hover">
         <thead>
             <tr>
                 <th data-sorted="Name">Name</th>
@@ -32,6 +33,7 @@
     </div>
 
     <footer>
+        <div>Metrics</div>
         <div data-ng-show="data.totalMsec">Metrics {{ data.totalMsec }}msec</div>
         <ul>
             <li data-ng-repeat="r in data.metrics">

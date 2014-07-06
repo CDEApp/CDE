@@ -8,7 +8,7 @@
         </ul>
         <form class="navbar-form navbar-search form-inline pull-right">
         <ul class="nav" >
-            <li data-ng-show="haveResults()">
+            <li data-ng-show="data.haveResults()">
                 <button type="button" class="btn btn-info"
                         data-ng-click="clearResult()">Clear Results
                     <i class="icon-remove"></i>
@@ -19,7 +19,7 @@
                 <input id="search" type="text" placeholder="Search" class="search-query span4" 
                         data-ng-model="data.query" data-ui-reset="" data-restoresearchfocus="">
             </li>
-            <li><button data-ng-click="search()" type="submit" class="btn btn-primary">Search</button></li>
+            <li><button data-ng-click="search()" type="submit" class="btn btn-primary" data-ng-disabled="!data.canQuery()">Search</button></li>
             <li><button data-ng-click="" type="button" class="btn">Options</button></li>
         </ul>
         </form>
