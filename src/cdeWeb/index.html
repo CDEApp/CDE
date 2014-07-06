@@ -81,6 +81,10 @@
         .table {
             margin-bottom: 0px;
         }
+
+        .debug-border {
+            border: 1px solid #ddd;
+        }
     </style>
 
     <!--<script type="text/javascriptx" src="/Scripts/modernizr-2.5.3.js"></script>-->
@@ -88,21 +92,28 @@
 <body>
     <div data-ng-view=""></div>
         
-    <div data-ng-controller="ServerTimeController">
-        <div>
-            <button data-ng-click="getServerTime()">Get time from server</button>
-            <button data-ng-click="startConnection()">Start Connection</button>
-            <button data-ng-click="stopConnection()">Stop Connection</button>
-            <button data-ng-click="hubOff()">Hub Off</button>
-            <button data-ng-click="hubOn()">Hub On</button>
+    <table data-ng-controller="ServerTimeController" class="table debug-border">
+        <tbody>
+        <tr class="warning">
+        <td>
+            <small>
+            <div>Test area below here related to Hubs and Connection.</div>
+            <button data-ng-click="getServerTime()" class="btn btn-mini">Get time from server</button>
+            <button data-ng-click="startConnection()" class="btn btn-mini">Start Connection</button>
+            <button data-ng-click="stopConnection()" class="btn btn-mini">Stop Connection</button>
+            <button data-ng-click="hubOff()" class="btn btn-mini">Hub Off</button>
+            <button data-ng-click="hubOn()" class="btn btn-mini">Hub On</button>
 
             <div>
                 <div>5 sec server: <span data-ng-bind="currentServerTime">Server Push Time</span></div>
                 <div>Manual time: <span data-ng-bind="currentServerTimeManually">Manual Get Time</span></div>
                 <div data-ng-bind="trace"></div>
             </div>
-        </div>
-    </div>
+            </small>
+        </td>
+        </tr>
+        </tbody>
+    </table>
 
     <script src="/Scripts/lodash.js"></script>
     <script src="/Scripts/jquery-2.0.3.js"></script> <!-- before angular -->
