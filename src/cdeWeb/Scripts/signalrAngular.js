@@ -30,8 +30,8 @@ angular.module('signalrAngular', ['ng'])
                         var self = this;
                         self.srHubProxy.on(eventName, function () {
                             log('"' + hubName + '".on("' + eventName + '", f(arguments.length = "' + arguments.length + '"))');
-                                callback.apply(callback, arguments);
-                                baseScope.$digest();
+                            callback.apply(callback, arguments);
+                            baseScope.$digest();
                         });
                     }
                 },
@@ -42,7 +42,7 @@ angular.module('signalrAngular', ['ng'])
                     log('"' + hubName + '".off(' + eventName + '", f())');
                 },
 
-                // Tried $q promise result bit its extra work for no apparent value extra value
+                // Tried $q promise result bit its extra work for no apparent extra value
                 // Any chained promise then needs to handle $apply context as well.
                 invoke: function () { // params methodName, argsForMethodName..., callback
                     var srProxy = this.srHubProxy;
@@ -307,6 +307,13 @@ app.controller('Controller2', function ($scope, myHubFactory) {
 // - so if you wish to handle errors calls .fail(function(error) { })
 // - this error isn't called if network is down.
 // - what occurs is that connection.error() handler occurs.
+//
+// - you can register callbacks on the factory for [ signalr events ]
+//   starting(cb), received(cb),
+//   stateChanged(cb), error(cb), disconnected(cb), connectionSlow(cb),
+//   reconnecting(cb), reconnected(cb)
+//
+
 
 //
 // See defaultModuleOptions for module options.
