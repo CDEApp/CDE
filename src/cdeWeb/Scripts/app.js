@@ -27,7 +27,7 @@ app.value('ngModuleOptions', {
 // todo consider a version tag appended for when version bumps for load partials ?
 app.config(function ($routeProvider) {
     $routeProvider
-        .when('/about', {
+        .when('/about/:query', {
             controller: 'aboutCtrl',
             templateUrl: 'partials/about.html',
             header: 'partials/navbar.html'
@@ -76,7 +76,7 @@ app.factory('dataModel', function (connectionStateMap) {
         hubActive: false,
         connected: false,
         canQuery: function() {
-          return this.hubActive && this.connected;
+            return this.hubActive && this.connected;
         },
         connectionStatusManager: function(evt) {
             this.connected = connectionStateMap[evt.newState] === 'connected';
@@ -138,35 +138,39 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     };
     
     $scope.navSearch = function () {
-        //console.log('navbarCtrl.search [' + $scope.data.query + ']');
-        dataModel.searchInputActive = $scope.searchInputActive();
         var query = dataModel.query || '';
+        dataModel.searchInputActive = $scope.searchInputActive();
         $location.path('/search/' + query);
         $route.reload(); // let it reload even if path not changed, just cause user clicked search again.
     };
 
     $scope.navAbout = function () {
-        $location.path('/about');
+        var query = dataModel.query || '';
+        $location.path('/about/' + query);
     }
 });
 
-app.controller('aboutCtrl', function ($scope) {
-});
-
-app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
+function commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    var current = $route.current;
     dataModel.hubActive = true;
+    dataModel.noResultsMessage = current.noResultsMessage;
 
     var query = $routeParams.query;
     if (!dataModel.query) {
         dataModel.query = query;
     }
-    var current = $route.current;
-    dataModel.noResultsMessage = current.noResultsMessage;
     searchHubInit($scope);
     startHubs($scope);
-    $scope.doSearch();
+}
+
+app.controller('aboutCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
 });
 
+app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
+    $scope.doSearch();
+});
 
 app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataModel) {
 
@@ -225,10 +229,8 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
     };
 });
 
-app.controller('nosearchCtrl', function ($routeParams, $route, dataModel) {
-    dataModel.hubActive = true;
-    var current = $route.current;
-    dataModel.noResultsMessage = current.noResultsMessage;
+app.controller('nosearchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
+    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
 });
 
 app.directive('selectall', function () {
