@@ -114,7 +114,6 @@ app.controller('copyCtrl', function($scope, $routeParams, $window) {
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
 app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchResult, dataModel) {
-    //console.log('navbarCtrl init');
 
     // modify ui-reset to only have remove icon visible if input has content.
     // This logic could be pushed back into uiReset possibly ? makes for easier styling control ?
@@ -126,8 +125,8 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
         }
     });
 
-    $scope.clearResult = function () {
-        // want to remove results, change route but not search again and /search/  will search all.
+    $scope.navClearResult = function () {
+        // clear results, and change route to nosearch so it doesnt search.
         resetSearchResult($scope);
         var query = dataModel.query || '';
         var path = '/nosearch/' + query;
@@ -138,7 +137,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
         return document.activeElement.id === 'search';
     };
     
-    $scope.search = function () {
+    $scope.navSearch = function () {
         //console.log('navbarCtrl.search [' + $scope.data.query + ']');
         dataModel.searchInputActive = $scope.searchInputActive();
         var query = dataModel.query || '';
@@ -162,8 +161,8 @@ app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearch
     resetSearchResult($scope);
     searchHubInit($scope);
     startHubs($scope);
-    console.log('$scope.doQuery();');
-    $scope.doQuery();  // do the query.
+    console.log('$scope.doSearch();');
+    $scope.doSearch();  // do the query.
 });
 
 
@@ -209,22 +208,18 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
         var proxy = myHubFactory.getHubProxy('searchHub');
         addProxyEventListeners(proxy, scope);
 
-        scope.doQuery = function() {
-            // This now only invokes Search when next connected, this might.
+        scope.doSearch = function() {
+            // This invokes Search when next connected, or now if allready connected.
             // TODO consider disconnect behaviour further?
             myHubFactory.start().done(function() {
                 proxy.invoke('Search', dataModel.query, function(data) {
-                    console.log('doQuery', data);
-                    console.log('doQuery total server side time (msec)', data.TotalMsec, 'nextUri "' + data.NextUri + '"');
+                    console.log('doSearch', data);
+                    console.log('doSearch total server side time (msec)', data.TotalMsec, 'nextUri "' + data.NextUri + '"');
                     dataModel.metrics = data.ElapsedList;
                     console.log('metrics', dataModel.metrics);
                 });
             });
         };
-
-        scope.doLog1 = function() {
-          console.log('manamana');
-        }
     };
 });
 

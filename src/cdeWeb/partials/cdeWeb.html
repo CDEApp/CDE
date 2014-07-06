@@ -2,9 +2,7 @@
 
 <div class="row-fluid">
     <div>
-        <div>Status: {{data.statusMessage}}</div>
-        <button data-ng-click="doQuery()" data-ng-disabled="!data.canQuery()">Test Query</button>
-        <button data-ng-click="doLog1()">Test Log</button>
+        <div class="alert-info">Status: {{data.statusMessage}}</div>
     </div>
     <div data-ng-show="!data.haveResults()" class="alert">
         <p><strong>{{data.noResultsMessage}}</strong></p>
@@ -32,7 +30,7 @@
         <a href="{{data.nextLink}}">More Results</a>
     </div>
 
-    <footer>
+    <footer  class="alert-info">
         <div>Metrics</div>
         <div data-ng-show="data.totalMsec">Metrics {{ data.totalMsec }}msec</div>
         <ul>
