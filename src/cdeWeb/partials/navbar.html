@@ -1,22 +1,19 @@
-﻿<div class="navbar navbar-static-top" data-ng-controller="navbarCtrl">
-    <div class="navbar-inner">
-        <ul class="nav">
-            <li class="divider-vertical"></li>
-            <li><img class="brand cdeLogo" src="Images/CDE-logo-badge-01.png" alt="cde logo""/></li>
-            <li><a class="brand" href="#/about"  title="Click for about cdeWeb.">{{ data.name }} v{{ data.version }}</a></li>
-            <li class="divider-vertical"></li>
+﻿<div class="navbar navbar-inverse navbar-static-top navbar-form form-inline " data-ng-controller="navbarCtrl">
+    <div class="navbar-inner ">
+        <ul class="nav pull-left">
+            <li><img class="brand cdeLogo" src="Images/CDE-logo-badge-01.png" alt="cde logo"/></li>
+            <li><button data-ng-click="navAbout()" class="btn btn-inverse">About {{ data.name }} v{{ data.version }}</button></li>
         </ul>
-        <form class="navbar-form navbar-search form-inline pull-right">
-        <ul class="nav" >
+        <form>
+        <ul class="nav pull-right" >
             <li data-ng-show="data.haveResults()">
                 <button type="button" class="btn btn-info"
                         data-ng-click="navClearResult()">Clear Results
                     <i class="icon-remove"></i>
                 </button>
             </li>
-            <li class="divider-vertical"></li>
             <li>
-                <input id="search" type="text" placeholder="Search" class="search-query span4" 
+                <input id="search" type="text" placeholder="Search" class="search-query span4"
                         data-ng-model="data.query" data-ui-reset="" data-restoresearchfocus="">
             </li>
             <li><button data-ng-click="navSearch()" type="submit" class="btn btn-primary" data-ng-disabled="!data.canQuery()">Search</button></li>

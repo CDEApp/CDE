@@ -144,6 +144,10 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
         $location.path('/search/' + query);
         $route.reload(); // let it reload even if path not changed, just cause user clicked search again.
     };
+
+    $scope.navAbout = function () {
+        $location.path('/about');
+    }
 });
 
 app.controller('aboutCtrl', function ($scope) {
@@ -348,18 +352,6 @@ app.factory('testButtonStuff', function (myHubFactory) {
             //setTimeout(function () {
             //    myHubFactory.stop(); // try get it out of $apply scope. and it does
             //, 100);
-        };
-
-        scope.hubOff = function() {
-            console.log('hubOff function');
-            clientPushHubProxy.off('serverTime');
-        };
-
-        scope.hubOn = function() {
-            console.log('hubOn called');
-            clientPushHubProxy.on('serverTime', function(data) {
-                scope.currentServerTime = data;
-            });
         };
     };
 });
