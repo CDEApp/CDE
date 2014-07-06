@@ -101,7 +101,8 @@ namespace cdeWeb
                 IncludePath = true,
                 IncludeFiles = true,
                 IncludeFolders = true,
-                LimitResultCount = 50,// int.MaxValue, // TODO skip X and get 50 ? doent exist yet in Find.
+                LimitResultCount = 25,
+                SkipCount = 0,
                 ProgressFunc = progress,
                 ProgressModifier = 5000,
                 FoundFunc = (p, d) =>
@@ -129,7 +130,8 @@ namespace cdeWeb
                 IncludePath = true,
                 IncludeFiles = true,
                 IncludeFolders = true,
-                LimitResultCount = 50,// int.MaxValue, // TODO skip X and get 50 ? doent exist yet in Find.
+                LimitResultCount = 25,
+                SkipCount = 0,
                 ProgressFunc = progress,
                 ProgressModifier = 5000,
                 FoundFunc = (p, d) =>
