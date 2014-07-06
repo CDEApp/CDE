@@ -105,12 +105,16 @@ app.factory('resetSearchResult', function(dataModel) {
     };
 });
 
-app.controller('copyCtrl', function($scope, $location, $routeParams) {
+app.controller('copyCtrl', function($scope, $location, $routeParams, $window) {
     $scope.resultPath = $routeParams.path;
     console.log('$location', $location);
     console.log('$routeParams.path', $routeParams.path);
     //window.prompt("Copy to clipboard: Ctrl+C, Enter", $scope.resultPath);
     //after copy leave ? //$location.path('/#');
+
+    $scope.goBack = function () {
+        $window.history.back();
+    }
 });
 
 // todo make Escape key in input query - clear it... or maybe two escapes clears it ?
