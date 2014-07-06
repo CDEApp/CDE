@@ -22,7 +22,7 @@
                 <td>{{result.Name}}</td>
                 <td>{{result.Size}}</td>
                 <td>{{result.Modified | date:'yyyy/MM/dd'}}</td>
-                <td><a class="" href="#/copyPath/{{result.Path}}" data-ng-model="resultPath">{{result.Path}}</a></td>
+                <td><a class="" href="#/copyPath/{{result.Path}}\{{result.Name}}" data-ng-model="resultPath">{{result.Path}}</a></td>
             </tr>
         </tbody>
     </table>

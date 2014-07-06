@@ -158,11 +158,9 @@ app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearch
     }
     var current = $route.current;
     dataModel.noResultsMessage = current.noResultsMessage;
-    resetSearchResult($scope);
     searchHubInit($scope);
     startHubs($scope);
-    console.log('$scope.doSearch();');
-    $scope.doSearch();  // do the query.
+    $scope.doSearch();
 });
 
 
@@ -225,11 +223,6 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
 
 app.controller('nosearchCtrl', function ($routeParams, $route, dataModel) {
     dataModel.hubActive = true;
-
-    var query = $routeParams.query;
-    if (!dataModel.query) {
-        dataModel.query = query;
-    }
     var current = $route.current;
     dataModel.noResultsMessage = current.noResultsMessage;
 });
