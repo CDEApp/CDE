@@ -101,7 +101,7 @@ app.factory('resetSearchResult', function(dataModel) {
         dataModel.nextLink = undefined;
         dataModel.metrics = undefined;
         dataModel.totalMsec = undefined;
-        dataModel.statusMessage = 'Results Reset';
+        dataModel.statusMessage = 'Search Results Cleared';
     };
 });
 
@@ -156,7 +156,6 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
 });
 
 app.controller('aboutCtrl', function ($scope) {
-    //console.log('aboutCtrl init');
 });
 
 app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, dirEntryRepository, myHubFactory, resetSearchResult, searchHubInit, startHubs, dataModel) {
@@ -169,13 +168,13 @@ app.controller('searchCtrl', function ($scope, $routeParams, $location, $route, 
     var current = $route.current;
     dataModel.noResultsMessage = current.noResultsMessage;
     resetSearchResult($scope);
-    $location.path('/search/' + query);
+    //$location.path('/search/' + query);
 
-    // use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
-    $scope.copyPathDialog = function (path) {
-        console.log('path ' + path);
-        $('#copyPathDialog').modal({});
-    };
+    //// use web browser modal dialog for clipboard copy hackery. Abandoned at moment.
+    //$scope.copyPathDialog = function (path) {
+    //    console.log('path ' + path);
+    //    $('#copyPathDialog').modal({});
+    //};
 
     searchHubInit($scope);
     startHubs($scope);
@@ -227,10 +226,10 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, connecti
         var proxy = myHubFactory.getHubProxy('searchHub');
         addProxyEventListeners(proxy, scope);
 
-        myHubFactory.stateChanged(function (evt) {
-            console.log('startHubs connection id ()', evt);
-            console.log('searchHubInit stateChanged to ', connectionStateMap[evt.newState]);
-        });
+        //myHubFactory.stateChanged(function (evt) {
+        //    console.log('startHubs connection id ()', evt);
+        //    console.log('searchHubInit stateChanged to ', connectionStateMap[evt.newState]);
+        //});
 
         scope.doQuery = function() {
             // This now only invokes Search when next connected, this might.
