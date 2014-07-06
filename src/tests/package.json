@@ -1,0 +1,17 @@
+{
+  "name": "cdeWebGuiTest",
+  "version": "0.0.1",
+  "description": "test cdeWeb angular browser interface",
+  "main": "test.js",
+  "dependencies": {},
+  "devDependencies": {
+    "karma": "^0.12.16",
+    "karma-chrome-launcher": "^0.1.4",
+    "karma-jasmine": "^0.1.5"
+  },
+  "scripts": {
+    "test": "node node_modules\\karma\\bin\\karma start karma.conf.js"
+  },
+  "author": "Robin",
+  "license": "ISC"
+}
