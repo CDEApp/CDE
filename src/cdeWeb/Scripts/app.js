@@ -1,6 +1,7 @@
 ﻿'use strict';
 
 var app = angular.module('cdeweb', [
+    'ngRoute',
     'ngResource',
     'ngCookies',
     'ui.directives',
@@ -27,29 +28,25 @@ app.value('ngModuleOptions', {
 // todo consider a version tag appended for when version bumps for load partials ?
 app.config(function ($routeProvider) {
     $routeProvider
-        .when('/about/:query', {
+
+        .when('/about/:query?', {
             controller: 'aboutCtrl',
             templateUrl: 'partials/about.html',
             header: 'partials/navbar.html'
         })
-        .when('/search/:query', {
+        .when('/search/:query?', {
             controller: 'searchCtrl',
             templateUrl: 'partials/cdeWeb.html',
             header: 'partials/navbar.html',
             noResultsMessage: 'No Search Results to display.',
             reloadOnSearch: false
         })
-        .when('/copyPath', {
+        .when('/copyPath/:path*', {
             controller: 'copyCtrl',
             templateUrl: 'partials/copyPath.html',
             header: 'partials/navbar.html'
         })
-        .when('/copyPath/:path', {
-            controller: 'copyCtrl',
-            templateUrl: 'partials/copyPath.html',
-            header: 'partials/navbar.html'
-        })
-        .otherwise({ redirectTo: '/about/' });
+        .otherwise({ redirectTo: '/about' });
 });
 
 app.run(function ($rootScope, $route, dataModel) {
@@ -117,7 +114,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     // modify ui-reset to only have remove icon visible if input has content.
     // This logic could be pushed back into uiReset possibly ? makes for easier styling control ?
     $scope.$watch('data.query', function queryWatch() {
-        if (dataModel === null || dataModel.query === null || dataModel.query === "") {
+        if (dataModel === null || typeof dataModel.query === 'undefined' || dataModel.query === null || dataModel.query === "") {
             $('a.hascontent').removeClass('hascontent');
         } else {
             $('a.ui-reset').addClass('hascontent'); // TODO use the default ui-reset class for this..
@@ -189,7 +186,7 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
 
             proxy.on('searchDone', function() {
                 dataModel.statusMessage =
-                    'For pattern "' + dataModel.query + '" found'
+                    'For pattern "' + dataModel.query + '" found '
                     + dataModel.searchResult.length + ' entries. '
                     + 'Searched ' + dataModel.searchCurrent
                     + ' entries. This is ' + ((100.0 * dataModel.searchCurrent) / dataModel.searchEnd).toFixed(1)
@@ -223,6 +220,7 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
                 });
             } else {
                 dataModel.errorMessage = "Search not executed, pattern string empty."
+                resetSearchResult(scope);
             }
         };
     };
