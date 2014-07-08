@@ -1,6 +1,5 @@
 using System.Web.Routing;
 using Microsoft.AspNet.SignalR;
-using cdeWeb.App_Start;
 
 namespace cdeWeb.App_Start
 {
