@@ -211,71 +211,68 @@ namespace cdeLib
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
                                              : _configuration.ProgressUpdateInterval;
-            if (File.Exists(fullPath))
-            {
-                var hashHelper = new HashHelper();
-                var configuration = new Configuration();
-                if (doPartialHash)
-                {
-                    //dont recalculate.
-                    if (de.IsHashDone && de.IsPartialHash)
-                    {
-                        return;
-                    }
-                    var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
 
-                    if (hashResponse != null)
+            var configuration = new Configuration();
+            if (doPartialHash)
+            {
+                //dont recalculate.
+                if (de.IsHashDone && de.IsPartialHash)
+                {
+                    return;
+                }
+                var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
+
+                if (hashResponse != null)
+                {
+                    de.SetHash(hashResponse.Hash);
+                    de.IsPartialHash = hashResponse.IsPartialHash;
+                    _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                    if (de.IsPartialHash)
                     {
-                        de.SetHash(hashResponse.Hash);
-                        de.IsPartialHash = hashResponse.IsPartialHash;
-                        _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
-                        if (de.IsPartialHash)
-                        {
-                            _duplicationStatistics.PartialHashes += 1;
-                        }
-                        else
-                        {
-                            _duplicationStatistics.FullHashes += 1;
-                        }
-                        
-                        //_logger.LogDebug(String.Format("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath));
-                        
-                        if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
-                        {
-                            Console.Write("p");
-                        }
-                        if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
-                        {
-                            Console.Write("f");
-                        }
+                        _duplicationStatistics.PartialHashes += 1;
                     }
                     else
                     {
-                        _duplicationStatistics.FailedToHash += 1;
+                        _duplicationStatistics.FullHashes += 1;
+                    }
+                        
+                    //_logger.LogDebug(String.Format("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath));
+                        
+                    if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
+                    {
+                        Console.Write("p");
+                    }
+                    if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
+                    {
+                        Console.Write("f");
                     }
                 }
                 else
                 {
-                    if (de.IsHashDone && !de.IsPartialHash)
+                    _duplicationStatistics.FailedToHash += 1;
+                }
+            }
+            else
+            {
+                if (de.IsHashDone && !de.IsPartialHash)
+                {
+                    return;
+                }
+                var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
+                if (hashResponse != null)
+                {
+                    de.SetHash(hashResponse.Hash);
+                    de.IsPartialHash = hashResponse.IsPartialHash;
+                    _duplicationStatistics.FullHashes += 1;
+                    _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                    if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
                     {
-                        return;
+                        Console.Write("f");
                     }
-                    var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
-                    if (hashResponse != null)
-                    {
-                        de.SetHash(hashResponse.Hash);
-                        de.IsPartialHash = hashResponse.IsPartialHash;
-                        _duplicationStatistics.FullHashes += 1;
-                        _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
-                        if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
-                        {
-                            Console.Write("f");
-                        }
-                    }
-                    else
-                    {
-                        _duplicationStatistics.FailedToHash += 1;
-                    }
+                }
+                else
+                {
+                    _duplicationStatistics.FailedToHash += 1;
                 }
             }
         }
