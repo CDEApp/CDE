@@ -35,6 +35,10 @@ namespace cdeLibTest.Infrastructure
         {
             _logger = MockRepository.GenerateMock<ILogger>();
             _configuration = MockRepository.GenerateMock<IConfiguration>();
+            _configuration.Stub(x => x.ProgressUpdateInterval).Return(100);
+            _configuration.Stub(x => x.HashFirstPassSize).Return(128);
+            _configuration.Stub(x => x.DegreesOfParallelism).Return(1);
+
             _applicationDiagnostics = MockRepository.GenerateMock<IApplicationDiagnostics>();
 
             var random = new Random();
