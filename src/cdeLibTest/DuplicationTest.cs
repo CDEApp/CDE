@@ -101,7 +101,7 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void TestHasingWorkds()
+        public void TestHashingWorks()
         {
             var de5  = new DirEntry { Path = @"de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
             var de6  = new DirEntry { Path = @"de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
