@@ -73,7 +73,7 @@ namespace cdeLib
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parrallel at the grouping level, hopefully this is one group per disk.
-            _logger.LogDebug("Beging Hashing...");
+            _logger.LogDebug("Beginning Hashing...");
             _logger.LogDebug(String.Format("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
             
             var timer = new Stopwatch();
