@@ -81,30 +81,27 @@ namespace cdeLib
 
         public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func)
         {
+            if (func == null) { return; } // nothing to do.
+
             var funcContinue = true;
             var dirs = new Stack<CommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
 
             while (funcContinue && dirs.Count > 0)
             {
                 var commonEntry = dirs.Pop();
+                if (commonEntry.Children == null) { continue; } // empty directories may not have Children initialized.
 
-                if (commonEntry.Children != null)// empty directories may not have Children initialized.
+                foreach (var dirEntry in commonEntry.Children)
                 {
-                    foreach (var dirEntry in commonEntry.Children)
+                    funcContinue = func(commonEntry, dirEntry);
+                    if (!funcContinue)
                     {
-                        if (func != null)
-                        {
-                            funcContinue = func(commonEntry, dirEntry);
-                            if (!funcContinue)
-                            {
-                                break;
-                            }
-                        }
+                        break;
+                    }
 
-                        if (dirEntry.IsDirectory)
-                        {
-                            dirs.Push(dirEntry);
-                        }
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirs.Push(dirEntry);
                     }
                 }
             }
