@@ -1,3 +1,6 @@
+2014/08/17 19:48 cdeWin v1.2.8.0, cde v1.3
+Fixed bug in duplicate file finding, likely many large files were not found as duplicates.
+
 2013/12/17 17:42 v1.2.8.0
 Modified progress reporting, search button turns pinkish while searching now as well.
 
