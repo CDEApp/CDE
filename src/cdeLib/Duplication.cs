@@ -137,12 +137,6 @@ namespace cdeLib
                     _duplicationStatistics.BytesProcessed/(1024*1024),
                     perf, _duplicationStatistics.FailedToHash);
             _logger.LogInfo(string.Format(statsMessage));
-
-            foreach (var rootEntry in rootEntries)
-            {
-                _logger.LogDebug(String.Format("Saving {0}", rootEntry.DefaultFileName));
-                rootEntry.SaveRootEntry();
-            }
         }
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
