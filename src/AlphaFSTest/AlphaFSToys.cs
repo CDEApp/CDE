@@ -20,7 +20,7 @@ namespace AlphaFSTest
         public void GetVolumePathNamesForVolume()
         {
             const string vol = @"C:\temp";
-            var vp = Volume.GetVolumePathNamesForVolume(vol);
+            var vp = Volume.EnumerateVolumePathNames(vol);
             foreach (var s in vp)
             {
                 Console.WriteLine(" vp {0}", s);
@@ -34,7 +34,7 @@ namespace AlphaFSTest
             var vi = Volume.GetVolumeInformation(vol); // requires a root volume specifier it seems
             Console.WriteLine("vi.FileSystemName {0}", vi.FileSystemName);
             Console.WriteLine("vi.MaximumComponentLength {0}", vi.MaximumComponentLength);
-            Console.WriteLine("vi.HasPersistentAccessControlLists {0}", vi.HasPersistentAccessControlLists);
+            Console.WriteLine("vi.PersistentAcls {0}", vi.PersistentAcls);
             Console.WriteLine("vi.SerialNumber {0}", vi.SerialNumber);
             Console.WriteLine("vi.Name {0}", vi.Name);
         }
@@ -43,7 +43,7 @@ namespace AlphaFSTest
         public void GetDiskFreeSpace()
         {
             const string path = @"C:\temp";
-            var dsi = Volume.GetDiskFreeSpace(path);
+            var dsi = Volume.GetDiskFreeSpace(path, false);
             Console.WriteLine("FreeBytesAvailable {0}", dsi.FreeBytesAvailable);
             Console.WriteLine("TotalNumberOfBytes {0}", dsi.TotalNumberOfBytes);
 
@@ -55,11 +55,11 @@ namespace AlphaFSTest
         [Test]
         public void GetVolumes_GetVolumePathNamesForVolume()
         {
-            var vols = Volume.GetVolumes();
+            var vols = Volume.EnumerateVolumes();
             foreach (var vol in vols)
             {
                 Console.WriteLine("Volume {0}", vol);
-                var volPaths = Volume.GetVolumePathNamesForVolume(vol);
+                var volPaths = Volume.EnumerateVolumePathNames(vol);
                 var lastPath = "";
                 foreach (var volPath in volPaths)
                 {
@@ -135,7 +135,7 @@ namespace AlphaFSTest
         {
             var a = Path.GetDirectoryNameWithoutRoot(@"\Data");
 
-            Assert.That(a, Is.EqualTo(@""));
+            Assert.That(a, Is.EqualTo(null));
         }
 
         [Test]
@@ -159,7 +159,23 @@ namespace AlphaFSTest
         {
             var a = Path.GetFullPath(@"\\Friday\cache");
 
-            Assert.That(a, Is.EqualTo(@"\\Friday\cache\"));
+            Assert.That(a, Is.EqualTo(@"\\Friday\cache"));
+        }
+
+        [Test]
+        public void GetFullPath_OfUncPath_AddDirectorySeperator()
+        {
+            var a = Path.GetFullPath(@"\\Friday\cache", true, true, false);
+
+            Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache\"));
+        }
+
+        [Test]
+        public void GetFullPath_OfUncPath_LongPath()
+        {
+            var a = Path.GetFullPath(@"\\Friday\cache", true);
+
+            Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache"));
         }
 
         [Test]
@@ -239,10 +255,47 @@ namespace AlphaFSTest
             var dirs = Directory.GetDirectories(".");
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
-            Assert.That(dirs.Contains(@".\bin"));
+            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
             Assert.That(dirs.Contains(@".\lib"));
             Assert.That(dirs.Contains(@".\src"));
         }
+
+        [Test]
+        public void Directory_EnumerateDirectories_OK()
+        {
+            Directory.SetCurrentDirectory("../../../..");
+            var dirs = Directory.EnumerateDirectories(".").ToArray();
+            var m = dirs.Contains("bin");
+            Console.WriteLine(string.Join(",", dirs));
+            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
+            Assert.That(dirs.Contains(@".\lib"));
+            Assert.That(dirs.Contains(@".\src"));
+        }
+
+        [Test]
+        public void Directory_EnumerateFiles_OK()
+        {
+            Directory.SetCurrentDirectory("../../../..");
+            var dirs = Directory.EnumerateFiles(".").ToArray();
+            var m = dirs.Contains("bin");
+            Console.WriteLine(string.Join(",", dirs));
+            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
+            Assert.That(dirs.Contains(@".\lib"));
+            Assert.That(dirs.Contains(@".\src"));
+        }
+
+
+        //[Test]
+        //public void Directory_GetFileSystemEntries_OK()
+        //{
+        //    Directory.SetCurrentDirectory("../../../..");
+        //    var fileSystemEntries = Directory.GetFileSystemEntries(".");
+        //    var m = fileSystemEntries.Contains("bin");
+        //    Console.WriteLine(string.Join(",", fileSystemEntries));
+        //    Assert.That(fileSystemEntries.Contains(@".\bin"));  // NOW get full paths ? hmm.
+        //    Assert.That(fileSystemEntries.Contains(@".\lib"));
+        //    Assert.That(fileSystemEntries.Contains(@".\src"));
+        //}
         // ReSharper restore InconsistentNaming
     }
 }

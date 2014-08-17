@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
@@ -8,8 +9,8 @@ using cdeLib.Infrastructure;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
-using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
-using FileAcces = Alphaleonis.Win32.Filesystem.FileAccess;
+using FileMode = System.IO.FileMode;
+using FileAcces = System.IO.FileAccess;
 using Filesystem = Alphaleonis.Win32.Filesystem;
 using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
@@ -104,7 +105,7 @@ namespace cdeLib
             DriveLetterHint = deviceHint;
             VolumeName = volumeName;
 
-            var dsi = Volume.GetDiskFreeSpace(Path);
+            var dsi = Volume.GetDiskFreeSpace(Path, false);
             AvailSpace = dsi.FreeBytesAvailable;
             TotalSpace = dsi.TotalNumberOfBytes;
             return startPath;
@@ -163,7 +164,7 @@ namespace cdeLib
 
         public virtual bool IsUnc(string path)
         {
-            return Filesystem.Path.IsUnc(path);
+            return Filesystem.Path.IsUncPath(path);
         }
 
         public virtual string GetDirectoryRoot(string path)
@@ -191,16 +192,16 @@ namespace cdeLib
 
             if (IsUnc(path))
             {
-                if (!path.EndsWith(Filesystem.Path.DirectorySeparatorChar))
+                if (!path.EndsWith(Filesystem.Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture)))
                 {
                     path = path + Filesystem.Path.DirectorySeparatorChar;
                 }
             }
             else
             {
-                if (path.EndsWith(Filesystem.Path.DirectorySeparatorChar) && volumeRoot != path)
+                if (path.EndsWith(Filesystem.Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture)) && volumeRoot != path)
                 {
-                    path = path.TrimEnd(Filesystem.Path.DirectorySeparatorChar.ToCharArray());
+                    path = path.TrimEnd(Filesystem.Path.DirectorySeparatorChar);
                 }
                 path = char.ToUpper(path[0]) + path.Substring(1);
             }
@@ -238,15 +239,31 @@ namespace cdeLib
         {
             var entryCount = 0;
             var dirs = new Stack<Tuple<CommonEntry,string>>();
-            startPath = new PathInfo(startPath).GetLongPath();
+            startPath = Filesystem.Path.GetLongPath(startPath);
             dirs.Push(Tuple.Create((CommonEntry)this, startPath));
             while (dirs.Count > 0)
             {
                 var t = dirs.Pop();
                 var commonEntry = t.Item1;
                 var directory = t.Item2;
-                var fsEntries = Directory.GetFullFileSystemEntries
-                    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
+
+                // NEW
+                var fsEntries = new FindFileSystemEntryInfo
+                    {
+                        IsFullPath = true,
+                        InputPath = directory,
+                        AsLongPath = true,
+                        GetFsoType = null, // both files and folders.
+                        SearchOption = SearchOption.TopDirectoryOnly,
+                        SearchPattern = MatchAll,
+                        Transaction = null,
+                        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                    }.Enumerate();
+
+                // OLD
+                //var fsEntries = Directory.GetFullFileSystemEntries
+                //    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
+
                 foreach (var fsEntry in fsEntries)
                 {
                     var dirEntry = new DirEntry(fsEntry);
@@ -280,20 +297,20 @@ namespace cdeLib
 
         public Action SimpleScanEndEvent { get; set; }
 
-        private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
-        {
-            if (e.GetType().Equals(typeof(UnauthorizedAccessException)))
-            {
-                PathsWithUnauthorisedExceptions.Add(path);
-                return EnumerationExceptionDecision.Skip;
-            }
+        //private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
+        //{
+        //    if (e.GetType().Equals(typeof(UnauthorizedAccessException)))
+        //    {
+        //        PathsWithUnauthorisedExceptions.Add(path);
+        //        return EnumerationExceptionDecision.Skip;
+        //    }
 
-            if (ExceptionEvent != null)
-            {
-                ExceptionEvent(path, e);
-            }
-            return EnumerationExceptionDecision.Abort;
-        }
+        //    if (ExceptionEvent != null)
+        //    {
+        //        ExceptionEvent(path, e);
+        //    }
+        //    return EnumerationExceptionDecision.Abort;
+        //}
 
         public Action<string, Exception> ExceptionEvent { get; set; }
 
