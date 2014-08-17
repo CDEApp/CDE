@@ -22,10 +22,9 @@ namespace cdeLib
         private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize =
             new Dictionary<long, List<PairDirEntry>>();
 
-        private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateForFullHash =
-            new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
+        private readonly HashSet<DirEntry> _dirEntriesRequiringFullHashing = new HashSet<DirEntry>();
 
-        private readonly DuplicationStatistics _duplicationStatistics;
+        protected readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
         private readonly IApplicationDiagnostics _applicationDiagnostics;
 
@@ -194,7 +193,10 @@ namespace cdeLib
 
             foreach (var keyValuePair in founddupes)
             {
-                _duplicateForFullHash.Add(keyValuePair.Key, keyValuePair.Value);
+                foreach (var pairDirEntry in keyValuePair.Value)
+                {
+                    _dirEntriesRequiringFullHashing.Add(pairDirEntry.ChildDE);
+                }
                 if (Hack.BreakConsoleFlag)
                 {
                     Console.WriteLine("\nBreak key detected exiting full hashing phase outer.");
@@ -288,7 +290,7 @@ namespace cdeLib
                     return true;
                 }
 
-                if (_duplicateForFullHash.ContainsKey(dirEntry))
+                if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
                 {
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                     CalculateMD5Hash(fullPath, dirEntry, false);

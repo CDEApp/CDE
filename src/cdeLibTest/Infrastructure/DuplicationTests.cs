@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
@@ -33,10 +34,10 @@ namespace cdeLibTest.Infrastructure
         [SetUp]
         public void SetUp()
         {
-            _logger = MockRepository.GenerateMock<ILogger>();
+            _logger = new Logger();
             _configuration = MockRepository.GenerateMock<IConfiguration>();
             _configuration.Stub(x => x.ProgressUpdateInterval).Return(100);
-            _configuration.Stub(x => x.HashFirstPassSize).Return(128);
+            _configuration.Stub(x => x.HashFirstPassSize).Return(1024);
             _configuration.Stub(x => x.DegreesOfParallelism).Return(1);
 
             _applicationDiagnostics = MockRepository.GenerateMock<IApplicationDiagnostics>();
@@ -50,12 +51,15 @@ namespace cdeLibTest.Infrastructure
             var data = new Byte[dataSize];
             random.NextBytes(data);
             WriteFile(data, new FileStream(String.Format("{0}\\testset1",FolderName),FileMode.Create));
-            WriteFile(data, new FileStream(String.Format("{0}\\testset1dupe",FolderName), FileMode.Create));
+            WriteFile(data, new FileStream(String.Format("{0}\\testset1dupe", FolderName), FileMode.Create));
 
             //no dupe
             data = new Byte[dataSize];
             random.NextBytes(data);
             WriteFile(data, new FileStream(String.Format("{0}\\testset2",FolderName), FileMode.Create));
+            // force 2nd file of testset2 to be different at last byte.
+            data[dataSize - 1] = (Byte)(data[dataSize - 1] ^ 0xFF);
+            WriteFile(data, new FileStream(String.Format("{0}\\testset2NotDupe", FolderName), FileMode.Create));
 
             //3 dupes
             data = new Byte[dataSize];
@@ -76,28 +80,56 @@ namespace cdeLibTest.Infrastructure
             }
         }
 
+        public class TestDuplication: Duplication
+        {
+            public TestDuplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics) : base(logger, configuration, applicationDiagnostics)
+            {
+            }
+
+            public DuplicationStatistics DuplicationStatistcs()
+            {
+                return _duplicationStatistics;
+            }
+        }
+
         [Test]
         public void CanFindDuplicates()
         {
-            var duplication = new Duplication(_logger, _configuration, _applicationDiagnostics);
+            var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry();
             rootEntry.PopulateRoot(String.Format("{0}\\",FolderName));
             var rootEntries = new List<RootEntry> {rootEntry};
             duplication.ApplyMd5Checksum(rootEntries);
-            duplication.FindDuplicates(rootEntries);
+            // all 7 Files are partial hashed.
+            Assert.That(duplication.DuplicationStatistcs().PartialHashes, Is.EqualTo(7));
+            // all 7 files are full hashed because every file appears to have a duplicate at partial hash size.
+            Assert.That(duplication.DuplicationStatistcs().FullHashes, Is.EqualTo(7));
             
-            //Do Assertion on count of dupes, should be 2 collections.
+            // need a new Duplication class() between ApplyMd5Checksum and GetDupePairs for valid operation.
+            duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
+            var dupes = duplication.GetDupePairs(rootEntries);
 
+            Assert.That(dupes[0].Value.Count, Is.EqualTo(2)); // testset1 has 2 dupes
+            Assert.That(dupes[1].Value.Count, Is.EqualTo(3)); // testset3 has 3 dupes
+
+            Console.WriteLine();
+            Console.WriteLine("Dumping sets of duplicates count {0}", dupes.Count);
+            foreach (var dupe in dupes)
+            {
+                Console.WriteLine("set of dupes to {0}", dupe.Key.Path);
+                foreach (var adupe in dupe.Value)
+                {
+                    Console.WriteLine("dupe set file {0}", adupe.FullPath);
+                }
+            }
         }
 
         // ReSharper disable InconsistentNaming
         [Test]
         public void Can_Acquire_hash_From_File()
         {
-            var hashHelper = new HashHelper();
             var hash = HashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
             Assert.IsNotNull(hash.Hash);
-
         }
 
         [Test]
