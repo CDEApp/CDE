@@ -297,38 +297,7 @@ namespace cdeLib
 
         public Action SimpleScanEndEvent { get; set; }
 
-        //private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
-        //{
-        //    if (e.GetType().Equals(typeof(UnauthorizedAccessException)))
-        //    {
-        //        PathsWithUnauthorisedExceptions.Add(path);
-        //        return EnumerationExceptionDecision.Skip;
-        //    }
-
-        //    if (ExceptionEvent != null)
-        //    {
-        //        ExceptionEvent(path, e);
-        //    }
-        //    return EnumerationExceptionDecision.Abort;
-        //}
-
         public Action<string, Exception> ExceptionEvent { get; set; }
-
-        //public CommonEntry FindDir(string basePath, string entryPath)
-        //{
-        //    var relativePath = entryPath.GetRelativePath(basePath);
-        //    if (relativePath == null)
-        //    {
-        //        throw new ArgumentException("Error entryPath must be logically under basePath.");
-        //    }
-
-        //    if (relativePath == string.Empty)
-        //    {
-        //        return this;
-        //    }
-
-        //    return FindClosestParentDir(relativePath);
-        //}
 
         public void SaveRootEntry()
         {
@@ -482,6 +451,7 @@ namespace cdeLib
 
         #region List of UAE paths on a known win7 volume - probably decent example
         #pragma warning disable 169
+        /*
         // ReSharper disable InconsistentNaming
         private static List<string> knownUAEpattern = new List<string>(100)
             {
@@ -588,6 +558,7 @@ namespace cdeLib
                 @"C:\Documents and Settings",
             };
         // ReSharper restore InconsistentNaming
+        */
         #pragma warning restore 169
         #endregion
     }

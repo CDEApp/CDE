@@ -210,21 +210,6 @@ namespace cdeLib
 
         public Action SimpleScanEndEvent { get; set; }
 
-        //private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
-        //{
-        //    if (e.GetType() == typeof(UnauthorizedAccessException))
-        //    {
-        //        PathsWithUnauthorisedExceptions.Add(path);
-        //        return EnumerationExceptionDecision.Skip;
-        //    }
-
-        //    if (ExceptionEvent != null)
-        //    {
-        //        ExceptionEvent(path, e);
-        //    }
-        //    return EnumerationExceptionDecision.Abort;
-        //}
-
         public static Action<string, Exception> ExceptionEvent { get; set; }
 
         public void SaveToFile()
