@@ -49,3 +49,6 @@ packages/
 *.cde
 *.cde.off
 
+node_modules/
+catalog-example-angular/
+catalog-example-angular.zip
