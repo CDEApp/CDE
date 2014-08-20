@@ -38,12 +38,13 @@ Options:
         Creates a cde catalog file for each given path.
         Copies hashes from old catalogs into new
         one as long as entries match size, date and path.
+  --hashall Calculate hash (MD5) for all entires in catalogs.
   --hash    Calculate hash (MD5) for entries.
-            Only create MD5 for required entries.
+            Only create MD5 for required entries for dupes to work.
   --dupes   Find duplicate entries, requires hash.
 
         Find catalog entries.
-        (read-eval-print) prefix repl version
+        Prefix repl version means (read-eval-print) variation. 
         Enter blank pattern in interactive to exit.
         Performs first search with given pattern, then prompts.
 
@@ -75,11 +76,13 @@ Options:
   --treedump2    debug output entry tree
   --loadwait     debug load performance
   --loadwait2    debug load performance
-  -h --help   Show this help screen.
+  -h --help      Show this help screen.
   -v --version   Show version.
 
   (--filter | --filterPath)
   (--find | --grep | --findPath | --grepPath | --replfind | --replgrep | --replgreppath)
+";
+        string ExampleUsage = @"
 
   naval_fate.exe ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.exe ship shoot <x> <y>
