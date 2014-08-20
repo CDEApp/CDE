@@ -264,7 +264,9 @@ namespace cdeLib
                         }
                         entryCount = 0;
                     }
+                    if (Hack.BreakConsoleFlag) { break; }
                 }
+                if (Hack.BreakConsoleFlag) { break; }
             }
             if (SimpleScanEndEvent != null)
             {

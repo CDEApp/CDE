@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
 
@@ -80,43 +79,46 @@ namespace cdeLib
 
             var cts = new CancellationTokenSource();
             var token = cts.Token;
+            var innerPhaseBreak = false;
             var outerOptions = new ParallelOptions {CancellationToken = token};
+
             try
             {
-              
                 Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) =>
-                    {
-                        var parallelOptions = new ParallelOptions();
-                        parallelOptions.MaxDegreeOfParallelism = _configuration.ProgressUpdateInterval;
-                        parallelOptions.CancellationToken = token;
-                        Parallel.ForEach(grp, parallelOptions,
-                            (flatFile, innerLoopState) =>
-                                {
-                                    CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
-                                    if (Hack.BreakConsoleFlag)
-                                    {
-                                        Console.WriteLine("\nBreak key detected exiting hashing phase inner.");
-                                        cts.Cancel();
-                                        parallelOptions.CancellationToken.ThrowIfCancellationRequested();
-                                    }
-
-                                    //if (Hack.BreakConsoleFlag)
-                                    //{
-                                    //    Console.WriteLine("\nBreak key detected exiting hashing phase outer.");
-                                    //    cts.Cancel();
-                                    //}
-                                });
-                    });
+                {
+                    var parallelOptions = new ParallelOptions
+                        {
+                            CancellationToken = token,
+                            MaxDegreeOfParallelism = 2
+                        };
+                    Parallel.ForEach(grp, parallelOptions,
+                                     (flatFile, innerLoopState) => {
+                                         CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
+                                         if (Hack.BreakConsoleFlag)
+                                         {
+                                             if (!innerPhaseBreak)
+                                             {
+                                                 innerPhaseBreak = true;
+                                                 Console.WriteLine(
+                                                     "\n * Break key detected exiting hashing phase inner.");
+                                                 cts.Cancel();
+                                             }
+                                         }
+                                     });
+                });
             }
+            catch (OperationCanceledException) {}
             catch (Exception ex)
             {
                 //parallel cancellation. will be OperationCancelled or Aggregate Exception
+                Console.WriteLine("Exception Type {0}", ex.GetType());
                 Console.WriteLine(ex.Message);
+                return;
             }
 
             if (Hack.BreakConsoleFlag)
             {
-                Console.WriteLine("\nBreak key detected skipping full hashing phase.");
+                Console.WriteLine("\n * Break key detected skipping full hashing phase.");
             }
             else
             {

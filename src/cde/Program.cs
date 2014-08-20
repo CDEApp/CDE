@@ -356,6 +356,11 @@ Options:
                 re.ExceptionEvent = PrintExceptions;
 
                 re.PopulateRoot(path);
+                if (Hack.BreakConsoleFlag)
+                {
+                    Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
+                    return;
+                }
 
                 var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
                 if (oldRoot != null)
@@ -401,6 +406,10 @@ Options:
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 Console.WriteLine("{0}{1}", hash, pairDirEntry.FullPath);                           
+                if (Hack.BreakConsoleFlag)
+                {
+                    break;
+                }
             }
         }
     }
