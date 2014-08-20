@@ -65,9 +65,14 @@ namespace cdeLib
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
+            LogPathProblems(flatList.Where(pde => pde.PathProblem));
+
+            //filter out path problem entries.
+            var goodFlatList = flatList.Where(pde => !pde.PathProblem);
+
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
-            var groupedByDirectoryRoot = flatList.GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
+            var groupedByDirectoryRoot = goodFlatList.GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parrallel at the grouping level, hopefully this is one group per disk.
@@ -138,6 +143,23 @@ namespace cdeLib
                     _duplicationStatistics.BytesProcessed/(1024*1024),
                     perf, _duplicationStatistics.FailedToHash);
             _logger.LogInfo(string.Format(statsMessage));
+        }
+
+        private void LogPathProblems(IEnumerable<PairDirEntry> badFlatList)
+        {
+            //report entries with path problems.
+            var outputPathErrorCount = 0L;
+            foreach (var badPDE in badFlatList)
+            {
+                _logger.LogDebug(String.Format("File not hashed: \"{0}\"", badPDE.FullPath));
+                ++outputPathErrorCount;
+            }
+            if (outputPathErrorCount > 0)
+            {
+                _logger.LogDebug(
+                    string.Format("{0} Files were not hashed as they had a path sub-section with a trailing slash or period.",
+                                  outputPathErrorCount));
+            }
         }
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)

@@ -37,6 +37,12 @@ namespace cdeLib
         /// </summary>
         public string FullPath { get; set; }
 
+        /// <summary>
+        /// True if entry name ends with Space or Period which is a problem on windows file systems.
+        /// If this entry is a directory this infects all child entries as well.
+        /// Populated on load not saved to disk.
+        /// </summary>
+        public bool PathProblem;
 
         //public CommonEntry FindClosestParentDir(string relativePath)
         //{
@@ -231,6 +237,14 @@ namespace cdeLib
         public bool ExistsOnFileSystem()
         {   // CommonEntry is always a directory ? - not really.
             return Filesystem.Directory.Exists(FullPath);
+        }
+
+        /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
+        public bool IsBadPath()
+        {
+            // This probably needs to check all parent paths if this is a root entry.
+            // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
+            return !string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."));
         }
     }
 }

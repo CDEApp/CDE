@@ -408,7 +408,8 @@ Options:
             foreach (var pairDirEntry in pdee)      
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
-                Console.WriteLine("{0}{1}", hash, pairDirEntry.FullPath);                           
+                var bang = pairDirEntry.PathProblem ? "!" : " ";
+                Console.WriteLine("{0}{1}{2}", hash, bang, pairDirEntry.FullPath);
                 if (Hack.BreakConsoleFlag)
                 {
                     break;

@@ -50,6 +50,12 @@ namespace cdeLibTest
             Assert.That(emptyDirEntry.FileEntryCount, Is.EqualTo(0));
         }
 
+        [Test]
+        public void SetSummaryFields_PathProblem_False_For_Empty_DirEntry()
+        {
+            emptyDirEntry.SetSummaryFields();
+            Assert.That(emptyDirEntry.PathProblem, Is.EqualTo(false));
+        }
     }
 
     class DirEntryTest_SetSummaryFields2 : RootEntryTestBase
@@ -184,6 +190,55 @@ namespace cdeLibTest
             testEntry.SetSummaryFields();
 
             Assert.That(testEntry.Size, Is.EqualTo(28));
+        }
+
+        [Test]
+        public void SetSummaryFields_PathProblem_False()
+        {
+            var testEntry = re;
+            testEntry.SetSummaryFields();
+
+            Assert.That(testEntry.PathProblem, Is.False);
+        }
+
+        [Test]
+        public void SetSummaryFields_PathProblem_DoesNotInfectChildren()
+        {
+            var testEntry = re;
+            testEntry.SetSummaryFields();
+
+            Assert.That(testEntry.PathProblem, Is.False);
+        }
+
+        [Test]
+        public void SetSummaryFields_PathProblem_EndsWithPeriod_True()
+        {
+            var testEntry = re;
+            testEntry.Path += ".";
+            testEntry.SetSummaryFields();
+
+            Assert.That(testEntry.PathProblem, Is.True);
+        }
+
+        [Test]
+        public void SetSummaryFields_PathProblem_EndsWithPeriod_InfectsChildren()
+        {
+            var testEntry = re;
+            testEntry.Path += ".";
+            testEntry.SetSummaryFields();
+
+            Assert.That(testEntry.Children[0].PathProblem, Is.False);
+        }
+
+        [Test]
+        public void SetSummaryFields_PathProblem_FileEndsWithPeriod_True()
+        {
+            var testEntry = re;
+            var testFileEntry = testEntry.Children[1];
+            testFileEntry.Path += ".";
+            testEntry.SetSummaryFields();
+
+            Assert.That(testFileEntry.PathProblem, Is.True);
         }
     }
     // ReSharper restore InconsistentNaming

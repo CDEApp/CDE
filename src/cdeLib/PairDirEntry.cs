@@ -5,7 +5,13 @@ namespace cdeLib
     public class PairDirEntry
     {
         public readonly CommonEntry ParentDE;
+
         public readonly DirEntry ChildDE;
+
+        /// <summary>
+        /// true if path or parent path ends with bad characters for NTFS, like Space or Period
+        /// </summary>
+        public readonly bool PathProblem;
 
         public string FullPath
         {
@@ -16,6 +22,7 @@ namespace cdeLib
         {
             ParentDE = parent;
             ChildDE = child;
+            PathProblem = ParentDE.PathProblem || ChildDE.PathProblem;
         }
 
         /// <summary>

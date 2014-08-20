@@ -362,6 +362,7 @@ namespace cdeLib
             var size = 0L;
             var dirEntryCount = 0L;
             var fileEntryCount = 0L;
+            PathProblem = IsBadPath();
 
             if (IsDirectory && Children != null)
             {
@@ -371,7 +372,15 @@ namespace cdeLib
                     if (dirEntry.IsDirectory)
                     {
                         dirEntry.SetSummaryFields();
+                        if (PathProblem) // infects child entries
+                        {
+                            dirEntry.PathProblem = PathProblem;
+                        }
                         ++dirEntryCount;
+                    }
+                    else
+                    {
+                        dirEntry.PathProblem = dirEntry.IsBadPath();
                     }
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
