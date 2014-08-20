@@ -82,7 +82,7 @@ Options:
   (--filter | --filterPath)
   (--find | --grep | --findPath | --grepPath | --replfind | --replgrep | --replgreppath)
 ";
-        string ExampleUsage = @"
+        private const string ExampleUsage = @"
 
   naval_fate.exe ship <name> move <x> <y> [--speed=<kn>]
   naval_fate.exe ship shoot <x> <y>
