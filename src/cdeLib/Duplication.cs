@@ -72,7 +72,26 @@ namespace cdeLib
 
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
-            var groupedByDirectoryRoot = goodFlatList.GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
+
+            // QUOTE 
+            // The IGrouping<TKey, TElement> objects are yielded in an order based on 
+            // the order of the elements in source that produced the first key of each 
+            // IGrouping<TKey, TElement>. Elements in a grouping are yielded in the 
+            // order they appear in source.
+            //
+            // by ordering from largest to smallest the larger files are hashed first
+            // so a break of process and then running of dupes is a win for larger files.
+            var descendingFlatList = goodFlatList.OrderByDescending(
+                pde => pde.ChildDE.IsDirectory ? 0 : pde.ChildDE.Size); // directories last
+
+            var some = descendingFlatList.Take(20);
+            foreach (var pairDirEntry in some)
+            {
+                Console.WriteLine("{0}", pairDirEntry.ChildDE.Size);
+            }
+
+            var groupedByDirectoryRoot = descendingFlatList
+                .GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
 
             //parrallel at the grouping level, hopefully this is one group per disk.
@@ -269,6 +288,7 @@ namespace cdeLib
                     if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
                     {
                         Console.Write("f");
+                        Console.Write(" {0} ", hashResponse.BytesHashed);
                     }
                 }
                 else
@@ -352,7 +372,8 @@ namespace cdeLib
         public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
         {
             //TODO: What if we don't have md5 hash? go and create it? -- Rob votes not.
-            var dupePairs = GetDupePairs(rootEntries);
+            var dupePairs = GetDupePairs(rootEntries)
+                .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
             foreach (var dupe in dupePairs)
             {
                 _logger.LogInfo("--------------------------------------");
