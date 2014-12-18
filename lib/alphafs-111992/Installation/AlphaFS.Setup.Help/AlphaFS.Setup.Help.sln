@@ -1,0 +1,38 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 11.00
+# Visual Studio 2010
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AlphaFS.Setup.Help", "AlphaFS.Setup.Help\AlphaFS.Setup.Help.vdproj", "{991FD61D-02D1-455B-9325-173F09BD4069}"
+EndProject
+Project("{54435603-DBB4-11D2-8724-00A0C9A8B90C}") = "AlphaFS.Setup.HelpMergeModule", "AlphaFS.Setup.HelpMergeModule\AlphaFS.Setup.HelpMergeModule.vdproj", "{C65BAB30-938E-4485-9C4E-C3025A8BA6FC}"
+EndProject
+Global
+	GlobalSection(TeamFoundationVersionControl) = preSolution
+		SccNumberOfProjects = 3
+		SccEnterpriseProvider = {4CA58AB2-18FA-4F8D-95D4-32DDF27D184C}
+		SccTeamFoundationServer = https://tfs.codeplex.com/tfs/tfs02
+		SccLocalPath0 = .
+		SccProjectUniqueName1 = AlphaFS.Setup.Help\\AlphaFS.Setup.Help.vdproj
+		SccProjectName1 = AlphaFS.Setup.Help
+		SccLocalPath1 = AlphaFS.Setup.Help
+		SccProjectUniqueName2 = AlphaFS.Setup.HelpMergeModule\\AlphaFS.Setup.HelpMergeModule.vdproj
+		SccProjectName2 = AlphaFS.Setup.HelpMergeModule
+		SccLocalPath2 = AlphaFS.Setup.HelpMergeModule
+	EndGlobalSection
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Default = Debug|Default
+		Release|Default = Release|Default
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{991FD61D-02D1-455B-9325-173F09BD4069}.Debug|Default.ActiveCfg = Debug
+		{991FD61D-02D1-455B-9325-173F09BD4069}.Debug|Default.Build.0 = Debug
+		{991FD61D-02D1-455B-9325-173F09BD4069}.Release|Default.ActiveCfg = Release
+		{991FD61D-02D1-455B-9325-173F09BD4069}.Release|Default.Build.0 = Release
+		{C65BAB30-938E-4485-9C4E-C3025A8BA6FC}.Debug|Default.ActiveCfg = Debug
+		{C65BAB30-938E-4485-9C4E-C3025A8BA6FC}.Debug|Default.Build.0 = Debug
+		{C65BAB30-938E-4485-9C4E-C3025A8BA6FC}.Release|Default.ActiveCfg = Release
+		{C65BAB30-938E-4485-9C4E-C3025A8BA6FC}.Release|Default.Build.0 = Release
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
