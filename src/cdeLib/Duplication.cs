@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
 
@@ -64,12 +65,7 @@ namespace cdeLib
             _logger.LogDebug("Flatten List..");
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
             _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
-
-            LogPathProblems(flatList.Where(pde => pde.PathProblem));
-
-            //filter out path problem entries.
-            var goodFlatList = flatList.Where(pde => !pde.PathProblem);
-
+            
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
 
@@ -81,7 +77,7 @@ namespace cdeLib
             //
             // by ordering from largest to smallest the larger files are hashed first
             // so a break of process and then running of dupes is a win for larger files.
-            var descendingFlatList = goodFlatList.OrderByDescending(
+            var descendingFlatList = flatList.OrderByDescending(
                 pde => pde.ChildDE.IsDirectory ? 0 : pde.ChildDE.Size); // directories last
 
             var some = descendingFlatList.Take(20);
@@ -162,23 +158,6 @@ namespace cdeLib
                     _duplicationStatistics.BytesProcessed/(1024*1024),
                     perf, _duplicationStatistics.FailedToHash);
             _logger.LogInfo(string.Format(statsMessage));
-        }
-
-        private void LogPathProblems(IEnumerable<PairDirEntry> badFlatList)
-        {
-            //report entries with path problems.
-            var outputPathErrorCount = 0L;
-            foreach (var badPDE in badFlatList)
-            {
-                _logger.LogDebug(String.Format("File not hashed: \"{0}\"", badPDE.FullPath));
-                ++outputPathErrorCount;
-            }
-            if (outputPathErrorCount > 0)
-            {
-                _logger.LogDebug(
-                    string.Format("{0} Files were not hashed as they had a path sub-section with a trailing slash or period.",
-                                  outputPathErrorCount));
-            }
         }
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
@@ -334,7 +313,8 @@ namespace cdeLib
                 if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
                 {
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                    CalculateMD5Hash(fullPath, dirEntry, false);
+                    var longFullPath = Path.GetFullPath(fullPath, true);
+                    CalculateMD5Hash(longFullPath, dirEntry, false);
                 }
             }
             return true;
