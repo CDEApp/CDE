@@ -247,18 +247,19 @@ namespace cdeLib
                 var commonEntry = t.Item1;
                 var directory = t.Item2;
 
-                // NEW
-                var fsEntries = new FindFileSystemEntryInfo
-                    {
-                        IsFullPath = true,
-                        InputPath = directory,
-                        AsLongPath = true,
-                        GetFsoType = null, // both files and folders.
-                        SearchOption = SearchOption.TopDirectoryOnly,
-                        SearchPattern = MatchAll,
-                        Transaction = null,
-                        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
-                    }.Enumerate();
+                //// NEW
+                //var fsEntries = new FindFileSystemEntryInfo
+                //    {
+                //        IsFullPath = true,
+                //        InputPath = directory,
+                //        AsLongPath = true,
+                //        GetFsoType = null, // both files and folders.
+                //        SearchOption = SearchOption.TopDirectoryOnly,
+                //        SearchPattern = MatchAll,
+                //        Transaction = null,
+                //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                //    }.Enumerate();
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
 
                 // OLD
                 //var fsEntries = Directory.GetFullFileSystemEntries

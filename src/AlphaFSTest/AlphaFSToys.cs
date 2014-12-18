@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib;
@@ -15,18 +16,6 @@ namespace AlphaFSTest
     public class AlphaFSToys
     // ReSharper restore InconsistentNaming
     {
-        [Ignore] // i got it wrong at moment
-        [Test]
-        public void GetVolumePathNamesForVolume()
-        {
-            const string vol = @"C:\temp";
-            var vp = Volume.EnumerateVolumePathNames(vol);
-            foreach (var s in vp)
-            {
-                Console.WriteLine(" vp {0}", s);
-            }
-        }
-
         [Test]
         public void GetVolumeInformation()
         {
@@ -179,7 +168,7 @@ namespace AlphaFSTest
         }
 
         [Test]
-        public void GetFilesWithExtension_AFileNotEndingInButContainingPatternIsReturend_NotSureWhy()
+        public void GetFilesWithExtension_FileContainingPatternUseToReturn()
         {
             const string name1 = "G-SN750B_02_S13UJ1NQ221583.cde";
             const string name2 = "G-SN750B_02_S13UJ1NQ221583.cde-backup-with-hash";
@@ -187,7 +176,6 @@ namespace AlphaFSTest
             var f2 = File.Create(name2);
             f1.Close();
             f2.Close();
-            //var files = Directory.GetFiles(".", "*.cde", SearchOption.TopDirectoryOnly);
             var files = AlphaFSHelper.GetFilesWithExtension(".", "cde");
 
             foreach (var file in files)
@@ -200,12 +188,11 @@ namespace AlphaFSTest
             File.Delete(name1);
             File.Delete(name2);
 
-            Assert.That(files.Count, Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
+            Assert.That(files.Count(), Is.EqualTo(1), "Oops somehow we got a file not ending in \"cde\" in our result set.");
         }
 
-        [Ignore("Example problem with alphaFS")]
         [Test]
-        public void GetFullPath_BugInAlphaFS_GRRR()
+        public void GetFullPath_GetDirectoryRoot_Behave_Like_SystemIO()
         {
             // BUG in AlphaFS. Path.FullGetPath()
             // BUG in AlphaFS. Path.GetDirectoryRoot()
@@ -217,35 +204,40 @@ namespace AlphaFSTest
 
             var originalDir = Directory.GetCurrentDirectory();
             Console.WriteLine("0 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine();
 
             var alphaFP = Path.GetFullPath(@"C:");
             var ioFP = System.IO.Path.GetFullPath(@"C:");
             Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", alphaFP);
             Console.WriteLine("0 System.IO.Path.GetFullPath(@\"C:\") {0}", ioFP);
+            Console.WriteLine();
+            Assert.That(alphaFP, Is.EqualTo(ioFP));
 
             Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Directory.GetDirectoryRoot(@\"C:\") {0}", Directory.GetDirectoryRoot(@"C:"));
             Console.WriteLine("0 System.IO.Directory.GetDirectoryRoot(@\"C:\") {0}", System.IO.Directory.GetDirectoryRoot(@"C:"));
             Console.WriteLine();
+            Assert.That(Directory.GetDirectoryRoot(@"C:"), Is.EqualTo(System.IO.Directory.GetDirectoryRoot(@"C:")));
 
             Directory.SetCurrentDirectory(@"C:\Windows\");
             Console.WriteLine("1 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
             Console.WriteLine("1 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
             Console.WriteLine("1 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
             Console.WriteLine();
+            Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
 
             Directory.SetCurrentDirectory(@"C:\");
             Console.WriteLine("2 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
             Console.WriteLine("2 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
             Console.WriteLine("2 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
             Console.WriteLine();
+            Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
 
             Directory.SetCurrentDirectory(originalDir);
             Console.WriteLine("3 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
             Console.WriteLine("3 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
             Console.WriteLine("3 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
             Console.WriteLine();
-
-            Assert.Fail();
+            Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
         }
 
         [Test]
@@ -255,9 +247,9 @@ namespace AlphaFSTest
             var dirs = Directory.GetDirectories(".");
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
-            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
-            Assert.That(dirs.Contains(@".\lib"));
-            Assert.That(dirs.Contains(@".\src"));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\bin")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\lib")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\src")));
         }
 
         [Test]
@@ -267,9 +259,9 @@ namespace AlphaFSTest
             var dirs = Directory.EnumerateDirectories(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
-            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
-            Assert.That(dirs.Contains(@".\lib"));
-            Assert.That(dirs.Contains(@".\src"));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\bin")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\lib")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\src")));
         }
 
         [Test]
@@ -279,9 +271,11 @@ namespace AlphaFSTest
             var dirs = Directory.EnumerateFiles(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
-            Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
-            Assert.That(dirs.Contains(@".\lib"));
-            Assert.That(dirs.Contains(@".\src"));
+            //Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
+            //Assert.That(dirs.Contains(@".\lib"));
+            //Assert.That(dirs.Contains(@".\src"));
+            Assert.That(dirs.Any(x => x.EndsWith(@".gitignore")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"History.txt")));
         }
 
 

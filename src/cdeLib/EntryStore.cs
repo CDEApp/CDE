@@ -5,6 +5,7 @@ using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
+using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = System.IO.FileMode;
 //using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
@@ -142,17 +143,18 @@ namespace cdeLib
                 int siblingIndex = 0; // entering a directory again
 
                 // NEW
-                var fsEntries = new FindFileSystemEntryInfo
-                    {
-                        IsFullPath = true,
-                        InputPath = directory,
-                        AsLongPath = true,
-                        GetFsoType = null, // both files and folders.
-                        SearchOption = SearchOption.TopDirectoryOnly,
-                        SearchPattern = MatchAll,
-                        Transaction = null,
-                        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
-                    }.Enumerate();
+                //var fsEntries = new FindFileSystemEntryInfo
+                //    {
+                //        IsFullPath = true,
+                //        InputPath = directory,
+                //        AsLongPath = true,
+                //        GetFsoType = null, // both files and folders.
+                //        SearchOption = SearchOption.TopDirectoryOnly,
+                //        SearchPattern = MatchAll,
+                //        Transaction = null,
+                //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                //    }.Enumerate();
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
 
                 // OLD
                 //var fsEntries = Directory.GetFullFileSystemEntries
