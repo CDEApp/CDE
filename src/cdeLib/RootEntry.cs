@@ -429,6 +429,10 @@ namespace cdeLib
 			return config.CompareWithInfo(Description, re.Description);
         }
 
+        /// <summary>
+        /// This gets .cde files in current dir or one directory down.
+        /// Use directory permissions to control who can load what .cde files one dir down if you like.
+        /// </summary>
 		public static IList<string> GetCacheFileList(IEnumerable<string> paths)
 		{
 			var cacheFilePaths = new List<string>();
@@ -439,7 +443,12 @@ namespace cdeLib
 				var childDirs = Directory.GetDirectories(path);
 				foreach (var childPath in childDirs)
 				{
-					cacheFilePaths.AddRange(GetCdeFiles(childPath));
+				    try
+				    {
+                        cacheFilePaths.AddRange(GetCdeFiles(childPath));
+				    }
+				    // ReSharper disable once EmptyGeneralCatchClause
+				    catch (Exception) { } // if cant list folders don't care.
 				}
 			}
 			return cacheFilePaths;
