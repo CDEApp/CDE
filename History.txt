@@ -1,3 +1,9 @@
+2014/12/19 08:13 cdeWin v1.5.0.0, cde v1.5
+Updated VS.
+Updated to latest AlphaFS can now hash files with names could not open before.
+example. files with a trailing "fullstop" or "hash" in file name or folder path.
+Bumped version.
+
 2014/08/18 xx:xx cdeWin v1.4.0.0, cde v1.4
 Updated AlphaFS library to 1.6Dev to address filestream open problem discovered.
 
