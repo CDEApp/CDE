@@ -1,3 +1,6 @@
+2014/08/18 xx:xx cdeWin v1.4.0.0, cde v1.4
+Updated AlphaFS library to 1.6Dev to address filestream open problem discovered.
+
 2014/08/17 19:48 cdeWin v1.2.8.0, cde v1.3
 Fixed bug in duplicate file finding, likely many large files were not found as duplicates.
 

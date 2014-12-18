@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Security.Cryptography;
 using File = Alphaleonis.Win32.Filesystem.File;
+using Path = Alphaleonis.Win32.Filesystem.Path;
 
 namespace cdeLib.Infrastructure.Hashing
 {
@@ -39,7 +40,7 @@ namespace cdeLib.Infrastructure.Hashing
             var hashResponse = new HashResponse();
             try
             {
-                using (Stream stream = File.OpenRead(filename))
+                using (Stream stream = File.OpenRead(filename, true))
                 {
                     var buf = new byte[bytesToHash];
                     int bytesRead = stream.Read(buf, 0, buf.Length);
@@ -66,6 +67,7 @@ namespace cdeLib.Infrastructure.Hashing
             catch (Exception ex)
             {
                 ILogger logger = new Logger();
+                logger.LogDebug(string.Format("                                                                                                        original filename \"{0}\"", filename));
                 logger.LogException(ex, "MD5Hash");
                 return null;
             }
@@ -75,7 +77,7 @@ namespace cdeLib.Infrastructure.Hashing
         {
             try
             {
-                using (Stream stream = File.OpenRead(filename))
+                using (Stream stream = File.OpenRead(filename, true))
                 {
                     var hashResponse = new HashResponse();
                     using (var md5 = MD5.Create())

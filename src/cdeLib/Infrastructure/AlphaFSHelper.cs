@@ -8,13 +8,10 @@ namespace cdeLib.Infrastructure
 {
     public static class AlphaFSHelper
     {
-        // Bug in either AlphaFS or the Win32 either way here is a work around.
         public static IList<string> GetFilesWithExtension(string path, string extension)
         {
             var pattern = "*." + extension;
-            var files = Directory.GetFiles(path, pattern, SearchOption.TopDirectoryOnly);
-            var checkedExtensionEndFiles = files.Where(val => val.EndsWith(extension)).ToList();
-            return checkedExtensionEndFiles;
+            return Directory.GetFiles(path, pattern, SearchOption.TopDirectoryOnly);
         }
 
         // BUG in AlphaFS. Path.FullGetPath()

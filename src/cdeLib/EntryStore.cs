@@ -2,13 +2,12 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
-using FileMode = Alphaleonis.Win32.Filesystem.FileMode;
+using FileMode = System.IO.FileMode;
 //using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
 
 namespace cdeLib
@@ -59,6 +58,16 @@ namespace cdeLib
             ++NextAvailableIndex;
             Entry[] block;
             EntryIndex(myNewIndex, out block); // ensure block allocated.
+            return myNewIndex;
+        }
+
+        // todo use
+        // hand out what i have from EntryIndex, should make callers not need to call EntryIndex.
+        public int AddEntry(out int blockIndex, out Entry[] block)
+        {
+            var myNewIndex = NextAvailableIndex;
+            ++NextAvailableIndex;
+            blockIndex = EntryIndex(myNewIndex, out block); // ensure block allocated.
             return myNewIndex;
         }
 
@@ -113,6 +122,7 @@ namespace cdeLib
         const string MatchAll = "*";
 
         // Better name ScanRootPath.
+        // -- consider each breadth first scan, sort then add to the Store, [dont do one at time].
         public void RecurseTree()
         {
             if (Root == null)
@@ -132,8 +142,23 @@ namespace cdeLib
                 var parentEntryIndex = EntryIndex(parentIndex, out parentBlock);
                 int siblingIndex = 0; // entering a directory again
 
-                var fsEntries = Directory.GetFullFileSystemEntries
-                    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
+                // NEW
+                //var fsEntries = new FindFileSystemEntryInfo
+                //    {
+                //        IsFullPath = true,
+                //        InputPath = directory,
+                //        AsLongPath = true,
+                //        GetFsoType = null, // both files and folders.
+                //        SearchOption = SearchOption.TopDirectoryOnly,
+                //        SearchPattern = MatchAll,
+                //        Transaction = null,
+                //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                //    }.Enumerate();
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
+
+                // OLD
+                //var fsEntries = Directory.GetFullFileSystemEntries
+                //    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
                 foreach (var fsEntry in fsEntries)
                 {
                     var newIndex = AddEntry();
@@ -186,21 +211,6 @@ namespace cdeLib
         public Action SimpleScanCountEvent { get; set; }
 
         public Action SimpleScanEndEvent { get; set; }
-
-        private EnumerationExceptionDecision exceptionHandler(string path, Exception e)
-        {
-            if (e.GetType().Equals(typeof(UnauthorizedAccessException)))
-            {
-                PathsWithUnauthorisedExceptions.Add(path);
-                return EnumerationExceptionDecision.Skip;
-            }
-
-            if (ExceptionEvent != null)
-            {
-                ExceptionEvent(path, e);
-            }
-            return EnumerationExceptionDecision.Abort;
-        }
 
         public static Action<string, Exception> ExceptionEvent { get; set; }
 
@@ -541,7 +551,7 @@ namespace cdeLib
             } while (goNext);
 
             Console.WriteLine("loopy {0}", loopy);
-            Console.WriteLine(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            Console.WriteLine("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
             return _duplicateFileSize;
         }
     }

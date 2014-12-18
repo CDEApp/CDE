@@ -27,7 +27,7 @@ namespace cdeLib
             {
                 return string.Empty;
             }
-            if (!rootPath.EndsWith(Path.DirectorySeparatorChar))
+            if (!rootPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
             {
                 rootPath += Path.DirectorySeparatorChar;
             }
