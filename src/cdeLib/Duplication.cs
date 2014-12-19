@@ -219,11 +219,6 @@ namespace cdeLib
                 {
                     _dirEntriesRequiringFullHashing.Add(pairDirEntry.ChildDE);
                 }
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\nBreak key detected exiting full hashing phase outer.");
-                    break;
-                }
             }
             CommonEntry.TraverseTreePair(rootEntries, CalculateFullMD5Hash);
         }
@@ -315,6 +310,11 @@ namespace cdeLib
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                     var longFullPath = Path.GetFullPath(fullPath, true);
                     CalculateMD5Hash(longFullPath, dirEntry, false);
+                    if (Hack.BreakConsoleFlag)
+                    {
+                        Console.WriteLine("\n * Break key detected exiting full hashing phase outer.");
+                        return false;
+                    }
                 }
             }
             return true;
