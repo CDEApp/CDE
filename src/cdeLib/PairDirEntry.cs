@@ -1,7 +1,9 @@
-﻿using Alphaleonis.Win32.Filesystem;
+﻿using System.Diagnostics;
+using Alphaleonis.Win32.Filesystem;
 
 namespace cdeLib
 {
+    [DebuggerDisplay("Size = {ChildDE.Size}")]
     public class PairDirEntry
     {
         public readonly CommonEntry ParentDE;

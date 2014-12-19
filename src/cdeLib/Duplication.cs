@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -10,7 +11,16 @@ using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
 {
-
+    public static class ParallelExtension
+    {
+        public static void ForEachInApproximateOrder<TSource>(this ParallelQuery<TSource> source, ParallelOptions options, Action<TSource,ParallelLoopState> action)
+        {
+            source = Partitioner.Create(source)
+                                .AsParallel()
+                                .AsOrdered();
+            Parallel.ForEach(source, options, action);
+        }
+    }
 
     public class Duplication
     {
@@ -41,7 +51,7 @@ namespace cdeLib
         /// Apply an MD5 Checksum to all rootEntries
         /// </summary> 
         /// <param name="rootEntries">Collection of rootEntries</param>
-        public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
+        public void ApplyMd5Checksum(IList<RootEntry> rootEntries)
         {
             _logger.LogDebug("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var newMatches = GetSizePairs(rootEntries);
@@ -50,16 +60,12 @@ namespace cdeLib
             var totalFilesInRootEntries = rootEntries.Sum(x => x.FileEntryCount);
             var totalEntriesInSizeDupes = newMatches.Sum(x => x.Value.Count);
             var longestListLength = newMatches.Count > 0 ? newMatches.Max(x => x.Value.Count) : -1;
-            var longestListSize = newMatches.Count > 0
-                                      ? newMatches.First(x => x.Value.Count == longestListLength).Key
-                                      : 0;
+            var longestListSize = newMatches.Count == 0 ? 0
+                : newMatches.First(x => x.Value.Count == longestListLength).Key;
             _logger.LogInfo("Found {0} sets of files matched by file size", newMatches.Count);
-            _logger.LogInfo("Total files processed for the file size matches is {0}",
-                            totalFilesInRootEntries);
-            _logger.LogInfo("Total files found with at least 1 other file of same length {0}",
-                            totalEntriesInSizeDupes);
-            _logger.LogInfo("Longest list of same sized files is {0} for size {1} ", longestListLength,
-                                          longestListSize);
+            _logger.LogInfo("Total files processed for the file size matches is {0}", totalFilesInRootEntries);
+            _logger.LogInfo("Total files found with at least 1 other file of same length {0}", totalEntriesInSizeDupes);
+            _logger.LogInfo("Longest list of same sized files is {0} for size {1} ", longestListLength, longestListSize);
 
             //flatten
             _logger.LogDebug("Flatten List..");
@@ -80,11 +86,11 @@ namespace cdeLib
             var descendingFlatList = flatList.OrderByDescending(
                 pde => pde.ChildDE.IsDirectory ? 0 : pde.ChildDE.Size); // directories last
 
-            var some = descendingFlatList.Take(20);
-            foreach (var pairDirEntry in some)
-            {
-                Console.WriteLine("{0}", pairDirEntry.ChildDE.Size);
-            }
+            //var some = descendingFlatList.Take(20);
+            //foreach (var pairDirEntry in some)
+            //{
+            //    Console.WriteLine("{0}", pairDirEntry.ChildDE.Size);
+            //}
 
             var groupedByDirectoryRoot = descendingFlatList
                 .GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
@@ -99,32 +105,30 @@ namespace cdeLib
 
             var cts = new CancellationTokenSource();
             var token = cts.Token;
-            var innerPhaseBreak = false;
             var outerOptions = new ParallelOptions {CancellationToken = token};
-
+            _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInSizeDupes;
             try
             {
-                Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) =>
-                {
+                Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) => {
                     var parallelOptions = new ParallelOptions
-                        {
-                            CancellationToken = token,
-                            MaxDegreeOfParallelism = 2
-                        };
-                    Parallel.ForEach(grp, parallelOptions,
-                                     (flatFile, innerLoopState) => {
-                                         CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
-                                         if (Hack.BreakConsoleFlag)
-                                         {
-                                             if (!innerPhaseBreak)
-                                             {
-                                                 innerPhaseBreak = true;
-                                                 Console.WriteLine(
-                                                     "\n * Break key detected exiting hashing phase inner.");
-                                                 cts.Cancel();
-                                             }
-                                         }
-                                     });
+                    {
+                        CancellationToken = token,
+                        MaxDegreeOfParallelism = 2
+                    };
+                    // This now tries to hash files in approx order of largest to smallest file.
+                    // Hitting break when smallest log display get down to a size you dont care about is viable.
+                    // Then the full hash phase will start and you can hit break again to stop it after a while.
+                    // tTo be able to then run --dupes on the larget hashed files.
+                    grp.AsParallel()
+                        .ForEachInApproximateOrder(parallelOptions, (flatFile, innerLoopState) => {
+                            _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
+                            CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
+                            if (Hack.BreakConsoleFlag)
+                            {
+                                Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
+                                cts.Cancel();
+                            }
+                        });
                 });
             }
             catch (OperationCanceledException) {}
@@ -136,22 +140,33 @@ namespace cdeLib
                 return;
             }
 
-            if (Hack.BreakConsoleFlag)
-            {
-                Console.WriteLine("\n * Break key detected skipping full hashing phase.");
-            }
-            else
-            {
-                CheckDupesAndCompleteFullHash(rootEntries);
-            }
-            _logger.LogInfo(string.Empty);
-            timer.Stop();
+            _logger.LogInfo("After initial partial hashing phase.");
             var perf = string.Format("{0:F2} MB/s",
+                ((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/
+                (1024.0*1024.0)
+                );
+            var statsMessage =
+                string.Format(
+                    "FullHash: {0}  PartialHash: {1}  Processed: {2:F2} MB  NotProcessed: {5:F2} MB  Perf: {3}\nTotal Data Encounetered: {6:F2} MB\nFailedHash: {4} (amost always because cannot open to read file)",
+                    _duplicationStatistics.FullHashes, _duplicationStatistics.PartialHashes,
+                    _duplicationStatistics.BytesProcessed / (1024 * 1024),
+                    perf, _duplicationStatistics.FailedToHash,
+                    _duplicationStatistics.BytesNotProcessed / (1024 * 1024),
+                    _duplicationStatistics.TotalFileBytes / (1024 * 1024));
+            _logger.LogInfo(statsMessage);
+
+            Hack.BreakConsoleFlag = false; // require to press break again to stop the fullhash phase.
+            CheckDupesAndCompleteFullHash(rootEntries);
+            
+            _logger.LogInfo(string.Empty);
+            _logger.LogInfo("After hashing completed.");
+            timer.Stop();
+            perf = string.Format("{0:F2} MB/s",
                     ((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/
                     (1024.0*1024.0)
                 );
 
-            var statsMessage =
+            statsMessage =
                 string.Format(
                     "FullHash: {0}  PartialHash: {1}  Processed: {2:F2} MB Perf: {3}\nFailedHash: {4} (amost always because cannot open to read file)",
                     _duplicationStatistics.FullHashes, _duplicationStatistics.PartialHashes,
@@ -194,6 +209,7 @@ namespace cdeLib
         {
             if (de.IsDirectory || de.IsHashDone)
             {
+                _duplicationStatistics.AllreadyDonePartials++;
                 return;
             }
             CalculateMD5Hash(fullPath, de, true);
@@ -228,7 +244,6 @@ namespace cdeLib
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
                                              : _configuration.ProgressUpdateInterval;
-
             var configuration = new Configuration();
             if (doPartialHash)
             {
@@ -244,6 +259,8 @@ namespace cdeLib
                     de.SetHash(hashResponse.Hash);
                     de.IsPartialHash = hashResponse.IsPartialHash;
                     _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                    _duplicationStatistics.TotalFileBytes += de.Size;
+                    _duplicationStatistics.BytesNotProcessed += de.Size <= hashResponse.BytesHashed ? 0 : de.Size - hashResponse.BytesHashed;
                     if (de.IsPartialHash)
                     {
                         _duplicationStatistics.PartialHashes += 1;
@@ -252,18 +269,26 @@ namespace cdeLib
                     {
                         _duplicationStatistics.FullHashes += 1;
                     }
-                        
+                    if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
+                    {
+                        _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",
+                            _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                            100* (1.0*_duplicationStatistics.FilesProcessed/_duplicationStatistics.FilesToCheckForDuplicatesCount),
+                            1.0*_duplicationStatistics.LargestFileSize/(1024*1024),
+                            1.0*_duplicationStatistics.SmallestFileSize/(1024*1024));
+                    }
+
                     //_logger.LogDebug("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath);
                         
-                    if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
-                    {
-                        Console.Write("p");
-                    }
-                    if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
-                    {
-                        Console.Write("f");
-                        Console.Write(" {0} ", hashResponse.BytesHashed);
-                    }
+                    //if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
+                    //{
+                    //    Console.Write("p");
+                    //}
+                    //if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
+                    //{
+                    //    Console.Write("f");
+                    //    Console.Write(" {0} ", hashResponse.BytesHashed);
+                    //}
                 }
                 else
                 {
@@ -274,6 +299,7 @@ namespace cdeLib
             {
                 if (de.IsHashDone && !de.IsPartialHash)
                 {
+                    _duplicationStatistics.AllreadyDoneFulls++;
                     return;
                 }
                 var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
@@ -283,10 +309,19 @@ namespace cdeLib
                     de.IsPartialHash = hashResponse.IsPartialHash;
                     _duplicationStatistics.FullHashes += 1;
                     _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
-                    if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
+                    if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                     {
-                        Console.Write("f");
+                        _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:.0}%",
+                            _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                            100 * (1.0 * _duplicationStatistics.FilesProcessed / _duplicationStatistics.FilesToCheckForDuplicatesCount));
                     }
+
+                    // SOME can have both partial and full done, so they have 1 in both counts... :(
+
+                    //if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
+                    //{
+                    //    Console.Write("f");
+                    //}
                 }
                 else
                 {
@@ -356,7 +391,7 @@ namespace cdeLib
                 .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
             foreach (var dupe in dupePairs)
             {
-                _logger.LogInfo("--------------------------------------");
+                _logger.LogInfo("-------------------------------------- {0}", dupe.Key.Size);
                 dupe.Value.ForEach(v => Console.WriteLine("{0}", v.FullPath));
             }
         }
