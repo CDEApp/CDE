@@ -34,7 +34,7 @@ namespace cdeLib
             _configuration = configuration;
             _applicationDiagnostics = applicationDiagnostics;
             _duplicationStatistics = new DuplicationStatistics();
-            _logger.LogDebug(String.Format("Dupe Constructor Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("Dupe Constructor Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         }
 
         /// <summary>
@@ -43,9 +43,9 @@ namespace cdeLib
         /// <param name="rootEntries">Collection of rootEntries</param>
         public void ApplyMd5Checksum(IEnumerable<RootEntry> rootEntries)
         {
-            _logger.LogDebug(String.Format("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var newMatches = GetSizePairs(rootEntries);
-            _logger.LogDebug(String.Format("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
             var totalFilesInRootEntries = rootEntries.Sum(x => x.FileEntryCount);
             var totalEntriesInSizeDupes = newMatches.Sum(x => x.Value.Count);
@@ -53,18 +53,18 @@ namespace cdeLib
             var longestListSize = newMatches.Count > 0
                                       ? newMatches.First(x => x.Value.Count == longestListLength).Key
                                       : 0;
-            _logger.LogInfo(string.Format("Found {0} sets of files matched by file size", newMatches.Count));
-            _logger.LogInfo(string.Format("Total files processed for the file size matches is {0}",
-                                          totalFilesInRootEntries));
-            _logger.LogInfo(string.Format("Total files found with at least 1 other file of same length {0}",
-                                          totalEntriesInSizeDupes));
-            _logger.LogInfo(string.Format("Longest list of same sized files is {0} for size {1} ", longestListLength,
-                                          longestListSize));
+            _logger.LogInfo("Found {0} sets of files matched by file size", newMatches.Count);
+            _logger.LogInfo("Total files processed for the file size matches is {0}",
+                            totalFilesInRootEntries);
+            _logger.LogInfo("Total files found with at least 1 other file of same length {0}",
+                            totalEntriesInSizeDupes);
+            _logger.LogInfo("Longest list of same sized files is {0} for size {1} ", longestListLength,
+                                          longestListSize);
 
             //flatten
             _logger.LogDebug("Flatten List..");
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
-            _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             
             //group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
@@ -88,11 +88,11 @@ namespace cdeLib
 
             var groupedByDirectoryRoot = descendingFlatList
                 .GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
-            _logger.LogDebug(String.Format("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
             //parrallel at the grouping level, hopefully this is one group per disk.
             _logger.LogDebug("Beginning Hashing...");
-            _logger.LogDebug(String.Format("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()));
+            _logger.LogDebug("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             
             var timer = new Stopwatch();
             timer.Start();
@@ -157,17 +157,17 @@ namespace cdeLib
                     _duplicationStatistics.FullHashes, _duplicationStatistics.PartialHashes,
                     _duplicationStatistics.BytesProcessed/(1024*1024),
                     perf, _duplicationStatistics.FailedToHash);
-            _logger.LogInfo(string.Format(statsMessage));
+            _logger.LogInfo(statsMessage);
         }
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
             CommonEntry.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
-            _logger.LogDebug(String.Format("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            _logger.LogDebug("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
 
             //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
             _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize.Remove(x.Key));
-            _logger.LogDebug(String.Format("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count));
+            _logger.LogDebug("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
             return _duplicateFileSize;
         }
 
@@ -208,10 +208,10 @@ namespace cdeLib
             var founddupes = _duplicateFile.Where(d => d.Value.Count > 1);
             var totalEntriesInDupes = founddupes.Sum(x => x.Value.Count);
             var longestListLength = founddupes.Any() ? founddupes.Max(x => x.Value.Count) : 0;
-            _logger.LogInfo(string.Format("Found {0} duplication collections.", founddupes.Count()));
-            _logger.LogInfo(string.Format("Total files found with at least 1 other file duplicate {0}",
-                                          totalEntriesInDupes));
-            _logger.LogInfo(string.Format("Longest list of duplicate files is {0}", longestListLength));
+            _logger.LogInfo("Found {0} duplication collections.", founddupes.Count());
+            _logger.LogInfo("Total files found with at least 1 other file duplicate {0}",
+                            totalEntriesInDupes);
+            _logger.LogInfo("Longest list of duplicate files is {0}", longestListLength);
 
             foreach (var keyValuePair in founddupes)
             {
@@ -258,7 +258,7 @@ namespace cdeLib
                         _duplicationStatistics.FullHashes += 1;
                     }
                         
-                    //_logger.LogDebug(String.Format("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath));
+                    //_logger.LogDebug("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath);
                         
                     if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
                     {
@@ -366,12 +366,10 @@ namespace cdeLib
             CommonEntry.TraverseTreePair(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();
 
-            _logger.LogInfo(string.Format("Count of list of all hashes of files with same sizes {0}",
-                                          _duplicateFile.Count));
-            _logger.LogInfo(
-                string.Format(
-                    "Count of list of all hashes of files with same sizes where more than 1 of that hash {0}",
-                    moreThanOneFile.Count));
+            _logger.LogInfo("Count of list of all hashes of files with same sizes {0}",
+                                          _duplicateFile.Count);
+            _logger.LogInfo("Count of list of all hashes of files with same sizes where more than 1 of that hash {0}",
+                    moreThanOneFile.Count);
             return moreThanOneFile;
         }
     }

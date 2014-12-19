@@ -296,9 +296,9 @@ Options:
         {
             var logger = Container.Resolve<ILogger>();
             var diagnostics = Container.Resolve<IApplicationDiagnostics>();
-            logger.LogInfo(String.Format("Memory pre-catload: {0}",diagnostics.GetMemoryAllocated().FormatAsBytes()));
+            logger.LogInfo("Memory pre-catload: {0}",diagnostics.GetMemoryAllocated().FormatAsBytes());
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            logger.LogInfo(String.Format("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes()));
+            logger.LogInfo("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
             var duplication = Container.Resolve<Duplication>();
             var sw = new Stopwatch();
             sw.Start();
@@ -307,7 +307,7 @@ Options:
 
             foreach (var rootEntry in rootEntries)
             {
-                logger.LogDebug(String.Format("Saving {0}", rootEntry.DefaultFileName));
+                logger.LogDebug("Saving {0}", rootEntry.DefaultFileName);
                 rootEntry.SaveRootEntry();
             }
 
