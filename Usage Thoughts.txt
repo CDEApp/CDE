@@ -1,0 +1,70 @@
+cde - catalog directory entries.
+
+Usage:
+  cde --scan <path>...
+  cde --hash [options]
+  cde --hash2
+  cde --dupes [options]
+  cde --find <pattern> [options]
+  cde --findPath <pattern> [options]
+  cde --grep <pattern> [options]
+  cde --grepPath <pattern> [options]
+  cde --replFind <pattern> [options]
+  cde --replGrep <pattern> [options]
+  cde --replGrepPath <pattern> [options]
+  cde --repl
+  cde --treedump1
+  cde --treedump2
+  cde --loadwait
+  cde --loadwait2
+  cde --flurb <wers>...
+  cde (-h | --help)
+  cde (-v | --version)
+
+What those parameters mean.
+
+    Populate catalogs with file entries or hash information.
+  --scan <path>... 
+         Creates a cde catalog file for each given path.
+         Copies hashes from old catalogs into new
+         one as long as entries match size, date and path.
+  --hashall  Calculate hash (MD5) for all entires in catalogs.
+  --hash     Calculate hash (MD5) for entries.
+             Only create MD5 for required entries for dupes to work.
+  --dupes    Find duplicate entries, requires hash.
+
+    Find catalog entries.
+    Prefix repl version means (read-eval-print) variation. 
+    Enter blank pattern in interactive to exit.
+    Performs first search with given pattern, then prompts.
+
+  --find <pattern>        entry name substring matches pattern.
+  --findPath <pattern>    entry path substring matches pattern.
+  --grep <pattern>        entry name regex matches pattern.
+  --grepPath <pattern>    entry path regex matches pattern.
+  --replFind <pattern>       
+  --replGrep <pattern>
+  --replGrepPath <pattern>
+
+  --treeDump1    debug output entry tree
+  --treeDump2    debug output entry tree
+  --loadWait     debug load performance
+  --loadWait2    debug load performance
+  -h --help      Show this help screen.
+  -v --version   Show version.
+
+Options:
+    Include or exclude files, paths and catalogs.
+  --includeFiles <incFile>...      defaults to all files
+  --includeCatalogs <incCat>...    defaults to all catalogs
+  --excludeCatalogs <exclCat>...
+  --excludePaths <exclPath>
+  --excludeFiles <exclFile>...
+
+  --startPaths <startPath>...
+        For --hash and --dupes, use specified paths only.
+        Defaults to root of all catalogs.
+
+        Extra matching rule for entry.
+  --filter <filter>          regex pattern to entry name
+  --filterPath <filterpath>  regex pattern to entry path
