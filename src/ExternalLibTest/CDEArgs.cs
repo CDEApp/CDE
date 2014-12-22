@@ -26,6 +26,8 @@ namespace ExternalLibTest
 
         public CDEArgs()
         {
+            // every Option except "<>" needs to set _currentlist to its own list, or null.
+            // to improve handling of non matching parameters.
             _os = new OptionSet
             {
                 //{
@@ -37,7 +39,7 @@ namespace ExternalLibTest
                 //    }
                 //},
 
-                // Modes below here
+                // Modes below here in this section
                 {
                     "scan=", "Mode: scans one or more {Path}(s) creating catalogs", o => {
                         Mode = Modes.Scan;
@@ -55,35 +57,41 @@ namespace ExternalLibTest
                 {
                     "hash", "Mode: collect minimal set of hashes for dupes", o => {
                         Mode = Modes.Hash;
+                        _currentList = null;
                     }
                 },
                 {
                     "dupes", "Mode: find duplicate files, requires hashes done", o => {
                         Mode = Modes.Dupes;
+                        _currentList = null;
                     }
                 },
                 {
                     "dump", "Mode: output to console catalog entries", o => {
                         Mode = Modes.Dump;
+                        _currentList = null;
                     }
                 },
                 {
                     "loadWait", "Mode: load catalogs and wait till enter pressed", o => {
                         Mode = Modes.LoadWait;
+                        _currentList = null;
                     }
                 },
                 {
                     "h|help",  "Mode: show this message and exit", o => {
                         Mode = Modes.Help;
+                        _currentList = null;
                     }
                 },
                 {
                     "v|version",  "Mode: show version", o => {
                         Mode = Modes.Version;
+                        _currentList = null;
                     }
                 },
 
-                // Options below here
+                // Options below here in this section
                 {
                     "bp|basePath=", "Set one or more base {Path}(s)", o => {
                         if (!AllowStartPath.Contains(_mode))
@@ -101,6 +109,7 @@ namespace ExternalLibTest
                             throw new OptionException("The -grep option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _grepEnabled = o != null;
+                        _currentList = null;
                     }
                 },
                 {
@@ -110,6 +119,7 @@ namespace ExternalLibTest
                             throw new OptionException("The -repl option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _replEnabled = o != null;
+                        _currentList = null;
                     }
                 },
                 {
@@ -119,6 +129,7 @@ namespace ExternalLibTest
                             throw new OptionException("The -path option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _pathEnabled = o != null;
+                        _currentList = null;
                     }
                 },
                 {
@@ -128,6 +139,7 @@ namespace ExternalLibTest
                             throw new OptionException("The -hashAll option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _hashAllEnabled = o != null;
+                        _currentList = null;
                     }
                 },
                 {
@@ -150,18 +162,24 @@ namespace ExternalLibTest
                         _currentList.Add(o);
                     }
                 },
-
+                {   // unsure if leaving this here for releases
+                    "alternate", "(testing) an alternate data model (not really functioning)", o => {
+                        if (!AllowAlternate.Contains(_mode))
+                        {
+                            throw new OptionException("The -alt option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _alternate = o != null;
+                        _currentList = null;
+                    }
+                },
                 // to collection multi value parameter values.
                 {   
                     "<>", "", o => {
-                        if (_currentList != null)
-                        {
-                            _currentList.Add(o);
-                        }
-                        else
+                        if (_currentList == null)
                         {
                             throw new OptionException("Error unmatched parameter: '" + o + "'", o);
                         }
+                        _currentList.Add(o);
                     }
                 },
             };
@@ -227,6 +245,9 @@ namespace ExternalLibTest
 
         private readonly List<string> _include = new List<string>();
         public List<string> Include { get { return _include; } }
+
+        private bool _alternate;
+        public bool Alternate { get { return _alternate; } }
 
         //private long _minSize;
         //public long MinSize { get { return _minSize; } }
@@ -304,6 +325,17 @@ namespace ExternalLibTest
         /// Modes which allow include parameter
         /// </summary>
         private static readonly ICollection<Modes> AllowInclude = new HashSet<Modes>
+        {
+            {Modes.Scan},
+            {Modes.Hash},
+            {Modes.Dupes},
+            {Modes.Find},
+        };
+
+        /// <summary>
+        /// Modes which allow alt parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowAlternate = new HashSet<Modes>
         {
             {Modes.Scan},
             {Modes.Hash},

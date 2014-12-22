@@ -217,5 +217,13 @@ namespace ExternalLibTest
             Assert.That(cdeArgs.Include[0], Is.EqualTo("XoomXoom"));
         }
 
+        [Test]
+        public void Alternate_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-alternate" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.Alternate, Is.EqualTo(true));
+        }
     }
 }
