@@ -120,7 +120,7 @@ namespace ExternalLibTest
             var args = new[] { "-scan", @"C:\", "-grep" };
             var cdeArgs = new CDEArgs(args);
             Console.WriteLine("error \"{0}\"", cdeArgs.Error);
-            Assert.That(cdeArgs.Error, Is.EqualTo("The -grep parameter is not supported in mode '-scan'."));
+            Assert.That(cdeArgs.Error, Is.EqualTo("The -grep option is not supported in mode '-scan'."));
         }
 
         [Test]
@@ -129,7 +129,7 @@ namespace ExternalLibTest
             var args = new[] { "-scan", @"C:\", "-path" };
             var cdeArgs = new CDEArgs(args);
             Console.WriteLine("error \"{0}\"", cdeArgs.Error);
-            Assert.That(cdeArgs.Error, Is.EqualTo("The -path parameter is not supported in mode '-scan'."));
+            Assert.That(cdeArgs.Error, Is.EqualTo("The -path option is not supported in mode '-scan'."));
         }
 
         [Test]
@@ -138,7 +138,7 @@ namespace ExternalLibTest
             var args = new[] { "-scan", @"C:\", "-repl" };
             var cdeArgs = new CDEArgs(args);
             Console.WriteLine("error \"{0}\"", cdeArgs.Error);
-            Assert.That(cdeArgs.Error, Is.EqualTo("The -repl parameter is not supported in mode '-scan'."));
+            Assert.That(cdeArgs.Error, Is.EqualTo("The -repl option is not supported in mode '-scan'."));
         }
 
         [Test]
@@ -154,7 +154,7 @@ namespace ExternalLibTest
         {
             var args = new[] { "-scan", @"C:\", "-basePath", @"X:\Moo", @"Y:\Moo" };
             var cdeArgs = new CDEArgs(args);
-            Assert.That(cdeArgs.Error, Is.EqualTo("The -basePath parameter is not supported in mode '-scan'."));
+            Assert.That(cdeArgs.Error, Is.EqualTo("The -basePath option is not supported in mode '-scan'."));
         }
 
         [Test]
@@ -180,5 +180,42 @@ namespace ExternalLibTest
             var cdeArgs = new CDEArgs(args);
             Assert.That(cdeArgs.PathEnabled, Is.EqualTo(true));
         }
+
+        [Test]
+        public void HashAll_Enabled_Hash()
+        {
+            var args = new[] { "-hash", "-hashAll" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.HashAllEnabled, Is.EqualTo(true));
+        }
+
+        [Test]
+        public void HashAll_Not_Supported_Find()
+        {
+            var args = new[] { "-find", @"C:\", "-hashAll" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo("The -hashAll option is not supported in mode '-find'."));
+            Assert.That(cdeArgs.HashAllEnabled, Is.EqualTo(false));
+        }
+
+        [Test]
+        public void Exclude_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-exclude", "Moooo" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.Exclude[0], Is.EqualTo("Moooo"));
+        }
+
+        [Test]
+        public void Include_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-include", "XoomXoom" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.Include[0], Is.EqualTo("XoomXoom"));
+        }
+
     }
 }

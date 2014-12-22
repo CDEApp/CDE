@@ -85,10 +85,10 @@ namespace ExternalLibTest
 
                 // Options below here
                 {
-                    "bp|basePath=", "set one or more base {Path}(s)", o => {
+                    "bp|basePath=", "Set one or more base {Path}(s)", o => {
                         if (!AllowStartPath.Contains(_mode))
                         {
-                            throw new OptionException("The -basePath parameter is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                            throw new OptionException("The -basePath option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _currentList = _basePaths;
                         _currentList.Add(o);
@@ -98,7 +98,7 @@ namespace ExternalLibTest
                     "grep", "Enable regular expressions for String find.", o => {
                         if (!AllowGrep.Contains(_mode))
                         {
-                            throw new OptionException("The -grep parameter is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                            throw new OptionException("The -grep option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _grepEnabled = o != null;
                     }
@@ -107,7 +107,7 @@ namespace ExternalLibTest
                     "repl", "Enable repl prompting find.", o => {
                         if (!AllowRepl.Contains(_mode))
                         {
-                            throw new OptionException("The -repl parameter is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                            throw new OptionException("The -repl option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _replEnabled = o != null;
                     }
@@ -116,15 +116,38 @@ namespace ExternalLibTest
                     "path", "Include paths when searching in find.", o => {
                         if (!AllowPath.Contains(_mode))
                         {
-                            throw new OptionException("The -path parameter is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                            throw new OptionException("The -path option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
                         _pathEnabled = o != null;
                     }
                 },
                 {
-                    "hashAll", "In hash mode force hashes every file for full length regardless", o => {
-                        //var hashAll = true;
-                        // maybe it has other meanings in other modes ? shall see at moment its just hash.
+                    "hashAll", "In hash mode hash all files", o => {
+                        if (!AllowHashAll.Contains(_mode))
+                        {
+                            throw new OptionException("The -hashAll option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _hashAllEnabled = o != null;
+                    }
+                },
+                {
+                    "e|exclude=", "regex {String}(s) to exclude from processing", o => {
+                        if (!AllowExclude.Contains(_mode))
+                        {
+                            throw new OptionException("The -exclude option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _currentList = _exclude;
+                        _currentList.Add(o);
+                    }
+                },
+                {
+                    "i|include=", "regex {String}(s) to include for processing", o => {
+                        if (!AllowInclude.Contains(_mode))
+                        {
+                            throw new OptionException("The -include option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _currentList = _include;
+                        _currentList.Add(o);
                     }
                 },
 
@@ -196,6 +219,15 @@ namespace ExternalLibTest
         private bool _pathEnabled;
         public bool PathEnabled { get { return _pathEnabled; } }
 
+        private bool _hashAllEnabled;
+        public bool HashAllEnabled { get { return _hashAllEnabled; } }
+
+        private readonly List<string> _exclude = new List<string>();
+        public List<string> Exclude { get { return _exclude; } }
+
+        private readonly List<string> _include = new List<string>();
+        public List<string> Include { get { return _include; } }
+
         //private long _minSize;
         //public long MinSize { get { return _minSize; } }
 
@@ -220,9 +252,9 @@ namespace ExternalLibTest
         /// </summary>
         private static readonly ICollection<Modes> AllowStartPath = new HashSet<Modes>
         {
-            {Modes.Find},
             {Modes.Hash},
             {Modes.Dupes},
+            {Modes.Find},
         };
 
         /// <summary>
@@ -236,12 +268,48 @@ namespace ExternalLibTest
         /// <summary>
         /// Modes which allow path parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowPath = AllowGrep;
+        private static readonly ICollection<Modes> AllowPath = new HashSet<Modes>
+        {
+            {Modes.Find},
+        };
 
         /// <summary>
         /// Modes which allow repl parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowRepl = AllowGrep;
+        private static readonly ICollection<Modes> AllowRepl = new HashSet<Modes>
+        {
+            {Modes.Find},
+        };
+
+        /// <summary>
+        /// Modes which allow hashAll parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowHashAll = new HashSet<Modes>
+        {
+            {Modes.Hash},
+        };
+
+        /// <summary>
+        /// Modes which allow exclude parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowExclude = new HashSet<Modes>
+        {
+            {Modes.Scan},
+            {Modes.Hash},
+            {Modes.Dupes},
+            {Modes.Find},
+        };
+
+        /// <summary>
+        /// Modes which allow include parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowInclude = new HashSet<Modes>
+        {
+            {Modes.Scan},
+            {Modes.Hash},
+            {Modes.Dupes},
+            {Modes.Find},
+        };
 
         public void ShowHelpX()
         {
