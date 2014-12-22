@@ -225,5 +225,50 @@ namespace ExternalLibTest
             Assert.That(cdeArgs.Error, Is.EqualTo(null));
             Assert.That(cdeArgs.Alternate, Is.EqualTo(true));
         }
+
+        [Test]
+        public void MinSize_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minSize", "234" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinSize, Is.EqualTo(234));
+        }
+
+        [Test]
+        public void MinSize_With_KB_Multiplier_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minSize", "234KB" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinSize, Is.EqualTo(234000));
+        }
+
+        [Test]
+        public void MinSize_With_MB_Multiplier_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minSize", "234MB" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinSize, Is.EqualTo(234000000));
+        }
+
+        [Test]
+        public void MinSize_With_GB_Multiplier_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minSize", "234GB" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinSize, Is.EqualTo(234000000000));
+        }
+
+        [Test]
+        public void MaxSize_With_KB_Multiplier_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-maxSize", "14KB" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MaxSize, Is.EqualTo(14000));
+        }
     }
 }

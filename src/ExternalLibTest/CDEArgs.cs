@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using NDesk.Options;
 
 namespace ExternalLibTest
@@ -162,6 +163,26 @@ namespace ExternalLibTest
                         _currentList.Add(o);
                     }
                 },
+                {
+                    "minSize=", "Minimum file inclusive size to include in processing", o => {
+                        if (!AllowMinSize.Contains(_mode))
+                        {
+                            throw new OptionException("The -minSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _minSize = SizeOption(o);
+                        _currentList = null;
+                    }
+                },
+                {
+                    "maxSize=", "Maximum file inclusive size to include in processing", o => {
+                        if (!AllowMaxSize.Contains(_mode))
+                        {
+                            throw new OptionException("The -maxSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        _maxSize = SizeOption(o);
+                        _currentList = null;
+                    }
+                },
                 {   // unsure if leaving this here for releases
                     "alternate", "(testing) an alternate data model (not really functioning)", o => {
                         if (!AllowAlternate.Contains(_mode))
@@ -197,6 +218,19 @@ namespace ExternalLibTest
             {
                 _error = e.Message;
             }
+        }
+
+        public long SizeOption(string o)
+        {
+            var suffix = new List<string> {"KB", "MB", "GB"};
+            var foundIndex = suffix.FindIndex(c => o.EndsWith(c));
+            var multiplier = 1L;
+            if (foundIndex >= 0)
+            {
+                o = o.Substring(0, o.Length - 2);
+                multiplier = (long)Math.Pow(1000, (foundIndex + 1));
+            }
+            return multiplier * long.Parse(o);
         }
 
         private Modes _mode;
@@ -249,11 +283,11 @@ namespace ExternalLibTest
         private bool _alternate;
         public bool Alternate { get { return _alternate; } }
 
-        //private long _minSize;
-        //public long MinSize { get { return _minSize; } }
+        private long _minSize;
+        public long MinSize { get { return _minSize; } }
 
-        //private long _maxSize;
-        //public long MaxSize { get { return _maxSize; } }
+        private long _maxSize;
+        public long MaxSize { get { return _maxSize; } }
 
         //private DateTime _minDate;
         //public DateTime MinDate { get { return _minDate; } }
@@ -261,11 +295,17 @@ namespace ExternalLibTest
         //private DateTime _maxDate;
         //public DateTime MaxDate { get { return _maxDate; } }
 
+        //private DateTime _minTime;
+        //public DateTime MinTime { get { return _minTime; } }
+
+        //private DateTime _maxTime;
+        //public DateTime MaxTime { get { return _maxTime; } }
+
         /// <summary>
         /// Minimum age of a file in hours to find it, or hash it, or ?
         /// </summary>
-        //public int MinHourAge { get { return _minHourAge; } }
-        //private int _minHourAge;
+        //public int MinHours { get { return _minHours; } }
+        //private int _minHours;
 
 
         /// <summary>
@@ -289,18 +329,12 @@ namespace ExternalLibTest
         /// <summary>
         /// Modes which allow path parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowPath = new HashSet<Modes>
-        {
-            {Modes.Find},
-        };
+        private static readonly ICollection<Modes> AllowPath = AllowGrep;
 
         /// <summary>
         /// Modes which allow repl parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowRepl = new HashSet<Modes>
-        {
-            {Modes.Find},
-        };
+        private static readonly ICollection<Modes> AllowRepl = AllowGrep;
 
         /// <summary>
         /// Modes which allow hashAll parameter
@@ -310,38 +344,63 @@ namespace ExternalLibTest
             {Modes.Hash},
         };
 
-        /// <summary>
-        /// Modes which allow exclude parameter
-        /// </summary>
-        private static readonly ICollection<Modes> AllowExclude = new HashSet<Modes>
+        private static readonly ICollection<Modes> ScanHashDupesFind = new HashSet<Modes>
         {
             {Modes.Scan},
             {Modes.Hash},
             {Modes.Dupes},
             {Modes.Find},
         };
+
+        /// <summary>
+        /// Modes which allow exclude parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowExclude = ScanHashDupesFind;
 
         /// <summary>
         /// Modes which allow include parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowInclude = new HashSet<Modes>
-        {
-            {Modes.Scan},
-            {Modes.Hash},
-            {Modes.Dupes},
-            {Modes.Find},
-        };
+        private static readonly ICollection<Modes> AllowInclude = ScanHashDupesFind;
 
         /// <summary>
         /// Modes which allow alt parameter
         /// </summary>
-        private static readonly ICollection<Modes> AllowAlternate = new HashSet<Modes>
-        {
-            {Modes.Scan},
-            {Modes.Hash},
-            {Modes.Dupes},
-            {Modes.Find},
-        };
+        private static readonly ICollection<Modes> AllowAlternate = ScanHashDupesFind;
+        /// <summary>
+        /// Modes which allow minSize parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMinSize = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow maxSize parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMaxSize = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow minDate parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMinDate = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow maxDate parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMaxDate = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow minTime parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMinTime = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow maxTime parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMaxTime = ScanHashDupesFind;
+
+        /// <summary>
+        /// Modes which allow minHours parameter
+        /// </summary>
+        private static readonly ICollection<Modes> AllowMinHours = ScanHashDupesFind;
+
 
         public void ShowHelpX()
         {
