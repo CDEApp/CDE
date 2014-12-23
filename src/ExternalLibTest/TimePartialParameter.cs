@@ -12,6 +12,7 @@ namespace ExternalLibTest
     {
         // "HH:MM:SS"; example
         private static string _format = "<HH>:<MM>:<SS>";
+        private string _activeFormat;
 
         private int _hour;  // 0 - 23
         public int Hour
@@ -55,15 +56,15 @@ namespace ExternalLibTest
 
         public TimePartialParameter(string str) : this(str, _format) { }
 
-        public TimePartialParameter(string str, string format)
+        public TimePartialParameter(string str, string activeFormat)
         {
-            _format = format;
+            _activeFormat = activeFormat;
             var splitOnColon = str.Split(':');
             int hour;
             int.TryParse(splitOnColon[0], out hour);
             if (hour == 0 || hour > 23)
             {
-                _e = new ArgumentException(string.Format("Require valid Integer 1-23 for Hour <HH> as part of format \"{0}\"", _format));
+                _e = new ArgumentException(string.Format("Require valid Integer 1-23 for Hour <HH> as part of format \"{0}\"", _activeFormat));
                 return;
             }
             _hour = hour;
@@ -78,7 +79,7 @@ namespace ExternalLibTest
                 int.TryParse(splitOnColon[1], out minute);
                 if (minute == 0 || minute > 59)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Minute <MM> as part of format \"{0}\"", _format));
+                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Minute <MM> as part of format \"{0}\"", _activeFormat));
                     return;
                 }
                 _minute = minute;
@@ -94,7 +95,7 @@ namespace ExternalLibTest
                 int.TryParse(splitOnColon[2], out second);
                 if (second == 0 || second > 59)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Second <SS> as part of format \"{0}\"", _format));
+                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Second <SS> as part of format \"{0}\"", _activeFormat));
                     return;
                 }
                 _second = second;
