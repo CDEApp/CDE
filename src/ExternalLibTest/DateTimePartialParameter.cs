@@ -1,13 +1,20 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
+using System.Text.RegularExpressions;
 
 namespace ExternalLibTest
 {
+    /// <summary>
+    /// Unspecified values as per format are returned as 1 for Month and Day and Zero for other fields.
+    /// </summary>
     [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
     [SuppressMessage("ReSharper", "ConvertToConstant.Local")]
-    public class DateTimeParameter
+    public class DateTimePartialParameter
     {
-        // "YYYY-Month-DDTHH:MM:SS" example
+        private string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
+
+        // a Parsing Expression Grammar mgith be a better way to do this.... PEG
+        // - http://en.wikipedia.org/wiki/Parsing_expression_grammar
 
         private int _year;
         private int _month = 1; // 1-12
@@ -17,7 +24,7 @@ namespace ExternalLibTest
         private int _second = 0; // 0-59
         private Exception _e;
 
-        public DateTimeParameter(string str)
+        public DateTimePartialParameter(string str)
         {
             var splitOnDash = str.Split('-');
 
@@ -25,7 +32,7 @@ namespace ExternalLibTest
             int.TryParse(splitOnDash[0], out year);
             if (year < 1000)
             {
-                _e = new ArgumentException("Require Year parameter be a 4 Digit Year as part of format \"YYYY-Month-DDTHH:MM:SS\"");
+                _e = new ArgumentException(string.Format("Require Year parameter be a 4 Digit Year <YYYY> as part of format \"{0}\"", _format));
                 return;
             }
             _year = year;
@@ -48,13 +55,12 @@ namespace ExternalLibTest
                 }
                 if (month == 0 || month > 12)
                 {
-                    _e = new ArgumentException("Require Month parameter as digits 1-12 or month name as part of format \"YYYY-Month-DDTHH:MM:SS\"");
+                    _e = new ArgumentException(string.Format("Require valid integer 1-12 or Month name for Month as part of format \"{0}\"", _format));
                     return;
                 }
                 _month = month;
             }
 
-            string[] splitOnT;
 
             if (splitOnDash.Length > 2) // may have dayOfMonth specified
             {
@@ -63,7 +69,14 @@ namespace ExternalLibTest
                     return;
                 }
 
-                splitOnT = splitOnDash[2].Split('T');
+                // If 'T' is not used as seperator between Date and Time then error
+                if (SeperatorIsNotValid(splitOnDash[2], 'T'))
+                {
+                    _e = new ArgumentException(string.Format("The seperator between Date and Time must be 'T' as part of format \"{0}\"", _format));
+                    return;
+                }
+
+                var splitOnT = splitOnDash[2].Split('T');
 
                 int dayOfMonth = 0;
                 int unValidatedDayOfMonth;
@@ -79,12 +92,37 @@ namespace ExternalLibTest
                 
                 if (dayOfMonth == 0 || dayOfMonth > 31)
                 {
-                    _e = new ArgumentException("Require Day parameter as digits 1-31 and valid for month as part of format \"YYYY-Month-DDTHH:MM:SS\"");
+                    _e = new ArgumentException(string.Format("Require valid Day of Month integer range 1-31 for Day <DD> as part of format \"{0}\"", _format));
                     return;
                 }
                 _dayOfMonth = dayOfMonth;
+
+                if (splitOnT.Length > 1 && splitOnT[1].Length > 0)
+                {
+                    var t = new TimePartialParameter(splitOnT[1], _format);
+                    _hour = t.Hour;
+                    _minute = t.Minute;
+                    _second = t.Second;
+                }
             }
-            // hand over processing to TimeParameter ?
+        }
+
+        private static bool SeperatorIsNotValid(string str, char validSeperator)
+        {
+            var badSeperator = false;
+            foreach (var c in str)
+            {
+                if (c >= '0' && c <= '9')
+                {
+                    continue;
+                }
+                if (c != validSeperator)
+                {
+                    badSeperator = true;
+                }
+                break;
+            }
+            return badSeperator;
         }
 
         public DateTime GetDate()
