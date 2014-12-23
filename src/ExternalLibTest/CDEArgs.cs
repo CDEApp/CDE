@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.Remoting.Metadata.W3cXsd2001;
+using System.Diagnostics.CodeAnalysis;
 using NDesk.Options;
-using NUnit.Framework;
 
 namespace ExternalLibTest
 {
+    [SuppressMessage("ReSharper", "ConvertToAutoPropertyWithPrivateSetter")]
     public class CDEArgs
     {
         public enum Modes
@@ -154,7 +153,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "i|include=", "regex {String}(s) to include for processing", o => {
+                    "i|include=", "regex {String}(s) to include it in processing", o => {
                         if (!AllowInclude.Contains(_mode))
                         {
                             throw new OptionException("The -include option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -164,7 +163,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "minSize=", "Minimum file size to include in processing", o => {
+                    "minSize=", "Minimum file size to include it in processing", o => {
                         if (!AllowMinSize.Contains(_mode))
                         {
                             throw new OptionException("The -minSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -174,7 +173,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "maxSize=", "Maximum file size to include in processing", o => {
+                    "maxSize=", "Maximum file size to include it in processing", o => {
                         if (!AllowMaxSize.Contains(_mode))
                         {
                             throw new OptionException("The -maxSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -183,7 +182,60 @@ namespace ExternalLibTest
                         _currentList = null;
                     }
                 },
-                {   // unsure if leaving this here for releases
+                {
+                    "minDate=", "Minimum DateTime on entry to include it in processing", o => {
+                        if (!AllowMinDate.Contains(_mode))
+                        {
+                            throw new OptionException("The -minDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        try
+                        {
+                            var d = new DateTimePartialParameter(o);
+                            _minDate = d.GetDate();
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new OptionException(ae.Message, _mode.ToString());
+                        }
+                        _currentList = null;
+                    }
+                },                
+                {
+                    "maxDate=", "Maximum DateTime on entry to include it in processing", o => {
+                        if (!AllowMaxDate.Contains(_mode))
+                        {
+                            throw new OptionException("The -maxDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        try
+                        {
+                            var d = new DateTimePartialParameter(o);
+                            _maxDate = d.GetDate();
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new OptionException(ae.Message, _mode.ToString());
+                        }
+                        _currentList = null;
+                    }
+                },                
+                {
+                    "minTime=", "Minimum Time on entry ignore Date to include it in processing", o => {
+                        if (!AllowMinTime.Contains(_mode))
+                        {
+                            throw new OptionException("The -minTime option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
+                        }
+                        try
+                        {
+                            var d = new TimePartialParameter(o);
+                            _minTime = new DateTime(1, 1, 1, d.Hour, d.Minute, d.Second);
+                        }
+                        catch (ArgumentException ae)
+                        {
+                            throw new OptionException(ae.Message, _mode.ToString());
+                        }
+                        _currentList = null;
+                    }
+                },                 {   // unsure if leaving this here for releases
                     "alternate", "an alternate data model (testing)", o => {
                         if (!AllowAlternate.Contains(_mode))
                         {
@@ -214,6 +266,9 @@ namespace ExternalLibTest
             {
                 // using "<>" in OptionSet, there for unmatched parameters never returned from Parse()
                 _os.Parse(args);
+
+                // TODO -  do not yet error on MinDateTime <= MaxDateTime and MinTime <= MaxTime 
+                // check here ? and throw appropriattley ?
             }
             catch (OptionException e)
             {
@@ -290,14 +345,14 @@ namespace ExternalLibTest
         private long _maxSize;
         public long MaxSize { get { return _maxSize; } }
 
-        //private DateTime _minDate;
-        //public DateTime MinDate { get { return _minDate; } }
+        private DateTime _minDate;
+        public DateTime MinDate { get { return _minDate; } }
 
-        //private DateTime _maxDate;
-        //public DateTime MaxDate { get { return _maxDate; } }
+        private DateTime _maxDate;
+        public DateTime MaxDate { get { return _maxDate; } }
 
-        //private DateTime _minTime;
-        //public DateTime MinTime { get { return _minTime; } }
+        private DateTime _minTime;
+        public DateTime MinTime { get { return _minTime; } }
 
         //private DateTime _maxTime;
         //public DateTime MaxTime { get { return _maxTime; } }

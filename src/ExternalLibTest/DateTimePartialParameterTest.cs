@@ -13,7 +13,7 @@ namespace ExternalLibTest
         {
             var args = "12";
             var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
-            Assert.That(ex.Message, Is.EqualTo("Require Year parameter be a 4 Digit Year <YYYY> as part of format \"<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require Year parameter be a 4 Digit Year <YYYY> as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -92,7 +92,7 @@ namespace ExternalLibTest
         {
             var args = "2014-2-29";
             var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
-            Assert.That(ex.Message, Is.EqualTo("Require valid Day of Month integer range 1-31 for Day <DD> as part of format \"<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid Day of Month integer range 1-31 for Day <DD> as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -108,7 +108,7 @@ namespace ExternalLibTest
         {
             var args = "2014-4-5Z"; // todo identify Z as problem not day integer maybe ?
             var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
-            Assert.That(ex.Message, Is.EqualTo("The seperator between Date and Time must be 'T' as part of format \"<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("The seperator between Date and Time must be 'T' as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -150,7 +150,7 @@ namespace ExternalLibTest
             var value = 0;
 
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -160,7 +160,7 @@ namespace ExternalLibTest
             var value = 0;
 
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -179,7 +179,7 @@ namespace ExternalLibTest
             var args = "3:34s";
             var value = 0;
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format '<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -188,7 +188,7 @@ namespace ExternalLibTest
             var args = "3:60";
             var value = 0;
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format '<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -207,7 +207,7 @@ namespace ExternalLibTest
             var args = "3:34:10s";
             var value = 0;
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
         }
 
         [Test]
@@ -216,7 +216,7 @@ namespace ExternalLibTest
             var args = "3:34:60";
             var value = 0;
             var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
-            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format \"<HH>:<MM>:<SS>\""));
+            Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
         }
     }
 

@@ -1,4 +1,5 @@
 using System;
+using NDesk.Options;
 using NUnit.Framework;
 // ReSharper disable InconsistentNaming
 
@@ -270,5 +271,57 @@ namespace ExternalLibTest
             Assert.That(cdeArgs.Error, Is.EqualTo(null));
             Assert.That(cdeArgs.MaxSize, Is.EqualTo(14000));
         }
+
+        [Test]
+        public void MinDate_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minDate", "2012-02-29T10:15:30" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinDate, Is.EqualTo(new DateTime(2012, 02, 29, 10, 15, 30)));
+        }
+
+        [Test]
+        public void MinDate_With_Missing_Value()
+        {
+            var args = new[] { "-scan", @"C:\", "-minDate" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo("Missing required value for option '-minDate'."));
+        }
+
+        [Test]
+        public void MinDate_With_Bad_Value()
+        {
+            var args = new[] { "-scan", @"C:\", "-minDate", "" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo("Require Year parameter be a 4 Digit Year <YYYY> as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
+        }
+
+        [Test]
+        public void MinDate_With_Bad_Value2()
+        {
+            var args = new[] { "-scan", @"C:\", "-minDate", "2012-02-30" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo("Require valid Day of Month integer range 1-31 for Day <DD> as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
+        }
+
+        [Test]
+        public void MaxDate_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-maxDate", "2012-02-29T10:15:30" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MaxDate, Is.EqualTo(new DateTime(2012, 02, 29, 10, 15, 30)));
+        }
+
+        [Test]
+        public void MinTime_Has_Value_Scan()
+        {
+            var args = new[] { "-scan", @"C:\", "-minTime", "10:15:30" };
+            var cdeArgs = new CDEArgs(args);
+            Assert.That(cdeArgs.Error, Is.EqualTo(null));
+            Assert.That(cdeArgs.MinTime, Is.EqualTo(new DateTime(1, 1, 1, 10, 15, 30)));
+        }
     }
+
 }

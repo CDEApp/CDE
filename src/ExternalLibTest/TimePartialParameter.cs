@@ -64,7 +64,7 @@ namespace ExternalLibTest
             int.TryParse(splitOnColon[0], out hour);
             if (hour == 0 || hour > 23)
             {
-                _e = new ArgumentException(string.Format("Require valid Integer 1-23 for Hour <HH> as part of format \"{0}\"", _activeFormat));
+                _e = new ArgumentException(string.Format("Require valid Integer 1-23 for Hour <HH> as part of format '{0}'", _activeFormat));
                 return;
             }
             _hour = hour;
@@ -79,7 +79,7 @@ namespace ExternalLibTest
                 int.TryParse(splitOnColon[1], out minute);
                 if (minute == 0 || minute > 59)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Minute <MM> as part of format \"{0}\"", _activeFormat));
+                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Minute <MM> as part of format '{0}'", _activeFormat));
                     return;
                 }
                 _minute = minute;
@@ -95,7 +95,7 @@ namespace ExternalLibTest
                 int.TryParse(splitOnColon[2], out second);
                 if (second == 0 || second > 59)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Second <SS> as part of format \"{0}\"", _activeFormat));
+                    _e = new ArgumentException(string.Format("Require valid integer 1-59 or for Second <SS> as part of format '{0}'", _activeFormat));
                     return;
                 }
                 _second = second;

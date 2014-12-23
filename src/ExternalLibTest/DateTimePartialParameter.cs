@@ -32,7 +32,7 @@ namespace ExternalLibTest
             int.TryParse(splitOnDash[0], out year);
             if (year < 1000)
             {
-                _e = new ArgumentException(string.Format("Require Year parameter be a 4 Digit Year <YYYY> as part of format \"{0}\"", _format));
+                _e = new ArgumentException(string.Format("Require Year parameter be a 4 Digit Year <YYYY> as part of format '{0}'", _format));
                 return;
             }
             _year = year;
@@ -55,7 +55,7 @@ namespace ExternalLibTest
                 }
                 if (month == 0 || month > 12)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-12 or Month name for Month as part of format \"{0}\"", _format));
+                    _e = new ArgumentException(string.Format("Require valid integer 1-12 or Month name for Month as part of format '{0}'", _format));
                     return;
                 }
                 _month = month;
@@ -72,7 +72,7 @@ namespace ExternalLibTest
                 // If 'T' is not used as seperator between Date and Time then error
                 if (SeperatorIsNotValid(splitOnDash[2], 'T'))
                 {
-                    _e = new ArgumentException(string.Format("The seperator between Date and Time must be 'T' as part of format \"{0}\"", _format));
+                    _e = new ArgumentException(string.Format("The seperator between Date and Time must be 'T' as part of format '{0}'", _format));
                     return;
                 }
 
@@ -92,7 +92,7 @@ namespace ExternalLibTest
                 
                 if (dayOfMonth == 0 || dayOfMonth > 31)
                 {
-                    _e = new ArgumentException(string.Format("Require valid Day of Month integer range 1-31 for Day <DD> as part of format \"{0}\"", _format));
+                    _e = new ArgumentException(string.Format("Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{0}'", _format));
                     return;
                 }
                 _dayOfMonth = dayOfMonth;
