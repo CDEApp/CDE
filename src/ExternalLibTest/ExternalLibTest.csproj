@@ -67,8 +67,11 @@
   <ItemGroup>
     <Compile Include="CDEArgs.cs" />
     <Compile Include="CDEArgsTest.cs" />
+    <Compile Include="DateTimeParameter.cs" />
+    <Compile Include="DateTimeParameterTest.cs" />
     <Compile Include="Test_NDeskOptions.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TimeParameter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

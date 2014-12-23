@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Metadata.W3cXsd2001;
 using NDesk.Options;
+using NUnit.Framework;
 
 namespace ExternalLibTest
 {
-    //public class CDEArgsException : ArgumentException { }
-
     public class CDEArgs
     {
         public enum Modes
@@ -27,8 +27,8 @@ namespace ExternalLibTest
 
         public CDEArgs()
         {
-            // every Option except "<>" needs to set _currentlist to its own list, or null.
-            // to improve handling of non matching parameters.
+            // Every Option except "<>" needs to set _currentlist to its own list, or null.
+            // This improves the handling of non matching parameters.
             _os = new OptionSet
             {
                 //{
@@ -205,6 +205,7 @@ namespace ExternalLibTest
                 },
             };
         }
+
 
         public CDEArgs(IEnumerable<string> args) : this()
         {
@@ -411,5 +412,4 @@ namespace ExternalLibTest
             _os.WriteOptionDescriptions(Console.Out);
         }
     }
-
 }
