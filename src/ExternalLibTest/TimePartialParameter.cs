@@ -71,7 +71,7 @@ namespace ExternalLibTest
 
             if (splitOnColon.Length > 1) // may have hour specified
             {
-                if (splitOnColon[1].Length == 0) // just a : is allowed and ignore. just set hour value.
+                if (splitOnColon[1].Length == 0) // just a ':' is allowed with no value. just set hour value.
                 {
                     return;
                 }
@@ -87,7 +87,7 @@ namespace ExternalLibTest
 
             if (splitOnColon.Length > 2) // may have second specified
             {
-                if (splitOnColon[2].Length == 0) // just a : is allowed and ignore. just set hour and minute value.
+                if (splitOnColon[2].Length == 0) // just a ':' is allowed with no value. just set hour and minute value.
                 {
                     return;
                 }

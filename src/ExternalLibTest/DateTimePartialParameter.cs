@@ -39,7 +39,7 @@ namespace ExternalLibTest
 
             if (splitOnDash.Length > 1) // may have month specified
             {
-                if (splitOnDash[1].Length == 0) // just a - is allowed and ignore. just return year.
+                if (splitOnDash[1].Length == 0) // just a '-' is allowed with no value. just set year.
                 {
                     return;
                 }
@@ -64,7 +64,7 @@ namespace ExternalLibTest
 
             if (splitOnDash.Length > 2) // may have dayOfMonth specified
             {
-                if (splitOnDash[2].Length == 0) // just a - is allowed and ignore. just return year and month
+                if (splitOnDash[2].Length == 0) // just a '-' is allowed with no value. just set year and month
                 {
                     return;
                 }
