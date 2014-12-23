@@ -62,7 +62,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "dupes", "Mode: find duplicate files, requires hashes done", o => {
+                    "dupes", "Mode: find duplicate files, depends on hashes", o => {
                         Mode = Modes.Dupes;
                         _currentList = null;
                     }
@@ -114,7 +114,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "repl", "Enable repl prompting find.", o => {
+                    "repl", "Enable prompting for more find searches.", o => {
                         if (!AllowRepl.Contains(_mode))
                         {
                             throw new OptionException("The -repl option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -164,7 +164,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "minSize=", "Minimum file inclusive size to include in processing", o => {
+                    "minSize=", "Minimum file size to include in processing", o => {
                         if (!AllowMinSize.Contains(_mode))
                         {
                             throw new OptionException("The -minSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -174,7 +174,7 @@ namespace ExternalLibTest
                     }
                 },
                 {
-                    "maxSize=", "Maximum file inclusive size to include in processing", o => {
+                    "maxSize=", "Maximum file size to include in processing", o => {
                         if (!AllowMaxSize.Contains(_mode))
                         {
                             throw new OptionException("The -maxSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -184,7 +184,7 @@ namespace ExternalLibTest
                     }
                 },
                 {   // unsure if leaving this here for releases
-                    "alternate", "(testing) an alternate data model (not really functioning)", o => {
+                    "alternate", "an alternate data model (testing)", o => {
                         if (!AllowAlternate.Contains(_mode))
                         {
                             throw new OptionException("The -alt option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
