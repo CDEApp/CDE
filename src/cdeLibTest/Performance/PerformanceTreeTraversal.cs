@@ -74,8 +74,8 @@ namespace cdeLibTest.Performance
             }
         }
 
-        [Ignore("Just a manually run performance test.")]
         [Test]
+        [Ignore("Just a manually run performance test.")]
         public void TestCSV()
         {
             long msecs;
@@ -228,8 +228,8 @@ namespace cdeLibTest.Performance
             return reC;
         }
 
-        [Ignore("Just a manually run performance test.")]
         [Test]
+        [Ignore("Just a manually run performance test.")]
         public void TestFind_CSV()
         {
             long msecs;
@@ -350,15 +350,15 @@ namespace cdeLibTest.Performance
             return sw.ElapsedMilliseconds;
         }
 
-        [Ignore("Just a manually run performance test.")]
         [Test]
+        [Ignore("Just a manually run performance test.")]
         public void SetCommonEntryFields_Test_Small()
         {
             DoSetCommonEntryFields(TestCatalog200K, 100);
         }
 
-        [Ignore("Just a manually run performance test.")]
         [Test]
+        [Ignore("Just a manually run performance test.")]
         public void SetCommonEntryFields_Test_Large()
         {
             DoSetCommonEntryFields(TestCatalog1_2M, 35);

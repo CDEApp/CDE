@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using NDesk.Options;
 
-namespace ExternalLibTest
+namespace cdeLib
 {
     [SuppressMessage("ReSharper", "ConvertToAutoPropertyWithPrivateSetter")]
     public class CDEArgs

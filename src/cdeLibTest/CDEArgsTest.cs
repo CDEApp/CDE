@@ -1,9 +1,10 @@
 using System;
-using NDesk.Options;
+using cdeLib;
 using NUnit.Framework;
+
 // ReSharper disable InconsistentNaming
 
-namespace ExternalLibTest
+namespace cdeLibTest
 {
     [TestFixture]
     public class CDEArgsTest_Basic_Modes

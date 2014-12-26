@@ -1,8 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
-using System.Text.RegularExpressions;
 
-namespace ExternalLibTest
+namespace cdeLib
 {
     /// <summary>
     /// Unspecified values as per format are returned as 1 for Month and Day and Zero for other fields.
@@ -30,7 +29,7 @@ namespace ExternalLibTest
 
             int year;
             int.TryParse(splitOnDash[0], out year);
-            if (year < 1000)
+            if (year < 1000) // this is not 4 digits, its only value eg  4 digits 0982 is 4 digits.
             {
                 _e = new ArgumentException(string.Format("Require Year parameter be a 4 Digit Year <YYYY> as part of format '{0}'", _format));
                 return;

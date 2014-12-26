@@ -79,6 +79,9 @@
     <Reference Include="LZ4">
       <HintPath>..\packages\lz4net.1.0.2.93\lib\net40-client\LZ4.dll</HintPath>
     </Reference>
+    <Reference Include="NDesk.Options">
+      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
+    </Reference>
     <Reference Include="NSpec">
       <HintPath>..\packages\nspec.0.9.67\lib\NSpec.dll</HintPath>
     </Reference>
@@ -99,7 +102,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CDEArgsTest.cs" />
     <Compile Include="CommonEntryTest_GetListFromRoot.cs" />
+    <Compile Include="DateTimePartialParameterTest.cs" />
     <Compile Include="DirEntryTest_SetSummaryFields.cs" />
     <Compile Include="DocoptTest.cs" />
     <Compile Include="EntryEnumeratorTest.cs" />
@@ -126,6 +131,7 @@
     <Compile Include="RootEntryTestBase.cs" />
     <Compile Include="SerializeDataModelTest.cs" />
     <Compile Include="StringExtensionTest.cs" />
+    <Compile Include="TimePartialParameterTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">

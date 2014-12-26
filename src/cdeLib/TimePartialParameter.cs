@@ -1,7 +1,7 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace ExternalLibTest
+namespace cdeLib
 {
     /// <summary>
     /// Unspecified values per format are returned as zero if no error.

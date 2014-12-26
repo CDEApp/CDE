@@ -85,6 +85,9 @@
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\..\lib\alphafs-111992\Development\Bin\Debug\Net40\AlphaFS.dll</HintPath>
     </Reference>
+    <Reference Include="NDesk.Options">
+      <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
+    </Reference>
     <Reference Include="protobuf-net, Version=2.0.0.640, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>..\packages\protobuf-net.2.0.0.640\lib\net40\protobuf-net.dll</HintPath>
@@ -95,7 +98,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CDEArgs.cs" />
     <Compile Include="CommonEntry.cs" />
+    <Compile Include="DateTimePartialParameter.cs" />
     <Compile Include="DirEntry.cs" />
     <Compile Include="DirEntryEnumerator.cs" />
     <Compile Include="Duplication.cs" />
@@ -124,6 +129,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="RootEntry.cs" />
     <Compile Include="StringExtension.cs" />
+    <Compile Include="TimePartialParameter.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
