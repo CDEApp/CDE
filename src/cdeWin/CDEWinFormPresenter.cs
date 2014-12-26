@@ -675,7 +675,7 @@ namespace cdeWin
                 // This is required or item under cursor after double click is selected.
                 // not sure why ? some sort of left over click on new ListView content.
                 var directoryHelper = _clientForm.DirectoryListViewHelper;
-                directoryHelper.DeselectItems();
+                directoryHelper.DeselectAllItems();
                 //_clientForm.DirectoryListViewDeselectItems();
 
                 _clientForm.SelectDirectoryPane();

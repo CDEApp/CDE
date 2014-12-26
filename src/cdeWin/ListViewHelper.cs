@@ -54,7 +54,7 @@ namespace cdeWin
         void SetColumnConfigs(IEnumerable<ColumnConfig> columns);
         void ForceDraw();
         void SelectItem(int index);
-        void DeselectItems();
+        void DeselectAllItems();
         void SelectAllItems();
         int SetList(List<T> list);
         void ListViewColumnClick();
@@ -303,7 +303,7 @@ namespace cdeWin
             _listView.Select();
         }
 
-        public void DeselectItems()
+        public void DeselectAllItems()
         {
             for (var i = 0; i < _listView.Items.Count; i++)
             {
@@ -313,6 +313,32 @@ namespace cdeWin
                     listItem.Selected = false;
                 }
             }
+        }
+
+        // Cannot use SelectItem() in a loop as it does Focus on each item.
+        public void SelectItems(IEnumerable<int> itemIndices)
+        {
+            var minIndex = int.MaxValue;
+            foreach (var i in itemIndices)
+            {
+                minIndex = Math.Min(minIndex, i);
+                var listItem = _listView.Items[i];
+                listItem.Selected = true;
+            }
+
+            if (minIndex != int.MaxValue)
+            {
+                var minimumItem = _listView.Items[minIndex];
+                minimumItem.Focused = true;
+                minimumItem.EnsureVisible();
+            }
+            _listView.Select();
+        }
+
+        public void SelectItems(IEnumerable<T> itemList)
+        {
+            var newIndices = itemList.Select(item => _list.FindIndex(sortedItem => item == sortedItem));
+            SelectItems(newIndices);
         }
 
         public void SelectAllItems()
@@ -361,7 +387,10 @@ namespace cdeWin
             SetColumnSortArrow();
             if (_list != null)
             {
+                var selectedItems = GetSelectedItems().ToList(); // ToList() need results before deselect
+                DeselectAllItems();
                 _list.Sort(ColumnSortCompare);
+                SelectItems(selectedItems);
                 ForceDraw();
             }
         }
@@ -385,8 +414,7 @@ namespace cdeWin
 
         private IEnumerable<T> GetSelectedItems()
         {
-            return (from int ind in _listView.SelectedIndices 
-                    select _list[ind]);
+            return _listView.SelectedIndices.Cast<int>().Select(i => _list[i]);
         }
 
         public void ActionOnSelectedItem(Action<T> action)
