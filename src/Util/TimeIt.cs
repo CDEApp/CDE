@@ -18,6 +18,9 @@ namespace Util
 		private readonly Stopwatch _watch;
 		protected readonly List<LabelElapsed> _elapsedList;
 
+        /// <summary>
+        /// Start(label) and Stop() to collect list of elapsed times for things.
+        /// </summary>
 		public TimeIt()
 		{
 			_runningLabel = String.Empty;
