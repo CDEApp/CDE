@@ -34,7 +34,7 @@ namespace cdeLib
                 IncludeFiles = true,
                 IncludeFolders = true,
                 LimitResultCount = int.MaxValue,
-                FoundFunc = (p, d) =>
+                VisitorFunc = (p, d) =>
                 {
                     ++totalFound;
                     Console.WriteLine(" {0}", p.MakeFullPath(d));
