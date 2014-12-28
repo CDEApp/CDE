@@ -8,6 +8,10 @@ namespace cdeLib.Infrastructure
         void LogException(Exception ex, string format, params object[] paramList);
         void LogInfo(string format, params object[] paramList);
         void LogDebug(string format, params object[] paramList);
+        /// <summary>
+        /// For logging progress no new newline output.
+        /// </summary>
+        void LogInfoP(string format, params object[] paramList);
     }
 
     /// <summary>
@@ -26,6 +30,12 @@ namespace cdeLib.Infrastructure
         {
             Console.WriteLine(format, paramList);
         }
+
+        public void LogInfoP(string format, params object[] paramList)
+        {
+            Console.Write(format, paramList);
+        }
+
 
         public void LogDebug(string format, params object[] paramList)
         {
