@@ -10,6 +10,9 @@ namespace cdeLibSpec
     // ReSharper disable ImplicitlyCapturedClosure
     // ReSharper disable InconsistentNaming
 
+    // these test might benefit from updates, as in break them into tests for two methods.
+    // due to splitting GetFindPredicate() out of GetFindFunc().
+
     [Tag("describe_core_test")]
     public class find_options_spec : nspec
     {
@@ -45,7 +48,7 @@ namespace cdeLibSpec
         public void given_FindOptions_with_matcherAll()
         {
             FindOptions findOptions = null;
-            TraverseFunc foundFunc = null;
+            TraverseFunc visitorFunc = null;
             TraverseFunc findFunc = null;
             RootEntry rootEntry = null;
             DirEntry testFile = null;
@@ -53,11 +56,11 @@ namespace cdeLibSpec
 
             before = () => {
                 findOptions = new FindOptions();
-                foundFunc = Substitute.For<TraverseFunc>();
+                visitorFunc = Substitute.For<TraverseFunc>();
                 var matcherAll = Substitute.For<Func<CommonEntry, DirEntry, bool>>();
                 matcherAll(null, null).ReturnsForAnyArgs(true);
 
-                findOptions.FoundFunc = foundFunc;
+                findOptions.VisitorFunc = visitorFunc;
                 findOptions.PatternMatcher = matcherAll;
 
                 rootEntry = new RootEntry { FullPath = @"C:\" };
@@ -76,17 +79,19 @@ namespace cdeLibSpec
 
                     it["find calls found"] = () => {
                         findFunc(rootEntry, testFile);
-                        //findOptions.FoundFunc.Received().Invoke(rootEntry, testFile);
-                        findOptions.FoundFunc.Received()(rootEntry, testFile);
+                        //findOptions.VisitorFunc.Received().Invoke(rootEntry, testFile);
+                        findOptions.VisitorFunc.Received()(rootEntry, testFile);
                     };
 
                     it["find returns true if found returns true"] = () => {
-                        foundFunc(null, null).ReturnsForAnyArgs(true);
+                        visitorFunc(null, null).ReturnsForAnyArgs(true);
                         findFunc(rootEntry, testFile).should_be_true();
                     };
 
                     it["find returns false if found returns false"] = () => {
-                        foundFunc(null, null).ReturnsForAnyArgs(false);
+                        // findprecicate is seperate from foundVisitor :(........ 
+                        // this is borked.
+                        visitorFunc(null, null).ReturnsForAnyArgs(false);
                         findFunc(rootEntry, testFile).should_be_false();
                     };
                 };
@@ -98,11 +103,11 @@ namespace cdeLibSpec
 
                     it["find calls found"] = () => {
                         findFunc(rootEntry, testFile);
-                        findOptions.FoundFunc.Received().Invoke(rootEntry, testFile);
+                        findOptions.VisitorFunc.Received().Invoke(rootEntry, testFile);
                     };
 
                     it["find returns false if found returns true"] = () => {
-                        foundFunc(null, null).ReturnsForAnyArgs(true);
+                        visitorFunc(null, null).ReturnsForAnyArgs(true);
                         findFunc(rootEntry, testFile).should_be_false();
                     };
                 };
@@ -115,7 +120,7 @@ namespace cdeLibSpec
 
                     it["find doesn't call found"] = () => {
                         findFunc(rootEntry, testFile);
-                        findOptions.FoundFunc.DidNotReceiveWithAnyArgs().Invoke(null, null);
+                        findOptions.VisitorFunc.DidNotReceiveWithAnyArgs().Invoke(null, null);
                     };
                 };
 
@@ -127,7 +132,7 @@ namespace cdeLibSpec
 
                     it["find calls found"] = () => {
                         findFunc(rootEntry, testFile);
-                        findOptions.FoundFunc.ReceivedWithAnyArgs().Invoke(null, null);
+                        findOptions.VisitorFunc.ReceivedWithAnyArgs().Invoke(null, null);
                     };
                 };
             };
@@ -142,7 +147,7 @@ namespace cdeLibSpec
 
                     it["find calls found"] = () => {
                         findFunc(rootEntry, testDir);
-                        findOptions.FoundFunc.ReceivedWithAnyArgs().Invoke(null, null);
+                        findOptions.VisitorFunc.ReceivedWithAnyArgs().Invoke(null, null);
                     };
                 };
 
@@ -154,7 +159,7 @@ namespace cdeLibSpec
 
                     it["find doesn't call found"] = () => {
                         findFunc(rootEntry, testDir);
-                        findOptions.FoundFunc.DidNotReceiveWithAnyArgs().Invoke(null, null);
+                        findOptions.VisitorFunc.DidNotReceiveWithAnyArgs().Invoke(null, null);
                     };
                 };
             };
@@ -278,15 +283,15 @@ namespace cdeLibSpec
 
                 describe["with FindOptions matching all entries"] = () =>
                 {
-                    TraverseFunc foundFunc = null;
+                    TraverseFunc visitorFunc = null;
 
                     before = () =>
                     {
-                        foundFunc = Substitute.For<TraverseFunc>();
-                        foundFunc(null, null).ReturnsForAnyArgs(x => true);
+                        visitorFunc = Substitute.For<TraverseFunc>();
+                        visitorFunc(null, null).ReturnsForAnyArgs(x => true);
                         findOptions.Pattern = string.Empty;
                         findOptions.PatternMatcher = matcherAll;
-                        findOptions.FoundFunc = foundFunc;
+                        findOptions.VisitorFunc = visitorFunc;
                     };
 
                     describe["given find limit 2"] = () =>
@@ -297,7 +302,7 @@ namespace cdeLibSpec
                             findOptions.Find(new[] { re });
                         };
 
-                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+                        specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
                         specify = () => findOptions.ProgressCount.should_be(2);
                     };
@@ -310,7 +315,7 @@ namespace cdeLibSpec
                             findOptions.Find(new[] { re });
                         };
 
-                        specify = () => foundFunc.ReceivedWithAnyArgs(4).Invoke(null, null);
+                        specify = () => visitorFunc.ReceivedWithAnyArgs(4).Invoke(null, null);
 
                         specify = () => findOptions.ProgressCount.should_be(4);
                     };
@@ -326,7 +331,7 @@ namespace cdeLibSpec
                         {
                             before = () => findOptions.Find(new[] { re });
 
-                            specify = () => foundFunc.ReceivedWithAnyArgs(5).Invoke(null, null);
+                            specify = () => visitorFunc.ReceivedWithAnyArgs(5).Invoke(null, null);
 
                             specify = () => findOptions.ProgressCount.should_be(5);
                         };
@@ -339,7 +344,7 @@ namespace cdeLibSpec
                                 findOptions.Find(new[] { re });
                             };
 
-                            specify = () => foundFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
+                            specify = () => visitorFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
 
                             specify = () => findOptions.ProgressCount.should_be(5);
                         };
@@ -352,14 +357,14 @@ namespace cdeLibSpec
                                 findOptions.Find(new[] { re });
                             };
 
-                            specify = () => foundFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
+                            specify = () => visitorFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
 
                             specify = () => findOptions.ProgressCount.should_be(5);
                         };
 
                     };
 
-                    describe["When find limit 2, pattern \"a\""] = () =>
+                    describe["When find limit 2, pattern 'a'"] = () =>
                     {
                         before = () =>
                         {
@@ -368,12 +373,12 @@ namespace cdeLibSpec
                             findOptions.Find(new[] { re });
                         };
 
-                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+                        specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
                         specify = () => findOptions.ProgressCount.should_be(4);
                     };
 
-                    describe["When find limit 2, pattern \"a\" with Skip count 2"] = () =>
+                    describe["When find limit 2, pattern 'a' with Skip count 2"] = () =>
                     {
                         before = () =>
                         {
@@ -383,15 +388,15 @@ namespace cdeLibSpec
                             findOptions.Find(new[] { re });
                         };
 
-                        specify = () => foundFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
+                        specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
                         specify = () => findOptions.ProgressCount.Is(5);
 
                         it["found received in expected order"] =
                             () => Received.InOrder(() =>
                             {
-                                foundFunc.Received().Invoke(Arg.Any<CommonEntry>(), de3a);
-                                foundFunc.Received().Invoke(Arg.Any<CommonEntry>(), de4a);
+                                visitorFunc.Received().Invoke(Arg.Any<CommonEntry>(), de3a);
+                                visitorFunc.Received().Invoke(Arg.Any<CommonEntry>(), de4a);
                             });
                     };
                 };

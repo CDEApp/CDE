@@ -409,7 +409,7 @@ namespace cdeWin
             state.ListCount = list.Count;   // 0
             state.List = list;
             worker.ReportProgress(0, state);
-            findOptions.FoundFunc = (p, d) =>
+            findOptions.VisitorFunc = (p, d) =>
                 {
                     //Thread.Sleep(20);
                     list.Add(new PairDirEntry(p, d));

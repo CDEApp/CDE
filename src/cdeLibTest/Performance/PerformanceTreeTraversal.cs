@@ -296,7 +296,7 @@ namespace cdeLibTest.Performance
                     IncludeFiles = true,
                     IncludeFolders = true,
                     LimitResultCount = int.MaxValue,
-                    FoundFunc = (p, d) =>
+                    VisitorFunc = (p, d) =>
                     {
                         ++totalFound;
                         return true;
@@ -317,7 +317,7 @@ namespace cdeLibTest.Performance
             {
                 //var totalFound = 0L;
                 var list = new List<PairDirEntry>();
-                findOptions.FoundFunc = (p, d) =>
+                findOptions.VisitorFunc = (p, d) =>
                     {
                         //++totalFound;
                         list.Add(new PairDirEntry(p, d));
@@ -338,7 +338,7 @@ namespace cdeLibTest.Performance
             {
                 //var totalFound = 0L;
                 var list = new List<DirEntry>();
-                findOptions.FoundFunc = (p, d) =>
+                findOptions.VisitorFunc = (p, d) =>
                 {
                     //++totalFound;
                     list.Add(d);
@@ -358,7 +358,7 @@ namespace cdeLibTest.Performance
         }
 
         [Test]
-        [Ignore("Just a manually run performance test.")]
+        [Ignore]
         public void SetCommonEntryFields_Test_Large()
         {
             DoSetCommonEntryFields(TestCatalog1_2M, 35);

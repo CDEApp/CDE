@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.IO.IsolatedStorage;
 using System.Linq;
 using System.Text.RegularExpressions;
 
@@ -36,9 +37,9 @@ namespace cdeLib
         public int SkipCount { get; set; }
 
         /// <summary>
-        /// Called for every found entry.
+        /// Called for every entry that matches predicate entry.
         /// </summary>
-        public TraverseFunc FoundFunc { get; set; }
+        public TraverseFunc VisitorFunc { get; set; }
         /// <summary>
         /// Called for reporting progress to caller.
         /// </summary>
@@ -56,7 +57,7 @@ namespace cdeLib
 
         public void Find(IEnumerable<RootEntry> rootEntries)
         {
-            if (FoundFunc == null)
+            if (VisitorFunc == null)
             {
                 return;
             }
@@ -106,6 +107,8 @@ namespace cdeLib
 
         public TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
         {
+            var findPredicate = GetFindPredicate();
+
             TraverseFunc findFunc = (p, d) =>
             {
                 ++progressCount[0];
@@ -123,31 +126,42 @@ namespace cdeLib
                         return false;   // end the find.
                     }
                 }
-                if ((d.IsDirectory && IncludeFolders) 
-                    || (!d.IsDirectory && IncludeFiles))
+                if (findPredicate(p, d))
                 {
-                    if (   (!FromSizeEnable || (FromSizeEnable && d.Size >= FromSize))
-                        && (!ToSizeEnable || (ToSizeEnable && d.Size <= ToSize))
-                        && (!FromDateEnable || (FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate))
-                        && (!ToDateEnable || (ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate))
-                        && (!FromHourEnable || (FromHourEnable && !d.IsModifiedBad 
-                                                && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                        && (!ToHourEnable || (ToHourEnable && !d.IsModifiedBad 
-                                                && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                        && (!NotOlderThanEnable || (NotOlderThanEnable 
-                                                && !d.IsModifiedBad && d.Modified >= NotOlderThan))
-                        && PatternMatcher(p, d))
+                    if (!VisitorFunc(p, d) || --limitCount[0] <= 0)
                     {
-                        if (!FoundFunc(p, d)
-                            || --limitCount[0] <= 0)
-                        {
-                            return false;   // end the find.
-                        }
+                        return false;   // end the find.
                     }
                 }
                 return true;
             };
             return findFunc;
+        }
+
+        public TraverseFunc GetFindPredicate()
+        {
+            TraverseFunc func = (p, d) => {
+                if ((d.IsDirectory && IncludeFolders)
+                    || (!d.IsDirectory && IncludeFiles))
+                {
+                    if ((!FromSizeEnable || (FromSizeEnable && d.Size >= FromSize))
+                        && (!ToSizeEnable || (ToSizeEnable && d.Size <= ToSize))
+                        && (!FromDateEnable || (FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate))
+                        && (!ToDateEnable || (ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate))
+                        && (!FromHourEnable || (FromHourEnable && !d.IsModifiedBad
+                                                && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                        && (!ToHourEnable || (ToHourEnable && !d.IsModifiedBad
+                                              && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                        && (!NotOlderThanEnable || (NotOlderThanEnable
+                                                    && !d.IsModifiedBad && d.Modified >= NotOlderThan))
+                        && PatternMatcher(p, d))
+                    {
+                        return true; // matches predicate conditions
+                    }
+                }
+                return false;
+            };
+            return func;
         }
     }
 

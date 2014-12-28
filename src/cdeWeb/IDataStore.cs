@@ -105,7 +105,7 @@ namespace cdeWeb
                 SkipCount = 0,
                 ProgressFunc = progress,
                 ProgressModifier = 5000,
-                FoundFunc = (p, d) =>
+                VisitorFunc = (p, d) =>
                 {
                     results.Value.Add(new DirEntry(p, d));
                     //return list.Count < 25; // dont need to limit count here feature field above for it.
@@ -134,7 +134,7 @@ namespace cdeWeb
                 SkipCount = 0,
                 ProgressFunc = progress,
                 ProgressModifier = 5000,
-                FoundFunc = (p, d) =>
+                VisitorFunc = (p, d) =>
                 {
                     found(new DirEntry(p, d));
                     //return list.Count < 25; // dont need to limit count here feature field above for it.

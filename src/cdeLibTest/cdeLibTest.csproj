@@ -76,9 +76,6 @@
     <Reference Include="AlphaFS">
       <HintPath>..\..\lib\alphafs-111992\Development\Bin\Debug\Net40\AlphaFS.dll</HintPath>
     </Reference>
-    <Reference Include="LZ4">
-      <HintPath>..\packages\lz4net.1.0.2.93\lib\net40-client\LZ4.dll</HintPath>
-    </Reference>
     <Reference Include="NDesk.Options">
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
     </Reference>
