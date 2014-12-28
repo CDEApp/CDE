@@ -115,7 +115,7 @@ if you choose :MSBuilder as your :builder
 this is the execution path for MSBuild.exe
 =end
 MSBuilder.ms_build_path =
-  'C:\Windows\Microsoft.NET\Framework\v4.0.30319\MSBuild.exe'
+  'c:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\MSBuild'
 
 =begin
  _______  _______  _        _______ 

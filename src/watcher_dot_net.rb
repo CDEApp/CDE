@@ -57,7 +57,7 @@ class MSBuilder
     @folder = folder
     @sh = CommandShell.new
     @failed = false
-    @@ms_build_path = "C:\\Windows\\Microsoft.NET\\Framework\\v4.0.30319\\MSBuild.exe"
+    @@ms_build_path = "C:\\Program Files (x86)\\MSBuild\\12.0\\Bin\\MSBuild"
   end
 
   def execute
@@ -71,7 +71,7 @@ class MSBuilder
   end
 
   def build_cmd file
-    "\"#{MSBuilder.ms_build_path}\" \"#{file}\" /verbosity:quiet /nologo /p:Platform=\"x86\""
+    "\"#{MSBuilder.ms_build_path}\" \"#{file}\" /verbosity:quiet /nologo /p:Platform=\"Any CPU\""
   end
 
   def self.ms_build_path
