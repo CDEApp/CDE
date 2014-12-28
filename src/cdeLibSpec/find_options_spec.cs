@@ -17,8 +17,8 @@ namespace cdeLibSpec
     [Tag("describe_core_test")]
     public class find_options_spec : nspec
     {
-        // System.Diagnostics.Debugger.Launch();
-
+        // System.Diagnostics.Debugger.Launch();     0123456
+        
         static void log(string str, params object[] values)
         {
             Console.WriteLine(str, values);

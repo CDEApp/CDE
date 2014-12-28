@@ -71,7 +71,7 @@ class MSBuilder
   end
 
   def build_cmd file
-    "\"#{MSBuilder.ms_build_path}\" \"#{file}\" /verbosity:quiet /nologo /p:Platform=\"Any CPU\""
+    "\"#{MSBuilder.ms_build_path}\" \"#{file}\" /verbosity:quiet /nologo /p:Platform=\"x86\""
   end
 
   def self.ms_build_path
@@ -200,8 +200,15 @@ class NSpecRunner < TestRunner
 
   def test_dlls
     return  @test_dlls_override if !@test_dlls_override.nil?
-
-    Dir['**/*NSpec.dll'].select {|f| !f.downcase.include?('packages')}.map {|f| f.gsub(/([^\/]*)\/bin\/Debug\/.*/, '\1/bin/Debug/\1.dll')}
+	raw = Dir['**/*Spec.dll']
+	#raw.each { |f| puts "raw '#{f}'" }
+    result = raw
+		.select {|f| !f.downcase.include?('/obj/') }
+		.select {|f| !f.downcase.include?('packages') }
+		.select {|f| !f.include?('/NSpec.dll') }
+		.map {|f| f.gsub(/([^\/]*)\/bin\/Debug\/.*/, '\1/bin/Debug/\1.dll')}
+	#result.each { |f| puts "result '#{f}'" }
+	result
   end
 
   def find file
