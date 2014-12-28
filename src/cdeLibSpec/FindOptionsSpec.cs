@@ -4,6 +4,7 @@ using NSubstitute.Experimental;
 using cdeLib;
 using NSubstitute;
 using cdeLibTest;
+using Received = NSubstitute.Received;
 
 namespace cdeLibSpec
 {
