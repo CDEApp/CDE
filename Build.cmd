@@ -50,7 +50,7 @@ cd %t%
 @echo Building x86
 cd src
 set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
-REM manual deletes cause /Rebuild really doesnt work right
+REM manual deletes cause /Rebuild really doesn't work right
 del cde\bin\Release\*.exe
 del cde\bin\Release\*.dll
 del cde\bin\Release\*.config
