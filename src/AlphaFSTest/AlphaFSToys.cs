@@ -114,9 +114,12 @@ namespace AlphaFSTest
         [Test]
         public void GetDirectoryRoot_WithRelativePath_ReturnsCurrentDirRoot()
         {
+            var originalDir = Directory.GetCurrentDirectory();
+            Directory.SetCurrentDirectory(@"C:\Windows\");
             var root = Directory.GetDirectoryRoot(@"\Windows");
 
-            Assert.That(root, Is.EqualTo(@"D:\"));  // my dev drive is D:
+            Assert.That(root, Is.EqualTo(@"C:\"));
+            Directory.SetCurrentDirectory(originalDir);
         }
 
         [Test]
@@ -138,9 +141,9 @@ namespace AlphaFSTest
         [Test]
         public void GetFullPath_OfLeadingSlashPath()
         {
-            var a = Path.GetFullPath(@"\Data");
+            var a = Path.GetFullPath(@"C:\Windows");
 
-            Assert.That(a, Is.EqualTo(@"D:\Data"));
+            Assert.That(a, Is.EqualTo(@"C:\Windows"));
         }
 
         [Test]
@@ -243,39 +246,37 @@ namespace AlphaFSTest
         [Test]
         public void Directory_GetDirectories_OK()
         {
-            Directory.SetCurrentDirectory("../../../..");
+            Directory.SetCurrentDirectory(@"../..");
             var dirs = Directory.GetDirectories(".");
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\obj")));
             Assert.That(dirs.Any(x => x.EndsWith(@"\bin")));
-            Assert.That(dirs.Any(x => x.EndsWith(@"\lib")));
-            Assert.That(dirs.Any(x => x.EndsWith(@"\src")));
         }
 
         [Test]
         public void Directory_EnumerateDirectories_OK()
         {
-            Directory.SetCurrentDirectory("../../../..");
+            Directory.SetCurrentDirectory(@"../..");
             var dirs = Directory.EnumerateDirectories(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
             Assert.That(dirs.Any(x => x.EndsWith(@"\bin")));
-            Assert.That(dirs.Any(x => x.EndsWith(@"\lib")));
-            Assert.That(dirs.Any(x => x.EndsWith(@"\src")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"\obj")));
         }
 
         [Test]
         public void Directory_EnumerateFiles_OK()
         {
-            Directory.SetCurrentDirectory("../../../..");
+            Directory.SetCurrentDirectory(@".");
             var dirs = Directory.EnumerateFiles(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
             //Assert.That(dirs.Contains(@".\bin"));  // NOW get full paths ? hmm.
             //Assert.That(dirs.Contains(@".\lib"));
             //Assert.That(dirs.Contains(@".\src"));
-            Assert.That(dirs.Any(x => x.EndsWith(@".gitignore")));
-            Assert.That(dirs.Any(x => x.EndsWith(@"History.txt")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"AlphaFSTest.pdb")));
+            Assert.That(dirs.Any(x => x.EndsWith(@"AlphaFSTest.dll")));
         }
 
 
