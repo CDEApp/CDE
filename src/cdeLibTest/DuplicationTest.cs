@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
@@ -124,7 +125,19 @@ namespace cdeLibTest
         [Test]
         public void GetSizePairs_CheckSanityOfDupeSizeCountandDupeFileCount_Exercise()
         {
+            var originalDir = Directory.GetCurrentDirectory();
+            Console.WriteLine("0 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
             var rootEntries = RootEntry.LoadCurrentDirCache();
+
+            if (rootEntries.Count == 0)
+            {
+                Console.WriteLine("No Catalogs found.");
+                Assert.Fail();
+            }
+            foreach (var r in rootEntries)
+            {
+                Console.WriteLine("loaded {0}", r.DefaultFileName);
+            }
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(rootEntries);

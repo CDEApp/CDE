@@ -16,7 +16,7 @@ namespace cdeLibTest.Performance
     /// Test run with sort() not enabled in PairDirEntryEnumerator.
     /// 
     /// </summary>
-    [TestFixture]
+    //[TestFixture] disabled performance not unit test.
     class PerformanceTreeTraversal
     {
         private const string PathToTest = @"..\..\..\..\test\";

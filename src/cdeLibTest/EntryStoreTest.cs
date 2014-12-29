@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Diagnostics;
 using System.Threading;
+using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using NUnit.Framework;
 
@@ -164,6 +165,7 @@ namespace cdeLibTest
             Console.WriteLine("loaded {0}", e2.Root.DefaultFileName);
         }
 
+        [Ignore("its a long test available for convenience.")]
         [Test]
         public void RecurseTree_ScanCDrive_OK()
         {
@@ -215,6 +217,7 @@ namespace cdeLibTest
             Console.WriteLine("GC Memory End:{0} (bytes)", gcMemEnd);
             Console.WriteLine("x Process Memory End:{0} (bytes)", processMemEnd);
             Console.WriteLine();
+            File.Delete(e.Root.DefaultFileName); // get rid of file we created.
         }
     }
     // ReSharper restore InconsistentNaming
