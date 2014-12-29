@@ -117,13 +117,6 @@ namespace cdeWin
 
         void CleanUp();
 
-        // improve test easy on CDEWinFormPresenter.
-        void SetColumnSortCompare<T>(IListViewHelper<T> lvh, Comparison<T> compare) where T : class;
-        // improve test easy on CDEWinFormPresenter.
-        int SetList<T>(IListViewHelper<T> lvh, List<T> list) where T : class;
-        // improve test easy on CDEWinFormPresenter.
-        void SortList<T>(IListViewHelper<T> lvh) where T : class;
-
         void MessageBox(string message);
 		void AboutDialog();
 		void Addline(string format, params object[] args);

@@ -89,16 +89,16 @@ namespace cdeWin
 
         private void RegisterListViewSorters()
         {
-            _clientForm.SetColumnSortCompare(_clientForm.SearchResultListViewHelper, SearchResultCompare);
-            _clientForm.SetColumnSortCompare(_clientForm.DirectoryListViewHelper, DirectoryCompare);
-            _clientForm.SetColumnSortCompare(_clientForm.CatalogListViewHelper, RootCompare);
+            _clientForm.SearchResultListViewHelper.ColumnSortCompare =  SearchResultCompare;
+            _clientForm.DirectoryListViewHelper.ColumnSortCompare = DirectoryCompare;
+            _clientForm.CatalogListViewHelper.ColumnSortCompare = RootCompare;
         }
 
         private void SetCatalogListView()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = _clientForm.SetList(catalogHelper, _rootEntries);
-            _clientForm.SortList(catalogHelper);
+            var count = catalogHelper.SetList(_rootEntries);
+            catalogHelper.SortList();
             _clientForm.SetCatalogsLoadedStatus(count);
             _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
         }
@@ -463,7 +463,7 @@ namespace cdeWin
                 }
             }
             _clientForm.SetSearchResultStatus(count);
-            _clientForm.SortList(searchHelper);
+            searchHelper.SortList();
             SetSearchButton(true);
             _bgWorker.Dispose();
             _bgWorker = null;
@@ -524,8 +524,8 @@ namespace cdeWin
             _directoryListCommonEntry = commonEntry;
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
-            _clientForm.SetList(directoryHelper, _directoryList);
-            _clientForm.SortList(directoryHelper);
+            directoryHelper.SetList(_directoryList);
+            directoryHelper.SortList();
             _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
         }
 
@@ -1067,11 +1067,11 @@ namespace cdeWin
         {
             // clear all current list views and tree views.
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            _clientForm.SetList(catalogHelper, null);
+            catalogHelper.SetList(null);
             var searchResultHelper = _clientForm.SearchResultListViewHelper;
-            _clientForm.SetList(searchResultHelper, null);
+            searchResultHelper.SetList(null);
             var directoryListHelper = _clientForm.DirectoryListViewHelper;
-            _clientForm.SetList(directoryListHelper, null);
+            directoryListHelper.SetList(null);
 
             var previousRootEntries = _rootEntries;
             foreach (var rootEntry in previousRootEntries)

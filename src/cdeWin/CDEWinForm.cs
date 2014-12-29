@@ -557,21 +557,6 @@ namespace cdeWin
             }
         }
 
-        public void SetColumnSortCompare<T>(IListViewHelper<T> lvh, Comparison<T> compare) where T : class
-        {
-            lvh.ColumnSortCompare = compare;
-        }
-
-        public int SetList<T>(IListViewHelper<T> lvh, List<T> list) where T : class
-        {
-            return lvh.SetList(list);
-        }
-
-        public void SortList<T>(IListViewHelper<T> lvh) where T : class
-        {
-            lvh.SortList();
-        }
-
         public DateTime FromDateValue
         {
             get { return fromDateTimePicker.Value; }
@@ -614,9 +599,9 @@ namespace cdeWin
         private void CDEWinFormShown(object sender, EventArgs e)
         {
             // setup our sort arrow icons, this requires windows message loop afaik.
-            SortList(CatalogListViewHelper);
-            SortList(SearchResultListViewHelper);
-            SortList(DirectoryListViewHelper);
+            CatalogListViewHelper.SortList();
+            SearchResultListViewHelper.SortList();
+            DirectoryListViewHelper.SortList();
         }
     }
 }
