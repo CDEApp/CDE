@@ -8,6 +8,7 @@ namespace cdeWin
 {
     public interface ICDEWinForm : IView
     {
+        event EventAction OnFormShown;
         event EventAction OnFormActivated;
         event EventAction OnDirectoryTreeViewBeforeExpandNode;
         event EventAction OnDirectoryTreeViewAfterSelect;

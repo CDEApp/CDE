@@ -122,6 +122,14 @@ namespace cdeWin
             }
         }
 
+        public void FormShown()
+        {
+            // setup our sort arrow icons, this requires windows message loop afaik.
+            _clientForm.CatalogListViewHelper.SortList();
+            _clientForm.SearchResultListViewHelper.SortList();
+            _clientForm.DirectoryListViewHelper.SortList();
+        }
+
         public void FormActivated()
         {
         }

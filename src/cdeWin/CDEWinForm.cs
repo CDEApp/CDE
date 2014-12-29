@@ -21,6 +21,7 @@ namespace cdeWin
     {
         private const int DirectoryTabIndex = 2;
 
+        public event EventAction OnFormShown;
         public event EventAction OnFormActivated;
         public event EventAction OnDirectoryTreeViewBeforeExpandNode;
         public event EventAction OnDirectoryTreeViewAfterSelect;
@@ -598,10 +599,7 @@ namespace cdeWin
 
         private void CDEWinFormShown(object sender, EventArgs e)
         {
-            // setup our sort arrow icons, this requires windows message loop afaik.
-            CatalogListViewHelper.SortList();
-            SearchResultListViewHelper.SortList();
-            DirectoryListViewHelper.SortList();
+            OnFormShown();
         }
     }
 }
