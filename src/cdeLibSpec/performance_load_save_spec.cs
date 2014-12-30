@@ -97,8 +97,6 @@ namespace cdeLibSpec
             //specify = () => "gumby".should_be("gumby");
 
             //describe["long perf test"] = () => {
-            Action tempo = () => {
-
             //it["runs performance tests"] = () => { 
             //    Console.WriteLine("performance testing.");
             //    specify = () => "gumby".should_be("gumby");
@@ -276,7 +274,6 @@ namespace cdeLibSpec
             {
                 Scenarios[i].printer();
             }
-            };
         }
 
         public void wtf()
