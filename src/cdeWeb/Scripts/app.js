@@ -325,8 +325,9 @@ app.factory('clientPushHubInit', function(myHubFactory) {
 app.factory('startHubs', function(myHubFactory) {
     console.log('__ startHub');
     return function (scope) {
-        console.log('_! startHub', myHubFactory.start().state());
-        myHubFactory.start().then(function () {
+        var startedHub = myHubFactory.start();
+        console.log('_! startHub', startedHub.state());
+        startedHub.then(function () {
         });
     };
 });
