@@ -3,8 +3,14 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+// ReSharper disable UnusedMember.Local
 
 // This found at http://www.vbusers.com/codecsharp/codeget.asp?ThreadID=58&PostID=1&NumReplies=0
+// Stackoverflow question i asked in relation to problem.
+// http://stackoverflow.com/questions/27763003/windows-forms-app-with-autowaitcursor-crashing-in-vs2013ce-debugger-if-platfor
+// With a good response, fixed the crash in debugger.
+// Also setup for ApplicationExit so splash form does not cause autowait to exit.
+// Unless you are running blocking tasks on your gui thread autowait is not overly active.
 
 namespace cdeWin
 {
@@ -211,9 +217,27 @@ namespace cdeWin
 
             #region PInvokes
 
-            [DllImport("user32.dll", CharSet=CharSet.Auto, SetLastError=true)]
-            [return: MarshalAs(UnmanagedType.Bool)]
-            private static extern bool SendMessageTimeout(IntPtr hWnd, int msg, int wParam, string lParam, int fuFlags, int uTimeout, out int lpdwResult);
+            // FROM http://www.pinvoke.net/default.aspx/user32.SendMessageTimeout
+            [Flags]
+            public enum SendMessageTimeoutFlags : uint
+            {
+                SmtoNormal = 0x0,
+                SmtoBlock = 0x1,
+                SmtoAbortifhung = 0x2,
+                SmtoNotimeoutifnothung = 0x8,
+                SmtoErroronexit = 0x20
+            }
+
+            // FROM http://www.pinvoke.net/default.aspx/user32.SendMessageTimeout, this fixes the crash in vs2015 64bit Debug mode in vshost.exe
+            [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
+            public static extern IntPtr SendMessageTimeout(
+                IntPtr windowHandle,
+                uint msg,
+                IntPtr wParam,
+                IntPtr lParam,
+                SendMessageTimeoutFlags flags,
+                uint timeout,
+                out IntPtr result);
 
             [DllImport("USER32.DLL")]
             private static extern uint AttachThreadInput(uint attachTo, uint attachFrom, bool attach);
@@ -244,6 +268,7 @@ namespace cdeWin
                 _waitCursor = waitCursor;
                 // Gracefully shuts down the state monitor
                 Application.ThreadExit += _OnApplicationThreadExit;
+                //Application.ApplicationExit += _OnApplicationThreadExit;
             }
 
             #endregion
@@ -447,26 +472,22 @@ namespace cdeWin
                 const int INFINITE = Int32.MaxValue;
                 const int WM_NULL = 0;
                 // ReSharper restore InconsistentNaming
-                int result;// = 0;
+                IntPtr result;// = 0;
                 //bool success;
 
                 // See if the application is responding
                 if (delay == TimeSpan.MaxValue)
                 {
-                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, 0, null,
-                        SMTO_BLOCK, INFINITE, out result);
+                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
+                        SendMessageTimeoutFlags.SmtoBlock, INFINITE, out result);
                 }
                 else
                 {
-                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, 0, null,
-                        SMTO_BLOCK, Convert.ToInt32(delay.TotalMilliseconds), out result);
+                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
+                        SendMessageTimeoutFlags.SmtoBlock, Convert.ToUInt32(delay.TotalMilliseconds), out result);
                 }
 
-                if (result != 0)
-                {
-                    return true;
-                }
-                return false;
+                return result != IntPtr.Zero;
             }
 
             /// <summary>
