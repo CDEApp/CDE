@@ -9,8 +9,8 @@ using cdeLib.Infrastructure;
 using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
-using FileMode = System.IO.FileMode;
 using FileAcces = System.IO.FileAccess;
+using FileMode = System.IO.FileMode;
 using Filesystem = Alphaleonis.Win32.Filesystem;
 using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
@@ -71,7 +71,8 @@ namespace cdeLib
             get { return (ScanEndUTC - ScanStartUTC).TotalMilliseconds; }
         }
 
-        public RootEntry () : base(true)
+        public RootEntry()
+            : base(true)
         {
             Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
@@ -94,7 +95,7 @@ namespace cdeLib
             startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
             {
-                throw new ArgumentException(string.Format("Cannot find path \"{0}\"", startPath));
+                throw new ArgumentException(String.Format("Cannot find path \"{0}\"", startPath));
             }
             string deviceHint;
             string volumeName;
@@ -175,7 +176,7 @@ namespace cdeLib
         public virtual string GetVolumeName(string rootPath)
         {
             var alphasFSroot = Directory.GetDirectoryRoot(rootPath);    // hacky hacky 
-            return Volume.GetVolumeInformation(alphasFSroot).Name;
+            return Volume.GetVolumeInfo(alphasFSroot).Name;
         }
         #endregion
 
@@ -259,7 +260,8 @@ namespace cdeLib
                 //        Transaction = null,
                 //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
                 //    }.Enumerate();
-                var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
+                //var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, DirectoryEnumerationOptions.Folders); 
 
                 // OLD
                 //var fsEntries = Directory.GetFullFileSystemEntries

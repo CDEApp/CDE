@@ -25,9 +25,10 @@ namespace cdeLibSpec
             // ReSharper disable RedundantArgumentDefaultValue
             var finder = new SpecFinder(types, "");
             // ReSharper restore RedundantArgumentDefaultValue
-            var builder = new ContextBuilder(finder, new Tags().Parse(tagOrClassName), new DefaultConventions());
+            var tagsFilter = new Tags().Parse(tagOrClassName);
+            var builder = new ContextBuilder(finder, tagsFilter, new DefaultConventions());
             //var builder = new ContextBuilder(finder, new DefaultConventions());
-            var runner = new ContextRunner(builder, new ConsoleFormatter(), false);
+            var runner = new ContextRunner(tagsFilter, new ConsoleFormatter(), false);
             var results = runner.Run(builder.Contexts().Build());
 
             //assert that there aren't any failures

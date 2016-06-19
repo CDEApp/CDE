@@ -358,7 +358,7 @@ namespace cdeLibTest.Performance
         }
 
         [Test]
-        [Ignore]
+        [Ignore("Ignore")]
         public void SetCommonEntryFields_Test_Large()
         {
             DoSetCommonEntryFields(TestCatalog1_2M, 35);

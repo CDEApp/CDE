@@ -20,7 +20,7 @@ namespace AlphaFSTest
         public void GetVolumeInformation()
         {
             const string vol = @"C:\";
-            var vi = Volume.GetVolumeInformation(vol); // requires a root volume specifier it seems
+            var vi = Volume.GetVolumeInfo(vol); // requires a root volume specifier it seems
             Console.WriteLine("vi.FileSystemName {0}", vi.FileSystemName);
             Console.WriteLine("vi.MaximumComponentLength {0}", vi.MaximumComponentLength);
             Console.WriteLine("vi.PersistentAcls {0}", vi.PersistentAcls);
@@ -157,7 +157,7 @@ namespace AlphaFSTest
         [Test]
         public void GetFullPath_OfUncPath_AddDirectorySeperator()
         {
-            var a = Path.GetFullPath(@"\\Friday\cache", true, true, false);
+            var a = Path.GetFullPath(@"\\Friday\cache");
 
             Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache\"));
         }
@@ -165,7 +165,7 @@ namespace AlphaFSTest
         [Test]
         public void GetFullPath_OfUncPath_LongPath()
         {
-            var a = Path.GetFullPath(@"\\Friday\cache", true);
+            var a = Path.GetFullPath(@"\\Friday\cache");
 
             Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache"));
         }

@@ -1,13 +1,15 @@
 ﻿using System;
+
 using cdeLib;
-using NUnit.Framework;
 using cdeLib.Infrastructure;
+
+using NUnit.Framework;
 
 namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class CommonEntryTest_TraverseTreesCopyHash
+    public class CommonEntryTest_TraverseTreesCopyHash
     {
         private RootEntry _reSource;
         private DirEntry _sde1;
@@ -27,23 +29,20 @@ namespace cdeLibTest
         private DirEntry _dde6;
         private DirEntry _dde7;
 
-        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "source and destination must be not null.")]
         [Test]
         public void TraverseTreesCopyHash_RunWithDirEntry_Exception()
         {
-            var reSource = new DirEntry { Path = @"Moo" };
+            var reSource = new DirEntry { Path = "Moo" };
 
-            reSource.TraverseTreesCopyHash(null);
+            Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(null), "source and destination must be not null.");
         }
 
-        [ExpectedException(typeof(ArgumentException), ExpectedMessage = "source and destination must have same root path.")]
         [Test]
         public void TraverseTreesCopyHash_RootPathsDifferent_Exception()
         {
             var reSource = new RootEntry { Path = @"C:\a" };
             var reDest = new RootEntry { Path = @"C:\" };
-
-            reSource.TraverseTreesCopyHash(reDest);
+            Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(reDest), "source and destination must have same root path.");
         }
 
         [Test]
@@ -81,7 +80,7 @@ namespace cdeLibTest
         public void TraverseTreesCopyHash_FileDateDifferent_DoesNotCopyFilesHash()
         {
             RecreateTestTree();
-            _sde1.Modified = new DateTime(2011, 02, 01, 12,11,10);
+            _sde1.Modified = new DateTime(2011, 02, 01, 12, 11, 10);
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
@@ -157,24 +156,24 @@ namespace cdeLibTest
         public void TraverseTreesCopyHash_DontCopyHashIfDestHasFullHash()
         {
             RecreateTestTree();
-            _dde1.SetHash(99);//_dde1.Hash = new byte[] { 99 };
+            _dde1.SetHash(99); // _dde1.Hash = new byte[] { 99 };
             _dde1.IsPartialHash = false;
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            //Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(99));
+            // Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(99));
         }
 
         private void RecreateTestTree()
         {
             _reSource = new RootEntry { Path = @"C:\" };
-            _sde1 = new DirEntry(false) { Path = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
-            _sde2 = new DirEntry(false) { Path = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
-            _sde3 = new DirEntry(false) { Path = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
-            _sfe4 = new DirEntry(true)  { Path = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _sde5 = new DirEntry(false) { Path = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
-            _sde6 = new DirEntry(false) { Path = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
-            _sde7 = new DirEntry(false) { Path = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
+            _sde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
+            _sde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
+            _sde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
+            _sfe4 = new DirEntry(true)  { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
+            _sde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
+            _sde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
+            _sde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
             _reSource.Children.Add(_sde1);
             _reSource.Children.Add(_sde2);
             _reSource.Children.Add(_sde3);
@@ -184,13 +183,13 @@ namespace cdeLibTest
             _sfe4.Children.Add(_sde7);
 
             _reDest = new RootEntry { Path = @"C:\" };
-            _dde1 = new DirEntry(false) { Path = @"de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
-            _dde2 = new DirEntry(false) { Path = @"de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
-            _dde3 = new DirEntry(false) { Path = @"de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
-            _dfe4 = new DirEntry(true)  { Path = @"fe4", Modified = new DateTime(2011, 02, 04) };
-            _dde5 = new DirEntry(false) { Path = @"de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
-            _dde6 = new DirEntry(false) { Path = @"de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
-            _dde7 = new DirEntry(false) { Path = @"de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
+            _dde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
+            _dde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
+            _dde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
+            _dfe4 = new DirEntry(true)  { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
+            _dde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
+            _dde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
+            _dde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
             _reDest.Children.Add(_dde1);
             _reDest.Children.Add(_dde2);
             _reDest.Children.Add(_dde3);

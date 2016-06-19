@@ -122,7 +122,7 @@ namespace cdeWinTest
             private CDEWinFormPresenter _sutPresenter;
 
             [SetUp]
-            override public void RunBeforeEveryTest()
+            public override void RunBeforeEveryTest()
             {
                 base.RunBeforeEveryTest();
                 InitRootWithDir();
@@ -130,14 +130,13 @@ namespace cdeWinTest
             }
 
             [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
-            [ExpectedException(typeof(NullReferenceException))]
             [Test]
             public void With_TreeViewRoot_Null_Throws_Exception()
             {
                 _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
                     .Return(null);
 
-                _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+                Assert.Throws<NullReferenceException>(()=>_sutPresenter.DirectoryTreeViewBeforeExpandNode());
             }
 
             [Test]
@@ -437,14 +436,13 @@ namespace cdeWinTest
             /// This is not something that should happen as listview wont ask for 
             /// an Item Index that is outside bounds of the setup ListView.
             /// </summary>
-            [ExpectedException(typeof(ArgumentOutOfRangeException))]
             [Test]
             public void Invalid_ItemIndex_Throws_Exception()
             {
                 _mockCatalogListViewHelper.Stub(x => x.RetrieveItemIndex)
                     .Return(1);
 
-                _sutPresenter.CatalogRetrieveVirtualItem();
+               Assert.Throws<ArgumentOutOfRangeException>(()=>_sutPresenter.CatalogRetrieveVirtualItem());
             }
 
             [Test]
@@ -512,7 +510,6 @@ namespace cdeWinTest
             /// This is not something that should happen as listview wont ask for 
             /// an Item Index that is outside bounds of the setup ListView.
             /// </summary>
-            [ExpectedException(typeof(ArgumentOutOfRangeException))]
             [Test]
             public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
             {
@@ -522,7 +519,7 @@ namespace cdeWinTest
                 _mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
                     .Return(1);
 
-                _sutPresenter.SearchResultRetrieveVirtualItem();
+                Assert.Throws<ArgumentOutOfRangeException>(()=>_sutPresenter.SearchResultRetrieveVirtualItem());
             }
 
             [Test]

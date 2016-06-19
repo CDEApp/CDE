@@ -343,7 +343,7 @@ namespace cdeLib
                 if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
                 {
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                    var longFullPath = Path.GetFullPath(fullPath, true);
+                    var longFullPath = Path.GetFullPath(fullPath);
                     CalculateMD5Hash(longFullPath, dirEntry, false);
                     if (Hack.BreakConsoleFlag)
                     {

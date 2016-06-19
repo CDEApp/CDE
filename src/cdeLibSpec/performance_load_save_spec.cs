@@ -86,9 +86,11 @@ namespace cdeLibSpec
 
         public class Info
         {
+#pragma warning disable 0649            
             public RootEntry root;
             public int count;
             public long durationMsec;
+#pragma warning restore 0649
         }
 
         public void describe_performance_test_compression_of_cde()
@@ -531,7 +533,7 @@ namespace cdeLibSpec
 
         public void writeLZ4HStream(RootEntry root, Stream s)
         {
-            using (var xFs = new LZ4Stream(s, CompressionMode.Compress, true))
+            using (var xFs = new LZ4Stream(s,LZ4StreamMode.Compress,LZ4StreamFlags.HighCompression))
             {
                 root.Write(xFs);
             }

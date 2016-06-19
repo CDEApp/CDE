@@ -40,7 +40,7 @@ namespace cdeLib.Infrastructure.Hashing
             var hashResponse = new HashResponse();
             try
             {
-                using (Stream stream = File.OpenRead(filename, true))
+                using (Stream stream = File.OpenRead(filename))
                 {
                     var buf = new byte[bytesToHash];
                     int bytesRead = stream.Read(buf, 0, buf.Length);
@@ -77,7 +77,7 @@ namespace cdeLib.Infrastructure.Hashing
         {
             try
             {
-                using (Stream stream = File.OpenRead(filename, true))
+                using (Stream stream = File.OpenRead(filename))
                 {
                     var hashResponse = new HashResponse();
                     using (var md5 = MD5.Create())

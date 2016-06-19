@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
-using System.Text;
 using cdeLib.Infrastructure;
 
+#pragma warning disable 0649
 namespace cdeLibTest
 {
     // limit 2 billion entries.
@@ -42,11 +41,16 @@ namespace cdeLibTest
         }
     }
 
+
     struct ArrayThing<T>
     {
+        
         public T[] Array;  // to addres max array size... list of blocks ? like did in EntryStore ? icky icky icky
+
+
         public int NextFree;
     }
+
 
     struct Root
     {
@@ -103,3 +107,4 @@ namespace cdeLibTest
     {
     }
 }
+#pragma warning restore 0649

@@ -11,7 +11,7 @@ namespace cdeLibTest
     [TestFixture]
     class EntrySizeOfStructTest
     {
-        [Ignore]
+        [Ignore("Ignore me")]
         [Test]
         public void Test()
         {
@@ -69,22 +69,19 @@ namespace cdeLibTest
             Assert.That(block[entryIndex].IsDirectory, Is.True);
         }
 
-        [ExpectedException(typeof(ArgumentException))]
         [Test]
         public void RecurseTree_WithRootNotSet_ThrowsException()
         {
             var e = new EntryStore();
 
-            e.RecurseTree();
+            Assert.Throws<ArgumentException>(()=>e.RecurseTree());
         }
 
-        [ExpectedException(typeof(Exception))]
         [Test]
         public void SaveToFile_WithRootNotSet_ThrowsException()
         {
             var e = new EntryStore();
-
-            e.SaveToFile();
+            Assert.Throws<Exception>(() => e.SaveToFile());
         }
 
         [Test]
@@ -234,14 +231,13 @@ namespace cdeLibTest
             Assert.That(e, Is.Not.Null);
         }
 
-        [ExpectedException(typeof(IndexOutOfRangeException))]
         [Test]
         public void EntryIndex_FirstTime_ZeroethBlock_UnallocatedThrowsException()
         {
             var e = new EntryStore();
             Entry[] blockIndex;
 
-            e.EntryIndex(1, out blockIndex);
+            Assert.Throws<IndexOutOfRangeException>(() => e.EntryIndex(1, out blockIndex));
         }
 
         [Test]

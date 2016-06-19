@@ -3,9 +3,10 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Autofac;
-using Mono.Terminal;
 using cdeLib;
 using cdeLib.Infrastructure;
+
+using Mono.Terminal;
 
 namespace cde
 {
@@ -18,12 +19,11 @@ namespace cde
             {
                 var asm = Assembly.GetExecutingAssembly();
                 var fvi = FileVersionInfo.GetVersionInfo(asm.Location);
-                return String.Format("{0} v{1}.{2}", fvi.ProductName,
-                    fvi.ProductMajorPart, fvi.ProductMinorPart);
+                return $"{fvi.ProductName} v{fvi.ProductMajorPart}.{fvi.ProductMinorPart}";
             }
         }
 
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
             Container = BootStrapper.Components();
             Console.CancelKeyPress += BreakConsole;
@@ -246,10 +246,7 @@ namespace cde
         {
             var rootEntries = EntryStore.LoadCurrentDirCache();
             var re = rootEntries.FirstOrDefault();
-            if (re != null)
-            {
-                re.ApplyMd5Checksum();
-            }
+            re?.ApplyMd5Checksum();
         }
 
         static void CreateCache2(string path)
@@ -258,11 +255,7 @@ namespace cde
             //long gcMemStart = GC.GetTotalMemory(true);
             //long processMemStart = objProcess.PrivateMemorySize64;
 
-            var e = new EntryStore();
-            e.SimpleScanCountEvent = ScanCountPrintDot;
-            e.SimpleScanEndEvent = ScanEndofEntries;
-            e.EntryCountThreshold = 10000;
-
+            var e = new EntryStore { SimpleScanCountEvent = ScanCountPrintDot, SimpleScanEndEvent = ScanEndofEntries, EntryCountThreshold = 10000 };
             e.SetRoot(path);
             e.Root.ScanStartUTC = DateTime.UtcNow;
             e.RecurseTree();

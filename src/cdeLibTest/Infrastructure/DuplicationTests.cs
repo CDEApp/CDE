@@ -133,7 +133,7 @@ namespace cdeLibTest.Infrastructure
         }
 
         [Test]
-        [Ignore]
+        [Ignore("Reason")]
         public void Test_Memory_Usage_Of_MD5_Stream()
         {
             Process currentProcess = Process.GetCurrentProcess();
@@ -141,6 +141,7 @@ namespace cdeLibTest.Infrastructure
             Console.WriteLine("Memory Usage {0}",totalBytesOfMemoryUsed);
             var hashHelper = new HashHelper();
             var hash = HashHelper.GetMD5HashFromFile("C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
+
             // get the current process
             // get the physical mem usage
         }
