@@ -54,3 +54,4 @@ catalog-example-angular/
 catalog-example-angular.zip
 *.ncrunchproject
 *.ncrunchsolution
+src/.vs/config/applicationhost.config
