@@ -38,7 +38,7 @@ namespace cdeLibTest.Performance
             public static RootEntry RootLarge { get; set; }
             public static int RootLargeCount;
 
-            [SetUp]
+            [OneTimeSetUp]
             public void BeforeAllTests()
             {
                 RootSmall = RootEntry.LoadDirCache(TestCatalog200K);
