@@ -154,7 +154,7 @@ namespace cdeLib
                 //        Transaction = null,
                 //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
                 //    }.Enumerate();
-                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, DirectoryEnumerationOptions.Folders); // was SearchOption.TopDirectoryOnly is this a match?
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, DirectoryEnumerationOptions.FilesAndFolders); // was SearchOption.TopDirectoryOnly is this a match?   Recursive is another flag that can be added, can we assume then top only
 
 
                 // OLD
