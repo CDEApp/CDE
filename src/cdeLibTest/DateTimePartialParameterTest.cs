@@ -109,7 +109,7 @@ namespace cdeLibTest
         {
             var args = "2014-4-5Z"; // todo identify Z as problem not day integer maybe ?
             var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
-            Assert.That(ex.Message, Is.EqualTo("The seperator between Date and Time must be 'T' as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
+            Assert.That(ex.Message, Is.EqualTo("The separator between Date and Time must be 'T' as part of format '<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>'"));
         }
 
         [Test]
