@@ -15,7 +15,7 @@ set t=..\..\..\..
 REM OLD set ilmerge="c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe"
 set ilmerge=%t%\lib\ILMerge\ILMerge.exe
 REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
-set msbuildpath="C:\Program Files (x86)\MSBuild\12.0\Bin\msbuild.exe"
+set msbuildpath="C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe"
 
 goto BUILD86
 
@@ -50,7 +50,8 @@ cd %t%
 :BUILD86
 @echo Building x86
 cd src
-set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+
 REM manual deletes cause /Rebuild really doesn't work right
 del cde\bin\Release\*.exe
 del cde\bin\Release\*.dll
