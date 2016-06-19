@@ -71,7 +71,7 @@ namespace cdeLib
                 // If 'T' is not used as seperator between Date and Time then error
                 if (SeperatorIsNotValid(splitOnDash[2], 'T'))
                 {
-                    _e = new ArgumentException(string.Format("The seperator between Date and Time must be 'T' as part of format '{0}'", _format));
+                    _e = new ArgumentException(string.Format("The separator between Date and Time must be 'T' as part of format '{0}'", _format));
                     return;
                 }
 
