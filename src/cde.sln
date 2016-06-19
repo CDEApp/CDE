@@ -27,11 +27,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Mono.Terminal", "Mono.Termi
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Util", "Util\Util.csproj", "{27847DBD-65B6-489D-A600-89D4FF5151E8}"
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{01F495EB-BFB0-4D53-9B96-0A7BAE45E6AC}"
-	ProjectSection(SolutionItems) = preProject
-		.nuget\NuGet.Config = .nuget\NuGet.Config
-	EndProjectSection
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWeb", "cdeWeb\cdeWeb.csproj", "{CE39D9B5-4209-40CF-BB15-86E622A0F52F}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeWebTest", "cdeWebTest\cdeWebTest.csproj", "{CFA197C7-4F7D-447A-BA79-34BE11BF7000}"

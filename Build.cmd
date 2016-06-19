@@ -14,7 +14,8 @@ del bin\x86\*.config
 set t=..\..\..\..
 REM OLD set ilmerge="c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe"
 set ilmerge=%t%\lib\ILMerge\ILMerge.exe
-set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+set msbuildpath="C:\Program Files (x86)\MSBuild\12.0\Bin\msbuild.exe"
 
 goto BUILD86
 
