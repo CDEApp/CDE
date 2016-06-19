@@ -237,9 +237,10 @@ app.value('ngModuleOptions', {
     hubStartOptions: { logging: true }
 });
 
+// include signalrAngular.js to register factory 'signalrHubFactory'
 // Example of creating a personalised hub factory
-app.factory('myHubFactory', function (srHubFactory, ngModuleOptions) {
-    return srHubFactory(ngModuleOptions);
+app.factory('myHubFactory', function (signalrHubFactory, ngModuleOptions) {
+    return signalrHubFactory(ngModuleOptions);
 });
 
 // example controller

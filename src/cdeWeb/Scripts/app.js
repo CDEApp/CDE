@@ -24,7 +24,7 @@ app.value('ngModuleOptions', {
 
 // get Contact from web.config - so can be configured for site ?
 // todo hitting search of same string doesnt do the search... ? force it ?
-// todo support back navigation ? without doing a search ? ? 
+// todo support back navigation ? without doing a search ? ?
 // todo consider a version tag appended for when version bumps for load partials ?
 app.config(function ($routeProvider) {
     $routeProvider
@@ -124,7 +124,7 @@ app.controller('navbarCtrl', function ($scope, $location, $route, resetSearchRes
     $scope.searchInputActive = function() {
         return document.activeElement.id === 'search';
     };
-    
+
     $scope.navSearch = function () {
         var query = dataModel.query || '';
         dataModel.searchInputActive = $scope.searchInputActive();
@@ -154,11 +154,11 @@ function commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searc
 }
 
 app.controller('aboutCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
-    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
+    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel);
 });
 
 app.controller('searchCtrl', function ($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel) {
-    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel)
+    commonSearchCtrl($scope, $routeParams, $route, resetSearchResult, searchHubInit, startHubs, dataModel);
     $scope.doSearch();
 });
 
@@ -219,7 +219,7 @@ app.factory('searchHubInit', function (myHubFactory, resetSearchResult, dataMode
                     });
                 });
             } else {
-                dataModel.errorMessage = "Search not executed, pattern string empty."
+                dataModel.errorMessage = "Search not executed, pattern string empty.";
                 resetSearchResult(scope);
             }
         };
@@ -369,4 +369,3 @@ app.controller('ServerTimeController', function ($scope, serverTimeHubInit, clie
     startHubs($scope);
     testButtonStuff($scope, clientPushHubProxy);
 });
-

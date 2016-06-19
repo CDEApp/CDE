@@ -130,13 +130,23 @@ namespace cde
                     }
                 }
             }
+            else if (args.Length == 2 && param0 == "--populousfolders")
+            {
+                int count;
+                if (int.TryParse(args[1], out count))
+                {
+                   FindPouplous(count);
+                }
+                else
+                {
+                    Console.WriteLine("Populous folders option requires an integer as second parameter");
+                }
+            }
             else
             {
                 ShowHelp();
             }
         }
-
-
 
         private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
         {
@@ -193,9 +203,11 @@ namespace cde
             Console.WriteLine("       Enter readline mode - trying it out not useful yet...");
             Console.WriteLine("Usage: cde --replGreppath <regex>");
             Console.WriteLine("Usage: cde --replGrep <regex>");
-            Console.WriteLine("Usage: cde --repFind <regex>");
+            Console.WriteLine("Usage: cde --replFind <regex>");
             Console.WriteLine("       read-eval-print loops version of the 3 find options.");
             Console.WriteLine("       This one is repl it doesnt exit unless you press enter with no search term.");
+            Console.WriteLine("Usage: cde --populousfolders <minimumcount>");
+            Console.WriteLine("       output folders containing more than <minimumentrysize> entires.");
         }
 
         private static void FindDupes()
@@ -328,6 +340,30 @@ namespace cde
                     break;
                 }
             }
+        }
+        
+        private static void FindPouplous(int minimumCount)
+        {
+            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var entries = CommonEntry.GetDirEntries(rootEntries);
+            var largeEntries = entries
+                .Where(e => e.Children != null && e.Children.Count > minimumCount)
+                .ToList();
+            largeEntries.Sort(CompareDirEntries);
+
+            foreach (var e in largeEntries.Where(e => e.Children != null && e.Children.Count > minimumCount))
+            {
+                Console.WriteLine("{0} {1}", e.FullPath, e.Children.Count);
+                if (Hack.BreakConsoleFlag)
+                {
+                    break;
+                }
+            }
+        }
+
+        private static int CompareDirEntries(DirEntry x, DirEntry y)
+        {
+            return y.Children.Count - x.Children.Count;
         }
     }
 }

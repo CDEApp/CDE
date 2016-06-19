@@ -88,7 +88,7 @@ namespace cdeWin
         public HorizontalAlignment Alignment = HorizontalAlignment.Left;
 
         // columns can not currently be hidden.
-        // columss can not currently be reordered.
+        // columns can not currently be reordered.
     }
 
     [ProtoContract]

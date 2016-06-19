@@ -33,27 +33,27 @@ namespace cdeWin
         event EventAction OnDirectoryContextMenuParentClick;
 
         event EventAction OnDirectoryRetrieveVirtualItem;
-        void OnDirectoryRetrieveVirtualItemFire();
+        //void OnDirectoryRetrieveVirtualItemFire();
         event EventAction OnDirectoryListViewItemActivate;
-        void OnDirectoryListViewItemActivateFire();
+        //void OnDirectoryListViewItemActivateFire();
         event EventAction OnDirectoryListViewColumnClick;
-        void OnDirectoryListViewColumnClickFire();
+        //void OnDirectoryListViewColumnClickFire();
         event EventAction OnDirectoryListViewItemSelectionChanged;
-        void OnDirectoryListViewItemSelectionChangedFire();
+        //void OnDirectoryListViewItemSelectionChangedFire();
 
         event EventAction OnSearchResultRetrieveVirtualItem;
-        void OnSearchResultRetrieveVirtualItemFire();
+        //void OnSearchResultRetrieveVirtualItemFire();
         event EventAction OnSearchResultListViewItemActivate;
-        void OnSearchResultListViewItemActivateFire();
+        //void OnSearchResultListViewItemActivateFire();
         event EventAction OnSearchResultListViewColumnClick;
-        void OnSearchResultListViewColumnClickFire();
+        //void OnSearchResultListViewColumnClickFire();
 
         event EventAction OnCatalogRetrieveVirtualItem;
-        void OnCatalogRetrieveVirtualItemFire();
+        //void OnCatalogRetrieveVirtualItemFire();
         event EventAction OnCatalogListViewItemActivate;
-        void OnCatalogListViewItemActivateFire();
+        //void OnCatalogListViewItemActivateFire();
         event EventAction OnCatalogListViewColumnClick;
-        void OnCatalogListViewColumnClickFire();
+        //void OnCatalogListViewColumnClickFire();
 
         event EventAction OnAdvancedSearchCheckboxChanged;
 

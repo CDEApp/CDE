@@ -52,3 +52,5 @@ packages/
 node_modules/
 catalog-example-angular/
 catalog-example-angular.zip
+*.ncrunchproject
+*.ncrunchsolution

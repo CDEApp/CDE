@@ -4,7 +4,7 @@
 
 ## Introduction
 ### What is cde
-This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file sy stem entries with assorted criteria.
+This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file system entries with assorted criteria.
 
 It is written in C# and requires .Net 4.0.
 
@@ -37,12 +37,12 @@ This a web interface version of cde for searching but it is not released or fini
 It is built with ASP.Net, MVC, SignalR, Bootstrap and Angular.js.
 
 ### Contact Author
-My name is Robin and you can contact me about cde using `rob at queenofblad.es`
+My name is Robin and you can contact me about cde using `rob at EMAIL ADDRESS` # need email address
 
 This application will continue to evolve driven by my own and a few friends desires however the rate of change to date has not been very fast. It may evolve faster if there is sufficient interest from the public.
 
 #### License Shareware Snowball
-cde is currently released in Jan 2015 as a variant of **Shareware**, I would like to call **Shareware Snowball**.
+cde is currently released in June 2015 as a variant of **Shareware**, I would think of as **Shareware Snowball**.
 
 If you like it enough I would appreciate a donation to cdeDonationAddress@gmail.com.
 
@@ -53,10 +53,10 @@ If you don't feel its reached your donation threshold then apply this rule.
 
 I have no problem with individuals using this tool for themselves in a commercial environment and they can apply a donation threshold rule as they see fit.
 
-If you are deploying this to other employees in a commercial environment for more than 6 weeks then I think you have allready passed a value threshold and should seriously consider that the application is of sufficient value for a donation based on the number of regular users of the software.
+If have deployed cde in a commercial environment for users other than your self for more than a testing period of 6 weeks then I think you have allready passed a value threshold.
 
 As a small incentive a 64 build of cde and cdeWin is available to people who donate for cde.
-You woudl realy need to be dealing with a lot of file entries to need this. As the 32 bit version of cdeWin can deal with over 11 million file system entries using just over 1.5 GB of ram.
+The 64 bit build is really only of value to people dealing with a very large number of file system entries, as the 32 bit version of cdeWin can deal with over 11 million file system entries using just over 1.5 GB of ram.
 
 ## Details
 
@@ -290,14 +290,17 @@ The catalog files are not compressed internally as the use cases I have had till
 ### Acknowledgements
 
 The following sofwtare is used in the Development of this application.
-- Microsofts Visual Studio
-- protobuf-net https://code.google.com/p/protobuf-net/
-- AlphaFS https://alphafs.codeplex.com/
-- NUnit http://www.nunit.org/
-- NDesk.Options http://www.ndesk.org/Options
+
+* Microsofts Visual Studio
+* protobuf-net https://code.google.com/p/protobuf-net/
+* AlphaFS https://alphafs.codeplex.com/
+* NUnit http://www.nunit.org/
+* NDesk.Options http://www.ndesk.org/Options
 
 The web version uses. (not available currently)
-- AngularJS https://angularjs.org/
-- Bootstrap http://getbootstrap.com/
-- autofac http://autofac.org/
-- SignalR http://signalr.net/
+
+* AngularJS https://angularjs.org/
+* Bootstrap http://getbootstrap.com/
+* autofac http://autofac.org/
+* SignalR http://signalr.net/
+

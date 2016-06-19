@@ -41,7 +41,11 @@ namespace cdeWin
         private bool _isSearchButton;
         private readonly ILoadCatalogService _loadCatalogService;
 
-        public CDEWinFormPresenter(ICDEWinForm form, IConfig config, ILoadCatalogService loadCatalogService = null) : base(form)
+        public CDEWinFormPresenter(
+            ICDEWinForm form, 
+            IConfig config, 
+            ILoadCatalogService loadCatalogService = null) 
+            : base(form)
         {
             var timeIt = new TimeIt();
             _clientForm = form;

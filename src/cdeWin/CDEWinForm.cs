@@ -47,26 +47,16 @@ namespace cdeWin
         public event EventAction OnDirectoryContextMenuParentClick;
 
         public event EventAction OnDirectoryRetrieveVirtualItem;
-        public virtual void OnDirectoryRetrieveVirtualItemFire() { OnDirectoryRetrieveVirtualItem(); }
         public event EventAction OnDirectoryListViewItemActivate;
-        public virtual void OnDirectoryListViewItemActivateFire() { OnDirectoryListViewItemActivate(); }
         public event EventAction OnDirectoryListViewColumnClick;
-        public virtual void OnDirectoryListViewColumnClickFire() { OnDirectoryListViewColumnClick(); }
         public event EventAction OnDirectoryListViewItemSelectionChanged;
-        public virtual void OnDirectoryListViewItemSelectionChangedFire() { OnDirectoryListViewItemSelectionChanged(); }
 
         public event EventAction OnSearchResultRetrieveVirtualItem;
-        public virtual void OnSearchResultRetrieveVirtualItemFire() { OnSearchResultRetrieveVirtualItem(); }
         public event EventAction OnSearchResultListViewItemActivate;
-        public virtual void OnSearchResultListViewItemActivateFire() { OnSearchResultListViewItemActivate(); }
         public event EventAction OnSearchResultListViewColumnClick;
-        public virtual void OnSearchResultListViewColumnClickFire() { OnSearchResultListViewColumnClick(); }
 
-        public virtual void OnCatalogRetrieveVirtualItemFire() { OnCatalogRetrieveVirtualItem(); }
         public event EventAction OnCatalogListViewItemActivate;
-        public virtual void OnCatalogListViewItemActivateFire() { OnCatalogListViewItemActivate(); }
         public event EventAction OnCatalogListViewColumnClick;
-        public void OnCatalogListViewColumnClickFire() { OnCatalogListViewColumnClick(); }
 
         public event EventAction OnAdvancedSearchCheckboxChanged;
 
@@ -177,19 +167,19 @@ namespace cdeWin
 
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
                 {
-                    RetrieveVirtualItem = OnSearchResultRetrieveVirtualItemFire,
-                    ItemActivate = OnSearchResultListViewItemActivateFire,
-                    ColumnClick = OnSearchResultListViewColumnClickFire,
+                    RetrieveVirtualItem = () => { OnSearchResultRetrieveVirtualItem(); },
+                    ItemActivate = () => { OnSearchResultListViewItemActivate(); },
+                    ColumnClick = () => { OnSearchResultListViewColumnClick(); },
                     ContextMenu = CreateSearchResultContextMenu(),
                 };
 
             DirectoryListViewHelper = new ListViewHelper<DirEntry>(directoryListView)
                 {
-                    RetrieveVirtualItem = OnDirectoryRetrieveVirtualItemFire,
-                    ItemActivate = OnDirectoryListViewItemActivateFire,
-                    ColumnClick = OnDirectoryListViewColumnClickFire,
+                    RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
+                    ItemActivate = () => { OnDirectoryListViewItemActivate(); },
+                    ColumnClick = () => { OnDirectoryListViewColumnClick(); },
                     ContextMenu = CreateDirectoryContextMenu(),
-                    ItemSelectionChanged = OnDirectoryListViewItemSelectionChangedFire
+                    ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); }
                 };
 
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
@@ -203,9 +193,9 @@ namespace cdeWin
             CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
                 {
                     MultiSelect = false,
-                    RetrieveVirtualItem = OnCatalogRetrieveVirtualItemFire,
-                    ItemActivate = OnCatalogListViewItemActivateFire,
-                    ColumnClick = OnCatalogListViewColumnClickFire,
+                    RetrieveVirtualItem = () => { OnCatalogRetrieveVirtualItem(); },
+                    ItemActivate = () => { OnCatalogListViewItemActivate(); },
+                    ColumnClick = () => { OnCatalogListViewColumnClick(); },
                 };
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
