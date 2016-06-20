@@ -2,8 +2,8 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using NUnit.Framework;
 using cdeLib;
+using NUnit.Framework;
 
 namespace cdeLibTest.Performance
 {
@@ -44,7 +44,7 @@ namespace cdeLibTest.Performance
                 RootSmall = RootEntry.LoadDirCache(TestCatalog200K);
                 if (RootSmall == null)
                 {
-                    throw new Exception("TestData setup failed cannot load " + TestCatalog200K);
+                    Assert.Inconclusive("TestData not Found" + TestCatalog200K);
                 }
                 var e1 = CommonEntry.GetDirEntries(RootSmall);
                 RootSmallCount = e1.Count();
@@ -52,7 +52,7 @@ namespace cdeLibTest.Performance
                 RootLarge  = RootEntry.LoadDirCache(TestCatalog1_2M);
                 if (RootSmall == null)
                 {
-                    throw new Exception("TestData setup failed cannot load " + TestCatalog1_2M);
+                    Assert.Inconclusive("TestData not Found" + TestCatalog1_2M);
                 }
                 var e2 = CommonEntry.GetDirEntries(RootLarge);
                 RootLargeCount = e2.Count();
@@ -70,7 +70,6 @@ namespace cdeLibTest.Performance
             if (TestData.RootLarge == null)
             {
                 Console.WriteLine("RootLarge null oops");
-                return;
             }
         }
 
@@ -200,16 +199,16 @@ namespace cdeLibTest.Performance
             for (var i = 0; i < repeatCount; i++)
             {
                 var testlist = new List<DirEntry>();
-                ((CommonEntry)root).TraverseTreePair((p, d) =>
+                root.TraverseTreePair((p, d) =>
                 {
                     testlist.Add(d);
                     return true;
                 });
             }
+
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
-
 
         private static RootEntry MeasureLoad(string catalogName)
         {
@@ -223,6 +222,7 @@ namespace cdeLibTest.Performance
                 Console.WriteLine("Not Loaded!");
                 return null;
             }
+
             Console.WriteLine("Loaded!");
             Console.WriteLine("loadTime " + loadTime + " msecs");
             return reC;
@@ -304,6 +304,7 @@ namespace cdeLibTest.Performance
                 };
                 findOptions.Find(rootEntries);
             }
+
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
@@ -313,18 +314,19 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
+            var list = new List<PairDirEntry>();
             for (var i = 0; i < repeatCount; i++)
             {
-                //var totalFound = 0L;
-                var list = new List<PairDirEntry>();
+                // var totalFound = 0L;
                 findOptions.VisitorFunc = (p, d) =>
                     {
-                        //++totalFound;
+                        // ++totalFound;
                         list.Add(new PairDirEntry(p, d));
                         return true;
                     };
                 findOptions.Find(rootEntries);
             }
+
             sw.Stop();
             return sw.ElapsedMilliseconds;
         }
@@ -336,11 +338,11 @@ namespace cdeLibTest.Performance
             var rootEntries = new List<RootEntry> { root };
             for (var i = 0; i < repeatCount; i++)
             {
-                //var totalFound = 0L;
+                // var totalFound = 0L;
                 var list = new List<DirEntry>();
                 findOptions.VisitorFunc = (p, d) =>
                 {
-                    //++totalFound;
+                    // ++totalFound;
                     list.Add(d);
                     return true;
                 };
