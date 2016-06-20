@@ -176,8 +176,10 @@ namespace cdeLibTest
             Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
             var dupePairEnum = d.GetDupePairs(rootEntries);
 
+            var itemToVerify = dupePairEnum.SingleOrDefault(x => x.Key.Path.Contains("CDE_testFile"));
+
             //Assert we have at least a count of the number of dupe files we originally created.
-            Assert.GreaterOrEqual(dupePairEnum.Count,dupeCount );
+            Assert.GreaterOrEqual(itemToVerify.Value.Count,dupeCount );
 
             //TODO: Cleanup test.
         }
