@@ -16,14 +16,11 @@ using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
-    // 
     // TODO - RootEntry needs All the Flags.
     // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
-    // 
-
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
-    public class RootEntry : DirEntry//CommonEntry
+    public class RootEntry : DirEntry // CommonEntry
     {
         private readonly IConfiguration _configuration;
         const string MatchAll = "*";
@@ -249,23 +246,23 @@ namespace cdeLib
                 var directory = t.Item2;
 
                 //// NEW
-                //var fsEntries = new FindFileSystemEntryInfo
-                //    {
-                //        IsFullPath = true,
-                //        InputPath = directory,
-                //        AsLongPath = true,
-                //        GetFsoType = null, // both files and folders.
-                //        SearchOption = SearchOption.TopDirectoryOnly,
-                //        SearchPattern = MatchAll,
-                //        Transaction = null,
-                //        ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
-                //    }.Enumerate();
-                //var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
+                // var fsEntries = new FindFileSystemEntryInfo
+                // {
+                // IsFullPath = true,
+                // InputPath = directory,
+                // AsLongPath = true,
+                // GetFsoType = null, // both files and folders.
+                // SearchOption = SearchOption.TopDirectoryOnly,
+                // SearchPattern = MatchAll,
+                // Transaction = null,
+                // ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                // }.Enumerate();
+                // var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
                 var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, DirectoryEnumerationOptions.FilesAndFolders); 
 
                 // OLD
-                //var fsEntries = Directory.GetFullFileSystemEntries
-                //    (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
+                // var fsEntries = Directory.GetFullFileSystemEntries
+                // (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
 
                 foreach (var fsEntry in fsEntries)
                 {

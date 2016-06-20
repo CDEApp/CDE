@@ -83,6 +83,10 @@
       <HintPath>..\packages\AlphaFS.2.0.1\lib\net451\AlphaFS.dll</HintPath>
       <Private>True</Private>
     </Reference>
+    <Reference Include="Autofac, Version=3.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.3.5.2\lib\net40\Autofac.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="NDesk.Options">
       <HintPath>..\packages\NDesk.Options.0.2.1\lib\NDesk.Options.dll</HintPath>
     </Reference>
@@ -138,6 +142,7 @@
     <Compile Include="RootEntryTestBase.cs" />
     <Compile Include="SerializeDataModelTest.cs" />
     <Compile Include="StringExtensionTest.cs" />
+    <Compile Include="TestHelpers\FileHelper.cs" />
     <Compile Include="TimePartialParameterTest.cs" />
   </ItemGroup>
   <ItemGroup>
@@ -157,6 +162,9 @@
       <Project>{b66e72a2-73b3-4100-b933-3c1bb86c0a6d}</Project>
       <Name>cde</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

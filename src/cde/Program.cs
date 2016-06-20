@@ -217,7 +217,7 @@ namespace cde
             duplication.FindDuplicates(rootEntries);
         }
 
-        private static void CreateMd5OnCache()
+        public static void CreateMd5OnCache()
         {
             var logger = Container.Resolve<ILogger>();
             var diagnostics = Container.Resolve<IApplicationDiagnostics>();
@@ -267,7 +267,7 @@ namespace cde
             Console.WriteLine("Saved Scanned Path {0}", e.Root.DefaultFileName);
         }
 
-        static void CreateCache(string path)
+        public static void CreateCache(string path)
         {
             var re = new RootEntry();
             try

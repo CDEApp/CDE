@@ -18,8 +18,8 @@ namespace cdeLib
             Dump,
             Version,
             Help,
-            LoadWait,
-        };
+            LoadWait
+        }
 
         private readonly OptionSet _os;
         private List<string> _currentList;
@@ -98,6 +98,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -basePath option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _currentList = _basePaths;
                         _currentList.Add(o);
                     }
@@ -108,6 +109,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -grep option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _grepEnabled = o != null;
                         _currentList = null;
                     }
@@ -118,6 +120,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -repl option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _replEnabled = o != null;
                         _currentList = null;
                     }
@@ -128,6 +131,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -path option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _pathEnabled = o != null;
                         _currentList = null;
                     }
@@ -138,6 +142,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -hashAll option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _hashAllEnabled = o != null;
                         _currentList = null;
                     }
@@ -148,6 +153,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -exclude option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _currentList = _exclude;
                         _currentList.Add(o);
                     }
@@ -158,6 +164,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -include option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _currentList = _include;
                         _currentList.Add(o);
                     }
@@ -168,6 +175,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -minSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _minSize = SizeOption(o);
                         _currentList = null;
                     }
@@ -178,6 +186,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -maxSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         _maxSize = SizeOption(o);
                         _currentList = null;
                     }
@@ -188,6 +197,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -minDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         try
                         {
                             var d = new DateTimePartialParameter(o);
@@ -197,6 +207,7 @@ namespace cdeLib
                         {
                             throw new OptionException(ae.Message, _mode.ToString());
                         }
+
                         _currentList = null;
                     }
                 },                
@@ -206,6 +217,7 @@ namespace cdeLib
                         {
                             throw new OptionException("The -maxDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
                         }
+
                         try
                         {
                             var d = new DateTimePartialParameter(o);
