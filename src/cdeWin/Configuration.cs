@@ -264,10 +264,10 @@ namespace cdeWin
             Pattern = string.Empty,
             RegexMode = false,
             IsAdvancedSearchMode = false,
-            LimitResultCountIndex = -1, // initial default value is set by win forms configuratoin code
-            FromSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
-            ToSizeDropDownIndex = -1, // initial default value is set by win forms configuratoin code
-            NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuratoin code
+            LimitResultCountIndex = -1, // initial default value is set by win forms configuration code
+            FromSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
+            ToSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
+            NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuration code
 			PatternHistoryMaximum = 50,
         };
 
@@ -309,9 +309,8 @@ namespace cdeWin
                         return Read(fs);
                     }
                 }
-                // ReSharper disable EmptyGeneralCatchClause
+                // ReSharper disable once EmptyGeneralCatchClause
                 catch { }
-                // ReSharper restore EmptyGeneralCatchClause
             }
             return null;
         }

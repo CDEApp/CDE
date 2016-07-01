@@ -1,9 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Threading;
 using System.Windows.Forms;
-using Util;
-using cdeLib;
 
 namespace cdeWin
 {

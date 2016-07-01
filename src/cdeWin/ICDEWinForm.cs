@@ -33,27 +33,17 @@ namespace cdeWin
         event EventAction OnDirectoryContextMenuParentClick;
 
         event EventAction OnDirectoryRetrieveVirtualItem;
-        //void OnDirectoryRetrieveVirtualItemFire();
         event EventAction OnDirectoryListViewItemActivate;
-        //void OnDirectoryListViewItemActivateFire();
         event EventAction OnDirectoryListViewColumnClick;
-        //void OnDirectoryListViewColumnClickFire();
         event EventAction OnDirectoryListViewItemSelectionChanged;
-        //void OnDirectoryListViewItemSelectionChangedFire();
 
         event EventAction OnSearchResultRetrieveVirtualItem;
-        //void OnSearchResultRetrieveVirtualItemFire();
         event EventAction OnSearchResultListViewItemActivate;
-        //void OnSearchResultListViewItemActivateFire();
         event EventAction OnSearchResultListViewColumnClick;
-        //void OnSearchResultListViewColumnClickFire();
 
         event EventAction OnCatalogRetrieveVirtualItem;
-        //void OnCatalogRetrieveVirtualItemFire();
         event EventAction OnCatalogListViewItemActivate;
-        //void OnCatalogListViewItemActivateFire();
         event EventAction OnCatalogListViewColumnClick;
-        //void OnCatalogListViewColumnClickFire();
 
         event EventAction OnAdvancedSearchCheckboxChanged;
 

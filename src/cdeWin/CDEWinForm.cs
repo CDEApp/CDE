@@ -91,32 +91,32 @@ namespace cdeWin
         public event EventAction OnReloadCatalogs;
 
         private readonly ComboBoxItem<int>[] _byteSizeUnits = new[]
-                {
-                    new ComboBoxItem<int>("byte(s)", 1),
-                    new ComboBoxItem<int>("KB(s)", 1000),
-                    new ComboBoxItem<int>("KiB(s)", 1024),
-                    new ComboBoxItem<int>("MB(s)", 1000*1000),
-                    new ComboBoxItem<int>("MiB(s)", 1024*1024),
-                    new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
-                    new ComboBoxItem<int>("GIB(s)", 1024*1024*1024)
-                };
+        {
+            new ComboBoxItem<int>("byte(s)", 1),
+            new ComboBoxItem<int>("KB(s)", 1000),
+            new ComboBoxItem<int>("KiB(s)", 1024),
+            new ComboBoxItem<int>("MB(s)", 1000*1000),
+            new ComboBoxItem<int>("MiB(s)", 1024*1024),
+            new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
+            new ComboBoxItem<int>("GIB(s)", 1024*1024*1024)
+        };
 
         private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = new[]
-                {
-                    new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
-                    new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
-                    new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
-                    new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
-                    new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear)
-                };
+        {
+            new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
+            new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
+            new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
+            new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
+            new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear)
+        };
 
         private readonly ComboBoxItem<int>[] _limitResultValues = new[]
-                {
-                    new ComboBoxItem<int>("Max Results 1000", 1000),
-                    new ComboBoxItem<int>("Max Results 10000", 10000),
-                    new ComboBoxItem<int>("Max Results 100000", 100000),
-                    new ComboBoxItem<int>("Unlimited Results", int.MaxValue)
-                };
+        {
+            new ComboBoxItem<int>("Max Results 1000", 1000),
+            new ComboBoxItem<int>("Max Results 10000", 10000),
+            new ComboBoxItem<int>("Max Results 100000", 100000),
+            new ComboBoxItem<int>("Unlimited Results", int.MaxValue)
+        };
 
     	private readonly IConfig _config;
 
@@ -165,21 +165,31 @@ namespace cdeWin
             findComboBox.SelectedIndex = 0; // default Files and Folders
             findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
+            // TODO having ListViewHelper setup in VIEW breaks passive view. i think.
+            // * it does register a bunch of events which it fires.... ? so not real bad.
+            // - whats happening is im making view smarter... with specific behaviour.
+            // - but its not passive, passive wourl require ListViewHelper to raise events
+            // - from gui actions....  and decisions from presenter...
+            // - - at moment, listviewhelper is small presenter ?
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
                 {
+                    // ReSharper disable PossibleNullReferenceException
                     RetrieveVirtualItem = () => { OnSearchResultRetrieveVirtualItem(); },
                     ItemActivate = () => { OnSearchResultListViewItemActivate(); },
                     ColumnClick = () => { OnSearchResultListViewColumnClick(); },
+                    // ReSharper restore PossibleNullReferenceException
                     ContextMenu = CreateSearchResultContextMenu(),
                 };
 
             DirectoryListViewHelper = new ListViewHelper<DirEntry>(directoryListView)
                 {
+                    // ReSharper disable PossibleNullReferenceException
                     RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
                     ItemActivate = () => { OnDirectoryListViewItemActivate(); },
                     ColumnClick = () => { OnDirectoryListViewColumnClick(); },
                     ContextMenu = CreateDirectoryContextMenu(),
                     ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); }
+                    // ReSharper restore PossibleNullReferenceException
                 };
 
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
@@ -187,25 +197,32 @@ namespace cdeWin
             directoryTreeView.ContextMenuStrip = CreateDirectoryTreeContextMenu();
 
             // Enter in pattern Text Box fires Search Button.
+            // TODO move this logic into presenter... not here..
+            // means fire event for each of GotFocus, LostFocus. and handle in presnter.
             patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternComboBox.LostFocus += (s, e) => AcceptButton = null;
 
             CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
                 {
                     MultiSelect = false,
+                    // ReSharper disable PossibleNullReferenceException
                     RetrieveVirtualItem = () => { OnCatalogRetrieveVirtualItem(); },
                     ItemActivate = () => { OnCatalogListViewItemActivate(); },
                     ColumnClick = () => { OnCatalogListViewColumnClick(); },
+                    // ReSharper restore PossibleNullReferenceException
                 };
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
+            // ReSharper disable PossibleNullReferenceException
             exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
             aboutToolStripMenuItem.Click += (s, e) => OnAboutMenuItem();
 
             searchButton.Click += (s, e) => OnSearch();
+            // ReSharper restore PossibleNullReferenceException
             SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
 
+            // ReSharper disable once PossibleNullReferenceException
             reloadCatalogsButton.Click += (s, e) => OnReloadCatalogs();
 
             RegisterAdvancedSearchControls();
@@ -216,6 +233,12 @@ namespace cdeWin
         private void RegisterAdvancedSearchControls()
         {
             SetTimePickerYMD(fromDateTimePicker);
+            // TODO - all these CheckBoxDependentControlHelper 
+            // - are breaking the passive view model.... 
+            // - logic needs to bein presenter so these need to event...
+            // - it the handlers should be raising events to Presenter. 
+            //   - or maybe some presenter of presenter just for checkbox dependencies ?
+            //
             FromDate = new CheckBoxDependentControlHelper(fromDateCheckbox, new Control[] { fromDateTimePicker }, new[] { notOlderThanCheckbox });
             FromDate.Checked = false;
 
@@ -252,6 +275,7 @@ namespace cdeWin
             LimitResultHelper = new DropDownHelper<int>(limitResultDropDown, _limitResultValues, 1);
             SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isnt usually useful.");
 
+            // ReSharper disable once PossibleNullReferenceException
             advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
             SetToolTip(advancedSearchCheckBox, "Enable or Disable advanced search options to include Date and Size filtering.");
         }
@@ -278,6 +302,7 @@ namespace cdeWin
 
         private void MyFormClosing(object s, FormClosingEventArgs e)
         {
+            // ReSharper disable once PossibleNullReferenceException
             OnMyFormClosing();
         }
 
@@ -286,6 +311,7 @@ namespace cdeWin
             var menuHelper = new ContextMenuHelper
             {
                 //TreeViewHandler not useful in tree
+                // ReSharper disable PossibleNullReferenceException
                 OpenHandler = (s, e) => OnDirectoryTreeContextMenuOpenClick(),
                 ExploreHandler = (s, e) => OnDirectoryTreeContextMenuExploreClick(),
                 PropertiesHandler = (s, e) => OnDirectoryTreeContextMenuPropertiesClick(),
@@ -293,14 +319,17 @@ namespace cdeWin
                 //CopyBaseNameHandler = (s, e) => (),
                 //CopyFullNameHandler = (s, e) => (),
                 ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                // ReSharper restore PossibleNullReferenceException
                 CancelOpeningEventHandler = (s, e) => DirectoryTreeContextMenuOpening(s, e),
             };
 
             return menuHelper.GetContextMenuStrip();
         }
 
+        // ReSharper disable once UnusedParameter.Local
         void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
         {
+            // ReSharper disable once ArrangeStaticMemberQualifier
             var treeNodeAtMousePosition = directoryTreeView.GetNodeAt(directoryTreeView.PointToClient(Control.MousePosition));
             var selectedTreeNode = directoryTreeView.SelectedNode;
 
@@ -327,6 +356,7 @@ namespace cdeWin
         {
             var menuHelper = new ContextMenuHelper
                 {
+                    // ReSharper disable PossibleNullReferenceException
                     TreeViewHandler = (s, e) => OnDirectoryContextMenuViewTreeClick(),
                     OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
                     ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
@@ -335,6 +365,7 @@ namespace cdeWin
                     //CopyBaseNameHandler = (s, e) => (),
                     CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
                     ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                    // ReSharper restore PossibleNullReferenceException
                     CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
                 };
             return menuHelper.GetContextMenuStrip();
@@ -344,13 +375,15 @@ namespace cdeWin
         {
             var menuHelper = new ContextMenuHelper
             {
-                TreeViewHandler = (s,e) => OnSearchResultContextMenuViewTreeClick(),
+                // ReSharper disable PossibleNullReferenceException
+                TreeViewHandler = (s, e) => OnSearchResultContextMenuViewTreeClick(),
                 OpenHandler = (s, e) => OnSearchResultContextMenuOpenClick(),
                 ExploreHandler = (s, e) => OnSearchResultContextMenuExploreClick(),
                 PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
                 SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
                 //CopyBaseNameHandler = (s, e) => (),
                 CopyFullNameHandler = (s, e) => OnSearchResultContextMenuCopyFullPathClick(),
+                // ReSharper restore PossibleNullReferenceException
                 CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e),
             };
             return menuHelper.GetContextMenuStrip();
@@ -358,18 +391,21 @@ namespace cdeWin
 
         private void MyFormActivated(object sender, EventArgs eventArgs)
         {
+            // ReSharper disable once PossibleNullReferenceException
             OnFormActivated();
         }
 
         private void DirectoryTreeViewOnAfterSelect(object s, TreeViewEventArgs e)
         {
             DirectoryTreeViewActiveAfterSelectNode = e.Node;
+            // ReSharper disable once PossibleNullReferenceException
             OnDirectoryTreeViewAfterSelect();
         }
 
         private void DirectoryTreeViewOnBeforeExpand(object s, TreeViewCancelEventArgs e)
         {
             DirectoryTreeViewActiveBeforeExpandNode = e.Node;
+            // ReSharper disable once PossibleNullReferenceException
             OnDirectoryTreeViewBeforeExpandNode();
         }
 
@@ -434,17 +470,17 @@ namespace cdeWin
 
         public void SetSearchResultStatus(int i)
         {
-            searchResultsStatus.Text = "Search Results " + i.ToString(CultureInfo.InvariantCulture);
+            searchResultsStatus.Text = @"Search Results " + i.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetTotalFileEntriesLoadedStatus(int i)
         {
-            totalFileEntriesStatus.Text = "Entries " + i.ToString(CultureInfo.InvariantCulture);
+            totalFileEntriesStatus.Text = @"Entries " + i.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetCatalogsLoadedStatus(int i)
         {
-            catalogsLoadedStatus.Text = "Catalogs " + i.ToString(CultureInfo.InvariantCulture);
+            catalogsLoadedStatus.Text = @"Catalogs " + i.ToString(CultureInfo.InvariantCulture);
         }
 
         public void SetSearchTimeStatus(string s)
@@ -589,6 +625,7 @@ namespace cdeWin
 
         private void CDEWinFormShown(object sender, EventArgs e)
         {
+            // ReSharper disable once PossibleNullReferenceException
             OnFormShown();
         }
     }

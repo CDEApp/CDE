@@ -10,11 +10,11 @@ namespace cdeWin
         {
             var columns = chc.OfType<ColumnHeader>();
             return columns.Select(columnHeader =>
-                                  new ColumnConfig
-                                      {
-                                          Name = columnHeader.Text,
-                                          Width = columnHeader.Width
-                                      });
+                new ColumnConfig
+                {
+                    Name = columnHeader.Text,
+                    Width = columnHeader.Width
+                });
         }
     }
 }

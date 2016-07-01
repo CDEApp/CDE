@@ -256,15 +256,15 @@ namespace cdeWin
 
         private void MySelectedIndexChanged(object sender, EventArgs e)
         {
-            DirectoryListViewItemSelectionChanged();
+            ListViewItemSelectionChanged();
         }
 
         private void MyVirtualItemsSelectionRangeChanged(object sender, ListViewVirtualItemsSelectionRangeChangedEventArgs e)
         {
-            DirectoryListViewItemSelectionChanged();
+            ListViewItemSelectionChanged();
         }
 
-        private void DirectoryListViewItemSelectionChanged()
+        private void ListViewItemSelectionChanged()
         {
             SelectedIndicesCount = _listView.SelectedIndices.Count; // todo can i lose this ?
             SelectedIndices = _listView.SelectedIndices.OfType<int>();
