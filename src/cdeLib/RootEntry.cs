@@ -258,7 +258,11 @@ namespace cdeLib
                 // ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
                 // }.Enumerate();
                 // var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
-                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, DirectoryEnumerationOptions.FilesAndFolders); 
+                const DirectoryEnumerationOptions options =
+                    DirectoryEnumerationOptions.FilesAndFolders |
+                    DirectoryEnumerationOptions.ContinueOnException |
+                    DirectoryEnumerationOptions.LargeCache;
+                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, options); 
 
                 // OLD
                 // var fsEntries = Directory.GetFullFileSystemEntries
