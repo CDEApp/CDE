@@ -38,12 +38,12 @@ namespace cdeLibTest
             long gcMemEnd = GC.GetTotalMemory(true);
             long processMemEnd = objProcess.PrivateMemorySize64;
 
-            Console.WriteLine("GC Memory Use:{0} (bytes)", gcMemEnd - gcMemStart);
-            Console.WriteLine("Process Memory Use:{0} (bytes)", processMemEnd - processMemStart);
-            Console.WriteLine("GC Memory Start:{0} (bytes)", gcMemStart);
-            Console.WriteLine("Process Memory Start:{0} (bytes)", processMemStart);
-            Console.WriteLine("GC Memory End:{0} (bytes)", gcMemEnd);
-            Console.WriteLine("x Process Memory End:{0} (bytes)", processMemEnd);
+            Console.WriteLine($"GC Memory Use:{gcMemEnd - gcMemStart} (bytes)");
+            Console.WriteLine($"Process Memory Use:{processMemEnd - processMemStart} (bytes)");
+            Console.WriteLine($"GC Memory Start:{gcMemStart} (bytes)");
+            Console.WriteLine($"Process Memory Start:{processMemStart} (bytes)");
+            Console.WriteLine($"GC Memory End:{gcMemEnd} (bytes)");
+            Console.WriteLine($"x Process Memory End:{processMemEnd} (bytes)");
             Console.WriteLine();
             //Console.ReadLine();
         }
@@ -159,7 +159,7 @@ namespace cdeLibTest
         public void Read_ASavedFile_OK()
         {
             var e2 = EntryStore.Read("C-Vertex3.cde");
-            Console.WriteLine("loaded {0}", e2.Root.DefaultFileName);
+            Console.WriteLine($"loaded {e2.Root.DefaultFileName}");
         }
 
         [Ignore("its a long test available for convenience.")]
@@ -179,9 +179,9 @@ namespace cdeLibTest
             e.RecurseTree();
             e.SaveToFile();
 
-            Console.WriteLine("BaseBlockCount {0}", e.BaseBlockCount);
+            Console.WriteLine($"BaseBlockCount {e.BaseBlockCount}");
 
-            Console.WriteLine(@"after scanning C:\ NextAvailableIndex = {0}", e.NextAvailableIndex);
+            Console.WriteLine($@"after scanning C:\ NextAvailableIndex = {e.NextAvailableIndex}");
 
             uint nonEmptyNameCount = 0;
             uint nonEmptyFullPathCount = 0;
@@ -200,19 +200,19 @@ namespace cdeLibTest
                 }
             }
 
-            Console.WriteLine(@"NonEmptyNameCount = {0}", nonEmptyNameCount);
-            Console.WriteLine(@"NonEmptyFullPathCount = {0}", nonEmptyFullPathCount);
+            Console.WriteLine($@"NonEmptyNameCount = {nonEmptyNameCount}");
+            Console.WriteLine($@"NonEmptyFullPathCount = {nonEmptyFullPathCount}");
 
             //Measure memory after allocating -- this isnt working in Release run ? to quick ?
             long gcMemEnd = GC.GetTotalMemory(true);
             long processMemEnd = objProcess.PrivateMemorySize64;
 
-            Console.WriteLine("GC Memory Use:{0} (bytes)", gcMemEnd - gcMemStart);
-            Console.WriteLine("Process Memory Use:{0} (bytes)", processMemEnd - processMemStart);
-            Console.WriteLine("GC Memory Start:{0} (bytes)", gcMemStart);
-            Console.WriteLine("Process Memory Start:{0} (bytes)", processMemStart);
-            Console.WriteLine("GC Memory End:{0} (bytes)", gcMemEnd);
-            Console.WriteLine("x Process Memory End:{0} (bytes)", processMemEnd);
+            Console.WriteLine($"GC Memory Use:{gcMemEnd - gcMemStart} (bytes)");
+            Console.WriteLine($"Process Memory Use:{processMemEnd - processMemStart} (bytes)");
+            Console.WriteLine($"GC Memory Start:{gcMemStart} (bytes)");
+            Console.WriteLine($"Process Memory Start:{processMemStart} (bytes)");
+            Console.WriteLine($"GC Memory End:{gcMemEnd} (bytes)");
+            Console.WriteLine($"x Process Memory End:{processMemEnd} (bytes)");
             Console.WriteLine();
             File.Delete(e.Root.DefaultFileName); // get rid of file we created.
         }

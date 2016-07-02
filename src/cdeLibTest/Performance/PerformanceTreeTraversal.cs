@@ -116,7 +116,7 @@ namespace cdeLibTest.Performance
 
         private void OutputStatLine(string name, int repeat, int entryCount, long msecs)
         {
-            Console.WriteLine("{0},{1},{2},{3},{4},{5}", name, repeat, entryCount, msecs, 1.0*msecs/repeat, (1.0*msecs/repeat)/entryCount);
+            Console.WriteLine($"{name},{repeat},{entryCount},{msecs},{1.0*msecs/repeat},{(1.0*msecs/repeat)/entryCount}");
         }
 
         public long DoPairDirEntryEnumeratorCountTest(RootEntry root, int repeatCount)

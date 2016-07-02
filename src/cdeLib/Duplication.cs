@@ -135,7 +135,7 @@ namespace cdeLib
             catch (Exception ex)
             {
                 //parallel cancellation. will be OperationCancelled or Aggregate Exception
-                Console.WriteLine("Exception Type {0}", ex.GetType());
+                Console.WriteLine($"Exception Type {ex.GetType()}");
                 Console.WriteLine(ex.Message);
                 return;
             }

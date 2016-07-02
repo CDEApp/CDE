@@ -81,7 +81,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-scan" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("Missing required value for option '-scan'."));
         }
 
@@ -90,7 +90,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-find" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("Missing required value for option '-find'."));
         }
 
@@ -99,7 +99,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-scan", @"C:\", "-find", "hello" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("Only one Mode argument is allowed '-find'."));
         }
 
@@ -108,7 +108,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-dupes", "-notExist" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("Error unmatched parameter: '-notExist'"));
         }
     }
@@ -121,7 +121,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-scan", @"C:\", "-grep" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("The -grep option is not supported in mode '-scan'."));
         }
 
@@ -130,7 +130,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-scan", @"C:\", "-path" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("The -path option is not supported in mode '-scan'."));
         }
 
@@ -139,7 +139,7 @@ namespace cdeLibTest
         {
             var args = new[] { "-scan", @"C:\", "-repl" };
             var cdeArgs = new CDEArgs(args);
-            Console.WriteLine("error \"{0}\"", cdeArgs.Error);
+            Console.WriteLine($"error \"{cdeArgs.Error}\"");
             Assert.That(cdeArgs.Error, Is.EqualTo("The -repl option is not supported in mode '-scan'."));
         }
 

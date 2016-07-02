@@ -54,10 +54,8 @@ namespace cdeLibTest.Infrastructure
                     testSubject.Value.Hash(data);
                 }
                 timer.Stop();
-                Console.WriteLine("{0}:\t\t{1:F2} MB/s ({2})", testSubject.Key,
-                    (data.Length * (1000.0 / (timer.ElapsedMilliseconds / 9999.0)))
-                        / (1024.0 * 1024.0),
-                    timer.ElapsedMilliseconds);
+                Console.WriteLine(
+                    $"{testSubject.Key}:\t\t{(data.Length*(1000.0/(timer.ElapsedMilliseconds/9999.0)))/(1024.0*1024.0):F2} MB/s ({timer.ElapsedMilliseconds})");
             }
         }
     }

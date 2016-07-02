@@ -112,13 +112,13 @@ namespace cdeLibTest.Infrastructure
             Assert.That(dupes[1].Value.Count, Is.EqualTo(3)); // testset3 has 3 dupes
 
             Console.WriteLine();
-            Console.WriteLine("Dumping sets of duplicates count {0}", dupes.Count);
+            Console.WriteLine($"Dumping sets of duplicates count {dupes.Count}");
             foreach (var dupe in dupes)
             {
-                Console.WriteLine("set of dupes to {0}", dupe.Key.Path);
+                Console.WriteLine($"set of dupes to {dupe.Key.Path}");
                 foreach (var adupe in dupe.Value)
                 {
-                    Console.WriteLine("dupe set file {0}", adupe.FullPath);
+                    Console.WriteLine($"dupe set file {adupe.FullPath}");
                 }
             }
         }
@@ -137,7 +137,7 @@ namespace cdeLibTest.Infrastructure
         {
             Process currentProcess = Process.GetCurrentProcess();
             long totalBytesOfMemoryUsed = currentProcess.WorkingSet64;
-            Console.WriteLine("Memory Usage {0}",totalBytesOfMemoryUsed);
+            Console.WriteLine($"Memory Usage {totalBytesOfMemoryUsed}");
             var hashHelper = new HashHelper();
             var hash = HashHelper.GetMD5HashFromFile("C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
 

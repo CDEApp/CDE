@@ -20,11 +20,11 @@ namespace AlphaFSTest
         {
             const string vol = @"C:\";
             var vi = Volume.GetVolumeInfo(vol); // requires a root volume specifier it seems
-            Console.WriteLine("vi.FileSystemName {0}", vi.FileSystemName);
-            Console.WriteLine("vi.MaximumComponentLength {0}", vi.MaximumComponentLength);
-            Console.WriteLine("vi.PersistentAcls {0}", vi.PersistentAcls);
-            Console.WriteLine("vi.SerialNumber {0}", vi.SerialNumber);
-            Console.WriteLine("vi.Name {0}", vi.Name);
+            Console.WriteLine($"vi.FileSystemName {vi.FileSystemName}");
+            Console.WriteLine($"vi.MaximumComponentLength {vi.MaximumComponentLength}");
+            Console.WriteLine($"vi.PersistentAcls {vi.PersistentAcls}");
+            Console.WriteLine($"vi.SerialNumber {vi.SerialNumber}");
+            Console.WriteLine($"vi.Name {vi.Name}");
         }
 
         [Test]
@@ -32,11 +32,11 @@ namespace AlphaFSTest
         {
             const string path = @"C:\temp";
             var dsi = Volume.GetDiskFreeSpace(path, false);
-            Console.WriteLine("FreeBytesAvailable {0}", dsi.FreeBytesAvailable);
-            Console.WriteLine("TotalNumberOfBytes {0}", dsi.TotalNumberOfBytes);
+            Console.WriteLine($"FreeBytesAvailable {dsi.FreeBytesAvailable}");
+            Console.WriteLine($"TotalNumberOfBytes {dsi.TotalNumberOfBytes}");
 
             var p = Directory.GetDirectoryRoot(path);
-            Console.WriteLine("GetDirectoryRoot {0} => {1}", path, p);
+            Console.WriteLine($"GetDirectoryRoot {path} => {p}");
         }
 
         // ReSharper disable InconsistentNaming
@@ -46,12 +46,12 @@ namespace AlphaFSTest
             var vols = Volume.EnumerateVolumes();
             foreach (var vol in vols)
             {
-                Console.WriteLine("Volume {0}", vol);
+                Console.WriteLine($"Volume {vol}");
                 var volPaths = Volume.EnumerateVolumePathNames(vol);
                 var lastPath = "";
                 foreach (var volPath in volPaths)
                 {
-                    Console.WriteLine("Volume Path {0}", volPath);
+                    Console.WriteLine($"Volume Path {volPath}");
                     lastPath = volPath;
                 }
 
@@ -182,7 +182,7 @@ namespace AlphaFSTest
 
             foreach (var file in files)
             {
-                Console.WriteLine("file {0}", file);
+                Console.WriteLine($"file {file}");
             }
 
             //System.Threading.Thread.Sleep(1000); // delay 1 second
@@ -205,39 +205,41 @@ namespace AlphaFSTest
             // if G: is G:\ then it returns G:\
 
             var originalDir = Directory.GetCurrentDirectory();
-            Console.WriteLine("0 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine($"0 Directory.GetCurrentDirectory() {Directory.GetCurrentDirectory()}");
             Console.WriteLine();
 
             var alphaFP = Path.GetFullPath(@"C:");
             var ioFP = System.IO.Path.GetFullPath(@"C:");
-            Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", alphaFP);
-            Console.WriteLine("0 System.IO.Path.GetFullPath(@\"C:\") {0}", ioFP);
+            Console.WriteLine($"0 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {alphaFP}");
+            Console.WriteLine($"0 System.IO.Path.GetFullPath(@\"C:\") {ioFP}");
             Console.WriteLine();
             Assert.That(alphaFP, Is.EqualTo(ioFP));
 
-            Console.WriteLine("0 Alphaleonis.Win32.Filesystem.Directory.GetDirectoryRoot(@\"C:\") {0}", Directory.GetDirectoryRoot(@"C:"));
-            Console.WriteLine("0 System.IO.Directory.GetDirectoryRoot(@\"C:\") {0}", System.IO.Directory.GetDirectoryRoot(@"C:"));
+            Console.WriteLine(
+                $"0 Alphaleonis.Win32.Filesystem.Directory.GetDirectoryRoot(@\"C:\") {Directory.GetDirectoryRoot(@"C:")}");
+            Console.WriteLine(
+                $"0 System.IO.Directory.GetDirectoryRoot(@\"C:\") {System.IO.Directory.GetDirectoryRoot(@"C:")}");
             Console.WriteLine();
             Assert.That(Directory.GetDirectoryRoot(@"C:"), Is.EqualTo(System.IO.Directory.GetDirectoryRoot(@"C:")));
 
             Directory.SetCurrentDirectory(@"C:\Windows\");
-            Console.WriteLine("1 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
-            Console.WriteLine("1 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
-            Console.WriteLine("1 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine($"1 Directory.GetCurrentDirectory() {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"1 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {Path.GetFullPath(@"C:")}");
+            Console.WriteLine($"1 System.IO.Path.GetFullPath(@\"C:\") {System.IO.Path.GetFullPath(@"C:")}");
             Console.WriteLine();
             Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
 
             Directory.SetCurrentDirectory(@"C:\");
-            Console.WriteLine("2 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
-            Console.WriteLine("2 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
-            Console.WriteLine("2 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine($"2 Directory.GetCurrentDirectory() {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"2 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {Path.GetFullPath(@"C:")}");
+            Console.WriteLine($"2 System.IO.Path.GetFullPath(@\"C:\") {System.IO.Path.GetFullPath(@"C:")}");
             Console.WriteLine();
             Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
 
             Directory.SetCurrentDirectory(originalDir);
-            Console.WriteLine("3 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
-            Console.WriteLine("3 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {0}", Path.GetFullPath(@"C:"));
-            Console.WriteLine("3 System.IO.Path.GetFullPath(@\"C:\") {0}", System.IO.Path.GetFullPath(@"C:"));
+            Console.WriteLine($"3 Directory.GetCurrentDirectory() {Directory.GetCurrentDirectory()}");
+            Console.WriteLine($"3 Alphaleonis.Win32.Filesystem.Path.GetFullPath(@\"C:\") {Path.GetFullPath(@"C:")}");
+            Console.WriteLine($"3 System.IO.Path.GetFullPath(@\"C:\") {System.IO.Path.GetFullPath(@"C:")}");
             Console.WriteLine();
             Assert.That(Path.GetFullPath(@"C:"), Is.EqualTo(System.IO.Path.GetFullPath(@"C:")));
         }

@@ -643,11 +643,11 @@ namespace cdeWinTest
                 var got = listViewItem.SubItems[i].Text;
                 if (expect != got)
                 {
-                    Assert.Fail("At index {0} expected item \"{1}\" did not match \"{2}\"", i, expect, got);
+                    Assert.Fail($"At index {i} expected item \"{expect}\" did not match \"{got}\"");
                 }
                 else
                 {
-                    Console.WriteLine("{0} {1}", i, expect);
+                    Console.WriteLine($"{i} {expect}");
                 }
             }
         }

@@ -22,7 +22,7 @@ namespace cdeLib.Infrastructure
 
         public void LogException(Exception ex, string format, params object[] paramList)
         {
-            Console.WriteLine("{0}: {1} {2}", ex.GetType(), string.Format(format, paramList), ex.Message);
+            Console.WriteLine($"{ex.GetType()}: {string.Format(format, paramList)} {ex.Message}");
         }
 
         public void LogInfo(string format, params object[] paramList)

@@ -1127,10 +1127,10 @@ namespace Mono.Terminal
 
             public void Dump()
             {
-                Console.WriteLine("Head={0} Tail={1} Cursor={2}", head, tail, cursor);
+                Console.WriteLine($"Head={head} Tail={tail} Cursor={cursor}");
                 for (int i = 0; i < history.Length; i++)
                 {
-                    Console.WriteLine(" {0} {1}: {2}", i == cursor ? "==>" : "   ", i, history[i]);
+                    Console.WriteLine($" {(i == cursor ? "==>" : "   ")} {i}: {history[i]}");
                 }
                 //log.Flush ();
             }

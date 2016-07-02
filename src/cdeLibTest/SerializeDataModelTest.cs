@@ -33,8 +33,8 @@ namespace cdeLibTest
             Serializer.Serialize(ms, re1);
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(118));
         }
 
@@ -85,8 +85,8 @@ namespace cdeLibTest
             Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
 
             var b = ms.ToArray();
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
 
             var newMS = new MemoryStream(b);
 

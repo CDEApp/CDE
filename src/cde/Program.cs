@@ -101,7 +101,7 @@ namespace cde
 
                 while (running && (s = le.Edit("shell> ", string.Empty)) != null)
                 {
-                    Console.WriteLine("----> [{0}]", s);
+                    Console.WriteLine($"----> [{s}]");
                     switch (s)
                     {
                         case "quit":
@@ -239,7 +239,7 @@ namespace cde
             sw.Stop();
             var ts = sw.Elapsed;
             var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
-            Console.WriteLine("Hash took : {0}",elapsedTime);
+            Console.WriteLine($"Hash took : {elapsedTime}");
         }
 
         private static void CreateMd5OnCache2()
@@ -262,9 +262,9 @@ namespace cde
             e.Root.ScanEndUTC = DateTime.UtcNow;
             e.SaveToFile();
             var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
-            Console.WriteLine("Scanned Path {0}", e.Root.Path);
-            Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
-            Console.WriteLine("Saved Scanned Path {0}", e.Root.DefaultFileName);
+            Console.WriteLine($"Scanned Path {e.Root.Path}");
+            Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
+            Console.WriteLine($"Saved Scanned Path {e.Root.DefaultFileName}");
         }
 
         public static void CreateCache(string path)
@@ -286,27 +286,28 @@ namespace cde
                 var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
                 if (oldRoot != null)
                 {
-                    Console.WriteLine("Found cache \"{0}\"", re.DefaultFileName);
+                    Console.WriteLine($"Found cache \"{re.DefaultFileName}\"");
                     Console.WriteLine("Updating hashs on new scan from found cache file.");
                     oldRoot.TraverseTreesCopyHash(re);
                 }
                 re.SortAllChildrenByPath();
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
-                Console.WriteLine("Scanned Path {0}", re.Path);
-                Console.WriteLine("Scan time {0:0.00} msecs", scanTimeSpan.TotalMilliseconds);
-                Console.WriteLine("Saved Scanned Path {0}", re.DefaultFileName);
-                Console.WriteLine("Files {0:0,0} Dirs {1:0,0} Total Size of Files {2:0,0}", re.FileEntryCount, re.DirEntryCount, re.Size);
+                Console.WriteLine($"Scanned Path {re.Path}");
+                Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
+                Console.WriteLine($"Saved Scanned Path {re.DefaultFileName}");
+                Console.WriteLine(
+                    $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0}");
             }
             catch (ArgumentException aex)
             {
-                Console.WriteLine("Error: {0}", aex.Message);
+                Console.WriteLine($"Error: {aex.Message}");
             }
         }
 
         private static void PrintExceptions(string path, Exception ex)
         {
-            Console.WriteLine("Exception {0}, Path \"{1}\"", ex.GetType(), path);
+            Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
         }
 
         private static void ScanCountPrintDot()
@@ -327,7 +328,7 @@ namespace cde
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 var bang = pairDirEntry.PathProblem ? "!" : " ";
-                Console.WriteLine("{0}{1}{2}", hash, bang, pairDirEntry.FullPath);
+                Console.WriteLine($"{hash}{bang}{pairDirEntry.FullPath}");
                 if (Hack.BreakConsoleFlag)
                 {
                     break;
@@ -346,7 +347,7 @@ namespace cde
 
             foreach (var e in largeEntries.Where(e => e.Children != null && e.Children.Count > minimumCount))
             {
-                Console.WriteLine("{0} {1}", e.FullPath, e.Children.Count);
+                Console.WriteLine($"{e.FullPath} {e.Children.Count}");
                 if (Hack.BreakConsoleFlag)
                 {
                     break;

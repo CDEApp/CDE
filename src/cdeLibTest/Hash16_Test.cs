@@ -29,8 +29,8 @@ namespace cdeLibTest
             // ReSharper restore RedundantExplicitArraySize
             var s1 = ByteArrayHelper.ByteArrayToString(b);
             var s2 = new Hash16(b).HashAsString;
-            Console.WriteLine("s1 {0}", s1);
-            Console.WriteLine("s2 {0}", s2);
+            Console.WriteLine($"s1 {s1}");
+            Console.WriteLine($"s2 {s2}");
             Assert.That(s2, Is.EqualTo("ffeeddccbbaa99887766554433221100"));
         }
 
@@ -52,8 +52,8 @@ namespace cdeLibTest
             }
             var h16 = new Hash16(hash);
 
-            Console.WriteLine("h16.HashAsString {0}", h16.HashAsString);
-            Console.WriteLine("         old hex {0}", ByteArrayHelper.ByteArrayToString(hash));
+            Console.WriteLine($"h16.HashAsString {h16.HashAsString}");
+            Console.WriteLine($"         old hex {ByteArrayHelper.ByteArrayToString(hash)}");
 
             Assert.That(h16.HashAsString, Is.EqualTo("a4bd60352d683c3eac5f826528bbfd02"));
         }

@@ -180,7 +180,7 @@ namespace cdeLib
                     siblingIndex = newIndex; // sibling chain for next entry
                     if (block[entryIndex].IsModifiedBad)
                     {
-                        Console.WriteLine("Bad date on \"{0}\"", fsEntry.FullPath);
+                        Console.WriteLine($"Bad date on \"{fsEntry.FullPath}\"");
                     }
 
                     if (fsEntry.IsDirectory)
@@ -462,7 +462,7 @@ namespace cdeLib
                 Entry[] block;
                 var entryIndex = EntryIndex(entryKey.Index, out block);
                 var hash = block[entryIndex].IsHashDone ? "#" : " ";
-                Console.WriteLine("{0}{1}", hash, block[entryIndex].GetFullPath(this));
+                Console.WriteLine($"{hash}{block[entryIndex].GetFullPath(this)}");
             }
         }
 
@@ -551,8 +551,9 @@ namespace cdeLib
                 }
             } while (goNext);
 
-            Console.WriteLine("loopy {0}", loopy);
-            Console.WriteLine("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
+            Console.WriteLine($"loopy {loopy}");
+            Console.WriteLine(
+                $"Deleted entries from dictionary: {_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()}, dupeDictCount {_duplicateFileSize.Count}");
             return _duplicateFileSize;
         }
     }

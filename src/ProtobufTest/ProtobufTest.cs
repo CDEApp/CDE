@@ -22,8 +22,8 @@ namespace ProtobufTest
             ms.Close();
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(2));
         }
 
@@ -45,8 +45,8 @@ namespace ProtobufTest
             ms.Close();
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(2));
         }
 
@@ -69,8 +69,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(17));
         }
 
@@ -86,8 +86,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(5));
         }
 
@@ -107,8 +107,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(17));
         }
 
@@ -138,8 +138,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(5));
         }
 
@@ -168,8 +168,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(12));
         }
 
@@ -185,8 +185,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             Assert.That(b.Length, Is.EqualTo(22));
         }
     }
@@ -332,8 +332,8 @@ namespace ProtobufTest
 
             var b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             //Assert.That(b.Length, Is.EqualTo(23));
 
             var tbClass2 = new TestBool1_Flags();
@@ -343,8 +343,8 @@ namespace ProtobufTest
 
             b = ms.ToArray();
 
-            Console.WriteLine("b.Length {0}", b.Length);
-            Console.WriteLine("b {0}", ByteArrayHelper.ByteArrayToString(b));
+            Console.WriteLine($"b.Length {b.Length}");
+            Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
             //Assert.That(b.Length, Is.EqualTo(13));
 
         }

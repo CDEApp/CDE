@@ -61,11 +61,11 @@ namespace cdeLibTest
             var d = new Duplication(_logger,_configuration,_applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(roots);
 
-            Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
+            Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
             Assert.That(sizePairDictionary.Count, Is.EqualTo(2));
 
             var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize_ExcludePartialHash(sizePairDictionary);
-            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            Console.WriteLine($"Sum of total unique hashes (split on filesize to) {sumOfUniqueHashesForEachSize}");
             Assert.That(sumOfUniqueHashesForEachSize, Is.EqualTo(5));
         }
 
@@ -119,13 +119,13 @@ namespace cdeLibTest
             var ah6 = Hash16.EqualityComparer.StaticGetHashCode(de6.Hash);
             var ah7 = Hash16.EqualityComparer.StaticGetHashCode(de7.Hash);
             var ah8 = Hash16.EqualityComparer.StaticGetHashCode(de8.Hash);
-            Console.WriteLine("de5.Hash {0}  de6.Hash {1} de7.Hash {2} de8.Hash {3}", ah5, ah6, ah7, ah8);
+            Console.WriteLine($"de5.Hash {ah5}  de6.Hash {ah6} de7.Hash {ah7} de8.Hash {ah8}");
 
             var a5 = DirEntry.EqualityComparer.StaticGetHashCode(de5);
             var a6 = DirEntry.EqualityComparer.StaticGetHashCode(de6);
             var a7 = DirEntry.EqualityComparer.StaticGetHashCode(de7);
             var a8 = DirEntry.EqualityComparer.StaticGetHashCode(de8);
-            Console.WriteLine("de5 {0}  de6 {1} de7 {2} de8 {3}", a5, a6, a7, a8);
+            Console.WriteLine($"de5 {a5}  de6 {a6} de7 {a7} de8 {a8}");
         }
 
         private string AssemblyPathLocation()
@@ -154,7 +154,7 @@ namespace cdeLibTest
             Program.CreateMd5OnCache();
 
             //run tests.
-            Console.WriteLine("0 Directory.GetCurrentDirectory() {0}", Directory.GetCurrentDirectory());
+            Console.WriteLine($"0 Directory.GetCurrentDirectory() {Directory.GetCurrentDirectory()}");
             var rootEntries = RootEntry.LoadCurrentDirCache();
 
             if (rootEntries.Count == 0)
@@ -164,15 +164,15 @@ namespace cdeLibTest
             }
             foreach (var r in rootEntries)
             {
-                Console.WriteLine("loaded {0}", r.DefaultFileName);
+                Console.WriteLine($"loaded {r.DefaultFileName}");
             }
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(rootEntries);
 
-            Console.WriteLine("Number of Size Pairs {0}", sizePairDictionary.Count);
+            Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
             var sumOfUniqueHashesForEachSize = GetSumOfUniqueHashesForEachSize_ExcludePartialHash(sizePairDictionary);
-            Console.WriteLine("Sum of total unique hashes (split on filesize to) {0}", sumOfUniqueHashesForEachSize);
+            Console.WriteLine($"Sum of total unique hashes (split on filesize to) {sumOfUniqueHashesForEachSize}");
             var dupePairEnum = d.GetDupePairs(rootEntries);
 
             var itemToVerify = dupePairEnum.SingleOrDefault(x => x.Key.Path.Contains("CDE_testFile"));
@@ -225,7 +225,7 @@ namespace cdeLibTest
                 {
                     if (de.ChildDE.IsPartialHash)
                     {
-                        Console.WriteLine("Trouble partial hash {0}", de.FullPath);
+                        Console.WriteLine($"Trouble partial hash {de.FullPath}");
                         Assert.Fail();
                     }
                 }

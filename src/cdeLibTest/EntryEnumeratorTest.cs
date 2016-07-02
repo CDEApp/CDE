@@ -191,7 +191,7 @@ namespace cdeLibTest
             // root(1) -> file1(2)
             File1Index = EStore.AddEntry("file1", null, 55,
                     new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: RootIndex);
-            Console.WriteLine("NextAvailableIndex 1 {0}", EStore.NextAvailableIndex);
+            Console.WriteLine($"NextAvailableIndex 1 {EStore.NextAvailableIndex}");
         }
 
         // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
@@ -204,7 +204,7 @@ namespace cdeLibTest
             // root(1) -> dir2(3), file1(2) # dir2(3) -> file3(4)
             File3Index = EStore.AddEntry("file3", null, 66,
                     new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: Dir2Index);
-            Console.WriteLine("NextAvailableIndex 2 {0}", EStore.NextAvailableIndex);
+            Console.WriteLine($"NextAvailableIndex 2 {EStore.NextAvailableIndex}");
         }
 
         // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
@@ -213,7 +213,7 @@ namespace cdeLibTest
             // root(1) -> dir2(3), file1(2) # dir2(3) -> file4(5), file3(4)
             File4Index = EStore.AddEntry("file4", null, 77,
                                          new DateTime(2011, 05, 04, 10, 09, 05), parentIndex: Dir2Index);
-            Console.WriteLine("NextAvailableIndex 3 {0}", EStore.NextAvailableIndex);
+            Console.WriteLine($"NextAvailableIndex 3 {EStore.NextAvailableIndex}");
         }
 
         // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
@@ -226,12 +226,12 @@ namespace cdeLibTest
             // root(1) -> file1(.), dir2(.)
             File1Index = EStore.AddEntry("file1", null, 55,
                     new DateTime(2011, 05, 04, 10, 09, 07), parentIndex: RootIndex);
-            Console.WriteLine("NextAvailableIndex 1 {0}", EStore.NextAvailableIndex);
+            Console.WriteLine($"NextAvailableIndex 1 {EStore.NextAvailableIndex}");
 
             // root(1) -> file1(.), dir2(.) # dir2(.) -> dir5(.)
             Dir5Index = EStore.AddEntry("dir5", @"x:\dir2\dir5", 0,
                                          new DateTime(2011, 05, 04, 10, 09, 04), parentIndex: Dir2Index);
-            Console.WriteLine("NextAvailableIndex 4 {0}", EStore.NextAvailableIndex);
+            Console.WriteLine($"NextAvailableIndex 4 {EStore.NextAvailableIndex}");
         }
     }
 }

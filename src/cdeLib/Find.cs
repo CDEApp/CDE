@@ -44,7 +44,7 @@ namespace cdeLib
             findOptions.Find(_rootEntries);
             if (totalFound >  0)
             {
-                Console.WriteLine("Found a total of {0} entries. Matching pattern \"{1}\"", totalFound, pattern);
+                Console.WriteLine($"Found a total of {totalFound} entries. Matching pattern \"{pattern}\"");
             }
             else
             {
@@ -60,10 +60,11 @@ namespace cdeLib
                 _rootEntries = RootEntry.LoadCurrentDirCache();
                 var end = DateTime.UtcNow;
                 var loadTimeSpan = end - start;
-                Console.WriteLine("Loaded {0} file(s) in {1:0.00} msecs", _rootEntries.Count, loadTimeSpan.TotalMilliseconds);
+                Console.WriteLine($"Loaded {_rootEntries.Count} file(s) in {loadTimeSpan.TotalMilliseconds:0.00} msecs");
                 foreach (var rootEntry in _rootEntries)
                 {
-                    Console.WriteLine("Loaded File {0} with {1} entries.", rootEntry.DefaultFileName, rootEntry.DirEntryCount + rootEntry.FileEntryCount);
+                    Console.WriteLine(
+                        $"Loaded File {rootEntry.DefaultFileName} with {rootEntry.DirEntryCount + rootEntry.FileEntryCount} entries.");
                 }
             }
         }

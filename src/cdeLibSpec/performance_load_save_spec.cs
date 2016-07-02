@@ -67,9 +67,8 @@ namespace cdeLibSpec
             {
                 if (sampleCount > 0)
                 {
-                    Console.WriteLine("\"{0}\", {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}",
-                        desc, compressCode, sampleCount, count, originalSize, writtenSize,
-                        writeDuration, readDuration, writeFileDuration, readFileDuration, writeFileSSDDuration, readFileSSDDuration);
+                    Console.WriteLine(
+                        $"\"{desc}\", {compressCode}, {sampleCount}, {count}, {originalSize}, {writtenSize}, {writeDuration}, {readDuration}, {writeFileDuration}, {readFileDuration}, {writeFileSSDDuration}, {readFileSSDDuration}");
                 }
             }
         }
@@ -289,28 +288,28 @@ namespace cdeLibSpec
             using (ms = new MemoryStream(buf))
             //using (ms = new MemoryStream())
             {
-                Console.WriteLine("c: {0} p: {1} l: {2}", ms.Capacity, ms.Position, ms.Length);
+                Console.WriteLine($"c: {ms.Capacity} p: {ms.Position} l: {ms.Length}");
                 var b = Encoding.UTF8.GetBytes(str);
                 ms.Write(b, 0, b.Length);
                 ms.Flush();
-                Console.WriteLine("c: {0} p: {1} l: {2}", ms.Capacity, ms.Position, ms.Length);
+                Console.WriteLine($"c: {ms.Capacity} p: {ms.Position} l: {ms.Length}");
                 ms.Close();
             }
             var x = ms.ToArray();
-            Console.WriteLine("x.Length: {0}", x.Length);
+            Console.WriteLine($"x.Length: {x.Length}");
 
             //using (ms = new MemoryStream(buf))
             using (ms = new MemoryStream())
             {
-                Console.WriteLine("c: {0} p: {1} l: {2}", ms.Capacity, ms.Position, ms.Length);
+                Console.WriteLine($"c: {ms.Capacity} p: {ms.Position} l: {ms.Length}");
                 var b = Encoding.UTF8.GetBytes(str);
                 ms.Write(b, 0, b.Length);
                 ms.Flush();
-                Console.WriteLine("c: {0} p: {1} l: {2}", ms.Capacity, ms.Position, ms.Length);
+                Console.WriteLine($"c: {ms.Capacity} p: {ms.Position} l: {ms.Length}");
                 ms.Close();
             }
             var x2 = ms.ToArray();
-            Console.WriteLine("x2.Length: {0}", x.Length);
+            Console.WriteLine($"x2.Length: {x.Length}");
 
 
             Console.WriteLine("AFTER");

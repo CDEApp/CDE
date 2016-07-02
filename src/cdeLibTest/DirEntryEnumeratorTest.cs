@@ -112,10 +112,10 @@ namespace cdeLibTest
 
             while (myListEnumerator.MoveNext() && expectEnumerator.MoveNext())
             {
-                Console.WriteLine("a {0}", myListEnumerator.Current.Path);
+                Console.WriteLine($"a {myListEnumerator.Current.Path}");
                 if (expectEnumerator.Current != null)
                 {
-                    Console.WriteLine("b {0}", expectEnumerator.Current.Path);
+                    Console.WriteLine($"b {expectEnumerator.Current.Path}");
                     Assert.That(myListEnumerator.Current, Is.EqualTo(expectEnumerator.Current), "Sequence of directory entries is not matching.");
                 }
             }
@@ -158,8 +158,8 @@ namespace cdeLibTest
             sw.Stop();
             var ts = sw.Elapsed;
             var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
-            Console.WriteLine("Enumerator took : {0}", elapsedTime);
-            Console.WriteLine("Total files enumerated : {0}", _fileCount);
+            Console.WriteLine($"Enumerator took : {elapsedTime}");
+            Console.WriteLine($"Total files enumerated : {_fileCount}");
             //Console.WriteLine("Total path length : {0}", _num);
 
             var re = rootEntries.First();
@@ -174,8 +174,8 @@ namespace cdeLibTest
             sw.Stop();
             ts = sw.Elapsed;
             elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
-            Console.WriteLine("TraverseTreePair took : {0}", elapsedTime);
-            Console.WriteLine("Total files enumerated : {0}", _fileCount);
+            Console.WriteLine($"TraverseTreePair took : {elapsedTime}");
+            Console.WriteLine($"Total files enumerated : {_fileCount}");
             //Console.WriteLine("Total path length : {0}", _num);
         }
 
