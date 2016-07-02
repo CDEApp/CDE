@@ -1,5 +1,4 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib;
@@ -149,25 +148,25 @@ namespace AlphaFSTest
         [Test]
         public void GetFullPath_OfUncPath()
         {
-            var a = Path.GetFullPath(@"\\Friday\cache");
+            var a = Path.GetFullPath(@"\\Philly\cache");
 
-            Assert.That(a, Is.EqualTo(@"\\Friday\cache"));
+            Assert.That(a, Is.EqualTo(@"\\Philly\cache"));
         }
 
         [Test]
         public void GetFullPath_OfUncPath_AddDirectorySeperator()
         {
-            var a = Path.GetFullPath(@"\\Friday\cache");
+            var a = Path.GetFullPath(@"\\Philly\cache");
 
-            Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache\"));
+            Assert.That(a, Is.EqualTo(@"\\Philly\cache"));
         }
 
         [Test]
         public void GetFullPath_OfUncPath_LongPath()
         {
-            var a = Path.GetFullPath(@"\\Friday\cache");
+            var a = Path.GetFullPath(@"\\Philly\cache");
 
-            Assert.That(a, Is.EqualTo(@"\\?\UNC\Friday\cache"));
+            Assert.That(a, Is.EqualTo(@"\\Philly\cache"));
         }
 
         [Test]
@@ -246,7 +245,11 @@ namespace AlphaFSTest
         [Test]
         public void Directory_GetDirectories_OK()
         {
-            Directory.SetCurrentDirectory(@"../..");
+            var dir = Path.GetDirectoryName(typeof(AlphaFSToys).Assembly.Location);
+            Console.WriteLine($"AlphaFSToys directory name {dir} or {TestContext.CurrentContext.TestDirectory}");
+            Directory.SetCurrentDirectory($"{dir}\\..\\..\\..");
+
+
             var dirs = Directory.GetDirectories(".");
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
@@ -257,7 +260,10 @@ namespace AlphaFSTest
         [Test]
         public void Directory_EnumerateDirectories_OK()
         {
-            Directory.SetCurrentDirectory(@"../..");
+            var dir = Path.GetDirectoryName(typeof(AlphaFSToys).Assembly.Location);
+            Console.WriteLine($"AlphaFSToys directory name {dir} or {TestContext.CurrentContext.TestDirectory}");
+            Directory.SetCurrentDirectory($"{dir}\\..\\..\\..");
+
             var dirs = Directory.EnumerateDirectories(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
@@ -268,7 +274,10 @@ namespace AlphaFSTest
         [Test]
         public void Directory_EnumerateFiles_OK()
         {
-            Directory.SetCurrentDirectory(@".");
+            var dir = Path.GetDirectoryName(typeof(AlphaFSToys).Assembly.Location);
+            Console.WriteLine($"AlphaFSToys directory name {dir} or {TestContext.CurrentContext.TestDirectory}");
+            Directory.SetCurrentDirectory(dir);
+
             var dirs = Directory.EnumerateFiles(".").ToArray();
             var m = dirs.Contains("bin");
             Console.WriteLine(string.Join(",", dirs));
