@@ -1,8 +1,8 @@
 ﻿using System.Linq;
-using System.Reflection;
 using NSpec;
 using NSpec.Domain;
 using NSpec.Domain.Formatters;
+using NUnit.Framework;
 
 /*
  * Howdy,
@@ -20,26 +20,20 @@ using NSpec.Domain.Formatters;
  * Visual Studio will detect this and will give you a window which you can use to attach a debugger.
  */
 
-//[TestFixture]
-public class DebuggerShim
+// Shim modified as follows.
+// Reference https://chrisseroka.wordpress.com/2014/11/27/debugging-nspec-with-visualstudioresharper-simple-trick/
+[TestFixture]
+public abstract class nspec : global::NSpec.nspec
 {
-    //[Test]
-    public void debug()
+    // Alternate 
+    [Test]
+    public void NspecNunitAdapter()
     {
-        var tagOrClassName = "class_or_tag_you_want_to_debug";
-
-        var types = GetType().Assembly.GetTypes(); 
-        // OR
-        // var types = new Type[]{typeof(Some_Type_Containg_some_Specs)};
-
-        var finder = new SpecFinder(types, "");
-
-        var tagsFilter = new Tags().Parse(tagOrClassName);
-
+        var currentSpec = this.GetType();
+        var finder = new SpecFinder(new[] { currentSpec });
+        var tagsFilter = new Tags().Parse(currentSpec.Name);
         var builder = new ContextBuilder(finder, tagsFilter, new DefaultConventions());
-
         var runner = new ContextRunner(tagsFilter, new ConsoleFormatter(), false);
-
         var results = runner.Run(builder.Contexts().Build());
 
         //assert that there aren't any failures
