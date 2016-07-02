@@ -10,6 +10,7 @@ using Lz4Net;
 using NSpec;
 using cdeLib;
 
+
 // ReSharper disable InconsistentNaming
 namespace cdeLibSpec
 {
@@ -20,8 +21,17 @@ namespace cdeLibSpec
     /// try lz4 [claimed fastest out there[
     /// </summary>
     [Tag("performance_test")]
-    class loadsave_cde_performance //: nspec
+    class loadsave_cde_performance : nspec
     {
+        public loadsave_cde_performance()
+        {
+            Console.WriteLine($"loadsave_cde_performance directory name {TestDirectory}");
+            Directory.SetCurrentDirectory(TestDirectory);
+            
+            // Can't find test files if this line is run. so this disables test
+            Directory.SetCurrentDirectory(@"C:\");
+        }
+
         public class Result
         {
             public Stream stream;
@@ -73,7 +83,9 @@ namespace cdeLibSpec
             }
         }
 
-        private const string PathToTest = @"..\..\..\..\test\";
+
+        //private const string PathToTest = @"..\..\..\..\test\";
+        private const string PathToTest = @"..\..\..\..\..\test\";
         private const string TestCatalog32K = PathToTest + "G-SN750B_02_S13UJ1NQ221583.cde";
         private const string TestCatalog200K = PathToTest + "C-V3Win7.cde";
         private const string TestCatalog1_2M = PathToTest + "D-SM15T_2_1.cde";

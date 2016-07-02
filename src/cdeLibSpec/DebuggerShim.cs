@@ -25,6 +25,8 @@ using NUnit.Framework;
 [TestFixture]
 public abstract class nspec : global::NSpec.nspec
 {
+    public static string TestDirectory = TestContext.CurrentContext.TestDirectory;
+
     // Alternate 
     [Test]
     public void NspecNunitAdapter()
