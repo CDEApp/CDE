@@ -49,7 +49,7 @@ namespace cdeWin
 				var re = RootEntry.LoadDirCache(s);
 				_timeIt.Stop();
 				++fileCounter;
-				lblProgressMessage.Text = string.Format("Loading catalog {0} of {1}", fileCounter, totalFiles);
+				lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
 				barLoading.Value = fileCounter;
 				Application.DoEvents(); // Get label to update.
 				return re;

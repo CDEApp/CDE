@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Linq;
-using System.Web.Http;
 using NSubstitute;
 using NUnit.Framework;
 using cdeWeb;

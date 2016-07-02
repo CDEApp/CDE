@@ -244,7 +244,7 @@ namespace ProtobufTest
                 for (uint i = 0; i < fill; i++)
                 {
                     b[i].f1 = 1 + i;
-                    b[i].s1 = string.Format("s1{0}", i);
+                    b[i].s1 = $"s1{i}";
                 }
             }
 

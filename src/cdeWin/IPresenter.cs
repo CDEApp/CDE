@@ -51,9 +51,8 @@ namespace cdeWin
                 MethodInfo presenterMethodInfo;
                 if (!presenterEventHandlers.TryGetValue(eventName, out presenterMethodInfo))
                 {
-                    throw new Exception(string.Format(
-                        "\n\nThere is no event handler for event '{0}' on presenter '{1}' expected '{2}'\n\n",
-                        eventInfo.Name, GetType().FullName, eventName));
+                    throw new Exception(
+                        $"\n\nThere is no event handler for event '{eventInfo.Name}' on presenter '{GetType().FullName}' expected '{eventName}'\n\n");
                 }
                 var newDelegate = Delegate.CreateDelegate(typeof(EventAction), this, presenterMethodInfo);
                 eventInfo.AddEventHandler(view, newDelegate);
@@ -94,7 +93,7 @@ namespace cdeWin
 
         private static bool Contains(ICollection<string> actionProperties, MethodInfo x)
         {
-            return actionProperties.Contains(string.Format("On{0}", x.Name));
+            return actionProperties.Contains($"On{x.Name}");
         }
     }
 

@@ -4,7 +4,6 @@ using System.ComponentModel;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
@@ -226,7 +225,7 @@ namespace cdeWin
             vals[7] = rootEntry.AvailSpace.ToHRString();
             vals[8] = rootEntry.TotalSpace.ToHRString();
             vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[10] = string.Format("{0:0.} msec", rootEntry.ScanDurationMilliseconds);
+            vals[10] = $"{rootEntry.ScanDurationMilliseconds:0.} msec";
             vals[11] = rootEntry.ActualFileName;
             vals[12] = rootEntry.Description;
 
@@ -750,7 +749,7 @@ namespace cdeWin
                     break;
 
                 default:
-                    throw new Exception(string.Format("Problem column {0} not handled for sort.", sortColumn));
+                    throw new Exception($"Problem column {sortColumn} not handled for sort.");
             }
             if (searchResultHelper.ColumnSortOrder == SortOrder.Descending)
             {
@@ -784,7 +783,7 @@ namespace cdeWin
                     break;
 
                 default:
-                    throw new Exception(string.Format("Problem column {0} not handled for sort.", column));
+                    throw new Exception($"Problem column {column} not handled for sort.");
             }
             if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
             {
@@ -1055,7 +1054,7 @@ namespace cdeWin
                     break;
 
                 default:
-                    throw new Exception(string.Format("Problem column {0} not handled for sort.", column));
+                    throw new Exception($"Problem column {column} not handled for sort.");
             }
             if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
             {

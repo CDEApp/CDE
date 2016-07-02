@@ -238,7 +238,7 @@ namespace cde
 
             sw.Stop();
             var ts = sw.Elapsed;
-            var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}",ts.Hours, ts.Minutes, ts.Seconds,ts.Milliseconds / 10);
+            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
             Console.WriteLine("Hash took : {0}",elapsedTime);
         }
 

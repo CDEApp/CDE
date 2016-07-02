@@ -9,7 +9,6 @@ using Rhino.Mocks;
 
 namespace cdeLibTest
 {
-    using System.ComponentModel;
     using System.Reflection;
 
     using cde;

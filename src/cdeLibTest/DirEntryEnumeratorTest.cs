@@ -157,7 +157,7 @@ namespace cdeLibTest
             }
             sw.Stop();
             var ts = sw.Elapsed;
-            var elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
             Console.WriteLine("Enumerator took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
             //Console.WriteLine("Total path length : {0}", _num);
@@ -173,7 +173,7 @@ namespace cdeLibTest
             }
             sw.Stop();
             ts = sw.Elapsed;
-            elapsedTime = String.Format("{0:00}:{1:00}:{2:00}.{3:00}", ts.Hours, ts.Minutes, ts.Seconds, ts.Milliseconds / 10);
+            elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
             Console.WriteLine("TraverseTreePair took : {0}", elapsedTime);
             Console.WriteLine("Total files enumerated : {0}", _fileCount);
             //Console.WriteLine("Total path length : {0}", _num);

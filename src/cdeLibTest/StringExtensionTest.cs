@@ -59,7 +59,7 @@ namespace cdeLibTest
 
             var rest = prefix.GetRelativePath(prefix);
 
-            Console.WriteLine(string.Format("rest \"{0}\"", rest));
+            Console.WriteLine($"rest \"{rest}\"");
             Assert.That(rest, Is.EqualTo(string.Empty));
         }
     }

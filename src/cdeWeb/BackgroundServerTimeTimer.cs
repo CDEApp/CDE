@@ -23,7 +23,7 @@ namespace cdeWeb
         private void OnTimerElapsed(object sender)
         {
             hub.Clients.All.serverTime(
-                string.Format("{0} {1}", DateTime.UtcNow.ToString(), count++));
+                $"{DateTime.UtcNow.ToString()} {count++}");
         }
 
         public void Stop(bool immediate)

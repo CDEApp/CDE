@@ -92,7 +92,7 @@ namespace cdeLib
             startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
             {
-                throw new ArgumentException(String.Format("Cannot find path \"{0}\"", startPath));
+                throw new ArgumentException($"Cannot find path \"{startPath}\"");
             }
             string deviceHint;
             string volumeName;
@@ -133,17 +133,17 @@ namespace cdeLib
             var filenameSafePath = SafeFileName(scanPath);
             if (IsUnc(scanPath))
             {
-                fileName = string.Format("{0}-{1}.cde", hint, filenameSafePath.Substring(2));
+                fileName = $"{hint}-{filenameSafePath.Substring(2)}.cde";
             }
             else
             {
                 if (volumeRoot == scanPath)
                 {
-                    fileName = string.Format("{0}-{1}.cde", hint, volumeName);
+                    fileName = $"{hint}-{volumeName}.cde";
                 }
                 else
                 {
-                    fileName = string.Format("{0}-{1}-{2}.cde", hint, volumeName, filenameSafePath);
+                    fileName = $"{hint}-{volumeName}-{filenameSafePath}.cde";
                 }
             }
             return fileName;

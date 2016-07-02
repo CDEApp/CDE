@@ -1,6 +1,4 @@
-﻿using System;
-
-namespace cdeLib
+﻿namespace cdeLib
 {
     /// <summary>
     /// Simple statistics holder for Duplication

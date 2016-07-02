@@ -33,7 +33,6 @@ using System;
 using System.Text;
 using System.IO;
 using System.Threading;
-using System.Reflection;
 
 // ReSharper disable InconsistentNaming
 namespace Mono.Terminal

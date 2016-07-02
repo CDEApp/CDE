@@ -15,7 +15,7 @@ namespace cdeLib.Infrastructure
                 }
                 catch (ArgumentException ae)
                 {
-                    return String.Format("Bad Regex: {0}.", ae.Message);
+                    return $"Bad Regex: {ae.Message}.";
                 }
             }
             else

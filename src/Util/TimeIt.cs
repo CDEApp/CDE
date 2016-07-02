@@ -68,7 +68,7 @@ namespace Util
 			var str = _elapsedList
 				.Aggregate(string.Empty,
 					(current, labelElapsed) =>
-						String.Format("{0},\"{1}\",{2}", current, labelElapsed.Label, labelElapsed.ElapsedMsec));
+					    $"{current},\"{labelElapsed.Label}\",{labelElapsed.ElapsedMsec}");
 			return str.Substring(1) + ",Total," + TotalMsec;
 		}
 	}

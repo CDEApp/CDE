@@ -18,7 +18,7 @@ namespace cdeLib
             foreach (var order in orders)
             {
                 if (bytes > max)
-                    return string.Format("{0:##.##} {1}", decimal.Divide(bytes, max), order);
+                    return $"{decimal.Divide(bytes, max):##.##} {order}";
 
                 max /= scale;
             }

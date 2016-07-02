@@ -1,7 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-
-namespace cdeWeb.Models
+﻿namespace cdeWeb.Models
 {
     public interface IDirEntryRepository
     {

@@ -12,7 +12,7 @@ namespace cdeWin
             InitializeComponent();
         	_config = config;
 			linkEmail.Text = _config.ContactEmail;
-			tbVersion.Text = String.Format("{0} v{1}", _config.ProductName, _config.Version);
+			tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
 		}
 
         public static void MyShow(Form parentForm, IConfig config)
@@ -31,8 +31,8 @@ namespace cdeWin
 		    try
 		    {
                 var proc = new System.Diagnostics.Process();
-                proc.StartInfo.FileName = string.Format("mailto:{0}?subject=About {1} v{2}",
-                        _config.ContactEmail, _config.ProductName, _config.Version);
+                proc.StartInfo.FileName =
+                    $"mailto:{_config.ContactEmail}?subject=About {_config.ProductName} v{_config.Version}";
                 proc.Start();
 		    }
 		    catch (Exception)
@@ -42,7 +42,7 @@ namespace cdeWin
 
 		private void MyAboutBox_Load(object sender, EventArgs e)
 		{
-			Text = String.Format("About {0} v{1}", _config.ProductName, _config.Version);
+			Text = $"About {_config.ProductName} v{_config.Version}";
 		}
 
     }

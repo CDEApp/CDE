@@ -1,7 +1,5 @@
-﻿using Alphaleonis.Win32.Filesystem;
-using cdeLib;
+﻿using cdeLib;
 using NUnit.Framework;
-using Rhino.Mocks;
 
 namespace cdeLibTest
 {

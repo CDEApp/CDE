@@ -1,9 +1,4 @@
-﻿using System;
-using Alphaleonis.Win32.Filesystem;
-using cdeLib;
-using NUnit.Framework;
-
-namespace cdeLibTest
+﻿namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     //[TestFixture]

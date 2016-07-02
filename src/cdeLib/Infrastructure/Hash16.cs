@@ -51,7 +51,7 @@ namespace cdeLib.Infrastructure
 
         public override string ToString()
         {
-            return string.Format("A:[{0}] B:[{1}]", HashA, HashB);
+            return $"A:[{HashA}] B:[{HashB}]";
         }
 
         public class EqualityComparer: IEqualityComparer<Hash16>

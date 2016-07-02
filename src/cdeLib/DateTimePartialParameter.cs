@@ -31,7 +31,8 @@ namespace cdeLib
             int.TryParse(splitOnDash[0], out year);
             if (year < 1000) // this is not 4 digits, its only value eg  4 digits 0982 is 4 digits.
             {
-                _e = new ArgumentException(string.Format("Require Year parameter be a 4 Digit Year <YYYY> as part of format '{0}'", _format));
+                _e = new ArgumentException(
+                    $"Require Year parameter be a 4 Digit Year <YYYY> as part of format '{_format}'");
                 return;
             }
             _year = year;
@@ -54,7 +55,8 @@ namespace cdeLib
                 }
                 if (month == 0 || month > 12)
                 {
-                    _e = new ArgumentException(string.Format("Require valid integer 1-12 or Month name for Month as part of format '{0}'", _format));
+                    _e = new ArgumentException(
+                        $"Require valid integer 1-12 or Month name for Month as part of format '{_format}'");
                     return;
                 }
                 _month = month;
@@ -71,7 +73,8 @@ namespace cdeLib
                 // If 'T' is not used as seperator between Date and Time then error
                 if (SeperatorIsNotValid(splitOnDash[2], 'T'))
                 {
-                    _e = new ArgumentException(string.Format("The separator between Date and Time must be 'T' as part of format '{0}'", _format));
+                    _e = new ArgumentException(
+                        $"The separator between Date and Time must be 'T' as part of format '{_format}'");
                     return;
                 }
 
@@ -91,7 +94,8 @@ namespace cdeLib
                 
                 if (dayOfMonth == 0 || dayOfMonth > 31)
                 {
-                    _e = new ArgumentException(string.Format("Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{0}'", _format));
+                    _e = new ArgumentException(
+                        $"Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{_format}'");
                     return;
                 }
                 _dayOfMonth = dayOfMonth;

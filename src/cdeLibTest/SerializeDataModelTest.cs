@@ -141,7 +141,7 @@ namespace cdeLibTest
 
             if (re1.Path != re2.Path)
             {
-                LastMessage = string.Format("RootPath {0} not same as {1}", re1.Path, re2.Path);
+                LastMessage = $"RootPath {re1.Path} not same as {re2.Path}";
                 return false;
             }
 
@@ -150,7 +150,7 @@ namespace cdeLibTest
             var e2 = new DirEntryEnumerator(re2);
             while (e1.MoveNext() && e2.MoveNext())
             {
-                LastMessage = string.Format("{0} not same as {1}", e1.Current.Path, e2.Current.Path);
+                LastMessage = $"{e1.Current.Path} not same as {e2.Current.Path}";
                 if (e1.Current.Path != e2.Current.Path)
                 {
                     differenceFound = true;

@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using NUnit.Framework.Constraints;
+﻿using NUnit.Framework.Constraints;
 using Constraint = NUnit.Framework.Constraints.Constraint;
 
 // All from https://github.com/remi/NUnit.Should/blob/master/src/HelperMethods.cs

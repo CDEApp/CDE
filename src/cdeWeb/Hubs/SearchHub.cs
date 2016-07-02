@@ -12,7 +12,7 @@ namespace cdeWeb.Hubs
 
         public string GetServerTime()
         {
-            return string.Format("{0} {1}", DateTime.UtcNow.ToString(), count++);
+            return $"{DateTime.UtcNow.ToString()} {count++}";
         }
     }
 
@@ -47,7 +47,7 @@ namespace cdeWeb.Hubs
         public cdeWeb.Results<DirEntry> Search(string pattern)
         {
             _dataStore.LoadDataEnsureOnce(NotifyLoadFileCount);
-            Debug.WriteLine(string.Format("Query parameters: \"{0}\"", pattern));
+            Debug.WriteLine($"Query parameters: \"{pattern}\"");
             NotifySearchStart();
             var result = _dataStore.Search(pattern, NotifySearchProgress, AddDirEntry);
             NotifySearchDone();

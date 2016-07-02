@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
@@ -50,23 +49,23 @@ namespace cdeLibTest.Infrastructure
 
             var data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream(String.Format("{0}\\testset1",FolderName),FileMode.Create));
-            WriteFile(data, new FileStream(String.Format("{0}\\testset1dupe", FolderName), FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset1",FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset1dupe", FileMode.Create));
 
             //no dupe
             data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream(String.Format("{0}\\testset2",FolderName), FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset2", FileMode.Create));
             // force 2nd file of testset2 to be different at last byte.
             data[dataSize - 1] = (Byte)(data[dataSize - 1] ^ 0xFF);
-            WriteFile(data, new FileStream(String.Format("{0}\\testset2NotDupe", FolderName), FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset2NotDupe", FileMode.Create));
 
             //3 dupes
             data = new Byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream(String.Format("{0}\\testset3",FolderName), FileMode.Create));
-            WriteFile(data, new FileStream(String.Format("{0}\\testset3dupe1",FolderName), FileMode.Create));
-            WriteFile(data, new FileStream(String.Format("{0}\\testset3dupe2", FolderName), FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset3", FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset3dupe1", FileMode.Create));
+            WriteFile(data, new FileStream($"{FolderName}\\testset3dupe2", FileMode.Create));
         }
 
         private static void WriteFile(byte[] data, Stream fs)
@@ -97,7 +96,7 @@ namespace cdeLibTest.Infrastructure
         {
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry();
-            rootEntry.PopulateRoot(String.Format("{0}\\",FolderName));
+            rootEntry.PopulateRoot($"{FolderName}\\");
             var rootEntries = new List<RootEntry> {rootEntry};
             duplication.ApplyMd5Checksum(rootEntries);
             // all 7 Files are partial hashed.
@@ -128,7 +127,7 @@ namespace cdeLibTest.Infrastructure
         [Test]
         public void Can_Acquire_hash_From_File()
         {
-            var hash = HashHelper.GetMD5HashFromFile(String.Format("{0}\\testset2", FolderName));
+            var hash = HashHelper.GetMD5HashFromFile($"{FolderName}\\testset2");
             Assert.IsNotNull(hash.Hash);
         }
 
