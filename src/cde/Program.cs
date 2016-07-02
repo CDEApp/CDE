@@ -207,7 +207,7 @@ namespace cde
             Console.WriteLine("       read-eval-print loops version of the 3 find options.");
             Console.WriteLine("       This one is repl it doesnt exit unless you press enter with no search term.");
             Console.WriteLine("Usage: cde --populousfolders <minimumcount>");
-            Console.WriteLine("       output folders containing more than <minimumentrysize> entires.");
+            Console.WriteLine("       output folders containing more than <minimumcount> entires.");
         }
 
         private static void FindDupes()
