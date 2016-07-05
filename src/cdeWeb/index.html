@@ -85,6 +85,10 @@
         .debug-border {
             border: 1px solid #ddd;
         }
+
+        .small-font {
+            font-size: small;
+        }
     </style>
 
     <!--<script type="text/javascriptx" src="/Scripts/modernizr-2.5.3.js"></script>-->
@@ -95,8 +99,7 @@
     <table data-ng-controller="ServerTimeController" class="table debug-border">
         <tbody>
         <tr class="warning">
-        <td>
-            <small>
+        <td class="small-font">
             <div>Test area below here related to Hubs and Connection.</div>
             <button data-ng-click="getServerTime()" class="btn btn-mini">Get time from server</button>
             <button data-ng-click="startConnection()" class="btn btn-mini">Start Connection</button>
@@ -107,7 +110,6 @@
                 <div>Manual time: <span data-ng-bind="currentServerTimeManually">Manual Get Time</span></div>
                 <div data-ng-bind="trace"></div>
             </div>
-            </small>
         </td>
         </tr>
         </tbody>
