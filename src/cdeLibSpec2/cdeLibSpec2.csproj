@@ -1,0 +1,119 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="14.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{D7D87AA4-8842-4854-855F-CB0CBE70A84A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>cdeLibSpec2</RootNamespace>
+    <AssemblyName>cdeLibSpec2</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|x86' ">
+    <PlatformTarget>x86</PlatformTarget>
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup>
+    <StartupObject />
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="AlphaFS, Version=2.0.0.0, Culture=neutral, PublicKeyToken=4d31a58f7d7ad5c9, processorArchitecture=MSIL">
+      <HintPath>..\packages\AlphaFS.2.0.1\lib\net451\AlphaFS.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="NSubstitute, Version=1.10.0.0, Culture=neutral, PublicKeyToken=92dd2e9066daa5ca, processorArchitecture=MSIL">
+      <HintPath>..\packages\NSubstitute.1.10.0.0\lib\net45\NSubstitute.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="nunit.framework, Version=3.2.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\NUnit.3.2.1\lib\net45\nunit.framework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="Shouldly, Version=2.8.0.0, Culture=neutral, PublicKeyToken=6042cbcb05cbc941, processorArchitecture=MSIL">
+      <HintPath>..\packages\Shouldly.2.8.0\lib\net40\Shouldly.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Runtime.Serialization" />
+    <Reference Include="System.Transactions" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="TestStack.BDDfy, Version=4.3.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\TestStack.BDDfy.4.3.0\lib\net40\TestStack.BDDfy.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Check_default_FindOptions_values.cs" />
+    <Compile Include="FindOptionBdd.cs" />
+    <Compile Include="GivenFindExcludesFiles.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\Atm\AccountHasInsufficientFund.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\Atm\AccountHolderWithdrawsCash.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\Atm\Atm.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\Atm\AtmHtmlReportConfig.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BDDfy_Rocks.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\BuyerCategory.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\DayPass.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\Fare.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\Money.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\MonthlyPass.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\SingleTicket.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFares\WeeklyPass.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\BuyingTrainFareWithExamples.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\CanRunAsyncSteps.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\CanWorkWithoutAStory.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\CustomTextReporter.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\ModuleInitializer.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\TicTacToe\Game.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\TicTacToe\Helpers.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\TicTacToe\TicTacToe.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\TicTacToe\WinnerGame.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\TicTacToe\XWins.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\UseExamplesWithFluentApi.cs" />
+    <Compile Include="TestStack.BDDfy.Samples\UseExamplesWithReflectiveApi.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\cdeLib\cdeLib.csproj">
+      <Project>{38066fce-1ee4-4b6c-ba94-2a526df7b3ed}</Project>
+      <Name>cdeLib</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
+       Other similar extension points exist, see Microsoft.Common.targets.
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+  -->
+</Project>
