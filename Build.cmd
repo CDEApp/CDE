@@ -12,16 +12,19 @@ del bin\x86\*.pdb
 del bin\x86\*.config
 
 set t=..\..\..\..
-REM OLD set ilmerge="c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe"
-set ilmerge=%t%\lib\ILMerge\ILMerge.exe
-REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+@REM OLD set ilmerge="c:\Program Files (x86)\Microsoft\ILMerge\ILMerge.exe"
+@REM set ilmerge=%t%\lib\ILMerge\ILMerge.exe
+set ilmerge=%t%\src\packages\ILMerge.2.14.1208\tools\ilmerge.exe
+
+@REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
 set msbuildpath="C:\Program Files (x86)\MSBuild\14.0\Bin\msbuild.exe"
 
-goto BUILD86
+@REM goto BUILD86
 
 @ECHO Building Any CPU
+type .\lib\text\build_any.txt
 cd src
-REM manual deletes cause /Rebuild really doesnt work right
+@REM manual deletes cause /Rebuild really doesnt work right
 del cde\bin\Release\*.exe
 del cde\bin\Release\*.dll
 del cde\bin\Release\*.config
@@ -31,28 +34,38 @@ del cdeWin\bin\Release\*.dll
 del cdeWin\bin\Release\*.pdb
 %msbuildpath% /t:Rebuild /p:Configuration=Release /p:Platform="Any CPU" cde.sln
 cd ..
-
+@ECHO.
+@ECHO.
+@ECHO -------------------------
 @echo Merging Any CPU
-set sTbin =bin\AnyCPU
+@ECHO -------------------------
+@ECHO.
+@ECHO.
+set sTbin=bin\AnyCPU
 set tbin=%t%\%sTbin%
 copy History.txt %sTbin%
 cd src\cde\bin\Release
-rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
-%ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+@rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+@rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+%ilmerge% /targetplatform:"v4,%windir%\Microsoft.NET\Framework64\v4.0.30319" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+
 copy cde.exe.config %tbin%
 cd %t%
 
 cd src\cdeWin\bin\Release
-rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
-%ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
+@rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
+@REm %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
+%ilmerge% /targetplatform:"v4,%windir%\Microsoft.NET\Framework64\v4.0.30319" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
+
 cd %t%
 
 :BUILD86
 @echo Building x86
+type .\lib\text\build_any.txt
 cd src
-REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
+@REM set msbuildpath=%windir%\Microsoft.NET\Framework\v4.0.30319\msbuild.exe
 
-REM manual deletes cause /Rebuild really doesn't work right
+@REM manual deletes cause /Rebuild really doesn't work right
 del cde\bin\Release\*.exe
 del cde\bin\Release\*.dll
 del cde\bin\Release\*.config
@@ -62,28 +75,29 @@ del cdeWin\bin\Release\*.dll
 del cdeWin\bin\Release\*.pdb
 %msbuildpath% /t:Rebuild /p:Configuration=Release /p:Platform="x86" cde.sln
 cd ..
-rem goto END
+@rem goto END
 
 @echo Merging x86
 set sTbin=bin\x86
 set tbin=%t%\%sTbin%
 copy History.txt %sTbin%
 cd src\cde\bin\Release
-rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
-rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+@rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
+@rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 %ilmerge% /targetplatform:"v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cde.exe cde.exe cdelib.dll AlphaFS.dll protobuf-net.dll Autofac.dll Mono.Terminal.dll
 copy cde.exe.config %tbin%
 
 cd %t%
 
 cd src\cdeWin\bin\Release
-rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
-rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
-%ilmerge% /targetplatform:"v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
+@rem %ilmerge% /targetplatform:v4,c:\windows\Microsoft.Net\Framework\v4.0.30319 /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
+@rem %ilmerge% /targetplatform:"v4,C:\Program Files\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll
+@REM %ilmerge% /targetplatform:"v4,C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.0" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
+%ilmerge% /targetplatform:"v4,%windir%\Microsoft.NET\Framework64\v4.0.30319" /target:cde /out:%tbin%\cdewin.exe cdewin.exe cdelib.dll AlphaFS.dll protobuf-net.dll Util.dll
 cd %t%
 
-rem @ECHO Running Unit Tests
-rem ..\lib\NUnit-2.5.10..11092\bin\net-2.0\nunit-color-console.exe .\cdeLibTest\bin\Debug\cdelibtest.dll /nologo
+@rem @ECHO Running Unit Tests
+@rem ..\lib\NUnit-2.5.10..11092\bin\net-2.0\nunit-color-console.exe .\cdeLibTest\bin\Debug\cdelibtest.dll /nologo
 
 :END
 @pause
