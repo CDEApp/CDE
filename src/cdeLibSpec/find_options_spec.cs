@@ -101,7 +101,7 @@ namespace cdeLibSpec
                         findFunc = findOptions.GetFindFunc(new[] {0}, new[] {1});
                     };
 
-                    it["find calls found"] = () => {
+                    it["find calls found for first matched entry"] = () => {
                         findFunc(rootEntry, testFile);
                         findOptions.VisitorFunc.Received().Invoke(rootEntry, testFile);
                     };
