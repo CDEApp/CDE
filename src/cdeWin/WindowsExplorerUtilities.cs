@@ -55,7 +55,7 @@ namespace cdeWin
 
         public static void ExplorerExplore(string path)
         {
-            Process.Start("explorer.exe", @"/select, " + path);
+            Process.Start("explorer.exe", "/select,\"" + path + "\"");
         }
     }
 }
