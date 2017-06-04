@@ -1,3 +1,7 @@
+
+2017/06/04 11:42 cdeWin v1.7.1.0, cde v1.7.1.0
+Fixed bug in cdeWin explore to file/folder.
+
 2016/06/19 20:22 cdeWin v1.6.0.0, cde v1.6
 Clean up.
 Added populousfolders.
