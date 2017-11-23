@@ -200,13 +200,13 @@ namespace cdeWin
 
     public class Config : IConfig
     {
-		public string DateFormatYMDHMS { get { return "{0:yyyy/MM/dd HH:mm:ss}"; } }
-		public string DateCustomFormatYMD { get { return "yyyy/MM/dd"; } }
-		public string DateCustomFormatHMS { get { return "HH:mm:ss"; } }
-		public string ContactEmail { get { return "rob@queenofblad.es"; } }
+		public string DateFormatYMDHMS => "{0:yyyy/MM/dd HH:mm:ss}";
+        public string DateCustomFormatYMD => "yyyy/MM/dd";
+        public string DateCustomFormatHMS => "HH:mm:ss";
+        public string ContactEmail => "rluiten@racs.com.au";
 
-		public string Version { get; private set; }
-		public string ProductName { get; private set; }
+        public string Version { get; }
+        public string ProductName { get; }
 
 	    private const string CdeConfigPath = "cde";
 	    private string _configFileName;
