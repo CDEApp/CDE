@@ -3,6 +3,7 @@ using NSpec;
 using NSpec.Domain;
 using NSpec.Domain.Formatters;
 using NUnit.Framework;
+using Shouldly;
 
 /*
  * Howdy,
@@ -39,6 +40,6 @@ public abstract class nspec : global::NSpec.nspec
         var results = runner.Run(builder.Contexts().Build());
 
         //assert that there aren't any failures
-        results.Failures().Count().should_be(0);
+        results.Failures().Count().ShouldBe(0);
     }
 }
