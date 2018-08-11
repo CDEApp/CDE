@@ -3,11 +3,11 @@
   <Target Name="ILRepacker" AfterTargets="Build" Condition="'$(Configuration)' == 'Release'">
     <ItemGroup>
       <InputAssemblies Include="$(OutputPath)\$(AssemblyName).exe" />
-      <InputAssemblies Include="$(OutputPath)\Util.dll" />
-      <InputAssemblies Include="$(OutputPath)\AlphaFS.dll" />
-      <InputAssemblies Include="$(OutputPath)\protobuf-net.dll" />
-      <InputAssemblies Include="$(OutputPath)\NDesk.Options.dll" />
-      <InputAssemblies Include="$(OutputPath)\cdelib.dll" />
+      <InputAssemblies Include="$(OutputPath)\*.dll" />
+      <!-- <InputAssemblies Include="$(OutputPath)\AlphaFS.dll" /> -->
+      <!-- <InputAssemblies Include="$(OutputPath)\protobuf-net.dll" /> -->
+      <!-- <InputAssemblies Include="$(OutputPath)\NDesk.Options.dll" /> -->
+      <!-- <InputAssemblies Include="$(OutputPath)\cdelib.dll" /> -->
     </ItemGroup>
 
     <ItemGroup>
@@ -18,15 +18,16 @@
     </ItemGroup>
 
     <ILRepack
-      Parallel="true"
+      Parallel="false"
       DebugInfo="true"
       AllowDuplicateResources="false"
       Internalize="false"
       InternalizeExclude="@(DoNotInternalizeAssemblies)"
       InputAssemblies="@(InputAssemblies)"
       TargetKind="SameAsPrimaryAssembly"
-      OutputFile="$(OutputPath)\$(AssemblyName).exe"
+      OutputFile="$(OutputPath)\$(AssemblyName)_merged.exe"
     />
+    <!-- Ideally would prefer OutputFile to be the exe name, but when set getting errors on build of pdb in use and output not generated -->
     <Delete Files="@(ToDelete)" />
   </Target>
 </Project>

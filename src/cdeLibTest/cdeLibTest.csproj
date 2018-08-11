@@ -166,12 +166,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
-      <Project>{38066fce-1ee4-4b6c-ba94-2a526df7b3ed}</Project>
+      <Project>{6090EE70-25FA-45C6-9D2E-CABB29B29298}</Project>
       <Name>cdeLib</Name>
-      <Private>True</Private>
     </ProjectReference>
     <ProjectReference Include="..\cde\cde.csproj">
-      <Project>{b66e72a2-73b3-4100-b933-3c1bb86c0a6d}</Project>
+      <Project>{987562eb-d23b-4044-9a65-45838ecbdf89}</Project>
       <Name>cde</Name>
     </ProjectReference>
   </ItemGroup>

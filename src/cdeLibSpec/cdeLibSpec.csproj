@@ -138,11 +138,11 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\cdeLibTest\cdeLibTest.csproj">
-      <Project>{937FD4F3-1173-4A23-8DFA-2ABC2C3B27C9}</Project>
+      <Project>{937fd4f3-1173-4a23-8dfa-2abc2c3b27c9}</Project>
       <Name>cdeLibTest</Name>
     </ProjectReference>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj">
-      <Project>{38066FCE-1EE4-4B6C-BA94-2A526DF7B3ED}</Project>
+      <Project>{6090EE70-25FA-45C6-9D2E-CABB29B29298}</Project>
       <Name>cdeLib</Name>
     </ProjectReference>
   </ItemGroup>

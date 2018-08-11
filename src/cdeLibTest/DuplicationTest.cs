@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 using Rhino.Mocks;
+using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest
 {

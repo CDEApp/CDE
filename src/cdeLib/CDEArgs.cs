@@ -41,51 +41,51 @@ namespace cdeLib
 
                 // Modes below here in this section
                 {
-                    "scan=", "Mode: scans one or more {Path}(s) creating catalogs", o => {
+                    "scan=", ()=>"Mode: scans one or more {Path}(s) creating catalogs", o => {
                         Mode = Modes.Scan;
                         _currentList = _scanParameters;
                         _scanParameters.Add(o);
                     }
                 },
                 {
-                    "find=", "Mode: find entries matching {String}(s)", o => {
+                    "find=", ()=>"Mode: find entries matching {String}(s)", o => {
                         Mode = Modes.Find;
                         _currentList = _findParameters;
                         _findParameters.Add(o);
                     }
                 },
                 {
-                    "hash", "Mode: collect minimal set of hashes for dupes", o => {
+                    "hash", ()=>"Mode: collect minimal set of hashes for dupes", o => {
                         Mode = Modes.Hash;
                         _currentList = null;
                     }
                 },
                 {
-                    "dupes", "Mode: find duplicate files, depends on hashes", o => {
+                    "dupes", ()=>"Mode: find duplicate files, depends on hashes", o => {
                         Mode = Modes.Dupes;
                         _currentList = null;
                     }
                 },
                 {
-                    "dump", "Mode: output to console catalog entries", o => {
+                    "dump", ()=>"Mode: output to console catalog entries", o => {
                         Mode = Modes.Dump;
                         _currentList = null;
                     }
                 },
                 {
-                    "loadWait", "Mode: load catalogs and wait till enter pressed", o => {
+                    "loadWait", ()=>"Mode: load catalogs and wait till enter pressed", o => {
                         Mode = Modes.LoadWait;
                         _currentList = null;
                     }
                 },
                 {
-                    "h|help",  "Mode: show this message and exit", o => {
+                    "h|help",  ()=>"Mode: show this message and exit", o => {
                         Mode = Modes.Help;
                         _currentList = null;
                     }
                 },
                 {
-                    "v|version",  "Mode: show version", o => {
+                    "v|version",  ()=>"Mode: show version", o => {
                         Mode = Modes.Version;
                         _currentList = null;
                     }
@@ -93,7 +93,7 @@ namespace cdeLib
 
                 // Options below here in this section
                 {
-                    "bp|basePath=", "Set one or more base {Path}(s)", o => {
+                    "bp|basePath=", ()=>"Set one or more base {Path}(s)", o => {
                         if (!AllowStartPath.Contains(_mode))
                         {
                             throw new OptionException("The -basePath option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -104,7 +104,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "grep", "Enable regular expressions for String find.", o => {
+                    "grep", ()=>"Enable regular expressions for String find.", o => {
                         if (!AllowGrep.Contains(_mode))
                         {
                             throw new OptionException("The -grep option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -115,7 +115,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "repl", "Enable prompting for more find searches.", o => {
+                    "repl", ()=>"Enable prompting for more find searches.", o => {
                         if (!AllowRepl.Contains(_mode))
                         {
                             throw new OptionException("The -repl option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -126,7 +126,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "path", "Include paths when searching in find.", o => {
+                    "path",()=> "Include paths when searching in find.", o => {
                         if (!AllowPath.Contains(_mode))
                         {
                             throw new OptionException("The -path option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -137,7 +137,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "hashAll", "In hash mode hash all files", o => {
+                    "hashAll", ()=>"In hash mode hash all files", o => {
                         if (!AllowHashAll.Contains(_mode))
                         {
                             throw new OptionException("The -hashAll option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -148,7 +148,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "e|exclude=", "regex {String}(s) to exclude from processing", o => {
+                    "e|exclude=", ()=>"regex {String}(s) to exclude from processing", o => {
                         if (!AllowExclude.Contains(_mode))
                         {
                             throw new OptionException("The -exclude option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -159,7 +159,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "i|include=", "regex {String}(s) to include it in processing", o => {
+                    "i|include=", ()=>"regex {String}(s) to include it in processing", o => {
                         if (!AllowInclude.Contains(_mode))
                         {
                             throw new OptionException("The -include option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -170,7 +170,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "minSize=", "Minimum file size to include it in processing", o => {
+                    "minSize=", ()=>"Minimum file size to include it in processing", o => {
                         if (!AllowMinSize.Contains(_mode))
                         {
                             throw new OptionException("The -minSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -181,7 +181,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "maxSize=", "Maximum file size to include it in processing", o => {
+                    "maxSize=",()=> "Maximum file size to include it in processing", o => {
                         if (!AllowMaxSize.Contains(_mode))
                         {
                             throw new OptionException("The -maxSize option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -192,7 +192,7 @@ namespace cdeLib
                     }
                 },
                 {
-                    "minDate=", "Minimum DateTime on entry to include it in processing", o => {
+                    "minDate=", ()=>"Minimum DateTime on entry to include it in processing", o => {
                         if (!AllowMinDate.Contains(_mode))
                         {
                             throw new OptionException("The -minDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -212,7 +212,7 @@ namespace cdeLib
                     }
                 },                
                 {
-                    "maxDate=", "Maximum DateTime on entry to include it in processing", o => {
+                    "maxDate=", ()=>"Maximum DateTime on entry to include it in processing", o => {
                         if (!AllowMaxDate.Contains(_mode))
                         {
                             throw new OptionException("The -maxDate option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -231,7 +231,7 @@ namespace cdeLib
                     }
                 },                
                 {
-                    "minTime=", "Minimum Time on entry ignore Date to include it in processing", o => {
+                    "minTime=", ()=>"Minimum Time on entry ignore Date to include it in processing", o => {
                         if (!AllowMinTime.Contains(_mode))
                         {
                             throw new OptionException("The -minTime option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -248,7 +248,7 @@ namespace cdeLib
                         _currentList = null;
                     }
                 },                 {   // unsure if leaving this here for releases
-                    "alternate", "an alternate data model (testing)", o => {
+                    "alternate", ()=>"an alternate data model (testing)", o => {
                         if (!AllowAlternate.Contains(_mode))
                         {
                             throw new OptionException("The -alt option is not supported in mode '-" + _mode.ToString().ToLower() + "'.", o);
@@ -259,7 +259,7 @@ namespace cdeLib
                 },
                 // to collection multi value parameter values.
                 {   
-                    "<>", "", o => {
+                    "<>", ()=>"", o => {
                         if (_currentList == null)
                         {
                             throw new OptionException("Error unmatched parameter: '" + o + "'", o);

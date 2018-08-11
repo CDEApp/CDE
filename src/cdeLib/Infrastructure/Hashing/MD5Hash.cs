@@ -1,5 +1,6 @@
 using System;
 using System.Security.Cryptography;
+using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib.Infrastructure
 {
