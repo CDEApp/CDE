@@ -22,7 +22,6 @@ namespace cdeLib
     [ProtoContract]
     public class RootEntry : DirEntry // CommonEntry
     {
-        private readonly IConfiguration _configuration;
         const string MatchAll = "*";
 
         [ProtoMember(1, IsRequired = true)]
@@ -63,18 +62,15 @@ namespace cdeLib
 
         public string ActualFileName { get; set; }
 
-        public double ScanDurationMilliseconds
-        {
-            get { return (ScanEndUTC - ScanStartUTC).TotalMilliseconds; }
-        }
+        public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
 
         public RootEntry()
             : base(true)
         {
             Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
-            _configuration = new Configuration();
-            EntryCountThreshold = _configuration.ProgressUpdateInterval;
+            IConfiguration configuration = new Configuration();
+            EntryCountThreshold = configuration.ProgressUpdateInterval;
         }
 
         public void PopulateRoot(string startPath)
@@ -94,18 +90,16 @@ namespace cdeLib
             {
                 throw new ArgumentException($"Cannot find path \"{startPath}\"");
             }
-            string deviceHint;
-            string volumeName;
-            string volRoot;
-            DefaultFileName = GetDefaultFileName(startPath, out deviceHint, out volRoot, out volumeName);
+
+            DefaultFileName = GetDefaultFileName(startPath, out var deviceHint, out _, out var volumeName);
 
             Path = startPath;
             DriveLetterHint = deviceHint;
             VolumeName = volumeName;
 
             var dsi = Volume.GetDiskFreeSpace(Path, false);
-            AvailSpace = dsi.FreeBytesAvailable;
-            TotalSpace = dsi.TotalNumberOfBytes;
+            AvailSpace = (ulong)dsi.FreeBytesAvailable;
+            TotalSpace = (ulong)dsi.TotalNumberOfBytes;
             return startPath;
         }
 
@@ -137,6 +131,7 @@ namespace cdeLib
             }
             else
             {
+                // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (volumeRoot == scanPath)
                 {
                     fileName = $"{hint}-{volumeName}.cde";
@@ -210,15 +205,7 @@ namespace cdeLib
 
         public string GetDriverLetterHint(string path, string volumeRoot)
         {
-            string hint;
-            if (IsUnc(path))
-            {
-                hint = "UNC";
-            }
-            else
-            {
-                hint = volumeRoot.Substring(0, 1);
-            }
+            var hint = IsUnc(path) ? "UNC" : volumeRoot.Substring(0, 1);
             return hint;
         }
 
@@ -279,20 +266,15 @@ namespace cdeLib
                     ++entryCount;
                     if (entryCount > EntryCountThreshold)
                     {
-                        if (SimpleScanCountEvent != null)
-                        {
-                            SimpleScanCountEvent();
-                        }
+                        SimpleScanCountEvent?.Invoke();
                         entryCount = 0;
                     }
                     if (Hack.BreakConsoleFlag) { break; }
                 }
                 if (Hack.BreakConsoleFlag) { break; }
             }
-            if (SimpleScanEndEvent != null)
-            {
-                SimpleScanEndEvent();
-            }
+
+            SimpleScanEndEvent?.Invoke();
         }
 
         public int EntryCountThreshold { get; set; }

@@ -216,7 +216,7 @@ namespace cdeLib
             // TODO this assumes date error on LastModified, what about Created and LastAccessed ?
             try
             {
-                Modified = fs.LastModified;
+                Modified = fs.LastWriteTime;
             }
             catch (ArgumentOutOfRangeException)
             {

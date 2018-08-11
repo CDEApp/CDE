@@ -70,7 +70,7 @@ namespace cdeLib
         #region BitFields based properties
         public bool IsDirectory
         {
-            get { return (BitFields & Flags.Directory) == Flags.Directory; }
+            get => (BitFields & Flags.Directory) == Flags.Directory;
             set
             {
                 if (value)
@@ -86,7 +86,7 @@ namespace cdeLib
 
         public bool IsModifiedBad
         {
-            get { return (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad; }
+            get => (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad;
             set
             {
                 if (value)
@@ -102,7 +102,7 @@ namespace cdeLib
 
         public bool IsSymbolicLink
         {
-            get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
+            get => (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink;
             set
             {
                 if (value)
@@ -118,7 +118,7 @@ namespace cdeLib
 
         public bool IsReparsePoint
         {
-            get { return (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint; }
+            get => (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint;
             set
             {
                 if (value)
@@ -134,7 +134,7 @@ namespace cdeLib
 
         public bool IsHashDone
         {
-            get { return (BitFields & Flags.HashDone) == Flags.HashDone; }
+            get => (BitFields & Flags.HashDone) == Flags.HashDone;
             set
             {
                 if (value)
@@ -150,7 +150,7 @@ namespace cdeLib
 
         public bool IsPartialHash
         {
-            get { return (BitFields & Flags.PartialHash) == Flags.PartialHash; }
+            get => (BitFields & Flags.PartialHash) == Flags.PartialHash;
             set
             {
                 if (value)
@@ -170,7 +170,7 @@ namespace cdeLib
             Name = fs.FileName;
             try
             {
-                Modified = fs.LastModified;
+                Modified = fs.LastWriteTime;
             }
             catch (ArgumentOutOfRangeException)
             {
@@ -193,15 +193,13 @@ namespace cdeLib
 
         public string GetParentPath(EntryStore entryStore)
         {
-            Entry[] parentBlock;
-            var parentEntryIndex = entryStore.EntryIndex(Parent, out parentBlock);
+            var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
             return parentBlock[parentEntryIndex].FullPath;
         }
 
         public void SetParentSize(EntryStore entryStore, ulong size)
         {
-            Entry[] parentBlock;
-            var parentEntryIndex = entryStore.EntryIndex(Parent, out parentBlock);
+            var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
             parentBlock[parentEntryIndex].Size = size;
         }
     }
