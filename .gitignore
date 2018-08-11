@@ -55,3 +55,4 @@ catalog-example-angular.zip
 *.ncrunchproject
 *.ncrunchsolution
 src/.vs/config/applicationhost.config
+/src/.vs/cde/v15/Server/sqlite3/*
