@@ -56,3 +56,6 @@ catalog-example-angular.zip
 *.ncrunchsolution
 src/.vs/config/applicationhost.config
 /src/.vs/cde/v15/Server/sqlite3/*
+/src/cdeLibSpec/x64/lz4X64.dll
+/src/cdeLibSpec/x86/lz4X86.dll
+/src/.vs/cde/*
