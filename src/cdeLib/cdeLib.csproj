@@ -5,10 +5,18 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="AlphaFS" Version="2.2.1" />
     <PackageReference Include="NDesk.Options.Patched" Version="0.3.1" />
     <PackageReference Include="protobuf-net" Version="2.3.17" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="4.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Reference Include="AlphaFS">
+      <HintPath>..\..\lib\AlphaFS_NetStandard2_Fork\AlphaFS.dll</HintPath>
+    </Reference>
+    <Reference Include="System.Security.Cryptography.RIPEMD160">
+      <HintPath>..\..\lib\AlphaFS_NetStandard2_Fork\System.Security.Cryptography.RIPEMD160.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
 </Project>
