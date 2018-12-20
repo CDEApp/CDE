@@ -59,3 +59,4 @@ src/.vs/config/applicationhost.config
 /src/cdeLibSpec/x64/lz4X64.dll
 /src/cdeLibSpec/x86/lz4X86.dll
 /src/.vs/cde/*
+/src/.vs/*
