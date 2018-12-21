@@ -1,27 +1,33 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
 using Serilog;
 
 namespace cdeWin
 {
+    public static class LoggingBootstrap
+    {
+        public static void CreateLogger()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Debug()
+                .CreateLogger();
+            Log.Logger.Debug("CDE Starting");
+        }
+    }
+
     static class Program
     {
-		public static string Version
-		{
-			get { return Application.ProductVersion; }
-		}
+		public static string Version => Application.ProductVersion;
 
-		public static string ProductName
-		{
-			get { return Application.ProductName; }
-		}
+        public static string ProductName => Application.ProductName;
 
         [STAThread]
         static void Main()
         {
-            BootstrapLogging();
+            LoggingBootstrap.CreateLogger();
 
             Application.ThreadException += UIThreadException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
@@ -41,16 +47,6 @@ namespace cdeWin
 
             config.Active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
-        }
-
-        private static void BootstrapLogging()
-        {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Seq("http://localhost:5341")
-                .WriteTo.Debug()
-                .CreateLogger();
-            Log.Logger.Debug("CDE Starting");
         }
 
         private static void UIThreadException(object sender, ThreadExceptionEventArgs t)
