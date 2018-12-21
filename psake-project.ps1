@@ -1,4 +1,4 @@
-Framework 4.6.1
+Framework 4.7.2
 Properties {
     $solution = "src\cde.sln"
     $opencover = "packages\OpenCover.*\opencover.console.exe"
