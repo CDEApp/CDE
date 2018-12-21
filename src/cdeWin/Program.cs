@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Threading;
 using System.Windows.Forms;
+using Serilog;
 
 namespace cdeWin
 {
@@ -19,6 +21,8 @@ namespace cdeWin
         [STAThread]
         static void Main()
         {
+            BootstrapLogging();
+
             Application.ThreadException += UIThreadException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;
@@ -28,7 +32,6 @@ namespace cdeWin
 
 			// TODO consider using (var config = new Config()) { } - with Save built in.
 			var config = new Config("cdeWinView.cfg", ProductName, Version);
-
             var mainForm = new CDEWinForm(config);
             var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService());
 			config.RestoreConfigFormBase(mainForm);
@@ -38,6 +41,16 @@ namespace cdeWin
 
             config.Active.MainWindowConfig.RecordForm(mainForm);
             config.Save();
+        }
+
+        private static void BootstrapLogging()
+        {
+            Log.Logger = new LoggerConfiguration()
+                .MinimumLevel.Debug()
+                .WriteTo.Seq("http://localhost:5341")
+                .WriteTo.Debug()
+                .CreateLogger();
+            Log.Logger.Debug("CDE Starting");
         }
 
         private static void UIThreadException(object sender, ThreadExceptionEventArgs t)

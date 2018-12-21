@@ -1,6 +1,9 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
@@ -10,7 +13,6 @@ namespace cdeWin
 	public partial class LoaderForm : Form
 	{
 		private readonly IConfig _config;
-
 	    private List<RootEntry> _rootEntries;
 		private readonly IEnumerable<string> _cdeList;
 		private readonly TimeIt _timeIt;
@@ -31,6 +33,19 @@ namespace cdeWin
 			AutoWaitCursor.Start();
 		}
 
+        private void UpdateUI(Action action)
+        {
+            if (InvokeRequired)
+            {
+                BeginInvoke(action);
+            }
+            else
+            {
+                action();
+            }
+            Application.DoEvents(); // Get label to update.
+        }
+
 		private void LoaderForm_Shown(object sender, System.EventArgs e)
 		{
 			lblProgressMessage.Text = string.Empty;
@@ -42,25 +57,45 @@ namespace cdeWin
 			barLoading.Step = totalFiles;
 			barLoading.Maximum = totalFiles;
 
-			// Not doing a background worker.
-			_rootEntries = cacheFiles.Select(s =>
-			{
-				_timeIt.Start(s);
-				var re = RootEntry.LoadDirCache(s);
-				_timeIt.Stop();
-				++fileCounter;
-				lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
-				barLoading.Value = fileCounter;
-				Application.DoEvents(); // Get label to update.
-				return re;
-			}).ToList();
+            
 
-			Close();
+            var rootEntries = new ConcurrentStack<RootEntry>();
+            Serilog.Log.Logger.Debug("Loading {catalogCount} catalogues", totalFiles);
+            _timeIt.Start("Load Files");
+            Parallel.ForEach(cacheFiles,
+                (cacheFile) =>
+            {
+                var re = RootEntry.LoadDirCache(cacheFile);
+                Interlocked.Increment(ref fileCounter);
+                rootEntries.Push(re);
+
+                UpdateUI(() =>
+                {
+                    barLoading.Value = fileCounter;
+                    lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
+                });
+            });
+
+//            int i = 1;
+//            // Not doing a background worker.
+//            			_rootEntries = cacheFiles.Select(s =>
+//            			{
+//            				//_timeIt.Start(s);
+//            				var re = RootEntry.LoadDirCache(s);
+//            				//_timeIt.Stop();
+//            				++fileCounter;
+//            				lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
+//            				barLoading.Value = fileCounter;
+//            				Application.DoEvents(); // Get label to update.
+//            				return re;
+//            			}).ToList();
+//            _timeIt.Stop();
+
+            Serilog.Log.Logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
+            _rootEntries = rootEntries.ToList();
+            Close();
 		}
 
-		public List<RootEntry> RootEntries
-		{
-			get { return _rootEntries; }
-		}
-	}
+		public List<RootEntry> RootEntries => _rootEntries;
+    }
 }

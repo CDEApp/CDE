@@ -84,9 +84,15 @@ namespace cdeLib
             TraverseTreePair(new List<CommonEntry> { this }, func);
         }
 
-        public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func, RootEntry catalogRootEntry = null)
+        /// <summary>
+        /// Recursive traversal
+        /// </summary>
+        /// <param name="rootEntries">Entries to traverse</param>
+        /// <param name="traverseFunc">TraversalFunc</param>
+        /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
+        public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc traverseFunc, RootEntry catalogRootEntry = null)
         {
-            if (func == null) { return; } // nothing to do.
+            if (traverseFunc == null) { return; } // nothing to do.
 
             var funcContinue = true;
             var dirs = new Stack<CommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
@@ -102,7 +108,7 @@ namespace cdeLib
                     {
                         commonEntry.RootEntry = catalogRootEntry;
                     }
-                    funcContinue = func(commonEntry, dirEntry);
+                    funcContinue = traverseFunc(commonEntry, dirEntry);
                     if (!funcContinue)
                     {
                         break;
