@@ -168,7 +168,7 @@ namespace cdeWin
             // TODO having ListViewHelper setup in VIEW breaks passive view. i think.
             // * it does register a bunch of events which it fires.... ? so not real bad.
             // - whats happening is im making view smarter... with specific behaviour.
-            // - but its not passive, passive wourl require ListViewHelper to raise events
+            // - but its not passive, passive would require ListViewHelper to raise events
             // - from gui actions....  and decisions from presenter...
             // - - at moment, listviewhelper is small presenter ?
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)

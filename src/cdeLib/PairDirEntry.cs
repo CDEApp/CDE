@@ -15,10 +15,7 @@ namespace cdeLib
         /// </summary>
         public readonly bool PathProblem;
 
-        public string FullPath
-        {
-            get { return CommonEntry.MakeFullPath(ParentDE, ChildDE); }
-        }
+        public string FullPath => CommonEntry.MakeFullPath(ParentDE, ChildDE);
 
         public PairDirEntry(CommonEntry parent, DirEntry child)
         {
@@ -34,8 +31,8 @@ namespace cdeLib
         public bool ExistsOnFileSystem()
         {
             var path = FullPath;
-            return ChildDE.IsDirectory 
-                ? Directory.Exists(path) 
+            return ChildDE.IsDirectory
+                ? Directory.Exists(path)
                 : File.Exists(path);
         }
     }

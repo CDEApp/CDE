@@ -8,7 +8,6 @@ using ProtoBuf;
 using Directory = Alphaleonis.Win32.Filesystem.Directory;
 using File = Alphaleonis.Win32.Filesystem.File;
 using FileMode = System.IO.FileMode;
-//using FileSystemInfo = Alphaleonis.Win32.Filesystem.FileSystemInfo;
 
 namespace cdeLib
 {
@@ -26,7 +25,7 @@ namespace cdeLib
         [ProtoMember(1, IsRequired = true)]
         private SortedList<int, Entry[]> BaseBlock;
 
-        public int BaseBlockCount { get { return BaseBlock.Count; } }
+        public int BaseBlockCount => BaseBlock.Count;
 
         [ProtoMember(2, IsRequired = true)]
         public RootEntry Root;
@@ -74,7 +73,7 @@ namespace cdeLib
         /// <summary>
         /// Converts Index to a <paramref name="block"/> 
         /// and returns entryIndex in that block to the entry.
-        /// Allocates Entry array if it is not allready allocated.
+        /// Allocates Entry array if it is not already allocated.
         /// </summary>
         public int EntryIndex(int index, out Entry[] block)
         {
@@ -295,8 +294,7 @@ namespace cdeLib
         public int AddEntry(string name, string fullpath, ulong size, DateTime modified, bool isDirectory = false, int parentIndex = 0)
         {
             var myNewIndex = AddEntry();
-            Entry[] block;
-            var entryIndex = EntryIndex(myNewIndex, out block);
+            var entryIndex = EntryIndex(myNewIndex, out var block);
             block[entryIndex].Name = name;
             block[entryIndex].FullPath = fullpath;
             block[entryIndex].Size = size;
@@ -306,8 +304,7 @@ namespace cdeLib
             if (parentIndex > 0)
             {
                 block[entryIndex].Parent = parentIndex;
-                Entry[] parentBlock;
-                var parentEntryIndex = EntryIndex(parentIndex, out parentBlock);
+                var parentEntryIndex = EntryIndex(parentIndex, out var parentBlock);
                 var currentFirstChildIndex = parentBlock[parentEntryIndex].Child;
                 if (currentFirstChildIndex != 0)
                 {   // prepend our new Entry to the sibling chain
@@ -322,16 +319,14 @@ namespace cdeLib
         public int AddEntry(FileSystemEntryInfo fs, int parentIndex = 0, int siblingIndex = 0)
         {
             var myNewIndex = AddEntry();
-            Entry[] block;
-            var entryIndex = EntryIndex(myNewIndex, out block);
+            var entryIndex = EntryIndex(myNewIndex, out var block);
             block[entryIndex].Set(fs);
 
             if (parentIndex > 0)
             {
                 block[entryIndex].Parent = parentIndex;
 
-                Entry[] parentBlock;
-                var parentEntryIndex = EntryIndex(parentIndex, out parentBlock);
+                var parentEntryIndex = EntryIndex(parentIndex, out var parentBlock);
                 parentBlock[parentEntryIndex].Child = myNewIndex;
             }
 
@@ -404,8 +399,7 @@ namespace cdeLib
             var entryEnumerator = new EntryEnumerator(this);
             foreach (var entryKey in entryEnumerator)
             {
-                Entry[] block;
-                var entryIndex = EntryIndex(entryKey.Index, out block);
+                var entryIndex = EntryIndex(entryKey.Index, out var block);
                 if (block[entryIndex].IsDirectory)
                 {   // set full path on this dir
                     block[entryIndex].FullPath = block[entryIndex].GetFullPath(this);
@@ -432,8 +426,7 @@ namespace cdeLib
                 throw new Exception("Entry Store Root must have valid DefaultFileName.");
             }
 
-            Entry[] block;
-            var rootEntryIndex = EntryIndex(Root.RootIndex, out block);
+            var rootEntryIndex = EntryIndex(Root.RootIndex, out var block);
 
             if (!block[rootEntryIndex].IsDirectory)
             {
@@ -459,8 +452,7 @@ namespace cdeLib
             var entryEnumerator = new EntryEnumerator(this);
             foreach (var entryKey in entryEnumerator)
             {
-                Entry[] block;
-                var entryIndex = EntryIndex(entryKey.Index, out block);
+                var entryIndex = EntryIndex(entryKey.Index, out var block);
                 var hash = block[entryIndex].IsHashDone ? "#" : " ";
                 Console.WriteLine($"{hash}{block[entryIndex].GetFullPath(this)}");
             }
@@ -499,9 +491,8 @@ namespace cdeLib
                 var entryEnumerator = new EntryEnumerator(this);
                 foreach (var entryKey in entryEnumerator)
                 {
-                    Entry[] block;
                     var index = entryKey.Index;
-                    var entryIndex = EntryIndex(index, out block);
+                    var entryIndex = EntryIndex(index, out var block);
                     var size = block[entryIndex].Size;
 
                     if (size >= min && size < max)

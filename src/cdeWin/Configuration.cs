@@ -229,6 +229,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Name", Width=260},
                     new ColumnConfig { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Modified", Width=130},
+                    new ColumnConfig { Name="Catalog", Width=130},
                     new ColumnConfig { Name="Path", Width=400},
                 }
             },
