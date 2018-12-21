@@ -11,11 +11,15 @@ namespace cdeLib
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
 
+    public delegate bool TraverseFuncWithRoot(CommonEntry ce, DirEntry de, RootEntry rootEntry = null);
+
     [ProtoContract
     ,ProtoInclude(1, typeof(RootEntry))
     ,ProtoInclude(2, typeof(DirEntry))]
     public abstract class CommonEntry
     {
+        public RootEntry RootEntry { get; set; }
+
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         public List<DirEntry> Children { get; set; }
@@ -80,7 +84,7 @@ namespace cdeLib
             TraverseTreePair(new List<CommonEntry> { this }, func);
         }
 
-        public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func)
+        public static void TraverseTreePair(IEnumerable<CommonEntry> rootEntries, TraverseFunc func, RootEntry catalogRootEntry = null)
         {
             if (func == null) { return; } // nothing to do.
 
@@ -94,6 +98,10 @@ namespace cdeLib
 
                 foreach (var dirEntry in commonEntry.Children)
                 {
+                    if (catalogRootEntry != null)
+                    {
+                        commonEntry.RootEntry = catalogRootEntry;
+                    }
                     funcContinue = func(commonEntry, dirEntry);
                     if (!funcContinue)
                     {

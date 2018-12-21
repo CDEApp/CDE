@@ -535,7 +535,11 @@ namespace cdeWin
 
             _searchVals[(int) SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
-            _searchVals[(int) SearchResultColumn.Catalog] = "TODO"; // ((cdeLib.RootEntry) pairDirEntry.ParentDE).DefaultFileName;
+            if (pairDirEntry.ParentDE.RootEntry != null)
+            {
+                _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.RootEntry.DefaultFileName;
+            }
+            
 
             var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             searchHelper.RenderItem = lvi;

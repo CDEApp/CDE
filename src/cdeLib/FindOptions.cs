@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 namespace cdeLib
 {
@@ -76,7 +77,20 @@ namespace cdeLib
 
             var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
-            CommonEntry.TraverseTreePair(rootEntries, findFunc);
+
+
+//            Parallel.ForEach(rootEntries, (rootEntry) =>
+//            {
+//                //TODO: Parallel breaks the progress percentage, need to fix.
+//                CommonEntry.TraverseTreePair(new List<CommonEntry>() { rootEntry }, findFunc);
+//            });
+
+            foreach (var rootEntry in rootEntries)
+            {
+                CommonEntry.TraverseTreePair(new List<CommonEntry>(){rootEntry}, findFunc, rootEntry);
+            }
+
+            //CommonEntry.TraverseTreePair(rootEntries, findFunc);
             ProgressFunc(_progressCount[0], ProgressEnd);        // end of Progress
             // ReSharper restore PossibleMultipleEnumeration
         }
