@@ -147,6 +147,7 @@
     <Compile Include="LoaderForm.Designer.cs">
       <DependentUpon>LoaderForm.cs</DependentUpon>
     </Compile>
+    <Compile Include="LoggingBootstrap.cs" />
     <Compile Include="MyAboutBox.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -249,7 +250,8 @@
     <Error Condition="!Exists('..\packages\ILRepack.2.0.16\build\ILRepack.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.2.0.16\build\ILRepack.props'))" />
     <Error Condition="!Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets'))" />
   </Target>
-  <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets')" />
+  <!-- TO reenable ILRepack task uncomment next line -->
+  <!-- <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.16\build\ILRepack.Lib.MSBuild.Task.targets')" /> -->
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">

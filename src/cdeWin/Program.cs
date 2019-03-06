@@ -1,26 +1,12 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
-using Serilog;
 
 namespace cdeWin
 {
-    public static class LoggingBootstrap
-    {
-        public static void CreateLogger()
-        {
-            Log.Logger = new LoggerConfiguration()
-                .MinimumLevel.Debug()
-                .WriteTo.Seq("http://localhost:5341")
-                .WriteTo.Debug()
-                .CreateLogger();
-            Log.Logger.Debug("CDE Starting");
-        }
-    }
-
     static class Program
     {
-		public static string Version => Application.ProductVersion;
+        public static string Version => Application.ProductVersion;
 
         public static string ProductName => Application.ProductName;
 
@@ -36,11 +22,11 @@ namespace cdeWin
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
 
-			// TODO consider using (var config = new Config()) { } - with Save built in.
-			var config = new Config("cdeWinView.cfg", ProductName, Version);
+            // TODO consider using (var config = new Config()) { } - with Save built in.
+            var config = new Config("cdeWinView.cfg", ProductName, Version);
             var mainForm = new CDEWinForm(config);
             var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService());
-			config.RestoreConfigFormBase(mainForm);
+            config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
             Application.Run(mainForm);

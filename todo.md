@@ -1,0 +1,1 @@
+Remove ILRepack.Lib.MSBuild.Task, swap with cake
