@@ -8,12 +8,14 @@
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 
+
 //////////////////////////////////////////////////////////////////////
 // PREPARATION
 //////////////////////////////////////////////////////////////////////
 
 // Define directories.
-var buildDir = Directory("./src/Example/bin") + Directory(configuration);
+var buildDir = Directory("./dist") + Directory(configuration);
+var slnDir = "./src/cde.sln";
 
 //////////////////////////////////////////////////////////////////////
 // TASKS
@@ -32,28 +34,31 @@ Task("Restore-NuGet-Packages")
     NuGetRestore("./src/cde.sln");
 });
 
+Task("Package")
+.Does(()=> {
+  var assemblyPaths = GetFiles("./src/cde/bin/Release/*.dll");
+      ILRepack(
+            buildDir + File("Cde.exe"),
+            "./src/cde/bin/Release/cde.exe",
+            assemblyPaths
+      );
+});
+
 Task("Build")
     .IsDependentOn("Restore-NuGet-Packages")
     .Does(() =>
 {
-    var slndir = "./src/cde.sln";
+    
     if(IsRunningOnWindows())
     {
       // Use MSBuild
-      MSBuild(slndir, settings =>
+      MSBuild(slnDir, settings =>
         settings.SetConfiguration(configuration));
-
-    var assemblyPaths = GetFiles("./src/cde/bin/Release/*.dll");
-      ILRepack(
-            "./MergedCde.exe",
-            "./src/cde/bin/Release/cde.exe",
-            assemblyPaths
-      );
-    }
+  }
     else
     {
       // Use XBuild
-      XBuild(slndir, settings =>
+      XBuild(slnDir, settings =>
         settings.SetConfiguration(configuration));
     }
 });
@@ -72,7 +77,8 @@ Task("Run-Unit-Tests")
 //////////////////////////////////////////////////////////////////////
 
 Task("Default")
-    .IsDependentOn("Run-Unit-Tests");
+    .IsDependentOn("Run-Unit-Tests")
+    .IsDependentOn("Package");    
 
 //////////////////////////////////////////////////////////////////////
 // EXECUTION

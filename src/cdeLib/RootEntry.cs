@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
@@ -302,8 +304,7 @@ namespace cdeLib
         {
             try
             {
-                var rootEntry = Serializer.Deserialize<RootEntry>(input);
-                return rootEntry;
+                return Serializer.Deserialize<RootEntry>(input);
             }
             catch (Exception)
             {
@@ -317,9 +318,15 @@ namespace cdeLib
         }
 
 		public static List<RootEntry> Load(IEnumerable<string> cdeList)
-		{
-			return cdeList.Select(LoadDirCache).ToList();
-		}
+        {
+            var results = new ConcurrentBag<RootEntry>();
+            Parallel.ForEach(cdeList, file =>
+            {
+                results.Add(LoadDirCache(file));
+                Console.WriteLine($"{file} read..");
+            });
+            return results.ToList();
+        }
 
         public static RootEntry LoadDirCache(string file)
         {
@@ -330,11 +337,9 @@ namespace cdeLib
                     using (var fs = File.Open(file, FileMode.Open, FileAcces.Read))
                     {
                         var re = Read(fs);
-                        if (re != null)
-                        {
-                            re.ActualFileName = file;
-                            re.SetInMemoryFields();
-                        }
+                        if (re == null) return null;
+                        re.ActualFileName = file;
+                        re.SetInMemoryFields();
                         return re;
                     }
                 }
@@ -425,8 +430,7 @@ namespace cdeLib
 			{
 				cacheFilePaths.AddRange(GetCdeFiles(path));
 
-				var childDirs = Directory.GetDirectories(path);
-				foreach (var childPath in childDirs)
+				foreach (var childPath in Directory.GetDirectories(path))
 				{
 				    try
 				    {
