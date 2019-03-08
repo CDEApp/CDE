@@ -1,5 +1,5 @@
 #tool nuget:?package=NUnit.ConsoleRunner&version=3.4.0
-#tool "nuget:?package=ILRepack"
+#tool "nuget:?package=ILRepack&version=2.0.16"
 
 //////////////////////////////////////////////////////////////////////
 // ARGUMENTS
@@ -36,12 +36,27 @@ Task("Restore-NuGet-Packages")
 
 Task("Package")
 .Does(()=> {
-  var assemblyPaths = GetFiles("./src/cde/bin/Release/*.dll");
+  var cdeAssemblyPaths = GetFiles("./src/cde/bin/Release/*.dll");
       ILRepack(
             buildDir + File("Cde.exe"),
             "./src/cde/bin/Release/cde.exe",
-            assemblyPaths
+            cdeAssemblyPaths
       );
+
+// var cdeWinAssemblyPaths = new FilePathCollection();
+//   cdeWinAssemblyPaths.Add(GetFiles("./src/cde/bin/Release/AlphaFS.dll"));
+//   cdeWinAssemblyPaths.Add(GetFiles("./src/cde/bin/Release/ndesk.options.dll"));
+//   cdeWinAssemblyPaths.Add(GetFiles("./src/cde/bin/Release/protobuf-net.dll"));
+//   cdeWinAssemblyPaths.Add(GetFiles("./src/cde/bin/Release/cdelib.dll"));
+//   cdeWinAssemblyPaths.Add(GetFiles("./src/cde/bin/Release/Util.dll"));
+    //issue with serilog + ilpack?
+    var cdeWinAssemblyPaths = GetFiles("./src/cdeWin/bin/Release/*.dll");
+      ILRepack(
+            buildDir + File("CdeWin.exe"),
+            "./src/cdeWin/bin/Release/cdeWin.exe",
+            cdeWinAssemblyPaths
+      );
+
 });
 
 Task("Build")
