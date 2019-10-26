@@ -6,15 +6,7 @@ pool:
   vmImage: 'windows-latest'
 
 steps:
-- script: echo Starting build.
-  displayName: 'Run a one-line script'
-- task: CmdLine@2
-  inputs:
-    script: |
-      dir
 - task: PowerShell@2
+  displayName: Build App
   inputs:
     filePath: 'build.ps1'      
-#- task: CmdLine@2
-#  inputs:
-#    script: call BuildCake.cmd
