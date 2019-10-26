@@ -1,0 +1,13 @@
+trigger:
+- master
+- feat/*
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+- script: echo Starting build.
+  displayName: 'Run a one-line script'
+- task: CmdLine@2
+  inputs:
+    script: BuildCake.cmd
