@@ -2,25 +2,36 @@
 
 [TOC]
 
+## Continuous integration
+
+| Build server                | Platform      | Build status                                                                                                                                                        | Tests                                                                                                                                                   |
+|-----------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Azure Pipelines             | Windows         | [![Build Status](https://dev.azure.com/cdeapplication/CDE/_apis/build/status/CDEApp.CDE?branchName=master)](https://dev.azure.com/cdeapplication/CDE/_build/latest?definitionId=1&branchName=master) |
+
 ## Introduction
+
 ### What is cde
+
 This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file system entries with assorted criteria.
 
-It is written in C# and requires .Net 4.0.
+It is written in C# and requires .Net 4.7.2
 
-It was inspired by and old and faithful utility called Cathy I have used in the past found at http://www.mtg.sk/rva/. One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
+It was inspired by and old and faithful utility called Cathy I have used in the past found at [Cathy's Website](http://www.mtg.sk/rva/). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
 
 #### cde
+
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
 
 The executable `cde.exe` can be copied around by it self to be used anywhere that .Net 4.0 is available. The cde.config file is optional for cde.exe and it allows you to control some settings. [cde.config](#cde.config)
 
 #### cdeWin
+
 cdeWin is a Windows Forms application for searching, sorting and browsing of catalogs.
 
 This application reads and writes a configuration file `cdeWinView.cfg`.
+
 - This file is normally located in the Local Application Data folder of the current user.
-- On standard Windows 7 machine its path would be
+- On standard Windows 10 machine its path would be
     - `C:\Users\username\AppData\Local\cde`
 - If a file called cdeWinView.cfg exists in the current directory when cdeWin launches it will use the current directory for the configuration file and not the Local Application Data Folder.
 - This file saves and restores information about cdeWin window and controls.
@@ -32,21 +43,25 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
 The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .Net 4.0 is available with the behavior of the cdeWinView.cfg file as described just above.
 
 #### cdeWeb (unreleased)
+
 This a web interface version of cde for searching but it is not released or finished.
 
 It is built with ASP.Net, MVC, SignalR, Bootstrap and Angular.js.
 
 ### Contact Author
+
 My name is Robin and you can contact me about cde using `rob at EMAIL ADDRESS` # need email address
 
 This application will continue to evolve driven by my own and a few friends desires however the rate of change to date has not been very fast. It may evolve faster if there is sufficient interest from the public.
 
 #### License Shareware Snowball
+
 cde is currently released in June 2015 as a variant of **Shareware**, I would think of as **Shareware Snowball**.
 
 If you like it enough I would appreciate a donation to cdeDonationAddress@gmail.com.
 
 If you don't feel its reached your donation threshold then apply this rule.
+
 1. Consider some other shareware software you like and have not donated for yet.
 1. Add the perceived value of **cde** to this other shareware's value to you.
 1. If this combination of value reaches your threshold for donation then donate to the other shareware software and consider yourself donated for cde as well.
@@ -61,25 +76,30 @@ The 64 bit build is really only of value to people dealing with a very large num
 ## Details
 
 ### Catalog files ".cde"
+
 - cde creates a separate catalog file for each file system it scans.
 
 - each catalog file ends with extension ".cde"
 - each catalog file created has a file name derived from the drive letter, volume name and path or unc path to the file system.
-     - These canonical names are not enforced, but are used when cde updates hashes on a file system that has an old catalog file available.
-     - Renaming files is not a problem if you are not using hashes or don't care about hashes.
-     - Duplicating a catalog to a different name will cause cde to load both original and duplicate as it does not check for duplicates catalog file contents.
+  - These canonical names are not enforced, but are used when cde updates hashes on a file system that has an old catalog file available.
+  - Renaming files is not a problem if you are not using hashes or don't care about hashes.
+  - Duplicating a catalog to a different name will cause cde to load both original and duplicate as it does not check for duplicates catalog file contents.
 - example catalog file names
+  
     ```batch
     cde --scan c:\users\
     ```
+
     Produces a cde file name of `C-V3Win7-C__users.cde` on my machine.
+
     ```batch
     cde --scan \\unc\toothless\c$\users
     ```
+
     Produces a cde file name of `UNC-toothless_c__users_.cde`  on my home network.
 
 - All catalog files in the current directory, or one directory below current directory will be loaded by cde or cdeWin when they are started.
-    - The main reason for loading also from one directory down is to allow for file system permission to be applied to folders in the current directory to limit what catalog files are loaded by the current useres identity.
+  - The main reason for loading also from one directory down is to allow for file system permission to be applied to folders in the current directory to limit what catalog files are loaded by the current useres identity.
 
 - Catalog files can contain MD5 Hashes for files as well if they have been added by using the "-hash" option.
 
@@ -95,17 +115,21 @@ The 64 bit build is really only of value to people dealing with a very large num
 Some options only apply to some modes, in those cases the mode parameter must occur before the other parameters for the command line to be valid.
 
 Valid:
+
 ```batch
 cde -find afilename -path
 ```
+
 Invalid:
+
 ```batch
 cde -path -find afilename
 ```
 
-
 ### cde -scan Path
+
 #### Valid Options for this mode
+
 [`-minSize`](#parameter-options)
 [`-maxSize`](#parameter-options)
 [`-minDateTime`](#parameter-options)
@@ -120,7 +144,9 @@ When it creates new catalog files it will detect an old catalog file for the giv
 Only Last Modified Time of file system entries is captured into .cde files.
 
 ### cde -find String
+
 #### Valid Options for this mode
+
 [`-basePath`](#parameter-options)
 [`-path`](#parameter-options)
 [`-grep`](#parameter-options)
@@ -135,7 +161,9 @@ Only Last Modified Time of file system entries is captured into .cde files.
 This is the mode for finding files in your catalogs using assorted filter criteria. If you wish to sort and browse it is suggested you use use cdeWin rather than cde.
 
 ### cde -hash
+
 #### Valid Options for this mode
+
 [`-basePath`](#parameter-options)
 [`-minSize`](#parameter-options)
 [`-maxSize`](#parameter-options)
@@ -158,7 +186,9 @@ By doing this you can  limit the hashing of  files to try and run Dupes on a sub
 You can also use the option -minSize to limit the size of Hashed files and Dupes reported files
 
 ### cde -dupes
+
 #### Valid Options for this mode
+
 [`-basePath`](#parameter-options)
 [`-minSize`](#parameter-options)
 [`-maxSize`](#parameter-options)
@@ -177,12 +207,14 @@ Dupes does not look at files on the file system at all, so if you run Dupes on a
 Consider using -minHourAge to limit Hash and Dupes work if your are cleanign up file systems.
 
 ### cde -dump
+
 #### Valid Options for this mode
+
 `No options supported.`
 
 Output the full tree of file entries in the catologs in text format.
 
-###  Parameter Options
+### Parameter Options
 
 | | Parameter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
 | ---: | :--- | :--- |
@@ -202,6 +234,7 @@ Output the full tree of file entries in the catologs in text format.
 | | `-include {Regex}` | A filter to include only entries that match these Regexes for processing.
 
 ##### Date Time  Format for parameters
+
 `<YYYY>-<MONTH>-<DD>T<HH>:<MM>:<SS>`
 
 - Month field is an integer 1-12 or short Month Name
@@ -210,6 +243,7 @@ Output the full tree of file entries in the catologs in text format.
 - The `T` between date and time is required and must be upper case.
 
 Valid Examples:
+
 - "2014"
 - "2014-12"
 - "2014-Dec"
@@ -221,21 +255,24 @@ Valid Examples:
 - "2014-12-02T13:10:30"
 
 ##### Time Format for parameters
+
 `<HH>:<MM>:<SS>`
 
 - The time is 24 hour time format. 0 - 23
 - There is no need to fill out all the fields of the time format to get a valid value.
 
 Valid Examples:
+
 - "9"
 - "9:30"
 - "9:30:15"
 
-#####  Size format for parameters
+##### Size format for parameters
+
 The following suffixes case independent on size fields modify there value.
 
 | Suffix | Description | Multiplier
-| ---: | --- |
+|--------| ------------|-------------
 | KB | Kilobytes | 1000
 | MB | Megabytes | 1000^2
 | GB | Gigabytes | 1000^3
@@ -245,6 +282,7 @@ Suffixes must follow number with no spaces.
 ## Extra Details
 
 ### cde.config
+
 There are 3 values that can be modified to change cde behaviour.
 
 - `ProgressUpdateInterval`  which defaults to 5000.
@@ -257,19 +295,22 @@ There are 3 values that can be modified to change cde behaviour.
     - hashing will automatically try to do hashing on different file systems in parallel.
     - This setting defines how many concurrent processes will be hashing files on one file system.
 
-###Examples
+### Examples
 
 To create a cde catalog for C:\ drive.
+
 ```batch
 cde --scan C:\
 ```
 
 To find files containing word "system.dll" in catalogs in current directory.
+
 ```batch
 cde --find system.dll
 ```
 
 ### Catalog file sizes and memory usage
+
 These are examples and actual file sizes and memory footprints may vary depending
 on the length of file and folder names.
 
@@ -291,16 +332,14 @@ The catalog files are not compressed internally as the use cases I have had till
 
 The following sofwtare is used in the Development of this application.
 
-* Microsofts Visual Studio
-* protobuf-net https://code.google.com/p/protobuf-net/
-* AlphaFS https://alphafs.codeplex.com/
-* NUnit http://www.nunit.org/
-* NDesk.Options http://www.ndesk.org/Options
+- [protobuf-net](https://code.google.com/p/protobuf-net/)
+- [AlphaFS](https://alphafs.codeplex.com/)
+- [NUnit](http://www.nunit.org/)
+- [NDesk.Options](http://www.ndesk.org/Options)
 
 The web version uses. (not available currently)
 
-* AngularJS https://angularjs.org/
-* Bootstrap http://getbootstrap.com/
-* autofac http://autofac.org/
-* SignalR http://signalr.net/
-
+- [AngularJS](https://angularjs.org/)
+- [Bootstrap](http://getbootstrap.com/)
+- [autofac](http://autofac.org/)
+- [SignalR](http://signalr.net/)
