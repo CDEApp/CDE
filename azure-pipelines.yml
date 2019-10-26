@@ -10,4 +10,4 @@ steps:
   displayName: 'Run a one-line script'
 - task: CmdLine@2
   inputs:
-    script: BuildCake.cmd
+    script: call BuildCake.cmd
