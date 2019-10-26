@@ -1,2 +1,4 @@
 @ECHO Build with Cake
-powershell .\build.ps1
+dotnet tool install --global Cake.Tool --version 0.35.0
+dotnet cake build.cake
+REM powershell .\build.ps1
