@@ -12,6 +12,9 @@ steps:
   inputs:
     script: |
       dir
-- task: CmdLine@2
+- task: PowerShell@2
   inputs:
-    script: call BuildCake.cmd
+    filePath: 'build.ps1'      
+#- task: CmdLine@2
+#  inputs:
+#    script: call BuildCake.cmd
