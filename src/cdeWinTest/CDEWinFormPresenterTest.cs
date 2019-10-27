@@ -480,7 +480,7 @@ namespace cdeWinTest
                 base.RunBeforeEveryTest();
 
                 _stubConfig.Stub(x => x.DefaultSearchResultColumnCount)
-                    .Return(4); // enough spaces for search result list view items.
+                    .Return(5); // enough spaces for search result list view items.
                 _stubConfig.Stub(x => x.DateFormatYMDHMS)
                     .Return("{0:yyyy/MM/dd HH:mm:ss}");
 
@@ -536,7 +536,7 @@ namespace cdeWinTest
                 var listViewItem = (ListViewItem)(args[0][0]);
                 var expectedValues = new[]
                 {   // Fragile, this depends on time zone of test machine at moment.
-                    "Test", "531", "2010/11/02 18:16:12", @"T:\"
+                    "Test", "531", "2010/11/02 18:16:12", "TestRootEntry.cde", @"T:\"
                 };
                 listViewItem.AssertListViewSubItemEqualValues(expectedValues);
             }

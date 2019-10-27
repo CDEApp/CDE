@@ -110,6 +110,7 @@ namespace AlphaFSTest
             Assert.That(a, Is.True);
         }
 
+        [Ignore("This assumes windows and isn't of much value so ignore for now")]
         [Test]
         public void GetDirectoryRoot_WithRelativePath_ReturnsCurrentDirRoot()
         {
@@ -249,7 +250,7 @@ namespace AlphaFSTest
         {
             var dir = Path.GetDirectoryName(typeof(AlphaFSToys).Assembly.Location);
             Console.WriteLine($"AlphaFSToys directory name {dir} or {TestContext.CurrentContext.TestDirectory}");
-            Directory.SetCurrentDirectory($"{dir}\\..\\..\\..");
+            Directory.SetCurrentDirectory($"{dir}\\..\\..");
 
 
             var dirs = Directory.GetDirectories(".");
@@ -264,7 +265,7 @@ namespace AlphaFSTest
         {
             var dir = Path.GetDirectoryName(typeof(AlphaFSToys).Assembly.Location);
             Console.WriteLine($"AlphaFSToys directory name {dir} or {TestContext.CurrentContext.TestDirectory}");
-            Directory.SetCurrentDirectory($"{dir}\\..\\..\\..");
+            Directory.SetCurrentDirectory($"{dir}\\..\\..");
 
             var dirs = Directory.EnumerateDirectories(".").ToArray();
             var m = dirs.Contains("bin");

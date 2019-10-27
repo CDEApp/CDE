@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using cdeLib;
 using NUnit.Framework;
 
@@ -8,6 +9,10 @@ namespace cdeLibTest
     [TestFixture]
     public class RootEntryTest
     {
+        private static readonly string projectPath =
+            Path.GetDirectoryName(Path.GetDirectoryName(TestContext.CurrentContext.TestDirectory));
+        private string testDir = Path.Combine(projectPath, "Test");
+
         [Test]
         public void Constructor_Minimal_Creates()
         {
@@ -19,9 +24,8 @@ namespace cdeLibTest
         [Test]
         public void Constuctor_GetTree_OK()
         {
-            const string p = @"C:\temp";
             var re = new RootEntry();
-            re.RecurseTree(p);
+            re.RecurseTree(testDir);
 
             Assert.That(re, Is.Not.Null);
             Assert.That(re.Children, Is.Not.Null);
@@ -31,9 +35,8 @@ namespace cdeLibTest
         [Test]
         public void Constuctor_GetTreeWithMoreThanOneLevel_OK()
         {
-            const string p = @"C:\temp";
             var re = new RootEntry();
-            re.RecurseTree(p);
+            re.RecurseTree(testDir);
 
             Assert.That(re, Is.Not.Null);
             var found = re.Children.Any(x => x.Children != null && x.Children.Count > 0);

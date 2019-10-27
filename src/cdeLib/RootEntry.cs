@@ -73,6 +73,7 @@ namespace cdeLib
             PathsWithUnauthorisedExceptions = new List<string>();
             IConfiguration configuration = new Configuration();
             EntryCountThreshold = configuration.ProgressUpdateInterval;
+            RootEntry = this;
         }
 
         public void PopulateRoot(string startPath)
@@ -314,7 +315,7 @@ namespace cdeLib
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
-	        return Load(GetCacheFileList(new[] {"."}));
+	        return Load(GetCacheFileList(new[] {"./"}));
         }
 
 		public static List<RootEntry> Load(IEnumerable<string> cdeList)
@@ -322,7 +323,11 @@ namespace cdeLib
             var results = new ConcurrentBag<RootEntry>();
             Parallel.ForEach(cdeList, file =>
             {
-                results.Add(LoadDirCache(file));
+                var newRootEntry = LoadDirCache(file);
+                if (newRootEntry != null)
+                {
+                    results.Add(newRootEntry);
+                }
                 Console.WriteLine($"{file} read..");
             });
             return results.ToList();
