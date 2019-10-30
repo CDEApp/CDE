@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using ProtoBuf;
-using Filesystem = Alphaleonis.Win32.Filesystem;
 
 namespace cdeLib
 {
@@ -10,7 +9,7 @@ namespace cdeLib
     /// Returns true if want traversal to continue after this returns.
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
-
+    
     public delegate bool TraverseFuncWithRoot(CommonEntry ce, DirEntry de, RootEntry rootEntry = null);
 
     [ProtoContract
@@ -157,7 +156,7 @@ namespace cdeLib
                 {
                     foreach (var sourceDirEntry in baseSourceEntry.Children)
                     {
-                        var fullPath = Filesystem.Path.Combine(workPath, sourceDirEntry.Path);
+                        var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
 
                         // find if theres a destination entry available.
                         // size of dir is irrelevant. date of dir we don't care about.
@@ -211,7 +210,7 @@ namespace cdeLib
         {
             var a = parentEntry.FullPath ?? "pnull";
             var b = dirEntry.Path ?? "dnull";
-            return Filesystem.Path.Combine(a, b);
+            return System.IO.Path.Combine(a, b);
         }
 
         public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
@@ -250,7 +249,7 @@ namespace cdeLib
 
         public bool ExistsOnFileSystem()
         {   // CommonEntry is always a directory ? - not really.
-            return Filesystem.Directory.Exists(FullPath);
+            return System.IO.Directory.Exists(FullPath);
         }
 
         /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>

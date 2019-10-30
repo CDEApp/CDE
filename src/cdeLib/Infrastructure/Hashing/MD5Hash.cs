@@ -1,7 +1,7 @@
 using System;
 using System.Security.Cryptography;
 
-namespace cdeLib.Infrastructure
+namespace cdeLib.Infrastructure.Hashing
 {
     public class MD5Hash : IHashAlgorithm
     {

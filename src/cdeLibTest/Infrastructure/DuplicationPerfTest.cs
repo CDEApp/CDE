@@ -37,7 +37,7 @@ namespace cdeLibTest.Infrastructure
             tests.Add("Sha1", sha1);
             tests.Add("CRC32", crc32);
 
-            var data = new Byte[256 * 1024];
+            var data = new byte[256 * 1024];
             new Random().NextBytes(data);
             Thread.CurrentThread.Priority = ThreadPriority.Highest;
             Process.GetCurrentProcess().PriorityClass = ProcessPriorityClass.RealTime;
@@ -48,8 +48,8 @@ namespace cdeLibTest.Infrastructure
             }
             foreach (var testSubject in tests)
             {
-                Stopwatch timer = Stopwatch.StartNew();
-                for (int i = 0; i < 9999; i++)
+                var timer = Stopwatch.StartNew();
+                for (var i = 0; i < 9999; i++)
                 {
                     testSubject.Value.Hash(data);
                 }

@@ -5,7 +5,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
 
@@ -93,10 +92,10 @@ namespace cdeLib
             //}
 
             var groupedByDirectoryRoot = descendingFlatList
-                .GroupBy(x => AlphaFSHelper.GetDirectoryRoot(x.FullPath));
+                .GroupBy(x => System.IO.Directory.GetDirectoryRoot(x.FullPath));
             _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
-            //parrallel at the grouping level, hopefully this is one group per disk.
+            // parallel at the grouping level, hopefully this is one group per disk.
             _logger.LogDebug("Beginning Hashing...");
             _logger.LogDebug("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             
@@ -107,6 +106,14 @@ namespace cdeLib
             var token = cts.Token;
             var outerOptions = new ParallelOptions {CancellationToken = token};
             _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInSizeDupes;
+
+            // Trivial non parallel loop for testing and exploring.
+            // foreach (var flatFile in descendingFlatList)
+            // {
+            //     _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
+            //     CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
+            // }
+            
             try
             {
                 Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) => {
@@ -116,9 +123,9 @@ namespace cdeLib
                         MaxDegreeOfParallelism = 2
                     };
                     // This now tries to hash files in approx order of largest to smallest file.
-                    // Hitting break when smallest log display get down to a size you dont care about is viable.
+                    // Hitting break when smallest log display get down to a size you don't care about is viable.
                     // Then the full hash phase will start and you can hit break again to stop it after a while.
-                    // tTo be able to then run --dupes on the larget hashed files.
+                    // to be able to then run --dupes on the larger hashed files.
                     grp.AsParallel()
                         .ForEachInApproximateOrder(parallelOptions, (flatFile, innerLoopState) => {
                             _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
@@ -328,7 +335,8 @@ namespace cdeLib
                 if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
                 {
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
-                    var longFullPath = Path.GetFullPath(fullPath);
+                    // TODO not sure we need this GetFullpath since dotnetcore3.0
+                    var longFullPath = System.IO.Path.GetFullPath(fullPath);
                     CalculateMD5Hash(longFullPath, dirEntry, false);
                     if (Hack.BreakConsoleFlag)
                     {

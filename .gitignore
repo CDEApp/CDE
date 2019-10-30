@@ -63,3 +63,5 @@ src/.vs/config/applicationhost.config
 /dist/*
 /tools/Cake/*
 /tools/*
+
+/src/cdeLibTest/Test2/*

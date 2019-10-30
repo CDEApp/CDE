@@ -2,19 +2,11 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
-using Directory = Alphaleonis.Win32.Filesystem.Directory;
-using File = Alphaleonis.Win32.Filesystem.File;
-using FileAcces = System.IO.FileAccess;
-using FileMode = System.IO.FileMode;
-using Filesystem = Alphaleonis.Win32.Filesystem;
-using Volume = Alphaleonis.Win32.Filesystem.Volume;
 
 namespace cdeLib
 {
@@ -26,6 +18,8 @@ namespace cdeLib
     {
         const string MatchAll = "*";
 
+        // NO LONGER USED
+        [Obsolete]
         [ProtoMember(1, IsRequired = true)]
         public string VolumeName { get; set; }
 
@@ -79,7 +73,6 @@ namespace cdeLib
         public void PopulateRoot(string startPath)
         {
             startPath = GetRootEntry(startPath);
-
             ScanStartUTC = DateTime.UtcNow;
             RecurseTree(startPath);
             ScanEndUTC = DateTime.UtcNow;
@@ -94,15 +87,15 @@ namespace cdeLib
                 throw new ArgumentException($"Cannot find path \"{startPath}\"");
             }
 
-            DefaultFileName = GetDefaultFileName(startPath, out var deviceHint, out _, out var volumeName);
-
+            DefaultFileName = GetDefaultFileName(startPath, out var deviceHint, out _);
             Path = startPath;
             DriveLetterHint = deviceHint;
-            VolumeName = volumeName;
+            // VolumeName = volumeName;
 
-            var dsi = Volume.GetDiskFreeSpace(Path, false);
-            AvailSpace = (ulong)dsi.FreeBytesAvailable;
-            TotalSpace = (ulong)dsi.TotalNumberOfBytes;
+            var pathRoot = System.IO.Path.GetPathRoot(startPath);
+            var driveInfo = new DriveInfo(pathRoot);
+            AvailSpace = (ulong) driveInfo.AvailableFreeSpace;
+            TotalSpace = (ulong) driveInfo.TotalSize;
             return startPath;
         }
 
@@ -112,21 +105,17 @@ namespace cdeLib
             // So just handle it here
             ScanStartUTC = new DateTime(ScanStartUTC.Ticks, DateTimeKind.Utc);
             ScanEndUTC = new DateTime(ScanEndUTC.Ticks, DateTimeKind.Utc);
-
             FullPath = Path;
             SetCommonEntryFields();
             SetSummaryFields();
         }
 
-        public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot, out string volumeName)
+        public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot)
         {
             string fileName;
-
             volumeRoot = GetDirectoryRoot(scanPath);
-            volumeName = GetVolumeName(volumeRoot);
-
+            // volumeName = GetVolumeName(volumeRoot);
             hint = GetDriverLetterHint(scanPath, volumeRoot);
-
             var filenameSafePath = SafeFileName(scanPath);
             if (IsUnc(scanPath))
             {
@@ -137,42 +126,48 @@ namespace cdeLib
                 // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (volumeRoot == scanPath)
                 {
-                    fileName = $"{hint}-{volumeName}.cde";
+                    fileName = $"{hint}.cde";
                 }
                 else
                 {
-                    fileName = $"{hint}-{volumeName}-{filenameSafePath}.cde";
+                    fileName = $"{hint}-{filenameSafePath}.cde";
                 }
             }
             return fileName;
         }
 
         #region Methods virtual to assist testing.
+        // TODO may not be needed with move to dotnetcore3.0 and System.IO
         public virtual string GetFullPath(string path)
         {
-            return AlphaFSHelper.GetFullPath(path);
+            return System.IO.Path.GetFullPath(path);
         }
 
-        public virtual bool IsPathRooted(string path)
-        {
-            return Filesystem.Path.IsPathRooted(path);
-        }
+        // UNCLEAR what this is here for? so commenting out for now.
+        // public virtual bool IsPathRooted(string path)
+        // {
+        //     // return Filesystem.Path.IsPathRooted(path);
+        //     return Path.;
+        // }
 
         public virtual bool IsUnc(string path)
         {
-            return Filesystem.Path.IsUncPath(path);
+            return System.IO.Path.IsPathFullyQualified(path) && path.StartsWith("\\\\");
         }
 
         public virtual string GetDirectoryRoot(string path)
         {
-            return AlphaFSHelper.GetDirectoryRoot(path);
+            return Directory.GetDirectoryRoot(path);
         }
 
-        public virtual string GetVolumeName(string rootPath)
-        {
-            var alphasFSroot = Directory.GetDirectoryRoot(rootPath);    // hacky hacky 
-            return Volume.GetVolumeInfo(alphasFSroot).Name;
-        }
+        // VolumeName is a windows specific thing....
+        // QUESTION: delete this field entirely
+        // public virtual string GetVolumeName(string rootPath)
+        // {
+        //     var pathRoot = System.IO.Path.GetPathRoot(rootPath);
+        //     // var driveInfo = new DriveInfo(pathRoot);
+        //     return pathRoot;
+        // }
         #endregion
 
         /// <summary>
@@ -183,21 +178,20 @@ namespace cdeLib
         public string CanonicalPath(string path)
         {
             path = GetFullPath(path);  // Fully qualified path used to generate filename
-
             var volumeRoot = GetDirectoryRoot(path);
-
             if (IsUnc(path))
             {
-                if (!path.EndsWith(Filesystem.Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture)))
+                if (!System.IO.Path.EndsInDirectorySeparator(path))
                 {
-                    path = path + Filesystem.Path.DirectorySeparatorChar;
+                    path += System.IO.Path.DirectorySeparatorChar;
                 }
             }
             else
             {
-                if (path.EndsWith(Filesystem.Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture)) && volumeRoot != path)
+                // if (path.EndsWith(Filesystem.Path.DirectorySeparatorChar.ToString(CultureInfo.InvariantCulture)) && volumeRoot != path)
+                if (System.IO.Path.EndsInDirectorySeparator(path) && volumeRoot != path)
                 {
-                    path = path.TrimEnd(Filesystem.Path.DirectorySeparatorChar);
+                    path = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
                 }
                 path = char.ToUpper(path[0]) + path.Substring(1);
             }
@@ -212,6 +206,11 @@ namespace cdeLib
             return hint;
         }
 
+        /// <summary>
+        /// Safe for windows which is the least forgiving filesystem I currently believe.
+        /// </summary>
+        /// <param name="path"></param>
+        /// <returns></returns>
         public static string SafeFileName(string path)
         {
             return path.Replace('\\', '_')
@@ -226,45 +225,48 @@ namespace cdeLib
         public void RecurseTree(string startPath)
         {
             var entryCount = 0;
-            var dirs = new Stack<Tuple<CommonEntry,string>>();
-            startPath = Filesystem.Path.GetLongPath(startPath);
-            dirs.Push(Tuple.Create((CommonEntry)this, startPath));
+            var dirs = new Stack<(CommonEntry, string)>();
+            // startPath = Filesystem.Path.GetLongPath(startPath);
+            dirs.Push((this, startPath));
             while (dirs.Count > 0)
             {
-                var t = dirs.Pop();
-                var commonEntry = t.Item1;
-                var directory = t.Item2;
+                var (commonEntry, directory) = dirs.Pop();
 
-                //// NEW
-                // var fsEntries = new FindFileSystemEntryInfo
-                // {
-                // IsFullPath = true,
-                // InputPath = directory,
-                // AsLongPath = true,
-                // GetFsoType = null, // both files and folders.
-                // SearchOption = SearchOption.TopDirectoryOnly,
-                // SearchPattern = MatchAll,
-                // Transaction = null,
-                // ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
-                // }.Enumerate();
-                // var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
-                const DirectoryEnumerationOptions options =
-                    DirectoryEnumerationOptions.FilesAndFolders |
-                    DirectoryEnumerationOptions.ContinueOnException |
-                    DirectoryEnumerationOptions.LargeCache;
-                var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, options); 
+                // //// NEW
+                // // var fsEntries = new FindFileSystemEntryInfo
+                // // {
+                // // IsFullPath = true,
+                // // InputPath = directory,
+                // // AsLongPath = true,
+                // // GetFsoType = null, // both files and folders.
+                // // SearchOption = SearchOption.TopDirectoryOnly,
+                // // SearchPattern = MatchAll,
+                // // Transaction = null,
+                // // ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
+                // // }.Enumerate();
+                // // var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
+                // const DirectoryEnumerationOptions options =
+                //     DirectoryEnumerationOptions.FilesAndFolders |
+                //     DirectoryEnumerationOptions.ContinueOnException |
+                //     DirectoryEnumerationOptions.LargeCache;
+                // var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, options);
+                // var fsEntries =
+                //     Directory.EnumerateFileSystemEntries(directory, MatchAll, SearchOption.TopDirectoryOnly);
 
+                var dirInfo = new DirectoryInfo(directory);
+                var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
+                    
                 // OLD
                 // var fsEntries = Directory.GetFullFileSystemEntries
                 // (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
 
-                foreach (var fsEntry in fsEntries)
+                foreach (var fsInfo in fsInfos)
                 {
-                    var dirEntry = new DirEntry(fsEntry);
+                    var dirEntry = new DirEntry(fsInfo);
                     commonEntry.Children.Add(dirEntry);
-                    if (fsEntry.IsDirectory)
+                    if (dirEntry.IsDirectory)
                     {
-                        dirs.Push(Tuple.Create((CommonEntry)dirEntry, fsEntry.FullPath));
+                        dirs.Push(((CommonEntry)dirEntry, fsInfo.FullName));
                     }
                     ++entryCount;
                     if (entryCount > EntryCountThreshold)
@@ -339,7 +341,7 @@ namespace cdeLib
             {
                 try
                 {
-                    using (var fs = File.Open(file, FileMode.Open, FileAcces.Read))
+                    using (var fs = File.Open(file, FileMode.Open, FileAccess.Read))
                     {
                         var re = Read(fs);
                         if (re == null) return null;
@@ -450,7 +452,7 @@ namespace cdeLib
 
 		private static IEnumerable<string> GetCdeFiles(string path)
 		{
-			return AlphaFSHelper.GetFilesWithExtension(path, "cde");
+			return FSHelper.GetFilesWithExtension(path, "cde");
 		}
 
         #region List of UAE paths on a known win7 volume - probably decent example

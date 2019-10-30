@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using Alphaleonis.Win32.Filesystem;
 using cdeLib.Infrastructure;
 using ProtoBuf;
 
@@ -165,42 +164,42 @@ namespace cdeLib
         }
         #endregion
 
-        public void Set(FileSystemEntryInfo fs)
-        {
-            Name = fs.FileName;
-            try
-            {
-                Modified = fs.LastWriteTime;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
-                IsModifiedBad = true;
-            }
-            IsDirectory = fs.IsDirectory;
-            IsSymbolicLink = fs.IsSymbolicLink;
-            IsReparsePoint = fs.IsReparsePoint;
-            if (!fs.IsDirectory)
-            {
-                Size = (ulong) fs.FileSize;
-            }
-        }
-
-        public string GetFullPath(EntryStore entryStore)
-        {
-            return Path.Combine(GetParentPath(entryStore), Name);
-        }
-
-        public string GetParentPath(EntryStore entryStore)
-        {
-            var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
-            return parentBlock[parentEntryIndex].FullPath;
-        }
-
-        public void SetParentSize(EntryStore entryStore, ulong size)
-        {
-            var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
-            parentBlock[parentEntryIndex].Size = size;
-        }
+        // public void Set(FileSystemEntryInfo fs)
+        // {
+        //     Name = fs.FileName;
+        //     try
+        //     {
+        //         Modified = fs.LastWriteTime;
+        //     }
+        //     catch (ArgumentOutOfRangeException)
+        //     {
+        //         //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
+        //         IsModifiedBad = true;
+        //     }
+        //     IsDirectory = fs.IsDirectory;
+        //     IsSymbolicLink = fs.IsSymbolicLink;
+        //     IsReparsePoint = fs.IsReparsePoint;
+        //     if (!fs.IsDirectory)
+        //     {
+        //         Size = (ulong) fs.FileSize;
+        //     }
+        // }
+        //
+        // public string GetFullPath(EntryStore entryStore)
+        // {
+        //     return Path.Combine(GetParentPath(entryStore), Name);
+        // }
+        //
+        // public string GetParentPath(EntryStore entryStore)
+        // {
+        //     var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
+        //     return parentBlock[parentEntryIndex].FullPath;
+        // }
+        //
+        // public void SetParentSize(EntryStore entryStore, ulong size)
+        // {
+        //     var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
+        //     parentBlock[parentEntryIndex].Size = size;
+        // }
     }
 }

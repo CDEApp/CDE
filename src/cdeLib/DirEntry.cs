@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
-using Alphaleonis.Win32.Filesystem;
+using System.IO;
 using cdeLib.Infrastructure;
 using ProtoBuf;
 
@@ -22,6 +22,7 @@ namespace cdeLib
             Directory = 1 << 0,
             [Description("Has a bad modified date field.")]
             ModifiedBad = 1 << 1,
+            [Obsolete("With dotnetcore3.0")]
             [Description("Is a symbolic link.")]
             SymbolicLink = 1 << 2,
             [Description("Is a reparse point.")]
@@ -89,21 +90,21 @@ namespace cdeLib
             }
         }
 
-        public bool IsSymbolicLink
-        {
-            get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
-            set
-            {
-                if (value)
-                {
-                    BitFields |= Flags.SymbolicLink;
-                }
-                else
-                {
-                    BitFields &= ~Flags.SymbolicLink;
-                }
-            }
-        }
+        // public bool IsSymbolicLink
+        // {
+        //     get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
+        //     set
+        //     {
+        //         if (value)
+        //         {
+        //             BitFields |= Flags.SymbolicLink;
+        //         }
+        //         else
+        //         {
+        //             BitFields &= ~Flags.SymbolicLink;
+        //         }
+        //     }
+        // }
 
         public bool IsReparsePoint
         {
@@ -210,30 +211,19 @@ namespace cdeLib
             }
         }
 
-        public DirEntry(FileSystemEntryInfo fs) : this()
+        public DirEntry(FileSystemInfo fs) : this()
         {
-            Path = fs.FileName;
-            // TODO this assumes date error on LastModified, what about Created and LastAccessed ?
-            try
+            Path = fs.Name;
+            Modified = fs.LastWriteTime;
+            IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
+            IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
+            if (fs is FileInfo)
             {
-                Modified = fs.LastWriteTime;
-            }
-            catch (ArgumentOutOfRangeException)
-            {
-                // AlphaFS blows up trying to convert bad DateTime. eg. 1/1/1601 
-                // create a bad date time file copy file to NAS with date of 2098 it mucks up.
-                IsModifiedBad = true;
-            }
-            IsDirectory = fs.IsDirectory;
-            IsSymbolicLink = fs.IsSymbolicLink;
-            IsReparsePoint = fs.IsReparsePoint;
-            if (IsDirectory)
-            {
-                Children = new List<DirEntry>();
+                Size = ((FileInfo)fs).Length;
             }
             else
             {
-                Size = fs.FileSize;
+                Children = new List<DirEntry>();
             }
         }
 

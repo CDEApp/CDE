@@ -1,11 +1,9 @@
 ﻿using System;
-using Alphaleonis.Win32.Filesystem;
 
 namespace cdeLib
 {
     public static class StringExtension
     {
-
         public static bool IsNullOrEmpty(this string value)
         {
             return String.IsNullOrEmpty(value);
@@ -27,9 +25,9 @@ namespace cdeLib
             {
                 return string.Empty;
             }
-            if (!rootPath.EndsWith(Path.DirectorySeparatorChar.ToString()))
+            if (!System.IO.Path.EndsInDirectorySeparator(rootPath))
             {
-                rootPath += Path.DirectorySeparatorChar;
+                rootPath += System.IO.Path.DirectorySeparatorChar;
             }
             if (fullPath.Contains(rootPath))
             {

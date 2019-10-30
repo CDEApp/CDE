@@ -1,9 +1,9 @@
 ﻿using System.Linq;
 using System.Reflection;
-using NSpec;
-using NSpec.Assertions;
-using NSpec.Domain;
-using NSpec.Domain.Formatters;
+//using NSpec;
+//using NSpec.Assertions;
+//using NSpec.Domain;
+//using NSpec.Domain.Formatters;
 
 /*
  * Howdy,
@@ -21,29 +21,29 @@ using NSpec.Domain.Formatters;
  * Visual Studio will detect this and will give you a window which you can use to attach a debugger.
  */
 
-//[TestFixture]
-public class DebuggerShim
-{
-    //[Test]
-    public void debug()
-    {
-        var tagOrClassName = "class_or_tag_you_want_to_debug";
-
-        var types = GetType().GetTypeInfo().Assembly.GetTypes();
-        // OR
-        // var types = new Type[]{typeof(Some_Type_Containg_some_Specs)};
-
-        var finder = new SpecFinder(types, "");
-
-        var tagsFilter = new Tags().Parse(tagOrClassName);
-
-        var builder = new ContextBuilder(finder, tagsFilter, new DefaultConventions());
-
-        var runner = new ContextRunner(tagsFilter, new ConsoleFormatter(), false);
-
-        var results = runner.Run(builder.Contexts().Build());
-
-        //assert that there aren't any failures
-        (results.Failures().Count() == 0).ShouldBeTrue();
-    }
-}
+////[TestFixture]
+//public class DebuggerShim
+//{
+//    //[Test]
+//    public void debug()
+//    {
+//        var tagOrClassName = "class_or_tag_you_want_to_debug";
+//
+//        var types = GetType().GetTypeInfo().Assembly.GetTypes();
+//        // OR
+//        // var types = new Type[]{typeof(Some_Type_Containg_some_Specs)};
+//
+//        var finder = new SpecFinder(types, "");
+//
+//        var tagsFilter = new Tags().Parse(tagOrClassName);
+//
+//        var builder = new ContextBuilder(finder, tagsFilter, new DefaultConventions());
+//
+//        var runner = new ContextRunner(tagsFilter, new ConsoleFormatter(), false);
+//
+//        var results = runner.Run(builder.Contexts().Build());
+//
+//        //assert that there aren't any failures
+//        (results.Failures().Count() == 0).ShouldBeTrue();
+//    }
+//}

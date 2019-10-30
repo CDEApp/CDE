@@ -1,6 +1,7 @@
 ﻿using System.IO;
 using System.Linq;
 using cdeLib;
+using cdeLibTest.TestHelpers;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -9,10 +10,6 @@ namespace cdeLibTest
     [TestFixture]
     public class RootEntryTest
     {
-        private static readonly string projectPath =
-            Path.GetDirectoryName(Path.GetDirectoryName(TestContext.CurrentContext.TestDirectory));
-        private string testDir = Path.Combine(projectPath, "Test");
-
         [Test]
         public void Constructor_Minimal_Creates()
         {
@@ -22,10 +19,10 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void Constuctor_GetTree_OK()
+        public void Constructor_GetTree_OK()
         {
             var re = new RootEntry();
-            re.RecurseTree(testDir);
+            re.RecurseTree(FileHelper.TestDir);
 
             Assert.That(re, Is.Not.Null);
             Assert.That(re.Children, Is.Not.Null);
@@ -33,10 +30,10 @@ namespace cdeLibTest
         }
 
         [Test]
-        public void Constuctor_GetTreeWithMoreThanOneLevel_OK()
+        public void Constructor_GetTreeWithMoreThanOneLevel_OK()
         {
             var re = new RootEntry();
-            re.RecurseTree(testDir);
+            re.RecurseTree(FileHelper.TestDir);
 
             Assert.That(re, Is.Not.Null);
             var found = re.Children.Any(x => x.Children != null && x.Children.Count > 0);
@@ -112,31 +109,30 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub();
 
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"C:\", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"C:\", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C-VolName.cde"));
+            // Assert.That(volName, Is.EqualTo(@"VolName"));
+            Assert.That(fileName, Is.EqualTo(@"C.cde"));
         }
 
         [Test]
         public void GetDefaultFileName_SimpleRootPath2_ReturnsExpectedStuff()
         {
             // ReSharper disable RedundantArgumentName
-            var re = new RootEntryTestStub(root: @"D:\", volName: "OtherValue", fullPath:@"D:\");
+            var re = new RootEntryTestStub(root: @"D:\", fullPath:@"D:\");
             // ReSharper restore RedundantArgumentName
 
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"D:\", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"D:\", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"D"));
             Assert.That(volRoot, Is.EqualTo(@"D:\"));
-            Assert.That(volName, Is.EqualTo(@"OtherValue"));
-            Assert.That(fileName, Is.EqualTo(@"D-OtherValue.cde"));
+            Assert.That(fileName, Is.EqualTo(@"D.cde"));
         }
 
   
@@ -145,14 +141,13 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder");
 
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C-VolName-C__MyTestFolder.cde"));
+            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder.cde"));
         }
 
         [Test]
@@ -160,57 +155,53 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
 
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C-VolName-C__MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder_Mine.cde"));
         }
 
         [Test]
         public void GetDefaultFileName_NonRootedPath_UsesFullPathToScanPath()
         {
             var re = new RootEntryTestStub(fullPath: @"C:\Stuff\MyTestFolder\Mine");
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
-            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C-VolName-C__Stuff_MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo(@"C-C__Stuff_MyTestFolder_Mine.cde"));
         }
 
         [Test]
         public void GetDefaultFileName_RootedPathByLeadingSlash_UsingFullPath()
         {
             var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
-            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C-VolName-C__MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder_Mine.cde"));
         }
 
         [Test]
         public void GetDefaultFileName_UNCPath_UsesFullPath()
         {
             var re = new RootEntryTestStub(isUnc:true, fullPath: @"\\myserver\myshare");
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
             Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare.cde"));
         }
 
@@ -218,13 +209,12 @@ namespace cdeLibTest
         public void GetDefaultFileName_UNCPath2_UsesFullPath()
         {
             var re = new RootEntryTestStub(isUnc: true, fullPath: @"\\myserver\myshare\stuff");
-            string hint, volRoot, volName;
+            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot, out volName);
+            var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot);
 
             Assert.That(hint, Is.EqualTo(@"UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(volName, Is.EqualTo(@"VolName"));
             Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare_stuff.cde"));
         }
 
@@ -275,20 +265,17 @@ namespace cdeLibTest
         private class RootEntryTestStub : RootEntry
         {
             private readonly string _root;
-            private readonly string _volName;
             private readonly bool _isUnc;
             private readonly bool _isPathRooted;
             private readonly string _fullPath;
 
             public RootEntryTestStub(
                 string root=@"C:\",
-                string volName="VolName", 
                 bool isUnc=false, 
                 bool isPathRooted=true,
                 string fullPath=@"C:\")
             {
                 _root = root;
-                _volName = volName;
                 _isUnc = isUnc;
                 _isPathRooted = isPathRooted;
                 _fullPath = fullPath;
@@ -299,19 +286,9 @@ namespace cdeLibTest
                 return _root;
             }
 
-            public override string GetVolumeName(string rootPath)
-            {
-                return _volName;
-            }
-
             public override bool IsUnc(string path)
             {
                 return _isUnc;
-            }
-
-            public override bool IsPathRooted(string path)
-            {
-                return _isPathRooted;
             }
 
             public override string GetFullPath(string path)
@@ -344,17 +321,12 @@ namespace cdeLibTest
     // ReSharper disable InconsistentNaming
     public class RootEntryTest_SortAllChildrenByPath : RootEntryTestBase
     {
-        DirEntry de2a;
-        DirEntry de2b;
-        DirEntry de2c;
-        DirEntry de3a;
-        DirEntry de4a;
         private RootEntry re;
 
         [SetUp]
         public void BeforeEveryTest()
         {
-            re = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re = NewTestRootEntry(out _, out _, out _, out _, out _);
         }
 
         [Test]

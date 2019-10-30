@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
-using File = Alphaleonis.Win32.Filesystem.File;
 
 namespace cdeLib.Infrastructure.Hashing
 {
