@@ -219,7 +219,7 @@ namespace cdeLib
         }
 
         /// <summary>
-        /// This version recurses itself so it can cache the folders and the node in its own stack.
+        /// This version calls itself so it can cache the folders and the node in its own stack.
         /// This improves performance.
         /// </summary>
         public void RecurseTree(string startPath)
@@ -231,42 +231,15 @@ namespace cdeLib
             while (dirs.Count > 0)
             {
                 var (commonEntry, directory) = dirs.Pop();
-
-                // //// NEW
-                // // var fsEntries = new FindFileSystemEntryInfo
-                // // {
-                // // IsFullPath = true,
-                // // InputPath = directory,
-                // // AsLongPath = true,
-                // // GetFsoType = null, // both files and folders.
-                // // SearchOption = SearchOption.TopDirectoryOnly,
-                // // SearchPattern = MatchAll,
-                // // Transaction = null,
-                // // ContinueOnAccessError = true // ignoring them all, cant collec them like use to.
-                // // }.Enumerate();
-                // // var fsEntries = Directory.EnumerateFileSystemEntryInfos(directory, MatchAll, SearchOption.TopDirectoryOnly, true, null);
-                // const DirectoryEnumerationOptions options =
-                //     DirectoryEnumerationOptions.FilesAndFolders |
-                //     DirectoryEnumerationOptions.ContinueOnException |
-                //     DirectoryEnumerationOptions.LargeCache;
-                // var fsEntries = Directory.EnumerateFileSystemEntryInfos<FileSystemEntryInfo>(directory, MatchAll, options);
-                // var fsEntries =
-                //     Directory.EnumerateFileSystemEntries(directory, MatchAll, SearchOption.TopDirectoryOnly);
-
                 var dirInfo = new DirectoryInfo(directory);
                 var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
-                    
-                // OLD
-                // var fsEntries = Directory.GetFullFileSystemEntries
-                // (null, directory, MatchAll, SearchOption.TopDirectoryOnly, false, exceptionHandler, null);
-
                 foreach (var fsInfo in fsInfos)
                 {
                     var dirEntry = new DirEntry(fsInfo);
                     commonEntry.Children.Add(dirEntry);
                     if (dirEntry.IsDirectory)
                     {
-                        dirs.Push(((CommonEntry)dirEntry, fsInfo.FullName));
+                        dirs.Push((dirEntry, fsInfo.FullName));
                     }
                     ++entryCount;
                     if (entryCount > EntryCountThreshold)
