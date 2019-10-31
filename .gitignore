@@ -65,3 +65,4 @@ src/.vs/config/applicationhost.config
 /tools/*
 
 /src/cdeLibTest/Test2/*
+/publish/*
