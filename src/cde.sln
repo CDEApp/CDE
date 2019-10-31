@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Util", "Util\Util.csproj", "{100D8B34-9EB4-4682-8ABD-48C48A508CDF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "util", "util\util.csproj", "{100D8B34-9EB4-4682-8ABD-48C48A508CDF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cdeLib", "cdeLib\cdeLib.csproj", "{79FB051E-1A62-4CC5-84BB-84486E9647CC}"
 EndProject
