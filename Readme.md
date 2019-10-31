@@ -343,3 +343,13 @@ The web version uses. (not available currently)
 - [Bootstrap](http://getbootstrap.com/)
 - [autofac](http://autofac.org/)
 - [SignalR](http://signalr.net/)
+
+
+# dotnetcore3.0 notes
+
+# Single file binary, not massive
+
+* `dotnet publish -r win-x86 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true`
+* `dotnet publish -r win-x86 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true /p:ReadyToRun=true`
+* `dotnet publish -r win-x86 -c Release --self-contained=false /p:PublishSingleFile=true /p:ReadyToRun=true`
+
