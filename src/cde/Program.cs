@@ -5,8 +5,8 @@ using System.Reflection;
 using Autofac;
 using cdeLib;
 using cdeLib.Infrastructure;
-
 using Mono.Terminal;
+using IContainer = Autofac.IContainer;
 
 namespace cde
 {
@@ -37,10 +37,10 @@ namespace cde
             {
                 CreateCache(args[1]);
             }
-            else if (args.Length == 2 && param0 == "--scan2")
-            {
-                CreateCache2(args[1]);
-            }
+            // else if (args.Length == 2 && param0 == "--scan2")
+            // {
+            //     CreateCache2(args[1]);
+            // }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
                 Find.StaticFind(args[1], param0);
@@ -61,10 +61,10 @@ namespace cde
             {
                 CreateMd5OnCache();
             }
-            else if (args.Length == 1 && param0 == "--hash2")
-            {
-                CreateMd5OnCache2();
-            }
+            // else if (args.Length == 1 && param0 == "--hash2")
+            // {
+            //     CreateMd5OnCache2();
+            // }
             else if (args.Length == 1 && param0 == "--dupes")
             {
                 FindDupes();
@@ -73,10 +73,10 @@ namespace cde
             {
                 PrintPathsHaveHashEnumerator();
             }
-            else if (args.Length == 1 && param0 == "--treedump2")
-            {
-                EntryStore.PrintPathsHaveHash();
-            }
+            // else if (args.Length == 1 && param0 == "--treedump2")
+            // {
+            //     EntryStore.PrintPathsHaveHash();
+            // }
             else if (args.Length == 1 && param0 == "--version")
             {
                 Console.WriteLine(Version);
@@ -87,12 +87,12 @@ namespace cde
                 RootEntry.LoadCurrentDirCache();
                 Console.ReadLine();
             }
-            else if (args.Length == 1 && param0 == "--loadwait2")
-            {
-                Console.WriteLine(Version);
-                EntryStore.LoadCurrentDirCache();
-                Console.ReadLine();
-            }
+            // else if (args.Length == 1 && param0 == "--loadwait2")
+            // {
+            //     Console.WriteLine(Version);
+            //     EntryStore.LoadCurrentDirCache();
+            //     Console.ReadLine();
+            // }
             else if (args.Length == 1 && param0 == "--repl")
             {
                 var le = new LineEditor(null);
@@ -242,30 +242,30 @@ namespace cde
             Console.WriteLine($"Hash took : {elapsedTime}");
         }
 
-        private static void CreateMd5OnCache2()
-        {
-            var rootEntries = EntryStore.LoadCurrentDirCache();
-            var re = rootEntries.FirstOrDefault();
-            re?.ApplyMd5Checksum();
-        }
+        // private static void CreateMd5OnCache2()
+        // {
+        //     var rootEntries = EntryStore.LoadCurrentDirCache();
+        //     var re = rootEntries.FirstOrDefault();
+        //     re?.ApplyMd5Checksum();
+        // }
 
-        static void CreateCache2(string path)
-        {
-            //Process objProcess = Process.GetCurrentProcess();
-            //long gcMemStart = GC.GetTotalMemory(true);
-            //long processMemStart = objProcess.PrivateMemorySize64;
-
-            var e = new EntryStore { SimpleScanCountEvent = ScanCountPrintDot, SimpleScanEndEvent = ScanEndofEntries, EntryCountThreshold = 10000 };
-            e.SetRoot(path);
-            e.Root.ScanStartUTC = DateTime.UtcNow;
-            e.RecurseTree();
-            e.Root.ScanEndUTC = DateTime.UtcNow;
-            e.SaveToFile();
-            var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
-            Console.WriteLine($"Scanned Path {e.Root.Path}");
-            Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-            Console.WriteLine($"Saved Scanned Path {e.Root.DefaultFileName}");
-        }
+        // static void CreateCache2(string path)
+        // {
+        //     //Process objProcess = Process.GetCurrentProcess();
+        //     //long gcMemStart = GC.GetTotalMemory(true);
+        //     //long processMemStart = objProcess.PrivateMemorySize64;
+        //
+        //     var e = new EntryStore { SimpleScanCountEvent = ScanCountPrintDot, SimpleScanEndEvent = ScanEndofEntries, EntryCountThreshold = 10000 };
+        //     e.SetRoot(path);
+        //     e.Root.ScanStartUTC = DateTime.UtcNow;
+        //     e.RecurseTree();
+        //     e.Root.ScanEndUTC = DateTime.UtcNow;
+        //     e.SaveToFile();
+        //     var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
+        //     Console.WriteLine($"Scanned Path {e.Root.Path}");
+        //     Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
+        //     Console.WriteLine($"Saved Scanned Path {e.Root.DefaultFileName}");
+        // }
 
         public static void CreateCache(string path)
         {

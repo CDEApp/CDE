@@ -5,8 +5,8 @@ using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 using System.Reflection;
+using cde;
 using cdeLibTest.TestHelpers;
-using Microsoft.VisualStudio.TestPlatform.TestHost;
 using NSubstitute;
 
 namespace cdeLibTest
@@ -132,7 +132,7 @@ namespace cdeLibTest
             return System.IO.Path.GetDirectoryName(path);
         }
 
-        [Ignore("Ignore until get cde console in project again")]
+        // [Ignore("Ignore until get cde console in project again")]
         [Test]
         public void GetSizePairs_CheckSanityOfDupeSizeCountAndDupeFileCount_Exercise()
         {
@@ -146,10 +146,10 @@ namespace cdeLibTest
                 System.IO.File.WriteAllText($"{testPath}\\CDE_testFile{i}.txt",random);
             }
             
-//            //hacky creating catalog.
-//            Program.Container = BootStrapper.Components();
-//            Program.CreateCache($"{testPath}.\\");
-//            Program.CreateMd5OnCache();
+            // hacky creating catalog.
+            Program.Container = BootStrapper.Components();
+            Program.CreateCache($"{testPath}.\\");
+            Program.CreateMd5OnCache();
 
             //run tests.
             Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
