@@ -37,7 +37,7 @@
 			// 
 			// pictureCDEIcon
 			// 
-			this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+			// this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
 			this.pictureCDEIcon.Location = new System.Drawing.Point(12, 12);
 			this.pictureCDEIcon.Name = "pictureCDEIcon";
 			this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);

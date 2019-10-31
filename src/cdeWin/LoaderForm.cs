@@ -60,7 +60,7 @@ namespace cdeWin
             
 
             var rootEntries = new ConcurrentStack<RootEntry>();
-            Serilog.Log.Logger.Debug("Loading {catalogCount} catalogues", totalFiles);
+            //Serilog.Log.Logger.Debug("Loading {catalogCount} catalogues", totalFiles);
             _timeIt.Start("Load Files");
             Parallel.ForEach(cacheFiles,
                 (cacheFile) =>
@@ -91,7 +91,7 @@ namespace cdeWin
 //            			}).ToList();
 //            _timeIt.Stop();
 
-            Serilog.Log.Logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
+            //Serilog.Log.Logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
             _rootEntries = rootEntries.ToList();
             Close();
 		}

@@ -4,8 +4,8 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
-using Util;
 using cdeLib;
+using Util;
 
 namespace cdeWin
 {

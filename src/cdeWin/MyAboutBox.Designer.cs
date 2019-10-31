@@ -98,7 +98,7 @@
             // 
             // pictureCDEIcon
             // 
-            this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+            //this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
             this.pictureCDEIcon.Location = new System.Drawing.Point(218, 234);
             this.pictureCDEIcon.Name = "pictureCDEIcon";
             this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);
@@ -108,7 +108,7 @@
             // 
             // pictureHeronLogo
             // 
-            this.pictureHeronLogo.Image = global::cdeWin.Properties.Resources.heron_200_black;
+            //this.pictureHeronLogo.Image = global::cdeWin.Properties.Resources.heron_200_black;
             this.pictureHeronLogo.Location = new System.Drawing.Point(12, 12);
             this.pictureHeronLogo.Name = "pictureHeronLogo";
             this.pictureHeronLogo.Size = new System.Drawing.Size(200, 286);
