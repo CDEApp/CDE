@@ -34,7 +34,7 @@ namespace cdeLibTest
             
             de.TraverseTreePair(mockAction);
             
-            mockAction.DidNotReceive();
+            mockAction.DidNotReceive().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
         }
 
         [Test]
@@ -50,16 +50,6 @@ namespace cdeLibTest
             });
 
             actionCalled.ShouldBe(false);
-            
-            // This fails with error so created my own delegate function to test if called.
-            //
-            // Castle.DynamicProxy.InvalidProxyConstructorArgumentsException :
-            //   Can not instantiate proxy of class: System.Object.
-            // Could not find a parameterless constructor.
-            //
-            // var mockAction = Substitute.For<TraverseFunc>();
-            // de.TraverseTreePair(mockAction);
-            // mockAction.DidNotReceive();
         }
 
         [Test]
@@ -70,10 +60,10 @@ namespace cdeLibTest
             var de2 = new DirEntry { Path = "d2" };
             de1.Children.Add(de2);
             var mockAction = Substitute.For<TraverseFunc>();
-            mockAction(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>()).Returns(true);
+
             de1.TraverseTreePair(mockAction);
 
-            mockAction.Received(); // .Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
+            mockAction.Received().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
         }
 
 //        [Test]
