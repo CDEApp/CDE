@@ -51,10 +51,10 @@ namespace cdeLib
         public DateTime ScanEndUTC { get; set; }
 
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
-        public int RootIndex;  // hackery with Entry and EntryStore
+        public int RootIndex; // hackery with Entry and EntryStore
 
         [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
-        public int Version= 2;
+        public int Version = 3;
 
         public string ActualFileName { get; set; }
 
@@ -133,10 +133,12 @@ namespace cdeLib
                     fileName = $"{hint}-{filenameSafePath}.cde";
                 }
             }
+
             return fileName;
         }
 
         #region Methods virtual to assist testing.
+
         // TODO may not be needed with move to dotnetcore3.0 and System.IO
         public virtual string GetFullPath(string path)
         {
@@ -168,6 +170,7 @@ namespace cdeLib
         //     // var driveInfo = new DriveInfo(pathRoot);
         //     return pathRoot;
         // }
+
         #endregion
 
         /// <summary>
@@ -177,7 +180,7 @@ namespace cdeLib
         /// </summary>
         public string CanonicalPath(string path)
         {
-            path = GetFullPath(path);  // Fully qualified path used to generate filename
+            path = GetFullPath(path); // Fully qualified path used to generate filename
             var volumeRoot = GetDirectoryRoot(path);
             if (IsUnc(path))
             {
@@ -193,9 +196,10 @@ namespace cdeLib
                 {
                     path = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
                 }
+
                 path = char.ToUpper(path[0]) + path.Substring(1);
             }
-            
+
             return path;
         }
 
@@ -214,8 +218,8 @@ namespace cdeLib
         public static string SafeFileName(string path)
         {
             return path.Replace('\\', '_')
-                        .Replace('$', '_')
-                        .Replace(':', '_');
+                .Replace('$', '_')
+                .Replace(':', '_');
         }
 
         /// <summary>
@@ -232,24 +236,40 @@ namespace cdeLib
             {
                 var (commonEntry, directory) = dirs.Pop();
                 var dirInfo = new DirectoryInfo(directory);
-                var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
-                foreach (var fsInfo in fsInfos)
+                try
                 {
-                    var dirEntry = new DirEntry(fsInfo);
-                    commonEntry.Children.Add(dirEntry);
-                    if (dirEntry.IsDirectory)
+                    var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
+                    foreach (var fsInfo in fsInfos)
                     {
-                        dirs.Push((dirEntry, fsInfo.FullName));
+                        var dirEntry = new DirEntry(fsInfo);
+                        commonEntry.Children.Add(dirEntry);
+                        if (dirEntry.IsDirectory)
+                        {
+                            dirs.Push((dirEntry, fsInfo.FullName));
+                        }
+
+                        ++entryCount;
+                        if (entryCount > EntryCountThreshold)
+                        {
+                            SimpleScanCountEvent?.Invoke();
+                            entryCount = 0;
+                        }
+
+                        if (Hack.BreakConsoleFlag)
+                        {
+                            break;
+                        }
                     }
-                    ++entryCount;
-                    if (entryCount > EntryCountThreshold)
+
+                    if (Hack.BreakConsoleFlag)
                     {
-                        SimpleScanCountEvent?.Invoke();
-                        entryCount = 0;
+                        break;
                     }
-                    if (Hack.BreakConsoleFlag) { break; }
                 }
-                if (Hack.BreakConsoleFlag) { break; }
+                catch (UnauthorizedAccessException)
+                {
+                    PathsWithUnauthorisedExceptions.Add(directory);
+                }
             }
 
             SimpleScanEndEvent?.Invoke();
@@ -265,7 +285,7 @@ namespace cdeLib
 
         public void SaveRootEntry()
         {
-            using(var newFs = File.Open(DefaultFileName, FileMode.Create))
+            using (var newFs = File.Open(DefaultFileName, FileMode.Create))
             {
                 Write(newFs);
             }
@@ -290,10 +310,10 @@ namespace cdeLib
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
-	        return Load(GetCacheFileList(new[] {"./"}));
+            return Load(GetCacheFileList(new[] {"./"}));
         }
 
-		public static List<RootEntry> Load(IEnumerable<string> cdeList)
+        public static List<RootEntry> Load(IEnumerable<string> cdeList)
         {
             var results = new ConcurrentBag<RootEntry>();
             Parallel.ForEach(cdeList, file =>
@@ -303,6 +323,7 @@ namespace cdeLib
                 {
                     results.Add(newRootEntry);
                 }
+
                 Console.WriteLine($"{file} read..");
             });
             return results.ToList();
@@ -324,9 +345,12 @@ namespace cdeLib
                     }
                 }
                 // ReSharper disable EmptyGeneralCatchClause
-                catch (Exception) { }
-				// ReSharper restore EmptyGeneralCatchClause
-			}
+                catch (Exception)
+                {
+                }
+                // ReSharper restore EmptyGeneralCatchClause
+            }
+
             return null;
         }
 
@@ -337,14 +361,15 @@ namespace cdeLib
         public void SetCommonEntryFields()
         {
             TraverseTreePair((p, d) =>
+            {
+                if (d.IsDirectory)
                 {
-                    if (d.IsDirectory)
-                    {
-                        d.FullPath = p.MakeFullPath(d);
-                    }
-                    d.ParentCommonEntry = p;
-                    return true;
-                });
+                    d.FullPath = p.MakeFullPath(d);
+                }
+
+                d.ParentCommonEntry = p;
+                return true;
+            });
         }
 
         /// <summary>
@@ -358,6 +383,7 @@ namespace cdeLib
                 {
                     d.FullPath = null;
                 }
+
                 d.ParentCommonEntry = null;
                 return true;
             });
@@ -378,58 +404,66 @@ namespace cdeLib
                         d.IsDefaultSort = true;
                     }
                 }
+
                 return true;
             });
         }
 
-		public int DescriptionCompareTo(RootEntry re, IConfigCdeLib config)
+        public int DescriptionCompareTo(RootEntry re, IConfigCdeLib config)
         {
             if (re == null)
             {
                 return -1; // this before re
             }
+
             if (Description == null && re.Description != null)
             {
                 return -1; // this before re
             }
+
             if (Description != null && re.Description == null)
             {
                 return 1; // this after re
             }
-			return config.CompareWithInfo(Description, re.Description);
+
+            return config.CompareWithInfo(Description, re.Description);
         }
 
         /// <summary>
         /// This gets .cde files in current dir or one directory down.
         /// Use directory permissions to control who can load what .cde files one dir down if you like.
         /// </summary>
-		public static IList<string> GetCacheFileList(IEnumerable<string> paths)
-		{
-			var cacheFilePaths = new List<string>();
-			foreach (var path in paths)
-			{
-				cacheFilePaths.AddRange(GetCdeFiles(path));
+        public static IList<string> GetCacheFileList(IEnumerable<string> paths)
+        {
+            var cacheFilePaths = new List<string>();
+            foreach (var path in paths)
+            {
+                cacheFilePaths.AddRange(GetCdeFiles(path));
 
-				foreach (var childPath in Directory.GetDirectories(path))
-				{
-				    try
-				    {
+                foreach (var childPath in Directory.GetDirectories(path))
+                {
+                    try
+                    {
                         cacheFilePaths.AddRange(GetCdeFiles(childPath));
-				    }
-				    // ReSharper disable once EmptyGeneralCatchClause
-				    catch (Exception) { } // if cant list folders don't care.
-				}
-			}
-			return cacheFilePaths;
-		}
+                    }
+                    // ReSharper disable once EmptyGeneralCatchClause
+                    catch (Exception)
+                    {
+                    } // if cant list folders don't care.
+                }
+            }
 
-		private static IEnumerable<string> GetCdeFiles(string path)
-		{
-			return FSHelper.GetFilesWithExtension(path, "cde");
-		}
+            return cacheFilePaths;
+        }
+
+        private static IEnumerable<string> GetCdeFiles(string path)
+        {
+            return FSHelper.GetFilesWithExtension(path, "cde");
+        }
 
         #region List of UAE paths on a known win7 volume - probably decent example
-        #pragma warning disable 169
+
+#pragma warning disable 169
         /*
         // ReSharper disable InconsistentNaming
         private static List<string> knownUAEpattern = new List<string>(100)
@@ -538,7 +572,8 @@ namespace cdeLib
             };
         // ReSharper restore InconsistentNaming
         */
-        #pragma warning restore 169
+#pragma warning restore 169
+
         #endregion
     }
 }
