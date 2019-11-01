@@ -1,5 +1,9 @@
 #tool "nuget:?package=GitVersion.CommandLine&version=4.0.0"
 
+// Alternate version possible using dotnet tool installs but running cake twice to get module isn't worth it.
+// // #module nuget:?package=Cake.DotNetTool.Module&version=0.3.1
+// // #tool "dotnet:https://api.nuget.org/v3/index.json?package=GitVersion.Tool&version=5.0.1"
+
 using Path = System.IO.Path;
 using System.Xml;
 
@@ -110,40 +114,29 @@ Task("Restore")
 	    ArgumentCustomization = args => args.Append($"--verbosity normal")
     }));
 
-// Task("Build")
-// 	.IsDependentOn("Restore")
-//     .Does(() =>
-//     {
-//         DotNetCoreBuild("./src/cde.sln", new DotNetCoreBuildSettings {
-//             Configuration = configuration,
-//             ArgumentCustomization = args =>
-//                 args.Append($"/p:Version={nugetVersion}")
-//                     .Append($"--verbosity normal")
-//                     .Append($"/p:InformationalVersion={informationalVersion}")
-//                     // .Append($"/p:PublishSingleFile=true")
-//                     // .Append($"/p:PublishTrimmed=true") // mutually exclusive with self contained
-//                     .Append($"/p:SelfContained=false")
-//         });
-//     });
-
 Task("Build")
     .IsDependentOn("Restore")
     .Does(() =>
 	{
-		DotNetCoreBuild("./src/cde.sln", new DotNetCoreBuildSettings
-		{
-			Configuration = configuration,
-			ArgumentCustomization = args => args
-                .Append($"/p:Version={nugetVersion}")
-                .Append($"--verbosity normal")
-		});
+        var projects = GetFiles("./src/**/cde.csproj");
+        projects.Add(GetFiles("./src/**/cdeLibTest.csproj"));
+        projects.Add(GetFiles("./src/**/cdeWin.csproj"));
+        // projects.Add(GetFiles("./src/**/cdeWinTest.csproj"));
+        foreach(var project in projects)
+    		DotNetCoreBuild(project.FullPath, new DotNetCoreBuildSettings
+           		{
+           			Configuration = configuration,
+           			ArgumentCustomization = args => args
+                           .Append($"/p:Version={nugetVersion}")
+                           // .Append($"--verbosity normal")
+           		});
 	});
 
 Task("Test")
     .IsDependentOn("Build")
     .Does(() =>
     {
-        var projects = GetFiles("./src/**/*LibTest.csproj");
+        var projects = GetFiles("./src/**/cdeLibTest.csproj");
 		foreach(var project in projects)
 			DotNetCoreTest(project.FullPath, new DotNetCoreTestSettings
 			{
@@ -195,6 +188,8 @@ private void DoPackage(string project, string framework, string version, string 
 		    .Append($"--verbosity normal")
 		    .Append($"/p:PublishSingleFile=true") // try it
             .Append($"/p:SelfContained=false") // try it
+
+        // .Append($"/p:PublishTrimmed=true") // mutually exclusive with self contained false
     };
     if (!string.IsNullOrEmpty(runtimeId))
     {

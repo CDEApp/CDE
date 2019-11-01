@@ -2,13 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
 using NUnit.Framework;
-using Rhino.Mocks;
 using cdeLib;
 using cdeWin;
+using NSubstitute;
 
 namespace cdeWinTest
 {
-    // ReSharper disable InconsistentNaming
     public class TestCDEWinPresenterBase
     {
         protected ICDEWinForm _mockForm;
@@ -31,20 +30,14 @@ namespace cdeWinTest
              _emptyRootList = new List<RootEntry>();
              _rootList = new List<RootEntry>();
 
-            _mockForm = MockRepository.GenerateMock<ICDEWinForm>();
-            _stubConfig = MockRepository.GenerateStub<IConfig>();
-
-            _mockSearchResultListViewHelper = MockRepository.GenerateMock<IListViewHelper<PairDirEntry>>();
-            _mockForm.Stub(x => x.SearchResultListViewHelper)
-                .Return(_mockSearchResultListViewHelper);
-
-            _mockDirectoryListViewHelper = MockRepository.GenerateMock<IListViewHelper<DirEntry>>();
-            _mockForm.Stub(x => x.DirectoryListViewHelper)
-                .Return(_mockDirectoryListViewHelper);
-
-            _mockCatalogListViewHelper = MockRepository.GenerateMock<IListViewHelper<RootEntry>>();
-            _mockForm.Stub(x => x.CatalogListViewHelper)
-                .Return(_mockCatalogListViewHelper);
+            _mockForm = Substitute.For<ICDEWinForm>();
+            _stubConfig = Substitute.For<IConfig>();
+            _mockSearchResultListViewHelper = Substitute.For<IListViewHelper<PairDirEntry>>();
+            _mockForm.SearchResultListViewHelper.Returns(_mockSearchResultListViewHelper);
+            _mockDirectoryListViewHelper = Substitute.For<IListViewHelper<DirEntry>>();
+            _mockForm.DirectoryListViewHelper.Returns(_mockDirectoryListViewHelper);
+            _mockCatalogListViewHelper = Substitute.For<IListViewHelper<RootEntry>>();
+            _mockForm.CatalogListViewHelper.Returns(_mockCatalogListViewHelper);
         }
 
         protected void InitRootWithFile()
@@ -114,35 +107,35 @@ namespace cdeWinTest
             _rootList.Add(_rootEntry);
         }
 
-        protected Action<T> GetPresenterAction<T>(IListViewHelper<T> lvh) where T : class
-        {
-            var args = lvh.GetArgumentsForCallsMadeOn(
-                x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything));
-            Assert.That(args.Count, Is.EqualTo(1));
-            Assert.That(args[0].Length, Is.EqualTo(1));
-            return (Action<T>)(args[0][0]); // extract the ActivateOnItem action 
-        }
+        // protected Action<T> GetPresenterAction<T>(IListViewHelper<T> lvh) where T : class
+        // {
+        //     var args = lvh.GetArgumentsForCallsMadeOn(
+        //         x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything));
+        //     Assert.That(args.Count, Is.EqualTo(1));
+        //     Assert.That(args[0].Length, Is.EqualTo(1));
+        //     return (Action<T>)(args[0][0]); // extract the ActivateOnItem action 
+        // }
 
-        // ReSharper disable LocalizableElement
-        protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
-        {
-            lvh.Stub(x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything))
-                .WhenCalled(a => Console.WriteLine("called ActionOnActivateItem()."));
-        }
-        // ReSharper restore LocalizableElement
+        // // ReSharper disable LocalizableElement
+        // protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
+        // {
+        //     lvh.Stub(x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything))
+        //         .WhenCalled(a => Console.WriteLine("called ActionOnActivateItem()."));
+        // }
+        // // ReSharper restore LocalizableElement
 
-        protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
-        {
-            _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
-                .WhenCalled(a =>
-                                {
-                                    _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
-                                    _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
-                                        .Repeat.Times(1)
-                                        .Return(_treeViewAfterSelectNode);
-                                    presenter.DirectoryTreeViewAfterSelect();
-                                });
-        }
+        // protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
+        // {
+        //     _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
+        //         .WhenCalled(a =>
+        //                         {
+        //                             _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
+        //                             _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
+        //                                 .Repeat.Times(1)
+        //                                 .Return(_treeViewAfterSelectNode);
+        //                             presenter.DirectoryTreeViewAfterSelect();
+        //                         });
+        // }
     }
 
     // ReSharper restore InconsistentNaming

@@ -1,5 +1,4 @@
 ﻿using NUnit.Framework;
-using Rhino.Mocks;
 using cdeWin;
 
 namespace cdeWinTest
@@ -14,7 +13,7 @@ namespace cdeWinTest
         public override void RunBeforeEveryTest()
         {
             base.RunBeforeEveryTest();
-            _mockForm.Stub(x => x.RegexMode).Return(false);
+            _mockForm.RegexMode = false;
             _presenter = new TestOptimise(_mockForm, _stubConfig);
         }
 
@@ -62,7 +61,7 @@ namespace cdeWinTest
         override public void RunBeforeEveryTest()
         {
             base.RunBeforeEveryTest();
-            _mockForm.Stub(x => x.RegexMode).Return(true);
+            _mockForm.RegexMode = true;
             _presenter = new TestOptimise(_mockForm, _stubConfig);
         }
         
