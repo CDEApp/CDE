@@ -187,9 +187,9 @@ namespace cdeWin
                     RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
                     ItemActivate = () => { OnDirectoryListViewItemActivate(); },
                     ColumnClick = () => { OnDirectoryListViewColumnClick(); },
-                    ContextMenu = CreateDirectoryContextMenu(),
-                    ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); }
+                    ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); },
                     // ReSharper restore PossibleNullReferenceException
+                    ContextMenu = CreateDirectoryContextMenu(),
                 };
 
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;

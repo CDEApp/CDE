@@ -22,9 +22,9 @@ namespace cdeLib
             Directory = 1 << 0,
             [Description("Has a bad modified date field.")]
             ModifiedBad = 1 << 1,
-            [Obsolete("With dotnetcore3.0")]
-            [Description("Is a symbolic link.")]
-            SymbolicLink = 1 << 2,
+            // [Obsolete("With dotnetcore3.0")]
+            // [Description("Is a symbolic link.")]
+            // SymbolicLink = 1 << 2,
             [Description("Is a reparse point.")]
             ReparsePoint = 1 << 3,
             [Description("Hashing was done for this.")]

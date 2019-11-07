@@ -120,8 +120,8 @@ Task("Build")
 	{
         var projects = GetFiles("./src/**/cde.csproj");
         projects.Add(GetFiles("./src/**/cdeLibTest.csproj"));
-        projects.Add(GetFiles("./src/**/cdeWin.csproj"));
-        // projects.Add(GetFiles("./src/**/cdeWinTest.csproj"));
+        projects.Add(GetFiles("./src/**/cdeWin.csproj")); // TODO ONLY BUILD ON WINDOWS AGENTS
+        projects.Add(GetFiles("./src/**/cdeWinTest.csproj"));
         foreach(var project in projects)
     		DotNetCoreBuild(project.FullPath, new DotNetCoreBuildSettings
            		{

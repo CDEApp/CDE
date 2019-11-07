@@ -66,12 +66,7 @@ namespace cdeWin
 
         protected List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
-            if (_loadCatalogService != null)
-            {
-                return _loadCatalogService.LoadRootEntries(config, timeIt);
-            }
-
-            return null;
+            return _loadCatalogService?.LoadRootEntries(config, timeIt);
         }
 
         private void InitialiseLog(TimeIt timeIt)
@@ -114,7 +109,7 @@ namespace cdeWin
         {
             _isSearchButton = search;
             _clientForm.SearchButtonText = _isSearchButton ? "Search" : "Cancel Search";
-            _clientForm.SearchButtonBackColor = _isSearchButton ? default(Color) : Color.LightCoral;
+            _clientForm.SearchButtonBackColor = _isSearchButton ? default : Color.LightCoral;
         }
 
         public void Display()
@@ -184,8 +179,7 @@ namespace cdeWin
         /// </summary>
         private static void SetDummyChildNode(TreeNode treeNode, CommonEntry commonEntry)
         {
-            if (commonEntry.Children != null
-                && commonEntry.Children.Any(entry => entry.IsDirectory))
+            if (commonEntry.Children?.Any(entry => entry.IsDirectory) == true)
             {
                 treeNode.Nodes.Add(NewTreeNode(DummyNodeName));
             }
@@ -555,7 +549,7 @@ namespace cdeWin
         {
             _directoryListCommonEntry = commonEntry;
             var directoryHelper = _clientForm.DirectoryListViewHelper;
-            _directoryList = commonEntry.Children != null ? commonEntry.Children.ToList() : null;
+            _directoryList = commonEntry.Children?.ToList();
             directoryHelper.SetList(_directoryList);
             directoryHelper.SortList();
             _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
@@ -619,20 +613,13 @@ namespace cdeWin
             _clientForm.CatalogListViewHelper.ActionOnActivateItem(GoToDirectoryRoot);
         }
 
-        public void GoToDirectoryRoot(RootEntry newRoot)
+        private void GoToDirectoryRoot(RootEntry newRoot)
         {
-            RootEntry currentRoot = null;
-            var directoryTreeViewNodes = _clientForm.DirectoryTreeViewNodes;
-            if (directoryTreeViewNodes != null)
-            {
-                currentRoot = (RootEntry) directoryTreeViewNodes.Tag;
-            }
-
+            var currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes?.Tag; 
             if (currentRoot == null || currentRoot != newRoot)
             {
                 SetNewDirectoryRoot(newRoot);
             }
-
             _clientForm.SelectDirectoryPane();
         }
 
@@ -672,11 +659,7 @@ namespace cdeWin
         private void SetDirectoryWithExpand(IEnumerable<CommonEntry> activatedDirEntryList)
         {
             var currentRootNode = _clientForm.DirectoryTreeViewNodes;
-            RootEntry currentRoot = null;
-            if (currentRootNode != null)
-            {
-                currentRoot = (RootEntry) currentRootNode.Tag;
-            }
+            var currentRoot = (RootEntry) currentRootNode?.Tag;
 
             TreeNode workingTreeNode = null;
             RootEntry newRoot = null;
@@ -899,7 +882,6 @@ namespace cdeWin
         {
             var dirEntry = pde.ChildDE;
             SetDirectoryWithExpand(dirEntry);
-
             SelectFileInDirectoryTab(dirEntry);
         }
 

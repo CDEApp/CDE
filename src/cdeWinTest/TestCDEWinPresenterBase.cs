@@ -10,6 +10,7 @@ namespace cdeWinTest
 {
     public class TestCDEWinPresenterBase
     {
+        // ReSharper disable InconsistentNaming
         protected ICDEWinForm _mockForm;
         protected IConfig _stubConfig;
         protected IListViewHelper<PairDirEntry> _mockSearchResultListViewHelper;
@@ -22,7 +23,7 @@ namespace cdeWinTest
 
         protected List<RootEntry> _emptyRootList = new List<RootEntry>();
         protected List<RootEntry> _rootList = new List<RootEntry>();
-        protected TreeNode _treeViewAfterSelectNode;
+        // protected TreeNode _treeViewAfterSelectNode;
 
         [SetUp]
         public virtual void RunBeforeEveryTest()
@@ -45,7 +46,7 @@ namespace cdeWinTest
             var nowUtc = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc);
             _rootEntry = new RootEntry {
                 Path = @"T:\",
-                VolumeName = "TestVolume",
+                // VolumeName = "TestVolume",
                 DirEntryCount = 1,
                 FileEntryCount = 0,
                 DriveLetterHint = @"Z",
@@ -73,6 +74,8 @@ namespace cdeWinTest
 
         protected void InitRootWithDir()
         {
+            // massive assumption on path, this T:\ is windows only......
+            // is it a valid test on other platforms or behavior on other platforms?
             _rootEntry = new RootEntry { Path = @"T:\" };
             _dirEntry = new DirEntry(true) { Path = @"Test1" };
             _rootEntry.Children.Add(_dirEntry);
@@ -107,35 +110,33 @@ namespace cdeWinTest
             _rootList.Add(_rootEntry);
         }
 
-        // protected Action<T> GetPresenterAction<T>(IListViewHelper<T> lvh) where T : class
-        // {
-        //     var args = lvh.GetArgumentsForCallsMadeOn(
-        //         x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything));
-        //     Assert.That(args.Count, Is.EqualTo(1));
-        //     Assert.That(args[0].Length, Is.EqualTo(1));
-        //     return (Action<T>)(args[0][0]); // extract the ActivateOnItem action 
-        // }
+        protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
+        {
+            lvh.ActionOnActivateItem(Arg.Do<Action<T>>(x =>
+            {
+                Console.Out.WriteLine("called ActionOnActivateItem()");
+            }));
+        }
 
-        // // ReSharper disable LocalizableElement
-        // protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
-        // {
-        //     lvh.Stub(x => x.ActionOnActivateItem(Arg<Action<T>>.Is.Anything))
-        //         .WhenCalled(a => Console.WriteLine("called ActionOnActivateItem()."));
-        // }
-        // // ReSharper restore LocalizableElement
-
-        // protected void MockTreeViewAfterSelect(CDEWinFormPresenter presenter)
-        // {
-        //     _mockForm.Stub(x => x.DirectoryTreeViewSelectedNode = Arg<TreeNode>.Is.Anything)
-        //         .WhenCalled(a =>
-        //                         {
-        //                             _treeViewAfterSelectNode = (TreeNode)a.Arguments[0];
-        //                             _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
-        //                                 .Repeat.Times(1)
-        //                                 .Return(_treeViewAfterSelectNode);
-        //                             presenter.DirectoryTreeViewAfterSelect();
-        //                         });
-        // }
+        protected void MockDirectoryTreeViewAfterSelect(
+            CDEWinFormPresenter presenter, 
+            Action<TreeNode> captureNode = null)
+        {
+            _mockForm.DirectoryTreeViewSelectedNode =
+                Arg.Do<TreeNode>(node =>
+                {
+                    captureNode?.Invoke(node);
+                    // these 2 lines simulate the form after select node handler
+                    _mockForm.DirectoryTreeViewActiveAfterSelectNode = node;
+                    presenter.DirectoryTreeViewAfterSelect();
+                });
+        }
+        
+        protected void FakeItemActivateWithValue<T>(IListViewHelper<T> view, T value) where T : class 
+        {
+            view.ActionOnActivateItem(Arg.Invoke(value));
+        }
+        
     }
 
     // ReSharper restore InconsistentNaming

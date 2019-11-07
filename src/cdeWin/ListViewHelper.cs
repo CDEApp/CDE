@@ -66,7 +66,7 @@ namespace cdeWin
     }
 
     /// <summary>
-    /// Consolidated code for Listview operation in VirtualMode.
+    /// Consolidated code for ListView operation in VirtualMode.
     /// Only ListView events required are enabled.
     /// Several property setters add Event handlers as required so dont call them more than once.
     /// </summary>
@@ -75,7 +75,7 @@ namespace cdeWin
         private int _listSize;
         private List<T> _list;
         private readonly DoubleBufferListView _listView;
-        // very simple caching of LVI's, just remembers the previous index - its a big win for how simple.
+        // very simple caching of ListViewItem's, just remembers the previous index - its a big win for how simple.
         private ListViewItem _cacheListViewItem;
         private int _cacheIndex;
 
@@ -118,14 +118,15 @@ namespace cdeWin
         /// </summary>
         public EventAction RetrieveVirtualItem
         {
-            get { return _retrieveVirtualItem; } 
+            get => _retrieveVirtualItem;
             set
             {   // not adding retrieve virtual item events here as _list may not be set
                 // was getting some odd errors earlier, this may address the null 
-                // ListViewItem we go outside of visual studio in release builds.
+                // ListViewItem we got outside of visual studio in release builds.
                 _retrieveVirtualItem = value;
                 if (_retrieveVirtualItem != null)
                 {
+                    // TODO AUDIT - this should probably add if not null, and remove if null?
                     _listView.CacheVirtualItems += MyCacheVirtualItems;
                     _listView.RetrieveVirtualItem += MyRetrieveVirtualItem;
                 }
@@ -138,12 +139,13 @@ namespace cdeWin
         /// </summary>
         public EventAction ColumnClick
         {
-            get { return _columnClick;  }
+            get => _columnClick;
             set
             {
                 _columnClick = value;
                 if (_columnClick != null)
                 {
+                    // TODO AUDIT - this should probably add if not null, and remove if null?
                     _listView.ColumnClick += MyColumnClick;
                 }
             }
@@ -155,12 +157,13 @@ namespace cdeWin
         /// </summary>
         public EventAction ItemActivate
         {
-            get { return _itemActivate; }
+            get => _itemActivate;
             set
             {
                 _itemActivate = value;
                 if (_itemActivate != null)
                 {
+                    // TODO AUDIT - this should probably add if not null, and remove if null?
                     _listView.ItemActivate += MyItemActivate;
                 }
             }
@@ -169,12 +172,13 @@ namespace cdeWin
 
         public ContextMenuStrip ContextMenu
         {
-            get { return _contextMenu; }
+            get => _contextMenu;
             set
             {
                 _contextMenu = value;
                 if (_contextMenu != null)
                 {
+                    // TODO AUDIT - this should probably remove context menu if null?
                     _listView.ContextMenuStrip = _contextMenu;
                 }
             }
@@ -186,12 +190,13 @@ namespace cdeWin
         /// </summary>
         public EventAction ItemSelectionChanged
         {
-            get { return _itemSelectionChanged; }
+            get => _itemSelectionChanged;
             set
             {
                 _itemSelectionChanged = value;
                 if (_itemSelectionChanged != null)
                 {
+                    // TODO AUDIT - this should probably add if not null, and remove if null?
                     _listView.SelectedIndexChanged += MySelectedIndexChanged;
                     _listView.VirtualItemsSelectionRangeChanged += MyVirtualItemsSelectionRangeChanged;
                 }
@@ -201,8 +206,8 @@ namespace cdeWin
 
         public bool MultiSelect
         {
-            get { return _listView.MultiSelect; }
-            set { _listView.MultiSelect = value; }
+            get => _listView.MultiSelect;
+            set => _listView.MultiSelect = value;
         }
 
         /// <summary>
@@ -228,12 +233,7 @@ namespace cdeWin
                 RenderItem = null;
                 _retrieveVirtualItem();
                 _cacheIndex = itemIndex;
-                if (RenderItem == null) // possible if list not available for this listview.
-                {
-                    //RenderItem = EmptyListViewItem; // dummy not sure its a good idea but better than null.
-                    throw new Exception("ListViewItem not retrieved... for " + typeof(T));
-                }
-                _cacheListViewItem = RenderItem;
+                _cacheListViewItem = RenderItem ?? throw new Exception("ListViewItem not retrieved... for " + typeof(T));
             }
             e.Item = _cacheListViewItem;
         }
@@ -357,7 +357,7 @@ namespace cdeWin
         {
             if (_columnClick != null && ColumnSortCompare == null)
             {
-                throw new Exception("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
+                throw new InvalidOperationException("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
             }
             _list = list;
             _listSize = _list == null ? 0 : _list.Count();
@@ -449,6 +449,7 @@ namespace cdeWin
 
         private T GetActivateItem()
         {
+            Console.Out.WriteLine("X02 GetActivateItem AfterActivateIndex" + AfterActivateIndex);
             if (!(AfterActivateIndex >= 0) || _list == null)
             {
                 return null;
@@ -473,10 +474,7 @@ namespace cdeWin
             {
                 _listView.ItemActivate -= MyItemActivate;
             }
-            if (_contextMenu != null)
-            {
-                _contextMenu.Dispose();
-            }
+            _contextMenu?.Dispose();
             if (_itemSelectionChanged != null)
             {
                 _listView.SelectedIndexChanged -= MySelectedIndexChanged;
