@@ -70,7 +70,7 @@
 			this.Controls.Add(this.lblProgressMessage);
 			this.Controls.Add(this.barLoading);
 			this.Controls.Add(this.pictureCDEIcon);
-			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+			// this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
 			this.Name = "LoaderForm";
