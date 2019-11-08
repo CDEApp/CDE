@@ -2,6 +2,15 @@
 
 [TOC]
 
+# Overhaul to .net core 3 app started late Oct 2019.
+
+---
+
+Chunks of readme are irrelevant.
+Stuff is not all working.
+
+---
+
 ## Continuous integration
 
 | Build server                | Platform      | Build status                                                                                                                                                        | Tests                                                                                                                                                   |
