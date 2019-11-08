@@ -751,8 +751,15 @@ namespace cdeWin
                 case 2: // SearchResult ListView Modified column
                     compareResult = de1.ModifiedCompareTo(de2);
                     break;
+                
+                case 3:
+                    compareResult = _config.MyCompareInfo.Compare(
+                        pde1.ParentDE.RootEntry.ActualFileName,
+                        pde2.ParentDE.RootEntry.ActualFileName,
+                        _config.MyCompareOptions);
+                    break;
 
-                case 3: // SearchResult ListView Path column
+                case 4: // SearchResult ListView Path column
                     //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
                     compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
                         _config.MyCompareOptions);
