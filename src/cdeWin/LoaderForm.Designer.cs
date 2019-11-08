@@ -1,4 +1,6 @@
-﻿namespace cdeWin
+﻿using cdeWin.Properties;
+
+namespace cdeWin
 {
 	partial class LoaderForm
 	{
@@ -28,7 +30,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoaderForm));
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SharedResources));
 			this.pictureCDEIcon = new System.Windows.Forms.PictureBox();
 			this.barLoading = new System.Windows.Forms.ProgressBar();
 			this.lblProgressMessage = new System.Windows.Forms.Label();
@@ -38,6 +40,7 @@
 			// pictureCDEIcon
 			// 
 			// this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+			this.pictureCDEIcon.Image = ((System.Drawing.Image) (resources.GetObject("cdeWin-Logo")));
 			this.pictureCDEIcon.Location = new System.Drawing.Point(12, 12);
 			this.pictureCDEIcon.Name = "pictureCDEIcon";
 			this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);

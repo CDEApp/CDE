@@ -1,4 +1,6 @@
-﻿namespace cdeWin
+﻿using cdeWin.Properties;
+
+namespace cdeWin
 {
     partial class MyAboutBox
     {
@@ -28,7 +30,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MyAboutBox));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SharedResources));
             this.bottomPanel = new System.Windows.Forms.Panel();
             this.okButton = new System.Windows.Forms.Button();
             this.topPanel = new System.Windows.Forms.Panel();
@@ -99,6 +101,7 @@
             // pictureCDEIcon
             // 
             //this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+            this.pictureCDEIcon.Image = ((System.Drawing.Image) (resources.GetObject("cdeWin-Logo")));
             this.pictureCDEIcon.Location = new System.Drawing.Point(218, 234);
             this.pictureCDEIcon.Name = "pictureCDEIcon";
             this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);
@@ -109,6 +112,7 @@
             // pictureHeronLogo
             // 
             //this.pictureHeronLogo.Image = global::cdeWin.Properties.Resources.heron_200_black;
+            this.pictureHeronLogo.Image = ((System.Drawing.Image) (resources.GetObject("alert-heron-image")));
             this.pictureHeronLogo.Location = new System.Drawing.Point(12, 12);
             this.pictureHeronLogo.Name = "pictureHeronLogo";
             this.pictureHeronLogo.Size = new System.Drawing.Size(200, 286);
