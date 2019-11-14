@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.IO.Enumeration;
 using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Hashing;
@@ -22,7 +21,7 @@ namespace cdeLibTest.Infrastructure
         public void Teardown()
         {
             Directory.Delete(FileHelper.TestDir2, true);
-            var files = Directory.GetFiles(".\\", "*.cde");
+            var files = Directory.GetFiles(".", "*.cde");
             foreach (var file in files)
             {
                 File.Delete(file);
@@ -115,7 +114,8 @@ namespace cdeLibTest.Infrastructure
         [Test]
         public void Can_Acquire_hash_From_File()
         {
-            var hash = HashHelper.GetMD5HashFromFile($"{FileHelper.TestDir2}\\testset2");
+            var fullFileName = Path.Combine(FileHelper.TestDir2, "testset2");
+            var hash = HashHelper.GetMD5HashFromFile(fullFileName);
             Assert.IsNotNull(hash.Hash);
         }
 
