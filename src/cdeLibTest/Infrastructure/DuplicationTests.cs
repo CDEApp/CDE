@@ -48,33 +48,22 @@ namespace cdeLibTest.Infrastructure
             var data = new byte[dataSize];
             // 2 dupes
             random.NextBytes(data);
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset1", FileMode.Create));
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset1dupe", FileMode.Create));
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset1");
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset1dupe");
 
             // 0 dupes
             random.NextBytes(data);
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset2", FileMode.Create));
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2");
             // force 2nd file of testset2 to be different at last byte.
             data[dataSize - 1] = (byte) (data[dataSize - 1] ^ 0xFF);
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset2NotDupe", FileMode.Create));
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2NotDupe");
 
             // 3 dupes
             data = new byte[dataSize];
             random.NextBytes(data);
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset3", FileMode.Create));
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset3dupe1", FileMode.Create));
-            WriteFile(data, new FileStream($"{FileHelper.TestDir2}\\testset3dupe2", FileMode.Create));
-        }
-
-        private static void WriteFile(byte[] data, Stream fs)
-        {
-            BinaryWriter bw;
-            using (bw = new BinaryWriter(fs))
-            {
-                bw.Write(data);
-                bw.Close();
-                fs.Close();
-            }
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3");
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3dupe1");
+            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3dupe2");
         }
 
         private class TestDuplication : Duplication
@@ -95,7 +84,7 @@ namespace cdeLibTest.Infrastructure
         {
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry();
-            rootEntry.PopulateRoot($"{FileHelper.TestDir2}\\");
+            rootEntry.PopulateRoot(FileHelper.TestDir2);
             var rootEntries = new List<RootEntry> {rootEntry};
             duplication.ApplyMd5Checksum(rootEntries);
             // all 7 Files are partial hashed.

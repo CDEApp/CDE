@@ -24,5 +24,29 @@ namespace cdeLibTest.TestHelpers
             return new string(Enumerable.Repeat(chars, length).Select(s => s[Random.Next(s.Length)]).ToArray());
         }
 
+        public static void WriteAllText(string data, string path, string fileName)
+        {
+            var fullFilePath = Path.Combine(path, fileName);
+            File.WriteAllText(fullFilePath, data);
+        }
+
+        public static void WriteFile(byte[] data, string path, string fileName)
+        {
+            var fullFilePath = Path.Combine(path, fileName);
+            var fs = new FileStream(fullFilePath, FileMode.Create);
+            WriteFile(data, fs);
+        }
+
+        private static void WriteFile(byte[] data, Stream fs)
+        {
+            BinaryWriter bw;
+            using (bw = new BinaryWriter(fs))
+            {
+                bw.Write(data);
+                bw.Close();
+                fs.Close();
+            }
+        }
+
     }
 }

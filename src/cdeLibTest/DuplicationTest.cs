@@ -143,12 +143,12 @@ namespace cdeLibTest
             var random = FileHelper.RandomString(4096 * 16);
             for (var i = 1; i <= dupeCount; i++)
             {
-                System.IO.File.WriteAllText($"{testPath}\\CDE_testFile{i}.txt",random);
+                FileHelper.WriteAllText(random, testPath, $"CDE_testFile{i}.txt");
             }
             
             // hacky creating catalog.
             Program.Container = BootStrapper.Components();
-            Program.CreateCache($"{testPath}.\\");
+            Program.CreateCache(testPath);
             Program.CreateMd5OnCache();
 
             //run tests.
