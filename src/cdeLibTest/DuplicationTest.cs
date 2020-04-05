@@ -6,6 +6,7 @@ using cdeLib.Infrastructure;
 using NUnit.Framework;
 using System.Reflection;
 using cde;
+using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
 
@@ -17,10 +18,12 @@ namespace cdeLibTest
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
+        IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
         {
+            _config.ProgressUpdateInterval.Returns(5000);
             _logger = Substitute.For<ILogger>();
             _configuration = Substitute.For<IConfiguration>();
             _applicationDiagnostics = Substitute.For<IApplicationDiagnostics>();
@@ -30,7 +33,7 @@ namespace cdeLibTest
         [Test]
         public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
         {
-            var re1  = new RootEntry { Path = @"C:\" };
+            var re1  = new RootEntry(_config) { Path = @"C:\" };
             var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
             var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
             var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
@@ -68,7 +71,7 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_DupeHashDoesNotMatchDiffSizeFilesOrPartialHash_OK()
         {
-            var re1  = new RootEntry { Path = @"C:\" };
+            var re1  = new RootEntry(_config) { Path = @"C:\" };
             var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
             var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
             var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
@@ -147,7 +150,7 @@ namespace cdeLibTest
             }
             
             // hacky creating catalog.
-            Program.Container = BootStrapper.Components();
+            Program.Container = BootStrapper.Components(Array.Empty<string>());
             Program.CreateCache(testPath);
             Program.CreateMd5OnCache();
 

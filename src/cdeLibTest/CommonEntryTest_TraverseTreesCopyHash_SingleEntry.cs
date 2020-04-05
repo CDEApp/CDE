@@ -4,6 +4,8 @@ using System.Text;
 using cdeLib;
 using NUnit.Framework;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 
 namespace cdeLibTest
 {
@@ -15,20 +17,22 @@ namespace cdeLibTest
         private RootEntry rootDest;
         private DirEntry deSource;
         private DirEntry deDest;
+        IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()
         {
             SetupRootDestTest1();
+            _config.ProgressUpdateInterval.Returns(5000);
         }
 
         private void SetupRootDestTest1()
         {
-            rootSource = new RootEntry { Path = @"C:\" };
+            rootSource = new RootEntry(_config) { Path = @"C:\" };
             deSource = GetNewTestF1();
             rootSource.Children.Add(deSource);
 
-            rootDest = new RootEntry { Path = @"C:\" };
+            rootDest = new RootEntry(_config) { Path = @"C:\" };
             deDest = GetNewTestF1();
             deDest.SetHash(0);  // clear it just in case.
             deDest.IsHashDone = false;

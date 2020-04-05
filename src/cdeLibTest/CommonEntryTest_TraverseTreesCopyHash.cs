@@ -2,7 +2,8 @@
 
 using cdeLib;
 using cdeLib.Infrastructure;
-
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -29,6 +30,14 @@ namespace cdeLibTest
         private DirEntry _dde6;
         private DirEntry _dde7;
 
+        IConfiguration _config = Substitute.For<IConfiguration>();
+
+        [SetUp]
+        public void Setup()
+        {
+            _config.ProgressUpdateInterval.Returns(5000);
+        }
+
         [Test]
         public void TraverseTreesCopyHash_RunWithDirEntry_Exception()
         {
@@ -37,11 +46,14 @@ namespace cdeLibTest
             Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(null), "source and destination must be not null.");
         }
 
+
+
         [Test]
         public void TraverseTreesCopyHash_RootPathsDifferent_Exception()
         {
-            var reSource = new RootEntry { Path = @"C:\a" };
-            var reDest = new RootEntry { Path = @"C:\" };
+            
+            var reSource = new RootEntry(_config) { Path = @"C:\a" };
+            var reDest = new RootEntry(_config) { Path = @"C:\" };
             Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(reDest), "source and destination must have same root path.");
         }
 
@@ -166,7 +178,7 @@ namespace cdeLibTest
 
         private void RecreateTestTree()
         {
-            _reSource = new RootEntry { Path = @"C:\" };
+            _reSource = new RootEntry(_config) { Path = @"C:\" };
             _sde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
             _sde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
             _sde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
@@ -182,7 +194,7 @@ namespace cdeLibTest
             _sfe4.Children.Add(_sde6);
             _sfe4.Children.Add(_sde7);
 
-            _reDest = new RootEntry { Path = @"C:\" };
+            _reDest = new RootEntry(_config) { Path = @"C:\" };
             _dde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
             _dde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
             _dde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };

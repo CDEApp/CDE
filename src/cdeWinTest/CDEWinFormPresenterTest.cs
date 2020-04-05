@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using cdeLib;
+using cdeLib.Infrastructure.Config;
 using cdeWin;
 using JetBrains.Annotations;
 using NUnit.Framework;
@@ -11,6 +12,7 @@ using NSubstitute;
 namespace cdeWinTest
 {
     [UsedImplicitly]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "RCS1102:Make class static.", Justification = "<Pending>")]
     public class CDEWinFormPresenterTest
     {
         // ReSharper disable InconsistentNaming
@@ -225,10 +227,13 @@ namespace cdeWinTest
         public class CatalogListViewItemActivate : TestCDEWinPresenterBase
         {
             private CDEWinFormPresenter _sutPresenter;
+            IConfiguration _config = Substitute.For<IConfiguration>();
+
 
             [SetUp]
             public override void RunBeforeEveryTest()
             {
+                _config.ProgressUpdateInterval.Returns(5000);
                 base.RunBeforeEveryTest();
                 InitRootWithDir();
                 _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
@@ -251,7 +256,7 @@ namespace cdeWinTest
             [Test]
             public void Catalog_Activate_On_Different_RootEntry_Sets_New_Root()
             {
-                var alternateRootEntry = new RootEntry {Path = "alternate"};
+                var alternateRootEntry = new RootEntry(_config) {Path = "alternate"};
                 var testRootTreeNode = new TreeNode("Moo") {Tag = alternateRootEntry};
                 _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
                 TreeNode treeNodeSet = null;

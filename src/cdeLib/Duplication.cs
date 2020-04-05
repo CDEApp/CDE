@@ -6,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
@@ -236,7 +237,6 @@ namespace cdeLib
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
                                              : _configuration.ProgressUpdateInterval;
-            var configuration = new Configuration();
             if (doPartialHash)
             {
                 //dont recalculate.
@@ -244,7 +244,7 @@ namespace cdeLib
                 {
                     return;
                 }
-                var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, configuration.HashFirstPassSize);
+                var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
 
                 if (hashResponse != null)
                 {

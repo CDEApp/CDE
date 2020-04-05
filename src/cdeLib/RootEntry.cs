@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using ProtoBuf;
 
@@ -62,15 +63,18 @@ namespace cdeLib
 
         public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
 
-        public RootEntry()
-            : base(true)
+        public RootEntry() : base(true)
         {
             Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
-            IConfiguration configuration = new Configuration();
-            EntryCountThreshold = configuration.ProgressUpdateInterval;
             RootEntry = this;
             _driveInfoService = new DriveInfoService();
+        }
+
+        public RootEntry(IConfiguration configuration)
+            : this()
+        {
+            EntryCountThreshold = configuration.ProgressUpdateInterval;
         }
 
         public void PopulateRoot(string startPath)
@@ -350,7 +354,7 @@ namespace cdeLib
                     }
                 }
                 // ReSharper disable EmptyGeneralCatchClause
-                catch (Exception)
+                catch
                 {
                 }
                 // ReSharper restore EmptyGeneralCatchClause
@@ -452,7 +456,7 @@ namespace cdeLib
                         cacheFilePaths.AddRange(GetCdeFiles(childPath));
                     }
                     // ReSharper disable once EmptyGeneralCatchClause
-                    catch (Exception)
+                    catch
                     {
                     } // if cant list folders don't care.
                 }

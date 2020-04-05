@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using cdeLib;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
@@ -82,7 +83,7 @@ namespace cdeLibTest.Infrastructure
         public void CanFindDuplicates()
         {
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
-            var rootEntry = new RootEntry();
+            var rootEntry = new RootEntry(_configuration);
             rootEntry.PopulateRoot(FileHelper.TestDir2);
             var rootEntries = new List<RootEntry> {rootEntry};
             duplication.ApplyMd5Checksum(rootEntries);

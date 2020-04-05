@@ -1,7 +1,9 @@
 ﻿using cdeLib;
+using cdeLib.Infrastructure.Config;
 
 namespace cdeLibTest
 {
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "RCS1102:Make class static.", Justification = "<Pending>")]
     public class RootEntryTestBase
     {
         // ReSharper disable InconsistentNaming
@@ -16,9 +18,9 @@ namespace cdeLibTest
         ///  Z:\d2b\d3a\d4a (size 17)
         ///  Z:\d2c (size 0)
         /// </summary>
-        public static RootEntry NewTestRootEntry(out DirEntry de2a, out DirEntry de2b, out DirEntry de2c, out DirEntry de3a, out DirEntry de4a)
+        public static RootEntry NewTestRootEntry(IConfiguration config, out DirEntry de2a, out DirEntry de2b, out DirEntry de2c, out DirEntry de3a, out DirEntry de4a)
         {
-            var re1 = new RootEntry {Path = @"Z:\"};
+            var re1 = new RootEntry(config) {Path = @"Z:\"};
             de2a = new DirEntry {Path = "d2a", Size = 11};
             de2b = new DirEntry(true) {Path = "d2b"};
             de2c = new DirEntry {Path = "d2c"};

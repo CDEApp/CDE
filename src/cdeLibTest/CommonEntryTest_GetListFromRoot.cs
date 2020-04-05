@@ -1,4 +1,7 @@
 ﻿using cdeLib;
+using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -7,10 +10,17 @@ namespace cdeLibTest
     // ReSharper disable InconsistentNaming
     class CommonEntryTest_GetListFromRoot
     {
+        IConfiguration _config = Substitute.For<IConfiguration>();
+
+        public void Setup()
+        {
+            _config.ProgressUpdateInterval.Returns(5000);
+        }
+
         [Test]
         public void GetListFromRoot_FromRoot_SameAsRootEntry()
         {
-            var re = new RootEntry { Path = @"X:\" };
+            var re = new RootEntry(_config) { Path = @"X:\" };
 
             var list = re.GetListFromRoot();
 
@@ -20,7 +30,7 @@ namespace cdeLibTest
         [Test]
         public void GetListFromRoot_FirstLevelEntry_TwoItemsReturned()
         {
-            var re = new RootEntry {Path = @"X:\"};
+            var re = new RootEntry(_config) {Path = @"X:\"};
             var de1 = new DirEntry {Path = @"de1" };
             re.Children.Add(de1);
             re.SetCommonEntryFields();

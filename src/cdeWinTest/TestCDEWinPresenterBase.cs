@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using NUnit.Framework;
 using cdeLib;
+using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using cdeWin;
 using NSubstitute;
 
@@ -24,12 +26,14 @@ namespace cdeWinTest
         protected List<RootEntry> _emptyRootList = new List<RootEntry>();
         protected List<RootEntry> _rootList = new List<RootEntry>();
         // protected TreeNode _treeViewAfterSelectNode;
+        IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public virtual void RunBeforeEveryTest()
         {
              _emptyRootList = new List<RootEntry>();
              _rootList = new List<RootEntry>();
+             _config.ProgressUpdateInterval.Returns(5000);
 
             _mockForm = Substitute.For<ICDEWinForm>();
             _stubConfig = Substitute.For<IConfig>();
@@ -44,7 +48,8 @@ namespace cdeWinTest
         protected void InitRootWithFile()
         {
             var nowUtc = new DateTime(2011, 12, 01, 17, 15, 13, DateTimeKind.Utc);
-            _rootEntry = new RootEntry {
+            _rootEntry = new RootEntry(_config)
+            {
                 Path = @"T:\",
                 // VolumeName = "TestVolume",
                 DirEntryCount = 1,
@@ -76,7 +81,7 @@ namespace cdeWinTest
         {
             // massive assumption on path, this T:\ is windows only......
             // is it a valid test on other platforms or behavior on other platforms?
-            _rootEntry = new RootEntry { Path = @"T:\" };
+            _rootEntry = new RootEntry(_config) { Path = @"T:\" };
             _dirEntry = new DirEntry(true) { Path = @"Test1" };
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();

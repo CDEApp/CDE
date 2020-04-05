@@ -1,4 +1,7 @@
 ﻿using cdeLib;
+using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -8,6 +11,7 @@ namespace cdeLibTest
     class DirEntryTest_SetSummaryFields
     {
         private DirEntry emptyDirEntry;
+        
 
         [SetUp]
         public void BeforeEveryTest()
@@ -66,11 +70,13 @@ namespace cdeLibTest
         DirEntry de3a;
         DirEntry de4a;
         private RootEntry re;
+        IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()
         {
-            re = NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            _config.ProgressUpdateInterval.Returns(5000);
+            re = NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
         }
 
         [Test]

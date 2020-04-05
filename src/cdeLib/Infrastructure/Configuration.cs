@@ -1,56 +1,31 @@
-using System;
-using System.Configuration;
+using cdeLib.Infrastructure.Config;
+using Microsoft.Extensions.Configuration;
+using IConfiguration = cdeLib.Infrastructure.Config.IConfiguration;
 
 namespace cdeLib.Infrastructure
 {
-    public interface IConfiguration
-    {
-        int ProgressUpdateInterval { get; }
-        int HashFirstPassSize { get; }
-        int DegreesOfParallelism { get; }
-    }
-
     /// <summary>
     /// Configuration to talk to app.config
     /// </summary>
     public class Configuration : IConfiguration
     {
+        private readonly AppConfigurationSection _appConfig;
+
+        public Configuration(IConfigurationRoot configurationRoot)
+        {
+            _appConfig = configurationRoot.GetSection("AppConfig").Get<AppConfigurationSection>();
+        }
+
         /// <summary>
         /// Get the loop interval for progress updates.
         /// </summary>
-        public int ProgressUpdateInterval
-        {
-            get
-            {
-                int result;
-                Int32.TryParse(ConfigurationManager.AppSettings["ProgressUpdateInterval"], out result);
-                if (result <= 0)
-                    result = 10000;
-                return result;
-            }
-        }
+        public int ProgressUpdateInterval => _appConfig.Display.ProgressUpdateInterval;
 
         /// <summary>
         /// Size in bytes to use for a firstRunHashSize
         /// </summary>
-        public int HashFirstPassSize
-        { get {
-            int result;
-            Int32.TryParse(ConfigurationManager.AppSettings["Hash.FirstPassSizeInBytes"], out result);
-            if (result <= 1024)
-                result = 1024;
-            return result;
-            
-        }}
+        public int HashFirstPassSize => _appConfig.Hashing.FirstPassSizeInBytes;
 
-        public int DegreesOfParallelism
-        {
-            get
-            {
-                int result;
-                Int32.TryParse(ConfigurationManager.AppSettings["Hash.DegreesOfParallelism"], out result);
-                return result;
-            }
-        }
+        public int DegreesOfParallelism => _appConfig.Hashing.DegreesOfParallelism;
     }
 }

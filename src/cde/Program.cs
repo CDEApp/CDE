@@ -5,6 +5,7 @@ using System.Reflection;
 using Autofac;
 using cdeLib;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using Mono.Terminal;
 using IContainer = Autofac.IContainer;
 
@@ -13,6 +14,7 @@ namespace cde
     public static class Program
     {
         public static IContainer Container;
+
         public static string Version
         {
             get
@@ -25,13 +27,14 @@ namespace cde
 
         private static void Main(string[] args)
         {
-            Container = BootStrapper.Components();
+            Container = BootStrapper.Components(args);
             Console.CancelKeyPress += BreakConsole;
-            if (args.Length ==0)
+            if (args.Length == 0)
             {
                 ShowHelp();
                 return;
             }
+
             var param0 = args[0].ToLowerInvariant();
             if (args.Length == 2 && param0 == "--scan")
             {
@@ -135,7 +138,7 @@ namespace cde
                 int count;
                 if (int.TryParse(args[1], out count))
                 {
-                   FindPouplous(count);
+                    FindPouplous(count);
                 }
                 else
                 {
@@ -162,8 +165,8 @@ namespace cde
             Find.StaticFind(firstPattern, parmString);
             do
             {
-                if (Hack.BreakConsoleFlag) 
-                    Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behavouir in loop.
+                if (Hack.BreakConsoleFlag)
+                    Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behaviour in loop.
                 Console.Write("Enter string to search <nothing exits>: ");
                 var pattern = Console.ReadLine();
                 if (pattern == string.Empty)
@@ -171,6 +174,7 @@ namespace cde
                     Console.WriteLine("Exiting...");
                     break;
                 }
+
                 Find.StaticFind(pattern, parmString);
             } while (true);
         }
@@ -221,13 +225,13 @@ namespace cde
         {
             var logger = Container.Resolve<ILogger>();
             var diagnostics = Container.Resolve<IApplicationDiagnostics>();
-            logger.LogInfo("Memory pre-catload: {0}",diagnostics.GetMemoryAllocated().FormatAsBytes());
+            logger.LogInfo("Memory pre-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
             var rootEntries = RootEntry.LoadCurrentDirCache();
             logger.LogInfo("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
             var duplication = Container.Resolve<Duplication>();
             var sw = new Stopwatch();
             sw.Start();
-            
+
             duplication.ApplyMd5Checksum(rootEntries);
 
             foreach (var rootEntry in rootEntries)
@@ -238,7 +242,7 @@ namespace cde
 
             sw.Stop();
             var ts = sw.Elapsed;
-            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
+            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
             Console.WriteLine($"Hash took : {elapsedTime}");
         }
 
@@ -269,7 +273,7 @@ namespace cde
 
         public static void CreateCache(string path)
         {
-            var re = new RootEntry();
+            var re = new RootEntry(Container.Resolve<IConfiguration>());
             try
             {
                 re.SimpleScanCountEvent = ScanCountPrintDot;
@@ -290,6 +294,7 @@ namespace cde
                     Console.WriteLine("Updating hashs on new scan from found cache file.");
                     oldRoot.TraverseTreesCopyHash(re);
                 }
+
                 re.SortAllChildrenByPath();
                 re.SaveRootEntry();
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
@@ -324,7 +329,7 @@ namespace cde
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var pdee = CommonEntry.GetPairDirEntries(rootEntries);
-            foreach (var pairDirEntry in pdee)      
+            foreach (var pairDirEntry in pdee)
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 var bang = pairDirEntry.PathProblem ? "!" : " ";
@@ -335,7 +340,7 @@ namespace cde
                 }
             }
         }
-        
+
         private static void FindPouplous(int minimumCount)
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();

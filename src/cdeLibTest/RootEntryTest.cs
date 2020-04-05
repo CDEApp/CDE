@@ -1,7 +1,10 @@
 ﻿using System.IO;
 using System.Linq;
 using cdeLib;
+using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -10,10 +13,19 @@ namespace cdeLibTest
     [TestFixture]
     public class RootEntryTest
     {
+        IConfiguration _config = Substitute.For<IConfiguration>();
+
+        [SetUp]
+        public void Setup()
+        {
+            _config.ProgressUpdateInterval.Returns(5000);
+        }
+
         [Test]
         public void Constructor_Minimal_Creates()
         {
-            var a = new RootEntry();
+
+            var a = new RootEntry(_config);
 
             Assert.That(a, Is.Not.Null);
         }
@@ -21,7 +33,7 @@ namespace cdeLibTest
         [Test]
         public void Constructor_GetTree_OK()
         {
-            var re = new RootEntry();
+            var re = new RootEntry(_config);
             re.RecurseTree(FileHelper.TestDir);
 
             Assert.That(re, Is.Not.Null);
@@ -32,7 +44,7 @@ namespace cdeLibTest
         [Test]
         public void Constructor_GetTreeWithMoreThanOneLevel_OK()
         {
-            var re = new RootEntry();
+            var re = new RootEntry(_config);
             re.RecurseTree(FileHelper.TestDir);
 
             Assert.That(re, Is.Not.Null);
@@ -66,7 +78,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimpleRootPath_ReturnsDriveLetter()
         {
-            var re = new RootEntryTestStub();
+            var re = new RootEntryTestStub(_config);
 
             var hint = re.GetDriverLetterHint(@"C:\", @"C:\");
             
@@ -76,7 +88,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimpleRootPathOddAsRootDifferent_ReturnsRootDriveLetter()
         {
-            var re = new RootEntryTestStub();
+            var re = new RootEntryTestStub(_config);
 
             var hint = re.GetDriverLetterHint(@"C:\", @"D:\");
 
@@ -86,7 +98,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_SimplePath_ReturnsRootLetter()
         {
-            var re = new RootEntryTestStub();
+            var re = new RootEntryTestStub(_config);
 
             var hint = re.GetDriverLetterHint(@"C:\MyFolder", @"C:\");
 
@@ -96,7 +108,7 @@ namespace cdeLibTest
         [Test]
         public void GetDriverLetterHint_UncPath_ReturnsUNC()
         {
-            var re = new RootEntryTestStub(isUnc:true);
+            var re = new RootEntryTestStub(_config,isUnc: true);
 
             var hint = re.GetDriverLetterHint(@"\\server\basepath\path", @"doest matter");
 
@@ -107,7 +119,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimpleRootPath_ReturnsExpectedStuff()
         {
-            var re = new RootEntryTestStub();
+            var re = new RootEntryTestStub(_config);
 
             string hint, volRoot;
 
@@ -123,7 +135,7 @@ namespace cdeLibTest
         public void GetDefaultFileName_SimpleRootPath2_ReturnsExpectedStuff()
         {
             // ReSharper disable RedundantArgumentName
-            var re = new RootEntryTestStub(root: @"D:\", fullPath:@"D:\");
+            var re = new RootEntryTestStub(_config, root: @"D:\", fullPath:@"D:\");
             // ReSharper restore RedundantArgumentName
 
             string hint, volRoot;
@@ -139,7 +151,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimplePath_ReturnsExpectedStuff()
         {
-            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder");
+            var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder");
 
             string hint, volRoot;
 
@@ -153,7 +165,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_SimplePath2_ReturnsExpectedStuff()
         {
-            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder\Mine");
 
             string hint, volRoot;
 
@@ -167,7 +179,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_NonRootedPath_UsesFullPathToScanPath()
         {
-            var re = new RootEntryTestStub(fullPath: @"C:\Stuff\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(_config,fullPath: @"C:\Stuff\MyTestFolder\Mine");
             string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
@@ -181,7 +193,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_RootedPathByLeadingSlash_UsingFullPath()
         {
-            var re = new RootEntryTestStub(fullPath: @"C:\MyTestFolder\Mine");
+            var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder\Mine");
             string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
@@ -195,7 +207,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_UNCPath_UsesFullPath()
         {
-            var re = new RootEntryTestStub(isUnc:true, fullPath: @"\\myserver\myshare");
+            var re = new RootEntryTestStub(_config,isUnc: true, fullPath: @"\\myserver\myshare");
             string hint, volRoot;
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot);
@@ -208,7 +220,7 @@ namespace cdeLibTest
         [Test]
         public void GetDefaultFileName_UNCPath2_UsesFullPath()
         {
-            var re = new RootEntryTestStub(isUnc: true, fullPath: @"\\myserver\myshare\stuff");
+            var re = new RootEntryTestStub(_config,isUnc: true, fullPath: @"\\myserver\myshare\stuff");
             string hint, volRoot;
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot);
@@ -221,7 +233,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_DeviceRelativePath_OK()
         {
-            var re = new RootEntryTestStub(isUnc: false, root: @"g:\", fullPath: @"g:\");
+            var re = new RootEntryTestStub(_config,isUnc: false, root: @"g:\", fullPath: @"g:\");
             const string testPath = @"g:";
 
             var result = re.CanonicalPath(testPath);
@@ -232,7 +244,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_TrailingSlash_OK()
         {
-            var re = new RootEntryTestStub(isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
+            var re = new RootEntryTestStub(_config, isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
             const string testPath = @"c:\Windows\";
 
             var result = re.CanonicalPath(testPath);
@@ -243,7 +255,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_UNCTrailingSlash_OK()
         {
-            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+            var re = new RootEntryTestStub(_config,isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
             const string testPath = @"\\Friday\d$\";
 
             var result = re.CanonicalPath(testPath);
@@ -254,7 +266,7 @@ namespace cdeLibTest
         [Test]
         public void CanonicalPath_UNCTrailingSlash2_OK()
         {
-            var re = new RootEntryTestStub(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+            var re = new RootEntryTestStub(_config, isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
             const string testPath = @"\\Friday\d$";
 
             var result = re.CanonicalPath(testPath);
@@ -270,10 +282,12 @@ namespace cdeLibTest
             private readonly string _fullPath;
 
             public RootEntryTestStub(
+                IConfiguration config,
                 string root=@"C:\",
                 bool isUnc=false, 
                 bool isPathRooted=true,
-                string fullPath=@"C:\")
+                string fullPath=@"C:\"
+                ) : base(config)
             {
                 _root = root;
                 _isUnc = isUnc;
@@ -301,7 +315,7 @@ namespace cdeLibTest
         [Test]
         public void SetFullPath_OnRootDirectory_SetsAllFullPaths()
         {
-            var re = new RootEntry { Path = @"C:\" };
+            var re = new RootEntry(_config) { Path = @"C:\" };
             var fe1 = new DirEntry { Path = "fe1" };
             var de2 = new DirEntry(true) { Path = "de2" };
             var fe3 = new DirEntry { Path = "fe3" };
@@ -322,11 +336,13 @@ namespace cdeLibTest
     public class RootEntryTest_SortAllChildrenByPath : RootEntryTestBase
     {
         private RootEntry re;
+        IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()
         {
-            re = NewTestRootEntry(out _, out _, out _, out _, out _);
+            _config.ProgressUpdateInterval.Returns(5000);
+            re = NewTestRootEntry(_config, out _, out _, out _, out _, out _);
         }
 
         [Test]

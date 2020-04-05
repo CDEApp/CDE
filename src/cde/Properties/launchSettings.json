@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "cde": {
+      "commandName": "Project",
+      "commandLineArgs": "--scan \\\\freenas\\tank1\\apps"
+    }
+  }
+}

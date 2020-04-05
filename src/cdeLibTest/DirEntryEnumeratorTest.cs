@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using cdeLib;
+using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 using NUnit.Framework;
 
 namespace cdeLibTest
@@ -14,9 +17,9 @@ namespace cdeLibTest
         protected DirEntry Fe2;
         protected List<RootEntry> RootEntries;
 
-        protected void RebuildTestRoot()
+        protected void RebuildTestRoot(IConfiguration config)
         {
-            _re1 = new RootEntry { Path = @"C:\" };
+            _re1 = new RootEntry(config) { Path = @"C:\" };
             De1 = new DirEntry(true) { Path = @"de1" };
             Fe2 = new DirEntry { Path = @"fe2" };
             De1.Children.Add(Fe2);
@@ -30,10 +33,13 @@ namespace cdeLibTest
     [TestFixture]
     public class DirEntryEnumeratorTest : DirEntryTestBase
     {
+        IConfiguration _config = Substitute.For<IConfiguration>();
+
         [SetUp]
         public void RunBeforeEveryTest()
         {
-            RebuildTestRoot();
+            _config.ProgressUpdateInterval.Returns(5000);
+            RebuildTestRoot(_config);
         }
 
         [Test]

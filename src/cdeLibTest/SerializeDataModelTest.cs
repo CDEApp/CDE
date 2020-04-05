@@ -5,6 +5,8 @@ using NUnit.Framework;
 using ProtoBuf;
 using cdeLib;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Config;
+using NSubstitute;
 
 namespace cdeLibTest
 {
@@ -23,11 +25,19 @@ namespace cdeLibTest
         private DirEntry de3a;
         private DirEntry de4a;
         private RootEntry re1;
+        IConfiguration _config = Substitute.For<IConfiguration>();
+
+
+        [SetUp]
+        public void SetUp()
+        {
+            _config.ProgressUpdateInterval.Returns(5000);
+        }
 
         [Test]
         public void Serialize_RootEntry()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -42,7 +52,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryMatches()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -58,7 +68,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryFailsMatches()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -76,7 +86,7 @@ namespace cdeLibTest
         [Test]
         public void DeSerialize_JustRootEntryThatHasTree()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             
