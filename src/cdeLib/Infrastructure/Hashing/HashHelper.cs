@@ -4,35 +4,8 @@ using System.Security.Cryptography;
 
 namespace cdeLib.Infrastructure.Hashing
 {
-    public class HashResponse
-    {
-        public string HashAsString
-        {
-            get {
-                if (Hash == null)
-                    return null;
-                return ByteArrayHelper.ByteArrayToString(Hash);
-            }
-        }
-
-        public byte[] Hash { get; set; }
-        public bool IsPartialHash { get; set; }
-        public long BytesHashed { get; set; }
-    }
-
     public class HashHelper
     {
-        /// <summary>
-        ///   Overload for GetMD5HashResponseFromFile(filename, bytesToHash);
-        /// </summary>
-        /// <param name = "filename"></param>
-        /// <param name = "bytesToHash"></param>
-        /// <returns></returns>
-        public byte[] GetMD5HashFromFile(string filename, int bytesToHash)
-        {
-            return GetMD5HashResponseFromFile(filename, bytesToHash).Hash;
-        }
-
         public static HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
         {
             var hashResponse = new HashResponse();
@@ -51,14 +24,12 @@ namespace cdeLib.Infrastructure.Hashing
                     hashResponse.BytesHashed = totalBytesRead;
                     hashResponse.IsPartialHash = stream.Length > bytesToHash;
 
-                    using (var md5 = MD5.Create())
-                    {
-                        hashResponse.Hash = md5.ComputeHash(buf);
-                    }
+                    using var md5 = MD5.Create();
+                    hashResponse.Hash = md5.ComputeHash(buf);
                 }
                 return hashResponse;
             }
-            catch (FileLoadException)   // if doing hasing on system drive cant open files dont care.
+            catch (FileLoadException)   // if doing hashing on system drive cant open files don't care.
             {
                 return null;
             }

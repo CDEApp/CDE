@@ -152,7 +152,7 @@ namespace cdeLibTest
             // hacky creating catalog.
             Program.Container = BootStrapper.Components(Array.Empty<string>());
             Program.CreateCache(testPath);
-            Program.CreateMd5OnCache();
+            Program.HashCatalog();
 
             //run tests.
             Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");

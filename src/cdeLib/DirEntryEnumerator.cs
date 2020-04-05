@@ -3,22 +3,15 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-    public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
+    public sealed class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
         private Stack<CommonEntry> _entries;
         private IEnumerator<DirEntry> _childEnumerator;
 
-        public DirEntry Current
-        {
-            get { return _current; }
-        }
-
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        public DirEntry Current => _current;
+        object IEnumerator.Current => Current;
 
         public DirEntryEnumerator(RootEntry rootEntry)
         {

@@ -30,14 +30,19 @@ namespace cdeWin
 		{
 		    try
 		    {
-                var proc = new System.Diagnostics.Process();
-                proc.StartInfo.FileName =
-                    $"mailto:{_config.ContactEmail}?subject=About {_config.ProductName} v{_config.Version}";
+                var proc = new System.Diagnostics.Process
+                {
+                    StartInfo =
+                    {
+                        FileName =
+                            $"mailto:{_config.ContactEmail}?subject=About {_config.ProductName} v{_config.Version}"
+                    }
+                };
                 proc.Start();
 		    }
-		    catch (Exception)
-		    {
-		    }
+		    catch
+            {
+            }
 		}
 
 		private void MyAboutBox_Load(object sender, EventArgs e)

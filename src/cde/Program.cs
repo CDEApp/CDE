@@ -40,10 +40,6 @@ namespace cde
             {
                 CreateCache(args[1]);
             }
-            // else if (args.Length == 2 && param0 == "--scan2")
-            // {
-            //     CreateCache2(args[1]);
-            // }
             else if (args.Length == 2 && Find.FindParams.Contains(param0))
             {
                 Find.StaticFind(args[1], param0);
@@ -62,12 +58,8 @@ namespace cde
             }
             else if (args.Length == 1 && param0 == "--hash")
             {
-                CreateMd5OnCache();
+                HashCatalog();
             }
-            // else if (args.Length == 1 && param0 == "--hash2")
-            // {
-            //     CreateMd5OnCache2();
-            // }
             else if (args.Length == 1 && param0 == "--dupes")
             {
                 FindDupes();
@@ -90,12 +82,6 @@ namespace cde
                 RootEntry.LoadCurrentDirCache();
                 Console.ReadLine();
             }
-            // else if (args.Length == 1 && param0 == "--loadwait2")
-            // {
-            //     Console.WriteLine(Version);
-            //     EntryStore.LoadCurrentDirCache();
-            //     Console.ReadLine();
-            // }
             else if (args.Length == 1 && param0 == "--repl")
             {
                 var le = new LineEditor(null);
@@ -135,8 +121,7 @@ namespace cde
             }
             else if (args.Length == 2 && param0 == "--populousfolders")
             {
-                int count;
-                if (int.TryParse(args[1], out count))
+                if (int.TryParse(args[1], out var count))
                 {
                     FindPouplous(count);
                 }
@@ -159,10 +144,10 @@ namespace cde
         }
 
         // repl = read-eval-print-loop
-        private static void FindRepl(string parmString, string firstPattern)
+        private static void FindRepl(string paramString, string firstPattern)
         {
             Find.GetDirCache();
-            Find.StaticFind(firstPattern, parmString);
+            Find.StaticFind(firstPattern, paramString);
             do
             {
                 if (Hack.BreakConsoleFlag)
@@ -175,7 +160,7 @@ namespace cde
                     break;
                 }
 
-                Find.StaticFind(pattern, parmString);
+                Find.StaticFind(pattern, paramString);
             } while (true);
         }
 
@@ -221,7 +206,7 @@ namespace cde
             duplication.FindDuplicates(rootEntries);
         }
 
-        public static void CreateMd5OnCache()
+        public static void HashCatalog()
         {
             var logger = Container.Resolve<ILogger>();
             var diagnostics = Container.Resolve<IApplicationDiagnostics>();
@@ -246,31 +231,6 @@ namespace cde
             Console.WriteLine($"Hash took : {elapsedTime}");
         }
 
-        // private static void CreateMd5OnCache2()
-        // {
-        //     var rootEntries = EntryStore.LoadCurrentDirCache();
-        //     var re = rootEntries.FirstOrDefault();
-        //     re?.ApplyMd5Checksum();
-        // }
-
-        // static void CreateCache2(string path)
-        // {
-        //     //Process objProcess = Process.GetCurrentProcess();
-        //     //long gcMemStart = GC.GetTotalMemory(true);
-        //     //long processMemStart = objProcess.PrivateMemorySize64;
-        //
-        //     var e = new EntryStore { SimpleScanCountEvent = ScanCountPrintDot, SimpleScanEndEvent = ScanEndofEntries, EntryCountThreshold = 10000 };
-        //     e.SetRoot(path);
-        //     e.Root.ScanStartUTC = DateTime.UtcNow;
-        //     e.RecurseTree();
-        //     e.Root.ScanEndUTC = DateTime.UtcNow;
-        //     e.SaveToFile();
-        //     var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
-        //     Console.WriteLine($"Scanned Path {e.Root.Path}");
-        //     Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-        //     Console.WriteLine($"Saved Scanned Path {e.Root.DefaultFileName}");
-        // }
-
         public static void CreateCache(string path)
         {
             var re = new RootEntry(Container.Resolve<IConfiguration>());
@@ -291,7 +251,7 @@ namespace cde
                 if (oldRoot != null)
                 {
                     Console.WriteLine($"Found cache \"{re.DefaultFileName}\"");
-                    Console.WriteLine("Updating hashs on new scan from found cache file.");
+                    Console.WriteLine("Updating hashes on new scan from found cache file.");
                     oldRoot.TraverseTreesCopyHash(re);
                 }
 
@@ -328,8 +288,7 @@ namespace cde
         private static void PrintPathsHaveHashEnumerator()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var pdee = CommonEntry.GetPairDirEntries(rootEntries);
-            foreach (var pairDirEntry in pdee)
+            foreach (var pairDirEntry in CommonEntry.GetPairDirEntries(rootEntries))
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 var bang = pairDirEntry.PathProblem ? "!" : " ";

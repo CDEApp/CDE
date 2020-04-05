@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-    public class PairDirEntryEnumerator : IEnumerator<PairDirEntry>, IEnumerable<PairDirEntry>
+    public sealed class PairDirEntryEnumerator : IEnumerator<PairDirEntry>, IEnumerable<PairDirEntry>
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private PairDirEntry _current;
@@ -11,15 +11,9 @@ namespace cdeLib
         private CommonEntry _parentDirEntry;
         private IEnumerator<DirEntry> _childEnumerator;
 
-        public PairDirEntry Current
-        {
-            get { return _current; }
-        }
+        public PairDirEntry Current => _current;
 
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        object IEnumerator.Current => Current;
 
         public PairDirEntryEnumerator(RootEntry rootEntry)
         {

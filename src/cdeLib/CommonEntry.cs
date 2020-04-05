@@ -252,6 +252,9 @@ namespace cdeLib
             return System.IO.Directory.Exists(FullPath);
         }
 
+        /// <summary>
+        /// Is bad path
+        /// </summary>
         /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
         public bool IsBadPath()
         {

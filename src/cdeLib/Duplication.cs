@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -11,17 +10,6 @@ using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLib
 {
-    public static class ParallelExtension
-    {
-        public static void ForEachInApproximateOrder<TSource>(this ParallelQuery<TSource> source, ParallelOptions options, Action<TSource,ParallelLoopState> action)
-        {
-            source = Partitioner.Create(source)
-                                .AsParallel()
-                                .AsOrdered();
-            Parallel.ForEach(source, options, action);
-        }
-    }
-
     public class Duplication
     {
         private readonly IConfiguration _configuration;
@@ -142,7 +130,7 @@ namespace cdeLib
             catch (OperationCanceledException) {}
             catch (Exception ex)
             {
-                //parallel cancellation. will be OperationCancelled or Aggregate Exception
+                // parallel cancellation. will be OperationCancelled or Aggregate Exception
                 Console.WriteLine($"Exception Type {ex.GetType()}");
                 Console.WriteLine(ex.Message);
                 return;
@@ -173,7 +161,7 @@ namespace cdeLib
             CommonEntry.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
 
-            //Remove the single values from the dictionary.  DOESNT SEEM TO CLEAR MEMORY ??? GC Force?
+            // Remove the single values from the dictionary.  DOESN'T SEEM TO CLEAR MEMORY ??? GC Force?
             _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize.Remove(x.Key));
             _logger.LogDebug("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
             return _duplicateFileSize;
@@ -239,7 +227,7 @@ namespace cdeLib
                                              : _configuration.ProgressUpdateInterval;
             if (doPartialHash)
             {
-                //dont recalculate.
+                // don't recalculate.
                 if (de.IsHashDone && de.IsPartialHash)
                 {
                     return;
@@ -269,18 +257,6 @@ namespace cdeLib
                             1.0*_duplicationStatistics.LargestFileSize/(1024*1024),
                             1.0*_duplicationStatistics.SmallestFileSize/(1024*1024));
                     }
-
-                    //_logger.LogDebug("Thread:{0}, File: {1}",Thread.CurrentThread.ManagedThreadId,fullPath);
-                        
-                    //if (_duplicationStatistics.PartialHashes%displayCounterInterval == 0)
-                    //{
-                    //    Console.Write("p");
-                    //}
-                    //if (_duplicationStatistics.FullHashes%displayCounterInterval == 0)
-                    //{
-                    //    Console.Write("f");
-                    //    Console.Write(" {0} ", hashResponse.BytesHashed);
-                    //}
                 }
                 else
                 {
