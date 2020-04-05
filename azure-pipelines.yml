@@ -17,3 +17,14 @@ steps:
   displayName: Build App
   inputs:
     filePath: 'build.ps1'      
+- task: CopyFiles@2
+displayName: 'Copy artifacts'
+inputs: 
+    SourceFolder: '$(Build.SourcesDirectory)/catalog/publish'
+    contents: '**\*' 
+    targetFolder: $(Build.ArtifactStagingDirectory)/
+    cleanTargetFolder: true    
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathtoPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: drop
