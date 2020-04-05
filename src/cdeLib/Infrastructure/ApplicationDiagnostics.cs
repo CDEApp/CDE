@@ -10,9 +10,6 @@ namespace cdeLib.Infrastructure
     public class ApplicationDiagnostics : IApplicationDiagnostics
     {
         private Process _process;
-        public ApplicationDiagnostics()
-        {
-        }
 
         public long GetMemoryAllocated()
         {

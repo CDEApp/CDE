@@ -41,7 +41,6 @@ namespace cdeLib
         /// Gets the properties for this file system.
         /// </summary>
         /// <param name="volumeIdentifier">The path whose volume properties are to be queried.</param>
-        /// <param name="cancel">An optional <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns>A <see cref="FileSystemProperties"/> containing the properties for the specified file system.</returns>
         public static FileSystemProperties GetProperties(string volumeIdentifier)
         {

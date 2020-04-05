@@ -1,7 +1,5 @@
-﻿using System.IO;
-using System.Linq;
+﻿using System.Linq;
 using cdeLib;
-using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;

@@ -1,6 +1,4 @@
-﻿using System;
-using cdeLib;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 
 namespace cdeLibTest
 {

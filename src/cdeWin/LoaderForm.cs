@@ -46,7 +46,7 @@ namespace cdeWin
             Application.DoEvents(); // Get label to update.
         }
 
-		private void LoaderForm_Shown(object sender, System.EventArgs e)
+		private void LoaderForm_Shown(object sender, EventArgs e)
 		{
 			lblProgressMessage.Text = string.Empty;
 			Application.DoEvents(); // Make sure controls render before we do something.

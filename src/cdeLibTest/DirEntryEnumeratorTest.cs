@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using cdeLib;
-using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;

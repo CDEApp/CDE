@@ -18,9 +18,9 @@ namespace cdeLib
         private int _year;
         private int _month = 1; // 1-12
         private int _dayOfMonth = 1; // 1-31
-        private int _hour = 0; // 0-23
-        private int _minute = 0; // 0-59
-        private int _second = 0; // 0-59
+        private int _hour; // 0-23
+        private int _minute; // 0-59
+        private int _second; // 0-59
         private Exception _e;
 
         public DateTimePartialParameter(string str)

@@ -24,7 +24,7 @@ namespace cdeLib
             }
         }
 
-        private int _minute = 0;  // 0 - 59
+        private int _minute;  // 0 - 59
         public int Minute
         {
             get
@@ -34,7 +34,7 @@ namespace cdeLib
             }
         }
 
-        private int _second = 0;  // 0 - 59
+        private int _second;  // 0 - 59
         public int Second
         {
             get

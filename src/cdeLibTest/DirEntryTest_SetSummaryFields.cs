@@ -1,5 +1,4 @@
 ﻿using cdeLib;
-using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;

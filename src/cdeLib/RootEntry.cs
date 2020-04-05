@@ -467,7 +467,7 @@ namespace cdeLib
 
         private static IEnumerable<string> GetCdeFiles(string path)
         {
-            return FSHelper.GetFilesWithExtension(path, "cde");
+            return FileSystemHelper.GetFilesWithExtension(path, "cde");
         }
 
         #region List of UAE paths on a known win7 volume - probably decent example

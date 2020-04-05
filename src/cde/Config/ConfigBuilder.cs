@@ -6,7 +6,7 @@ namespace cde.Config
     {
         public IConfigurationRoot Build(string[] args)
         {
-            return new Microsoft.Extensions.Configuration.ConfigurationBuilder()
+            return new ConfigurationBuilder()
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
                 .AddCommandLine(args)
                 .Build();

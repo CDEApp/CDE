@@ -69,7 +69,7 @@ namespace cdeLibTest
         public void Year_With_BadNamed_Month()
         {
             var args = "2014-Ma";
-            var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
+            Assert.Throws<ArgumentException>(() => new DateTimePartialParameter(args).GetDate());
         }
 
         [Test]

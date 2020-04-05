@@ -1,9 +1,5 @@
 ﻿namespace cdeLibTest
 {
-    using System;
-
-    using cdeLib;
-
     using NUnit.Framework;
 
     // ReSharper disable InconsistentNaming
