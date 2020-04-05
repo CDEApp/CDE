@@ -1,4 +1,7 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace cde.Config
 {
@@ -7,7 +10,8 @@ namespace cde.Config
         public IConfigurationRoot Build(string[] args)
         {
             return new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .SetBasePath(Directory.GetCurrentDirectory())   //required for single file application or it goes hunting in temp folder when it extracts.
+                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
                 .AddCommandLine(args)
                 .Build();
         }
