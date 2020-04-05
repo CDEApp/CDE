@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using cdeLib.Infrastructure;
+using cdeLib.IO;
 using ProtoBuf;
 
 namespace cdeLib
@@ -17,6 +18,7 @@ namespace cdeLib
     public class RootEntry : DirEntry // CommonEntry
     {
         const string MatchAll = "*";
+        private readonly IDriveInfoService _driveInfoService;
 
         // NO LONGER USED
         [Obsolete]
@@ -68,6 +70,7 @@ namespace cdeLib
             IConfiguration configuration = new Configuration();
             EntryCountThreshold = configuration.ProgressUpdateInterval;
             RootEntry = this;
+            _driveInfoService = new DriveInfoService();
         }
 
         public void PopulateRoot(string startPath)
@@ -93,11 +96,13 @@ namespace cdeLib
             // VolumeName = volumeName;
 
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
-            var driveInfo = new DriveInfo(pathRoot);
-            AvailSpace = (ulong) driveInfo.AvailableFreeSpace;
-            TotalSpace = (ulong) driveInfo.TotalSize;
+
+            var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
+            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
+            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
             return startPath;
         }
+
 
         public void SetInMemoryFields()
         {
@@ -174,7 +179,7 @@ namespace cdeLib
         #endregion
 
         /// <summary>
-        /// Return canoncial version of path.
+        /// Return canonical version of path.
         /// Ensure device id are upper case.
         /// if ends in a '\' and its not just a device eg G:\ then strip trailing \
         /// </summary>
