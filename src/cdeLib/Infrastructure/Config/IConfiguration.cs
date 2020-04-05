@@ -5,5 +5,7 @@ namespace cdeLib.Infrastructure.Config
         int ProgressUpdateInterval { get; }
         int HashFirstPassSize { get; }
         int DegreesOfParallelism { get; }
+
+        AppConfigurationSection Config { get; }
     }
 }

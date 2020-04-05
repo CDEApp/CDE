@@ -25,10 +25,12 @@ namespace cdeLib
         protected readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
         private readonly IApplicationDiagnostics _applicationDiagnostics;
+        private HashHelper _hashHelper;
 
         public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics)
         {
             _logger = logger;
+            _hashHelper = new HashHelper(logger);
             _configuration = configuration;
             _applicationDiagnostics = applicationDiagnostics;
             _duplicationStatistics = new DuplicationStatistics();
@@ -232,7 +234,7 @@ namespace cdeLib
                 {
                     return;
                 }
-                var hashResponse = HashHelper.GetMD5HashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
+                var hashResponse = _hashHelper.GetMD5HashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
 
                 if (hashResponse != null)
                 {
@@ -270,7 +272,7 @@ namespace cdeLib
                     _duplicationStatistics.AllreadyDoneFulls++;
                     return;
                 }
-                var hashResponse = HashHelper.GetMD5HashFromFile(fullPath);
+                var hashResponse = _hashHelper.GetMD5HashFromFile(fullPath);
                 if (hashResponse != null)
                 {
                     de.SetHash(hashResponse.Hash);

@@ -16,6 +16,8 @@ namespace cdeLib.Infrastructure
             _appConfig = configurationRoot.GetSection("AppConfig").Get<AppConfigurationSection>();
         }
 
+        public AppConfigurationSection Config => _appConfig;
+
         /// <summary>
         /// Get the loop interval for progress updates.
         /// </summary>

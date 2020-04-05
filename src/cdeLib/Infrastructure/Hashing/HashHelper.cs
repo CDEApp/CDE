@@ -6,7 +6,14 @@ namespace cdeLib.Infrastructure.Hashing
 {
     public class HashHelper
     {
-        public static HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
+        private ILogger _logger;
+
+        public HashHelper(ILogger logger)
+        {
+            _logger = logger;
+        }
+
+        public HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
         {
             var hashResponse = new HashResponse();
             try
@@ -35,15 +42,13 @@ namespace cdeLib.Infrastructure.Hashing
             }
             catch (Exception ex)
             {
-                ILogger logger = new Logger();
-                logger.LogDebug(
-                    $"                                                                                                        original filename \"{filename}\"");
-                logger.LogException(ex, "MD5Hash");
+                _logger.LogDebug($" original filename \"{filename}\""); 
+                _logger.LogException(ex, "MD5Hash");
                 return null;
             }
         }
 
-        public static HashResponse GetMD5HashFromFile(string filename)
+        public HashResponse GetMD5HashFromFile(string filename)
         {
             try
             {
@@ -61,8 +66,7 @@ namespace cdeLib.Infrastructure.Hashing
             }
             catch (Exception ex)
             {
-                ILogger logger = new Logger();
-                logger.LogException(ex, "MD5Hash");
+                _logger.LogException(ex, "MD5Hash");
                 return null;
             }
         }

@@ -148,9 +148,9 @@ namespace cdeLibTest
             {
                 FileHelper.WriteAllText(random, testPath, $"CDE_testFile{i}.txt");
             }
-            
+
             // hacky creating catalog.
-            Program.Container = BootStrapper.Components(Array.Empty<string>());
+            Program.InitProgram(Array.Empty<string>());
             Program.CreateCache(testPath);
             Program.HashCatalog();
 

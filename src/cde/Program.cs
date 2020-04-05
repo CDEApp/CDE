@@ -2,10 +2,12 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Autofac;
 using cdeLib;
-using cdeLib.Infrastructure;
+using cdeLib.Hashing;
 using cdeLib.Infrastructure.Config;
+using MediatR;
 using Mono.Terminal;
 using IContainer = Autofac.IContainer;
 
@@ -14,6 +16,8 @@ namespace cde
     public static class Program
     {
         public static IContainer Container;
+        private static IMediator Mediatr { get; set; }
+
 
         public static string Version
         {
@@ -25,13 +29,19 @@ namespace cde
             }
         }
 
+        public static void InitProgram(string[] args)
+        {
+            Container = AppContainerBuilder.BuildContainer(args);
+            Mediatr = Container.Resolve<IMediator>();
+        }
+
         private static void Main(string[] args)
         {
-            Container = BootStrapper.Components(args);
+            InitProgram(args);
             Console.CancelKeyPress += BreakConsole;
             if (args.Length == 0)
             {
-                ShowHelp();
+                Help.ShowHelp();
                 return;
             }
 
@@ -123,7 +133,7 @@ namespace cde
             {
                 if (int.TryParse(args[1], out var count))
                 {
-                    FindPouplous(count);
+                    FindPopulous(count);
                 }
                 else
                 {
@@ -132,7 +142,7 @@ namespace cde
             }
             else
             {
-                ShowHelp();
+                Help.ShowHelp();
             }
         }
 
@@ -164,41 +174,6 @@ namespace cde
             } while (true);
         }
 
-        private static void ShowHelp()
-        {
-            Console.WriteLine(Version);
-            Console.WriteLine("Usage: cde --version");
-            Console.WriteLine("       display version.");
-            Console.WriteLine("Usage: cde --scan <path>");
-            Console.WriteLine("       scans path and creates a cache file.");
-            Console.WriteLine("       copies hashes from old cache file to new one if old found.");
-            Console.WriteLine("Usage: cde --find <string>");
-            Console.WriteLine("       uses all cache files available searches for <string>");
-            Console.WriteLine("       as substring of on file name.");
-            Console.WriteLine("Usage: cde --findpath <string>");
-            Console.WriteLine("       uses all cache files available searches for <string>");
-            Console.WriteLine("       as regex match on full path to file name.");
-            Console.WriteLine("Usage: cde --grep <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex>");
-            Console.WriteLine("       as regex match on file name.");
-            Console.WriteLine("Usage: cde --greppath <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex>");
-            Console.WriteLine("       as regex match on full path to file name.");
-            Console.WriteLine("Usage: cde --hash ");
-            Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
-            Console.WriteLine("Usage: cde --dupes ");
-            Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
-            Console.WriteLine("Usage: cde --repl");
-            Console.WriteLine("       Enter readline mode - trying it out not useful yet...");
-            Console.WriteLine("Usage: cde --replGreppath <regex>");
-            Console.WriteLine("Usage: cde --replGrep <regex>");
-            Console.WriteLine("Usage: cde --replFind <regex>");
-            Console.WriteLine("       read-eval-print loops version of the 3 find options.");
-            Console.WriteLine("       This one is repl it doesnt exit unless you press enter with no search term.");
-            Console.WriteLine("Usage: cde --populousfolders <minimumcount>");
-            Console.WriteLine("       output folders containing more than <minimumcount> entires.");
-        }
-
         private static void FindDupes()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
@@ -208,27 +183,8 @@ namespace cde
 
         public static void HashCatalog()
         {
-            var logger = Container.Resolve<ILogger>();
-            var diagnostics = Container.Resolve<IApplicationDiagnostics>();
-            logger.LogInfo("Memory pre-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            logger.LogInfo("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
-            var duplication = Container.Resolve<Duplication>();
-            var sw = new Stopwatch();
-            sw.Start();
-
-            duplication.ApplyMd5Checksum(rootEntries);
-
-            foreach (var rootEntry in rootEntries)
-            {
-                logger.LogDebug("Saving {0}", rootEntry.DefaultFileName);
-                rootEntry.SaveRootEntry();
-            }
-
-            sw.Stop();
-            var ts = sw.Elapsed;
-            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
-            Console.WriteLine($"Hash took : {elapsedTime}");
+            var task = Task.Run(async () => await Mediatr.Send(new HashCatalogCommand()));
+            task.Wait();
         }
 
         public static void CreateCache(string path)
@@ -237,7 +193,7 @@ namespace cde
             try
             {
                 re.SimpleScanCountEvent = ScanCountPrintDot;
-                re.SimpleScanEndEvent = ScanEndofEntries;
+                re.SimpleScanEndEvent = ScanEndOfEntries;
                 re.ExceptionEvent = PrintExceptions;
 
                 re.PopulateRoot(path);
@@ -280,7 +236,7 @@ namespace cde
             Console.Write(".");
         }
 
-        private static void ScanEndofEntries()
+        private static void ScanEndOfEntries()
         {
             Console.WriteLine(string.Empty);
         }
@@ -300,7 +256,7 @@ namespace cde
             }
         }
 
-        private static void FindPouplous(int minimumCount)
+        private static void FindPopulous(int minimumCount)
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var entries = CommonEntry.GetDirEntries(rootEntries);

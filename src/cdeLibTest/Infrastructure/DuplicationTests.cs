@@ -9,6 +9,9 @@ using cdeLib.Infrastructure.Hashing;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
 using NUnit.Framework;
+using Serilog;
+using Shouldly;
+using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest.Infrastructure
 {
@@ -17,6 +20,7 @@ namespace cdeLibTest.Infrastructure
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
+        private HashHelper _hashHelper;
 
         [TearDown]
         public void Teardown()
@@ -32,12 +36,19 @@ namespace cdeLibTest.Infrastructure
         [SetUp]
         public void SetUp()
         {
-            _logger = new Logger();
             _configuration = Substitute.For<IConfiguration>();
             _configuration.ProgressUpdateInterval.Returns(100);
             _configuration.HashFirstPassSize.Returns(1024);
             _configuration.DegreesOfParallelism.Returns(1);
+            _configuration.Config.Returns(new AppConfigurationSection()
+                { Display = new DisplaySection() { ConsoleLogToSeq = true } });
+
+            var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
+            _logger = new Logger(_configuration, logger);
+            _hashHelper = new HashHelper(_logger);
+
             
+
             _applicationDiagnostics = Substitute.For<IApplicationDiagnostics>();
             var random = new Random();
             const int dataSize = 256 * 1024;
@@ -116,7 +127,7 @@ namespace cdeLibTest.Infrastructure
         public void Can_Acquire_hash_From_File()
         {
             var fullFileName = Path.Combine(FileHelper.TestDir2, "testset2");
-            var hash = HashHelper.GetMD5HashFromFile(fullFileName);
+            var hash = _hashHelper.GetMD5HashFromFile(fullFileName);
             Assert.IsNotNull(hash.Hash);
         }
 
@@ -127,8 +138,7 @@ namespace cdeLibTest.Infrastructure
             var currentProcess = Process.GetCurrentProcess();
             var totalBytesOfMemoryUsed = currentProcess.WorkingSet64;
             Console.WriteLine($"Memory Usage {totalBytesOfMemoryUsed}");
-            var hashHelper = new HashHelper();
-            var hash = HashHelper.GetMD5HashFromFile(
+            var hash = _hashHelper.GetMD5HashFromFile(
                 "C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
 
             // get the current process
