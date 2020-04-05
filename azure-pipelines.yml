@@ -18,8 +18,8 @@ steps:
   inputs:
     filePath: 'build.ps1'      
 - task: CopyFiles@2
-displayName: 'Copy artifacts'
-inputs: 
+  displayName: 'Copy artifacts'
+  inputs: 
     SourceFolder: '$(Build.SourcesDirectory)/catalog/publish'
     contents: '**\*' 
     targetFolder: $(Build.ArtifactStagingDirectory)/
