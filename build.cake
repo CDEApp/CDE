@@ -17,7 +17,7 @@ using System.Xml;
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 var testFilter = Argument("where", "");
-var netcoreAppVersion = Argument("netcoreapp", "3.0");
+var netcoreAppVersion = Argument("netcoreapp", "3.1");
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -160,7 +160,7 @@ Task("Pack")
     // Create the self-contained packages for each runtime ID defined
     foreach(var rid in GetProjectRuntimeIds(@".\src\cde\cde.csproj"))
     {
-        DoPackage("cde", "netcoreapp3.0", nugetVersion, rid);
+        DoPackage("cde", "netcoreapp3.1", nugetVersion, rid);
     }
 	
 	// // Create a Zip for each runtime for testing
