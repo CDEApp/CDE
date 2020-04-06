@@ -231,7 +231,7 @@ namespace cdeLibTest
             }
         }
 
-        // this one is useful to test drive ApplyMd5Checksum outside of the app.
+        // this one is useful to test drive ApplyHash outside of the app.
         // I copy a .cde file into the compile folder for testing, but it works with none.
         [Test]
         public void ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
@@ -239,7 +239,7 @@ namespace cdeLibTest
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
 
-            d.ApplyMd5Checksum(rootEntries);
+            d.ApplyHash(rootEntries);
         }
         // ReSharper restore InconsistentNaming
     }

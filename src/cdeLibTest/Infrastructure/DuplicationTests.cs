@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.IO;
+using System.Threading.Tasks;
 using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
@@ -10,7 +10,6 @@ using cdeLibTest.TestHelpers;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
-using Shouldly;
 using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest.Infrastructure
@@ -97,13 +96,13 @@ namespace cdeLibTest.Infrastructure
             var rootEntry = new RootEntry(_configuration);
             rootEntry.PopulateRoot(FileHelper.TestDir2);
             var rootEntries = new List<RootEntry> {rootEntry};
-            duplication.ApplyMd5Checksum(rootEntries);
+            duplication.ApplyHash(rootEntries);
             // all 7 Files are partial hashed.
             Assert.That(duplication.DuplicationStatistics().PartialHashes, Is.EqualTo(7));
             // all 7 files are full hashed because every file appears to have a duplicate at partial hash size.
             Assert.That(duplication.DuplicationStatistics().FullHashes, Is.EqualTo(7));
 
-            // need a new Duplication class() between ApplyMd5Checksum and GetDupePairs for valid operation.
+            // need a new Duplication class() between ApplyHash and GetDupePairs for valid operation.
             duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var dupes = duplication.GetDupePairs(rootEntries);
 
@@ -124,25 +123,11 @@ namespace cdeLibTest.Infrastructure
 
         // ReSharper disable InconsistentNaming
         [Test]
-        public void Can_Acquire_hash_From_File()
+        public async Task Can_Acquire_hash_From_File()
         {
             var fullFileName = Path.Combine(FileHelper.TestDir2, "testset2");
-            var hash = _hashHelper.GetMD5HashFromFile(fullFileName);
+            var hash = await _hashHelper.GetHashResponseFromFile(fullFileName,null);
             Assert.IsNotNull(hash.Hash);
-        }
-
-        [Test]
-        [Ignore("Reason")]
-        public void Test_Memory_Usage_Of_MD5_Stream()
-        {
-            var currentProcess = Process.GetCurrentProcess();
-            var totalBytesOfMemoryUsed = currentProcess.WorkingSet64;
-            Console.WriteLine($"Memory Usage {totalBytesOfMemoryUsed}");
-            var hash = _hashHelper.GetMD5HashFromFile(
-                "C:\\temp\\a\\aaf-tomorrow.when.the.war.began.2010.720p.bluray.x264.mkv");
-
-            // get the current process
-            // get the physical mem usage
         }
         // ReSharper restore InconsistentNaming
     }

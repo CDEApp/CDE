@@ -28,7 +28,7 @@ namespace cdeLib.Hashing
             var sw = new Stopwatch();
             sw.Start();
 
-            _duplication.ApplyMd5Checksum(rootEntries);
+            _duplication.ApplyHash(rootEntries);
 
             foreach (var rootEntry in rootEntries)
             {

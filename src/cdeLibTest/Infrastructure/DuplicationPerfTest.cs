@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
-using cdeLib.Hashing.Hasher;
 using cdeLib.Infrastructure.Hashing;
 using NUnit.Framework;
 

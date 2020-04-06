@@ -1,8 +1,7 @@
 ﻿using System;
-using cdeLib.Infrastructure.Hashing;
 using MurmurHash.Net;
 
-namespace cdeLib.Hashing.Hasher
+namespace cdeLib.Infrastructure.Hashing
 {
     public class MurmurHashWrapper : IHashAlgorithm
     {

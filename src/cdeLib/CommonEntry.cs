@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
 using ProtoBuf;
 
 namespace cdeLib
@@ -136,8 +135,7 @@ namespace cdeLib
             var sourcePath = source.Path;
             var destinationPath = destination.Path;
 
-            //if (sourcePath != destinationPath)
-            if (string.Compare(sourcePath, destinationPath, true) != 0)
+            if (string.Compare(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase) != 0)
             {
                 throw new ArgumentException("source and destination must have same root path.");
             }
@@ -160,7 +158,7 @@ namespace cdeLib
                     {
                         var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
 
-                        // find if theres a destination entry available.
+                        // find if there's a destination entry available.
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
                         var destinationDirEntry = baseDestinationEntry.Children

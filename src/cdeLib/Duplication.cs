@@ -41,7 +41,7 @@ namespace cdeLib
         /// Apply an MD5 Checksum to all rootEntries
         /// </summary> 
         /// <param name="rootEntries">Collection of rootEntries</param>
-        public void ApplyMd5Checksum(IList<RootEntry> rootEntries)
+        public void ApplyHash(IList<RootEntry> rootEntries)
         {
             _logger.LogDebug("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var newMatches = GetSizePairs(rootEntries);
@@ -121,7 +121,7 @@ namespace cdeLib
             catch (Exception ex)
             {
                 // parallel cancellation. will be OperationCancelled or Aggregate Exception
-                _logger.LogException(ex,"Error in {0}", nameof(ApplyMd5Checksum));
+                _logger.LogException(ex,"Error in {0}", nameof(ApplyHash));
                 return;
             }
 
@@ -229,7 +229,7 @@ namespace cdeLib
                 {
                     return;
                 }
-                var hashResponse = await _hashHelper.GetMD5HashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
+                var hashResponse = await _hashHelper.GetHashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
 
                 if (hashResponse != null)
                 {
@@ -267,7 +267,7 @@ namespace cdeLib
                     _duplicationStatistics.AllreadyDoneFulls++;
                     return;
                 }
-                var hashResponse = _hashHelper.GetMD5HashFromFile(fullPath);
+                var hashResponse = _hashHelper.GetHashFromFile(fullPath);
                 if (hashResponse != null)
                 {
                     de.SetHash(hashResponse.Hash);

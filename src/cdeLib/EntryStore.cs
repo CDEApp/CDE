@@ -456,7 +456,7 @@ namespace cdeLib
 //         private ApplicationDiagnostics _applicationDiagnostics;
 //         private IDictionary<ulong, List<int>> _duplicateFileSize;
 //
-//         public void ApplyMd5Checksum()
+//         public void ApplyHash()
 //         {
 //             _logger = new Logger();
 //             _applicationDiagnostics = new ApplicationDiagnostics();
