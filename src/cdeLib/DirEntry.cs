@@ -58,7 +58,7 @@ namespace cdeLib
         #region BitFields based properties
         public bool IsDirectory
         {
-            get { return (BitFields & Flags.Directory) == Flags.Directory; }
+            get => (BitFields & Flags.Directory) == Flags.Directory;
             set
             {
                 if (value)
@@ -74,7 +74,7 @@ namespace cdeLib
 
         public bool IsModifiedBad
         {
-            get { return (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad; }
+            get => (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad;
             set
             {
                 if (value)
@@ -106,7 +106,7 @@ namespace cdeLib
 
         public bool IsReparsePoint
         {
-            get { return (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint; }
+            get => (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint;
             set
             {
                 if (value)
@@ -122,7 +122,7 @@ namespace cdeLib
 
         public bool IsHashDone
         {
-            get { return (BitFields & Flags.HashDone) == Flags.HashDone; }
+            get => (BitFields & Flags.HashDone) == Flags.HashDone;
             set
             {
                 if (value)
@@ -138,7 +138,7 @@ namespace cdeLib
 
         public bool IsPartialHash
         {
-            get { return (BitFields & Flags.PartialHash) == Flags.PartialHash; }
+            get => (BitFields & Flags.PartialHash) == Flags.PartialHash;
             set
             {
                 if (value)
@@ -154,7 +154,7 @@ namespace cdeLib
 
         public bool IsDefaultSort
         {
-            get { return (BitFields & Flags.DefaultSort) == Flags.DefaultSort; }
+            get => (BitFields & Flags.DefaultSort) == Flags.DefaultSort;
             set
             {
                 if (value)
