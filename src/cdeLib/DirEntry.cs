@@ -6,6 +6,7 @@ using System.Globalization;
 using System.IO;
 using cdeLib.Infrastructure;
 using ProtoBuf;
+using Serilog;
 
 namespace cdeLib
 {
@@ -210,12 +211,21 @@ namespace cdeLib
         public DirEntry(FileSystemInfo fs) : this()
         {
             Path = fs.Name;
-            Modified = fs.LastWriteTime;
+            try
+            {
+                Modified = fs.LastWriteTime;
+            }
+            catch (ArgumentOutOfRangeException ex)
+            {
+                Log.Logger.Error(ex, "Error getting WriteTime for {0}, using CreationTime instead.",fs.Name);
+                Modified = fs.CreationTime;
+            }
+
             IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
             IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
-            if (fs is FileInfo)
+            if (fs is FileInfo info)
             {
-                Size = ((FileInfo)fs).Length;
+                Size = info.Length;
             }
             else
             {
