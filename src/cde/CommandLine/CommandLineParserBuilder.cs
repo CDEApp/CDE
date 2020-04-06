@@ -8,7 +8,7 @@ namespace cde.CommandLine
     {
         public static Parser Build()
         {
-            var parser = new Parser(cfg =>
+            return new Parser(cfg =>
             {
                 cfg.CaseSensitive = false;
                 cfg.AutoHelp = true;
@@ -27,7 +27,6 @@ namespace cde.CommandLine
                     cfg.MaximumDisplayWidth = 80;
                 }
             });
-            return parser;
         }
     }
 }

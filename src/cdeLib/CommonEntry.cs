@@ -10,8 +10,6 @@ namespace cdeLib
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
 
-    public delegate bool TraverseFuncWithRoot(CommonEntry ce, DirEntry de, RootEntry rootEntry = null);
-
     [ProtoContract
     ,ProtoInclude(1, typeof(RootEntry))
     ,ProtoInclude(2, typeof(DirEntry))]
@@ -46,37 +44,6 @@ namespace cdeLib
         /// Populated on load not saved to disk.
         /// </summary>
         public bool PathProblem;
-
-        //public CommonEntry FindClosestParentDir(string relativePath)
-        //{
-        //    if (string.IsNullOrWhiteSpace(relativePath))
-        //    {
-        //        throw new ArgumentException("Argument relativePath must be non empty.");
-        //    }
-        //    var indexOfDirectorySeperator = relativePath.IndexOf(Filesystem.Path.DirectorySeparatorChar);
-        //    var firstPathElement = relativePath;
-        //    var remainderPath = string.Empty;
-        //    if (indexOfDirectorySeperator > 0)
-        //    {
-        //        firstPathElement = relativePath.Remove(indexOfDirectorySeperator);
-        //        remainderPath = relativePath.Substring(indexOfDirectorySeperator + Filesystem.Path.DirectorySeparatorChar.Length);
-        //    }
-        //    var de = Children.FirstOrDefault(x => x.Path == firstPathElement);
-        //    if (de != null)
-        //    {
-        //        if (remainderPath == string.Empty)
-        //        {
-        //            return de;
-        //        }
-        //        var foundDe = de.FindClosestParentDir(remainderPath);
-        //        if (foundDe == null)
-        //        {
-        //            return de;
-        //        }
-        //        return foundDe;
-        //    }
-        //    return this;
-        //}
 
         public void TraverseTreePair(TraverseFunc func)
         {
@@ -172,16 +139,15 @@ namespace cdeLib
                             && sourceDirEntry.Modified == destinationDirEntry.Modified
                             && sourceDirEntry.Size == destinationDirEntry.Size)
                         {
-                            // copy MD5 if none in destination.
-                            // copy MD5 as upgrade to full if dest currently partial.
+                            // copy hash if none in destination.
+                            // copy hash as upgrade to full if dest currently partial.
                             if ((sourceDirEntry.IsHashDone)
                                 && (!destinationDirEntry.IsHashDone)
                                 ||
-                                ((sourceDirEntry.IsHashDone)
-                                 && (destinationDirEntry.IsHashDone)
-                                 && !sourceDirEntry.IsPartialHash
-                                 && destinationDirEntry.IsPartialHash
-                                ))
+                                (sourceDirEntry.IsHashDone)
+                                && (destinationDirEntry.IsHashDone)
+                                && !sourceDirEntry.IsPartialHash
+                                && destinationDirEntry.IsPartialHash)
                             {
                                 destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
                                 destinationDirEntry.Hash = sourceDirEntry.Hash;
@@ -222,11 +188,6 @@ namespace cdeLib
             return new DirEntryEnumerator(rootEntries);
         }
 
-        public static IEnumerable<PairDirEntry> GetPairDirEntries(RootEntry rootEntry)
-        {
-            return new PairDirEntryEnumerator(rootEntry);
-        }
-
         public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
         {
             return new PairDirEntryEnumerator(rootEntries);
@@ -255,7 +216,7 @@ namespace cdeLib
         /// Is bad path
         /// </summary>
         /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
-        public bool IsBadPath()
+        protected bool IsBadPath()
         {
             // This probably needs to check all parent paths if this is a root entry.
             // Not high priority as will not generally be able to specify a folder with a problem path at or above root.

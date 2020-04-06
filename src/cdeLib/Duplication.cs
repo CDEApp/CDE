@@ -38,7 +38,7 @@ namespace cdeLib
         }
 
         /// <summary>
-        /// Apply an MD5 Checksum to all rootEntries
+        /// Apply an Hash Checksum to all rootEntries
         /// </summary>
         /// <param name="rootEntries">Collection of rootEntries</param>
         public void ApplyHash(IList<RootEntry> rootEntries)
@@ -351,7 +351,7 @@ namespace cdeLib
 
         public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
         {
-            //TODO: What if we don't have md5 hash? go and create it? -- Rob votes not.
+            //TODO: What if we don't have hash? go and create it? -- Rob votes not.
             var dupePairs = GetDupePairs(rootEntries)
                 .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
             foreach (var dupe in dupePairs)
