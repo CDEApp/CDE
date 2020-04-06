@@ -5,8 +5,9 @@ using System.Reflection;
 using System.Threading.Tasks;
 using Autofac;
 using cdeLib;
+using cdeLib.Cache;
+using cdeLib.Duplicates;
 using cdeLib.Hashing;
-using cdeLib.Infrastructure.Config;
 using MediatR;
 using Mono.Terminal;
 using IContainer = Autofac.IContainer;
@@ -78,10 +79,7 @@ namespace cde
             {
                 PrintPathsHaveHashEnumerator();
             }
-            // else if (args.Length == 1 && param0 == "--treedump2")
-            // {
-            //     EntryStore.PrintPathsHaveHash();
-            // }
+
             else if (args.Length == 1 && param0 == "--version")
             {
                 Console.WriteLine(Version);
@@ -176,9 +174,8 @@ namespace cde
 
         private static void FindDupes()
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            var duplication = Container.Resolve<Duplication>();
-            duplication.FindDuplicates(rootEntries);
+            var task = Task.Run(async () => await Mediatr.Send(new FindDuplicatesCommand()));
+            task.Wait();
         }
 
         public static void HashCatalog()
@@ -189,56 +186,8 @@ namespace cde
 
         public static void CreateCache(string path)
         {
-            var re = new RootEntry(Container.Resolve<IConfiguration>());
-            try
-            {
-                re.SimpleScanCountEvent = ScanCountPrintDot;
-                re.SimpleScanEndEvent = ScanEndOfEntries;
-                re.ExceptionEvent = PrintExceptions;
-
-                re.PopulateRoot(path);
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
-                    return;
-                }
-
-                var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
-                if (oldRoot != null)
-                {
-                    Console.WriteLine($"Found cache \"{re.DefaultFileName}\"");
-                    Console.WriteLine("Updating hashes on new scan from found cache file.");
-                    oldRoot.TraverseTreesCopyHash(re);
-                }
-
-                re.SortAllChildrenByPath();
-                re.SaveRootEntry();
-                var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
-                Console.WriteLine($"Scanned Path {re.Path}");
-                Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-                Console.WriteLine($"Saved Scanned Path {re.DefaultFileName}");
-                Console.WriteLine(
-                    $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0}");
-            }
-            catch (ArgumentException aex)
-            {
-                Console.WriteLine($"Error: {aex.Message}");
-            }
-        }
-
-        private static void PrintExceptions(string path, Exception ex)
-        {
-            Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
-        }
-
-        private static void ScanCountPrintDot()
-        {
-            Console.Write(".");
-        }
-
-        private static void ScanEndOfEntries()
-        {
-            Console.WriteLine(string.Empty);
+            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(path)));
+            task.Wait();
         }
 
         private static void PrintPathsHaveHashEnumerator()
