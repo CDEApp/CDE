@@ -30,7 +30,7 @@ namespace cdeLibTest
         DefaultSort = 1 << 6
     };
 
-    class MyCatalogClass
+    internal class MyCatalogClass
     {
         // if searching only by entry name, then just step through array building list, then render after ?
         public List<Root> Roots;
@@ -41,17 +41,14 @@ namespace cdeLibTest
         }
     }
 
-
-    struct ArrayThing<T>
+    internal struct ArrayThing<T>
     {
-        public T[] Array;  // to addres max array size... list of blocks ? like did in EntryStore ? icky icky icky
-
+        public T[] Array;  // to address max array size... list of blocks ? like did in EntryStore ? icky icky icky
 
         public int NextFree;
     }
 
-
-    struct Root
+    internal struct Root
     {
         public int NextFreeEntryName;
         public string[] EntryName; // avoid 0
@@ -88,7 +85,7 @@ namespace cdeLibTest
     }
 
     // maybe make this the hot path ?
-    struct Node
+    internal struct Node
     {
         public int FileName; // reference TreeSet EntryName (4)
         public int Sibling; // reference Nodes, sibling of this Node (4)
@@ -100,9 +97,7 @@ namespace cdeLibTest
         public Hash16 Hash; // (16) -- ..(52)
     }
 
-
-
-    class IdeaStructNode
+    internal class IdeaStructNode
     {
     }
 }

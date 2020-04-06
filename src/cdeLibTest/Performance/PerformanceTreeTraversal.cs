@@ -27,8 +27,8 @@ namespace cdeLibTest.Performance
         // ReSharper disable JoinDeclarationAndInitializer
         // ReSharper disable PossibleMultipleEnumeration
 
-        private int _repeatSmall = 100;
-        private int _repeatLarge = 25;
+        private readonly int _repeatSmall = 100;
+        private readonly int _repeatLarge = 25;
 
         [SetUpFixture]
         public class TestData

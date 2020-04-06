@@ -130,7 +130,7 @@ namespace cde
                     Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behaviour in loop.
                 Console.Write("Enter string to search <nothing exits>: ");
                 var pattern = Console.ReadLine();
-                if (pattern == string.Empty)
+                if (string.IsNullOrEmpty(pattern))
                 {
                     Console.WriteLine("Exiting...");
                     break;

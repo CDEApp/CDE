@@ -171,7 +171,6 @@ namespace cdeLib
         }
         #endregion
 
-
         /// <summary>
         /// if this is a directory number of files contained in its heirarchy
         /// </summary>

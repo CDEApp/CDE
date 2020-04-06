@@ -25,7 +25,7 @@ namespace cdeLibTest
         private DirEntry de3a;
         private DirEntry de4a;
         private RootEntry re1;
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void SetUp()

@@ -10,18 +10,18 @@ namespace cdeLib
     [SuppressMessage("ReSharper", "ConvertToConstant.Local")]
     public class DateTimePartialParameter
     {
-        private string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
+        private readonly string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
 
         // a Parsing Expression Grammar mgith be a better way to do this.... PEG
         // - http://en.wikipedia.org/wiki/Parsing_expression_grammar
 
-        private int _year;
-        private int _month = 1; // 1-12
-        private int _dayOfMonth = 1; // 1-31
-        private int _hour; // 0-23
-        private int _minute; // 0-59
-        private int _second; // 0-59
-        private Exception _e;
+        private readonly int _year;
+        private readonly int _month = 1; // 1-12
+        private readonly int _dayOfMonth = 1; // 1-31
+        private readonly int _hour; // 0-23
+        private readonly int _minute; // 0-59
+        private readonly int _second; // 0-59
+        private readonly Exception _e;
 
         public DateTimePartialParameter(string str)
         {

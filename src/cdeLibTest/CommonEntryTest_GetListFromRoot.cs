@@ -9,7 +9,7 @@ namespace cdeLibTest
     // ReSharper disable InconsistentNaming
     class CommonEntryTest_GetListFromRoot
     {
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         public void Setup()
         {

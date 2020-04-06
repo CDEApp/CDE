@@ -32,7 +32,7 @@ namespace cdeLib
         public DateTime NotOlderThan { get; set; }
         public int ProgressEnd { get; set; }
         public int ProgressCount { get { return _progressCount[0]; } }
-        private int[] _progressCount = new [] { 0 };
+        private readonly int[] _progressCount = new [] { 0 };
         public int SkipCount { get; set; }
 
         /// <summary>

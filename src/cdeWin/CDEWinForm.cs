@@ -228,7 +228,6 @@ namespace cdeWin
             RegisterAdvancedSearchControls();
         }
 
-
         // ReSharper disable UseObjectOrCollectionInitializer
         private void RegisterAdvancedSearchControls()
         {

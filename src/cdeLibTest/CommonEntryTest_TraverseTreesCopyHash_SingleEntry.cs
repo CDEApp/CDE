@@ -17,7 +17,7 @@ namespace cdeLibTest
         private RootEntry rootDest;
         private DirEntry deSource;
         private DirEntry deDest;
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()

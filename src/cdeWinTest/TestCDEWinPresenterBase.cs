@@ -25,7 +25,7 @@ namespace cdeWinTest
         protected List<RootEntry> _emptyRootList = new List<RootEntry>();
         protected List<RootEntry> _rootList = new List<RootEntry>();
         // protected TreeNode _treeViewAfterSelectNode;
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public virtual void RunBeforeEveryTest()

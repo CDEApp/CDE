@@ -5,7 +5,7 @@ namespace cdeLibTest.Infrastructure.Hashing
 {
     public class Crc32 : IHashAlgorithm
     {
-        uint[] _tab;
+        private uint[] _tab;
 
         public Crc32()
         {
@@ -17,7 +17,7 @@ namespace cdeLibTest.Infrastructure.Hashing
             Init(poly);
         }
 
-        void Init(uint poly)
+        private void Init(uint poly)
         {
             _tab = new uint[256];
             for (uint i = 0; i < 256; i++)

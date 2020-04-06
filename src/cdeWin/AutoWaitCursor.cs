@@ -59,7 +59,7 @@ namespace cdeWin
         /// <summary>
         /// The application state monitor class (which monitors the application busy status).
         /// </summary>
-        private static ApplicationStateMonitor _appStateMonitor = new ApplicationStateMonitor(Cursors.WaitCursor, DefaultDelay);
+        private static readonly ApplicationStateMonitor _appStateMonitor = new ApplicationStateMonitor(Cursors.WaitCursor, DefaultDelay);
 
         #endregion
 
@@ -199,7 +199,7 @@ namespace cdeWin
             /// <summary>
             /// GUI Thread Id .
             /// </summary>
-            private uint _mainThreadId;
+            private readonly uint _mainThreadId;
             /// <summary>
             /// Callback Thread Id.
             /// </summary>

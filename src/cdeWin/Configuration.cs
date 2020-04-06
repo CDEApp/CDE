@@ -172,8 +172,6 @@ namespace cdeWin
         }
     }
 
-
-
 	public interface IConfig : IConfigCdeLib
     {
 		string DateFormatYMDHMS { get; }
@@ -440,7 +438,6 @@ namespace cdeWin
             }
             return active.Columns;
         }
-
 
         // improve test easy on CDEWinFormPresenter.
         public int DefaultSearchResultColumnCount

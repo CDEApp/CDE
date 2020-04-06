@@ -11,9 +11,9 @@ namespace cdeLib
     public class TimePartialParameter
     {
         // "HH:MM:SS"; example
-        private static string _format = "<HH>:<MM>:<SS>";
+        private static readonly string _format = "<HH>:<MM>:<SS>";
 
-        private int _hour;  // 0 - 23
+        private readonly int _hour;  // 0 - 23
         public int Hour
         {
             get
@@ -23,7 +23,7 @@ namespace cdeLib
             }
         }
 
-        private int _minute;  // 0 - 59
+        private readonly int _minute;  // 0 - 59
         public int Minute
         {
             get
@@ -33,7 +33,7 @@ namespace cdeLib
             }
         }
 
-        private int _second;  // 0 - 59
+        private readonly int _second;  // 0 - 59
         public int Second
         {
             get

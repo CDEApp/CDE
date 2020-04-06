@@ -32,7 +32,7 @@ namespace cdeLibTest
     [TestFixture]
     public class DirEntryEnumeratorTest : DirEntryTestBase
     {
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void RunBeforeEveryTest()

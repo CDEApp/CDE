@@ -30,7 +30,7 @@ namespace cdeLibTest
         private DirEntry _dde6;
         private DirEntry _dde7;
 
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
@@ -45,8 +45,6 @@ namespace cdeLibTest
 
             Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(null), "source and destination must be not null.");
         }
-
-
 
         [Test]
         public void TraverseTreesCopyHash_RootPathsDifferent_Exception()

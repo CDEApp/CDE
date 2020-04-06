@@ -226,7 +226,7 @@ namespace cdeWinTest
         public class CatalogListViewItemActivate : TestCDEWinPresenterBase
         {
             private CDEWinFormPresenter _sutPresenter;
-            IConfiguration _config = Substitute.For<IConfiguration>();
+            readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
             [SetUp]
             public override void RunBeforeEveryTest()
@@ -420,7 +420,6 @@ namespace cdeWinTest
                 };
                 setRenderItem.AssertListViewSubItemEqualValues(expectedValues);
             }
-
         }
 
         [TestFixture]

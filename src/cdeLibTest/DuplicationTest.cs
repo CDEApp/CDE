@@ -18,7 +18,7 @@ namespace cdeLibTest
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
@@ -205,7 +205,7 @@ namespace cdeLibTest
                         }
                     }
                 }
-                sumOfUniqueHashesForEachSize = sumOfUniqueHashesForEachSize + seenHash.Count;
+                sumOfUniqueHashesForEachSize += seenHash.Count;
             }
             return sumOfUniqueHashesForEachSize;
         }

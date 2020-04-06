@@ -11,7 +11,7 @@ namespace cdeLibTest
     [TestFixture]
     public class RootEntryTest
     {
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
@@ -327,7 +327,7 @@ namespace cdeLibTest
     public class RootEntryTest_SortAllChildrenByPath : RootEntryTestBase
     {
         private RootEntry re;
-        IConfiguration _config = Substitute.For<IConfiguration>();
+        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()
