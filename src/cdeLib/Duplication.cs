@@ -143,6 +143,7 @@ namespace cdeLib
             statsMessage =
                 $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed/(1024*1024):F2} MB Perf: {perf}\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
             _logger.LogInfo(statsMessage);
+            await Task.CompletedTask;
         }
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)

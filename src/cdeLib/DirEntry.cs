@@ -42,15 +42,12 @@ namespace cdeLib
         public Hash16 Hash;
 
         /// <summary>
-        /// public bool ShouldSerializeHash() should be same as this, but isnt
+        /// public bool ShouldSerializeHash() should be same as this, but isn't
         /// for current "protobuf-net r376local"
         /// URL some protobuf serialisation.
         /// http://stackoverflow.com/questions/6389477/how-to-add-optional-field-to-a-class-manually-in-protobuf-net
         /// </summary>
-        public bool HashSpecified
-        {
-            get { return IsHashDone; }
-        }
+        public bool HashSpecified => IsHashDone;
 
         //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
@@ -172,12 +169,12 @@ namespace cdeLib
         #endregion
 
         /// <summary>
-        /// if this is a directory number of files contained in its heirarchy
+        /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         public long FileEntryCount;
 
         /// <summary>
-        /// if this is a directory number of dirs contained in its heirarchy
+        /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         public long DirEntryCount;
 
@@ -226,9 +223,9 @@ namespace cdeLib
             }
         }
 
-        // TODO these need to be centralised.
-        public const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        public static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
+        // TODO: these need to be centralised.
+        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
         public int SizeCompareWithDirTo(DirEntry de)
         {

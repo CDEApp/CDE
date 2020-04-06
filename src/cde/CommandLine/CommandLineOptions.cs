@@ -56,7 +56,7 @@ namespace cde.CommandLine
     [Verb("replfind", HelpText = "<string>")]
     public class ReplFindOptions
     {
-        [Value(0, HelpText = "Value to serach for")]
+        [Value(0, HelpText = "Value to search for")]
         public string Value { get; set; }
     }
 

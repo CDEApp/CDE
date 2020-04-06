@@ -19,7 +19,7 @@ namespace cde
 {
     public static class Program
     {
-        public static IContainer Container;
+        private static IContainer _container;
         private static IMediator Mediatr { get; set; }
 
         public static string Version
@@ -34,8 +34,8 @@ namespace cde
 
         public static void InitProgram(string[] args)
         {
-            Container = AppContainerBuilder.BuildContainer(args);
-            Mediatr = Container.Resolve<IMediator>();
+            _container = AppContainerBuilder.BuildContainer(args);
+            Mediatr = _container.Resolve<IMediator>();
         }
 
         private static int Main(string[] args)
@@ -142,19 +142,19 @@ namespace cde
 
         private static void FindDupes()
         {
-            var task = Task.Run(async () => await Mediatr.Send(new FindDuplicatesCommand()));
+            var task = Task.Run(async () => await Mediatr.Send(new FindDuplicatesCommand()).ConfigureAwait(false));
             task.Wait();
         }
 
         public static void HashCatalog()
         {
-            var task = Task.Run(async () => await Mediatr.Send(new HashCatalogCommand()));
+            var task = Task.Run(async () => await Mediatr.Send(new HashCatalogCommand()).ConfigureAwait(false));
             task.Wait();
         }
 
         public static int CreateCache(string path)
         {
-            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(path)));
+            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(path)).ConfigureAwait(false));
             task.Wait();
             return 0;
         }
