@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 
 namespace cdeLib.Infrastructure.Hashing
 {
@@ -6,6 +7,8 @@ namespace cdeLib.Infrastructure.Hashing
     {
         UInt64 Hash(Byte[] data);
         UInt64 Hash(ReadOnlySpan<byte> data);
+
+        UInt64 HashStream(Stream stream);
     }
     public interface ISeededHashAlgorithm : IHashAlgorithm
     {

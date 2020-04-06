@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Security.Cryptography;
 using cdeLib.Infrastructure.Hashing;
 
@@ -19,6 +20,11 @@ namespace cdeLibTest.Infrastructure.Hashing
         }
 
         public UInt64 Hash(ReadOnlySpan<byte> data)
+        {
+            throw new NotImplementedException();
+        }
+
+        public ulong HashStream(Stream stream)
         {
             throw new NotImplementedException();
         }
