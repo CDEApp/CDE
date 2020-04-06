@@ -11,7 +11,7 @@ namespace cdeLib
     public class TimePartialParameter
     {
         // "HH:MM:SS"; example
-        private static readonly string _format = "<HH>:<MM>:<SS>";
+        private static readonly string Format = "<HH>:<MM>:<SS>";
 
         private readonly int _hour;  // 0 - 23
         public int Hour
@@ -53,14 +53,13 @@ namespace cdeLib
             }
         }
 
-        public TimePartialParameter(string str) : this(str, _format) { }
+        public TimePartialParameter(string str) : this(str, Format) { }
 
         public TimePartialParameter(string str, string activeFormat)
         {
             var activeFormat1 = activeFormat;
             var splitOnColon = str.Split(':');
-            int hour;
-            int.TryParse(splitOnColon[0], out hour);
+            int.TryParse(splitOnColon[0], out var hour);
             if (hour == 0 || hour > 23)
             {
                 _e = new ArgumentException(
@@ -75,8 +74,8 @@ namespace cdeLib
                 {
                     return;
                 }
-                int minute;
-                int.TryParse(splitOnColon[1], out minute);
+
+                int.TryParse(splitOnColon[1], out var minute);
                 if (minute == 0 || minute > 59)
                 {
                     _e = new ArgumentException(
@@ -92,8 +91,8 @@ namespace cdeLib
                 {
                     return;
                 }
-                int second;
-                int.TryParse(splitOnColon[2], out second);
+
+                int.TryParse(splitOnColon[2], out var second);
                 if (second == 0 || second > 59)
                 {
                     _e = new ArgumentException(
