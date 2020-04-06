@@ -1,4 +1,5 @@
-﻿using cdeLib.Infrastructure.Hashing;
+﻿using System;
+using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLibTest.Infrastructure
 {
@@ -31,12 +32,17 @@ namespace cdeLibTest.Infrastructure
             }
         }
 
-        public uint Hash(byte[] data)
+        public UInt64 Hash(byte[] data)
         {
             uint hash = 0xFFFFFFFF;
             foreach (byte b in data)
                 hash = (hash << 8) ^ _tab[b ^ (hash >> 24)];
             return ~hash;
+        }
+
+        public UInt64 Hash(ReadOnlySpan<byte> data)
+        {
+            throw new NotImplementedException();
         }
     }
 }

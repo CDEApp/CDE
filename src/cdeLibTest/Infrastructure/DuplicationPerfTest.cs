@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
+using cdeLib.Hashing.Hasher;
 using cdeLib.Infrastructure.Hashing;
 using NUnit.Framework;
 
@@ -11,10 +12,10 @@ namespace cdeLibTest.Infrastructure
     {
         /// <summary>
         /// Benchmark hashers.
-        /// md5.NET:		572.68 MB/s(4365)
-        /// Sha1:		708.35 MB/s(3529)
-        /// CRC32:		235.76 MB/s(10603)
-        /// MurmurHash3:		2903.31 MB/s(861)
+        /// md5.NET:	  572.68 MB/s(4365)
+        /// Sha1:		  708.35 MB/s(3529)
+        /// CRC32:		  235.76 MB/s(10603)
+        /// MurmurHash3: 2903.31 MB/s(861)
         /// </summary>
         [Test, Explicit("Only for benchmarking")]
         public void PerformanceHashTest()

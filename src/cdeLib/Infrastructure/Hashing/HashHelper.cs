@@ -1,19 +1,24 @@
 using System;
 using System.IO;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
+using cdeLib.Hashing.Hasher;
 
 namespace cdeLib.Infrastructure.Hashing
 {
     public class HashHelper
     {
-        private ILogger _logger;
+        private readonly ILogger _logger;
+        private readonly IHashAlgorithm _hashAlgorithm;
+
 
         public HashHelper(ILogger logger)
         {
             _logger = logger;
+            _hashAlgorithm = new MurmurHashWrapper();
         }
 
-        public HashResponse GetMD5HashResponseFromFile(string filename, int bytesToHash)
+        public async Task<HashResponse> GetMD5HashResponseFromFile(string filename, int bytesToHash)
         {
             var hashResponse = new HashResponse();
             try
@@ -21,7 +26,9 @@ namespace cdeLib.Infrastructure.Hashing
                 using (Stream stream = File.OpenRead(filename))
                 {
                     var buf = new byte[bytesToHash];
-                    int bytesRead = stream.Read(buf, 0, buf.Length);
+
+                    var bytesRead = await stream.ReadAsync(buf, 0, buf.Length);
+
                     long totalBytesRead = bytesRead;
                     while (bytesRead > 0 && totalBytesRead <= bytesToHash)
                     {
@@ -31,8 +38,7 @@ namespace cdeLib.Infrastructure.Hashing
                     hashResponse.BytesHashed = totalBytesRead;
                     hashResponse.IsPartialHash = stream.Length > bytesToHash;
 
-                    using var md5 = MD5.Create();
-                    hashResponse.Hash = md5.ComputeHash(buf);
+                    hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(buf));
                 }
                 return hashResponse;
             }
@@ -42,7 +48,7 @@ namespace cdeLib.Infrastructure.Hashing
             }
             catch (Exception ex)
             {
-                _logger.LogDebug($" original filename \"{filename}\""); 
+                _logger.LogDebug($" original filename \"{filename}\"");
                 _logger.LogException(ex, "MD5Hash");
                 return null;
             }
@@ -52,17 +58,13 @@ namespace cdeLib.Infrastructure.Hashing
         {
             try
             {
-                using (Stream stream = File.OpenRead(filename))
-                {
-                    var hashResponse = new HashResponse();
-                    using (var md5 = MD5.Create())
-                    {
-                        hashResponse.Hash = md5.ComputeHash(stream);
-                        hashResponse.IsPartialHash = false;
-                        hashResponse.BytesHashed += stream.Length;
-                        return hashResponse;
-                    }
-                }
+                using Stream stream = File.OpenRead(filename);
+                var hashResponse = new HashResponse();
+                using var md5 = MD5.Create();
+                hashResponse.Hash = md5.ComputeHash(stream);
+                hashResponse.IsPartialHash = false;
+                hashResponse.BytesHashed += stream.Length;
+                return hashResponse;
             }
             catch (Exception ex)
             {

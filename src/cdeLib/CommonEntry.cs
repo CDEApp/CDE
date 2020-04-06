@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using ProtoBuf;
 
 namespace cdeLib
@@ -9,7 +10,7 @@ namespace cdeLib
     /// Returns true if want traversal to continue after this returns.
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
-    
+
     public delegate bool TraverseFuncWithRoot(CommonEntry ce, DirEntry de, RootEntry rootEntry = null);
 
     [ProtoContract
@@ -120,6 +121,7 @@ namespace cdeLib
                 }
             }
         }
+
 
         public void TraverseTreesCopyHash(CommonEntry destination)
         {

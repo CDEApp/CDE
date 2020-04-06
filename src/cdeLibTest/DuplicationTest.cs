@@ -135,7 +135,6 @@ namespace cdeLibTest
             return System.IO.Path.GetDirectoryName(path);
         }
 
-        // [Ignore("Ignore until get cde console in project again")]
         [Test]
         public void GetSizePairs_CheckSanityOfDupeSizeCountAndDupeFileCount_Exercise()
         {
@@ -149,7 +148,6 @@ namespace cdeLibTest
                 FileHelper.WriteAllText(random, testPath, $"CDE_testFile{i}.txt");
             }
 
-            // hacky creating catalog.
             Program.InitProgram(Array.Empty<string>());
             Program.CreateCache(testPath);
             Program.HashCatalog();

@@ -29,7 +29,13 @@ namespace cdeLib.Infrastructure
         public void SetHash(byte[] hash)
         {
             HashA = BitConverter.ToUInt64(hash, 0); // swapped offset because of intel
-            HashB = BitConverter.ToUInt64(hash, 8); // swapped offset because of intel
+            if (hash.Length > 8)
+            {
+                HashB = BitConverter.ToUInt64(hash, 8); // swapped offset because of intel
+            } else
+            {
+                HashB = 0; //What is the right response here for 32bit hashes?
+            }
         }
 
         public void SetHash(int hash)

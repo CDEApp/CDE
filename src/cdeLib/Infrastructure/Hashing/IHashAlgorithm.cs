@@ -4,10 +4,11 @@ namespace cdeLib.Infrastructure.Hashing
 {
     public interface IHashAlgorithm
     {
-        UInt32 Hash(Byte[] data);
+        UInt64 Hash(Byte[] data);
+        UInt64 Hash(ReadOnlySpan<byte> data);
     }
     public interface ISeededHashAlgorithm : IHashAlgorithm
     {
-        UInt32 Hash(Byte[] data, UInt32 seed);
+        UInt64 Hash(Byte[] data, UInt32 seed);
     }
 }
