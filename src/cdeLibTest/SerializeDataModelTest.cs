@@ -90,7 +90,6 @@ namespace cdeLibTest
 
             var ms = new MemoryStream();
             
-            //Serializer.Serialize(ms, re1);
             Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
             Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
 
@@ -100,7 +99,6 @@ namespace cdeLibTest
 
             var newMS = new MemoryStream(b);
 
-            // var test = Serializer.ListItemTag;
             var iter = Serializer.DeserializeItems<RootEntry>(newMS, PrefixStyle.Base128, 1);
             var first = iter.FirstOrDefault();
             if (first != null) Console.WriteLine("first.RootPath " + first.Path);
@@ -114,7 +112,7 @@ namespace cdeLibTest
             }
             else
             {
-                Console.WriteLine("third.RootPath doesnt exist.");
+                Console.WriteLine("third.RootPath doesn't exist.");
             }
         }
         // ReSharper restore InconsistentNaming
@@ -171,6 +169,5 @@ namespace cdeLibTest
             var bothTreesComplete = e1.MoveNext() == false && e2.MoveNext() == false;
             return !differenceFound && bothTreesComplete;
         }
-
     }
 }

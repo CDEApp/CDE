@@ -276,20 +276,17 @@ namespace cdeLibTest
         {
             private readonly string _root;
             private readonly bool _isUnc;
-            private readonly bool _isPathRooted;
             private readonly string _fullPath;
 
             public RootEntryTestStub(
                 IConfiguration config,
                 string root=@"C:\",
-                bool isUnc=false, 
-                bool isPathRooted=true,
+                bool isUnc=false,
                 string fullPath=@"C:\"
                 ) : base(config)
             {
                 _root = root;
                 _isUnc = isUnc;
-                _isPathRooted = isPathRooted;
                 _fullPath = fullPath;
             }
 

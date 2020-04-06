@@ -267,7 +267,7 @@ namespace cdeLib
                     _duplicationStatistics.AllreadyDoneFulls++;
                     return;
                 }
-                var hashResponse = _hashHelper.GetHashFromFile(fullPath);
+                var hashResponse = await _hashHelper.GetHashResponseFromFile(fullPath,null);
                 if (hashResponse != null)
                 {
                     de.SetHash(hashResponse.Hash);

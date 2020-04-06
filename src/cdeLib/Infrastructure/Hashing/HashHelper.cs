@@ -33,14 +33,16 @@ namespace cdeLib.Infrastructure.Hashing
                         bytesRead = stream.Read(buf, 0, buf.Length);
                         totalBytesRead += bytesRead;
                     }
+
                     hashResponse.BytesHashed = totalBytesRead;
                     hashResponse.IsPartialHash = stream.Length > bytesToHash;
 
                     hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(buf));
                 }
+
                 return hashResponse;
             }
-            catch (FileLoadException)   // if doing hashing on system drive cant open files don't care.
+            catch (FileLoadException) // if doing hashing on system drive cant open files don't care.
             {
                 return null;
             }
@@ -50,15 +52,6 @@ namespace cdeLib.Infrastructure.Hashing
                 _logger.LogException(ex, "Hash");
                 return null;
             }
-        }
-
-        [Obsolete("Prefer async GetHashResponseFromFile")]
-        public HashResponse GetHashFromFile(string filename)
-        {
-            _logger.LogDebug($"{nameof(GetHashFromFile)} {0}", filename);
-            var task = GetHashResponseFromFile(filename, null);
-            task.Wait();
-            return task.Result;
         }
     }
 }

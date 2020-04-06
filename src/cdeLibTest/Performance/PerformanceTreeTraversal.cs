@@ -182,7 +182,7 @@ namespace cdeLibTest.Performance
             for (var i = 0; i < repeatCount; i++)
             {
                 var testlist = new List<PairDirEntry>();
-                ((CommonEntry)root).TraverseTreePair((p, d) =>
+                root.TraverseTreePair((p, d) =>
                 {
                     testlist.Add(new PairDirEntry(p, d));
                     return true;
