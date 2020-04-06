@@ -120,11 +120,12 @@ namespace cdeLib
         {
             var findPredicate = GetFindPredicate();
 
-            TraverseFunc findFunc = (p, d) =>
+            bool FindFunc(CommonEntry p, DirEntry d)
             {
                 ++progressCount[0];
                 if (progressCount[0] <= SkipCount)
-                {   // skip enforced
+                {
+                    // skip enforced
                     return true;
                 }
 
@@ -134,19 +135,22 @@ namespace cdeLib
                     // only check for cancel on progress modifier.
                     if (Worker != null && Worker.CancellationPending)
                     {
-                        return false;   // end the find.
+                        return false; // end the find.
                     }
                 }
+
                 if (findPredicate(p, d))
                 {
                     if (!VisitorFunc(p, d) || --limitCount[0] <= 0)
                     {
-                        return false;   // end the find.
+                        return false; // end the find.
                     }
                 }
+
                 return true;
-            };
-            return findFunc;
+            }
+
+            return FindFunc;
         }
 
         public TraverseFunc GetFindPredicate()

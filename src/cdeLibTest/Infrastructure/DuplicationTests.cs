@@ -88,13 +88,13 @@ namespace cdeLibTest.Infrastructure
         }
 
         [Test]
-        public void CanFindDuplicates()
+        public async Task CanFindDuplicates()
         {
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry(_configuration);
             rootEntry.PopulateRoot(FileHelper.TestDir2);
             var rootEntries = new List<RootEntry> {rootEntry};
-            duplication.ApplyHash(rootEntries);
+            await duplication.ApplyHash(rootEntries);
             // all 7 Files are partial hashed.
             Assert.That(duplication.DuplicationStatistics().PartialHashes, Is.EqualTo(7));
             // all 7 files are full hashed because every file appears to have a duplicate at partial hash size.

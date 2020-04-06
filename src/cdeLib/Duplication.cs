@@ -41,7 +41,7 @@ namespace cdeLib
         /// Apply an Hash Checksum to all rootEntries
         /// </summary>
         /// <param name="rootEntries">Collection of rootEntries</param>
-        public void ApplyHash(IList<RootEntry> rootEntries)
+        public async Task ApplyHash(IList<RootEntry> rootEntries)
         {
             _logger.LogDebug("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var newMatches = GetSizePairs(rootEntries);
@@ -106,9 +106,9 @@ namespace cdeLib
                     // Then the full hash phase will start and you can hit break again to stop it after a while.
                     // to be able to then run --dupes on the larger hashed files.
                     grp.AsParallel()
-                        .ForEachInApproximateOrder(parallelOptions, (flatFile, innerLoopState) => {
+                        .ForEachInApproximateOrder(parallelOptions, async (flatFile, innerLoopState) => {
                             _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
-                            CalculatePartialMD5Hash(flatFile.FullPath, flatFile.ChildDE);
+                            await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
                             if (Hack.BreakConsoleFlag)
                             {
                                 Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
@@ -175,20 +175,20 @@ namespace cdeLib
             return true;
         }
 
-        private void CalculatePartialMD5Hash(string fullPath, DirEntry de)
+        private void CalculatePartialHash(string fullPath, DirEntry de)
         {
-            var task = Task.Run(() => CalculatePartialMD5HashAsync(fullPath, de));
+            var task = Task.Run(() => CalculatePartialHashAsync(fullPath, de));
             task.Wait();
         }
 
-        private async Task CalculatePartialMD5HashAsync(string fullPath, DirEntry de)
+        private async Task CalculatePartialHashAsync(string fullPath, DirEntry de)
         {
             if (de.IsDirectory || de.IsHashDone)
             {
                 _duplicationStatistics.AllreadyDonePartials++;
                 return;
             }
-            await CalculateMD5Hash(fullPath, de, true);
+            await CalculateHash(fullPath, de, true);
         }
 
         private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
@@ -213,10 +213,10 @@ namespace cdeLib
                     _dirEntriesRequiringFullHashing.Add(pairDirEntry.ChildDE);
                 }
             }
-            CommonEntry.TraverseTreePair(commonEntries, CalculateFullMD5Hash);
+            CommonEntry.TraverseTreePair(commonEntries, CalculateFullHash);
         }
 
-        private async Task CalculateMD5Hash(string fullPath, DirEntry de, bool doPartialHash)
+        private async Task CalculateHash(string fullPath, DirEntry de, bool doPartialHash)
         {
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
@@ -287,14 +287,14 @@ namespace cdeLib
             }
         }
 
-        private bool CalculateFullMD5Hash(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool CalculateFullHash(CommonEntry parentEntry, DirEntry dirEntry)
         {
-            var tsk = Task.Run(() => CalculateFullMD5HashAsync(parentEntry, dirEntry));
+            var tsk = Task.Run(() => CalculateFullHashAsync(parentEntry, dirEntry));
             tsk.Wait();
             return tsk.Result;
         }
 
-        private async Task<bool> CalculateFullMD5HashAsync(CommonEntry parentEntry, DirEntry dirEntry)
+        private async Task<bool> CalculateFullHashAsync(CommonEntry parentEntry, DirEntry dirEntry)
         {
             // ignore if we already have a hash.
             if (dirEntry.IsHashDone)
@@ -309,7 +309,7 @@ namespace cdeLib
                     var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
                     // TODO not sure we need this GetFullPath since dotnetcore3.0
                     var longFullPath = System.IO.Path.GetFullPath(fullPath);
-                    await CalculateMD5Hash(longFullPath, dirEntry, false);
+                    await CalculateHash(longFullPath, dirEntry, false);
                     if (Hack.BreakConsoleFlag)
                     {
                         Console.WriteLine("\n * Break key detected exiting full hashing phase outer.");

@@ -5,6 +5,7 @@ using cdeLib;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 using System.Reflection;
+using System.Threading.Tasks;
 using cde;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
@@ -234,12 +235,11 @@ namespace cdeLibTest
         // this one is useful to test drive ApplyHash outside of the app.
         // I copy a .cde file into the compile folder for testing, but it works with none.
         [Test]
-        public void ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
+        public async Task ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
-
-            d.ApplyHash(rootEntries);
+            await d.ApplyHash(rootEntries);
         }
         // ReSharper restore InconsistentNaming
     }
