@@ -19,8 +19,8 @@ namespace cdeLibTest
         protected void RebuildTestRoot(IConfiguration config)
         {
             _re1 = new RootEntry(config) { Path = @"C:\" };
-            De1 = new DirEntry(true) { Path = @"de1" };
-            Fe2 = new DirEntry { Path = @"fe2" };
+            De1 = new DirEntry(true) { Path = "de1" };
+            Fe2 = new DirEntry { Path = "fe2" };
             De1.Children.Add(Fe2);
             _re1.Children.Add(De1);
             _re1.SetInMemoryFields();
@@ -183,7 +183,6 @@ namespace cdeLibTest
             Console.WriteLine($"Total files enumerated : {_fileCount}");
             //Console.WriteLine("Total path length : {0}", _num);
         }
-
     }
     // ReSharper restore InconsistentNaming
 }

@@ -22,7 +22,7 @@ namespace cdeLibTest
         [Test]
         public void GetRelativePath_RootPathIsDriveRoot_WithoutTrailSeperator_ReturnPath()
         {
-            const string rootPath = @"C:";
+            const string rootPath = "C:";
             const string fullPath = @"C:\Moo";
 
             var relativePath = fullPath.GetRelativePath(rootPath);

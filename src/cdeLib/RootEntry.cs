@@ -107,7 +107,6 @@ namespace cdeLib
             return startPath;
         }
 
-
         public void SetInMemoryFields()
         {
             // protobuf does not retain DateKind.
@@ -211,7 +210,6 @@ namespace cdeLib
 
             return path;
         }
-
 
         public string GetDriverLetterHint(string path, string volumeRoot)
         {

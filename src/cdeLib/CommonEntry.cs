@@ -121,7 +121,6 @@ namespace cdeLib
             }
         }
 
-
         public void TraverseTreesCopyHash(CommonEntry destination)
         {
             var dirs = new Stack<Tuple<string, CommonEntry, CommonEntry>>();

@@ -116,8 +116,8 @@ namespace cdeWinTest
             [Test]
             public void With_Dummy_Child_Replaces_Dummy_With_Children()
             {
-                var testTreeNode = new TreeNode("testTreeNode");
-                testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry which has its own children.
+                var testTreeNode = new TreeNode("testTreeNode") { Tag = _rootEntry };
+                // require a pointer to valid DirEntry which has its own children.
                 var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
                 testTreeNode.Nodes.Add(dummyChildNode);
                 _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(testTreeNode);
@@ -136,8 +136,7 @@ namespace cdeWinTest
             public void Dummy_Converted_To_Children_Files_Not_Added_To_TreeView()
             {
                 InitRootWithDirDirFileWithDir();
-                var testTreeNode = new TreeNode("testTreeNode");
-                testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry with children.
+                var testTreeNode = new TreeNode("testTreeNode") { Tag = _rootEntry }; // require a pointer to valid DirEntry with children.
                 var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
                 testTreeNode.Nodes.Add(dummyChildNode);
                 _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(testTreeNode);
@@ -216,7 +215,7 @@ namespace cdeWinTest
                 _sutPresenter.SearchResultListViewItemActivate(); // activating from search result
 
                 _mockForm.Received(1).DirectoryTreeViewNodes = treeViewRootNode;
-                Assert.That(treeViewSelectedNode.Text, Is.EqualTo(@"Test1"),
+                Assert.That(treeViewSelectedNode.Text, Is.EqualTo("Test1"),
                     "TreeView root node Text value not expected");
                 _mockDirectoryListViewHelper.Received(1).SetList(Arg.Any<List<DirEntry>>());
                 Assert.That(listViewListArg.Count, Is.EqualTo(0), "Nothing displayed in list view for empty folder");
@@ -228,7 +227,6 @@ namespace cdeWinTest
         {
             private CDEWinFormPresenter _sutPresenter;
             IConfiguration _config = Substitute.For<IConfiguration>();
-
 
             [SetUp]
             public override void RunBeforeEveryTest()
@@ -243,7 +241,7 @@ namespace cdeWinTest
             [Test]
             public void Catalog_Activate_On_Same_RootEntry_Does_Not_Set_Root()
             {
-                var testRootTreeNode = new TreeNode("Moo") {Tag = _rootEntry};
+                var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
                 _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
                 FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
 
@@ -256,8 +254,8 @@ namespace cdeWinTest
             [Test]
             public void Catalog_Activate_On_Different_RootEntry_Sets_New_Root()
             {
-                var alternateRootEntry = new RootEntry(_config) {Path = "alternate"};
-                var testRootTreeNode = new TreeNode("Moo") {Tag = alternateRootEntry};
+                var alternateRootEntry = new RootEntry(_config) { Path = "alternate" };
+                var testRootTreeNode = new TreeNode("Moo") { Tag = alternateRootEntry };
                 _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
                 TreeNode treeNodeSet = null;
                 _mockForm.DirectoryTreeViewNodes =
@@ -274,7 +272,7 @@ namespace cdeWinTest
             [Test]
             public void Catalog_Activate_GoToDirectoryRoot_On_Null_RootNode_Sets_New_Root()
             {
-                _mockForm.DirectoryTreeViewNodes.Returns((TreeNode) null);
+                _mockForm.DirectoryTreeViewNodes.Returns((TreeNode)null);
                 FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
 
                 // ACT                
@@ -390,13 +388,13 @@ namespace cdeWinTest
             }
 
             /// <summary>
-            /// This is not something that should happen as list view wont ask for 
+            /// This is not something that should happen as list view wont ask for
             /// an Item Index that is outside bounds of the setup ListView.
             /// </summary>
             [Test]
             public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
             {
-                var pairDirList = new List<PairDirEntry> {_pairDirEntry};
+                var pairDirList = new List<PairDirEntry> { _pairDirEntry };
                 _sutPresenter.TestSetSearchResultList(pairDirList);
                 _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(1);
 
@@ -409,20 +407,19 @@ namespace cdeWinTest
                 var pairDirList = new List<PairDirEntry> { _pairDirEntry };
                 _sutPresenter.TestSetSearchResultList(pairDirList);
                 _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(0);
-            
+
                 ListViewItem setRenderItem = null;
                 _mockSearchResultListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => { setRenderItem = lvi; });
 
                 // ACT
                 _sutPresenter.SearchResultRetrieveVirtualItem();
-            
+
                 var expectedValues = new[]
                 {   // Fragile, this depends on time zone of test machine at moment.
                     "Test", "531", "2010/11/02 18:16:12", "TestRootEntry.cde", @"T:\"
                 };
                 setRenderItem.AssertListViewSubItemEqualValues(expectedValues);
             }
-
 
         }
 
@@ -442,16 +439,16 @@ namespace cdeWinTest
             [Test]
             public void Set_ListView_List()
             {
-                var testRootTreeNode = new TreeNode("MyTestNode") {Tag = _rootEntry};
+                var testRootTreeNode = new TreeNode("MyTestNode") { Tag = _rootEntry };
                 _mockForm.DirectoryTreeViewActiveAfterSelectNode = testRootTreeNode;
                 List<DirEntry> list = null;
                 _mockDirectoryListViewHelper.SetList(Arg.Do<List<DirEntry>>(x => list = x));
                 var pathTextBoxValue = string.Empty;
                 _mockForm.SetDirectoryPathTextbox = Arg.Do<string>(x => pathTextBoxValue = x);
-                
+
                 // ACT
                 _sutPresenter.DirectoryTreeViewAfterSelect();
-            
+
                 Assert.That(list, Is.Not.Null);
                 Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasn't expected");
                 Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasn't expected");
@@ -485,7 +482,7 @@ namespace cdeWinTest
             public void Nothing_Bombs_With_List_Empty_Does_Nothing()
             {
                 MockDirectoryTreeViewAfterSelect(_sutPresenter);
-            
+
                 _sutPresenter.DirectoryRetrieveVirtualItem();
             }
         }
@@ -512,7 +509,7 @@ namespace cdeWinTest
             }
         }
     }
-    
+
     public class TestPresenterSetSearch : CDEWinFormPresenter
     {
         public TestPresenterSetSearch(ICDEWinForm form, IConfig config) : base(form, config, null)

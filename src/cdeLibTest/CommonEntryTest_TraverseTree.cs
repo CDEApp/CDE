@@ -6,8 +6,7 @@ using Shouldly;
 namespace cdeLibTest
 {
     
-    
-    
+
     // ReSharper disable InconsistentNaming
     [TestFixture]
     class CommonEntryTest_TraverseTree : RootEntryTestBase
@@ -30,16 +29,16 @@ namespace cdeLibTest
             // Could not find a parameterless constructor.
             var mockAction = Substitute.For<TraverseFunc>();
             var de = new DirEntry();
-            
+
             de.TraverseTreePair(mockAction);
-            
+
             mockAction.DidNotReceive().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
         }
 
         [Test]
         public void TraverseTree_EmptyTree_ActionNotRun_Alternate()
         {
-            var actionCalled = false; 
+            var actionCalled = false;
             var de = new DirEntry();
 
             de.TraverseTreePair((_ce, _de) =>
@@ -56,7 +55,7 @@ namespace cdeLibTest
         public void TraverseTree_SingleChildTree_CallsActionOnChild()
         {
             // only looks at Children for recurse.
-            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" }; 
+            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" };
             var de2 = new DirEntry { Path = "d2" };
             de1.Children.Add(de2);
             var mockAction = Substitute.For<TraverseFunc>();
@@ -65,13 +64,13 @@ namespace cdeLibTest
 
             mockAction.Received().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
         }
-        
+
         [Test]
         public void TraverseTree_SingleChildTree_CallsActionOnChild_Alternate()
         {
-            var actionCalled = false; 
+            var actionCalled = false;
             // only looks at Children for recurse.
-            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" }; 
+            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" };
             var de2 = new DirEntry { Path = "d2" };
             de1.Children.Add(de2);
 

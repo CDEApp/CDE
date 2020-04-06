@@ -49,6 +49,5 @@ namespace cdeWin
 		{
 			Text = $"About {_config.ProductName} v{_config.Version}";
 		}
-
     }
 }

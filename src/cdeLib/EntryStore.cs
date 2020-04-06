@@ -13,7 +13,7 @@ namespace cdeLib
         // NextAvailableIndex starts at 1. zero is always empty block, it represents parent of roots.
         private const int ShiftMaskBit = 16;
         private const uint BlockMask = 0xFFFF;
-        private const uint BlockSize = 65536;       
+        private const uint BlockSize = 65536;
 
         // could do our own array like data structure for BaseBlock maybe ?
         [ProtoMember(1, IsRequired = true)]

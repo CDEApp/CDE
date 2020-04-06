@@ -10,7 +10,6 @@ namespace cdeLibTest
     class DirEntryTest_SetSummaryFields
     {
         private DirEntry emptyDirEntry;
-        
 
         [SetUp]
         public void BeforeEveryTest()

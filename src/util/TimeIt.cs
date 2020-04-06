@@ -72,5 +72,4 @@ namespace Util
 			return str.Substring(1) + ",Total," + TotalMsec;
 		}
 	}
-
 }

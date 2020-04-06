@@ -51,7 +51,6 @@ namespace cdeLibTest
         [Test]
         public void TraverseTreesCopyHash_RootPathsDifferent_Exception()
         {
-            
             var reSource = new RootEntry(_config) { Path = @"C:\a" };
             var reDest = new RootEntry(_config) { Path = @"C:\" };
             Assert.Throws<ArgumentException>(() => reSource.TraverseTreesCopyHash(reDest), "source and destination must have same root path.");

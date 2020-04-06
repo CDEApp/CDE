@@ -44,7 +44,6 @@ namespace cdeLibTest
 
     struct ArrayThing<T>
     {
-        
         public T[] Array;  // to addres max array size... list of blocks ? like did in EntryStore ? icky icky icky
 
 

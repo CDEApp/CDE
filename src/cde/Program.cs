@@ -15,14 +15,12 @@ using Mono.Terminal;
 using FindOptions = cde.CommandLine.FindOptions;
 using IContainer = Autofac.IContainer;
 
-
 namespace cde
 {
     public static class Program
     {
         public static IContainer Container;
         private static IMediator Mediatr { get; set; }
-
 
         public static string Version
         {

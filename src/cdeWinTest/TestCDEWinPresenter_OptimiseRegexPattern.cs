@@ -50,7 +50,6 @@ namespace cdeWinTest
         }
     }
 
-
     // ReSharper disable InconsistentNaming
     [TestFixture]
     public class TestCDEWinPresenter_OptimiseRegexPattern_Regex : TestCDEWinPresenterBase
@@ -64,7 +63,7 @@ namespace cdeWinTest
             _mockForm.RegexMode = true;
             _presenter = new TestOptimise(_mockForm, _stubConfig);
         }
-        
+
         [Test]
         public void OptimiseRegexPattern_NullInput_ReturnsNull_WhenRegexMode()
         {
@@ -88,7 +87,6 @@ namespace cdeWinTest
 
             Assert.That(result, Is.EqualTo("moo"));
         }
-
 
         [Test]
         public void OptimiseRegexPattern_TrailingWild_ReturnsWithout_WhenRegexMode()

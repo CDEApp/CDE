@@ -77,7 +77,6 @@ namespace cdeLib
             var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
 
-
 //            Parallel.ForEach(rootEntries, (rootEntry) =>
 //            {
 //                //TODO: Parallel breaks the progress percentage, need to fix.

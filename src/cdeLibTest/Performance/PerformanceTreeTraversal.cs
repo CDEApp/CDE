@@ -12,9 +12,9 @@ namespace cdeLibTest.Performance
     /// TraverseTreePair
     /// PairDirEntryEnumerator
     /// For both C:\ drive 200k entries, and C:\ and D:\ total 1.4 million entries.
-    /// 
+    ///
     /// Test run with sort() not enabled in PairDirEntryEnumerator.
-    /// 
+    ///
     /// </summary>
     //[TestFixture] disabled performance not unit test.
     class PerformanceTreeTraversal

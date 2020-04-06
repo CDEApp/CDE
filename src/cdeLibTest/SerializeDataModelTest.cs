@@ -27,7 +27,6 @@ namespace cdeLibTest
         private RootEntry re1;
         IConfiguration _config = Substitute.For<IConfiguration>();
 
-
         [SetUp]
         public void SetUp()
         {
@@ -89,7 +88,7 @@ namespace cdeLibTest
             re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
-            
+
             Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
             Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
 

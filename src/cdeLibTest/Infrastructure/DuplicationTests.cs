@@ -46,8 +46,6 @@ namespace cdeLibTest.Infrastructure
             _logger = new Logger(_configuration, logger);
             _hashHelper = new HashHelper(_logger);
 
-            
-
             _applicationDiagnostics = Substitute.For<IApplicationDiagnostics>();
             var random = new Random();
             const int dataSize = 256 * 1024;

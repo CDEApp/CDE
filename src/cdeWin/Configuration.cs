@@ -73,7 +73,6 @@ namespace cdeWin
             Width = effectiveBounds.Width;
             Height = effectiveBounds.Height;
         }
-
     }
 
     [ProtoContract]
@@ -171,7 +170,6 @@ namespace cdeWin
         public Configuration()
         {
         }
-
     }
 
 

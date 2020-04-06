@@ -383,6 +383,5 @@ namespace cdeLib
             DirEntryCount = dirEntryCount;
             Size = size;
         }
-
     }
 }

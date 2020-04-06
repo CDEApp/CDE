@@ -12,7 +12,6 @@ namespace cdeLibTest.Infrastructure.Hashing
             _sha1 = SHA1.Create();
         }
 
-
         public UInt64 Hash(byte[] data)
         {
             var result = _sha1.ComputeHash(data);

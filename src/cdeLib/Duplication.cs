@@ -39,7 +39,7 @@ namespace cdeLib
 
         /// <summary>
         /// Apply an MD5 Checksum to all rootEntries
-        /// </summary> 
+        /// </summary>
         /// <param name="rootEntries">Collection of rootEntries</param>
         public void ApplyHash(IList<RootEntry> rootEntries)
         {
@@ -61,7 +61,7 @@ namespace cdeLib
             _logger.LogDebug("Flatten List..");
             var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
             _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-            
+
             // group by volume/network share
             _logger.LogDebug("GroupBy Volume/Share..");
 
@@ -83,7 +83,7 @@ namespace cdeLib
             // parallel at the grouping level, hopefully this is one group per disk.
             _logger.LogDebug("Begin Hashing...");
             _logger.LogDebug("Memory: {0}",_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-            
+
             var timer = new Stopwatch();
             timer.Start();
 
@@ -134,7 +134,7 @@ namespace cdeLib
 
             Hack.BreakConsoleFlag = false; // require to press break again to stop the full hash phase.
             CheckDupesAndCompleteFullHash(rootEntries);
-            
+
             _logger.LogInfo(string.Empty);
             _logger.LogInfo("After hashing completed.");
             timer.Stop();
@@ -215,7 +215,6 @@ namespace cdeLib
             }
             CommonEntry.TraverseTreePair(commonEntries, CalculateFullMD5Hash);
         }
-
 
         private async Task CalculateMD5Hash(string fullPath, DirEntry de, bool doPartialHash)
         {

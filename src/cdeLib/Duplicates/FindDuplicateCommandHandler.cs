@@ -4,7 +4,6 @@ using MediatR;
 
 namespace cdeLib.Duplicates
 {
-
     public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand>
     {
         private readonly Duplication _duplication;

@@ -47,6 +47,5 @@ namespace cdeLibTest.TestHelpers
                 fs.Close();
             }
         }
-
     }
 }

@@ -30,9 +30,9 @@ namespace cdeWinTest
         [SetUp]
         public virtual void RunBeforeEveryTest()
         {
-             _emptyRootList = new List<RootEntry>();
-             _rootList = new List<RootEntry>();
-             _config.ProgressUpdateInterval.Returns(5000);
+            _emptyRootList = new List<RootEntry>();
+            _rootList = new List<RootEntry>();
+            _config.ProgressUpdateInterval.Returns(5000);
 
             _mockForm = Substitute.For<ICDEWinForm>();
             _stubConfig = Substitute.For<IConfig>();
@@ -53,7 +53,7 @@ namespace cdeWinTest
                 // VolumeName = "TestVolume",
                 DirEntryCount = 1,
                 FileEntryCount = 0,
-                DriveLetterHint = @"Z",
+                DriveLetterHint = "Z",
                 AvailSpace = 754321,
                 TotalSpace = 654321,
                 ScanStartUTC = nowUtc,
@@ -65,7 +65,7 @@ namespace cdeWinTest
 
             _dirEntry = new DirEntry
             {
-                Path = @"Test",
+                Path = "Test",
                 Size = 531,
                 Modified = new DateTime(2010, 11, 02, 18, 16, 12, DateTimeKind.Unspecified),
             };
@@ -81,7 +81,7 @@ namespace cdeWinTest
             // massive assumption on path, this T:\ is windows only......
             // is it a valid test on other platforms or behavior on other platforms?
             _rootEntry = new RootEntry(_config) { Path = @"T:\" };
-            _dirEntry = new DirEntry(true) { Path = @"Test1" };
+            _dirEntry = new DirEntry(true) { Path = "Test1" };
             _rootEntry.Children.Add(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
@@ -92,16 +92,16 @@ namespace cdeWinTest
         protected void InitRootWithDirDirFileWithDir()
         {
             InitRootWithDir();
-            var dirEntry2 = new DirEntry(true) { Path = @"Test2" };
-            var dirEntry3 = new DirEntry(true) 
+            var dirEntry2 = new DirEntry(true) { Path = "Test2" };
+            var dirEntry3 = new DirEntry(true)
             {
-                Path = @"Test3",
+                Path = "Test3",
                 Size = 12312,
                 Modified = new DateTime(2009, 10, 03, 19, 17, 13, DateTimeKind.Unspecified),
             };
             var dirEntry4 = new DirEntry
             {
-                Path = @"Test4",
+                Path = "Test4",
                 Size = 32312,
                 Modified = new DateTime(2008, 10, 04, 20, 18, 14, DateTimeKind.Unspecified),
             };
@@ -123,7 +123,7 @@ namespace cdeWinTest
         }
 
         protected void MockDirectoryTreeViewAfterSelect(
-            CDEWinFormPresenter presenter, 
+            CDEWinFormPresenter presenter,
             Action<TreeNode> captureNode = null)
         {
             _mockForm.DirectoryTreeViewSelectedNode =
@@ -135,12 +135,11 @@ namespace cdeWinTest
                     presenter.DirectoryTreeViewAfterSelect();
                 });
         }
-        
-        protected void FakeItemActivateWithValue<T>(IListViewHelper<T> view, T value) where T : class 
+
+        protected void FakeItemActivateWithValue<T>(IListViewHelper<T> view, T value) where T : class
         {
             view.ActionOnActivateItem(Arg.Invoke(value));
         }
-        
     }
 
     // ReSharper restore InconsistentNaming

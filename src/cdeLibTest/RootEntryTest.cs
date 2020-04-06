@@ -22,7 +22,6 @@ namespace cdeLibTest
         [Test]
         public void Constructor_Minimal_Creates()
         {
-
             var a = new RootEntry(_config);
 
             Assert.That(a, Is.Not.Null);
@@ -79,7 +78,7 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(_config);
 
             var hint = re.GetDriverLetterHint(@"C:\", @"C:\");
-            
+
             Assert.That(hint, Is.EqualTo("C"));
         }
 
@@ -108,11 +107,10 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(_config,isUnc: true);
 
-            var hint = re.GetDriverLetterHint(@"\\server\basepath\path", @"doest matter");
+            var hint = re.GetDriverLetterHint(@"\\server\basepath\path", "doest matter");
 
             Assert.That(hint, Is.EqualTo("UNC"));
         }
-
 
         [Test]
         public void GetDefaultFileName_SimpleRootPath_ReturnsExpectedStuff()
@@ -123,10 +121,10 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"C:\", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"C"));
+            Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
             // Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo(@"C.cde"));
+            Assert.That(fileName, Is.EqualTo("C.cde"));
         }
 
         [Test]
@@ -140,12 +138,11 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"D:\", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"D"));
+            Assert.That(hint, Is.EqualTo("D"));
             Assert.That(volRoot, Is.EqualTo(@"D:\"));
-            Assert.That(fileName, Is.EqualTo(@"D.cde"));
+            Assert.That(fileName, Is.EqualTo("D.cde"));
         }
 
-  
         [Test]
         public void GetDefaultFileName_SimplePath_ReturnsExpectedStuff()
         {
@@ -155,9 +152,9 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"C"));
+            Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder.cde"));
+            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder.cde"));
         }
 
         [Test]
@@ -169,9 +166,9 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"C"));
+            Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder_Mine.cde"));
         }
 
         [Test]
@@ -183,9 +180,9 @@ namespace cdeLibTest
             var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
             var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"C"));
+            Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"C-C__Stuff_MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo("C-C__Stuff_MyTestFolder_Mine.cde"));
         }
 
         [Test]
@@ -197,9 +194,9 @@ namespace cdeLibTest
             var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
             var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"C"));
+            Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"C-C__MyTestFolder_Mine.cde"));
+            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder_Mine.cde"));
         }
 
         [Test]
@@ -210,9 +207,9 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"UNC"));
+            Assert.That(hint, Is.EqualTo("UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare.cde"));
+            Assert.That(fileName, Is.EqualTo("UNC-myserver_myshare.cde"));
         }
 
         [Test]
@@ -223,16 +220,16 @@ namespace cdeLibTest
 
             var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot);
 
-            Assert.That(hint, Is.EqualTo(@"UNC"));
+            Assert.That(hint, Is.EqualTo("UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo(@"UNC-myserver_myshare_stuff.cde"));
+            Assert.That(fileName, Is.EqualTo("UNC-myserver_myshare_stuff.cde"));
         }
 
         [Test]
         public void CanonicalPath_DeviceRelativePath_OK()
         {
             var re = new RootEntryTestStub(_config,isUnc: false, root: @"g:\", fullPath: @"g:\");
-            const string testPath = @"g:";
+            const string testPath = "g:";
 
             var result = re.CanonicalPath(testPath);
 
@@ -304,7 +301,6 @@ namespace cdeLibTest
             {
                 return _fullPath;
             }
-
         }
 
         [Test]

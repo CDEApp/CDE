@@ -50,7 +50,7 @@ namespace cdeLib.Infrastructure
             {
                 var a = BitConverter.GetBytes(HashA);
                 var b = BitConverter.GetBytes(HashB);
-                return ByteArrayHelper.ByteArrayToString(a) 
+                return ByteArrayHelper.ByteArrayToString(a)
                        + ByteArrayHelper.ByteArrayToString(b);
             }
         }

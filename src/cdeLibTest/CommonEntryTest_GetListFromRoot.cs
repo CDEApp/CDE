@@ -30,14 +30,14 @@ namespace cdeLibTest
         public void GetListFromRoot_FirstLevelEntry_TwoItemsReturned()
         {
             var re = new RootEntry(_config) {Path = @"X:\"};
-            var de1 = new DirEntry {Path = @"de1" };
+            var de1 = new DirEntry {Path = "de1" };
             re.Children.Add(de1);
             re.SetCommonEntryFields();
 
             var list = de1.GetListFromRoot();
 
             Assert.That(list[0].Path, Is.EqualTo(@"X:\"));
-            Assert.That(list[1].Path, Is.EqualTo(@"de1"));
+            Assert.That(list[1].Path, Is.EqualTo("de1"));
         }
     }
     // ReSharper restore InconsistentNaming

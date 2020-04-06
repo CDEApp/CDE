@@ -17,7 +17,7 @@ namespace cdeLib
         {
             _rootEntries = new List<RootEntry> { rootEntry };
             Reset();
-        }                                                   
+        }
 
         public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
         {

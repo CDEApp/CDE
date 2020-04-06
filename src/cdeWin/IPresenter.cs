@@ -96,5 +96,4 @@ namespace cdeWin
             return actionProperties.Contains($"On{x.Name}");
         }
     }
-
 }

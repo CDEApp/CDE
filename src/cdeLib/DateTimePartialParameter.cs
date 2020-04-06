@@ -62,7 +62,6 @@ namespace cdeLib
                 _month = month;
             }
 
-
             if (splitOnDash.Length > 2) // may have dayOfMonth specified
             {
                 if (splitOnDash[2].Length == 0) // just a '-' is allowed with no value. just set year and month
@@ -91,7 +90,7 @@ namespace cdeLib
                         dayOfMonth = tmpDateTime.Day;
                     }
                 }
-                
+
                 if (dayOfMonth == 0 || dayOfMonth > 31)
                 {
                     _e = new ArgumentException(

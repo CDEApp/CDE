@@ -9,7 +9,6 @@ namespace cdeLib.Infrastructure.Hashing
         private readonly ILogger _logger;
         private readonly IHashAlgorithm _hashAlgorithm;
 
-
         public HashHelper(ILogger logger)
         {
             _logger = logger;
