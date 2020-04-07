@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using cdeLib.Catalog;
 using cdeLib.Infrastructure;
 using MediatR;
 
@@ -35,7 +36,7 @@ namespace cdeLib.Hashing
             foreach (var rootEntry in rootEntries)
             {
                 _logger.LogDebug("Saving {0}", rootEntry.DefaultFileName);
-                rootEntry.SaveRootEntry();
+                _catalogRepository.SaveRootEntry(rootEntry);
             }
 
             sw.Stop();

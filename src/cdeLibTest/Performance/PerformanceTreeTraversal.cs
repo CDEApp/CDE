@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using cdeLib;
+using cdeLib.Catalog;
 using NUnit.Framework;
+using Serilog;
 
 namespace cdeLibTest.Performance
 {
@@ -41,7 +43,7 @@ namespace cdeLibTest.Performance
             [OneTimeSetUp]
             public void BeforeAllTests()
             {
-                ICatalogRepository catalogRepository = new CatalogRepository();
+                ICatalogRepository catalogRepository = new CatalogRepository(Log.Logger);
                 RootSmall = catalogRepository.LoadDirCache(TestCatalog200K);
                 if (RootSmall == null)
                 {
@@ -213,7 +215,7 @@ namespace cdeLibTest.Performance
 
         private static RootEntry MeasureLoad(string catalogName)
         {
-            var catalogRepository = new CatalogRepository();
+            var catalogRepository = new CatalogRepository(Log.Logger);
             var sw = new Stopwatch();
             sw.Start();
             var reC = catalogRepository.LoadDirCache(catalogName);

@@ -12,11 +12,11 @@ namespace cdeLib.Infrastructure
     public class Hash16 : object
     {
         [ProtoMember(1, IsRequired = true)]
-        [FlatBufferItem(1)]
+        [FlatBufferItem(0)]
         public virtual ulong HashA { get; set; } // first 8 bytes
         
         [ProtoMember(2, IsRequired = true)]
-        [FlatBufferItem(2)]
+        [FlatBufferItem(1)]
         public virtual ulong HashB { get; set; } // last 8 bytes
 
         public Hash16()

@@ -313,55 +313,6 @@ namespace cdeLib
 
         public Action<string, Exception> ExceptionEvent { get; set; }
 
-        public void SaveRootEntry()
-        {
-            using (var newFs = File.Open(DefaultFileName, FileMode.Create))
-            {
-                Write(newFs);
-            }
-        }
-
-        public void Write(Stream output)
-        {
-            Serializer.Serialize(output, this);
-        }
-
-        [Obsolete("Use CatalogRepository.Read")]
-        public static RootEntry Read(Stream input)
-        {
-            try
-            {
-                return Serializer.Deserialize<RootEntry>(input);
-            }
-            catch (Exception)
-            {
-                return null;
-            }
-        }
-
-   
-       
-
-        // public static RootEntry LoadDirCache(string file)
-        // {
-        //     if (!File.Exists(file)) return null;
-        //     try
-        //     {
-        //         using var fileStream = File.OpenRead(file);
-        //         var rootEntry = Read(fileStream);
-        //         if (rootEntry == null) return null;
-        //         rootEntry.ActualFileName = file;
-        //         rootEntry.SetInMemoryFields();
-        //         return rootEntry;
-        //     }
-        //     catch (Exception ex)
-        //     {
-        //         Log.Logger.Error(ex,"Error Reading file");
-        //         // ignored
-        //         return null;
-        //     }
-        // }
-
         /// <summary>
         /// Set FullPath on all Directories.
         /// Set ParentCommonEntry on all Entries in tree with a parent.
@@ -456,17 +407,6 @@ namespace cdeLib
         [ProtoMember(14, IsRequired = true)]
         [FlatBufferItem(14)]
         public virtual long ModifiedTicks { get; set; }
-
-        /// <summary>
-        /// public bool ShouldSerializeHash() should be same as this, but isn't
-        /// for current "protobuf-net r376local"
-        /// URL some protobuf serialisation.
-        /// http://stackoverflow.com/questions/6389477/how-to-add-optional-field-to-a-class-manually-in-protobuf-net
-        /// </summary>
-        public bool HashSpecified => IsHashDone;
-
-        //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
-
 
         #region BitFields based properties
         public bool IsDirectory

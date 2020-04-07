@@ -1,5 +1,6 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
+using cdeLib.Catalog;
 using MediatR;
 
 namespace cdeLib.Duplicates

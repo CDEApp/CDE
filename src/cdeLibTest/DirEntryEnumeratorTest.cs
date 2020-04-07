@@ -3,9 +3,11 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using cdeLib;
+using cdeLib.Catalog;
 using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;
+using Serilog;
 
 namespace cdeLibTest
 {
@@ -140,7 +142,7 @@ namespace cdeLibTest
         [Test]
         public void PerformanceTest_Compare_TraverseTree_With_DirEntryEnumerator()
         {
-            var catalogRepository = new CatalogRepository();
+            var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
             System.Threading.Thread.Sleep(200); // msec
             //_num = 0;

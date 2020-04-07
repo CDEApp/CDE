@@ -7,9 +7,12 @@ using NUnit.Framework;
 using System.Reflection;
 using System.Threading.Tasks;
 using cde;
+using cdeLib.Catalog;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
+using Serilog;
+using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest
 {
@@ -157,7 +160,7 @@ namespace cdeLibTest
 
             //run tests.
             Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
-            var catalogRepository = new CatalogRepository();
+            var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             if (rootEntries.Count == 0)
@@ -217,7 +220,7 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_CheckAllDupeFilesHaveFullHash_OK()
         {
-            var catalogRepository = new CatalogRepository();
+            var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
@@ -241,7 +244,7 @@ namespace cdeLibTest
         [Test]
         public async Task ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
         {
-            var catalogRepository = new CatalogRepository();
+            var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             await d.ApplyHash(rootEntries);

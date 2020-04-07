@@ -7,6 +7,8 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
+using cdeLib.Catalog;
+using Serilog;
 
 namespace cdeWin
 {
@@ -46,7 +48,7 @@ namespace cdeWin
 
 		private void LoaderForm_Shown(object sender, EventArgs e)
 		{
-            var repo = new CatalogRepository();
+            var repo = new CatalogRepository(Log.Logger);
 			lblProgressMessage.Text = string.Empty;
 			Application.DoEvents(); // Make sure controls render before we do something.
 

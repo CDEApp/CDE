@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using cdeLib.Catalog;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using MediatR.Extensions.Autofac.DependencyInjection;

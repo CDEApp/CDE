@@ -4,37 +4,54 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using cdeLib.Extensions;
 using cdeLib.Infrastructure;
+using FlatSharp;
 using ProtoBuf;
 using Serilog;
+using SerilogTimings;
+using ILogger = Serilog.ILogger;
 
-namespace cdeLib
+namespace cdeLib.Catalog
 {
-    public interface ICatalogRepository
-    {
-        RootEntry Read(Stream input);
-        IList<RootEntry> Load(IEnumerable<string> cdeList);
-        IList<RootEntry> LoadCurrentDirCache();
-
-        /// <summary>
-        /// This gets .cde files in current dir or one directory down.
-        /// Use directory permissions to control who can load what .cde files one dir down if you like.
-        /// </summary>
-        IList<string> GetCacheFileList(IEnumerable<string> paths);
-
-        RootEntry LoadDirCache(string file);
-    }
-
     public class CatalogRepository : ICatalogRepository
     {
+        private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.Protobuf; //hard coded for now.
+        private readonly ILogger _logger;
+
+        public CatalogRepository(ILogger logger)
+        {
+            _logger = logger;
+        }
+
         public RootEntry Read(Stream input)
         {
             try
             {
-                return Serializer.Deserialize<RootEntry>(input);
+                switch (_serializerProtocol)
+                {
+                    case SerializerProtocol.Protobuf:
+                        return Serializer.Deserialize<RootEntry>(input);
+                    case SerializerProtocol.Flatbuffers:
+                        byte[] bytes;
+                        using (Operation.Time("ToByteArray"))
+                        {
+                            bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.
+                        }
+
+                        using (Operation.Time("Deserialize"))
+                        {
+                            var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions(FlatBufferDeserializationOption.GreedyMutable));
+                            return serializer.Parse<RootEntry>(bytes);
+                        }
+
+                    default:
+                        throw new Exception("Invalid Serializer Protocol");
+                }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                _logger.Error(ex, "Error Reading catalogue");
                 return null;
             }
         }
@@ -108,9 +125,31 @@ namespace cdeLib
             catch (Exception ex)
             {
                 Log.Logger.Error(ex, "Error Reading file");
-                // ignored
                 return null;
             }
+        }
+
+        public void SaveRootEntry(RootEntry rootEntry)
+        {
+            switch (_serializerProtocol)
+            {
+                case SerializerProtocol.Protobuf:
+                    using (var newFs = File.Open(rootEntry.DefaultFileName, FileMode.Create)){
+                        Serializer.Serialize(newFs, rootEntry);
+                    }
+                    break;
+                case SerializerProtocol.Flatbuffers:
+                    var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
+                    var buffer = new byte[maxBytesNeeded];
+                    FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
+                    File.WriteAllBytes(rootEntry.DefaultFileName,buffer); //TODO: Smarter writer with span<> stream, etc.
+                    break;
+                default:
+                    throw new Exception("Invalid Serializer Protocol");
+
+            }
+            
+            
         }
     }
 }

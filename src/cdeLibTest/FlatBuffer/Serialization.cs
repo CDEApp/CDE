@@ -40,13 +40,11 @@ namespace cdeLibTest.FlatBuffer
         public void Serialize_RootEntry()
         {
             re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
-
-            var ms = new MemoryStream();
             var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(re1);
-            byte[] buffer = new byte[maxBytesNeeded];
+            var buffer = new byte[maxBytesNeeded];
             FlatBufferSerializer.Default.Serialize(re1, buffer);
 
-            RootEntry re2 = FlatBufferSerializer.Default.Parse<RootEntry>(buffer);
+            var re2 = FlatBufferSerializer.Default.Parse<RootEntry>(buffer);
 
             re2.ShouldNotBeNull();
 

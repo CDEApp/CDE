@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
+using cdeLib.Catalog;
 using cdeLib.Infrastructure.Config;
 using MediatR;
 
@@ -42,7 +43,7 @@ namespace cdeLib.Cache
                 }
 
                 re.SortAllChildrenByPath();
-                re.SaveRootEntry();
+                _catalogRepository.SaveRootEntry(re);
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
                 Console.WriteLine($"Scanned Path {re.Path}");
                 Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
@@ -58,17 +59,17 @@ namespace cdeLib.Cache
             return Unit.Task;
         }
 
-        private static void PrintExceptions(string path, Exception ex)
+        private void PrintExceptions(string path, Exception ex)
         {
             Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
         }
 
-        private static void ScanCountPrintDot()
+        private void ScanCountPrintDot()
         {
             Console.Write(".");
         }
 
-        private static void ScanEndOfEntries()
+        private void ScanEndOfEntries()
         {
             Console.WriteLine(string.Empty);
         }
