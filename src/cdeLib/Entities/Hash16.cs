@@ -25,8 +25,7 @@ namespace cdeLib.Infrastructure
 
         public Hash16(byte[] hash)
         {
-            HashA = BitConverter.ToUInt64(hash, 0); // swapped offset because of intel
-            HashB = BitConverter.ToUInt64(hash, 8); // swapped offset because of intel
+            SetHash(hash);
         }
 
         public Hash16(int hash)
@@ -38,13 +37,7 @@ namespace cdeLib.Infrastructure
         public void SetHash(byte[] hash)
         {
             HashA = BitConverter.ToUInt64(hash, 0); // swapped offset because of intel
-            if (hash.Length > 8)
-            {
-                HashB = BitConverter.ToUInt64(hash, 8); // swapped offset because of intel
-            } else
-            {
-                HashB = 0; //What is the right response here for 32bit hashes?
-            }
+            HashB = hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : (ulong) 0;
         }
 
         public void SetHash(int hash)

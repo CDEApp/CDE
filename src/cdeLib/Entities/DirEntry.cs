@@ -156,7 +156,7 @@ namespace cdeLib
 
         public void SetHash(byte[] hash)
         {
-            Hash.SetHash(hash);
+            Hash = new Hash16(hash);
             IsHashDone = true;
         }
 
