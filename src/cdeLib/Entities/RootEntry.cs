@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿ using System;
+ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using System.Threading.Tasks;
-using cdeLib.Infrastructure;
+ using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
@@ -328,6 +326,7 @@ namespace cdeLib
             Serializer.Serialize(output, this);
         }
 
+        [Obsolete("Use CatalogRepository.Read")]
         public static RootEntry Read(Stream input)
         {
             try
@@ -340,51 +339,28 @@ namespace cdeLib
             }
         }
 
-        public static IList<RootEntry> LoadCurrentDirCache()
-        {
-            return Load(GetCacheFileList(new[] {"./"}));
-        }
+   
+       
 
-        public static IList<RootEntry> Load(IEnumerable<string> cdeList)
-        {
-            var results = new ConcurrentBag<RootEntry>();
-            Parallel.ForEach(cdeList, file =>
-            {
-                var newRootEntry = LoadDirCache(file);
-                if (newRootEntry != null)
-                {
-                    results.Add(newRootEntry);
-                }
-
-                Console.WriteLine($"{file} read..");
-            });
-            return results.ToList();
-        }
-
-        public static RootEntry LoadDirCache(string file)
-        {
-            if (File.Exists(file))
-            {
-                try
-                {
-                    using (var fs = File.Open(file, FileMode.Open, FileAccess.Read))
-                    {
-                        var re = Read(fs);
-                        if (re == null) return null;
-                        re.ActualFileName = file;
-                        re.SetInMemoryFields();
-                        return re;
-                    }
-                }
-                // ReSharper disable EmptyGeneralCatchClause
-                catch
-                {
-                }
-                // ReSharper restore EmptyGeneralCatchClause
-            }
-
-            return null;
-        }
+        // public static RootEntry LoadDirCache(string file)
+        // {
+        //     if (!File.Exists(file)) return null;
+        //     try
+        //     {
+        //         using var fileStream = File.OpenRead(file);
+        //         var rootEntry = Read(fileStream);
+        //         if (rootEntry == null) return null;
+        //         rootEntry.ActualFileName = file;
+        //         rootEntry.SetInMemoryFields();
+        //         return rootEntry;
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         Log.Logger.Error(ex,"Error Reading file");
+        //         // ignored
+        //         return null;
+        //     }
+        // }
 
         /// <summary>
         /// Set FullPath on all Directories.
@@ -459,38 +435,6 @@ namespace cdeLib
             }
 
             return config.CompareWithInfo(Description, re.Description);
-        }
-
-        /// <summary>
-        /// This gets .cde files in current dir or one directory down.
-        /// Use directory permissions to control who can load what .cde files one dir down if you like.
-        /// </summary>
-        public static IList<string> GetCacheFileList(IEnumerable<string> paths)
-        {
-            var cacheFilePaths = new List<string>();
-            foreach (var path in paths)
-            {
-                cacheFilePaths.AddRange(GetCdeFiles(path));
-
-                foreach (var childPath in Directory.GetDirectories(path))
-                {
-                    try
-                    {
-                        cacheFilePaths.AddRange(GetCdeFiles(childPath));
-                    }
-                    // ReSharper disable once EmptyGeneralCatchClause
-                    catch
-                    {
-                    } // if cant list folders don't care.
-                }
-            }
-
-            return cacheFilePaths;
-        }
-
-        private static IEnumerable<string> GetCdeFiles(string path)
-        {
-            return FileSystemHelper.GetFilesWithExtension(path, "cde");
         }
 
         //direntry import

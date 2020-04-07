@@ -11,19 +11,21 @@ namespace cdeLib.Hashing
         private readonly Duplication _duplication;
         private readonly ILogger _logger;
         private readonly IApplicationDiagnostics _applicationDiagnostics;
+        private ICatalogRepository _catalogRepository;
 
         public HashCatalogCommandHandler(ILogger logger, IApplicationDiagnostics applicationDiagnostics,
-            Duplication duplication)
+            Duplication duplication, ICatalogRepository catalogRepository)
         {
             _logger = logger;
             _applicationDiagnostics = applicationDiagnostics;
             _duplication = duplication;
+            _catalogRepository = catalogRepository;
         }
 
         public async Task<Unit> Handle(HashCatalogCommand request, CancellationToken cancellationToken)
         {
             _logger.LogInfo("Memory pre-catalog load: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var rootEntries = _catalogRepository.LoadCurrentDirCache();
             _logger.LogInfo("Memory post-catalog load: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var sw = new Stopwatch();
             sw.Start();

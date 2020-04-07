@@ -50,27 +50,41 @@ namespace cde
                     FindPathOptions>(
                     args)
                 .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
-                .WithParsed<FindOptions>(opts => { Find.StaticFind(opts.Value, "--find"); })
-                .WithParsed<FindPathOptions>(opts => { Find.StaticFind(opts.Value, "--findpath"); })
-                .WithParsed<GrepOptions>(opts => { Find.StaticFind(opts.Value, "--grep"); })
-                .WithParsed<GrepPathOptions>(opts => { Find.StaticFind(opts.Value, "--greppath"); })
-                .WithParsed<ReplGrepPathOptions>(opts => { FindRepl(Find.ParamGreppath, opts.Value); })
-                .WithParsed<ReplGrepOptions>(opts => { FindRepl(Find.ParamGrep, opts.Value); })
-                .WithParsed<ReplFindOptions>(opts => { FindRepl(Find.ParamFind, opts.Value); })
+                .WithParsed<FindOptions>(opts =>
+                {
+                    _container.Resolve<IFindService>().StaticFind(opts.Value, "--find",
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                })
+                .WithParsed<FindPathOptions>(opts =>
+                {
+                    _container.Resolve<IFindService>().StaticFind(opts.Value, "--findpath",
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                })
+                .WithParsed<GrepOptions>(opts =>
+                {
+                    _container.Resolve<IFindService>().StaticFind(opts.Value, "--grep",
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                })
+                .WithParsed<GrepPathOptions>(opts =>
+                {
+                    _container.Resolve<IFindService>().StaticFind(opts.Value, "--greppath",
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                })
+                .WithParsed<ReplGrepPathOptions>(opts => { FindRepl(FindService.ParamGreppath, opts.Value); })
+                .WithParsed<ReplGrepOptions>(opts => { FindRepl(FindService.ParamGrep, opts.Value); })
+                .WithParsed<ReplFindOptions>(opts => { FindRepl(FindService.ParamFind, opts.Value); })
                 .WithParsed<HashOptions>(opts => { HashCatalog(); })
                 .WithParsed<DupesOptions>(opts => { FindDupes(); })
                 .WithParsed<TreeDumpOptions>(opts => { PrintPathsHaveHashEnumerator(); })
                 .WithParsed<LoadWaitOptions>(opts =>
                 {
-                    RootEntry.LoadCurrentDirCache();
+                    var catalogRepository = _container.Resolve<ICatalogRepository>();
+                    catalogRepository.LoadCurrentDirCache();
                     Console.ReadLine();
                 })
                 .WithParsed<ReplOptions>(opts => { InvokeRepl(); })
                 .WithParsed<PopulousFoldersOptions>(opts => { FindPopulous(opts.Count); })
-                .WithNotParsed(errs =>
-                {
-                    Environment.Exit(1);
-                });
+                .WithNotParsed(errs => { Environment.Exit(1); });
             return 0;
         }
 
@@ -122,8 +136,9 @@ namespace cde
         // repl = read-eval-print-loop
         private static void FindRepl(string paramString, string firstPattern)
         {
-            Find.GetDirCache();
-            Find.StaticFind(firstPattern, paramString);
+            var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+            var findService = _container.Resolve<IFindService>();
+            findService.StaticFind(firstPattern, paramString,rootEntries);
             do
             {
                 if (Hack.BreakConsoleFlag)
@@ -136,7 +151,7 @@ namespace cde
                     break;
                 }
 
-                Find.StaticFind(pattern, paramString);
+                findService.StaticFind(pattern, paramString, rootEntries);
             } while (true);
         }
 
@@ -161,7 +176,7 @@ namespace cde
 
         private static void PrintPathsHaveHashEnumerator()
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
             foreach (var pairDirEntry in EntryHelper.GetPairDirEntries(rootEntries))
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
@@ -176,7 +191,7 @@ namespace cde
 
         private static void FindPopulous(int minimumCount)
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
             var entries = EntryHelper.GetDirEntries(rootEntries);
             var largeEntries = entries
                 .Where(e => e.Children != null && e.Children.Count > minimumCount)

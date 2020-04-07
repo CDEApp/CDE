@@ -23,7 +23,7 @@
 //         {
 //             var args = new[] { "-find", @"C:\" };
 //             var cdeArgs = new CDEArgs(args);
-//             Assert.That(cdeArgs.Mode, Is.EqualTo(CDEArgs.Modes.Find));
+//             Assert.That(cdeArgs.Mode, Is.EqualTo(CDEArgs.Modes.FindService));
 //             Assert.That(cdeArgs.FindParameters[0], Is.EqualTo(@"C:\"));
 //         }
 //

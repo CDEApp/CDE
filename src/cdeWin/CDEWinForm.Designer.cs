@@ -263,7 +263,7 @@ namespace cdeWin
             this.findLabel.Name = "findLabel";
             this.findLabel.Size = new System.Drawing.Size(27, 13);
             this.findLabel.TabIndex = 4;
-            this.findLabel.Text = "Find";
+            this.findLabel.Text = "FindService";
             // 
             // findComboBox
             // 

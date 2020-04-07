@@ -12,20 +12,18 @@ namespace cdeWin
 {
 	public partial class LoaderForm : Form
 	{
-		private readonly IConfig _config;
-	    private List<RootEntry> _rootEntries;
+        private List<RootEntry> _rootEntries;
 		private readonly IEnumerable<string> _cdeList;
 		private readonly TimeIt _timeIt;
 
 		public LoaderForm(IConfig config, IEnumerable<string> cdeList, TimeIt timeIt)
 		{
-			InitializeComponent();
-			_config = config;
-			_cdeList = cdeList;
+            InitializeComponent();
+            _cdeList = cdeList;
 			_timeIt = timeIt;
 
 			// Set to top left of application if it is available.
-			_config.RestoreConfigFormTopLeft(this);
+			config.RestoreConfigFormTopLeft(this);
 
 			AutoWaitCursor.Cursor = Cursors.WaitCursor;
 			AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
@@ -48,10 +46,11 @@ namespace cdeWin
 
 		private void LoaderForm_Shown(object sender, EventArgs e)
 		{
+            var repo = new CatalogRepository();
 			lblProgressMessage.Text = string.Empty;
 			Application.DoEvents(); // Make sure controls render before we do something.
 
-			var cacheFiles = RootEntry.GetCacheFileList(_cdeList);
+			var cacheFiles = repo.GetCacheFileList(_cdeList);
 			var totalFiles = cacheFiles.Count();
 			var fileCounter = 0;
 			barLoading.Step = totalFiles;
@@ -63,7 +62,7 @@ namespace cdeWin
             Parallel.ForEach(cacheFiles,
                 (cacheFile) =>
             {
-                var re = RootEntry.LoadDirCache(cacheFile);
+                var re = repo.LoadDirCache(cacheFile);
                 Interlocked.Increment(ref fileCounter);
                 rootEntries.Push(re);
 
@@ -73,21 +72,6 @@ namespace cdeWin
                     lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
                 });
             });
-
-//            int i = 1;
-//            // Not doing a background worker.
-//            			_rootEntries = cacheFiles.Select(s =>
-//            			{
-//            				//_timeIt.Start(s);
-//            				var re = RootEntry.LoadDirCache(s);
-//            				//_timeIt.Stop();
-//            				++fileCounter;
-//            				lblProgressMessage.Text = $"Loading catalog {fileCounter} of {totalFiles}";
-//            				barLoading.Value = fileCounter;
-//            				Application.DoEvents(); // Get label to update.
-//            				return re;
-//            			}).ToList();
-//            _timeIt.Stop();
 
             Serilog.Log.Logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
             _rootEntries = rootEntries.ToList();

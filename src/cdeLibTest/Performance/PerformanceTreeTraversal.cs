@@ -41,7 +41,8 @@ namespace cdeLibTest.Performance
             [OneTimeSetUp]
             public void BeforeAllTests()
             {
-                RootSmall = RootEntry.LoadDirCache(TestCatalog200K);
+                ICatalogRepository catalogRepository = new CatalogRepository();
+                RootSmall = catalogRepository.LoadDirCache(TestCatalog200K);
                 if (RootSmall == null)
                 {
                     Assert.Inconclusive("TestData not Found" + TestCatalog200K);
@@ -49,7 +50,7 @@ namespace cdeLibTest.Performance
                 var e1 = EntryHelper.GetDirEntries(RootSmall);
                 RootSmallCount = e1.Count();
 
-                RootLarge  = RootEntry.LoadDirCache(TestCatalog1_2M);
+                RootLarge  = catalogRepository.LoadDirCache(TestCatalog1_2M);
                 if (RootSmall == null)
                 {
                     Assert.Inconclusive("TestData not Found" + TestCatalog1_2M);
@@ -212,9 +213,10 @@ namespace cdeLibTest.Performance
 
         private static RootEntry MeasureLoad(string catalogName)
         {
+            var catalogRepository = new CatalogRepository();
             var sw = new Stopwatch();
             sw.Start();
-            var reC = RootEntry.LoadDirCache(catalogName);
+            var reC = catalogRepository.LoadDirCache(catalogName);
             sw.Stop();
             var loadTime = sw.ElapsedMilliseconds;
             if (reC == null)

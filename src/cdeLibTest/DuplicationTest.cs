@@ -157,7 +157,8 @@ namespace cdeLibTest
 
             //run tests.
             Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var catalogRepository = new CatalogRepository();
+            var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             if (rootEntries.Count == 0)
             {
@@ -216,7 +217,8 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_CheckAllDupeFilesHaveFullHash_OK()
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var catalogRepository = new CatalogRepository();
+            var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var dupePairEnum = d.GetDupePairs(rootEntries);
@@ -239,7 +241,8 @@ namespace cdeLibTest
         [Test]
         public async Task ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var catalogRepository = new CatalogRepository();
+            var rootEntries = catalogRepository.LoadCurrentDirCache();
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             await d.ApplyHash(rootEntries);
         }

@@ -9,10 +9,12 @@ namespace cdeLib.Cache
     public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
     {
         private readonly IConfiguration _configuration;
+        private readonly ICatalogRepository _catalogRepository;
 
-        public CreateCacheCommandHandler(IConfiguration configuration)
+        public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository)
         {
             _configuration = configuration;
+            _catalogRepository = catalogRepository;
         }
 
         public Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
@@ -31,7 +33,7 @@ namespace cdeLib.Cache
                     return Unit.Task;
                 }
 
-                var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
+                var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
                 if (oldRoot != null)
                 {
                     Console.WriteLine($"Found cache \"{re.DefaultFileName}\"");

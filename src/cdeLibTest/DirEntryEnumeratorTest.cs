@@ -140,7 +140,8 @@ namespace cdeLibTest
         [Test]
         public void PerformanceTest_Compare_TraverseTree_With_DirEntryEnumerator()
         {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
+            var catalogRepository = new CatalogRepository();
+            var rootEntries = catalogRepository.LoadCurrentDirCache();
             System.Threading.Thread.Sleep(200); // msec
             //_num = 0;
             _fileCount = 0;
