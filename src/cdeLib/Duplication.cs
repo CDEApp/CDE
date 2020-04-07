@@ -20,7 +20,7 @@ namespace cdeLib
         private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize =
             new Dictionary<long, List<PairDirEntry>>();
 
-        private readonly HashSet<DirEntry> _dirEntriesRequiringFullHashing = new HashSet<DirEntry>();
+        private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new HashSet<ICommonEntry>();
 
         protected readonly DuplicationStatistics _duplicationStatistics;
         private readonly ILogger _logger;
@@ -148,7 +148,7 @@ namespace cdeLib
 
         public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
+            EntryHelper.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
             _logger.LogDebug("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
 
             // Remove the single values from the dictionary.  DOESN'T SEEM TO CLEAR MEMORY ??? GC Force?
@@ -157,7 +157,7 @@ namespace cdeLib
             return _duplicateFileSize;
         }
 
-        private bool FindMatchesOnFileSize2(CommonEntry ce, DirEntry de)
+        private bool FindMatchesOnFileSize2(ICommonEntry ce, ICommonEntry de)
         {
             if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
             {
@@ -176,13 +176,13 @@ namespace cdeLib
             return true;
         }
 
-        private void CalculatePartialHash(string fullPath, DirEntry de)
+        private void CalculatePartialHash(string fullPath, ICommonEntry de)
         {
             var task = Task.Run(() => CalculatePartialHashAsync(fullPath, de));
             task.Wait();
         }
 
-        private async Task CalculatePartialHashAsync(string fullPath, DirEntry de)
+        private async Task CalculatePartialHashAsync(string fullPath, ICommonEntry de)
         {
             if (de.IsDirectory || de.IsHashDone)
             {
@@ -197,7 +197,7 @@ namespace cdeLib
             _logger.LogDebug(string.Empty);
             _logger.LogDebug("Checking duplicates and completing full hash.");
             var commonEntries = rootEntries as RootEntry[] ?? rootEntries.ToArray();
-            CommonEntry.TraverseTreePair(commonEntries, BuildDuplicateListIncludePartialHash);
+            EntryHelper.TraverseTreePair(commonEntries, BuildDuplicateListIncludePartialHash);
 
             var foundDupes = _duplicateFile.Where(d => d.Value.Count > 1).ToArray();
             var totalEntriesInDupes = foundDupes.Sum(x => x.Value.Count);
@@ -214,10 +214,10 @@ namespace cdeLib
                     _dirEntriesRequiringFullHashing.Add(pairDirEntry.ChildDE);
                 }
             }
-            CommonEntry.TraverseTreePair(commonEntries, CalculateFullHash);
+            EntryHelper.TraverseTreePair(commonEntries, CalculateFullHash);
         }
 
-        private async Task CalculateHash(string fullPath, DirEntry de, bool doPartialHash)
+        private async Task CalculateHash(string fullPath, ICommonEntry de, bool doPartialHash)
         {
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
@@ -288,14 +288,14 @@ namespace cdeLib
             }
         }
 
-        private bool CalculateFullHash(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool CalculateFullHash(ICommonEntry parentEntry, ICommonEntry dirEntry)
         {
             var tsk = Task.Run(() => CalculateFullHashAsync(parentEntry, dirEntry));
             tsk.Wait();
             return tsk.Result;
         }
 
-        private async Task<bool> CalculateFullHashAsync(CommonEntry parentEntry, DirEntry dirEntry)
+        private async Task<bool> CalculateFullHashAsync(ICommonEntry parentEntry, ICommonEntry dirEntry)
         {
             // ignore if we already have a hash.
             if (dirEntry.IsHashDone)
@@ -307,7 +307,7 @@ namespace cdeLib
 
                 if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
                 {
-                    var fullPath = CommonEntry.MakeFullPath(parentEntry, dirEntry);
+                    var fullPath = EntryHelper.MakeFullPath(parentEntry, dirEntry);
                     // TODO not sure we need this GetFullPath since dotnetcore3.0
                     var longFullPath = System.IO.Path.GetFullPath(fullPath);
                     await CalculateHash(longFullPath, dirEntry, false);
@@ -321,7 +321,7 @@ namespace cdeLib
             return true;
         }
 
-        private bool BuildDuplicateListIncludePartialHash(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool BuildDuplicateListIncludePartialHash(ICommonEntry parentEntry, ICommonEntry dirEntry)
         {
             if (dirEntry.IsDirectory || !dirEntry.IsHashDone || dirEntry.Size == 0)
             {
@@ -341,7 +341,7 @@ namespace cdeLib
             return true;
         }
 
-        private bool BuildDuplicateList(CommonEntry parentEntry, DirEntry dirEntry)
+        private bool BuildDuplicateList(ICommonEntry parentEntry, ICommonEntry dirEntry)
         {
             if (!dirEntry.IsPartialHash)
             {
@@ -364,7 +364,7 @@ namespace cdeLib
 
         public IList<KeyValuePair<DirEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
         {
-            CommonEntry.TraverseTreePair(rootEntries, BuildDuplicateList);
+            EntryHelper.TraverseTreePair(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();
 
             _logger.LogInfo("Count of list of all hashes of files with same sizes {0}",

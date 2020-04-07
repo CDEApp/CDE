@@ -11,7 +11,9 @@ namespace cdeLib
 
     public interface ICommonEntry
     {
-        RootEntry RootEntry { get; set; }
+        bool IsDefaultSort { get; set; }
+        int PathCompareWithDirTo(ICommonEntry de);
+        RootEntry TheRootEntry { get; set; }
         List<ICommonEntry> Children { get; set; }
         long Size { get; set; }
 

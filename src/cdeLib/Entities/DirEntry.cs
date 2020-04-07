@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
@@ -12,30 +11,6 @@ using Serilog;
 
 namespace cdeLib
 {
-
-    [Flags]
-    [FlatBufferEnum(typeof(byte))]
-    public enum Flags : byte
-    {
-        [Description("Obligatory none value.")]
-        None = 0,
-        [Description("Is a directory.")]
-        Directory = 1 << 0,
-        [Description("Has a bad modified date field.")]
-        ModifiedBad = 1 << 1,
-        // [Obsolete("With dotnetcore3.0")]
-        // [Description("Is a symbolic link.")]
-        // SymbolicLink = 1 << 2,
-        [Description("Is a reparse point.")]
-        ReparsePoint = 1 << 3,
-        [Description("Hashing was done for this.")]
-        HashDone = 1 << 4,
-        [Description("The Hash if done was a partial.")]
-        PartialHash = 1 << 5,
-        [Description("The Children are allready in default order.")]
-        DefaultSort = 1 << 6
-    };
-
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]
     [FlatBufferTable]
@@ -279,7 +254,7 @@ namespace cdeLib
         }
 
         // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
-        public int PathCompareWithDirTo(DirEntry de)
+        public int PathCompareWithDirTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -296,7 +271,7 @@ namespace cdeLib
             return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
-        public int PathCompareTo(DirEntry de)
+        public int PathCompareTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -384,7 +359,7 @@ namespace cdeLib
 
         //commonentry
 
-        public RootEntry RootEntry { get; set; }
+        public RootEntry TheRootEntry { get; set; }
 
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
@@ -419,45 +394,7 @@ namespace cdeLib
 
         public void TraverseTreePair(TraverseFunc func)
         {
-            TraverseTreePair(new List<ICommonEntry> { this }, func);
-        }
-
-        /// <summary>
-        /// Recursive traversal
-        /// </summary>
-        /// <param name="rootEntries">Entries to traverse</param>
-        /// <param name="traverseFunc">TraversalFunc</param>
-        /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
-        public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc, RootEntry catalogRootEntry = null)
-        {
-            if (traverseFunc == null) { return; } // nothing to do.
-
-            var funcContinue = true;
-            var dirs = new Stack<ICommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
-
-            while (funcContinue && dirs.Count > 0)
-            {
-                var commonEntry = dirs.Pop();
-                if (commonEntry.Children == null) { continue; } // empty directories may not have Children initialized.
-
-                foreach (var dirEntry in commonEntry.Children)
-                {
-                    if (catalogRootEntry != null)
-                    {
-                        commonEntry.RootEntry = catalogRootEntry;
-                    }
-                    funcContinue = traverseFunc(commonEntry, dirEntry);
-                    if (!funcContinue)
-                    {
-                        break;
-                    }
-
-                    if (dirEntry.IsDirectory)
-                    {
-                        dirs.Push(dirEntry);
-                    }
-                }
-            }
+            EntryHelper.TraverseTreePair(new List<ICommonEntry> { this }, func);
         }
 
         public void TraverseTreesCopyHash(ICommonEntry destination)
@@ -539,14 +476,7 @@ namespace cdeLib
 
         public string MakeFullPath(ICommonEntry dirEntry)
         {
-            return MakeFullPath(this, dirEntry);
-        }
-
-        public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
-        {
-            var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Path ?? "dnull";
-            return System.IO.Path.Combine(a, b);
+            return EntryHelper.MakeFullPath(this, dirEntry);
         }
 
         public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)

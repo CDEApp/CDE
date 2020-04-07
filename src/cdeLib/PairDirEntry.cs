@@ -6,18 +6,18 @@ namespace cdeLib
     [DebuggerDisplay("Size = {ChildDE.Size}")]
     public class PairDirEntry
     {
-        public readonly CommonEntry ParentDE;
+        public readonly ICommonEntry ParentDE;
 
-        public readonly DirEntry ChildDE;
+        public readonly ICommonEntry ChildDE;
 
         /// <summary>
         /// true if path or parent path ends with bad characters for NTFS, like Space or Period
         /// </summary>
         public readonly bool PathProblem;
 
-        public string FullPath => CommonEntry.MakeFullPath(ParentDE, ChildDE);
+        public string FullPath => EntryHelper.MakeFullPath(ParentDE, ChildDE);
 
-        public PairDirEntry(CommonEntry parent, DirEntry child)
+        public PairDirEntry(ICommonEntry parent, ICommonEntry child)
         {
             ParentDE = parent;
             ChildDE = child;

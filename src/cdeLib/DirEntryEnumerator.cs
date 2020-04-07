@@ -7,7 +7,7 @@ namespace cdeLib
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
-        private Stack<CommonEntry> _entries;
+        private Stack<ICommonEntry> _entries;
         private IEnumerator<DirEntry> _childEnumerator;
 
         public DirEntry Current => _current;
@@ -25,9 +25,9 @@ namespace cdeLib
             Reset();
         }
 
-        private static Stack<CommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
+        private static Stack<ICommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
         {
-            var entries = new Stack<CommonEntry>();
+            var entries = new Stack<ICommonEntry>();
             foreach (var re in rootEntries)
             {
                 if (re.Children != null && re.Children.Count > 0)

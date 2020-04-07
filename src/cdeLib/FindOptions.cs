@@ -44,7 +44,7 @@ namespace cdeLib
         /// </summary>
         public Action<int, int> ProgressFunc { get; set; }
         public BackgroundWorker Worker { get; set; }
-        public Func<CommonEntry, DirEntry, bool> PatternMatcher { get; set; }
+        public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
 
         public FindOptions()
         {
@@ -85,7 +85,7 @@ namespace cdeLib
 
             foreach (var rootEntry in rootEntries)
             {
-                CommonEntry.TraverseTreePair(new List<CommonEntry>(){rootEntry}, findFunc, rootEntry);
+                EntryHelper.TraverseTreePair(new List<ICommonEntry>(){rootEntry}, findFunc, rootEntry);
             }
 
             //CommonEntry.TraverseTreePair(rootEntries, findFunc);
@@ -93,9 +93,9 @@ namespace cdeLib
             // ReSharper restore PossibleMultipleEnumeration
         }
 
-        public Func<CommonEntry, DirEntry, bool> GetPatternMatcher()
+        public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
         {
-            Func<CommonEntry, DirEntry, bool> matcher;
+            Func<ICommonEntry, ICommonEntry, bool> matcher;
             if (RegexMode)
             {
                 var regex = new Regex(Pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
@@ -120,7 +120,7 @@ namespace cdeLib
         {
             var findPredicate = GetFindPredicate();
 
-            bool FindFunc(CommonEntry p, DirEntry d)
+            bool FindFunc(ICommonEntry p, ICommonEntry d)
             {
                 ++progressCount[0];
                 if (progressCount[0] <= SkipCount)
