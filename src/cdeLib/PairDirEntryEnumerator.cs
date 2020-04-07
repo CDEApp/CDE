@@ -9,7 +9,7 @@ namespace cdeLib
         private PairDirEntry _current;
         private Stack<ICommonEntry> _entries;
         private ICommonEntry _parentDirEntry;
-        private IEnumerator<DirEntry> _childEnumerator;
+        private IEnumerator<ICommonEntry> _childEnumerator;
 
         public PairDirEntry Current => _current;
 

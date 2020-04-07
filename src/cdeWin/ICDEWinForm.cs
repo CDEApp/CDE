@@ -84,7 +84,7 @@ namespace cdeWin
         DateTime ToHourValue { get; set; }
 
         IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
-        IListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
         IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         CheckBoxDependentControlHelper FromDate { get; set; }
@@ -111,6 +111,6 @@ namespace cdeWin
         void MessageBox(string message);
 		void AboutDialog();
 		void Addline(string format, params object[] args);
-        CommonEntry GetSelectedTreeItem();
+        ICommonEntry GetSelectedTreeItem();
     }
 }

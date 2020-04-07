@@ -11,9 +11,10 @@ namespace cdeLib.Infrastructure
     [FlatBufferStruct]
     public class Hash16 : object
     {
-        [ProtoMember(0, IsRequired = true)]
-        [FlatBufferItem(0)]
+        [ProtoMember(1, IsRequired = true)]
+        [FlatBufferItem(1)]
         public virtual ulong HashA { get; set; } // first 8 bytes
+        
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(2)]
         public virtual ulong HashB { get; set; } // last 8 bytes
@@ -72,7 +73,6 @@ namespace cdeLib.Infrastructure
         {
             public bool Equals(Hash16 x, Hash16 y)
             {
-                //return x.HashA == y.HashA && x.HashB == y.HashB;
                 return StaticEquals(x, y);
             }
 

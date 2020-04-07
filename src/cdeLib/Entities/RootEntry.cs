@@ -15,16 +15,6 @@ using Serilog;
 
 namespace cdeLib
 {
-    public static class EntryHelper
-    {
-        public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
-        {
-            var a = parentEntry.FullPath ?? "pnull";
-            var b = dirEntry.Path ?? "dnull";
-            return System.IO.Path.Combine(a, b);
-        }
-    }
-
     // TODO - RootEntry needs All the Flags.
     // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
@@ -67,13 +57,26 @@ namespace cdeLib
         [FlatBufferItem(7)]
         public virtual ulong TotalSpace { get; set; }
 
-        [ProtoMember(8, IsRequired = true)]
-        [FlatBufferItem(8)]
-        public virtual DateTime ScanStartUTC { get; set; }
+        
+        
+        public virtual DateTime ScanStartUTC {
+            set => ScanStartUTCTicks = value.Ticks;
+            get => DateTime.FromBinary(ScanStartUTCTicks);
+        }
 
-        [ProtoMember(9, IsRequired = true)]
+        [FlatBufferItem(8)]
+        [ProtoMember(8, IsRequired = true)]
+        public virtual long ScanStartUTCTicks { get; set; }
+
+        public virtual DateTime ScanEndUTC
+        {
+            set => ScanEndUTCTicks = value.Ticks;
+            get => DateTime.FromBinary(ScanEndUTCTicks);
+        }
+
         [FlatBufferItem(9)]
-        public virtual DateTime ScanEndUTC { get; set; }
+        [ProtoMember(9, IsRequired = true)]
+        public virtual long ScanEndUTCTicks { get; set; }
 
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         [FlatBufferItem(10)]
@@ -90,7 +93,7 @@ namespace cdeLib
         public RootEntry()
             //: base(true)
         {
-            Children = new List<ICommonEntry>();
+            Children = new List<DirEntry>();
             PathsWithUnauthorisedExceptions = new List<string>();
             TheRootEntry = this;
             _driveInfoService = new DriveInfoService();
@@ -337,12 +340,12 @@ namespace cdeLib
             }
         }
 
-        public static List<RootEntry> LoadCurrentDirCache()
+        public static IList<RootEntry> LoadCurrentDirCache()
         {
             return Load(GetCacheFileList(new[] {"./"}));
         }
 
-        public static List<RootEntry> Load(IEnumerable<string> cdeList)
+        public static IList<RootEntry> Load(IEnumerable<string> cdeList)
         {
             var results = new ConcurrentBag<RootEntry>();
             Parallel.ForEach(cdeList, file =>
@@ -491,14 +494,24 @@ namespace cdeLib
         }
 
         //direntry import
+        public virtual DateTime Modified
+        {
+            set => ModifiedTicks = value.Ticks;
+            get => DateTime.FromBinary(ModifiedTicks);
+        }
 
-        [ProtoMember(1, IsRequired = true)]
-        [FlatBufferItem(1)]
-        public virtual DateTime Modified { get; set; }
 
-        [ProtoMember(2, IsRequired = false)]
-        [FlatBufferItem(2)]
+        [ProtoMember(12, IsRequired = false)] // is there a better default value than 0 here
+        [FlatBufferItem(12)]
+        public virtual Flags BitFields { get; set; }
+
+        [ProtoMember(13, IsRequired = false)]
+        [FlatBufferItem(13)]
         public virtual Hash16 Hash { get; set; }
+
+        [ProtoMember(14, IsRequired = true)]
+        [FlatBufferItem(14)]
+        public virtual long ModifiedTicks { get; set; }
 
         /// <summary>
         /// public bool ShouldSerializeHash() should be same as this, but isn't
@@ -510,9 +523,6 @@ namespace cdeLib
 
         //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
-        [ProtoMember(5, IsRequired = false)] // is there a better default value than 0 here
-        [FlatBufferItem(5)]
-        public virtual Flags BitFields { get; set; }
 
         #region BitFields based properties
         public bool IsDirectory
@@ -628,6 +638,7 @@ namespace cdeLib
             IsHashDone = true;
         }
 
+
         // For testing convenience.
         public void SetHash(int hash)
         {
@@ -656,7 +667,7 @@ namespace cdeLib
             }
             else
             {
-                Children = new List<ICommonEntry>();
+                Children = new List<DirEntry>();
             }
         }
 
@@ -664,7 +675,7 @@ namespace cdeLib
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
         private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
-        public int SizeCompareWithDirTo(DirEntry de)
+        public int SizeCompareWithDirTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -692,7 +703,7 @@ namespace cdeLib
             return sizeCompare;
         }
 
-        public int ModifiedCompareTo(DirEntry de)
+        public int ModifiedCompareTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -822,20 +833,20 @@ namespace cdeLib
         public RootEntry TheRootEntry { get; set; }
 
         // ReSharper disable MemberCanBePrivate.Global
-        [ProtoMember(3, IsRequired = false)]
-        [FlatBufferItem(3)]
-        public virtual List<ICommonEntry> Children { get; set; }
+        [ProtoMember(15, IsRequired = false)]
+        [FlatBufferItem(15)]
+        public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
-        [ProtoMember(4, IsRequired = true)]
-        [FlatBufferItem(4)]
+        [ProtoMember(16, IsRequired = true)]
+        [FlatBufferItem(16)]
         public virtual long Size { get; set; }
 
         /// <summary>
         /// RootEntry this is the root path, DirEntry this is the entry name.
         /// </summary>
-        [ProtoMember(5, IsRequired = true)]
-        [FlatBufferItem(5)]
+        [ProtoMember(17, IsRequired = true)]
+        [FlatBufferItem(17)]
         public virtual string Path { get; set; }
 
         public ICommonEntry ParentCommonEntry { get; set; }
@@ -964,7 +975,7 @@ namespace cdeLib
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, sourceDirEntry, destinationDirEntry));
+                                dirs.Push(Tuple.Create(fullPath, sourceDirEntry as ICommonEntry, destinationDirEntry as ICommonEntry));
                             }
                         }
                     }
@@ -977,25 +988,10 @@ namespace cdeLib
             return EntryHelper.MakeFullPath(this, dirEntry);
         }
 
-        public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
-        {
-            return new DirEntryEnumerator(rootEntry);
-        }
-
-        public static IEnumerable<DirEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
-        {
-            return new DirEntryEnumerator(rootEntries);
-        }
-
-        public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
-        {
-            return new PairDirEntryEnumerator(rootEntries);
-        }
-
         /// <summary>
         /// Return List of CommonEntry, first is RootEntry, rest are DirEntry that lead to this.
         /// </summary>
-        public List<ICommonEntry> GetListFromRoot()
+        public IList<ICommonEntry> GetListFromRoot()
         {
             var activatedDirEntryList = new List<ICommonEntry>(8);
             for (var entry = this as ICommonEntry; entry != null; entry = entry.ParentCommonEntry)

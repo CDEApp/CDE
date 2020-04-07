@@ -3,7 +3,7 @@ using cdeLib;
 
 namespace cdeLibTest
 {
-    public class CommonEntryTestStub : CommonEntry
+    public class CommonEntryTestStub : DirEntry
     {
         // TODO not sure initialise Children best way for test.
         public CommonEntryTestStub()

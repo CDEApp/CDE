@@ -14,11 +14,19 @@ namespace cdeLib
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]
     [FlatBufferTable]
-    public class DirEntry : ICommonEntry
+    public partial class DirEntry : ICommonEntry
     {
+        
+        public virtual DateTime Modified
+
+        {
+            set => ModifiedTicks = value.Ticks;
+            get => DateTime.FromBinary(ModifiedTicks);
+        }
+
         [ProtoMember(1, IsRequired = true)]
         [FlatBufferItem(1)]
-        public virtual DateTime Modified { get; set; }
+        public virtual long ModifiedTicks { get; set; }
 
         [ProtoMember(2, IsRequired = false)]
         [FlatBufferItem(2)]
@@ -34,8 +42,8 @@ namespace cdeLib
 
         //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
-        [ProtoMember(5, IsRequired = false)] // is there a better default value than 0 here
-        [FlatBufferItem(5)]
+        [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
+        [FlatBufferItem(6)]
         public virtual Flags BitFields { get; set; }
 
         #region BitFields based properties
@@ -171,7 +179,7 @@ namespace cdeLib
             IsDirectory = isDirectory;
             if (isDirectory)
             {
-                Children = new List<ICommonEntry>();
+                Children = new List<DirEntry>();
             }
         }
 
@@ -196,7 +204,7 @@ namespace cdeLib
             }
             else
             {
-                Children = new List<ICommonEntry>();
+                Children = new List<DirEntry>();
             }
         }
 
@@ -204,7 +212,7 @@ namespace cdeLib
         private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
         private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
-        public int SizeCompareWithDirTo(DirEntry de)
+        public int SizeCompareWithDirTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -232,7 +240,7 @@ namespace cdeLib
             return sizeCompare;
         }
 
-        public int ModifiedCompareTo(DirEntry de)
+        public int ModifiedCompareTo(ICommonEntry de)
         {
             if (de == null)
             {
@@ -280,45 +288,6 @@ namespace cdeLib
             return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
-        public class EqualityComparer : IEqualityComparer<DirEntry>
-        {
-            public bool Equals(DirEntry x, DirEntry y)
-            {
-                return StaticEquals(x, y);
-            }
-
-            public int GetHashCode(DirEntry obj)
-            {
-                return StaticGetHashCode(obj);
-            }
-
-            public static bool StaticEquals(DirEntry x, DirEntry y)
-            {
-                if (x == null || y == null
-                    || !x.IsHashDone || !y.IsHashDone)
-                {
-                    return false;
-                }
-                return Hash16.EqualityComparer.StaticEquals(x.Hash, y.Hash)
-                    && x.Size == y.Size;
-            }
-
-            public static int StaticGetHashCode(DirEntry obj)
-            {
-                // quite likely a bad choice for hash.
-                // if Hash not set then. avoid using it...
-                if (obj.IsHashDone)
-                {
-                    return (Hash16.EqualityComparer.StaticGetHashCode(obj.Hash) * 31 +
-                       (int)(obj.Size >> 32)) * 31 +
-                       (int)(obj.Size & 0xFFFFFFFF);
-                }
-
-                return (int)(obj.Size >> 32) * 31 +
-                       (int)(obj.Size & 0xFFFFFFFF);
-            }
-        }
-
         // can this be done with TraverseTree ?
         public void SetSummaryFields()
         {
@@ -364,7 +333,7 @@ namespace cdeLib
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         [FlatBufferItem(3)]
-        public virtual List<ICommonEntry> Children { get; set; }
+        public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
         [ProtoMember(4, IsRequired = true)]
@@ -466,7 +435,7 @@ namespace cdeLib
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, sourceDirEntry, destinationDirEntry));
+                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry, (ICommonEntry) destinationDirEntry));
                             }
                         }
                     }
@@ -479,12 +448,12 @@ namespace cdeLib
             return EntryHelper.MakeFullPath(this, dirEntry);
         }
 
-        public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
+        public static IEnumerable<ICommonEntry> GetDirEntries(RootEntry rootEntry)
         {
             return new DirEntryEnumerator(rootEntry);
         }
 
-        public static IEnumerable<DirEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
+        public static IEnumerable<ICommonEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
         {
             return new DirEntryEnumerator(rootEntries);
         }
@@ -497,7 +466,7 @@ namespace cdeLib
         /// <summary>
         /// Return List of CommonEntry, first is RootEntry, rest are DirEntry that lead to this.
         /// </summary>
-        public List<ICommonEntry> GetListFromRoot()
+        public IList<ICommonEntry> GetListFromRoot()
         {
             var activatedDirEntryList = new List<ICommonEntry>(8);
             for (var entry = this; entry != null; entry = (DirEntry) entry.ParentCommonEntry)

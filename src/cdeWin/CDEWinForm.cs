@@ -68,7 +68,7 @@ namespace cdeWin
         public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
         public IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
-        public IListViewHelper<DirEntry> DirectoryListViewHelper { get; set; }
+        public IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
         public IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
         public CheckBoxDependentControlHelper FromDate { get; set; }
@@ -181,7 +181,7 @@ namespace cdeWin
                     ContextMenu = CreateSearchResultContextMenu(),
                 };
 
-            DirectoryListViewHelper = new ListViewHelper<DirEntry>(directoryListView)
+            DirectoryListViewHelper = new ListViewHelper<ICommonEntry>(directoryListView)
                 {
                     // ReSharper disable PossibleNullReferenceException
                     RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
@@ -343,10 +343,10 @@ namespace cdeWin
             }
         }
 
-        public CommonEntry GetSelectedTreeItem()
+        public ICommonEntry GetSelectedTreeItem()
         {
             // any visible tree node has a valid Tag
-            return (CommonEntry) (directoryTreeView.SelectedNode != null
+            return (ICommonEntry) (directoryTreeView.SelectedNode != null
                     ? directoryTreeView.SelectedNode.Tag
                     : null);
         }

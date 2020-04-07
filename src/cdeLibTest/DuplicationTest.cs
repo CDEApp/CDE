@@ -121,11 +121,13 @@ namespace cdeLibTest
             var ah8 = Hash16.EqualityComparer.StaticGetHashCode(de8.Hash);
             Console.WriteLine($"de5.Hash {ah5}  de6.Hash {ah6} de7.Hash {ah7} de8.Hash {ah8}");
 
-            var a5 = DirEntry.EqualityComparer.StaticGetHashCode(de5);
-            var a6 = DirEntry.EqualityComparer.StaticGetHashCode(de6);
-            var a7 = DirEntry.EqualityComparer.StaticGetHashCode(de7);
-            var a8 = DirEntry.EqualityComparer.StaticGetHashCode(de8);
-            Console.WriteLine($"de5 {a5}  de6 {a6} de7 {a7} de8 {a8}");
+
+            // TODO: Fix
+            // var a5 = DirEntry.EqualityComparer.StaticGetHashCode(de5);
+            // var a6 = DirEntry.EqualityComparer.StaticGetHashCode(de6);
+            // var a7 = DirEntry.EqualityComparer.StaticGetHashCode(de7);
+            // var a8 = DirEntry.EqualityComparer.StaticGetHashCode(de8);
+            //Console.WriteLine($"de5 {a5}  de6 {a6} de7 {a7} de8 {a8}");
         }
 
         private string AssemblyPathLocation()

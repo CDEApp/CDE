@@ -15,7 +15,7 @@ namespace cdeWinTest
         protected ICDEWinForm _mockForm;
         protected IConfig _stubConfig;
         protected IListViewHelper<PairDirEntry> _mockSearchResultListViewHelper;
-        protected IListViewHelper<DirEntry> _mockDirectoryListViewHelper;
+        protected IListViewHelper<ICommonEntry> _mockDirectoryListViewHelper;
         protected IListViewHelper<RootEntry> _mockCatalogListViewHelper;
 
         protected RootEntry _rootEntry;
@@ -38,7 +38,7 @@ namespace cdeWinTest
             _stubConfig = Substitute.For<IConfig>();
             _mockSearchResultListViewHelper = Substitute.For<IListViewHelper<PairDirEntry>>();
             _mockForm.SearchResultListViewHelper.Returns(_mockSearchResultListViewHelper);
-            _mockDirectoryListViewHelper = Substitute.For<IListViewHelper<DirEntry>>();
+            _mockDirectoryListViewHelper = Substitute.For<IListViewHelper<ICommonEntry>>();
             _mockForm.DirectoryListViewHelper.Returns(_mockDirectoryListViewHelper);
             _mockCatalogListViewHelper = Substitute.For<IListViewHelper<RootEntry>>();
             _mockForm.CatalogListViewHelper.Returns(_mockCatalogListViewHelper);

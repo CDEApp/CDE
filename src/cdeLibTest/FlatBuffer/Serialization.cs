@@ -7,7 +7,9 @@ using cdeLib;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using FlatSharp;
+using Newtonsoft.Json;
 using NSubstitute;
+using Shouldly;
 
 namespace cdeLibTest.FlatBuffer
 {
@@ -43,8 +45,12 @@ namespace cdeLibTest.FlatBuffer
             var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(re1);
             byte[] buffer = new byte[maxBytesNeeded];
             FlatBufferSerializer.Default.Serialize(re1, buffer);
-            //Serializer.Serialize(ms, re1);
-            
+
+            RootEntry re2 = FlatBufferSerializer.Default.Parse<RootEntry>(buffer);
+
+            re2.ShouldNotBeNull();
+
+            re2.GetHashCode().ShouldBe(re1.GetHashCode());
             //var b = ms.ToArray();
 
             // Console.WriteLine($"b.Length {b.Length}");

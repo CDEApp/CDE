@@ -14,7 +14,7 @@ namespace cdeLib
         bool IsDefaultSort { get; set; }
         int PathCompareWithDirTo(ICommonEntry de);
         RootEntry TheRootEntry { get; set; }
-        List<ICommonEntry> Children { get; set; }
+        IList<DirEntry> Children { get; set; }
         long Size { get; set; }
 
         /// <summary>
@@ -37,6 +37,8 @@ namespace cdeLib
         bool IsHashDone { get; set; }
         bool IsPartialHash { get; set; }
         Hash16 Hash { get; set; }
+        bool IsModifiedBad { get; set; }
+        bool IsReparsePoint { get; set; }
 
         void TraverseTreePair(TraverseFunc func);
         void TraverseTreesCopyHash(ICommonEntry destination);
@@ -45,7 +47,7 @@ namespace cdeLib
         /// <summary>
         /// Return List of CommonEntry, first is RootEntry, rest are DirEntry that lead to this.
         /// </summary>
-        List<ICommonEntry> GetListFromRoot();
+        IList<ICommonEntry> GetListFromRoot();
 
         bool ExistsOnFileSystem();
 
@@ -56,5 +58,8 @@ namespace cdeLib
         bool IsBadPath();
 
         void SetSummaryFields();
+        void SetHash(byte[] hashResponseHash);
+        int SizeCompareWithDirTo(ICommonEntry de2);
+        int ModifiedCompareTo(ICommonEntry de2);
     }
 }

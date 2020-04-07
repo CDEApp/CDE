@@ -30,12 +30,12 @@ namespace cdeWin
         private readonly string[] _catalogVals;
 
         private List<PairDirEntry> _searchResultList;
-        private List<DirEntry> _directoryList;
+        private List<ICommonEntry> _directoryList;
 
         /// <summary>
         /// The entry that is the parent of the Directory List View displayed items.
         /// </summary>
-        private CommonEntry _directoryListCommonEntry;
+        private ICommonEntry _directoryListCommonEntry;
 
         private BackgroundWorker _bgWorker;
         private bool _isSearchButton;
@@ -147,7 +147,7 @@ namespace cdeWin
             {
                 // Replace Dummy with real nodes now visible.
                 parentNode.Nodes.Clear();
-                AddAllDirectoriesChildren(parentNode, (CommonEntry) parentNode.Tag);
+                AddAllDirectoriesChildren(parentNode, (ICommonEntry) parentNode.Tag);
             }
         }
 
@@ -156,7 +156,7 @@ namespace cdeWin
             return parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName;
         }
 
-        private static void AddAllDirectoriesChildren(TreeNode treeNode, CommonEntry dirEntry)
+        private static void AddAllDirectoriesChildren(TreeNode treeNode, ICommonEntry dirEntry)
         {
             foreach (var subDirEntry in dirEntry.Children)
             {
@@ -164,7 +164,7 @@ namespace cdeWin
             }
         }
 
-        private static void AddDirectoryChildren(TreeNode treeNode, DirEntry dirEntry)
+        private static void AddDirectoryChildren(TreeNode treeNode, ICommonEntry dirEntry)
         {
             if (dirEntry.IsDirectory)
             {
@@ -177,7 +177,7 @@ namespace cdeWin
         /// <summary>
         /// A node with children gets a dummy child node so Treeview shows node as expandable.
         /// </summary>
-        private static void SetDummyChildNode(TreeNode treeNode, CommonEntry commonEntry)
+        private static void SetDummyChildNode(TreeNode treeNode, ICommonEntry commonEntry)
         {
             if (commonEntry.Children?.Any(entry => entry.IsDirectory) == true)
             {
@@ -185,7 +185,7 @@ namespace cdeWin
             }
         }
 
-        private static TreeNode NewTreeNode(CommonEntry commonEntry)
+        private static TreeNode NewTreeNode(ICommonEntry commonEntry)
         {
             return NewTreeNode(commonEntry.Path, commonEntry);
         }
@@ -529,9 +529,9 @@ namespace cdeWin
 
             _searchVals[(int) SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
-            if (pairDirEntry.ParentDE.RootEntry != null)
+            if (pairDirEntry.ParentDE.TheRootEntry != null)
             {
-                _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.RootEntry.DefaultFileName;
+                _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.TheRootEntry.DefaultFileName;
             }
             
 
@@ -542,14 +542,14 @@ namespace cdeWin
         public void DirectoryTreeViewAfterSelect()
         {
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            SetDirectoryListView((CommonEntry) selectedNode.Tag);
+            SetDirectoryListView((ICommonEntry) selectedNode.Tag);
         }
 
-        public void SetDirectoryListView(CommonEntry commonEntry)
+        public void SetDirectoryListView(ICommonEntry commonEntry)
         {
             _directoryListCommonEntry = commonEntry;
             var directoryHelper = _clientForm.DirectoryListViewHelper;
-            _directoryList = commonEntry.Children?.ToList();
+            _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList());
             directoryHelper.SetList(_directoryList);
             directoryHelper.SortList();
             _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
@@ -570,7 +570,7 @@ namespace cdeWin
         }
 
 
-        private Color CreateRowValuesForDirectory(IList<string> vals, DirEntry dirEntry, Color itemColor)
+        private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
         {
             vals[0] = dirEntry.Path;
             vals[1] = dirEntry.Size.ToString();
@@ -585,12 +585,6 @@ namespace cdeWin
                     {
                         val += " R";
                     }
-
-                    // if (dirEntry.IsSymbolicLink)
-                    // {
-                    //     val += " S";
-                    // }
-
                     vals[1] = val + ">";
                 }
             }
@@ -649,14 +643,14 @@ namespace cdeWin
             });
         }
 
-        private void SetDirectoryWithExpand(DirEntry dirEntry)
+        private void SetDirectoryWithExpand(ICommonEntry dirEntry)
         {
             var activatedDirEntryList = dirEntry.GetListFromRoot();
 
             SetDirectoryWithExpand(activatedDirEntryList);
         }
 
-        private void SetDirectoryWithExpand(IEnumerable<CommonEntry> activatedDirEntryList)
+        private void SetDirectoryWithExpand(IEnumerable<ICommonEntry> activatedDirEntryList)
         {
             var currentRootNode = _clientForm.DirectoryTreeViewNodes;
             var currentRoot = (RootEntry) currentRootNode?.Tag;
@@ -754,8 +748,8 @@ namespace cdeWin
                 
                 case 3:
                     compareResult = _config.MyCompareInfo.Compare(
-                        pde1.ParentDE.RootEntry.ActualFileName,
-                        pde2.ParentDE.RootEntry.ActualFileName,
+                        pde1.ParentDE.TheRootEntry.ActualFileName,
+                        pde2.ParentDE.TheRootEntry.ActualFileName,
                         _config.MyCompareOptions);
                     break;
 
@@ -787,7 +781,7 @@ namespace cdeWin
             _clientForm.DirectoryListViewHelper.ListViewColumnClick();
         }
 
-        private int DirectoryCompare(DirEntry de1, DirEntry de2)
+        private int DirectoryCompare(ICommonEntry de1, ICommonEntry de2)
         {
             int compareResult;
             var directoryHelper = _clientForm.DirectoryListViewHelper;
@@ -828,7 +822,7 @@ namespace cdeWin
             _clientForm.AboutDialog();
         }
 
-        private void DirectoryTreeGetContextMenuPairDirEntryThatExists(Action<CommonEntry> gotContextAction)
+        private void DirectoryTreeGetContextMenuPairDirEntryThatExists(Action<ICommonEntry> gotContextAction)
         {
             var selectedCommonEntry = _clientForm.GetSelectedTreeItem();
             if (selectedCommonEntry.ExistsOnFileSystem())
@@ -866,7 +860,7 @@ namespace cdeWin
             });
         }
 
-        private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<DirEntry>> gotContextAction)
+        private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<ICommonEntry>> gotContextAction)
         {
             _clientForm.DirectoryListViewHelper.ActionOnSelectedItems(gotContextAction);
         }
@@ -892,7 +886,7 @@ namespace cdeWin
             SelectFileInDirectoryTab(dirEntry);
         }
 
-        private void SelectFileInDirectoryTab(DirEntry dirEntry)
+        private void SelectFileInDirectoryTab(ICommonEntry dirEntry)
         {
             if (!dirEntry.IsDirectory)
             {

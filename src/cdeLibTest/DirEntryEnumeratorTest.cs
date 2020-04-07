@@ -148,7 +148,7 @@ namespace cdeLibTest
             sw.Start();
             for (var i = 0; i < 100; ++i)
             {
-                var deEnumerator = CommonEntry.GetDirEntries(rootEntries);
+                var deEnumerator = EntryHelper.GetDirEntries(rootEntries);
                 foreach (var dirEntry in deEnumerator)
                 {
                     //_num += (ulong)dirEntry.FullPath.Length;

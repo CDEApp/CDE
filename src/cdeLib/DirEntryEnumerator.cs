@@ -3,14 +3,14 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-    public sealed class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
+    public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<ICommonEntry>
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
-        private DirEntry _current;
+        private ICommonEntry _current;
         private Stack<ICommonEntry> _entries;
-        private IEnumerator<DirEntry> _childEnumerator;
+        private IEnumerator<ICommonEntry> _childEnumerator;
 
-        public DirEntry Current => _current;
+        public ICommonEntry Current => _current;
         object IEnumerator.Current => Current;
 
         public DirEntryEnumerator(RootEntry rootEntry)
@@ -83,7 +83,7 @@ namespace cdeLib
             _childEnumerator = null;
         }
 
-        IEnumerator<DirEntry> IEnumerable<DirEntry>.GetEnumerator()
+        IEnumerator<ICommonEntry> IEnumerable<ICommonEntry>.GetEnumerator()
         {
             return new DirEntryEnumerator(_rootEntries);
         }

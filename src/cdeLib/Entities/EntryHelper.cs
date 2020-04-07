@@ -5,6 +5,21 @@ namespace cdeLib
 {
     public static class EntryHelper
     {
+        public static IEnumerable<ICommonEntry> GetDirEntries(RootEntry rootEntry)
+        {
+            return new DirEntryEnumerator(rootEntry);
+        }
+
+        public static IEnumerable<ICommonEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
+        {
+            return new DirEntryEnumerator(rootEntries);
+        }
+
+        public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
+        {
+            return new PairDirEntryEnumerator(rootEntries);
+        }
+
         public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
         {
             var a = parentEntry.FullPath ?? "pnull";

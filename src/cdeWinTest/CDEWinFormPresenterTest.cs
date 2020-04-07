@@ -49,7 +49,7 @@ namespace cdeWinTest
 
                 _mockSearchResultListViewHelper.ColumnSortCompare = Arg.Any<Comparison<PairDirEntry>>();
                 _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<RootEntry>>();
-                _mockDirectoryListViewHelper.ColumnSortCompare = Arg.Any<Comparison<DirEntry>>();
+                _mockDirectoryListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
             }
 
             [Test]
@@ -182,8 +182,8 @@ namespace cdeWinTest
                 MockDirectoryTreeViewAfterSelect(_sutPresenter, x => treeViewSelectedNode = x);
                 TreeNode treeViewRootNode = null;
                 _mockForm.DirectoryTreeViewNodes = Arg.Do<TreeNode>(x => treeViewRootNode = x);
-                List<DirEntry> listViewListArg = null;
-                _mockDirectoryListViewHelper.SetList(Arg.Do<List<DirEntry>>(x => listViewListArg = x));
+                List<ICommonEntry> listViewListArg = null;
+                _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => listViewListArg = x));
                 FakeItemActivateWithValue(_mockSearchResultListViewHelper, _pairDirEntry);
 
                 // ACT
@@ -207,8 +207,8 @@ namespace cdeWinTest
                 MockDirectoryTreeViewAfterSelect(_sutPresenter, node => treeViewSelectedNode = node);
                 TreeNode treeViewRootNode = null;
                 _mockForm.DirectoryTreeViewNodes = Arg.Do<TreeNode>(x => treeViewRootNode = x);
-                List<DirEntry> listViewListArg = null;
-                _mockDirectoryListViewHelper.SetList(Arg.Do<List<DirEntry>>(x => listViewListArg = x));
+                List<ICommonEntry> listViewListArg = null;
+                _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => listViewListArg = x));
                 FakeItemActivateWithValue(_mockSearchResultListViewHelper, _pairDirEntry);
 
                 // ACT
@@ -217,7 +217,7 @@ namespace cdeWinTest
                 _mockForm.Received(1).DirectoryTreeViewNodes = treeViewRootNode;
                 Assert.That(treeViewSelectedNode.Text, Is.EqualTo("Test1"),
                     "TreeView root node Text value not expected");
-                _mockDirectoryListViewHelper.Received(1).SetList(Arg.Any<List<DirEntry>>());
+                _mockDirectoryListViewHelper.Received(1).SetList(Arg.Any<List<ICommonEntry>>());
                 Assert.That(listViewListArg.Count, Is.EqualTo(0), "Nothing displayed in list view for empty folder");
             }
         }
@@ -440,8 +440,8 @@ namespace cdeWinTest
             {
                 var testRootTreeNode = new TreeNode("MyTestNode") { Tag = _rootEntry };
                 _mockForm.DirectoryTreeViewActiveAfterSelectNode = testRootTreeNode;
-                List<DirEntry> list = null;
-                _mockDirectoryListViewHelper.SetList(Arg.Do<List<DirEntry>>(x => list = x));
+                List<ICommonEntry> list = null;
+                _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => list = x));
                 var pathTextBoxValue = string.Empty;
                 _mockForm.SetDirectoryPathTextbox = Arg.Do<string>(x => pathTextBoxValue = x);
 

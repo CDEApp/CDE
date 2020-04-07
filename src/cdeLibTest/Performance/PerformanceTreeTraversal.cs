@@ -46,7 +46,7 @@ namespace cdeLibTest.Performance
                 {
                     Assert.Inconclusive("TestData not Found" + TestCatalog200K);
                 }
-                var e1 = CommonEntry.GetDirEntries(RootSmall);
+                var e1 = EntryHelper.GetDirEntries(RootSmall);
                 RootSmallCount = e1.Count();
 
                 RootLarge  = RootEntry.LoadDirCache(TestCatalog1_2M);
@@ -54,7 +54,7 @@ namespace cdeLibTest.Performance
                 {
                     Assert.Inconclusive("TestData not Found" + TestCatalog1_2M);
                 }
-                var e2 = CommonEntry.GetDirEntries(RootLarge);
+                var e2 = EntryHelper.GetDirEntries(RootLarge);
                 RootLargeCount = e2.Count();
             }
         }
@@ -124,7 +124,7 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
-            var pairDirEntries = CommonEntry.GetPairDirEntries(rootEntries);
+            var pairDirEntries = EntryHelper.GetPairDirEntries(rootEntries);
             for (var i = 0; i < repeatCount; i++)
             {
                 pairDirEntries.Count();
@@ -138,7 +138,7 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
-            var pairDirEntries = CommonEntry.GetPairDirEntries(rootEntries);
+            var pairDirEntries = EntryHelper.GetPairDirEntries(rootEntries);
             for (var i = 0; i < repeatCount; i++)
             {
                 pairDirEntries.ToList();
@@ -152,7 +152,7 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
-            var dirEntries = CommonEntry.GetDirEntries(rootEntries);
+            var dirEntries = EntryHelper.GetDirEntries(rootEntries);
             for (var i = 0; i < repeatCount; i++)
             {
                 dirEntries.ToList();
@@ -166,7 +166,7 @@ namespace cdeLibTest.Performance
             var sw = new Stopwatch();
             sw.Start();
             var rootEntries = new List<RootEntry> { root };
-            var dirEntries = CommonEntry.GetDirEntries(rootEntries);
+            var dirEntries = EntryHelper.GetDirEntries(rootEntries);
             for (var i = 0; i < repeatCount; i++)
             {
                 dirEntries.Count();
@@ -198,7 +198,7 @@ namespace cdeLibTest.Performance
             sw.Start();
             for (var i = 0; i < repeatCount; i++)
             {
-                var testlist = new List<DirEntry>();
+                var testlist = new List<ICommonEntry>();
                 root.TraverseTreePair((p, d) =>
                 {
                     testlist.Add(d);
@@ -339,7 +339,7 @@ namespace cdeLibTest.Performance
             for (var i = 0; i < repeatCount; i++)
             {
                 // var totalFound = 0L;
-                var list = new List<DirEntry>();
+                var list = new List<ICommonEntry>();
                 findOptions.VisitorFunc = (p, d) =>
                 {
                     // ++totalFound;

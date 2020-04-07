@@ -12,7 +12,7 @@ namespace cdeLib
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamFindpath, ParamGrep, ParamGreppath };
 
         // ReSharper disable InconsistentNaming
-        private static List<RootEntry> _rootEntries;
+        private static IList<RootEntry> _rootEntries;
         // ReSharper restore InconsistentNaming
 
         public static void StaticFind(string pattern, string param)

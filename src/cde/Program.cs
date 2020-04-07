@@ -162,7 +162,7 @@ namespace cde
         private static void PrintPathsHaveHashEnumerator()
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            foreach (var pairDirEntry in CommonEntry.GetPairDirEntries(rootEntries))
+            foreach (var pairDirEntry in EntryHelper.GetPairDirEntries(rootEntries))
             {
                 var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
                 var bang = pairDirEntry.PathProblem ? "!" : " ";
@@ -177,7 +177,7 @@ namespace cde
         private static void FindPopulous(int minimumCount)
         {
             var rootEntries = RootEntry.LoadCurrentDirCache();
-            var entries = CommonEntry.GetDirEntries(rootEntries);
+            var entries = EntryHelper.GetDirEntries(rootEntries);
             var largeEntries = entries
                 .Where(e => e.Children != null && e.Children.Count > minimumCount)
                 .ToList();
@@ -193,7 +193,7 @@ namespace cde
             }
         }
 
-        private static int CompareDirEntries(DirEntry x, DirEntry y)
+        private static int CompareDirEntries(ICommonEntry x, ICommonEntry y)
         {
             return y.Children.Count - x.Children.Count;
         }

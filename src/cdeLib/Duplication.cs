@@ -14,8 +14,8 @@ namespace cdeLib
     {
         private readonly IConfiguration _configuration;
 
-        private readonly Dictionary<DirEntry, List<PairDirEntry>> _duplicateFile =
-            new Dictionary<DirEntry, List<PairDirEntry>>(new DirEntry.EqualityComparer());
+        private readonly Dictionary<ICommonEntry, List<PairDirEntry>> _duplicateFile =
+            new Dictionary<ICommonEntry, List<PairDirEntry>>(new CommonEntryEqualityComparer());
 
         private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize =
             new Dictionary<long, List<PairDirEntry>>();
@@ -362,7 +362,7 @@ namespace cdeLib
             }
         }
 
-        public IList<KeyValuePair<DirEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
+        public IList<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
         {
             EntryHelper.TraverseTreePair(rootEntries, BuildDuplicateList);
             var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();

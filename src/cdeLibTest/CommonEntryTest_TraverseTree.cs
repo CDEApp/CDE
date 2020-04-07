@@ -31,7 +31,7 @@ namespace cdeLibTest
 
             de.TraverseTreePair(mockAction);
 
-            mockAction.DidNotReceive().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
+            mockAction.DidNotReceive().Invoke(Arg.Any<ICommonEntry>(), Arg.Any<DirEntry>());
         }
 
         [Test]
@@ -61,7 +61,7 @@ namespace cdeLibTest
 
             de1.TraverseTreePair(mockAction);
 
-            mockAction.Received().Invoke(Arg.Any<CommonEntry>(), Arg.Any<DirEntry>());
+            mockAction.Received().Invoke(Arg.Any<ICommonEntry>(), Arg.Any<DirEntry>());
         }
 
         [Test]
