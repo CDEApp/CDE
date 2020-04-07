@@ -1,6 +1,7 @@
 ﻿using System;
 using System.ComponentModel;
 using cdeLib.Infrastructure;
+using FlatSharp.Attributes;
 using ProtoBuf;
 
 namespace cdeLib
@@ -25,25 +26,34 @@ namespace cdeLib
     //
     // a million at an array does not seem bad.
     [ProtoContract]
-    public struct Entry
+    [FlatBufferTable]
+    public class Entry : object
     {
         [ProtoMember(1, IsRequired = true)]
-        public ulong Size;
+        [FlatBufferItem(1)]
+        public virtual ulong Size { get; set; }
         [ProtoMember(2, IsRequired = true)]
-        public DateTime Modified;
+        [FlatBufferItem(2)]
+        public virtual DateTime Modified { get; set; }
         [ProtoMember(3, IsRequired = true)]
-        public string Name;
+        [FlatBufferItem(3)]
+        public virtual string Name { get; set; }
         [ProtoMember(4, IsRequired = true)]
-        public string FullPath;
+        [FlatBufferItem(4)]
+        public virtual string FullPath { get; set; }
         [ProtoMember(5, IsRequired = true)]
-        public Hash16 Hash; // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
+        [FlatBufferItem(5)]
+        public virtual Hash16 Hash { get; set; } // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
         [ProtoMember(6, IsRequired = true)]
-        public int Child;
+        [FlatBufferItem(6)]
+        public virtual int Child { get; set; }
         [ProtoMember(7, IsRequired = true)]
-        public int Sibling;
+        [FlatBufferItem(7)]
+        public virtual int Sibling { get; set; }
         [ProtoMember(8, IsRequired = true)]
-        public int Parent;
+        [FlatBufferItem(8)]
+        public virtual int Parent { get; set; }
 
         [Flags]
         public enum Flags
@@ -65,7 +75,8 @@ namespace cdeLib
         };
 
         [ProtoMember(9, IsRequired = true)]
-        public Flags BitFields;
+        [FlatBufferItem(9)]
+        public virtual Flags BitFields { get; set; }
         #region BitFields based properties
         public bool IsDirectory
         {
@@ -163,43 +174,5 @@ namespace cdeLib
             }
         }
         #endregion
-
-        // public void Set(FileSystemEntryInfo fs)
-        // {
-        //     Name = fs.FileName;
-        //     try
-        //     {
-        //         Modified = fs.LastWriteTime;
-        //     }
-        //     catch (ArgumentOutOfRangeException)
-        //     {
-        //         //catch issue with crap date modified on some files. ie 1/1/1601 -- AlphaFS blows up.
-        //         IsModifiedBad = true;
-        //     }
-        //     IsDirectory = fs.IsDirectory;
-        //     IsSymbolicLink = fs.IsSymbolicLink;
-        //     IsReparsePoint = fs.IsReparsePoint;
-        //     if (!fs.IsDirectory)
-        //     {
-        //         Size = (ulong) fs.FileSize;
-        //     }
-        // }
-        //
-        // public string GetFullPath(EntryStore entryStore)
-        // {
-        //     return Path.Combine(GetParentPath(entryStore), Name);
-        // }
-        //
-        // public string GetParentPath(EntryStore entryStore)
-        // {
-        //     var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
-        //     return parentBlock[parentEntryIndex].FullPath;
-        // }
-        //
-        // public void SetParentSize(EntryStore entryStore, ulong size)
-        // {
-        //     var parentEntryIndex = entryStore.EntryIndex(Parent, out var parentBlock);
-        //     parentBlock[parentEntryIndex].Size = size;
-        // }
     }
 }

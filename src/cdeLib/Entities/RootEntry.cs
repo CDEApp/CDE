@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
+using FlatSharp.Attributes;
 using ProtoBuf;
 
 namespace cdeLib
@@ -16,7 +17,8 @@ namespace cdeLib
     // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
-    public class RootEntry : DirEntry // CommonEntry
+    [FlatBufferTable]
+    public class RootEntry : object : ICommonEntry
     {
         const string MatchAll = "*";
         private readonly IDriveInfoService _driveInfoService;
@@ -24,40 +26,50 @@ namespace cdeLib
         // NO LONGER USED
         [Obsolete]
         [ProtoMember(1, IsRequired = true)]
-        public string VolumeName { get; set; }
+        public virtual string VolumeName { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
-        public string Description { get; set; } // user entered description ?
+        [FlatBufferItem(2)]
+        public virtual string Description { get; set; } // user entered description ?
 
         /// <summary>
         /// There are a standard set on C: drive in win7 do we care about them ? Hmmmmm filter em out ? or hold internal filter to filter em out ojn display optionally.
         /// </summary>
         [ProtoMember(3, IsRequired = true)]
-        public IList<string> PathsWithUnauthorisedExceptions { get; set; }
+        [FlatBufferItem(3)]
+        public virtual IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
         [ProtoMember(4, IsRequired = true)]
-        public string DefaultFileName { get; set; }
+        [FlatBufferItem(4)]
+        public virtual string DefaultFileName { get; set; }
 
         [ProtoMember(5, IsRequired = true)]
-        public string DriveLetterHint { get; set; }
+        [FlatBufferItem(5)]
+        public virtual string DriveLetterHint { get; set; }
 
         [ProtoMember(6, IsRequired = true)]
-        public ulong AvailSpace { get; set; }
+        [FlatBufferItem(6)]
+        public virtual ulong AvailSpace { get; set; }
 
         [ProtoMember(7, IsRequired = true)]
-        public ulong TotalSpace { get; set; }
+        [FlatBufferItem(7)]
+        public virtual ulong TotalSpace { get; set; }
 
         [ProtoMember(8, IsRequired = true)]
-        public DateTime ScanStartUTC { get; set; }
+        [FlatBufferItem(8)]
+        public virtual DateTime ScanStartUTC { get; set; }
 
         [ProtoMember(9, IsRequired = true)]
-        public DateTime ScanEndUTC { get; set; }
+        [FlatBufferItem(9)]
+        public virtual DateTime ScanEndUTC { get; set; }
 
         [ProtoMember(10, IsRequired = true)] // need to save for new data model.
-        public int RootIndex; // hackery with Entry and EntryStore
+        [FlatBufferItem(10)]
+        public virtual int RootIndex { get; set; } // hackery with Entry and EntryStore
 
         [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
-        public int Version = 3;
+        [FlatBufferItem(11)]
+        public virtual int Version { get; set; } = 3;
 
         public string ActualFileName { get; set; }
 

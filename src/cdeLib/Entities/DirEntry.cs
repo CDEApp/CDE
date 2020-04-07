@@ -4,43 +4,50 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using cdeLib.Infrastructure;
+using FlatSharp.Attributes;
 using ProtoBuf;
 using Serilog;
 
 namespace cdeLib
 {
+
+    [Flags]
+    [FlatBufferEnum(typeof(byte))]
+    public enum Flags : byte
+    {
+        [Description("Obligatory none value.")]
+        None = 0,
+        [Description("Is a directory.")]
+        Directory = 1 << 0,
+        [Description("Has a bad modified date field.")]
+        ModifiedBad = 1 << 1,
+        // [Obsolete("With dotnetcore3.0")]
+        // [Description("Is a symbolic link.")]
+        // SymbolicLink = 1 << 2,
+        [Description("Is a reparse point.")]
+        ReparsePoint = 1 << 3,
+        [Description("Hashing was done for this.")]
+        HashDone = 1 << 4,
+        [Description("The Hash if done was a partial.")]
+        PartialHash = 1 << 5,
+        [Description("The Children are allready in default order.")]
+        DefaultSort = 1 << 6
+    };
+
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]
-    public class DirEntry : CommonEntry
+    [FlatBufferTable]
+    public class DirEntry : ICommonEntry
     {
-        [Flags]
-        public enum Flags
-        {
-            [Description("Obligatory none value.")]
-            None = 0,
-            [Description("Is a directory.")]
-            Directory = 1 << 0,
-            [Description("Has a bad modified date field.")]
-            ModifiedBad = 1 << 1,
-            // [Obsolete("With dotnetcore3.0")]
-            // [Description("Is a symbolic link.")]
-            // SymbolicLink = 1 << 2,
-            [Description("Is a reparse point.")]
-            ReparsePoint = 1 << 3,
-            [Description("Hashing was done for this.")]
-            HashDone = 1 << 4,
-            [Description("The Hash if done was a partial.")]
-            PartialHash = 1 << 5,
-            [Description("The Children are allready in default order.")]
-            DefaultSort = 1 << 6
-        };
-
         [ProtoMember(1, IsRequired = true)]
-        public DateTime Modified { get; set; }
+        [FlatBufferItem(1)]
+        public virtual DateTime Modified { get; set; }
 
         [ProtoMember(2, IsRequired = false)]
-        public Hash16 Hash;
+        [FlatBufferItem(2)]
+        public virtual Hash16 Hash { get; set; }
 
         /// <summary>
         /// public bool ShouldSerializeHash() should be same as this, but isn't
@@ -53,7 +60,8 @@ namespace cdeLib
         //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
         [ProtoMember(5, IsRequired = false)] // is there a better default value than 0 here
-        public Flags BitFields;
+        [FlatBufferItem(5)]
+        public virtual Flags BitFields { get; set; }
 
         #region BitFields based properties
         public bool IsDirectory
@@ -87,22 +95,6 @@ namespace cdeLib
                 }
             }
         }
-
-        // public bool IsSymbolicLink
-        // {
-        //     get { return (BitFields & Flags.SymbolicLink) == Flags.SymbolicLink; }
-        //     set
-        //     {
-        //         if (value)
-        //         {
-        //             BitFields |= Flags.SymbolicLink;
-        //         }
-        //         else
-        //         {
-        //             BitFields &= ~Flags.SymbolicLink;
-        //         }
-        //     }
-        // }
 
         public bool IsReparsePoint
         {
@@ -172,12 +164,12 @@ namespace cdeLib
         /// <summary>
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
-        public long FileEntryCount;
+        public long FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
-        public long DirEntryCount;
+        public long DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
         {
@@ -204,7 +196,7 @@ namespace cdeLib
             IsDirectory = isDirectory;
             if (isDirectory)
             {
-                Children = new List<DirEntry>();
+                Children = new List<ICommonEntry>();
             }
         }
 
@@ -229,7 +221,7 @@ namespace cdeLib
             }
             else
             {
-                Children = new List<DirEntry>();
+                Children = new List<ICommonEntry>();
             }
         }
 
@@ -388,6 +380,218 @@ namespace cdeLib
             FileEntryCount = fileEntryCount;
             DirEntryCount = dirEntryCount;
             Size = size;
+        }
+
+        //commonentry
+
+        public RootEntry RootEntry { get; set; }
+
+        // ReSharper disable MemberCanBePrivate.Global
+        [ProtoMember(3, IsRequired = false)]
+        [FlatBufferItem(3)]
+        public virtual List<ICommonEntry> Children { get; set; }
+        // ReSharper restore MemberCanBePrivate.Global
+
+        [ProtoMember(4, IsRequired = true)]
+        [FlatBufferItem(4)]
+        public virtual long Size { get; set; }
+
+        /// <summary>
+        /// RootEntry this is the root path, DirEntry this is the entry name.
+        /// </summary>
+        [ProtoMember(5, IsRequired = true)]
+        [FlatBufferItem(5)]
+        public virtual string Path { get; set; }
+
+        public ICommonEntry ParentCommonEntry { get; set; }
+
+        /// <summary>
+        /// Populated on load, not saved to disk.
+        /// </summary>
+        public string FullPath { get; set; }
+
+        /// <summary>
+        /// True if entry name ends with Space or Period which is a problem on windows file systems.
+        /// If this entry is a directory this infects all child entries as well.
+        /// Populated on load not saved to disk.
+        /// </summary>
+        public bool PathProblem { get; set; }
+
+        public void TraverseTreePair(TraverseFunc func)
+        {
+            TraverseTreePair(new List<ICommonEntry> { this }, func);
+        }
+
+        /// <summary>
+        /// Recursive traversal
+        /// </summary>
+        /// <param name="rootEntries">Entries to traverse</param>
+        /// <param name="traverseFunc">TraversalFunc</param>
+        /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
+        public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc, RootEntry catalogRootEntry = null)
+        {
+            if (traverseFunc == null) { return; } // nothing to do.
+
+            var funcContinue = true;
+            var dirs = new Stack<ICommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
+
+            while (funcContinue && dirs.Count > 0)
+            {
+                var commonEntry = dirs.Pop();
+                if (commonEntry.Children == null) { continue; } // empty directories may not have Children initialized.
+
+                foreach (var dirEntry in commonEntry.Children)
+                {
+                    if (catalogRootEntry != null)
+                    {
+                        commonEntry.RootEntry = catalogRootEntry;
+                    }
+                    funcContinue = traverseFunc(commonEntry, dirEntry);
+                    if (!funcContinue)
+                    {
+                        break;
+                    }
+
+                    if (dirEntry.IsDirectory)
+                    {
+                        dirs.Push(dirEntry);
+                    }
+                }
+            }
+        }
+
+        public void TraverseTreesCopyHash(ICommonEntry destination)
+        {
+            var dirs = new Stack<Tuple<string, ICommonEntry, ICommonEntry>>();
+            var source = this;
+
+            if (source == null || destination == null)
+            {
+                throw new ArgumentException("source and destination must be not null.");
+            }
+
+            var sourcePath = source.Path;
+            var destinationPath = destination.Path;
+
+            if (string.Compare(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase) != 0)
+            {
+                throw new ArgumentException("source and destination must have same root path.");
+            }
+
+            // traverse every source entry copy across the meta data that matches on destination entry
+            // if it adds value to destination.
+            // if destination is not there source not processed.
+            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
+
+            while (dirs.Count > 0)
+            {
+                var t = dirs.Pop();
+                var workPath = t.Item1;
+                var baseSourceEntry = t.Item2;
+                var baseDestinationEntry = t.Item3;
+
+                if (baseSourceEntry.Children != null)
+                {
+                    foreach (var sourceDirEntry in baseSourceEntry.Children)
+                    {
+                        var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
+
+                        // find if there's a destination entry available.
+                        // size of dir is irrelevant. date of dir we don't care about.
+                        var sourceEntry = sourceDirEntry;
+                        var destinationDirEntry = baseDestinationEntry.Children
+                            .FirstOrDefault(x => (x.Path == sourceEntry.Path));
+
+                        if (destinationDirEntry == null)
+                        {
+                            continue;
+                        }
+
+                        if (!sourceDirEntry.IsDirectory
+                            && sourceDirEntry.Modified == destinationDirEntry.Modified
+                            && sourceDirEntry.Size == destinationDirEntry.Size)
+                        {
+                            // copy hash if none in destination.
+                            // copy hash as upgrade to full if dest currently partial.
+                            if ((sourceDirEntry.IsHashDone)
+                                && (!destinationDirEntry.IsHashDone)
+                                ||
+                                (sourceDirEntry.IsHashDone)
+                                && (destinationDirEntry.IsHashDone)
+                                && !sourceDirEntry.IsPartialHash
+                                && destinationDirEntry.IsPartialHash)
+                            {
+                                destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
+                                destinationDirEntry.Hash = sourceDirEntry.Hash;
+                            }
+                        }
+                        else
+                        {
+                            if (destinationDirEntry.IsDirectory)
+                            {
+                                dirs.Push(Tuple.Create(fullPath, sourceDirEntry, destinationDirEntry));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        public string MakeFullPath(ICommonEntry dirEntry)
+        {
+            return MakeFullPath(this, dirEntry);
+        }
+
+        public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
+        {
+            var a = parentEntry.FullPath ?? "pnull";
+            var b = dirEntry.Path ?? "dnull";
+            return System.IO.Path.Combine(a, b);
+        }
+
+        public static IEnumerable<DirEntry> GetDirEntries(RootEntry rootEntry)
+        {
+            return new DirEntryEnumerator(rootEntry);
+        }
+
+        public static IEnumerable<DirEntry> GetDirEntries(IEnumerable<RootEntry> rootEntries)
+        {
+            return new DirEntryEnumerator(rootEntries);
+        }
+
+        public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
+        {
+            return new PairDirEntryEnumerator(rootEntries);
+        }
+
+        /// <summary>
+        /// Return List of CommonEntry, first is RootEntry, rest are DirEntry that lead to this.
+        /// </summary>
+        public List<ICommonEntry> GetListFromRoot()
+        {
+            var activatedDirEntryList = new List<ICommonEntry>(8);
+            for (var entry = this; entry != null; entry = (DirEntry) entry.ParentCommonEntry)
+            {
+                activatedDirEntryList.Add(entry);
+            }
+            activatedDirEntryList.Reverse(); // list now from root to this.
+            return activatedDirEntryList;
+        }
+
+        public bool ExistsOnFileSystem()
+        {   // CommonEntry is always a directory ? - not really.
+            return System.IO.Directory.Exists(FullPath);
+        }
+
+        /// <summary>
+        /// Is bad path
+        /// </summary>
+        /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
+        public bool IsBadPath()
+        {
+            // This probably needs to check all parent paths if this is a root entry.
+            // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
+            return !string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."));
         }
     }
 }
