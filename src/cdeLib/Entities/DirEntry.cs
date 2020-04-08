@@ -14,11 +14,10 @@ namespace cdeLib
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]
     [FlatBufferTable]
-    public partial class DirEntry : ICommonEntry
+    public class DirEntry : ICommonEntry
     {
         
         public virtual DateTime Modified
-
         {
             set => ModifiedTicks = value.Ticks;
             get => DateTime.FromBinary(ModifiedTicks);
@@ -335,6 +334,15 @@ namespace cdeLib
         [FlatBufferItem(3)]
         public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
+
+        public void AddChild(DirEntry child)
+        {
+            if (this.Children == null)
+            {
+                Children = new List<DirEntry>();
+            }
+            Children.Add(child);
+        }
 
         [ProtoMember(4, IsRequired = true)]
         [FlatBufferItem(4)]

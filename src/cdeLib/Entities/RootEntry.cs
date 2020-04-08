@@ -1,10 +1,10 @@
-﻿ using System;
- using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
- using cdeLib.Infrastructure;
+using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
@@ -76,9 +76,9 @@ namespace cdeLib
         [ProtoMember(9, IsRequired = true)]
         public virtual long ScanEndUTCTicks { get; set; }
 
-        [ProtoMember(10, IsRequired = true)] // need to save for new data model.
-        [FlatBufferItem(10)]
-        public virtual int RootIndex { get; set; } // hackery with Entry and EntryStore
+        // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
+        // [FlatBufferItem(10)]
+        // public virtual int RootIndex { get; set; } // hackery with Entry and EntryStore
 
         [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
         [FlatBufferItem(11)]
@@ -89,10 +89,7 @@ namespace cdeLib
         public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
 
         public RootEntry()
-            //: base(true)
         {
-            Children = new List<DirEntry>();
-            PathsWithUnauthorisedExceptions = new List<string>();
             TheRootEntry = this;
             _driveInfoService = new DriveInfoService();
         }
@@ -122,7 +119,6 @@ namespace cdeLib
             DefaultFileName = GetDefaultFileName(startPath, out var deviceHint, out _);
             Path = startPath;
             DriveLetterHint = deviceHint;
-            // VolumeName = volumeName;
 
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
@@ -272,7 +268,7 @@ namespace cdeLib
                     foreach (var fsInfo in fsInfos)
                     {
                         var dirEntry = new DirEntry(fsInfo);
-                        commonEntry.Children.Add(dirEntry);
+                        commonEntry.AddChild(dirEntry);
                         if (dirEntry.IsDirectory)
                         {
                             dirs.Push((dirEntry, fsInfo.FullName));
@@ -298,11 +294,21 @@ namespace cdeLib
                 }
                 catch (UnauthorizedAccessException)
                 {
-                    PathsWithUnauthorisedExceptions.Add(directory);
+                    AddPathsWithUnauthorisedExceptions(directory);
+                    
                 }
             }
 
             SimpleScanEndEvent?.Invoke();
+        }
+
+        private void AddPathsWithUnauthorisedExceptions(string directory)
+        {
+            if (PathsWithUnauthorisedExceptions == null)
+            {
+                PathsWithUnauthorisedExceptions = new List<string>();
+            }
+            PathsWithUnauthorisedExceptions.Add(directory);
         }
 
         public int EntryCountThreshold { get; set; }
@@ -721,6 +727,13 @@ namespace cdeLib
         [FlatBufferItem(15)]
         public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
+
+        public void AddChild(DirEntry child)
+        {
+            if (this.Children == null)
+                Children = new List<DirEntry>();
+            Children.Add(child);
+        }
 
         [ProtoMember(16, IsRequired = true)]
         [FlatBufferItem(16)]

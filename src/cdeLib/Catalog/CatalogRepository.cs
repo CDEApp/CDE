@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using FlatSharp;
+using FlatSharp.Unsafe;
 using ProtoBuf;
 using Serilog;
 using SerilogTimings;
@@ -36,13 +37,13 @@ namespace cdeLib.Catalog
                         byte[] bytes;
                         using (Operation.Time("ToByteArray"))
                         {
-                            bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.
+                            bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
                         }
 
                         using (Operation.Time("Deserialize"))
                         {
                             var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions(FlatBufferDeserializationOption.GreedyMutable));
-                            return serializer.Parse<RootEntry>(bytes);
+                            return serializer.Parse<RootEntry>(new UnsafeArrayInputBuffer(bytes));
                         }
 
                     default:
@@ -142,14 +143,11 @@ namespace cdeLib.Catalog
                     var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
                     var buffer = new byte[maxBytesNeeded];
                     FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                    File.WriteAllBytes(rootEntry.DefaultFileName,buffer); //TODO: Smarter writer with span<> stream, etc.
+                    File.WriteAllBytes(rootEntry.DefaultFileName,buffer);
                     break;
                 default:
                     throw new Exception("Invalid Serializer Protocol");
-
             }
-            
-            
         }
     }
 }

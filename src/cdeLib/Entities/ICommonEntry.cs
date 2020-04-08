@@ -14,7 +14,10 @@ namespace cdeLib
         bool IsDefaultSort { get; set; }
         int PathCompareWithDirTo(ICommonEntry de);
         RootEntry TheRootEntry { get; set; }
-        IList<DirEntry> Children { get; set; }
+        IList<DirEntry> Children { get; }
+
+        public void AddChild(DirEntry child);
+
         long Size { get; set; }
 
         /// <summary>
