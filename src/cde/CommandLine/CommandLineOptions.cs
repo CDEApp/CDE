@@ -1,4 +1,5 @@
 ﻿using CommandLine;
+// ReSharper disable ClassNeverInstantiated.Global
 
 namespace cde.CommandLine
 {
@@ -88,7 +89,12 @@ namespace cde.CommandLine
     [Verb("PopulousFolders", HelpText = "Show folders with <count> number of files")]
     public class PopulousFoldersOptions
     {
-        [Value(0, Required = true, HelpText = "output folders containing more than <minimumcount> entires.")]
+        [Value(0, Required = true, HelpText = "output folders containing more than <minimumcount> entries.")]
         public int Count { get; set; }
+    }
+
+    [Verb("upgrade", HelpText = "Upgrade catalogues to v4 structure")]
+    public class UpgradeOptions
+    {
     }
 }

@@ -10,6 +10,7 @@ using cdeLib.Cache;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Hashing;
+using cdeLib.Upgrade;
 using CommandLine;
 using MediatR;
 using Mono.Terminal;
@@ -52,8 +53,8 @@ namespace cde
                     parser.ParseArguments<ScanOptions, FindOptions, GrepOptions, GrepPathOptions, ReplGrepPathOptions,
                             ReplGrepOptions, ReplFindOptions,
                             HashOptions, DupesOptions, TreeDumpOptions, LoadWaitOptions, ReplOptions, PopulousFoldersOptions
-                            ,
-                            FindPathOptions>(
+                            ,FindPathOptions,
+                            UpgradeOptions>(
                             args)
                         .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
                         .WithParsed<FindOptions>(opts =>
@@ -89,9 +90,10 @@ namespace cde
                         })
                         .WithParsed<ReplOptions>(opts => { InvokeRepl(); })
                         .WithParsed<PopulousFoldersOptions>(opts => { FindPopulous(opts.Count); })
+                        .WithParsed<UpgradeOptions>(opts => { Upgrade(); })
                         .WithNotParsed(errs => { Environment.Exit(1); });
                     return 0;
-            }
+                }
         }
 
         private static void InvokeRepl()
@@ -160,6 +162,12 @@ namespace cde
 
                 findService.StaticFind(pattern, paramString, rootEntries);
             } while (true);
+        }
+
+        private static void Upgrade()
+        {
+            var task = Task.Run(async () => await Mediatr.Send(new UpgradeCommand()).ConfigureAwait(false));
+            task.Wait();
         }
 
         private static void FindDupes()

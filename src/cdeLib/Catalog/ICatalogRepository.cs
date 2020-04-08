@@ -1,12 +1,11 @@
 ﻿using System.Collections.Generic;
-using System.IO;
 using System.Threading.Tasks;
 
 namespace cdeLib.Catalog
 {
     public interface ICatalogRepository
     {
-        RootEntry Read(Stream input);
+        RootEntry Read(string fileName);
         IList<RootEntry> Load(IEnumerable<string> cdeList);
         IList<RootEntry> LoadCurrentDirCache();
         Task Save(RootEntry rootEntry);

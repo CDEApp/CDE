@@ -26,10 +26,13 @@ namespace cdeLib.Catalog
             _logger = logger;
         }
 
-        public RootEntry Read(Stream input)
+        public RootEntry Read(string file)
         {
             try
             {
+
+                using var input= File.OpenRead(file);
+
                 switch (_serializerProtocol)
                 {
                     case SerializerProtocol.Protobuf:
@@ -57,7 +60,7 @@ namespace cdeLib.Catalog
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error Reading catalogue");
+                _logger.Error(ex, "Error Reading catalogue {FileName}",file);
                 return null;
             }
         }
@@ -121,7 +124,7 @@ namespace cdeLib.Catalog
             try
             {
                 using var fileStream = File.OpenRead(file);
-                var rootEntry = Read(fileStream);
+                var rootEntry = Read(file);
                 if (rootEntry == null) return null;
                 rootEntry.ActualFileName = file;
                 rootEntry.SetInMemoryFields();
