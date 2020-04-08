@@ -16,7 +16,7 @@ namespace Util
 
 		private string _runningLabel;
 		private readonly Stopwatch _watch;
-		protected readonly List<LabelElapsed> _elapsedList;
+        private readonly List<LabelElapsed> _elapsedList;
 
         /// <summary>
         /// Start(label) and Stop() to collect list of elapsed times for things.
@@ -37,7 +37,7 @@ namespace Util
 				_watch.Start();
 				return;
 			}
-			throw new Exception("TimeIt in started state allready.");
+			throw new Exception("TimeIt in started state all ready.");
 		}
 
 		public LabelElapsed Stop()
@@ -57,8 +57,9 @@ namespace Util
 			throw new Exception("TimeIt not in started state.");
 		}
 
-		public IEnumerable<LabelElapsed> ElapsedList { get { return _elapsedList; } }
-	    public float TotalMsec
+		public IEnumerable<LabelElapsed> ElapsedList => _elapsedList;
+
+        public float TotalMsec
 	    {
             get { return _elapsedList.Sum(x => x.ElapsedMsec); }
 	    }

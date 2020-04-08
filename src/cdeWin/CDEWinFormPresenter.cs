@@ -534,9 +534,7 @@ namespace cdeWin
                 _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.TheRootEntry.DefaultFileName;
             }
 
-
-            var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
-            searchHelper.RenderItem = lvi;
+            searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
         }
 
         public void DirectoryTreeViewAfterSelect()
@@ -744,7 +742,7 @@ namespace cdeWin
                 case 2: // SearchResult ListView Modified column
                     compareResult = de1.ModifiedCompareTo(de2);
                     break;
-                
+
                 case 3:
                     compareResult = _config.MyCompareInfo.Compare(
                         pde1.ParentDE.TheRootEntry.ActualFileName,
@@ -1080,8 +1078,7 @@ namespace cdeWin
             }
 
             var timeIt = new TimeIt();
-            var newRootEntries = LoadRootEntries(_config, timeIt);
-            _rootEntries = newRootEntries;
+            _rootEntries = LoadRootEntries(_config, timeIt);
             if (_rootEntries.Count > 1)
             {
                 // this resets the tree view and directory list view

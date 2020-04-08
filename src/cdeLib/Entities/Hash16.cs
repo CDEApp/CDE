@@ -17,7 +17,7 @@ namespace cdeLib.Infrastructure
         [FlatBufferItem(0)]
         [Key(0)]
         public ulong HashA { get; set; } // first 8 bytes
-        
+
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(1)]
         [Key(1)]

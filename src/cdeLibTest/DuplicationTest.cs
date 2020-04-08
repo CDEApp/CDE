@@ -241,7 +241,7 @@ namespace cdeLibTest
         {
             var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
-            
+
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             await d.ApplyHash(rootEntries);
         }

@@ -66,7 +66,6 @@ namespace Mono.Terminal
         readonly StringBuilder rendered_text;
 
         // The prompt specified, and the prompt shown to the user.
-        string prompt;
         string shown_prompt;
 
         // The current cursor position, indexes into "text", for an index
@@ -246,7 +245,6 @@ namespace Mono.Terminal
                 home_row = 0;
         }
 
-
         void RenderFrom(int pos)
         {
             var rpos = TextToRenderPos(pos);
@@ -316,11 +314,7 @@ namespace Mono.Terminal
             return shown_prompt.Length + TextToRenderPos(pos);
         }
 
-        string Prompt
-        {
-            get { return prompt; }
-            set { prompt = value; }
-        }
+        private string Prompt { get; set; }
 
         int LineCount
         {
@@ -420,7 +414,6 @@ namespace Mono.Terminal
                         for (var p = 0; p < completions[0].Length; p++)
                         {
                             var c = completions[0][p];
-
 
                             for (var i = 1; i < ncompletions; i++)
                             {
@@ -628,7 +621,7 @@ namespace Mono.Terminal
             var k = text.ToString(cursor, pos - cursor);
 
             if (last_handler == CmdDeleteWord)
-                kill_buffer = kill_buffer + k;
+                kill_buffer += k;
             else
                 kill_buffer = k;
 
@@ -778,9 +771,9 @@ namespace Mono.Terminal
             }
             else
             {
-                if (search == "")
+                if (string.IsNullOrEmpty(search))
                 {
-                    if (last_search != "" && last_search != null)
+                    if (!string.IsNullOrEmpty(last_search))
                     {
                         search = last_search;
                         SetSearchPrompt(search);
@@ -797,7 +790,7 @@ namespace Mono.Terminal
 
         void SearchAppend(char c)
         {
-            search = search + c;
+            search += c;
             SetSearchPrompt(search);
 
             //
@@ -885,7 +878,7 @@ namespace Mono.Terminal
                         if (last_handler != CmdReverseSearch)
                         {
                             searching = 0;
-                            SetPrompt(prompt);
+                            SetPrompt(Prompt);
                         }
                     }
 
@@ -1013,15 +1006,13 @@ namespace Mono.Terminal
 
                 if (File.Exists(histfile))
                 {
-                    using (var sr = File.OpenText(histfile))
-                    {
-                        string line;
+                    using var sr = File.OpenText(histfile);
+                    string line;
 
-                        while ((line = sr.ReadLine()) != null)
-                        {
-                            if (line != "")
-                                Append(line);
-                        }
+                    while ((line = sr.ReadLine()) != null)
+                    {
+                        if (line != "")
+                            Append(line);
                     }
                 }
             }
@@ -1033,14 +1024,12 @@ namespace Mono.Terminal
 
                 try
                 {
-                    using (var sw = File.CreateText(histfile))
+                    using var sw = File.CreateText(histfile);
+                    var start = (count == history.Length) ? head : tail;
+                    for (var i = start; i < start + count; i++)
                     {
-                        var start = (count == history.Length) ? head : tail;
-                        for (var i = start; i < start + count; i++)
-                        {
-                            var p = i % history.Length;
-                            sw.WriteLine(history[p]);
-                        }
+                        var p = i % history.Length;
+                        sw.WriteLine(history[p]);
                     }
                 }
                 catch
@@ -1075,7 +1064,7 @@ namespace Mono.Terminal
 
             public void RemoveLast()
             {
-                head = head - 1;
+                head -= 1;
                 if (head < 0)
                     head = history.Length - 1;
             }
@@ -1106,7 +1095,6 @@ namespace Mono.Terminal
 
                 return true;
             }
-
 
             //
             // Returns: a string with the previous line contents, or
@@ -1177,20 +1165,6 @@ namespace Mono.Terminal
             }
         }
     }
-
-#if DEMO
-	class Demo {
-		static void Main ()
-		{
-			LineEditor le = new LineEditor (null);
-			string s;
-			
-			while ((s = le.Edit ("shell> ", "")) != null){
-				Console.WriteLine ("----> [{0}]", s);
-			}
-		}
-	}
-#endif
 }
 #endif
 // ReSharper restore InconsistentNaming

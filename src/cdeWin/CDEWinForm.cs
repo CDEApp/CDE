@@ -153,7 +153,6 @@ namespace cdeWin
             Activated += MyFormActivated;
 
             SetToolTip(reloadCatalogsButton, "Using reload catalogs will use more memory than quitting and starting again.");
-
             
             SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
             whatToSearchComboBox.Items.AddRange(new object[] { "Include Path in Search", "Exclude Path from Search" });
@@ -233,10 +232,10 @@ namespace cdeWin
         {
             SetTimePickerYMD(fromDateTimePicker);
             // TODO - all these CheckBoxDependentControlHelper 
-            // - are breaking the passive view model.... 
-            // - logic needs to bein presenter so these need to event...
+            // - are breaking the passive view model.
+            // - logic needs to be in presenter so these need to event.
             // - it the handlers should be raising events to Presenter. 
-            //   - or maybe some presenter of presenter just for checkbox dependencies ?
+            // - or maybe some presenter of presenter just for checkbox dependencies ?
             //
             FromDate = new CheckBoxDependentControlHelper(fromDateCheckbox, new Control[] { fromDateTimePicker }, new[] { notOlderThanCheckbox });
             FromDate.Checked = false;
@@ -272,7 +271,7 @@ namespace cdeWin
             ToSize.Checked = false;
 
             LimitResultHelper = new DropDownHelper<int>(limitResultDropDown, _limitResultValues, 1);
-            SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isnt usually useful.");
+            SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isn't usually useful.");
 
             // ReSharper disable once PossibleNullReferenceException
             advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
@@ -346,9 +345,7 @@ namespace cdeWin
         public ICommonEntry GetSelectedTreeItem()
         {
             // any visible tree node has a valid Tag
-            return (ICommonEntry) (directoryTreeView.SelectedNode != null
-                    ? directoryTreeView.SelectedNode.Tag
-                    : null);
+            return (ICommonEntry) directoryTreeView.SelectedNode?.Tag;
         }
 
         private ContextMenuStrip CreateDirectoryContextMenu()
