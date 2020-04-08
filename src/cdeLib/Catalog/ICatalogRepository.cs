@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 
 namespace cdeLib.Catalog
 {
@@ -8,7 +9,7 @@ namespace cdeLib.Catalog
         RootEntry Read(Stream input);
         IList<RootEntry> Load(IEnumerable<string> cdeList);
         IList<RootEntry> LoadCurrentDirCache();
-        void SaveRootEntry(RootEntry rootEntry);
+        Task Save(RootEntry rootEntry);
 
         /// <summary>
         /// This gets .cde files in current dir or one directory down.

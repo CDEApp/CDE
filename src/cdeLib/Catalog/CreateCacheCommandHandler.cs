@@ -18,7 +18,7 @@ namespace cdeLib.Cache
             _catalogRepository = catalogRepository;
         }
 
-        public Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
         {
             var re = new RootEntry(_configuration);
             try
@@ -31,7 +31,7 @@ namespace cdeLib.Cache
                 if (Hack.BreakConsoleFlag)
                 {
                     Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
-                    return Unit.Task;
+                    return Unit.Value;
                 }
 
                 var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
@@ -43,7 +43,8 @@ namespace cdeLib.Cache
                 }
 
                 re.SortAllChildrenByPath();
-                _catalogRepository.SaveRootEntry(re);
+                re.SetSummaryFields();
+                await _catalogRepository.Save(re);
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
                 Console.WriteLine($"Scanned Path {re.Path}");
                 Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
@@ -56,7 +57,7 @@ namespace cdeLib.Cache
                 Console.WriteLine($"Error: {aex.Message}");
             }
 
-            return Unit.Task;
+            return Unit.Value;
         }
 
         private void PrintExceptions(string path, Exception ex)
