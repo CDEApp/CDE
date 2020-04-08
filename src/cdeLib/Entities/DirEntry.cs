@@ -202,9 +202,15 @@ namespace cdeLib.Entities
             }
         }
 
+        public void SetPath(string path)
+        {
+            this.Path = path;
+            PathProblem = IsBadPath();
+        }
+
         public DirEntry(FileSystemInfo fs) : this()
         {
-            Path = fs.Name;
+            SetPath(fs.Name);
             try
             {
                 Modified = fs.LastWriteTime;
@@ -217,6 +223,8 @@ namespace cdeLib.Entities
 
             IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
             IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
+
+
             if (fs is FileInfo info)
             {
                 Size = info.Length;
@@ -313,7 +321,7 @@ namespace cdeLib.Entities
             var size = 0L;
             var dirEntryCount = 0L;
             var fileEntryCount = 0L;
-            PathProblem = IsBadPath();
+            //PathProblem = IsBadPath();
 
             if (IsDirectory && Children != null)
             {
@@ -329,10 +337,10 @@ namespace cdeLib.Entities
                         }
                         ++dirEntryCount;
                     }
-                    else
-                    {
-                        dirEntry.PathProblem = dirEntry.IsBadPath();
-                    }
+                    // else
+                    // {
+                    //     dirEntry.PathProblem = dirEntry.IsBadPath();
+                    // }
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
                     childrenDirEntryCount += dirEntry.DirEntryCount;
@@ -345,7 +353,6 @@ namespace cdeLib.Entities
             Size = size;
         }
 
-        //commonentry
         [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
@@ -392,8 +399,8 @@ namespace cdeLib.Entities
         /// If this entry is a directory this infects all child entries as well.
         /// Populated on load not saved to disk.
         /// </summary>
-        [IgnoreMember]
-        public bool PathProblem { get; set; }
+        [Key(7)]
+        public bool PathProblem { get; set; } = false;
 
         public void TraverseTreePair(TraverseFunc func)
         {
@@ -520,7 +527,7 @@ namespace cdeLib.Entities
         /// Is bad path
         /// </summary>
         /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
-        public bool IsBadPath()
+        private bool IsBadPath()
         {
             // This probably needs to check all parent paths if this is a root entry.
             // Not high priority as will not generally be able to specify a folder with a problem path at or above root.

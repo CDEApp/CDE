@@ -56,9 +56,9 @@ namespace cdeLib.Upgrade
                 //     HashB = src.Hash.HashB
                 // },
                 BitFields = (Flags) (byte) src.BitFields,
-                Size = src.Size,
-                Path = src.Path
+                Size = src.Size
             };
+            newDirEntry.SetPath(src.Path);
 
             if (src.Children == null) return newDirEntry;
             foreach (var newChild in src.Children.Select(MapDirEntry))

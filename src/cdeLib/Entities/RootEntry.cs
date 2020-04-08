@@ -673,7 +673,7 @@ namespace cdeLib.Entities
                     }
                     else
                     {
-                        dirEntry.PathProblem = dirEntry.IsBadPath();
+                        //dirEntry.PathProblem = dirEntry.IsBadPath();
                     }
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
