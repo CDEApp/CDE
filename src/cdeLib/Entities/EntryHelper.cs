@@ -38,29 +38,32 @@ namespace cdeLib.Entities
         {
             if (traverseFunc == null)
             {
+                // nothing to do.
                 return;
-            } // nothing to do.
+            }
 
             var funcContinue = true;
-            var dirs = new Stack<ICommonEntry>(rootEntries
+            var rootEntryStack = new Stack<ICommonEntry>(rootEntries
                 .Reverse()); // Reverse to keep same traversal order as prior code.
 
-            while (funcContinue && dirs.Count > 0)
+            while (funcContinue && rootEntryStack.Count > 0)
             {
-                var commonEntry = dirs.Pop();
-                if (commonEntry.Children == null)
+                var rootEntry = rootEntryStack.Pop();
+
+                // empty directories may not have Children initialized.
+                if (rootEntry.Children == null)
                 {
                     continue;
-                } // empty directories may not have Children initialized.
+                }
 
-                foreach (var dirEntry in commonEntry.Children)
+                foreach (var dirEntry in rootEntry.Children)
                 {
                     if (catalogRootEntry != null)
                     {
-                        commonEntry.TheRootEntry = catalogRootEntry;
+                        rootEntry.TheRootEntry = catalogRootEntry;
                     }
 
-                    funcContinue = traverseFunc(commonEntry, dirEntry);
+                    funcContinue = traverseFunc(rootEntry, dirEntry);
                     if (!funcContinue)
                     {
                         break;
@@ -68,7 +71,7 @@ namespace cdeLib.Entities
 
                     if (dirEntry.IsDirectory)
                     {
-                        dirs.Push(dirEntry);
+                        rootEntryStack.Push(dirEntry);
                     }
                 }
             }

@@ -8,7 +8,6 @@ namespace cdeLib
     {
         void StaticFind(string pattern, string param, IList<RootEntry> rootEntries);
         void StaticFind(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
-        void GetDirCache(IList<RootEntry> rootEntries);
     }
 
     public class FindService : IFindService
@@ -18,10 +17,6 @@ namespace cdeLib
         public const string ParamGrep = "--grep";
         public const string ParamGreppath = "--greppath";
         public static readonly List<string> FindParams = new List<string> { ParamFind, ParamFindpath, ParamGrep, ParamGreppath };
-
-        // ReSharper disable InconsistentNaming
-        private static IList<RootEntry> _rootEntries;
-        // ReSharper restore InconsistentNaming
 
         public void StaticFind(string pattern, string param, IList<RootEntry> rootEntries)
         {
@@ -50,33 +45,10 @@ namespace cdeLib
             };
             
             findOptions.Find(rootEntries);
-            
-            if (totalFound >  0)
-            {
-                Console.WriteLine($"Found a total of {totalFound} entries. Matching pattern \"{pattern}\"");
-            }
-            else
-            {
-                Console.WriteLine("No entries found in cached information.");
-            }
-        }
 
-        [Obsolete("Pass in value as parameter")]
-        public void GetDirCache(IList<RootEntry> rootEntries)
-        {
-            if (_rootEntries == null)
-            {
-                var start = DateTime.UtcNow;
-                _rootEntries = rootEntries;
-                var end = DateTime.UtcNow;
-                var loadTimeSpan = end - start;
-                Console.WriteLine($"Loaded {_rootEntries.Count} file(s) in {loadTimeSpan.TotalMilliseconds:0.00} msecs");
-                foreach (var rootEntry in _rootEntries)
-                {
-                    Console.WriteLine(
-                        $"Loaded File {rootEntry.DefaultFileName} with {rootEntry.DirEntryCount + rootEntry.FileEntryCount} entries.");
-                }
-            }
+            Console.WriteLine(totalFound > 0
+                ? $"Found a total of {totalFound} entries. Matching pattern \"{pattern}\""
+                : "No entries found in cached information.");
         }
     }
 }

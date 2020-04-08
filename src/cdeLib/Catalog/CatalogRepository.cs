@@ -32,8 +32,7 @@ namespace cdeLib.Catalog
         {
             try
             {
-
-                using var input= File.OpenRead(file);
+                using var input = File.OpenRead(file);
 
                 switch (_serializerProtocol)
                 {
@@ -62,14 +61,14 @@ namespace cdeLib.Catalog
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "Error Reading catalogue {FileName}",file);
+                _logger.Error(ex, "Error Reading catalogue {FileName}", file);
                 return null;
             }
         }
 
         public IList<RootEntry> Load(IList<string> cdeList)
         {
-            using (Operation.Time("Loading Catalogs {Count}",cdeList.Count()))
+            using (Operation.Time("Loading Catalogs {Count}", cdeList.Count()))
             {
                 var results = new ConcurrentBag<RootEntry>();
                 Parallel.ForEach(cdeList, file =>
