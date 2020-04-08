@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -11,6 +12,7 @@ using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
+// ReSharper disable MemberCanBeProtected.Global
 
 namespace cdeLib
 {
@@ -20,6 +22,8 @@ namespace cdeLib
     [ProtoContract]
     [FlatBufferTable]
     [MessagePackObject]
+    [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
+    [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
     public class RootEntry : object , ICommonEntry
     {
         const string MatchAll = "*";
@@ -37,7 +41,7 @@ namespace cdeLib
         public virtual string Description { get; set; } // user entered description ?
 
         /// <summary>
-        /// There are a standard set on C: drive in win7 do we care about them ? Hmmmmm filter em out ? or hold internal filter to filter em out ojn display optionally.
+        /// There are a standard set on C: drive in win7 do we care about them ? Filter em out ? or hold internal filter to filter em out ojn display optionally.
         /// </summary>
         [ProtoMember(3, IsRequired = true)]
         [FlatBufferItem(3)]
@@ -90,9 +94,9 @@ namespace cdeLib
 
         // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
         // [FlatBufferItem(10)]
-        // public virtual int RootIndex { get; set; } // hackery with Entry and EntryStore
+        // public virtual int RootIndex { get; set; } // hack with Entry and EntryStore
 
-        [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
+        [ProtoMember(11, IsRequired = true)] // hack to not load old files ?
         [FlatBufferItem(11)]
         [Key(11)]
         public virtual int Version { get; set; } = 3;
@@ -103,6 +107,7 @@ namespace cdeLib
         [IgnoreMember]
         public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
 
+        // ReSharper disable once MemberCanBePrivate.Global
         public RootEntry()
         {
             TheRootEntry = this;
@@ -123,7 +128,7 @@ namespace cdeLib
             SetInMemoryFields();
         }
 
-        public string GetRootEntry(string startPath)
+        private string GetRootEntry(string startPath)
         {
             startPath = CanonicalPath(startPath);
             if (!Directory.Exists(startPath))
@@ -145,8 +150,7 @@ namespace cdeLib
 
         public void SetInMemoryFields()
         {
-            // protobuf does not retain DateKind.
-            // So just handle it here
+            // Protobuf does not retain DateKind. So just handle it here
             ScanStartUTC = new DateTime(ScanStartUTC.Ticks, DateTimeKind.Utc);
             ScanEndUTC = new DateTime(ScanEndUTC.Ticks, DateTimeKind.Utc);
             FullPath = Path;
@@ -248,8 +252,7 @@ namespace cdeLib
 
         public string GetDriverLetterHint(string path, string volumeRoot)
         {
-            var hint = IsUnc(path) ? "UNC" : volumeRoot.Substring(0, 1);
-            return hint;
+            return IsUnc(path) ? "UNC" : volumeRoot.Substring(0, 1);
         }
 
         /// <summary>
@@ -271,7 +274,6 @@ namespace cdeLib
         {
             var entryCount = 0;
             var dirs = new Stack<(ICommonEntry, string)>();
-            // startPath = Filesystem.Path.GetLongPath(startPath);
             dirs.Push((this, startPath));
             while (dirs.Count > 0)
             {
@@ -657,54 +659,6 @@ namespace cdeLib
             return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
-        public int PathCompareTo(DirEntry de)
-        {
-            if (de == null)
-            {
-                return -1; // this before de
-            }
-            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
-        }
-
-        public class EqualityComparer : IEqualityComparer<DirEntry>
-        {
-            public bool Equals(DirEntry x, DirEntry y)
-            {
-                return StaticEquals(x, y);
-            }
-
-            public int GetHashCode(DirEntry obj)
-            {
-                return StaticGetHashCode(obj);
-            }
-
-            public static bool StaticEquals(DirEntry x, DirEntry y)
-            {
-                if (x == null || y == null
-                    || !x.IsHashDone || !y.IsHashDone)
-                {
-                    return false;
-                }
-                return Hash16.EqualityComparer.StaticEquals(x.Hash, y.Hash)
-                    && x.Size == y.Size;
-            }
-
-            public static int StaticGetHashCode(DirEntry obj)
-            {
-                // quite likely a bad choice for hash.
-                // if Hash not set then. avoid using it...
-                if (obj.IsHashDone)
-                {
-                    return (Hash16.EqualityComparer.StaticGetHashCode(obj.Hash) * 31 +
-                       (int)(obj.Size >> 32)) * 31 +
-                       (int)(obj.Size & 0xFFFFFFFF);
-                }
-
-                return (int)(obj.Size >> 32) * 31 +
-                       (int)(obj.Size & 0xFFFFFFFF);
-            }
-        }
-
         // can this be done with TraverseTree ?
         public void SetSummaryFields()
         {
@@ -746,12 +700,10 @@ namespace cdeLib
         [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
-        // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(15, IsRequired = false)]
         [FlatBufferItem(15)]
         [Key(15)]
         public virtual IList<DirEntry> Children { get; set; }
-        // ReSharper restore MemberCanBePrivate.Global
 
         public void AddChild(DirEntry child)
         {

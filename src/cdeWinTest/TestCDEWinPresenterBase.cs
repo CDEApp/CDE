@@ -69,7 +69,7 @@ namespace cdeWinTest
                 Size = 531,
                 Modified = new DateTime(2010, 11, 02, 18, 16, 12, DateTimeKind.Unspecified),
             };
-            _rootEntry.Children.Add(_dirEntry);
+            _rootEntry.AddChild(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
 
@@ -82,7 +82,7 @@ namespace cdeWinTest
             // is it a valid test on other platforms or behavior on other platforms?
             _rootEntry = new RootEntry(_config) { Path = @"T:\" };
             _dirEntry = new DirEntry(true) { Path = "Test1" };
-            _rootEntry.Children.Add(_dirEntry);
+            _rootEntry.AddChild(_dirEntry);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
 
@@ -105,9 +105,9 @@ namespace cdeWinTest
                 Size = 32312,
                 Modified = new DateTime(2008, 10, 04, 20, 18, 14, DateTimeKind.Unspecified),
             };
-            _dirEntry.Children.Add(dirEntry2);
-            _rootEntry.Children.Add(dirEntry3);
-            _rootEntry.Children.Add(dirEntry4);
+            _dirEntry.AddChild(dirEntry2);
+            _rootEntry.AddChild(dirEntry3);
+            _rootEntry.AddChild(dirEntry4);
             _rootEntry.SetInMemoryFields();
             _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
 

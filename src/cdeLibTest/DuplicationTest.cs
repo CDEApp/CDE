@@ -48,16 +48,16 @@ namespace cdeLibTest
             var de8  = new DirEntry { Path = "de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
             var de9  = new DirEntry { Path = "de9",  Size = 11, IsPartialHash = false };
             var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
-            re1.Children.Add(de1);
-            re1.Children.Add(de2);
-            re1.Children.Add(de3);
-            re1.Children.Add(de4);
-            re1.Children.Add(de5);
-            re1.Children.Add(de6);
-            re1.Children.Add(de7);
-            re1.Children.Add(de8);
-            re1.Children.Add(de9);
-            re1.Children.Add(de10);
+            re1.AddChild(de1);
+            re1.AddChild(de2);
+            re1.AddChild(de3);
+            re1.AddChild(de4);
+            re1.AddChild(de5);
+            re1.AddChild(de6);
+            re1.AddChild(de7);
+            re1.AddChild(de8);
+            re1.AddChild(de9);
+            re1.AddChild(de10);
             var roots = new List<RootEntry> { re1 };
             re1.SetInMemoryFields();
 
@@ -86,16 +86,16 @@ namespace cdeLibTest
             var de8  = new DirEntry { Path = "de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
             var de9  = new DirEntry { Path = "de9",  Size = 11, IsPartialHash = false };
             var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
-            re1.Children.Add(de1);
-            re1.Children.Add(de2);
-            re1.Children.Add(de3);
-            re1.Children.Add(de4);
-            re1.Children.Add(de5);
-            re1.Children.Add(de6);
-            re1.Children.Add(de7);
-            re1.Children.Add(de8);
-            re1.Children.Add(de9);
-            re1.Children.Add(de10);
+            re1.AddChild(de1);
+            re1.AddChild(de2);
+            re1.AddChild(de3);
+            re1.AddChild(de4);
+            re1.AddChild(de5);
+            re1.AddChild(de6);
+            re1.AddChild(de7);
+            re1.AddChild(de8);
+            re1.AddChild(de9);
+            re1.AddChild(de10);
             var roots = new List<RootEntry> { re1 };
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
@@ -158,14 +158,13 @@ namespace cdeLibTest
             Program.CreateCache(testPath);
             Program.HashCatalog();
 
-            //run tests.
+            // run tests.
             Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
             var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             if (rootEntries.Count == 0)
             {
-                Console.WriteLine("No Catalogs found.");
                 Assert.Fail("No catalogs found.");
             }
             foreach (var r in rootEntries)

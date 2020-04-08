@@ -30,14 +30,14 @@ namespace cdeLibTest
         {
             rootSource = new RootEntry(_config) { Path = @"C:\" };
             deSource = GetNewTestF1();
-            rootSource.Children.Add(deSource);
+            rootSource.AddChild(deSource);
 
             rootDest = new RootEntry(_config) { Path = @"C:\" };
             deDest = GetNewTestF1();
             deDest.SetHash(0);  // clear it just in case.
             deDest.IsHashDone = false;
             deDest.IsPartialHash = true;
-            rootDest.Children.Add(deDest);
+            rootDest.AddChild(deDest);
         }
 
         private static DirEntry GetNewTestF1()
@@ -132,10 +132,10 @@ namespace cdeLibTest
 
             deSource.IsDirectory = true;
             deSource.Children = new List<DirEntry>();
-            deSource.Children.Add(deSourceLev2);
+            deSource.AddChild(deSourceLev2);
             deDest.IsDirectory = true;
             deDest.Children = new List<DirEntry>();
-            deDest.Children.Add(deDestLev2);
+            deDest.AddChild(deDestLev2);
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 
@@ -154,10 +154,10 @@ namespace cdeLibTest
 
             deSource.IsDirectory = true;
             deSource.Children = new List<DirEntry>();
-            deSource.Children.Add(deSourceLev2);
+            deSource.AddChild(deSourceLev2);
             deDest.IsDirectory = true;
             deDest.Children = new List<DirEntry>();
-            deDest.Children.Add(deDestLev2);
+            deDest.AddChild(deDestLev2);
 
             rootSource.TraverseTreesCopyHash(rootDest); // act
 

@@ -61,7 +61,8 @@ namespace cdeLibTest
 
             _reSource.TraverseTreesCopyHash(_reDest);
 
-            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+            var x = new Hash16(09);
+            Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(x));
             Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
             Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
             Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
@@ -183,13 +184,13 @@ namespace cdeLibTest
             _sde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
             _sde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
             _sde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
-            _reSource.Children.Add(_sde1);
-            _reSource.Children.Add(_sde2);
-            _reSource.Children.Add(_sde3);
-            _reSource.Children.Add(_sfe4);
-            _sfe4.Children.Add(_sde5);
-            _sfe4.Children.Add(_sde6);
-            _sfe4.Children.Add(_sde7);
+            _reSource.AddChild(_sde1);
+            _reSource.AddChild(_sde2);
+            _reSource.AddChild(_sde3);
+            _reSource.AddChild(_sfe4);
+            _sfe4.AddChild(_sde5);
+            _sfe4.AddChild(_sde6);
+            _sfe4.AddChild(_sde7);
 
             _reDest = new RootEntry(_config) { Path = @"C:\" };
             _dde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
@@ -199,13 +200,13 @@ namespace cdeLibTest
             _dde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
             _dde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
             _dde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };
-            _reDest.Children.Add(_dde1);
-            _reDest.Children.Add(_dde2);
-            _reDest.Children.Add(_dde3);
-            _reDest.Children.Add(_dfe4);
-            _dfe4.Children.Add(_dde5);
-            _dfe4.Children.Add(_dde6);
-            _dfe4.Children.Add(_dde7);
+            _reDest.AddChild(_dde1);
+            _reDest.AddChild(_dde2);
+            _reDest.AddChild(_dde3);
+            _reDest.AddChild(_dfe4);
+            _dfe4.AddChild(_dde5);
+            _dfe4.AddChild(_dde6);
+            _dfe4.AddChild(_dde7);
         }
     }
     // ReSharper restore InconsistentNaming

@@ -23,8 +23,8 @@ namespace cdeLibTest
             _re1 = new RootEntry(config) { Path = @"C:\" };
             De1 = new DirEntry(true) { Path = "de1" };
             Fe2 = new DirEntry { Path = "fe2" };
-            De1.Children.Add(Fe2);
-            _re1.Children.Add(De1);
+            De1.AddChild(Fe2);
+            _re1.AddChild(De1);
             _re1.SetInMemoryFields();
             RootEntries = new List<RootEntry> { _re1 };
         }
@@ -111,7 +111,7 @@ namespace cdeLibTest
         public void ListOfRootEntryTest_TryOutEnumerable()
         {
             var fe3 = new DirEntry { Path = "fe3" };
-            De1.Children.Add(fe3);
+            De1.AddChild(fe3);
             var myListEnumerator = new DirEntryEnumerator(RootEntries);
 
             var expectList = new List<DirEntry> { De1, Fe2, fe3 };

@@ -310,9 +310,9 @@ namespace cdeLibTest
             var fe1 = new DirEntry { Path = "fe1" };
             var de2 = new DirEntry(true) { Path = "de2" };
             var fe3 = new DirEntry { Path = "fe3" };
-            re.Children.Add(fe1);
-            re.Children.Add(de2);
-            de2.Children.Add(fe3);
+            re.AddChild(fe1);
+            re.AddChild(de2);
+            de2.AddChild(fe3);
             re.SetInMemoryFields();
 
             Assert.That(re.FullPath, Is.EqualTo(@"C:\"));

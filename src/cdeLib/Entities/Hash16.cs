@@ -11,17 +11,19 @@ namespace cdeLib.Infrastructure
     [ProtoContract]
     [FlatBufferStruct]
     [MessagePackObject]
-    public class Hash16 : object
+    public sealed class Hash16 : object
     {
+     
+
         [ProtoMember(1, IsRequired = true)]
         [FlatBufferItem(0)]
         [Key(0)]
-        public virtual ulong HashA { get; set; } // first 8 bytes
+        public ulong HashA { get; set; } // first 8 bytes
         
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(1)]
         [Key(1)]
-        public virtual ulong HashB { get; set; } // last 8 bytes
+        public ulong HashB { get; set; } // last 8 bytes
 
         public Hash16()
         {
@@ -67,6 +69,21 @@ namespace cdeLib.Infrastructure
             return $"A:[{HashA}] B:[{HashB}]";
         }
 
+        private bool Equals(Hash16 other)
+        {
+            return HashA == other.HashA && HashB == other.HashB;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return ReferenceEquals(this, obj) || obj is Hash16 other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(HashA, HashB);
+        }
+
         public class EqualityComparer: IEqualityComparer<Hash16>
         {
             public bool Equals(Hash16 x, Hash16 y)
@@ -92,6 +109,8 @@ namespace cdeLib.Infrastructure
                        (int)(obj.HashB >> 32)) * 31 +
                        (int)(obj.HashB & 0xFFFFFFFF);
             }
+
+
         }
     }
 }

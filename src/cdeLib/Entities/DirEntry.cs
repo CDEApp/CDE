@@ -175,7 +175,15 @@ namespace cdeLib
         // For testing convenience.
         public void SetHash(int hash)
         {
-            Hash.HashB = (ulong)hash;
+            if (Hash == null)
+            {
+                Hash = new Hash16(hash);
+            }
+            else
+            {
+                Hash.HashB = (ulong) hash;
+            }
+
             IsHashDone = true;
         }
 

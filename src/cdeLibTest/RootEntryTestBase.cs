@@ -24,15 +24,15 @@ namespace cdeLibTest
             de2a = new DirEntry {Path = "d2a", Size = 11};
             de2b = new DirEntry(true) {Path = "d2b"};
             de2c = new DirEntry {Path = "d2c"};
-            re1.Children.Add(de2c);
-            re1.Children.Add(de2a);
-            re1.Children.Add(de2b);
+            re1.AddChild(de2c);
+            re1.AddChild(de2a);
+            re1.AddChild(de2b);
 
             de3a = new DirEntry(true) {Path = "d3a"};
-            de2b.Children.Add(de3a);
+            de2b.AddChild(de3a);
 
             de4a = new DirEntry {Path = "d4a", Size = 17};
-            de3a.Children.Add(de4a);
+            de3a.AddChild(de4a);
 
             return re1;
         }

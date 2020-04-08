@@ -31,7 +31,7 @@ namespace cdeLibTest
         {
             var re = new RootEntry(_config) {Path = @"X:\"};
             var de1 = new DirEntry {Path = "de1" };
-            re.Children.Add(de1);
+            re.AddChild(de1);
             re.SetCommonEntryFields();
 
             var list = de1.GetListFromRoot();

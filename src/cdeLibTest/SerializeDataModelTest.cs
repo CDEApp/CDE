@@ -34,9 +34,10 @@ namespace cdeLibTest
         }
 
         [Test]
+        [Ignore("Targeted at Protobuf only")]
         public void Serialize_RootEntry()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -47,7 +48,7 @@ namespace cdeLibTest
             Assert.That(b.Length, Is.EqualTo(118));
         }
 
-        // just a sanity check - shouldnt ever fail and only checking rootpath and name field.
+        // just a sanity check - shouldn't ever fail and only checking rootpath and name field.
         [Test]
         public void Serialize_Deserialize_RootEntryMatches()
         {
