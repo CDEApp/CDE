@@ -3,20 +3,24 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using FlatSharp.Attributes;
 using ProtoBuf;
+using MessagePack;
 
 namespace cdeLib.Infrastructure
 {
     [DebuggerDisplay("HashA = {HashA}, HashB = {HashB}")]
     [ProtoContract]
     [FlatBufferStruct]
+    [MessagePackObject]
     public class Hash16 : object
     {
         [ProtoMember(1, IsRequired = true)]
         [FlatBufferItem(0)]
+        [Key(0)]
         public virtual ulong HashA { get; set; } // first 8 bytes
         
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(1)]
+        [Key(1)]
         public virtual ulong HashB { get; set; } // last 8 bytes
 
         public Hash16()
@@ -46,6 +50,7 @@ namespace cdeLib.Infrastructure
             HashB = (ulong)hash;
         }
 
+        [Key(2)]
         public string HashAsString
         {
             get

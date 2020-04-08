@@ -8,6 +8,7 @@ using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
+using MessagePack;
 using ProtoBuf;
 using Serilog;
 
@@ -18,6 +19,7 @@ namespace cdeLib
     [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
     [ProtoContract]
     [FlatBufferTable]
+    [MessagePackObject]
     public class RootEntry : object , ICommonEntry
     {
         const string MatchAll = "*";
@@ -26,10 +28,12 @@ namespace cdeLib
         // NO LONGER USED
         [Obsolete]
         [ProtoMember(1, IsRequired = true)]
+        [IgnoreMember]
         public virtual string VolumeName { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(2)]
+        [Key(2)]
         public virtual string Description { get; set; } // user entered description ?
 
         /// <summary>
@@ -37,26 +41,31 @@ namespace cdeLib
         /// </summary>
         [ProtoMember(3, IsRequired = true)]
         [FlatBufferItem(3)]
+        [Key(3)]
         public virtual IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
         [ProtoMember(4, IsRequired = true)]
         [FlatBufferItem(4)]
+        [Key(4)]
         public virtual string DefaultFileName { get; set; }
 
         [ProtoMember(5, IsRequired = true)]
         [FlatBufferItem(5)]
+        [Key(5)]
         public virtual string DriveLetterHint { get; set; }
 
         [ProtoMember(6, IsRequired = true)]
         [FlatBufferItem(6)]
+        [Key(6)]
         public virtual ulong AvailSpace { get; set; }
 
         [ProtoMember(7, IsRequired = true)]
         [FlatBufferItem(7)]
+        [Key(7)]
         public virtual ulong TotalSpace { get; set; }
 
         
-        
+        [IgnoreMember]
         public virtual DateTime ScanStartUTC {
             set => ScanStartUTCTicks = value.Ticks;
             get => DateTime.FromBinary(ScanStartUTCTicks);
@@ -64,8 +73,10 @@ namespace cdeLib
 
         [FlatBufferItem(8)]
         [ProtoMember(8, IsRequired = true)]
+        [Key(8)]
         public virtual long ScanStartUTCTicks { get; set; }
 
+        [IgnoreMember]
         public virtual DateTime ScanEndUTC
         {
             set => ScanEndUTCTicks = value.Ticks;
@@ -74,6 +85,7 @@ namespace cdeLib
 
         [FlatBufferItem(9)]
         [ProtoMember(9, IsRequired = true)]
+        [Key(9)]
         public virtual long ScanEndUTCTicks { get; set; }
 
         // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
@@ -82,10 +94,13 @@ namespace cdeLib
 
         [ProtoMember(11, IsRequired = true)] // hackery to not load old files ?
         [FlatBufferItem(11)]
+        [Key(11)]
         public virtual int Version { get; set; } = 3;
 
+        [IgnoreMember]
         public string ActualFileName { get; set; }
 
+        [IgnoreMember]
         public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
 
         public RootEntry()
@@ -310,13 +325,16 @@ namespace cdeLib
             }
             PathsWithUnauthorisedExceptions.Add(directory);
         }
-
+        [IgnoreMember]
         public int EntryCountThreshold { get; set; }
 
+        [IgnoreMember]
         public Action SimpleScanCountEvent { get; set; }
 
+        [IgnoreMember]
         public Action SimpleScanEndEvent { get; set; }
 
+        [IgnoreMember]
         public Action<string, Exception> ExceptionEvent { get; set; }
 
         /// <summary>
@@ -395,6 +413,7 @@ namespace cdeLib
         }
 
         //direntry import
+        [IgnoreMember]
         public virtual DateTime Modified
         {
             set => ModifiedTicks = value.Ticks;
@@ -404,17 +423,21 @@ namespace cdeLib
 
         [ProtoMember(12, IsRequired = false)] // is there a better default value than 0 here
         [FlatBufferItem(12)]
+        [Key(12)]
         public virtual Flags BitFields { get; set; }
 
         [ProtoMember(13, IsRequired = false)]
         [FlatBufferItem(13)]
+        [Key(13)]
         public virtual Hash16 Hash { get; set; }
 
         [ProtoMember(14, IsRequired = true)]
         [FlatBufferItem(14)]
+        [Key(14)]
         public virtual long ModifiedTicks { get; set; }
 
         #region BitFields based properties
+        [IgnoreMember]
         public bool IsDirectory
         {
             get => (BitFields & Flags.Directory) == Flags.Directory;
@@ -430,7 +453,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsModifiedBad
         {
             get => (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad;
@@ -446,7 +469,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsReparsePoint
         {
             get => (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint;
@@ -462,7 +485,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsHashDone
         {
             get => (BitFields & Flags.HashDone) == Flags.HashDone;
@@ -478,7 +501,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsPartialHash
         {
             get => (BitFields & Flags.PartialHash) == Flags.PartialHash;
@@ -494,7 +517,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsDefaultSort
         {
             get => (BitFields & Flags.DefaultSort) == Flags.DefaultSort;
@@ -515,11 +538,13 @@ namespace cdeLib
         /// <summary>
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
+        [IgnoreMember]
         public long FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
+        [IgnoreMember]
         public long DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
@@ -719,12 +744,13 @@ namespace cdeLib
         }
 
         //commonentry
-
+        [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(15, IsRequired = false)]
         [FlatBufferItem(15)]
+        [Key(15)]
         public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
@@ -737,6 +763,7 @@ namespace cdeLib
 
         [ProtoMember(16, IsRequired = true)]
         [FlatBufferItem(16)]
+        [Key(16)]
         public virtual long Size { get; set; }
 
         /// <summary>
@@ -744,13 +771,16 @@ namespace cdeLib
         /// </summary>
         [ProtoMember(17, IsRequired = true)]
         [FlatBufferItem(17)]
+        [Key(17)]
         public virtual string Path { get; set; }
 
+        [IgnoreMember]
         public ICommonEntry ParentCommonEntry { get; set; }
 
         /// <summary>
         /// Populated on load, not saved to disk.
         /// </summary>
+        [IgnoreMember]
         public string FullPath { get; set; }
 
         /// <summary>
@@ -758,6 +788,7 @@ namespace cdeLib
         /// If this entry is a directory this infects all child entries as well.
         /// Populated on load not saved to disk.
         /// </summary>
+        [IgnoreMember]
         public bool PathProblem { get; set; }
 
         public void TraverseTreePair(TraverseFunc func)

@@ -6,6 +6,7 @@ using System.IO;
 using System.Linq;
 using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
+using MessagePack;
 using ProtoBuf;
 using Serilog;
 
@@ -14,9 +15,10 @@ namespace cdeLib
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]
     [FlatBufferTable]
+    [MessagePackObject]
     public class DirEntry : ICommonEntry
     {
-        
+        [IgnoreMember]
         public virtual DateTime Modified
         {
             set => ModifiedTicks = value.Ticks;
@@ -25,10 +27,12 @@ namespace cdeLib
 
         [ProtoMember(1, IsRequired = true)]
         [FlatBufferItem(1)]
+        [Key(1)]
         public virtual long ModifiedTicks { get; set; }
 
         [ProtoMember(2, IsRequired = false)]
         [FlatBufferItem(2)]
+        [Key(2)]
         public virtual Hash16 Hash { get; set; }
 
         /// <summary>
@@ -37,15 +41,18 @@ namespace cdeLib
         /// URL some protobuf serialisation.
         /// http://stackoverflow.com/questions/6389477/how-to-add-optional-field-to-a-class-manually-in-protobuf-net
         /// </summary>
+        [IgnoreMember]
         public bool HashSpecified => IsHashDone;
 
         //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
         [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
         [FlatBufferItem(6)]
+        [Key(6)]
         public virtual Flags BitFields { get; set; }
 
         #region BitFields based properties
+        [IgnoreMember]
         public bool IsDirectory
         {
             get => (BitFields & Flags.Directory) == Flags.Directory;
@@ -62,6 +69,7 @@ namespace cdeLib
             }
         }
 
+        [IgnoreMember]
         public bool IsModifiedBad
         {
             get => (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad;
@@ -78,6 +86,7 @@ namespace cdeLib
             }
         }
 
+        [IgnoreMember]
         public bool IsReparsePoint
         {
             get => (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint;
@@ -94,6 +103,7 @@ namespace cdeLib
             }
         }
 
+        [IgnoreMember]
         public bool IsHashDone
         {
             get => (BitFields & Flags.HashDone) == Flags.HashDone;
@@ -110,6 +120,7 @@ namespace cdeLib
             }
         }
 
+        [IgnoreMember]
         public bool IsPartialHash
         {
             get => (BitFields & Flags.PartialHash) == Flags.PartialHash;
@@ -125,7 +136,7 @@ namespace cdeLib
                 }
             }
         }
-
+        [IgnoreMember]
         public bool IsDefaultSort
         {
             get => (BitFields & Flags.DefaultSort) == Flags.DefaultSort;
@@ -146,11 +157,13 @@ namespace cdeLib
         /// <summary>
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
+        [IgnoreMember]
         public long FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
+        [IgnoreMember]
         public long DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
@@ -326,12 +339,13 @@ namespace cdeLib
         }
 
         //commonentry
-
+        [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         [FlatBufferItem(3)]
+        [Key(3)]
         public virtual IList<DirEntry> Children { get; set; }
         // ReSharper restore MemberCanBePrivate.Global
 
@@ -346,6 +360,7 @@ namespace cdeLib
 
         [ProtoMember(4, IsRequired = true)]
         [FlatBufferItem(4)]
+        [Key(4)]
         public virtual long Size { get; set; }
 
         /// <summary>
@@ -353,13 +368,16 @@ namespace cdeLib
         /// </summary>
         [ProtoMember(5, IsRequired = true)]
         [FlatBufferItem(5)]
+        [Key(5)]
         public virtual string Path { get; set; }
 
+        [IgnoreMember]
         public ICommonEntry ParentCommonEntry { get; set; }
 
         /// <summary>
         /// Populated on load, not saved to disk.
         /// </summary>
+        [IgnoreMember]
         public string FullPath { get; set; }
 
         /// <summary>
@@ -367,6 +385,7 @@ namespace cdeLib
         /// If this entry is a directory this infects all child entries as well.
         /// Populated on load not saved to disk.
         /// </summary>
+        [IgnoreMember]
         public bool PathProblem { get; set; }
 
         public void TraverseTreePair(TraverseFunc func)

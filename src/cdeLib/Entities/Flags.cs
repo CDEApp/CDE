@@ -6,6 +6,7 @@ namespace cdeLib
 {
     [Flags]
     [FlatBufferEnum(typeof(byte))]
+    
     public enum Flags : byte
     {
         [Description("Obligatory none value.")]

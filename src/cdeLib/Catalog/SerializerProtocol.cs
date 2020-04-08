@@ -3,6 +3,7 @@
     public enum SerializerProtocol
     {
         Protobuf,
-        Flatbuffers
+        Flatbuffers,
+        MessagePack
     }
 }

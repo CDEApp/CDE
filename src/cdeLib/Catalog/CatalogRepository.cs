@@ -8,6 +8,7 @@ using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using FlatSharp;
 using FlatSharp.Unsafe;
+using MessagePack;
 using ProtoBuf;
 using Serilog;
 using SerilogTimings;
@@ -17,7 +18,7 @@ namespace cdeLib.Catalog
 {
     public class CatalogRepository : ICatalogRepository
     {
-        private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.Protobuf; //hard coded for now.
+        private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
         private readonly ILogger _logger;
 
         public CatalogRepository(ILogger logger)
@@ -29,12 +30,13 @@ namespace cdeLib.Catalog
         {
             try
             {
+                byte[] bytes;
                 switch (_serializerProtocol)
                 {
                     case SerializerProtocol.Protobuf:
                         return Serializer.Deserialize<RootEntry>(input);
                     case SerializerProtocol.Flatbuffers:
-                        byte[] bytes;
+
                         using (Operation.Time("ToByteArray"))
                         {
                             bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
@@ -42,9 +44,13 @@ namespace cdeLib.Catalog
 
                         using (Operation.Time("Deserialize"))
                         {
-                            var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions(FlatBufferDeserializationOption.GreedyMutable));
+                            var serializer = new FlatBufferSerializer(
+                                new FlatBufferSerializerOptions(FlatBufferDeserializationOption.GreedyMutable));
                             return serializer.Parse<RootEntry>(new UnsafeArrayInputBuffer(bytes));
                         }
+                    case SerializerProtocol.MessagePack:
+                        bytes = input.ToByteArray();
+                        return MessagePackSerializer.Deserialize<RootEntry>(bytes);
 
                     default:
                         throw new Exception("Invalid Serializer Protocol");
@@ -135,15 +141,21 @@ namespace cdeLib.Catalog
             switch (_serializerProtocol)
             {
                 case SerializerProtocol.Protobuf:
-                    using (var newFs = File.Open(rootEntry.DefaultFileName, FileMode.Create)){
+                    using (var newFs = File.Open(rootEntry.DefaultFileName, FileMode.Create))
+                    {
                         Serializer.Serialize(newFs, rootEntry);
                     }
+
                     break;
                 case SerializerProtocol.Flatbuffers:
                     var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
                     var buffer = new byte[maxBytesNeeded];
                     FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                    File.WriteAllBytes(rootEntry.DefaultFileName,buffer);
+                    File.WriteAllBytes(rootEntry.DefaultFileName, buffer);
+                    break;
+                case SerializerProtocol.MessagePack:
+                    var bytes = MessagePackSerializer.Serialize(rootEntry);
+                    File.WriteAllBytes(rootEntry.DefaultFileName, bytes);
                     break;
                 default:
                     throw new Exception("Invalid Serializer Protocol");
