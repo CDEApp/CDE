@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;
+using Dawn;
 
 namespace cdeLib
 {
@@ -222,6 +223,7 @@ namespace cdeLib
             var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
                                              ? _configuration.ProgressUpdateInterval/10
                                              : _configuration.ProgressUpdateInterval;
+            Guard.Argument(displayCounterInterval, nameof(displayCounterInterval)).GreaterThan(0);
             if (doPartialHash)
             {
                 // don't recalculate.

@@ -19,17 +19,14 @@ namespace cdeLibTest
     [TestFixture]
     class DuplicationTest
     {
-        private ILogger _logger;
-        private IConfiguration _configuration;
+        private ILogger _logger = Substitute.For<ILogger>();
+        private IConfiguration _configuration = Substitute.For<IConfiguration>();
         private IApplicationDiagnostics _applicationDiagnostics;
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
         {
-            _config.ProgressUpdateInterval.Returns(5000);
-            _logger = Substitute.For<ILogger>();
-            _configuration = Substitute.For<IConfiguration>();
+            _configuration.ProgressUpdateInterval.Returns(5000);
             _applicationDiagnostics = Substitute.For<IApplicationDiagnostics>();
         }
 
@@ -37,7 +34,7 @@ namespace cdeLibTest
         [Test]
         public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
         {
-            var re1  = new RootEntry(_config) { Path = @"C:\" };
+            var re1  = new RootEntry(_configuration) { Path = @"C:\" };
             var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
             var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
             var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
@@ -75,7 +72,7 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_DupeHashDoesNotMatchDiffSizeFilesOrPartialHash_OK()
         {
-            var re1  = new RootEntry(_config) { Path = @"C:\" };
+            var re1  = new RootEntry(_configuration) { Path = @"C:\" };
             var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
             var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
             var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
@@ -245,6 +242,7 @@ namespace cdeLibTest
         {
             var catalogRepository = new CatalogRepository(Log.Logger);
             var rootEntries = catalogRepository.LoadCurrentDirCache();
+            
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             await d.ApplyHash(rootEntries);
         }
