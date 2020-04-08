@@ -431,7 +431,6 @@ namespace cdeWin
             worker.ReportProgress(0, state);
             findOptions.VisitorFunc = (p, d) =>
             {
-                //Thread.Sleep(20);
                 list.Add(new PairDirEntry(p, d));
                 return true;
             };
