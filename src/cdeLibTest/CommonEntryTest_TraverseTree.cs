@@ -5,7 +5,6 @@ using Shouldly;
 
 namespace cdeLibTest
 {
-
     // ReSharper disable InconsistentNaming
     [TestFixture]
     class CommonEntryTest_TraverseTree : RootEntryTestBase

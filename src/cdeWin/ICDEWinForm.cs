@@ -16,7 +16,7 @@ namespace cdeWin
         event EventAction OnExitMenuItem;
         event EventAction OnSearch;
         event EventAction OnAboutMenuItem;
-        
+
         event EventAction OnSearchResultContextMenuViewTreeClick;
         event EventAction OnSearchResultContextMenuOpenClick;
         event EventAction OnSearchResultContextMenuExploreClick;

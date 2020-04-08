@@ -115,7 +115,6 @@ namespace cdeLib.Catalog
             return FileSystemHelper.GetFilesWithExtension(path, "cde");
         }
 
-
         public RootEntry LoadDirCache(string file)
         {
             if (!File.Exists(file)) return null;

@@ -117,9 +117,7 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(_config);
 
-            string hint, volRoot;
-
-            var fileName = re.GetDefaultFileName(@"C:\", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"C:\", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -134,9 +132,7 @@ namespace cdeLibTest
             var re = new RootEntryTestStub(_config, root: @"D:\", fullPath:@"D:\");
             // ReSharper restore RedundantArgumentName
 
-            string hint, volRoot;
-
-            var fileName = re.GetDefaultFileName(@"D:\", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"D:\", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("D"));
             Assert.That(volRoot, Is.EqualTo(@"D:\"));
@@ -148,9 +144,7 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder");
 
-            string hint, volRoot;
-
-            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -162,9 +156,7 @@ namespace cdeLibTest
         {
             var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder\Mine");
 
-            string hint, volRoot;
-
-            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -175,10 +167,9 @@ namespace cdeLibTest
         public void GetDefaultFileName_NonRootedPath_UsesFullPathToScanPath()
         {
             var re = new RootEntryTestStub(_config,fullPath: @"C:\Stuff\MyTestFolder\Mine");
-            string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
-            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(canonicalName, out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -189,10 +180,9 @@ namespace cdeLibTest
         public void GetDefaultFileName_RootedPathByLeadingSlash_UsingFullPath()
         {
             var re = new RootEntryTestStub(_config,fullPath: @"C:\MyTestFolder\Mine");
-            string hint, volRoot;
 
             var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
-            var fileName = re.GetDefaultFileName(canonicalName, out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(canonicalName, out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -203,9 +193,8 @@ namespace cdeLibTest
         public void GetDefaultFileName_UNCPath_UsesFullPath()
         {
             var re = new RootEntryTestStub(_config,isUnc: true, fullPath: @"\\myserver\myshare");
-            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
@@ -216,9 +205,8 @@ namespace cdeLibTest
         public void GetDefaultFileName_UNCPath2_UsesFullPath()
         {
             var re = new RootEntryTestStub(_config,isUnc: true, fullPath: @"\\myserver\myshare\stuff");
-            string hint, volRoot;
 
-            var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out hint, out volRoot);
+            var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out var hint, out var volRoot);
 
             Assert.That(hint, Is.EqualTo("UNC"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));

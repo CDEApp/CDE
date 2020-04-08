@@ -25,8 +25,7 @@ namespace cdeLibTest.Infrastructure
         public void Teardown()
         {
             Directory.Delete(FileHelper.TestDir2, true);
-            var files = Directory.GetFiles(".", "*.cde");
-            foreach (var file in files)
+            foreach (var file in Directory.GetFiles(".", "*.cde"))
             {
                 File.Delete(file);
             }
@@ -112,9 +111,9 @@ namespace cdeLibTest.Infrastructure
             foreach (var dupe in dupes)
             {
                 Console.WriteLine($"set of dupes to {dupe.Key.Path}");
-                foreach (var adupe in dupe.Value)
+                foreach (var entry in dupe.Value)
                 {
-                    Console.WriteLine($"dupe set file {adupe.FullPath}");
+                    Console.WriteLine($"dupe set file {entry.FullPath}");
                 }
             }
         }

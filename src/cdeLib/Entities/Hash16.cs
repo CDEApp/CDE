@@ -13,8 +13,6 @@ namespace cdeLib.Infrastructure
     [MessagePackObject]
     public sealed class Hash16 : object
     {
-     
-
         [ProtoMember(1, IsRequired = true)]
         [FlatBufferItem(0)]
         [Key(0)]
@@ -109,8 +107,6 @@ namespace cdeLib.Infrastructure
                        (int)(obj.HashB >> 32)) * 31 +
                        (int)(obj.HashB & 0xFFFFFFFF);
             }
-
-
         }
     }
 }

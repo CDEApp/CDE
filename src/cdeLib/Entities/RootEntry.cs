@@ -312,7 +312,6 @@ namespace cdeLib
                 catch (UnauthorizedAccessException)
                 {
                     AddPathsWithUnauthorisedExceptions(directory);
-                    
                 }
             }
 
@@ -421,7 +420,6 @@ namespace cdeLib
             set => ModifiedTicks = value.Ticks;
             get => DateTime.FromBinary(ModifiedTicks);
         }
-
 
         [ProtoMember(12, IsRequired = false)] // is there a better default value than 0 here
         [FlatBufferItem(12)]
@@ -554,7 +552,6 @@ namespace cdeLib
             Hash.SetHash(hash);
             IsHashDone = true;
         }
-
 
         // For testing convenience.
         public void SetHash(int hash)

@@ -414,7 +414,7 @@ namespace cdeLib
             var sourcePath = source.Path;
             var destinationPath = destination.Path;
 
-            if (string.Compare(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase) != 0)
+            if (!string.Equals(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
             {
                 throw new ArgumentException("source and destination must have same root path.");
             }

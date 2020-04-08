@@ -3,7 +3,6 @@ using System.Collections.Generic;
 
 namespace cdeLib
 {
-
     public static class IListExtensions
     {
         public static void Sort<T>(this IList<T> list)

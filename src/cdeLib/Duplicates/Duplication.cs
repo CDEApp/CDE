@@ -128,7 +128,7 @@ namespace cdeLib
 
             _logger.LogInfo("After initial partial hashing phase.");
             var perf =
-                $"{((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/(1024.0*1024.0):F2} MB/s";
+                $"{(_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds))/(1024.0*1024.0):F2} MB/s";
             var statsMessage =
                 $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed/(1024*1024):F2} MB  NotProcessed: {_duplicationStatistics.BytesNotProcessed/(1024*1024):F2} MB  Perf: {perf}\nTotal Data Encountered: {_duplicationStatistics.TotalFileBytes/(1024*1024):F2} MB\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
             _logger.LogInfo(statsMessage);
@@ -140,7 +140,7 @@ namespace cdeLib
             _logger.LogInfo("After hashing completed.");
             timer.Stop();
             perf =
-                $"{((_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds)))/(1024.0*1024.0):F2} MB/s";
+                $"{(_duplicationStatistics.BytesProcessed*(1000.0/timer.ElapsedMilliseconds))/(1024.0*1024.0):F2} MB/s";
             statsMessage =
                 $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed/(1024*1024):F2} MB Perf: {perf}\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
             _logger.LogInfo(statsMessage);
@@ -177,12 +177,6 @@ namespace cdeLib
             return true;
         }
 
-        private void CalculatePartialHash(string fullPath, ICommonEntry de)
-        {
-            var task = Task.Run(() => CalculatePartialHashAsync(fullPath, de));
-            task.Wait();
-        }
-
         private async Task CalculatePartialHashAsync(string fullPath, ICommonEntry de)
         {
             if (de.IsDirectory || de.IsHashDone)
@@ -202,7 +196,7 @@ namespace cdeLib
 
             var foundDupes = _duplicateFile.Where(d => d.Value.Count > 1).ToArray();
             var totalEntriesInDupes = foundDupes.Sum(x => x.Value.Count);
-            var longestListLength = foundDupes.Any() ? foundDupes.Max(x => x.Value.Count) : 0;
+            var longestListLength = foundDupes.Length > 0 ? foundDupes.Max(x => x.Value.Count) : 0;
             _logger.LogInfo("Found {0} duplication collections.", foundDupes.Length);
             _logger.LogInfo("Total files found with at least 1 other file duplicate {0}",
                             totalEntriesInDupes);

@@ -8,7 +8,7 @@ namespace cdeLib.Duplicates
     public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand>
     {
         private readonly Duplication _duplication;
-        private ICatalogRepository _catalogRepository;
+        private readonly ICatalogRepository _catalogRepository;
 
         public FindDuplicateCommandHandler(Duplication duplication, ICatalogRepository catalogRepository)
         {

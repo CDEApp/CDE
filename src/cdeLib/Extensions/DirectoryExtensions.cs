@@ -44,10 +44,7 @@ namespace cdeLib
         /// <returns>A <see cref="FileSystemProperties"/> containing the properties for the specified file system.</returns>
         public static FileSystemProperties GetProperties(string volumeIdentifier)
         {
-            ulong available;
-            ulong total;
-            ulong free;
-            if (GetDiskFreeSpaceEx(volumeIdentifier, out available, out total, out free))
+            if (GetDiskFreeSpaceEx(volumeIdentifier, out var available, out var total, out var free))
             {
                 return new FileSystemProperties((long) total, (long) free, (long) available);
             }
@@ -66,10 +63,7 @@ namespace cdeLib
         {
             return await Task.Run(() =>
             {
-                ulong available;
-                ulong total;
-                ulong free;
-                if (GetDiskFreeSpaceEx(volumeIdentifier, out available, out total, out free))
+                if (GetDiskFreeSpaceEx(volumeIdentifier, out var available, out var total, out var free))
                 {
                     return new FileSystemProperties((long) total, (long) free, (long) available);
                 }

@@ -22,8 +22,7 @@ namespace cdeWin
             Application.SetHighDpiMode(HighDpiMode.SystemAware);
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            // Application.Run(new Form1());
-            
+
             // TODO consider using (var config = new Config()) { } - with Save built in.
             var config = new Config("cdeWinView.cfg", ProductName, Version);
             var mainForm = new CDEWinForm(config);

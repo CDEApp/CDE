@@ -2,7 +2,7 @@
   "profiles": {
     "cde": {
       "commandName": "Project",
-      "commandLineArgs": "hash"
+      "commandLineArgs": "scan c:\\temp"
     }
   }
 }

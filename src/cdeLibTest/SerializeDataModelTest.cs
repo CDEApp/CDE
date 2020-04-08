@@ -13,7 +13,7 @@ namespace cdeLibTest
     /// <summary>
     /// Test out how it serializes.
     /// That it serializes.
-    /// If i can deserialize without rehydrating entire tree.
+    /// If i can deserialize without re-hydrating entire tree.
     /// </summary>
     [TestFixture]
     class SerializeDataModelTest
@@ -52,7 +52,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryMatches()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -68,7 +68,7 @@ namespace cdeLibTest
         [Test]
         public void Serialize_Deserialize_RootEntryFailsMatches()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
             Serializer.Serialize(ms, re1);
@@ -86,7 +86,7 @@ namespace cdeLibTest
         [Test]
         public void DeSerialize_JustRootEntryThatHasTree()
         {
-            re1 = CommonEntryTest_TraverseTree.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+            re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
             var ms = new MemoryStream();
 
@@ -122,27 +122,6 @@ namespace cdeLibTest
     {
         public static string LastMessage;
 
-        //public static bool AreTreesSame(RootEntry re1, RootEntry re2)
-        //{
-        //    LastMessage = "";
-        //    var differenceFound = false;
-        //    var e1 = new DirEntryEnumerator(re1);
-        //    var e2 = new DirEntryEnumerator(re2);
-
-        //    while (e1.MoveNext() && e2.MoveNext())
-        //    {
-        //        LastMessage = string.Format("{0} not same as {1}", e1.Current.Name, e2.Current.Name);
-        //        if (e1.Current.Name != e2.Current.Name)
-        //        {
-        //            differenceFound = true;
-        //            break;
-        //        }
-        //        Console.WriteLine(LastMessage);
-        //    }
-        //    var bothTreesComplete = e1.MoveNext() == false && e2.MoveNext() == false;
-        //    return !differenceFound && bothTreesComplete;
-        //}
-
         public static bool SameTree(this RootEntry re1, RootEntry re2)
         {
             LastMessage = "";
@@ -166,7 +145,7 @@ namespace cdeLibTest
                 }
                 Console.WriteLine(LastMessage);
             }
-            var bothTreesComplete = e1.MoveNext() == false && e2.MoveNext() == false;
+            var bothTreesComplete = !e1.MoveNext() && !e2.MoveNext();
             return !differenceFound && bothTreesComplete;
         }
     }

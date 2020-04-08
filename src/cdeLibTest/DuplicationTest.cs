@@ -19,8 +19,8 @@ namespace cdeLibTest
     [TestFixture]
     class DuplicationTest
     {
-        private ILogger _logger = Substitute.For<ILogger>();
-        private IConfiguration _configuration = Substitute.For<IConfiguration>();
+        private readonly ILogger _logger = Substitute.For<ILogger>();
+        private readonly IConfiguration _configuration = Substitute.For<IConfiguration>();
         private IApplicationDiagnostics _applicationDiagnostics;
 
         [SetUp]
@@ -120,7 +120,6 @@ namespace cdeLibTest
             var ah7 = Hash16.EqualityComparer.StaticGetHashCode(de7.Hash);
             var ah8 = Hash16.EqualityComparer.StaticGetHashCode(de8.Hash);
             Console.WriteLine($"de5.Hash {ah5}  de6.Hash {ah6} de7.Hash {ah7} de8.Hash {ah8}");
-
 
             // TODO: Fix
             // var a5 = DirEntry.EqualityComparer.StaticGetHashCode(de5);

@@ -27,8 +27,7 @@ namespace cdeLib
         {
             var splitOnDash = str.Split('-');
 
-            int year;
-            int.TryParse(splitOnDash[0], out year);
+            int.TryParse(splitOnDash[0], out var year);
             if (year < 1000) // this is not 4 digits, its only value eg  4 digits 0982 is 4 digits.
             {
                 _e = new ArgumentException(
@@ -43,12 +42,11 @@ namespace cdeLib
                 {
                     return;
                 }
-                int month;
-                if (!int.TryParse(splitOnDash[1], out month))
+
+                if (!int.TryParse(splitOnDash[1], out var month))
                 {
                     //month = Convert.ToDateTime("01-" + p[1] + "-2000").Month;
-                    DateTime tmp;
-                    if (DateTime.TryParse("01-" + splitOnDash[1] + "-" + _year, out tmp))
+                    if (DateTime.TryParse("01-" + splitOnDash[1] + "-" + _year, out var tmp))
                     {
                         month = tmp.Month;
                     }
@@ -80,12 +78,10 @@ namespace cdeLib
                 var splitOnT = splitOnDash[2].Split('T');
 
                 int dayOfMonth = 0;
-                int unValidatedDayOfMonth;
-                if (int.TryParse(splitOnT[0], out unValidatedDayOfMonth))
+                if (int.TryParse(splitOnT[0], out var unValidatedDayOfMonth))
                 {
                     // check for valid day of month
-                    DateTime tmpDateTime;
-                    if (DateTime.TryParse(_year+ "-" + _month + "-" + unValidatedDayOfMonth, out tmpDateTime))
+                    if (DateTime.TryParse(_year+ "-" + _month + "-" + unValidatedDayOfMonth, out var tmpDateTime))
                     {
                         dayOfMonth = tmpDateTime.Day;
                     }

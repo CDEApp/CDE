@@ -537,9 +537,9 @@ namespace cdeWin
         }
 
         public float DirectoryPanelSplitterRatio
-        { 
+        {
             get { return directorySplitContainer.GetSplitterRatio(); }
-            set { directorySplitContainer.SetSplitterRatio(value); } 
+            set { directorySplitContainer.SetSplitterRatio(value); }
         }
 
         public string SetDirectoryPathTextbox

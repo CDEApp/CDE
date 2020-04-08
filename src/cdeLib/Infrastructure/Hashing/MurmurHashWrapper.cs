@@ -10,7 +10,6 @@ namespace cdeLib.Infrastructure.Hashing
 
         public UInt64 Hash(byte[] data)
         {
-            
             return MurmurHash3.Hash32(bytes: data, seed: Seed);
         }
 

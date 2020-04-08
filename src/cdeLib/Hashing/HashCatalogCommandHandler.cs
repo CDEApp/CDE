@@ -30,7 +30,6 @@ namespace cdeLib.Hashing
             var rootEntries = _catalogRepository.LoadCurrentDirCache();
             _logger.LogInfo("Memory post-catalog load: {0}",
                 _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-            
             var stopwatch = Stopwatch.StartNew();
             await _duplication.ApplyHash(rootEntries);
 

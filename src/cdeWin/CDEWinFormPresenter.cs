@@ -22,7 +22,7 @@ namespace cdeWin
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         private readonly ICDEWinForm _clientForm;
-        protected List<RootEntry> _rootEntries;
+        private List<RootEntry> _rootEntries;
         private readonly IConfig _config;
 
         private readonly string[] _directoryVals;
@@ -64,7 +64,7 @@ namespace cdeWin
             InitialiseLog(timeIt);
         }
 
-        protected List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
             return _loadCatalogService?.LoadRootEntries(config, timeIt);
         }
@@ -533,7 +533,7 @@ namespace cdeWin
             {
                 _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.TheRootEntry.DefaultFileName;
             }
-            
+
 
             var lvi = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
             searchHelper.RenderItem = lvi;
@@ -568,7 +568,6 @@ namespace cdeWin
             var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
             directoryHelper.RenderItem = lvi;
         }
-
 
         private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
         {
@@ -609,7 +608,7 @@ namespace cdeWin
 
         private void GoToDirectoryRoot(RootEntry newRoot)
         {
-            var currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes?.Tag; 
+            var currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes?.Tag;
             if (currentRoot == null || currentRoot != newRoot)
             {
                 SetNewDirectoryRoot(newRoot);
@@ -937,7 +936,7 @@ namespace cdeWin
                 foreach (var dirEntry in enumerableDirEntry)
                 {
                     var pde = new PairDirEntry(_directoryListCommonEntry, dirEntry);
-                    s.Append(pde.FullPath + Environment.NewLine);
+                    s.Append(pde.FullPath).Append(Environment.NewLine);
                 }
 
                 Clipboard.SetText(s.ToString());
@@ -995,7 +994,7 @@ namespace cdeWin
                 var s = new StringBuilder();
                 foreach (var pairDirEntry in listPDE)
                 {
-                    s.Append(pairDirEntry.FullPath + Environment.NewLine);
+                    s.Append(pairDirEntry.FullPath).Append(Environment.NewLine);
                 }
 
                 Clipboard.SetText(s.ToString());
@@ -1025,67 +1024,25 @@ namespace cdeWin
 
         private int RootCompare(RootEntry re1, RootEntry re2)
         {
-            int compareResult;
             var catalogHelper = _clientForm.CatalogListViewHelper;
             var column = catalogHelper.SortColumn;
-            switch (column)
+            var compareResult = column switch
             {
-                case 0:
-                    compareResult = re1.Path.CompareTo(re2.Path);
-                    break;
-
-                case 1:
-                    compareResult = 0; // re1.VolumeName.CompareTo(re2.VolumeName);
-                    break;
-
-                case 2:
-                    compareResult = re1.DirEntryCount.CompareTo(re2.DirEntryCount);
-                    break;
-
-                case 3:
-                    compareResult = re1.FileEntryCount.CompareTo(re2.FileEntryCount);
-                    break;
-
-                case 4:
-                    compareResult =
-                        (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount);
-                    break;
-
-                case 5:
-                    compareResult = re1.DriveLetterHint.CompareTo(re2.DriveLetterHint);
-                    break;
-
-                case 6:
-                    compareResult = re1.Size.CompareTo(re2.Size);
-                    break;
-
-                case 7:
-                    compareResult = re1.AvailSpace.CompareTo(re2.AvailSpace);
-                    break;
-
-                case 8:
-                    compareResult = re1.TotalSpace.CompareTo(re2.TotalSpace);
-                    break;
-
-                case 9:
-                    compareResult = re1.ScanStartUTC.CompareTo(re2.ScanStartUTC);
-                    break;
-
-                case 10:
-                    compareResult = re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds);
-                    break;
-
-                case 11:
-                    compareResult = re1.ActualFileName.CompareTo(re2.ActualFileName);
-                    break;
-
-                case 12:
-                    compareResult = re1.DescriptionCompareTo(re2, _config);
-                    break;
-
-                default:
-                    throw new Exception($"Problem column {column} not handled for sort.");
-            }
+                0 => re1.Path.CompareTo(re2.Path),
+                1 => 0, // re1.VolumeName.CompareTo(re2.VolumeName);
+                2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
+                3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
+                4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
+                5 => re1.DriveLetterHint.CompareTo(re2.DriveLetterHint),
+                6 => re1.Size.CompareTo(re2.Size),
+                7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
+                8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
+                9 => re1.ScanStartUTC.CompareTo(re2.ScanStartUTC),
+                10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
+                11 => re1.ActualFileName.CompareTo(re2.ActualFileName),
+                12 => re1.DescriptionCompareTo(re2, _config),
+                _ => throw new Exception($"Problem column {column} not handled for sort.")
+            };
 
             if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
             {
