@@ -32,7 +32,6 @@ namespace cdeLib
 
         public void StaticFind(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
         {
-            //GetDirCache(rootEntries);
             var totalFound = 0L;
             var findOptions = new FindOptions
             {
@@ -49,7 +48,9 @@ namespace cdeLib
                     return true;
                 },
             };
+            
             findOptions.Find(rootEntries);
+            
             if (totalFound >  0)
             {
                 Console.WriteLine($"Found a total of {totalFound} entries. Matching pattern \"{pattern}\"");
