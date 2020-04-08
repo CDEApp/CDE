@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using cdeLib.Entities;
+using RootEntry = cdeLib.Entities.RootEntry;
+using TraverseFunc = cdeLib.Entities.TraverseFunc;
 
 namespace cdeLib
 {
@@ -32,20 +34,24 @@ namespace cdeLib
         public bool NotOlderThanEnable { get; set; }
         public DateTime NotOlderThan { get; set; }
         public int ProgressEnd { get; set; }
-        public int ProgressCount { get { return _progressCount[0]; } }
-        private readonly int[] _progressCount = new [] { 0 };
+        public int ProgressCount => _progressCount[0];
+        private readonly int[] _progressCount = new[] {0};
         public int SkipCount { get; set; }
 
         /// <summary>
         /// Called for every entry that matches predicate entry.
         /// </summary>
         public TraverseFunc VisitorFunc { get; set; }
+
         /// <summary>
         /// Called for reporting progress to caller.
         /// </summary>
         public Action<int, int> ProgressFunc { get; set; }
+
         public BackgroundWorker Worker { get; set; }
         public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
+
+        Object _countLock = new Object();
 
         public FindOptions()
         {
@@ -57,14 +63,17 @@ namespace cdeLib
 
         public void Find(IEnumerable<RootEntry> rootEntries)
         {
+            var useParallel = true;
+
             if (VisitorFunc == null)
             {
                 return;
             }
 
-            int[] limitCount = { LimitResultCount };
+            int[] limitCount = {LimitResultCount};
             if (ProgressFunc == null || ProgressModifier == 0)
-            {   // dummy func and huge progressModifier so wont call progressFunc anyway.
+            {
+                // dummy func and huge progressModifier so wont call progressFunc anyway.
                 ProgressFunc = delegate { };
                 ProgressModifier = int.MaxValue;
             }
@@ -72,26 +81,29 @@ namespace cdeLib
             // ReSharper disable PossibleMultipleEnumeration
             ProgressEnd = rootEntries.TotalFileEntries();
             // ReSharper restore PossibleMultipleEnumeration
-            ProgressFunc(_progressCount[0], ProgressEnd);        // Start of process Progress report.
+            ProgressFunc(_progressCount[0], ProgressEnd); // Start of process Progress report.
             PatternMatcher = GetPatternMatcher();
 
             var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
 
-//            Parallel.ForEach(rootEntries, (rootEntry) =>
-//            {
-//                //TODO: Parallel breaks the progress percentage, need to fix.
-//                CommonEntry.TraverseTreePair(new List<CommonEntry>() { rootEntry }, findFunc);
-//            });
-
-            foreach (var rootEntry in rootEntries)
+            if (useParallel)
             {
-                EntryHelper.TraverseTreePair(new List<ICommonEntry>(){rootEntry}, findFunc, rootEntry);
+                Parallel.ForEach(rootEntries, (rootEntry) =>
+                {
+                    //TODO: Parallel breaks the progress percentage, need to fix.
+                    EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
+                });
+            }
+            else
+            {
+                foreach (var rootEntry in rootEntries)
+                {
+                    EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc, rootEntry);
+                }
             }
 
-            //CommonEntry.TraverseTreePair(rootEntries, findFunc);
-            ProgressFunc(_progressCount[0], ProgressEnd);        // end of Progress
-            // ReSharper restore PossibleMultipleEnumeration
+            ProgressFunc(_progressCount[0], ProgressEnd); // end of Progress
         }
 
         public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
@@ -99,7 +111,8 @@ namespace cdeLib
             Func<ICommonEntry, ICommonEntry, bool> matcher;
             if (RegexMode)
             {
-                var regex = new Regex(Pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+                var regex = new Regex(Pattern,
+                    RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
                 matcher = (p, d) => regex.IsMatch(d.Path);
                 if (IncludePath)
                 {
@@ -111,9 +124,11 @@ namespace cdeLib
                 matcher = (p, d) => d.Path.IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
                 if (IncludePath)
                 {
-                    matcher = (p, d) => p.MakeFullPath(d).IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
+                    matcher = (p, d) =>
+                        p.MakeFullPath(d).IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
                 }
             }
+
             return matcher;
         }
 
@@ -121,32 +136,38 @@ namespace cdeLib
         {
             var findPredicate = GetFindPredicate();
 
-            bool FindFunc(ICommonEntry p, ICommonEntry d)
+            bool FindFunc(ICommonEntry p, ICommonEntry dirEntry)
             {
-                ++progressCount[0];
-                if (progressCount[0] <= SkipCount)
+                lock (_countLock)
                 {
-                    // skip enforced
-                    return true;
-                }
-
-                if (progressCount[0] % ProgressModifier == 0)
-                {
-                    ProgressFunc(progressCount[0], ProgressEnd);
-                    // only check for cancel on progress modifier.
-                    if (Worker != null && Worker.CancellationPending)
+                    ++progressCount[0];
+                    if (progressCount[0] <= SkipCount)
                     {
-                        return false; // end the find.
+                        // skip enforced
+                        return true;
+                    }
+
+                    if (progressCount[0] % ProgressModifier == 0) //wiggle room for multithreaded updates.
+                    {
+                        ProgressFunc(progressCount[0], ProgressEnd);
+                        // only check for cancel on progress modifier.
+                        if (Worker != null && Worker.CancellationPending)
+                        {
+                            return false; // end the find.
+                        }
+                    }
+
+                    if (findPredicate(p, dirEntry))
+                    {
+                        if (!VisitorFunc(p, dirEntry) || --limitCount[0] <= 0)
+                        {
+                            return false; // end the find.
+                        }
                     }
                 }
+                
 
-                if (findPredicate(p, d))
-                {
-                    if (!VisitorFunc(p, d) || --limitCount[0] <= 0)
-                    {
-                        return false; // end the find.
-                    }
-                }
+              
 
                 return true;
             }
@@ -157,30 +178,20 @@ namespace cdeLib
         public TraverseFunc GetFindPredicate()
         {
             return (p, d) =>
-                        ((d.IsDirectory && IncludeFolders) || (!d.IsDirectory && IncludeFiles))
-                    && (!FromSizeEnable || (FromSizeEnable && d.Size >= FromSize))
-                    && (!ToSizeEnable || (ToSizeEnable && d.Size <= ToSize))
-                    && (!FromDateEnable || (FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate))
-                    && (!ToDateEnable || (ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate))
-                    && (!FromHourEnable || (FromHourEnable && !d.IsModifiedBad
-                                            && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                    && (!ToHourEnable || (ToHourEnable && !d.IsModifiedBad
-                                            && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                    && (!NotOlderThanEnable || (NotOlderThanEnable
-                                                && !d.IsModifiedBad && d.Modified >= NotOlderThan))
-                    && PatternMatcher(p, d);
+                ((d.IsDirectory && IncludeFolders) || (!d.IsDirectory && IncludeFiles))
+                && (!FromSizeEnable || (FromSizeEnable && d.Size >= FromSize))
+                && (!ToSizeEnable || (ToSizeEnable && d.Size <= ToSize))
+                && (!FromDateEnable || (FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate))
+                && (!ToDateEnable || (ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate))
+                && (!FromHourEnable || (FromHourEnable && !d.IsModifiedBad
+                                                       && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
+                && (!ToHourEnable || (ToHourEnable && !d.IsModifiedBad
+                                                   && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
+                && (!NotOlderThanEnable || (NotOlderThanEnable
+                                            && !d.IsModifiedBad && d.Modified >= NotOlderThan))
+                && PatternMatcher(p, d);
         }
     }
 
-    // ReSharper disable InconsistentNaming
-    public static class IEnumerableRootEntryExtension
-    {
-        public static int TotalFileEntries(this IEnumerable<RootEntry> rootEntries)
-        {
-            return rootEntries != null
-                       ? rootEntries.Sum(rootEntry => (int) rootEntry.DirEntryCount + (int) rootEntry.FileEntryCount)
-                       : 0;
-        }
-    }
-    // ReSharper restore InconsistentNaming
+    
 }
