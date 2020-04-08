@@ -240,7 +240,7 @@ namespace cdeLibTest
         {
             var testEntry = re;
             var testFileEntry = testEntry.Children[1];
-            testFileEntry.Path += ".";
+            testFileEntry.SetPath(testFileEntry.Path += ".");
             testEntry.SetSummaryFields();
 
             Assert.That(testFileEntry.PathProblem, Is.True);

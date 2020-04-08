@@ -7,7 +7,7 @@ namespace cdeLib.Catalog
     public interface ICatalogRepository
     {
         RootEntry Read(string fileName);
-        IList<RootEntry> Load(IEnumerable<string> cdeList);
+        IList<RootEntry> Load(IList<string> cdeList);
         IList<RootEntry> LoadCurrentDirCache();
         Task Save(RootEntry rootEntry);
 

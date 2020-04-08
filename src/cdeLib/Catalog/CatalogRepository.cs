@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Extensions;
@@ -66,20 +67,24 @@ namespace cdeLib.Catalog
             }
         }
 
-        public IList<RootEntry> Load(IEnumerable<string> cdeList)
+        public IList<RootEntry> Load(IList<string> cdeList)
         {
-            var results = new ConcurrentBag<RootEntry>();
-            Parallel.ForEach(cdeList, file =>
+            using (Operation.Begin("Loading Catalogs {Count}",cdeList.Count()))
             {
-                var newRootEntry = LoadDirCache(file);
-                if (newRootEntry != null)
+                var results = new ConcurrentBag<RootEntry>();
+                Parallel.ForEach(cdeList, file =>
                 {
-                    results.Add(newRootEntry);
-                }
+                    var newRootEntry = LoadDirCache(file);
+                    if (newRootEntry != null)
+                    {
+                        results.Add(newRootEntry);
+                    }
 
-                Console.WriteLine($"{file} read..");
-            });
-            return results.ToList();
+                    _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
+                        Thread.CurrentThread.ManagedThreadId);
+                });
+                return results.ToList();
+            }
         }
 
         public IList<RootEntry> LoadCurrentDirCache()
