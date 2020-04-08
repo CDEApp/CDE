@@ -482,7 +482,9 @@ namespace cdeWin
 
         public void SetSearchTimeStatus(string s)
         {
+            if (searchTimeStatus.Text.Equals(s)) return;
             searchTimeStatus.Text = s;
+            this.mainStatusStrip.Update(); //Added since it is not updating this automagically.
         }
 
         public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
