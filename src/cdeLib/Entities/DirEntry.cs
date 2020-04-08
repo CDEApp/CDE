@@ -496,7 +496,7 @@ namespace cdeLib
         public IList<ICommonEntry> GetListFromRoot()
         {
             var activatedDirEntryList = new List<ICommonEntry>(8);
-            for (var entry = this; entry != null; entry = (DirEntry) entry.ParentCommonEntry)
+            for (var entry = (ICommonEntry)this; entry != null; entry = entry.ParentCommonEntry)
             {
                 activatedDirEntryList.Add(entry);
             }
@@ -506,7 +506,7 @@ namespace cdeLib
 
         public bool ExistsOnFileSystem()
         {   // CommonEntry is always a directory ? - not really.
-            return System.IO.Directory.Exists(FullPath);
+            return Directory.Exists(FullPath);
         }
 
         /// <summary>
