@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using cdeLib.Entities;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using FlatSharp;

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Windows.Forms;
 using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeWin;
 using JetBrains.Annotations;

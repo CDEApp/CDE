@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;

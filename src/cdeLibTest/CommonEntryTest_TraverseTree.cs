@@ -1,4 +1,5 @@
 ﻿using cdeLib;
+using cdeLib.Entities;
 using NUnit.Framework;
 using NSubstitute;
 using Shouldly;

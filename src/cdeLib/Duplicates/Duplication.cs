@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;

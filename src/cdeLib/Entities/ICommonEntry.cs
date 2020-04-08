@@ -1,8 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using cdeLib.Infrastructure;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     /// <summary>
     /// Returns true if want traversal to continue after this returns.

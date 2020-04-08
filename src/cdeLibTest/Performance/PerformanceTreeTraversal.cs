@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.Linq;
 using cdeLib;
 using cdeLib.Catalog;
+using cdeLib.Entities;
 using NUnit.Framework;
 using Serilog;
 

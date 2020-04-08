@@ -1,4 +1,5 @@
 ﻿using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 
 namespace cdeLibTest

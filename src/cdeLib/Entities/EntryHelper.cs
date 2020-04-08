@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     public static class EntryHelper
     {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using cdeLib;
+using cdeLib.Entities;
 
 namespace cdeWin
 {

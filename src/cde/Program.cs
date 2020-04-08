@@ -9,6 +9,7 @@ using cdeLib;
 using cdeLib.Cache;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
+using cdeLib.Entities;
 using cdeLib.Hashing;
 using cdeLib.Upgrade;
 using CommandLine;

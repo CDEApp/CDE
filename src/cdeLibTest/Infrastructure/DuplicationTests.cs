@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;

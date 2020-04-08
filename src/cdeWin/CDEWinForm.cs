@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
+using cdeLib.Entities;
 using Util;
 
 namespace cdeWin

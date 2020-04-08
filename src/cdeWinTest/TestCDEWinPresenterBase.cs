@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Windows.Forms;
 using NUnit.Framework;
 using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeWin;
 using NSubstitute;

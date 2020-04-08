@@ -1,5 +1,6 @@
 ﻿using System.Diagnostics;
 using System.IO;
+using cdeLib.Entities;
 
 namespace cdeLib
 {

@@ -1,10 +1,9 @@
 ﻿using System;
 using System.ComponentModel;
-using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
 using ProtoBuf;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     // C: drive Files 149,507 Dirs 24,690 Total Size of Files 26,825,007,368
     // FILE   9,623,653 no hashes.  cde --replfind  60.3 Meg, 32bit 

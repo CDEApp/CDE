@@ -4,13 +4,12 @@ using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
     [ProtoContract]

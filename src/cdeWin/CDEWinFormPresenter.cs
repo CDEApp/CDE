@@ -7,6 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
+using cdeLib.Entities;
 using cdeLib.Infrastructure;
 
 namespace cdeWin

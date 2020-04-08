@@ -8,6 +8,7 @@ using System.Windows.Forms;
 using Util;
 using cdeLib;
 using cdeLib.Catalog;
+using cdeLib.Entities;
 using Serilog;
 
 namespace cdeWin

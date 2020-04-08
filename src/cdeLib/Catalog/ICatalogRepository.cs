@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
+using cdeLib.Entities;
 
 namespace cdeLib.Catalog
 {

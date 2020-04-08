@@ -1,7 +1,6 @@
 ﻿using System.Collections.Generic;
-using cdeLib.Infrastructure;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     public class CommonEntryEqualityComparer : IEqualityComparer<ICommonEntry>
     {

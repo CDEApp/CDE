@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using cdeLib;
+using cdeLib.Entities;
 using NUnit.Framework;
 
 namespace cdeLibTest

@@ -1,11 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
-using ProtoBuf;
 using MessagePack;
+using ProtoBuf;
 
-namespace cdeLib.Infrastructure
+namespace cdeLib.Entities
 {
     [DebuggerDisplay("HashA = {HashA}, HashB = {HashB}")]
     [ProtoContract]
@@ -50,7 +51,7 @@ namespace cdeLib.Infrastructure
             HashB = (ulong)hash;
         }
 
-        [Key(2)]
+        [IgnoreMember]
         public string HashAsString
         {
             get

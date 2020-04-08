@@ -5,16 +5,16 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
-using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
+
 // ReSharper disable MemberCanBeProtected.Global
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     // TODO - RootEntry needs All the Flags.
     // TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
@@ -28,12 +28,6 @@ namespace cdeLib
     {
         const string MatchAll = "*";
         private readonly IDriveInfoService _driveInfoService;
-
-        // NO LONGER USED
-        [Obsolete]
-        [ProtoMember(1, IsRequired = true)]
-        [IgnoreMember]
-        public virtual string VolumeName { get; set; }
 
         [ProtoMember(2, IsRequired = true)]
         [FlatBufferItem(2)]

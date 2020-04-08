@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Security.Cryptography;
+using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using NUnit.Framework;
 

@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using FlatSharp.Attributes;
 
-namespace cdeLib
+namespace cdeLib.Entities
 {
     [Flags]
     [FlatBufferEnum(typeof(byte))]

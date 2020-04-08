@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using cdeLib.Entities;
 using cdeLib.Infrastructure;
 
 #pragma warning disable 0649

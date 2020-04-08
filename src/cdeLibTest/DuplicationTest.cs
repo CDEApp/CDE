@@ -8,6 +8,7 @@ using System.Reflection;
 using System.Threading.Tasks;
 using cde;
 using cdeLib.Catalog;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
