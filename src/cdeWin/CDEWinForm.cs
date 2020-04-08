@@ -12,7 +12,7 @@ namespace cdeWin
 {
     /* Passive view hackery http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view 
      * This is ok, but its one presenter per Form, lots of controls gets large...
-     * Would like to break upinto seperate presenters for sets of controls and maybe a higher level
+     * Would like to break up into separate presenters for sets of controls and maybe a higher level
      * coordinating presenter.
      * 
      * Alternate presenter setup in cdeWinForm - need to review it again.
@@ -170,7 +170,7 @@ namespace cdeWin
             // - whats happening is im making view smarter... with specific behaviour.
             // - but its not passive, passive would require ListViewHelper to raise events
             // - from gui actions....  and decisions from presenter...
-            // - - at moment, listviewhelper is small presenter ?
+            // - - at moment, ListViewHelper is small presenter ?
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
                 {
                     // ReSharper disable PossibleNullReferenceException
@@ -198,7 +198,7 @@ namespace cdeWin
 
             // Enter in pattern Text Box fires Search Button.
             // TODO move this logic into presenter... not here..
-            // means fire event for each of GotFocus, LostFocus. and handle in presnter.
+            // means fire event for each of GotFocus, LostFocus. and handle in presenter.
             patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
             patternComboBox.LostFocus += (s, e) => AcceptButton = null;
 
@@ -408,14 +408,14 @@ namespace cdeWin
 
         public string Pattern
         {
-            get { return patternComboBox.Text; }
-            set { patternComboBox.Text = value; }
+            get => patternComboBox.Text;
+            set => patternComboBox.Text = value;
         }
 
         public bool RegexMode
         {
-            get { return regexCheckbox.Checked; }
-            set { regexCheckbox.Checked = value; }
+            get => regexCheckbox.Checked;
+            set => regexCheckbox.Checked = value;
         }
 
         /// <summary>
@@ -423,10 +423,8 @@ namespace cdeWin
         /// </summary>
         public TreeNode DirectoryTreeViewNodes
         {
-            get
-            {   // Directory Tab only holds one root node.
-                return directoryTreeView.Nodes.Count == 1 ? directoryTreeView.Nodes[0] : null;
-            }
+            // Directory Tab only holds one root node.
+            get => directoryTreeView.Nodes.Count == 1 ? directoryTreeView.Nodes[0] : null;
 
             set
             {
@@ -443,26 +441,20 @@ namespace cdeWin
             }
         }
 
-        public bool IncludeFiles
-        {
-            get { return findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 1; }
-        }
+        public bool IncludeFiles => findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 1;
 
-        public bool IncludeFolders
-        {
-            get { return findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 2; }
-        }
+        public bool IncludeFolders => findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 2;
 
         public int FindEntryFilter
         {
-            get { return findComboBox.SelectedIndex; }
-            set { findComboBox.SelectedIndex = value; }
+            get => findComboBox.SelectedIndex;
+            set => findComboBox.SelectedIndex = value;
         }
 
         public bool IncludePathInSearch
         {
-            get { return whatToSearchComboBox.SelectedIndex == 0; }
-            set { whatToSearchComboBox.SelectedIndex = value ? 0 : 1; }
+            get => whatToSearchComboBox.SelectedIndex == 0;
+            set => whatToSearchComboBox.SelectedIndex = value ? 0 : 1;
         }
 
         public void SetSearchResultStatus(int i)
@@ -511,7 +503,7 @@ namespace cdeWin
                     items.Remove(pattern);
                 }
                 items.TruncateList(_config.Active.PatternHistoryMaximum);
-                items.Insert(0, pattern);	// allways to front.
+                items.Insert(0, pattern);	// always to front.
                 patternComboBox.SelectedIndex = 0; // set value we added to combobox.
                 patternComboBox.Select(0, pattern.Length);
             }
@@ -538,43 +530,43 @@ namespace cdeWin
 
         public float DirectoryPanelSplitterRatio
         {
-            get { return directorySplitContainer.GetSplitterRatio(); }
-            set { directorySplitContainer.SetSplitterRatio(value); }
+            get => directorySplitContainer.GetSplitterRatio();
+            set => directorySplitContainer.SetSplitterRatio(value);
         }
 
-        public string SetDirectoryPathTextbox
+        public string SetDirectoryPathTextBox
         {
-            get { return directoryPathTextBox.Text; }
-            set { directoryPathTextBox.Text = value; }
+            get => directoryPathTextBox.Text;
+            set => directoryPathTextBox.Text = value;
         }
 
         public TreeNode DirectoryTreeViewSelectedNode
         {
-            get { return directoryTreeView.SelectedNode; }
-            set { directoryTreeView.SelectedNode = value; }
+            get => directoryTreeView.SelectedNode;
+            set => directoryTreeView.SelectedNode = value;
         }
 
         public bool SearchButtonEnable
         {
-            get { return searchButton.Enabled; }
-            set { searchButton.Enabled = value; }
+            get => searchButton.Enabled;
+            set => searchButton.Enabled = value;
         }
 
         public string SearchButtonText
         {
-            get { return searchButton.Text; }
-            set { searchButton.Text = value; }
+            get => searchButton.Text;
+            set => searchButton.Text = value;
         }
 
         public Color SearchButtonBackColor
         {
-            get { return searchButton.BackColor; }
-            set { searchButton.BackColor = value; }
+            get => searchButton.BackColor;
+            set => searchButton.BackColor = value;
         }
 
         public bool IsAdvancedSearchMode
         {
-            get { return advancedSearchCheckBox.Checked; }
+            get => advancedSearchCheckBox.Checked;
             set
             {
                 advancedSearchCheckBox.Checked = value;
@@ -585,26 +577,26 @@ namespace cdeWin
 
         public DateTime FromDateValue
         {
-            get { return fromDateTimePicker.Value; }
-            set { fromDateTimePicker.Value = value; }
+            get => fromDateTimePicker.Value;
+            set => fromDateTimePicker.Value = value;
         }
 
         public DateTime ToDateValue
         {
-            get { return toDateTimePicker.Value; }
-            set { toDateTimePicker.Value = value; }
+            get => toDateTimePicker.Value;
+            set => toDateTimePicker.Value = value;
         }
 
         public DateTime FromHourValue
         {
-            get { return fromHourTimePicker.Value; }
-            set { fromHourTimePicker.Value = value; }
+            get => fromHourTimePicker.Value;
+            set => fromHourTimePicker.Value = value;
         }
 
         public DateTime ToHourValue
         {
-            get { return toHourTimePicker.Value; }
-            set { toHourTimePicker.Value = value; }
+            get => toHourTimePicker.Value;
+            set => toHourTimePicker.Value = value;
         }
 
         public void MessageBox(string message)
@@ -617,7 +609,7 @@ namespace cdeWin
             MyAboutBox.MyShow(this, _config);
         }
 
-		public void Addline(string format, params object[] args)
+		public void AddLine(string format, params object[] args)
 		{
 			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
 		}
