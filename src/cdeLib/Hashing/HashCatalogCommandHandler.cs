@@ -12,7 +12,7 @@ namespace cdeLib.Hashing
         private readonly Duplication _duplication;
         private readonly ILogger _logger;
         private readonly IApplicationDiagnostics _applicationDiagnostics;
-        private ICatalogRepository _catalogRepository;
+        private readonly ICatalogRepository _catalogRepository;
 
         public HashCatalogCommandHandler(ILogger logger, IApplicationDiagnostics applicationDiagnostics,
             Duplication duplication, ICatalogRepository catalogRepository)
@@ -25,25 +25,25 @@ namespace cdeLib.Hashing
 
         public async Task<Unit> Handle(HashCatalogCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInfo("Memory pre-catalog load: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+            _logger.LogInfo("Memory pre-catalog load: {0}",
+                _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var rootEntries = _catalogRepository.LoadCurrentDirCache();
-            _logger.LogInfo("Memory post-catalog load: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-            var sw = new Stopwatch();
-            sw.Start();
-
+            _logger.LogInfo("Memory post-catalog load: {0}",
+                _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+            
+            var stopwatch = Stopwatch.StartNew();
             await _duplication.ApplyHash(rootEntries);
 
             foreach (var rootEntry in rootEntries)
             {
-                _logger.LogDebug("Saving {0}", rootEntry.DefaultFileName);
-                _catalogRepository.SaveRootEntry(rootEntry);
+                _logger.LogDebug("Saving Catalog {0}", rootEntry.DefaultFileName);
+                await _catalogRepository.Save(rootEntry);
             }
 
-            sw.Stop();
-            var ts = sw.Elapsed;
+            var ts = stopwatch.Elapsed;
             var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
-            _logger.LogInfo("Hash Took {0}",elapsedTime);
-            return await Unit.Task;
+            _logger.LogInfo("Hash Took {0}, Memory: {1}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+            return Unit.Value;
         }
     }
 }

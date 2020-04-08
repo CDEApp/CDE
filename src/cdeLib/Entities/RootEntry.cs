@@ -713,7 +713,7 @@ namespace cdeLib
             var fileEntryCount = 0L;
             PathProblem = IsBadPath();
 
-            if (IsDirectory && Children != null)
+            if (Children != null)
             {
                 var childrenDirEntryCount = 0L;
                 foreach (var dirEntry in Children)
@@ -743,7 +743,6 @@ namespace cdeLib
             Size = size;
         }
 
-        //commonentry
         [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
