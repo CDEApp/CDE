@@ -31,12 +31,12 @@ namespace cdeLib.Hashing
             _logger.LogInfo("Memory post-catalog load: {0}",
                 _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var stopwatch = Stopwatch.StartNew();
-            await _duplication.ApplyHash(rootEntries);
+            await _duplication.ApplyHash(rootEntries).ConfigureAwait(false);
 
             foreach (var rootEntry in rootEntries)
             {
                 _logger.LogDebug("Saving Catalog {0}", rootEntry.DefaultFileName);
-                await _catalogRepository.Save(rootEntry);
+                await _catalogRepository.Save(rootEntry).ConfigureAwait(false);
             }
 
             var ts = stopwatch.Elapsed;

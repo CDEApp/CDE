@@ -35,7 +35,7 @@ namespace cdeLib
         public DateTime NotOlderThan { get; set; }
         public int ProgressEnd { get; set; }
         public int ProgressCount => _progressCount[0];
-        private readonly int[] _progressCount = new[] {0};
+        private readonly int[] _progressCount = new[] { 0 };
         public int SkipCount { get; set; }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace cdeLib
         public BackgroundWorker Worker { get; set; }
         public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
 
-        Object _countLock = new Object();
+        private readonly object _countLock = new object();
 
         public FindOptions()
         {
@@ -63,14 +63,14 @@ namespace cdeLib
 
         public void Find(IEnumerable<RootEntry> rootEntries)
         {
-            var useParallel = true;
+            const bool useParallel = true;
 
             if (VisitorFunc == null)
             {
                 return;
             }
 
-            int[] limitCount = {LimitResultCount};
+            int[] limitCount = { LimitResultCount };
             if (ProgressFunc == null || ProgressModifier == 0)
             {
                 // dummy func and huge progressModifier so wont call progressFunc anyway.
@@ -92,14 +92,14 @@ namespace cdeLib
                 Parallel.ForEach(rootEntries, (rootEntry) =>
                 {
                     //TODO: Parallel breaks the progress percentage, need to fix.
-                    EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
+                    EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc);
                 });
             }
             else
             {
                 foreach (var rootEntry in rootEntries)
                 {
-                    EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc, rootEntry);
+                    EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc, rootEntry);
                 }
             }
 
@@ -151,7 +151,7 @@ namespace cdeLib
                     {
                         ProgressFunc(progressCount[0], ProgressEnd);
                         // only check for cancel on progress modifier.
-                        if (Worker != null && Worker.CancellationPending)
+                        if (Worker?.CancellationPending == true)
                         {
                             return false; // end the find.
                         }
@@ -165,13 +165,8 @@ namespace cdeLib
                         }
                     }
                 }
-                
-
-              
-
                 return true;
             }
-
             return FindFunc;
         }
 
@@ -192,6 +187,4 @@ namespace cdeLib
                 && PatternMatcher(p, d);
         }
     }
-
-    
 }

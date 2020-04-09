@@ -31,7 +31,7 @@ namespace cdeLibTest
         private DirEntry _dde6;
         private DirEntry _dde7;
 
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void Setup()
@@ -181,7 +181,7 @@ namespace cdeLibTest
             _sde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) }; _sde1.SetHash(09);
             _sde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) }; _sde2.SetHash(10);
             _sde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) }; _sde3.SetHash(11);
-            _sfe4 = new DirEntry(true)  { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
+            _sfe4 = new DirEntry(true) { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
             _sde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) }; _sde5.SetHash(12);
             _sde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) }; _sde6.SetHash(13);
             _sde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) }; _sde7.SetHash(14);
@@ -197,7 +197,7 @@ namespace cdeLibTest
             _dde1 = new DirEntry(false) { Path = "de1", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 01) };
             _dde2 = new DirEntry(false) { Path = "de2", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 02) };
             _dde3 = new DirEntry(false) { Path = "de3", Size = 10, IsPartialHash = false, Modified = new DateTime(2011, 02, 03) };
-            _dfe4 = new DirEntry(true)  { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
+            _dfe4 = new DirEntry(true) { Path = "fe4", Modified = new DateTime(2011, 02, 04) };
             _dde5 = new DirEntry(false) { Path = "de5", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 05) };
             _dde6 = new DirEntry(false) { Path = "de6", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 06) };
             _dde7 = new DirEntry(false) { Path = "de7", Size = 11, IsPartialHash = false, Modified = new DateTime(2011, 02, 07) };

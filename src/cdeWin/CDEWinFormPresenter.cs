@@ -149,7 +149,7 @@ namespace cdeWin
             {
                 // Replace Dummy with real nodes now visible.
                 parentNode.Nodes.Clear();
-                AddAllDirectoriesChildren(parentNode, (ICommonEntry) parentNode.Tag);
+                AddAllDirectoriesChildren(parentNode, (ICommonEntry)parentNode.Tag);
             }
         }
 
@@ -272,7 +272,7 @@ namespace cdeWin
 
             SetSearchButton(false);
 
-            _bgWorker = new BackgroundWorker {WorkerReportsProgress = true, WorkerSupportsCancellation = true};
+            _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
             _bgWorker.DoWork += BgWorkerDoWork;
             _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
             _bgWorker.ProgressChanged += BgWorkerProgressChanged;
@@ -374,19 +374,19 @@ namespace cdeWin
         private long FromSizeValue()
         {
             var value = _clientForm.FromSizeDropDownHelper.SelectedValue;
-            return (long) (_clientForm.FromSizeValue.Field * value);
+            return (long)(_clientForm.FromSizeValue.Field * value);
         }
 
         private long ToSizeValue()
         {
             var value = _clientForm.ToSizeDropDownHelper.SelectedValue;
-            return (long) (_clientForm.ToSizeValue.Field * value);
+            return (long)(_clientForm.ToSizeValue.Field * value);
         }
 
         private DateTime NotOlderThanValue()
         {
             var dropDownValueFunc = _clientForm.NotOlderThanDropDownHelper.SelectedValue;
-            var fieldValue = (int) _clientForm.NotOlderThanValue.Field;
+            var fieldValue = (int)_clientForm.NotOlderThanValue.Field;
             var now = DateTime.Now; // Option to set this to date of newest scanned Catalog
             return dropDownValueFunc(now, -fieldValue); // subtract as we are going back in time.
         }
@@ -420,8 +420,8 @@ namespace cdeWin
 
         private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
         {
-            var worker = (BackgroundWorker) sender;
-            var argument = (BgWorkerParam) e.Argument;
+            var worker = (BackgroundWorker)sender;
+            var argument = (BgWorkerParam)e.Argument;
             var findOptions = argument.Options;
             var rootEntries = argument.RootEntries;
             var state = argument.State;
@@ -441,12 +441,12 @@ namespace cdeWin
                 state.List = list; // concurrency !!!!
                 state.Counter = counter;
                 state.End = end;
-                worker.ReportProgress((int) (100.0 * counter / end), state);
+                worker.ReportProgress((int)(100.0 * counter / end), state);
             };
             findOptions.Find(rootEntries);
             state.ListCount = list.Count;
             state.List = list;
-            var completePercent = (int) (100.0 * state.Counter / state.End);
+            var completePercent = (int)(100.0 * state.Counter / state.End);
             if (state.End - state.Counter < findOptions.ProgressModifier)
             {
                 completePercent = 100;
@@ -479,7 +479,7 @@ namespace cdeWin
                 }
                 else
                 {
-                    var resultList = (List<PairDirEntry>) e.Result;
+                    var resultList = (List<PairDirEntry>)e.Result;
                     count = SetSearchResultList(resultList);
                 }
             }
@@ -493,12 +493,12 @@ namespace cdeWin
 
         private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
         {
-            var state = (BgWorkerState) e.UserState;
+            var state = (BgWorkerState)e.UserState;
             var p = e.ProgressPercentage;
             _clientForm.SetSearchTimeStatus("% " + p
-                //+ " lc " + state.ListCount
-                //+ " ctr " + state.Counter
-                //+ " end " + state.End
+            //+ " lc " + state.ListCount
+            //+ " ctr " + state.Counter
+            //+ " end " + state.End
             );
 
             var count = SetSearchResultList(state.List);
@@ -528,7 +528,7 @@ namespace cdeWin
             var dirEntry = pairDirEntry.ChildDE;
             var itemColor = CreateRowValuesForDirectory(_searchVals, dirEntry, _listViewForeColor);
 
-            _searchVals[(int) SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
+            _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
             if (pairDirEntry.ParentDE.TheRootEntry != null)
             {
@@ -541,7 +541,7 @@ namespace cdeWin
         public void DirectoryTreeViewAfterSelect()
         {
             var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            SetDirectoryListView((ICommonEntry) selectedNode.Tag);
+            SetDirectoryListView((ICommonEntry)selectedNode.Tag);
         }
 
         public void SetDirectoryListView(ICommonEntry commonEntry)
@@ -607,7 +607,7 @@ namespace cdeWin
 
         private void GoToDirectoryRoot(RootEntry newRoot)
         {
-            var currentRoot = (RootEntry) _clientForm.DirectoryTreeViewNodes?.Tag;
+            var currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes?.Tag;
             if (currentRoot == null || currentRoot != newRoot)
             {
                 SetNewDirectoryRoot(newRoot);
@@ -651,7 +651,7 @@ namespace cdeWin
         private void SetDirectoryWithExpand(IEnumerable<ICommonEntry> activatedDirEntryList)
         {
             var currentRootNode = _clientForm.DirectoryTreeViewNodes;
-            var currentRoot = (RootEntry) currentRootNode?.Tag;
+            var currentRoot = (RootEntry)currentRootNode?.Tag;
 
             TreeNode workingTreeNode = null;
             RootEntry newRoot = null;
@@ -659,7 +659,7 @@ namespace cdeWin
             {
                 if (newRoot == null)
                 {
-                    newRoot = (RootEntry) entry;
+                    newRoot = (RootEntry)entry;
                     if (currentRoot != newRoot)
                     {
                         currentRootNode = SetNewDirectoryRoot(newRoot);
@@ -670,7 +670,7 @@ namespace cdeWin
                 }
                 else
                 {
-                    if (((DirEntry) entry).IsDirectory && workingTreeNode != null)
+                    if (((DirEntry)entry).IsDirectory && workingTreeNode != null)
                     {
                         CreateNodesPreExpand(workingTreeNode);
                         workingTreeNode.Expand();
@@ -781,26 +781,18 @@ namespace cdeWin
 
         private int DirectoryCompare(ICommonEntry de1, ICommonEntry de2)
         {
-            int compareResult;
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             var column = directoryHelper.SortColumn;
-            switch (column)
+            var compareResult = column switch
             {
-                case 0: // SearchResult ListView Name column
-                    compareResult = de1.PathCompareWithDirTo(de2);
-                    break;
-
-                case 1: // SearchResult ListView Size column
-                    compareResult = de1.SizeCompareWithDirTo(de2);
-                    break;
-
-                case 2: // SearchResult ListView Modified column
-                    compareResult = de1.ModifiedCompareTo(de2);
-                    break;
-
-                default:
-                    throw new Exception($"Problem column {column} not handled for sort.");
-            }
+                0 => // SearchResult ListView Name column
+                de1.PathCompareWithDirTo(de2),
+                1 => // SearchResult ListView Size column
+                de1.SizeCompareWithDirTo(de2),
+                2 => // SearchResult ListView Modified column
+                de1.ModifiedCompareTo(de2),
+                _ => throw new Exception($"Problem column {column} not handled for sort.")
+            };
 
             if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
             {
@@ -1002,11 +994,9 @@ namespace cdeWin
 
         public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
         {
-            var lvItem = new ListViewItem(vals[0]);
-            // a bug this doesnt work under mouse cursor { UseItemStyleForSubItems = false };
+            var lvItem = new ListViewItem(vals[0]) { ForeColor = firstColumnForeColor, Tag = tag };
+            // a bug this doesn't work under mouse cursor { UseItemStyleForSubItems = false };
             // lvItem.SubItems[0].ForeColor = firstColumnForeColor;
-            lvItem.ForeColor = firstColumnForeColor;
-            lvItem.Tag = tag;
             for (var i = 1; i < vals.Length; ++i)
             {
                 lvItem.SubItems.Add(vals[i]);

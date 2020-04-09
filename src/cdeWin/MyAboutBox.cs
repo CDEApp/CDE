@@ -5,19 +5,19 @@ namespace cdeWin
 {
     public partial class MyAboutBox : Form
     {
-		private readonly IConfig _config;
+        private readonly IConfig _config;
 
         public MyAboutBox(IConfig config)
         {
             InitializeComponent();
-        	_config = config;
-			linkEmail.Text = _config.ContactEmail;
-			tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
-		}
+            _config = config;
+            linkEmail.Text = _config.ContactEmail;
+            tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
+        }
 
         public static void MyShow(Form parentForm, IConfig config)
         {
-			var m = new MyAboutBox(config);
+            var m = new MyAboutBox(config);
             m.ShowDialog(parentForm);
         }
 
@@ -26,10 +26,10 @@ namespace cdeWin
             Close();
         }
 
-		private void linkEmail_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-		{
-		    try
-		    {
+        private void linkEmail_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        {
+            try
+            {
                 var proc = new System.Diagnostics.Process
                 {
                     StartInfo =
@@ -39,15 +39,15 @@ namespace cdeWin
                     }
                 };
                 proc.Start();
-		    }
-		    catch
+            }
+            catch
             {
             }
-		}
+        }
 
-		private void MyAboutBox_Load(object sender, EventArgs e)
-		{
-			Text = $"About {_config.ProductName} v{_config.Version}";
-		}
+        private void MyAboutBox_Load(object sender, EventArgs e)
+        {
+            Text = $"About {_config.ProductName} v{_config.Version}";
+        }
     }
 }

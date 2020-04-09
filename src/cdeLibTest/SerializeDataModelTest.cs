@@ -17,7 +17,7 @@ namespace cdeLibTest
     /// If i can deserialize without re-hydrating entire tree.
     /// </summary>
     [TestFixture]
-    class SerializeDataModelTest
+    internal class SerializeDataModelTest
     {
         // ReSharper disable InconsistentNaming
         private DirEntry de2a;
@@ -26,7 +26,7 @@ namespace cdeLibTest
         private DirEntry de3a;
         private DirEntry de4a;
         private RootEntry re1;
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void SetUp()

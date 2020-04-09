@@ -58,20 +58,20 @@ namespace cdeLibTest
 
         public int NextFreeNode;
         public Node[] Nodes; // avoid 0
-            //  
-            // might be useful to order Nodes in an breadth first heirarchy order
-            // then path can be modified up/down relatively painlessly using stringbuffer as go ?
-            // dont care about depth first ? for our use case....
-            // if breadth first then carrying along path isnt hard ? for compares in builder ?
-            // - in normal breadth first RecurseTree getting it breadth first is easy.
-            //
-            //
-            //
-            //
-            // keep a int[] sorted by modifiedDate refernce to all blocks.
-            //   this then could be binary searched for date/time limits ? [not commmon mind you]
-            // similar for size field maybe ?
-            //
+                             //  
+                             // might be useful to order Nodes in an breadth first heirarchy order
+                             // then path can be modified up/down relatively painlessly using stringbuffer as go ?
+                             // dont care about depth first ? for our use case....
+                             // if breadth first then carrying along path isnt hard ? for compares in builder ?
+                             // - in normal breadth first RecurseTree getting it breadth first is easy.
+                             //
+                             //
+                             //
+                             //
+                             // keep a int[] sorted by modifiedDate refernce to all blocks.
+                             //   this then could be binary searched for date/time limits ? [not commmon mind you]
+                             // similar for size field maybe ?
+                             //
 
         public long[] FilesCount; // same index as Nodes
         public long[] DirsCount; // same index as Nodes

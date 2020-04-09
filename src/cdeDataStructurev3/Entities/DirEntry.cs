@@ -150,7 +150,6 @@ namespace cdeDataStructure3.Entities
 
         #endregion
 
-
         /// <summary>
         /// if this is a directory number of files contained in its heirarchy
         /// </summary>
@@ -185,7 +184,7 @@ namespace cdeDataStructure3.Entities
             IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
             if (fs is FileInfo)
             {
-                Size = ((FileInfo) fs).Length;
+                Size = ((FileInfo)fs).Length;
             }
             else
             {
@@ -195,7 +194,6 @@ namespace cdeDataStructure3.Entities
 
         public const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
         public static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
-
 
         // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
         public int PathCompareWithDirTo(DirEntry de)

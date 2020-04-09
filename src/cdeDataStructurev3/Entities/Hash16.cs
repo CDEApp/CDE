@@ -44,7 +44,7 @@ namespace cdeDataStructure3.Entities
             {
                 var a = BitConverter.GetBytes(HashA);
                 var b = BitConverter.GetBytes(HashB);
-                return ByteArrayHelper.ByteArrayToString(a) 
+                return ByteArrayHelper.ByteArrayToString(a)
                        + ByteArrayHelper.ByteArrayToString(b);
             }
         }
@@ -54,7 +54,7 @@ namespace cdeDataStructure3.Entities
             return $"A:[{HashA}] B:[{HashB}]";
         }
 
-        public class EqualityComparer: IEqualityComparer<Hash16>
+        public class EqualityComparer : IEqualityComparer<Hash16>
         {
             public bool Equals(Hash16 x, Hash16 y)
             {

@@ -35,7 +35,7 @@ namespace cdeLibTest
     [TestFixture]
     public class DirEntryEnumeratorTest : DirEntryTestBase
     {
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void RunBeforeEveryTest()
@@ -166,7 +166,7 @@ namespace cdeLibTest
             }
             sw.Stop();
             var ts = sw.Elapsed;
-            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
+            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
             Console.WriteLine($"Enumerator took : {elapsedTime}");
             Console.WriteLine($"Total files enumerated : {_fileCount}");
             //Console.WriteLine("Total path length : {0}", _num);
@@ -182,7 +182,7 @@ namespace cdeLibTest
             }
             sw.Stop();
             ts = sw.Elapsed;
-            elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
+            elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
             Console.WriteLine($"TraverseTreePair took : {elapsedTime}");
             Console.WriteLine($"Total files enumerated : {_fileCount}");
             //Console.WriteLine("Total path length : {0}", _num);

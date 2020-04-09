@@ -49,7 +49,7 @@ namespace cdeDataStructure3.Infrastructure
             ulong free;
             if (GetDiskFreeSpaceEx(volumeIdentifier, out available, out total, out free))
             {
-                return new FileSystemProperties((long) total, (long) free, (long) available);
+                return new FileSystemProperties((long)total, (long)free, (long)available);
             }
 
             return new FileSystemProperties(null, null, null);
@@ -71,7 +71,7 @@ namespace cdeDataStructure3.Infrastructure
                 ulong free;
                 if (GetDiskFreeSpaceEx(volumeIdentifier, out available, out total, out free))
                 {
-                    return new FileSystemProperties((long) total, (long) free, (long) available);
+                    return new FileSystemProperties((long)total, (long)free, (long)available);
                 }
 
                 return new FileSystemProperties(null, null, null);

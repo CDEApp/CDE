@@ -8,7 +8,7 @@ namespace cdeLibTest
 {
     [TestFixture]
     // ReSharper disable InconsistentNaming
-    class DirEntryTest_SetSummaryFields
+    internal class DirEntryTest_SetSummaryFields
     {
         private DirEntry emptyDirEntry;
 
@@ -61,15 +61,15 @@ namespace cdeLibTest
         }
     }
 
-    class DirEntryTest_SetSummaryFields2 : RootEntryTestBase
+    internal class DirEntryTest_SetSummaryFields2 : RootEntryTestBase
     {
-        DirEntry de2a;
-        DirEntry de2b;
-        DirEntry de2c;
-        DirEntry de3a;
-        DirEntry de4a;
+        private DirEntry de2a;
+        private DirEntry de2b;
+        private DirEntry de2c;
+        private DirEntry de3a;
+        private DirEntry de4a;
         private RootEntry re;
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()

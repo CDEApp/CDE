@@ -23,7 +23,7 @@ namespace cdeWin
             {
                 if (value >= 0)
                 {
-                    _comboBox.SelectedIndex = value; 
+                    _comboBox.SelectedIndex = value;
                 }
             }
         }

@@ -18,7 +18,7 @@ using ILogger = cdeLib.Infrastructure.ILogger;
 namespace cdeLibTest
 {
     [TestFixture]
-    class DuplicationTest
+    internal class DuplicationTest
     {
         private readonly ILogger _logger = Substitute.For<ILogger>();
         private readonly IConfiguration _configuration = Substitute.For<IConfiguration>();
@@ -35,17 +35,17 @@ namespace cdeLibTest
         [Test]
         public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
         {
-            var re1  = new RootEntry(_configuration) { Path = @"C:\" };
-            var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
-            var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
-            var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
-            var de4  = new DirEntry { Path = "de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
-            var de5  = new DirEntry { Path = "de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Path = "de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
-            var de7  = new DirEntry { Path = "de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
-            var de8  = new DirEntry { Path = "de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
-            var de9  = new DirEntry { Path = "de9",  Size = 11, IsPartialHash = false };
-            var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
+            var re1 = new RootEntry(_configuration) { Path = @"C:\" };
+            var de1 = new DirEntry { Path = "de1", Size = 10, IsPartialHash = false }; de1.SetHash(10);
+            var de2 = new DirEntry { Path = "de2", Size = 10, IsPartialHash = false }; de2.SetHash(11);
+            var de3 = new DirEntry { Path = "de3", Size = 11, IsPartialHash = false }; de3.SetHash(10);
+            var de4 = new DirEntry { Path = "de4", Size = 11, IsPartialHash = false }; de4.SetHash(11);
+            var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true }; de7.SetHash(12);
+            var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de9 = new DirEntry { Path = "de9", Size = 11, IsPartialHash = false };
+            var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true }; de10.SetHash(13);
             re1.AddChild(de1);
             re1.AddChild(de2);
             re1.AddChild(de3);
@@ -59,7 +59,7 @@ namespace cdeLibTest
             var roots = new List<RootEntry> { re1 };
             re1.SetInMemoryFields();
 
-            var d = new Duplication(_logger,_configuration,_applicationDiagnostics);
+            var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
             var sizePairDictionary = d.GetSizePairs(roots);
 
             Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
@@ -73,17 +73,17 @@ namespace cdeLibTest
         [Test]
         public void GetDupePairs_DupeHashDoesNotMatchDiffSizeFilesOrPartialHash_OK()
         {
-            var re1  = new RootEntry(_configuration) { Path = @"C:\" };
-            var de1  = new DirEntry { Path = "de1",  Size = 10, IsPartialHash = false }; de1.SetHash(10);
-            var de2  = new DirEntry { Path = "de2",  Size = 10, IsPartialHash = false }; de2.SetHash(11);
-            var de3  = new DirEntry { Path = "de3",  Size = 11, IsPartialHash = false }; de3.SetHash(10);
-            var de4  = new DirEntry { Path = "de4",  Size = 11, IsPartialHash = false }; de4.SetHash(11);
-            var de5  = new DirEntry { Path = "de5",  Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Path = "de6",  Size = 11, IsPartialHash = false }; de6.SetHash(12);
-            var de7  = new DirEntry { Path = "de7",  Size = 11, IsPartialHash = true  }; de7.SetHash(12);
-            var de8  = new DirEntry { Path = "de8",  Size = 11, IsPartialHash = false }; de8.SetHash(12);
-            var de9  = new DirEntry { Path = "de9",  Size = 11, IsPartialHash = false };
-            var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true  }; de10.SetHash(13);
+            var re1 = new RootEntry(_configuration) { Path = @"C:\" };
+            var de1 = new DirEntry { Path = "de1", Size = 10, IsPartialHash = false }; de1.SetHash(10);
+            var de2 = new DirEntry { Path = "de2", Size = 10, IsPartialHash = false }; de2.SetHash(11);
+            var de3 = new DirEntry { Path = "de3", Size = 11, IsPartialHash = false }; de3.SetHash(10);
+            var de4 = new DirEntry { Path = "de4", Size = 11, IsPartialHash = false }; de4.SetHash(11);
+            var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true }; de7.SetHash(12);
+            var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de9 = new DirEntry { Path = "de9", Size = 11, IsPartialHash = false };
+            var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true }; de10.SetHash(13);
             re1.AddChild(de1);
             re1.AddChild(de2);
             re1.AddChild(de3);
@@ -111,10 +111,10 @@ namespace cdeLibTest
         [Test]
         public void TestHashingWorks()
         {
-            var de5  = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
-            var de6  = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
+            var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false }; de5.SetHash(11);
+            var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false }; de6.SetHash(12);
             var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true }; de7.SetHash(12);
-            var de8  = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
+            var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false }; de8.SetHash(12);
 
             var ah5 = Hash16.EqualityComparer.StaticGetHashCode(de5.Hash);
             var ah6 = Hash16.EqualityComparer.StaticGetHashCode(de6.Hash);
@@ -180,7 +180,7 @@ namespace cdeLibTest
             var itemToVerify = dupePairEnum.SingleOrDefault(x => x.Key.Path.Contains("CDE_testFile"));
 
             //Assert we have at least a count of the number of dupe files we originally created.
-            Assert.GreaterOrEqual(itemToVerify.Value.Count,dupeCount );
+            Assert.GreaterOrEqual(itemToVerify.Value.Count, dupeCount);
 
             //TODO: Cleanup test.
         }
@@ -244,7 +244,7 @@ namespace cdeLibTest
             var rootEntries = catalogRepository.LoadCurrentDirCache();
 
             var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
-            await d.ApplyHash(rootEntries);
+            await d.ApplyHash(rootEntries).ConfigureAwait(false);
         }
         // ReSharper restore InconsistentNaming
     }

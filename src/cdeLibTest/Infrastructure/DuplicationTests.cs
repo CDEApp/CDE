@@ -40,7 +40,7 @@ namespace cdeLibTest.Infrastructure
             _configuration.HashFirstPassSize.Returns(1024);
             _configuration.DegreesOfParallelism.Returns(1);
             _configuration.Config.Returns(new AppConfigurationSection()
-                { Display = new DisplaySection() { ConsoleLogToSeq = true } });
+            { Display = new DisplaySection() { ConsoleLogToSeq = true } });
 
             var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
             _logger = new Logger(_configuration, logger);
@@ -63,7 +63,7 @@ namespace cdeLibTest.Infrastructure
             random.NextBytes(data);
             FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2");
             // force 2nd file of testset2 to be different at last byte.
-            data[dataSize - 1] = (byte) (data[dataSize - 1] ^ 0xFF);
+            data[dataSize - 1] = (byte)(data[dataSize - 1] ^ 0xFF);
             FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2NotDupe");
 
             // 3 dupes
@@ -93,7 +93,7 @@ namespace cdeLibTest.Infrastructure
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry(_configuration);
             rootEntry.PopulateRoot(FileHelper.TestDir2);
-            var rootEntries = new List<RootEntry> {rootEntry};
+            var rootEntries = new List<RootEntry> { rootEntry };
             await duplication.ApplyHash(rootEntries);
             // all 7 Files are partial hashed.
             Assert.That(duplication.DuplicationStatistics().PartialHashes, Is.EqualTo(7));
@@ -124,7 +124,7 @@ namespace cdeLibTest.Infrastructure
         public async Task Can_Acquire_hash_From_File()
         {
             var fullFileName = Path.Combine(FileHelper.TestDir2, "testset2");
-            var hash = await _hashHelper.GetHashResponseFromFile(fullFileName,null);
+            var hash = await _hashHelper.GetHashResponseFromFile(fullFileName, null);
             Assert.IsNotNull(hash.Hash);
         }
         // ReSharper restore InconsistentNaming

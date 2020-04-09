@@ -16,7 +16,7 @@ namespace cdeDataStructure3.Entities
     [ProtoContract]
     public class RootEntry : DirEntry // CommonEntry
     {
-        const string MatchAll = "*";
+        private const string MatchAll = "*";
         private readonly IDriveInfoService _driveInfoService;
 
         // NO LONGER USED
@@ -94,11 +94,10 @@ namespace cdeDataStructure3.Entities
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
             var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
-            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
-            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
+            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong)driveInfo.AvailableBytes;
+            if (driveInfo.TotalBytes != null) TotalSpace = (ulong)driveInfo.TotalBytes;
             return startPath;
         }
-
 
         public void SetInMemoryFields()
         {
@@ -174,7 +173,6 @@ namespace cdeDataStructure3.Entities
         public string CanonicalPath(string path)
         {
             path = GetFullPath(path); // Fully qualified path used to generate filename
-            var volumeRoot = GetDirectoryRoot(path);
             if (IsUnc(path))
             {
                 // if (!System.IO.Path.EndsInDirectorySeparator(path))
@@ -195,7 +193,6 @@ namespace cdeDataStructure3.Entities
 
             return path;
         }
-
 
         public string GetDriverLetterHint(string path, string volumeRoot)
         {
@@ -278,10 +275,8 @@ namespace cdeDataStructure3.Entities
 
         public void SaveRootEntry()
         {
-            using (var newFs = File.Open(DefaultFileName, FileMode.Create))
-            {
-                Write(newFs);
-            }
+            using var newFs = File.Open(DefaultFileName, FileMode.Create);
+            Write(newFs);
         }
 
         public void Write(Stream output)
@@ -303,7 +298,7 @@ namespace cdeDataStructure3.Entities
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
-            return Load(GetCacheFileList(new[] {"./"}));
+            return Load(GetCacheFileList(new[] { "./" }));
         }
 
         public static List<RootEntry> Load(IEnumerable<string> cdeList)
@@ -328,14 +323,12 @@ namespace cdeDataStructure3.Entities
             {
                 try
                 {
-                    using (var fs = File.Open(file, FileMode.Open, FileAccess.Read))
-                    {
-                        var re = Read(fs);
-                        if (re == null) return null;
-                        re.ActualFileName = file;
-                        re.SetInMemoryFields();
-                        return re;
-                    }
+                    using var fs = File.Open(file, FileMode.Open, FileAccess.Read);
+                    var re = Read(fs);
+                    if (re == null) return null;
+                    re.ActualFileName = file;
+                    re.SetInMemoryFields();
+                    return re;
                 }
                 // ReSharper disable EmptyGeneralCatchClause
                 catch

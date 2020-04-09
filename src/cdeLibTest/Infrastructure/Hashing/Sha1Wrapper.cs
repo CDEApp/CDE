@@ -16,7 +16,7 @@ namespace cdeLibTest.Infrastructure.Hashing
         public UInt64 Hash(byte[] data)
         {
             var result = _sha1.ComputeHash(data);
-            return BitConverter.ToUInt64(result,0);
+            return BitConverter.ToUInt64(result, 0);
         }
 
         public UInt64 Hash(ReadOnlySpan<byte> data)

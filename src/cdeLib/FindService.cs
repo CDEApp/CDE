@@ -43,7 +43,7 @@ namespace cdeLib
                     return true;
                 },
             };
-            
+
             findOptions.Find(rootEntries);
 
             Console.WriteLine(totalFound > 0

@@ -5,14 +5,14 @@ using Serilog;
 
 namespace cdeWin
 {
-    static class Program
+    internal static class Program
     {
         public static string Version => Application.ProductVersion;
 
         public static string ProductName => Application.ProductName;
 
         [STAThread]
-        static void Main()
+        private static void Main()
         {
             LoggingBootstrap.CreateLogger();
 

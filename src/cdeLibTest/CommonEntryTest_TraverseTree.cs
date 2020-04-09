@@ -8,7 +8,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class CommonEntryTest_TraverseTree : RootEntryTestBase
+    internal class CommonEntryTest_TraverseTree : RootEntryTestBase
     {
         [Test]
         public void Constructor_Minimal_OK()

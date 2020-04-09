@@ -52,7 +52,7 @@ namespace cdeWin
         event EventAction OnDirectoryTreeContextMenuExploreClick;
         event EventAction OnDirectoryTreeContextMenuPropertiesClick;
 
-        TreeNode DirectoryTreeViewNodes { get;  set; }
+        TreeNode DirectoryTreeViewNodes { get; set; }
 
         TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
         TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
@@ -110,8 +110,8 @@ namespace cdeWin
         void CleanUp();
 
         void MessageBox(string message);
-		void AboutDialog();
-		void AddLine(string format, params object[] args);
+        void AboutDialog();
+        void AddLine(string format, params object[] args);
         ICommonEntry GetSelectedTreeItem();
     }
 }

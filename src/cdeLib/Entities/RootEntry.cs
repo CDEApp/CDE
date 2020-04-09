@@ -24,9 +24,9 @@ namespace cdeLib.Entities
     [MessagePackObject]
     [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
     [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
-    public class RootEntry : object , ICommonEntry
+    public class RootEntry : object, ICommonEntry
     {
-        const string MatchAll = "*";
+        private const string MatchAll = "*";
         private readonly IDriveInfoService _driveInfoService;
 
         [ProtoMember(2, IsRequired = true)]
@@ -61,9 +61,10 @@ namespace cdeLib.Entities
         [FlatBufferItem(7)]
         [Key(7)]
         public virtual ulong TotalSpace { get; set; }
-        
+
         [IgnoreMember]
-        public virtual DateTime ScanStartUTC {
+        public virtual DateTime ScanStartUTC
+        {
             set => ScanStartUTCTicks = value.Ticks;
             get => DateTime.FromBinary(ScanStartUTCTicks);
         }
@@ -136,8 +137,8 @@ namespace cdeLib.Entities
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
             var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
-            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
-            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
+            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong)driveInfo.AvailableBytes;
+            if (driveInfo.TotalBytes != null) TotalSpace = (ulong)driveInfo.TotalBytes;
             return startPath;
         }
 

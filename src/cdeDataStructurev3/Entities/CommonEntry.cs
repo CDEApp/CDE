@@ -9,12 +9,12 @@ namespace cdeDataStructure3.Entities
     /// Returns true if want traversal to continue after this returns.
     /// </summary>
     public delegate bool TraverseFunc(CommonEntry ce, DirEntry de);
-    
+
     public delegate bool TraverseFuncWithRoot(CommonEntry ce, DirEntry de, RootEntry rootEntry = null);
 
     [ProtoContract
-    ,ProtoInclude(1, typeof(RootEntry))
-    ,ProtoInclude(2, typeof(DirEntry))]
+    , ProtoInclude(1, typeof(RootEntry))
+    , ProtoInclude(2, typeof(DirEntry))]
     public abstract class CommonEntry
     {
         public RootEntry RootEntry { get; set; }
@@ -47,7 +47,6 @@ namespace cdeDataStructure3.Entities
         /// </summary>
         public bool PathProblem;
 
-        
         public void TraverseTreePair(TraverseFunc func)
         {
             TraverseTreePair(new List<CommonEntry> { this }, func);
@@ -145,14 +144,13 @@ namespace cdeDataStructure3.Entities
                         {
                             // copy MD5 if none in destination.
                             // copy MD5 as upgrade to full if dest currently partial.
-                            if ((sourceDirEntry.IsHashDone)
-                                && (!destinationDirEntry.IsHashDone)
+                            if ((sourceDirEntry.IsHashDone
+                                && !destinationDirEntry.IsHashDone)
                                 ||
-                                ((sourceDirEntry.IsHashDone)
-                                 && (destinationDirEntry.IsHashDone)
-                                 && !sourceDirEntry.IsPartialHash
-                                 && destinationDirEntry.IsPartialHash
-                                ))
+                                (sourceDirEntry.IsHashDone
+                                && destinationDirEntry.IsHashDone
+                                && !sourceDirEntry.IsPartialHash
+                                && destinationDirEntry.IsPartialHash))
                             {
                                 destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
                                 destinationDirEntry.Hash = sourceDirEntry.Hash;
@@ -162,8 +160,8 @@ namespace cdeDataStructure3.Entities
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, (CommonEntry) sourceDirEntry,
-                                                       (CommonEntry) destinationDirEntry));
+                                dirs.Push(Tuple.Create(fullPath, (CommonEntry)sourceDirEntry,
+                                                       (CommonEntry)destinationDirEntry));
                             }
                         }
                     }
@@ -216,7 +214,6 @@ namespace cdeDataStructure3.Entities
             activatedDirEntryList.Reverse(); // list now from root to this.
             return activatedDirEntryList;
         }
-
 
         /// <summary>
         /// Check if Path is a bad path

@@ -29,7 +29,8 @@ namespace cdeLib.Infrastructure.Hashing
                         //avoid 'Array dimensions exceeded supported range', don't use byte[]
                         totalBytesRead = streamLength;
                         hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.HashStream(stream));
-                    } else
+                    }
+                    else
                     {
                         var buf = new byte[bytesToHash.Value];
                         var bytesRead = await stream.ReadAsync(buf, 0, buf.Length);

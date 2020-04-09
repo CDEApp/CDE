@@ -6,7 +6,7 @@ namespace cdeLibTest
 {
     // ReSharper disable InconsistentNaming
     [TestFixture]
-    class StringExtensionTest
+    internal class StringExtensionTest
     {
         [Test]
         public void GetRelativePath_RootPathIsDriveRoot_WithTrailSeperator_ReturnPath()

@@ -18,7 +18,7 @@ namespace cdeLibTest
         private RootEntry rootDest;
         private DirEntry deSource;
         private DirEntry deDest;
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         [SetUp]
         public void BeforeEveryTest()
@@ -44,12 +44,12 @@ namespace cdeLibTest
         private static DirEntry GetNewTestF1()
         {
             var de = new DirEntry
-                       {
-                           Path = "f1",
-                           Modified = new DateTime(2011, 05, 01, 12, 11, 10),
-                           Size = 10,
-                           IsPartialHash = true,
-                       };
+            {
+                Path = "f1",
+                Modified = new DateTime(2011, 05, 01, 12, 11, 10),
+                Size = 10,
+                IsPartialHash = true,
+            };
             de.SetHash(12312);
             return de;
         }

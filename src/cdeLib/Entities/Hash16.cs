@@ -42,7 +42,7 @@ namespace cdeLib.Entities
         public void SetHash(byte[] hash)
         {
             HashA = BitConverter.ToUInt64(hash, 0); // swapped offset because of intel
-            HashB = hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : (ulong) 0;
+            HashB = hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : (ulong)0;
         }
 
         public void SetHash(int hash)
@@ -83,7 +83,7 @@ namespace cdeLib.Entities
             return HashCode.Combine(HashA, HashB);
         }
 
-        public class EqualityComparer: IEqualityComparer<Hash16>
+        public class EqualityComparer : IEqualityComparer<Hash16>
         {
             public bool Equals(Hash16 x, Hash16 y)
             {

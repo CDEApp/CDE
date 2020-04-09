@@ -20,7 +20,7 @@ namespace cdeLibTest.Performance
     ///
     /// </summary>
     //[TestFixture] disabled performance not unit test.
-    class PerformanceTreeTraversal
+    internal class PerformanceTreeTraversal
     {
         private const string PathToTest = @"..\..\..\..\test\";
         private const string TestCatalog200K = PathToTest + "C-V3Win7.cde";
@@ -53,7 +53,7 @@ namespace cdeLibTest.Performance
                 var e1 = EntryHelper.GetDirEntries(RootSmall);
                 RootSmallCount = e1.Count();
 
-                RootLarge  = catalogRepository.LoadDirCache(TestCatalog1_2M);
+                RootLarge = catalogRepository.LoadDirCache(TestCatalog1_2M);
                 if (RootSmall == null)
                 {
                     Assert.Inconclusive("TestData not Found" + TestCatalog1_2M);
@@ -120,7 +120,7 @@ namespace cdeLibTest.Performance
 
         private void OutputStatLine(string name, int repeat, int entryCount, long msecs)
         {
-            Console.WriteLine($"{name},{repeat},{entryCount},{msecs},{1.0*msecs/repeat},{1.0*msecs/repeat/entryCount}");
+            Console.WriteLine($"{name},{repeat},{entryCount},{msecs},{1.0 * msecs / repeat},{1.0 * msecs / repeat / entryCount}");
         }
 
         public long DoPairDirEntryEnumeratorCountTest(RootEntry root, int repeatCount)
@@ -251,9 +251,9 @@ namespace cdeLibTest.Performance
                 LimitResultCount = int.MaxValue,
             };
 
-            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall, findOptions);
+            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall);
             OutputStatLine("TraverseTreeFind Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
-            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge, findOptions);
+            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge);
             OutputStatLine("TraverseTreeFind Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
 
             msecs = DoGetSearchHitsRFPairList(TestData.RootSmall, _repeatSmall, findOptions);
@@ -269,9 +269,9 @@ namespace cdeLibTest.Performance
             findOptions.RegexMode = true;
             findOptions.IncludePath = true;
 
-            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall, findOptions);
+            msecs = DoGetSearchHitsRFCount(TestData.RootSmall, _repeatSmall);
             OutputStatLine("TraverseTreeFind Small Count Regex", _repeatSmall, TestData.RootSmallCount, msecs);
-            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge, findOptions);
+            msecs = DoGetSearchHitsRFCount(TestData.RootLarge, _repeatLarge);
             OutputStatLine("TraverseTreeFind Large Count Regex", _repeatLarge, TestData.RootLargeCount, msecs);
 
             msecs = DoGetSearchHitsRFPairList(TestData.RootSmall, _repeatSmall, findOptions);
@@ -285,7 +285,7 @@ namespace cdeLibTest.Performance
             OutputStatLine("TraverseTreeFind Large List Regex", _repeatLarge, TestData.RootLargeCount, msecs);
         }
 
-        public long DoGetSearchHitsRFCount(RootEntry root, int repeatCount, FindOptions options)
+        public long DoGetSearchHitsRFCount(RootEntry root, int repeatCount)
         {
             var sw = new Stopwatch();
             sw.Start();
@@ -386,7 +386,7 @@ namespace cdeLibTest.Performance
             }
             sw.Stop();
             totalTraverseTime = sw.ElapsedMilliseconds;
-            traverseTimeAverage = 1.0d * totalTraverseTime/repeatCount;
+            traverseTimeAverage = 1.0d * totalTraverseTime / repeatCount;
             Console.WriteLine("SetCommonEntryFields");
             Console.WriteLine("repeatCount " + repeatCount);
             Console.WriteLine("totalTraverseTime " + totalTraverseTime + " msecs");
@@ -396,12 +396,12 @@ namespace cdeLibTest.Performance
             sw.Start();
             for (var i = 0; i < repeatCount; i++)
             {
-               //this code was temporary and showed no real gain.
-               //reC.SetCommonEntryFieldsT();
+                //this code was temporary and showed no real gain.
+                //reC.SetCommonEntryFieldsT();
             }
             sw.Stop();
             totalTraverseTime = sw.ElapsedMilliseconds;
-            traverseTimeAverage = 1.0d * totalTraverseTime/repeatCount;
+            traverseTimeAverage = 1.0d * totalTraverseTime / repeatCount;
             Console.WriteLine("SetCommonEntryFieldsNoParent");
             Console.WriteLine("repeatCount " + repeatCount);
             Console.WriteLine("totalTraverseTime " + totalTraverseTime + " msecs");

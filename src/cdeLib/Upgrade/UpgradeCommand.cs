@@ -24,7 +24,7 @@ namespace cdeLib.Upgrade
                 TotalSpace = src.TotalSpace,
                 ScanStartUTC = src.ScanStartUTC,
                 ScanEndUTC = src.ScanEndUTC,
-                BitFields = (Flags) (byte) src.BitFields,
+                BitFields = (Flags)(byte)src.BitFields,
                 // Hash = new Hash16
                 // {
                 //     HashA = src.Hash.HashA,
@@ -55,7 +55,7 @@ namespace cdeLib.Upgrade
                 //     HashA = src.Hash.HashA,
                 //     HashB = src.Hash.HashB
                 // },
-                BitFields = (Flags) (byte) src.BitFields,
+                BitFields = (Flags)(byte)src.BitFields,
                 Size = src.Size
             };
             newDirEntry.SetPath(src.Path);

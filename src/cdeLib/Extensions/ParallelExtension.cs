@@ -7,7 +7,7 @@ namespace cdeLib
 {
     public static class ParallelExtension
     {
-        public static void ForEachInApproximateOrder<TSource>(this ParallelQuery<TSource> source, ParallelOptions options, Action<TSource,ParallelLoopState> action)
+        public static void ForEachInApproximateOrder<TSource>(this ParallelQuery<TSource> source, ParallelOptions options, Action<TSource, ParallelLoopState> action)
         {
             source = Partitioner.Create(source)
                 .AsParallel()

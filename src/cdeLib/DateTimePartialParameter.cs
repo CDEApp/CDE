@@ -81,7 +81,7 @@ namespace cdeLib
                 if (int.TryParse(splitOnT[0], out var unValidatedDayOfMonth))
                 {
                     // check for valid day of month
-                    if (DateTime.TryParse(_year+ "-" + _month + "-" + unValidatedDayOfMonth, out var tmpDateTime))
+                    if (DateTime.TryParse(_year + "-" + _month + "-" + unValidatedDayOfMonth, out var tmpDateTime))
                     {
                         dayOfMonth = tmpDateTime.Day;
                     }

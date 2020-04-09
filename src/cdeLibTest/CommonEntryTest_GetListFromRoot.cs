@@ -8,9 +8,9 @@ namespace cdeLibTest
 {
     [TestFixture]
     // ReSharper disable InconsistentNaming
-    class CommonEntryTest_GetListFromRoot
+    internal class CommonEntryTest_GetListFromRoot
     {
-        readonly IConfiguration _config = Substitute.For<IConfiguration>();
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
         public void Setup()
         {
@@ -30,8 +30,8 @@ namespace cdeLibTest
         [Test]
         public void GetListFromRoot_FirstLevelEntry_TwoItemsReturned()
         {
-            var re = new RootEntry(_config) {Path = @"X:\"};
-            var de1 = new DirEntry {Path = "de1" };
+            var re = new RootEntry(_config) { Path = @"X:\" };
+            var de1 = new DirEntry { Path = "de1" };
             re.AddChild(de1);
             re.SetCommonEntryFields();
 

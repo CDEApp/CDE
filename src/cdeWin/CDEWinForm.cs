@@ -96,10 +96,10 @@ namespace cdeWin
             new ComboBoxItem<int>("byte(s)", 1),
             new ComboBoxItem<int>("KB(s)", 1000),
             new ComboBoxItem<int>("KiB(s)", 1024),
-            new ComboBoxItem<int>("MB(s)", 1000*1000),
-            new ComboBoxItem<int>("MiB(s)", 1024*1024),
-            new ComboBoxItem<int>("GB(s)", 1000*1000*1000),
-            new ComboBoxItem<int>("GIB(s)", 1024*1024*1024)
+            new ComboBoxItem<int>("MB(s)", 1000 * 1000),
+            new ComboBoxItem<int>("MiB(s)", 1024 * 1024),
+            new ComboBoxItem<int>("GB(s)", 1000 * 1000 * 1000),
+            new ComboBoxItem<int>("GIB(s)", 1024 * 1024 * 1024)
         };
 
         private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = new[]
@@ -119,11 +119,11 @@ namespace cdeWin
             new ComboBoxItem<int>("Unlimited Results", int.MaxValue)
         };
 
-    	private readonly IConfig _config;
+        private readonly IConfig _config;
 
         public CDEWinForm(IConfig config)
         {
-        	_config = config;
+            _config = config;
             InitializeComponent();
             AutoWaitCursor.Cursor = Cursors.WaitCursor;
             AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
@@ -153,13 +153,15 @@ namespace cdeWin
             FormClosing += MyFormClosing;
             Activated += MyFormActivated;
 
-            SetToolTip(reloadCatalogsButton, "Using reload catalogs will use more memory than quitting and starting again.");
-            
+            SetToolTip(reloadCatalogsButton,
+                "Using reload catalogs will use more memory than quitting and starting again.");
+
             SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
             whatToSearchComboBox.Items.AddRange(new object[] { "Include Path in Search", "Exclude Path from Search" });
             whatToSearchComboBox.SelectedIndex = 0; // default Include
             whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
-            SetToolTip(whatToSearchComboBox, "Excluding Path so that only entry Names are searched makes search faster.");
+            SetToolTip(whatToSearchComboBox,
+                "Excluding Path so that only entry Names are searched makes search faster.");
 
             findComboBox.Items.AddRange(new object[] { "Files and Folders", "Files Only", "Folders Only" });
             findComboBox.SelectedIndex = 0; // default Files and Folders
@@ -172,25 +174,25 @@ namespace cdeWin
             // - from gui actions....  and decisions from presenter...
             // - - at moment, ListViewHelper is small presenter ?
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
-                {
-                    // ReSharper disable PossibleNullReferenceException
-                    RetrieveVirtualItem = () => { OnSearchResultRetrieveVirtualItem(); },
-                    ItemActivate = () => { OnSearchResultListViewItemActivate(); },
-                    ColumnClick = () => { OnSearchResultListViewColumnClick(); },
-                    // ReSharper restore PossibleNullReferenceException
-                    ContextMenu = CreateSearchResultContextMenu(),
-                };
+            {
+                // ReSharper disable PossibleNullReferenceException
+                RetrieveVirtualItem = () => { OnSearchResultRetrieveVirtualItem(); },
+                ItemActivate = () => { OnSearchResultListViewItemActivate(); },
+                ColumnClick = () => { OnSearchResultListViewColumnClick(); },
+                // ReSharper restore PossibleNullReferenceException
+                ContextMenu = CreateSearchResultContextMenu(),
+            };
 
             DirectoryListViewHelper = new ListViewHelper<ICommonEntry>(directoryListView)
-                {
-                    // ReSharper disable PossibleNullReferenceException
-                    RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
-                    ItemActivate = () => { OnDirectoryListViewItemActivate(); },
-                    ColumnClick = () => { OnDirectoryListViewColumnClick(); },
-                    ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); },
-                    // ReSharper restore PossibleNullReferenceException
-                    ContextMenu = CreateDirectoryContextMenu(),
-                };
+            {
+                // ReSharper disable PossibleNullReferenceException
+                RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
+                ItemActivate = () => { OnDirectoryListViewItemActivate(); },
+                ColumnClick = () => { OnDirectoryListViewColumnClick(); },
+                ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); },
+                // ReSharper restore PossibleNullReferenceException
+                ContextMenu = CreateDirectoryContextMenu(),
+            };
 
             directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
             directoryTreeView.AfterSelect += DirectoryTreeViewOnAfterSelect;
@@ -203,14 +205,14 @@ namespace cdeWin
             patternComboBox.LostFocus += (s, e) => AcceptButton = null;
 
             CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
-                {
-                    MultiSelect = false,
-                    // ReSharper disable PossibleNullReferenceException
-                    RetrieveVirtualItem = () => { OnCatalogRetrieveVirtualItem(); },
-                    ItemActivate = () => { OnCatalogListViewItemActivate(); },
-                    ColumnClick = () => { OnCatalogListViewColumnClick(); },
-                    // ReSharper restore PossibleNullReferenceException
-                };
+            {
+                MultiSelect = false,
+                // ReSharper disable PossibleNullReferenceException
+                RetrieveVirtualItem = () => { OnCatalogRetrieveVirtualItem(); },
+                ItemActivate = () => { OnCatalogListViewItemActivate(); },
+                ColumnClick = () => { OnCatalogListViewColumnClick(); },
+                // ReSharper restore PossibleNullReferenceException
+            };
 
             directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
@@ -238,45 +240,67 @@ namespace cdeWin
             // - it the handlers should be raising events to Presenter. 
             // - or maybe some presenter of presenter just for checkbox dependencies ?
             //
-            FromDate = new CheckBoxDependentControlHelper(fromDateCheckbox, new Control[] { fromDateTimePicker }, new[] { notOlderThanCheckbox });
-            FromDate.Checked = false;
+            FromDate = new CheckBoxDependentControlHelper(fromDateCheckbox, new Control[] { fromDateTimePicker },
+                new[] { notOlderThanCheckbox })
+            {
+                Checked = false
+            };
 
             SetTimePickerYMD(toDateTimePicker);
-            ToDate = new CheckBoxDependentControlHelper(toDateCheckbox, new Control[] { toDateTimePicker }, new[] { notOlderThanCheckbox });
-            ToDate.Checked = false;
+            ToDate = new CheckBoxDependentControlHelper(toDateCheckbox, new Control[] { toDateTimePicker },
+                new[] { notOlderThanCheckbox })
+            {
+                Checked = false
+            };
 
             SetTimePickerHMS(fromHourTimePicker);
-            FromHour = new CheckBoxDependentControlHelper(fromHourCheckbox, new Control[] { fromHourTimePicker }, new[] { notOlderThanCheckbox });
-            FromHour.Checked = false;
+            FromHour = new CheckBoxDependentControlHelper(fromHourCheckbox, new Control[] { fromHourTimePicker },
+                new[] { notOlderThanCheckbox })
+            {
+                Checked = false
+            };
 
             SetTimePickerHMS(toHourTimePicker);
-            ToHour = new CheckBoxDependentControlHelper(toHourCheckbox, new Control[] { toHourTimePicker }, new[] { notOlderThanCheckbox });
-            ToHour.Checked = false;
+            ToHour = new CheckBoxDependentControlHelper(toHourCheckbox, new Control[] { toHourTimePicker },
+                new[] { notOlderThanCheckbox })
+            {
+                Checked = false
+            };
 
             NotOlderThanValue = new UpDownHelper(notOlderThanUpDown, 0);
             NotOlderThanDropDownHelper = new DropDownHelper<AddTimeUnitFunc>(notOlderThanDropDown, _durationUnits, 1);
 
             NotOlderThan = new CheckBoxDependentControlHelper(notOlderThanCheckbox,
-                            new Control[] {notOlderThanUpDown, notOlderThanDropDown},
-                            new [] { fromDateCheckbox, toDateCheckbox, fromHourCheckbox, toHourCheckbox });
-            NotOlderThan.Checked = false;
+                new Control[] { notOlderThanUpDown, notOlderThanDropDown },
+                new[] { fromDateCheckbox, toDateCheckbox, fromHourCheckbox, toHourCheckbox })
+            {
+                Checked = false
+            };
 
             FromSizeValue = new UpDownHelper(fromSizeUpDown);
             FromSizeDropDownHelper = new DropDownHelper<int>(fromSizeDropDown, _byteSizeUnits, 4);
-            FromSize = new CheckBoxDependentControlHelper(fromSizeCheckbox, new Control[] { fromSizeUpDown, fromSizeDropDown }, null);
-            FromSize.Checked = false;
+            FromSize = new CheckBoxDependentControlHelper(fromSizeCheckbox,
+                new Control[] { fromSizeUpDown, fromSizeDropDown }, null)
+            {
+                Checked = false
+            };
 
             ToSizeValue = new UpDownHelper(toSizeUpDown);
             ToSizeDropDownHelper = new DropDownHelper<int>(toSizeDropDown, _byteSizeUnits, 4);
-            ToSize = new CheckBoxDependentControlHelper(toSizeCheckbox, new Control[] { toSizeUpDown, toSizeDropDown }, null);
-            ToSize.Checked = false;
+            ToSize = new CheckBoxDependentControlHelper(toSizeCheckbox, new Control[] { toSizeUpDown, toSizeDropDown },
+                null)
+            {
+                Checked = false
+            };
 
             LimitResultHelper = new DropDownHelper<int>(limitResultDropDown, _limitResultValues, 1);
-            SetToolTip(limitResultDropDown, "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isn't usually useful.");
+            SetToolTip(limitResultDropDown,
+                "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isn't usually useful.");
 
             // ReSharper disable once PossibleNullReferenceException
             advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
-            SetToolTip(advancedSearchCheckBox, "Enable or Disable advanced search options to include Date and Size filtering.");
+            SetToolTip(advancedSearchCheckBox,
+                "Enable or Disable advanced search options to include Date and Size filtering.");
         }
         // ReSharper restore UseObjectOrCollectionInitializer
 
@@ -284,13 +308,13 @@ namespace cdeWin
         {
             picker.ShowUpDown = true;
             picker.Format = DateTimePickerFormat.Custom;
-			picker.CustomFormat = _config.DateCustomFormatHMS;
+            picker.CustomFormat = _config.DateCustomFormatHMS;
         }
 
         private void SetTimePickerYMD(DateTimePicker picker)
         {
             picker.Format = DateTimePickerFormat.Custom;
-			picker.CustomFormat = _config.DateCustomFormatYMD;
+            picker.CustomFormat = _config.DateCustomFormatYMD;
         }
 
         private void SetToolTip(Control c, string s)
@@ -326,18 +350,21 @@ namespace cdeWin
         }
 
         // ReSharper disable once UnusedParameter.Local
-        void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
+        private void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             // ReSharper disable once ArrangeStaticMemberQualifier
-            var treeNodeAtMousePosition = directoryTreeView.GetNodeAt(directoryTreeView.PointToClient(Control.MousePosition));
+            var treeNodeAtMousePosition =
+                directoryTreeView.GetNodeAt(directoryTreeView.PointToClient(Control.MousePosition));
             var selectedTreeNode = directoryTreeView.SelectedNode;
 
             if (treeNodeAtMousePosition == null)
-            {   // cancel context menu if no node at right click.
+            {
+                // cancel context menu if no node at right click.
                 e.Cancel = true;
             }
             else
-            {   // right click selects the node and shows context menu.
+            {
+                // right click selects the node and shows context menu.
                 if (treeNodeAtMousePosition != selectedTreeNode)
                     directoryTreeView.SelectedNode = treeNodeAtMousePosition;
             }
@@ -346,25 +373,25 @@ namespace cdeWin
         public ICommonEntry GetSelectedTreeItem()
         {
             // any visible tree node has a valid Tag
-            return (ICommonEntry) directoryTreeView.SelectedNode?.Tag;
+            return (ICommonEntry)directoryTreeView.SelectedNode?.Tag;
         }
 
         private ContextMenuStrip CreateDirectoryContextMenu()
         {
             var menuHelper = new ContextMenuHelper
-                {
-                    // ReSharper disable PossibleNullReferenceException
-                    TreeViewHandler = (s, e) => OnDirectoryContextMenuViewTreeClick(),
-                    OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
-                    ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
-                    PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
-                    SelectAllHandler = (s, e) => OnDirectoryContextMenuSelectAllClick(),
-                    //CopyBaseNameHandler = (s, e) => (),
-                    CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
-                    ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
-                    // ReSharper restore PossibleNullReferenceException
-                    CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
-                };
+            {
+                // ReSharper disable PossibleNullReferenceException
+                TreeViewHandler = (s, e) => OnDirectoryContextMenuViewTreeClick(),
+                OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
+                ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
+                PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
+                SelectAllHandler = (s, e) => OnDirectoryContextMenuSelectAllClick(),
+                //CopyBaseNameHandler = (s, e) => (),
+                CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
+                ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+                // ReSharper restore PossibleNullReferenceException
+                CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
+            };
             return menuHelper.GetContextMenuStrip();
         }
 
@@ -490,6 +517,7 @@ namespace cdeWin
                     patternComboBox.Items.Add(h);
                 }
             }
+
             patternComboBox.DropDownStyle = ComboBoxStyle.DropDown;
         }
 
@@ -502,8 +530,9 @@ namespace cdeWin
                 {
                     items.Remove(pattern);
                 }
+
                 items.TruncateList(_config.Active.PatternHistoryMaximum);
-                items.Insert(0, pattern);	// always to front.
+                items.Insert(0, pattern); // always to front.
                 patternComboBox.SelectedIndex = 0; // set value we added to combobox.
                 patternComboBox.Select(0, pattern.Length);
             }
@@ -609,10 +638,10 @@ namespace cdeWin
             MyAboutBox.MyShow(this, _config);
         }
 
-		public void AddLine(string format, params object[] args)
-		{
-			tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
-		}
+        public void AddLine(string format, params object[] args)
+        {
+            tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
+        }
 
         private void CDEWinFormShown(object sender, EventArgs e)
         {

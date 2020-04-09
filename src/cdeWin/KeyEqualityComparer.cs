@@ -29,7 +29,7 @@ namespace cdeWin
     /// <summary>
     /// see http://stackoverflow.com/questions/98033/wrap-a-delegate-in-an-iequalitycomparer
     /// </summary>
-    public class StrictKeyEqualityComparer<T, TKey> 
+    public class StrictKeyEqualityComparer<T, TKey>
         : KeyEqualityComparer<T, TKey> where TKey : IEquatable<TKey>
     {
         public StrictKeyEqualityComparer(Func<T, TKey> keyExtractor) : base(keyExtractor)

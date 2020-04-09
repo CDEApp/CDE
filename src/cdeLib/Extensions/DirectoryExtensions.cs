@@ -46,7 +46,7 @@ namespace cdeLib
         {
             if (GetDiskFreeSpaceEx(volumeIdentifier, out var available, out var total, out var free))
             {
-                return new FileSystemProperties((long) total, (long) free, (long) available);
+                return new FileSystemProperties((long)total, (long)free, (long)available);
             }
 
             return new FileSystemProperties(null, null, null);
@@ -65,7 +65,7 @@ namespace cdeLib
             {
                 if (GetDiskFreeSpaceEx(volumeIdentifier, out var available, out var total, out var free))
                 {
-                    return new FileSystemProperties((long) total, (long) free, (long) available);
+                    return new FileSystemProperties((long)total, (long)free, (long)available);
                 }
 
                 return new FileSystemProperties(null, null, null);

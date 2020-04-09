@@ -8,7 +8,7 @@ namespace cdeWin
     {
         // ShowFileProperties from http://stackoverflow.com/a/1936957
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]
-        static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
+        private static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
 
         [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Auto)]
         public struct SHELLEXECUTEINFO
@@ -45,7 +45,7 @@ namespace cdeWin
             info.lpFile = Filename;
             info.nShow = SW_SHOW;
             info.fMask = SEE_MASK_INVOKEIDLIST;
-            ShellExecuteEx(ref info);        
+            ShellExecuteEx(ref info);
         }
 
         public static void ExplorerOpen(string path)

@@ -6,7 +6,7 @@ namespace cdeWin
     {
         public static float GetSplitterRatio(this SplitContainer splitter)
         {
-            return (float)splitter.SplitterDistance/splitter.GetSplitterSize();
+            return (float)splitter.SplitterDistance / splitter.GetSplitterSize();
         }
 
         public static void SetSplitterRatio(this SplitContainer splitter, float splitterRatio)
@@ -15,7 +15,7 @@ namespace cdeWin
             var newDistance = (int)(currentSize * splitterRatio);
             if (newDistance >= splitter.Panel1MinSize   // Set splitter if Valid splitter distance
                 && newDistance <= (currentSize - splitter.Panel2MinSize))
-            {   
+            {
                 splitter.SplitterDistance = newDistance;
             }
         }

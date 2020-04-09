@@ -44,57 +44,57 @@ namespace cde
 
         private static int Main(string[] args)
         {
-                InitProgram(args);
-                Console.CancelKeyPress += BreakConsole;
-                using (Operation.Time("Main App"))
-                {
-                    var findService = _container.Resolve<IFindService>();
+            InitProgram(args);
+            Console.CancelKeyPress += BreakConsole;
+            using (Operation.Time("Main App"))
+            {
+                var findService = _container.Resolve<IFindService>();
 
-                    var parser = CommandLineParserBuilder.Build();
-                    parser.ParseArguments<ScanOptions, FindOptions, GrepOptions, GrepPathOptions, ReplGrepPathOptions,
-                            ReplGrepOptions, ReplFindOptions,
-                            HashOptions, DupesOptions, TreeDumpOptions, LoadWaitOptions, ReplOptions, PopulousFoldersOptions
-                            ,FindPathOptions,
-                            UpgradeOptions>(
-                            args)
-                        .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
-                        .WithParsed<FindOptions>(opts =>
-                        {
-                            findService.StaticFind(opts.Value, "--find",
-                                _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                        })
-                        .WithParsed<FindPathOptions>(opts =>
-                        {
-                            findService.StaticFind(opts.Value, "--findpath",
-                                _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                        })
-                        .WithParsed<GrepOptions>(opts =>
-                        {
-                            findService.StaticFind(opts.Value, "--grep",
-                                _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                        })
-                        .WithParsed<GrepPathOptions>(opts =>
-                        {
-                            findService.StaticFind(opts.Value, "--greppath",
-                                _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                        })
-                        .WithParsed<ReplGrepPathOptions>(opts => { FindRepl(FindService.ParamGreppath, opts.Value); })
-                        .WithParsed<ReplGrepOptions>(opts => { FindRepl(FindService.ParamGrep, opts.Value); })
-                        .WithParsed<ReplFindOptions>(opts => { FindRepl(FindService.ParamFind, opts.Value); })
-                        .WithParsed<HashOptions>(opts => { HashCatalog(); })
-                        .WithParsed<DupesOptions>(opts => { FindDupes(); })
-                        .WithParsed<TreeDumpOptions>(opts => { PrintPathsHaveHashEnumerator(); })
-                        .WithParsed<LoadWaitOptions>(opts =>
-                        {
-                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
-                            Console.ReadLine();
-                        })
-                        .WithParsed<ReplOptions>(opts => { InvokeRepl(); })
-                        .WithParsed<PopulousFoldersOptions>(opts => { FindPopulous(opts.Count); })
-                        .WithParsed<UpgradeOptions>(opts => { Upgrade(); })
-                        .WithNotParsed(errs => { Environment.Exit(1); });
-                    return 0;
-                }
+                var parser = CommandLineParserBuilder.Build();
+                parser.ParseArguments<ScanOptions, FindOptions, GrepOptions, GrepPathOptions, ReplGrepPathOptions,
+                        ReplGrepOptions, ReplFindOptions,
+                        HashOptions, DupesOptions, TreeDumpOptions, LoadWaitOptions, ReplOptions, PopulousFoldersOptions
+                        , FindPathOptions,
+                        UpgradeOptions>(
+                        args)
+                    .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
+                    .WithParsed<FindOptions>(opts =>
+                    {
+                        findService.StaticFind(opts.Value, "--find",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<FindPathOptions>(opts =>
+                    {
+                        findService.StaticFind(opts.Value, "--findpath",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<GrepOptions>(opts =>
+                    {
+                        findService.StaticFind(opts.Value, "--grep",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<GrepPathOptions>(opts =>
+                    {
+                        findService.StaticFind(opts.Value, "--greppath",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<ReplGrepPathOptions>(opts => { FindRepl(FindService.ParamGreppath, opts.Value); })
+                    .WithParsed<ReplGrepOptions>(opts => { FindRepl(FindService.ParamGrep, opts.Value); })
+                    .WithParsed<ReplFindOptions>(opts => { FindRepl(FindService.ParamFind, opts.Value); })
+                    .WithParsed<HashOptions>(opts => { HashCatalog(); })
+                    .WithParsed<DupesOptions>(opts => { FindDupes(); })
+                    .WithParsed<TreeDumpOptions>(opts => { PrintPathsHaveHashEnumerator(); })
+                    .WithParsed<LoadWaitOptions>(opts =>
+                    {
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+                        Console.ReadLine();
+                    })
+                    .WithParsed<ReplOptions>(opts => { InvokeRepl(); })
+                    .WithParsed<PopulousFoldersOptions>(opts => { FindPopulous(opts.Count); })
+                    .WithParsed<UpgradeOptions>(opts => { Upgrade(); })
+                    .WithNotParsed(errs => { Environment.Exit(1); });
+                return 0;
+            }
         }
 
         private static void InvokeRepl()

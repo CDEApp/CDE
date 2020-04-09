@@ -13,9 +13,9 @@ namespace cdeLibTest.TestHelpers
         private static readonly string ProjectPath =
             Path.GetDirectoryName(
                 Path.GetDirectoryName(Path.GetDirectoryName(TestContext.CurrentContext.TestDirectory)));
-        
+
         public static readonly string TestDir = Path.Combine(ProjectPath, "Test");
-        
+
         public static readonly string TestDir2 = Path.Combine(ProjectPath, "Test2");
 
         public static string RandomString(int length)

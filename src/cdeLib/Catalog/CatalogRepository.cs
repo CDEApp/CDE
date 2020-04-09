@@ -89,7 +89,7 @@ namespace cdeLib.Catalog
 
         public IList<RootEntry> LoadCurrentDirCache()
         {
-            return Load(GetCacheFileList(new[] {"./"}));
+            return Load(GetCacheFileList(new[] { "./" }));
         }
 
         /// <summary>

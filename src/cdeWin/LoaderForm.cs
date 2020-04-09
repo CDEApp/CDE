@@ -46,12 +46,11 @@ namespace cdeWin
             _backgroundWorker.ProgressChanged += BackgroundWorker_ProgressChanged;
         }
 
-
         private void BackgroundWorker_DoWork(object sender, DoWorkEventArgs e)
         {
             // Get the BackgroundWorker that raised this event.
             var worker = sender as BackgroundWorker;
-            var catalogs = LoadCatalogs(worker, e);
+            var catalogs = LoadCatalogs(worker);
             e.Result = catalogs;
             RootEntries = catalogs;
         }
@@ -72,7 +71,6 @@ namespace cdeWin
             lblProgressMessage.Text = $"Loading catalog {state.FileCount} of {state.TotalFiles}";
         }
 
-
         private void UpdateUI(Action action)
         {
             if (InvokeRequired)
@@ -92,11 +90,10 @@ namespace cdeWin
             lblProgressMessage.Text = string.Empty;
             Application.DoEvents(); // Make sure controls render before we do something.
             _backgroundWorker.RunWorkerAsync();
-            //_logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
-            //RootEntries = rootEntries.ToList();
+            _logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
         }
 
-        public IList<RootEntry> LoadCatalogs(BackgroundWorker worker, DoWorkEventArgs e)
+        public IList<RootEntry> LoadCatalogs(BackgroundWorker worker)
         {
             var repo = new CatalogRepository(Log.Logger);
             var cacheFiles = repo.GetCacheFileList(_cdeList);
@@ -117,7 +114,7 @@ namespace cdeWin
                     Interlocked.Increment(ref fileCounter);
                     rootEntries.Push(re);
 
-                    worker.ReportProgress((int) ((float) fileCounter / (float) totalFiles * 100),
+                    worker.ReportProgress((int)((float)fileCounter / (float)totalFiles * 100),
                         new LoadingState(fileCounter, totalFiles));
                 });
             return rootEntries.ToList();

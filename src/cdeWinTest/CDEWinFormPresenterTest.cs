@@ -227,7 +227,7 @@ namespace cdeWinTest
         public class CatalogListViewItemActivate : TestCDEWinPresenterBase
         {
             private CDEWinFormPresenter _sutPresenter;
-            readonly IConfiguration _config = Substitute.For<IConfiguration>();
+            private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
             [SetUp]
             public override void RunBeforeEveryTest()

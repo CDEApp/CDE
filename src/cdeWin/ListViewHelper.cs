@@ -371,7 +371,7 @@ namespace cdeWin
             var newSortColumn = ColumnClickIndex;
             if (SortColumn == newSortColumn)
             {
-                ColumnSortOrder = (ColumnSortOrder == SortOrder.Ascending) 
+                ColumnSortOrder = ColumnSortOrder == SortOrder.Ascending
                             ? SortOrder.Descending : SortOrder.Ascending;
             }
             else
@@ -487,7 +487,7 @@ namespace cdeWin
             var mouseLoc = _listView.PointToClient(Control.MousePosition);
             var listNodeAtMousePosition = _listView.GetItemAt(mouseLoc.X, mouseLoc.Y);
             return listNodeAtMousePosition;
-        } 
+        }
 
         public void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
         {

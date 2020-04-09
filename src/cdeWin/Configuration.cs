@@ -37,16 +37,16 @@ namespace cdeWin
 
         public void RestoreFormTopLeft(Form form)
         {
-			if (Left != -1 && Top != -1)
-			{
-				form.StartPosition = FormStartPosition.Manual;
-				form.Location = new Point(Left, Top);
-			}
+            if (Left != -1 && Top != -1)
+            {
+                form.StartPosition = FormStartPosition.Manual;
+                form.Location = new Point(Left, Top);
+            }
         }
 
         public void RestoreForm(Form form)
         {
-	        var restoreRect = new Rectangle(Left, Top, Width, Height);
+            var restoreRect = new Rectangle(Left, Top, Width, Height);
 
             if (Left != -1 && Top != -1 && restoreRect.IsVisibleOnAnyScreen())
             {   // Position sanity check before we allow manual restore.
@@ -108,7 +108,7 @@ namespace cdeWin
                 {
                     saveCol.Width = liveColumn.Width;
                 }
-            } 
+            }
         }
     }
 
@@ -164,20 +164,20 @@ namespace cdeWin
         public DateTime FromHourValue;
         [ProtoMember(24)]
         public DateTime ToHourValue;
-		[ProtoMember(25)]
-		public int PatternHistoryMaximum;
+        [ProtoMember(25)]
+        public int PatternHistoryMaximum;
 
         public Configuration()
         {
         }
     }
 
-	public interface IConfig : IConfigCdeLib
+    public interface IConfig : IConfigCdeLib
     {
-		string DateFormatYMDHMS { get; }
-		string DateCustomFormatYMD { get; }
-		string DateCustomFormatHMS { get; }
-		string ContactEmail { get; }
+        string DateFormatYMDHMS { get; }
+        string DateCustomFormatYMD { get; }
+        string DateCustomFormatHMS { get; }
+        string ContactEmail { get; }
 
         Configuration Active { get; set; }
         void RecordConfig(ICDEWinForm form);
@@ -185,18 +185,18 @@ namespace cdeWin
         int DefaultDirectoryColumnCount { get; }
         int DefaultCatalogColumnCount { get; }
 
-		string Version { get; }
-		string ProductName { get; }
-		void RestoreConfigFormTopLeft(Form form);
-		void RestoreConfigFormBase(Form form);
-		void RestoreConfig(ICDEWinForm form);
+        string Version { get; }
+        string ProductName { get; }
+        void RestoreConfigFormTopLeft(Form form);
+        void RestoreConfigFormBase(Form form);
+        void RestoreConfig(ICDEWinForm form);
 
-	    string ConfigPath { get; }
+        string ConfigPath { get; }
     }
 
     public class Config : IConfig
     {
-		public string DateFormatYMDHMS => "{0:yyyy/MM/dd HH:mm:ss}";
+        public string DateFormatYMDHMS => "{0:yyyy/MM/dd HH:mm:ss}";
         public string DateCustomFormatYMD => "yyyy/MM/dd";
         public string DateCustomFormatHMS => "HH:mm:ss";
         public string ContactEmail => "rluiten@racs.com.au";
@@ -204,8 +204,8 @@ namespace cdeWin
         public string Version { get; }
         public string ProductName { get; }
 
-	    private const string CdeConfigPath = "cde";
-	    private string _configFileName;
+        private const string CdeConfigPath = "cde";
+        private string _configFileName;
         private string _configPath;
         private string _configFullFileName;
 
@@ -215,8 +215,8 @@ namespace cdeWin
             {
                 Left = -1,
                 Top = -1,
-                Width=700,
-                Height=550
+                Width = 700,
+                Height = 550
             },
             SearchResultListView = new ListViewConfig
             {
@@ -252,7 +252,7 @@ namespace cdeWin
                     new ColumnConfig { Name="Available", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Size", Width=70, Alignment = HorizontalAlignment.Right },
                     new ColumnConfig { Name="Created", Width=130 },
-                    new ColumnConfig { Name="Scan Duration", Width=70 }, 
+                    new ColumnConfig { Name="Scan Duration", Width=70 },
                     new ColumnConfig { Name="Catalog File", Width=150 },
                     new ColumnConfig { Name="Description", Width=150 },
                 }
@@ -265,7 +265,7 @@ namespace cdeWin
             FromSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
             ToSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
             NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuration code
-			PatternHistoryMaximum = 50,
+            PatternHistoryMaximum = 50,
         };
 
         public Configuration Loaded;
@@ -277,8 +277,8 @@ namespace cdeWin
             BuildConfigPath(configFileName);
             Loaded = Read(_configFullFileName);
             Active = Loaded ?? Default;
-			ProductName = productName;
-			Version = version;
+            ProductName = productName;
+            Version = version;
         }
 
         private void BuildConfigPath(string configFileName)
@@ -319,11 +319,11 @@ namespace cdeWin
 
         public bool Save(string fileName)
         {   // we do want exception to percolate out if there is a problem.
-	        using (var newFs = File.Open(fileName, FileMode.Create))
-	        {
-		        Write(newFs);
-		        return true;
-	        }
+            using (var newFs = File.Open(fileName, FileMode.Create))
+            {
+                Write(newFs);
+                return true;
+            }
         }
 
         private Configuration Read(Stream input)
@@ -362,21 +362,20 @@ namespace cdeWin
             Active.ToHourValue = form.ToHourValue;
         }
 
-		public void RestoreConfigFormTopLeft(Form form)
-		{
-			Active.MainWindowConfig.RestoreFormTopLeft(form);
-		}
-
-		public void RestoreConfigFormBase(Form form)
+        public void RestoreConfigFormTopLeft(Form form)
         {
-			Active.MainWindowConfig.RestoreForm(form);
+            Active.MainWindowConfig.RestoreFormTopLeft(form);
+        }
+
+        public void RestoreConfigFormBase(Form form)
+        {
+            Active.MainWindowConfig.RestoreForm(form);
         }
 
         public void RestoreConfig(ICDEWinForm form)
         {
             //var a = Default.CatalogListView.Columns.Count;
             //var b = Active.CatalogListView.Columns.Count;
-            
 
             form.DirectoryListViewHelper.SetColumnConfigs(
                 RestoreColumnConfig(Default.DirectoryListView, Active.DirectoryListView));
@@ -462,11 +461,11 @@ namespace cdeWin
             return lvc != null && lvc.Columns != null ? lvc.Columns.Count : 0;
         }
 
-		public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
-		public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
-		public int CompareWithInfo(string s1, string s2)
-		{
-			return MyCompareInfo.Compare(s1, s2, MyCompareOptions);
-		}
+        public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
+        public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
+        public int CompareWithInfo(string s1, string s2)
+        {
+            return MyCompareInfo.Compare(s1, s2, MyCompareOptions);
+        }
     }
 }

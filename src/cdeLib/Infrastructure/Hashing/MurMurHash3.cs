@@ -29,7 +29,7 @@ namespace cdeLib.Infrastructure.Hashing
                 var chunk = reader.ReadBytes(4);
                 while (chunk.Length > 0)
                 {
-                    streamLength += (uint) chunk.Length;
+                    streamLength += (uint)chunk.Length;
                     uint k1;
                     switch (chunk.Length)
                     {
@@ -70,7 +70,7 @@ namespace cdeLib.Infrastructure.Hashing
                             h1 ^= k1;
                             break;
                         case 1:
-                            k1 = (uint) (chunk[0]);
+                            k1 = (uint)(chunk[0]);
                             k1 *= c1;
                             k1 = rotl32(k1, 15);
                             k1 *= c2;

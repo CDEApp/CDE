@@ -180,7 +180,7 @@ namespace cdeLib.Entities
             }
             else
             {
-                Hash.HashB = (ulong) hash;
+                Hash.HashB = (ulong)hash;
             }
 
             IsHashDone = true;
@@ -217,13 +217,12 @@ namespace cdeLib.Entities
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                Log.Logger.Error(ex, "Error getting WriteTime for {0}, using CreationTime instead.",fs.Name);
+                Log.Logger.Error(ex, "Error getting WriteTime for {0}, using CreationTime instead.", fs.Name);
                 Modified = fs.CreationTime;
             }
 
             IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
             IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
-
 
             if (fs is FileInfo info)
             {
@@ -428,7 +427,7 @@ namespace cdeLib.Entities
             // traverse every source entry copy across the meta data that matches on destination entry
             // if it adds value to destination.
             // if destination is not there source not processed.
-            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
+            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
 
             while (dirs.Count > 0)
             {
@@ -476,7 +475,7 @@ namespace cdeLib.Entities
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry, (ICommonEntry) destinationDirEntry));
+                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
                             }
                         }
                     }

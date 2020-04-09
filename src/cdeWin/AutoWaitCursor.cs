@@ -408,7 +408,7 @@ namespace cdeWin
             private void CreateMonitorThread()
             {
                 // Create the monitor thread
-                _callbackThread = new Thread(ThreadCallbackLoop) {Name = "AutoWaitCursorCallback", IsBackground = true};
+                _callbackThread = new Thread(ThreadCallbackLoop) { Name = "AutoWaitCursorCallback", IsBackground = true };
                 // Start the thread
                 _callbackThread.Start();
             }
@@ -478,13 +478,15 @@ namespace cdeWin
                 // See if the application is responding
                 if (delay == TimeSpan.MaxValue)
                 {
-                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
-                        SendMessageTimeoutFlags.SmtoBlock, INFINITE, out result);
+                    /*success = */
+                    SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
+          SendMessageTimeoutFlags.SmtoBlock, INFINITE, out result);
                 }
                 else
                 {
-                    /*success = */SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
-                        SendMessageTimeoutFlags.SmtoBlock, Convert.ToUInt32(delay.TotalMilliseconds), out result);
+                    /*success = */
+                    SendMessageTimeout(windowHandle, WM_NULL, IntPtr.Zero, (IntPtr)null,
+          SendMessageTimeoutFlags.SmtoBlock, Convert.ToUInt32(delay.TotalMilliseconds), out result);
                 }
 
                 return result != IntPtr.Zero;

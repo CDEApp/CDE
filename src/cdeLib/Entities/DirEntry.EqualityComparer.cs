@@ -42,7 +42,6 @@ namespace cdeLib.Entities
         }
     }
 
-
     public class DirEntryEqualityComparer : IEqualityComparer<DirEntry>
     {
         public bool Equals(DirEntry x, DirEntry y)
@@ -74,12 +73,12 @@ namespace cdeLib.Entities
             if (obj.IsHashDone)
             {
                 return (Hash16.EqualityComparer.StaticGetHashCode(obj.Hash) * 31 +
-                        (int) (obj.Size >> 32)) * 31 +
-                       (int) (obj.Size & 0xFFFFFFFF);
+                        (int)(obj.Size >> 32)) * 31 +
+                       (int)(obj.Size & 0xFFFFFFFF);
             }
 
-            return (int) (obj.Size >> 32) * 31 +
-                   (int) (obj.Size & 0xFFFFFFFF);
+            return (int)(obj.Size >> 32) * 31 +
+                   (int)(obj.Size & 0xFFFFFFFF);
         }
     }
 }
