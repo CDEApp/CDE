@@ -33,4 +33,8 @@
     <ProjectReference Include="..\cdeDataStructurev3\cdeDataStructure3.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="NewFolder\" />
+  </ItemGroup>
+
 </Project>

@@ -16,8 +16,6 @@ namespace cdeLibTest.TestHelpers
 
         public static readonly string TestDir = Path.Combine(ProjectPath, "Test");
 
-        public static readonly string TestDir2 = Path.Combine(ProjectPath, "Test2");
-
         public static string RandomString(int length)
         {
             const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";

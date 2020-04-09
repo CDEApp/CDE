@@ -89,7 +89,7 @@ namespace cdeLib.Catalog
 
         public IList<RootEntry> LoadCurrentDirCache()
         {
-            return Load(GetCacheFileList(new[] { "./" }));
+            return Load(GetCacheFileList(new[] {"./"}));
         }
 
         /// <summary>
@@ -145,10 +145,11 @@ namespace cdeLib.Catalog
 
         public async Task Save(RootEntry rootEntry)
         {
+            var fileName = rootEntry.ActualFileName ?? rootEntry.DefaultFileName;
             switch (_serializerProtocol)
             {
                 case SerializerProtocol.Protobuf:
-                    await using (var newFs = File.OpenWrite(rootEntry.DefaultFileName))
+                    await using (var newFs = File.OpenWrite(fileName))
                     {
                         Serializer.Serialize(newFs, rootEntry);
                     }
@@ -158,11 +159,10 @@ namespace cdeLib.Catalog
                     var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
                     var buffer = new byte[maxBytesNeeded];
                     FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                    await File.WriteAllBytesAsync(rootEntry.DefaultFileName, buffer);
+                    await File.WriteAllBytesAsync(fileName, buffer);
                     break;
                 case SerializerProtocol.MessagePack:
-                    await File.WriteAllBytesAsync(rootEntry.DefaultFileName,
-                        MessagePackSerializer.Serialize(rootEntry));
+                    await File.WriteAllBytesAsync(fileName, MessagePackSerializer.Serialize(rootEntry));
                     break;
                 default:
                     throw new Exception("Invalid Serializer Protocol");

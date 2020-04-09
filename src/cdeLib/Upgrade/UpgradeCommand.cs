@@ -8,7 +8,7 @@ namespace cdeLib.Upgrade
     {
     }
 
-    //Can't copy hashes, since we changed hashed alogorithim.
+    // Can't copy hashes, since we changed hashed algorithm to murmur previous was md5.
     public class MapV3ToV4Catalog
     {
         public RootEntry Map(cdeDataStructure3.Entities.RootEntry src)

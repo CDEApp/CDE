@@ -5,8 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using cdeDataStructure3.Exceptions;
 using cdeDataStructure3.Infrastructure;
 using ProtoBuf;
+using Serilog;
 
 namespace cdeDataStructure3.Entities
 {
@@ -94,8 +96,8 @@ namespace cdeDataStructure3.Entities
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
             var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
-            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong)driveInfo.AvailableBytes;
-            if (driveInfo.TotalBytes != null) TotalSpace = (ulong)driveInfo.TotalBytes;
+            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
+            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
             return startPath;
         }
 
@@ -298,22 +300,40 @@ namespace cdeDataStructure3.Entities
 
         public static List<RootEntry> LoadCurrentDirCache()
         {
-            return Load(GetCacheFileList(new[] { "./" }));
+            return Load(GetCacheFileList(new[] {"./"}));
         }
 
         public static List<RootEntry> Load(IEnumerable<string> cdeList)
         {
             var results = new ConcurrentBag<RootEntry>();
-            Parallel.ForEach(cdeList, file =>
+            try
             {
-                var newRootEntry = LoadDirCache(file);
-                if (newRootEntry != null)
+                Parallel.ForEach(cdeList, file =>
                 {
-                    results.Add(newRootEntry);
-                }
+                    try
+                    {
+                        var newRootEntry = LoadDirCache(file);
+                        if (newRootEntry != null)
+                        {
+                            results.Add(newRootEntry);
+                        }
 
-                Console.WriteLine($"{file} read..");
-            });
+                        Console.WriteLine($"{file} read..");
+                    }
+                    catch (Exception ex)
+                    {
+                        throw new CatalogReadException("Error reading file", ex);
+                    }
+                });
+            }
+            catch (AggregateException ex)
+            {
+                foreach (var error in ex.InnerExceptions)
+                {
+                    Log.Logger.Error(error, "Error reading catalog {Message}", error.Message);
+                }
+            }
+
             return results.ToList();
         }
 

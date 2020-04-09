@@ -15,17 +15,19 @@ using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest.Infrastructure
 {
+    [NonParallelizable]
     public class DuplicationTests
     {
         private ILogger _logger;
         private IConfiguration _configuration;
         private IApplicationDiagnostics _applicationDiagnostics;
         private HashHelper _hashHelper;
+        private readonly string _testDir = nameof(DuplicationTests) + Guid.NewGuid();
 
         [TearDown]
         public void Teardown()
         {
-            Directory.Delete(FileHelper.TestDir2, true);
+            Directory.Delete(_testDir, true);
             foreach (var file in Directory.GetFiles(".", "*.cde"))
             {
                 File.Delete(file);
@@ -51,27 +53,27 @@ namespace cdeLibTest.Infrastructure
             const int dataSize = 256 * 1024;
 
             //write 2 duplicate files.
-            Directory.CreateDirectory(FileHelper.TestDir2);
+            Directory.CreateDirectory(_testDir);
 
             var data = new byte[dataSize];
             // 2 dupes
             random.NextBytes(data);
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset1");
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset1dupe");
+            FileHelper.WriteFile(data, _testDir, "testset1");
+            FileHelper.WriteFile(data, _testDir, "testset1dupe");
 
             // 0 dupes
             random.NextBytes(data);
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2");
+            FileHelper.WriteFile(data, _testDir, "testset2");
             // force 2nd file of testset2 to be different at last byte.
             data[dataSize - 1] = (byte)(data[dataSize - 1] ^ 0xFF);
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset2NotDupe");
+            FileHelper.WriteFile(data, _testDir, "testset2NotDupe");
 
             // 3 dupes
             data = new byte[dataSize];
             random.NextBytes(data);
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3");
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3dupe1");
-            FileHelper.WriteFile(data, FileHelper.TestDir2, "testset3dupe2");
+            FileHelper.WriteFile(data, _testDir, "testset3");
+            FileHelper.WriteFile(data, _testDir, "testset3dupe1");
+            FileHelper.WriteFile(data, _testDir, "testset3dupe2");
         }
 
         private class TestDuplication : Duplication
@@ -93,7 +95,7 @@ namespace cdeLibTest.Infrastructure
         {
             var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);
             var rootEntry = new RootEntry(_configuration);
-            rootEntry.PopulateRoot(FileHelper.TestDir2);
+            rootEntry.PopulateRoot(_testDir);
             var rootEntries = new List<RootEntry> { rootEntry };
             await duplication.ApplyHash(rootEntries);
             // all 7 Files are partial hashed.
@@ -124,7 +126,7 @@ namespace cdeLibTest.Infrastructure
         [Test]
         public async Task Can_Acquire_hash_From_File()
         {
-            var fullFileName = Path.Combine(FileHelper.TestDir2, "testset2");
+            var fullFileName = Path.Combine(_testDir, "testset2");
             var hash = await _hashHelper.GetHashResponseFromFile(fullFileName, null);
             Assert.IsNotNull(hash.Hash);
         }

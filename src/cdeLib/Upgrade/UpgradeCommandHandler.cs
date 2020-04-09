@@ -20,17 +20,16 @@ namespace cdeLib.Upgrade
 
         public async Task<Unit> Handle(UpgradeCommand request, CancellationToken cancellationToken)
         {
-            //load catalog
+            // load catalog
             _logger.Debug("Loading catalogs");
-            var existingCatalogs = cdeDataStructure3.Entities.RootEntry.LoadCurrentDirCache();
-
-            foreach (var cat in existingCatalogs)
+            foreach (var cat in cdeDataStructure3.Entities.RootEntry.LoadCurrentDirCache())
             {
-                _logger.Debug("Catalog {name}", cat.ActualFileName);
-                //convert
+                _logger.Debug("Upgrading Catalog {name}", cat.ActualFileName);
+
+                // map to new structure
                 var newRootEntry = _mapV3ToV4Catalog.Map(cat);
 
-                //save
+                // save
                 await _catalogRepository.Save(newRootEntry);
             }
 
