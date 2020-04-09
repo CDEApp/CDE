@@ -62,7 +62,7 @@ namespace cdeLib.Catalog
             catch (Exception ex)
             {
                 _logger.Error(ex, "Error Reading catalogue {FileName}", file);
-                return null;
+                throw;
             }
         }
 
@@ -139,7 +139,7 @@ namespace cdeLib.Catalog
             catch (Exception ex)
             {
                 Log.Logger.Error(ex, "Error Reading file");
-                return null;
+                throw;
             }
         }
 

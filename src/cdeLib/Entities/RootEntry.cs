@@ -5,6 +5,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using cdeLib.Extensions;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;

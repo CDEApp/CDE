@@ -1,19 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace cdeLib
+namespace cdeLib.Extensions
 {
-    public static class IListExtensions
+    public static class ListExtensions
     {
         public static void Sort<T>(this IList<T> list)
         {
-            if (list is List<T>)
+            if (list is List<T> list1)
             {
-                ((List<T>)list).Sort();
+                list1.Sort();
             }
             else
             {
-                List<T> copy = new List<T>(list);
+                var copy = new List<T>(list);
                 copy.Sort();
                 Copy(copy, 0, list, 0, list.Count);
             }
@@ -21,13 +21,13 @@ namespace cdeLib
 
         public static void Sort<T>(this IList<T> list, Comparison<T> comparison)
         {
-            if (list is List<T>)
+            if (list is List<T> list1)
             {
-                ((List<T>)list).Sort(comparison);
+                list1.Sort(comparison);
             }
             else
             {
-                List<T> copy = new List<T>(list);
+                var copy = new List<T>(list);
                 copy.Sort(comparison);
                 Copy(copy, 0, list, 0, list.Count);
             }
@@ -35,13 +35,13 @@ namespace cdeLib
 
         public static void Sort<T>(this IList<T> list, IComparer<T> comparer)
         {
-            if (list is List<T>)
+            if (list is List<T> list1)
             {
-                ((List<T>)list).Sort(comparer);
+                list1.Sort(comparer);
             }
             else
             {
-                List<T> copy = new List<T>(list);
+                var copy = new List<T>(list);
                 copy.Sort(comparer);
                 Copy(copy, 0, list, 0, list.Count);
             }
@@ -50,14 +50,14 @@ namespace cdeLib
         public static void Sort<T>(this IList<T> list, int index, int count,
             IComparer<T> comparer)
         {
-            if (list is List<T>)
+            if (list is List<T> list1)
             {
-                ((List<T>)list).Sort(index, count, comparer);
+                list1.Sort(index, count, comparer);
             }
             else
             {
-                List<T> range = new List<T>(count);
-                for (int i = 0; i < count; i++)
+                var range = new List<T>(count);
+                for (var i = 0; i < count; i++)
                 {
                     range.Add(list[index + i]);
                 }

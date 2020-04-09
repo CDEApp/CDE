@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace cdeWin
 {
-    public class WindowsExplorerUtilities
+    public static class WindowsExplorerUtilities
     {
         // ShowFileProperties from http://stackoverflow.com/a/1936957
         [DllImport("shell32.dll", CharSet = CharSet.Auto)]

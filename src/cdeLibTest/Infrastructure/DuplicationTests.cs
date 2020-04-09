@@ -87,6 +87,7 @@ namespace cdeLibTest.Infrastructure
             }
         }
 
+        //THIS Test sometimes fails, flakey for what reason?
         [Test]
         public async Task CanFindDuplicates()
         {

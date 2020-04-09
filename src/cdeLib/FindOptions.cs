@@ -35,7 +35,7 @@ namespace cdeLib
         public DateTime NotOlderThan { get; set; }
         public int ProgressEnd { get; set; }
         public int ProgressCount => _progressCount[0];
-        private readonly int[] _progressCount = new[] { 0 };
+        private readonly int[] _progressCount = new[] {0};
         public int SkipCount { get; set; }
 
         /// <summary>
@@ -63,14 +63,12 @@ namespace cdeLib
 
         public void Find(IEnumerable<RootEntry> rootEntries)
         {
-            const bool useParallel = true;
-
             if (VisitorFunc == null)
             {
                 return;
             }
 
-            int[] limitCount = { LimitResultCount };
+            int[] limitCount = {LimitResultCount};
             if (ProgressFunc == null || ProgressModifier == 0)
             {
                 // dummy func and huge progressModifier so wont call progressFunc anyway.
@@ -87,22 +85,11 @@ namespace cdeLib
             var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
 
-            if (useParallel)
+            Parallel.ForEach(rootEntries, (rootEntry) =>
             {
-                Parallel.ForEach(rootEntries, (rootEntry) =>
-                {
-                    //TODO: Parallel breaks the progress percentage, need to fix.
-                    EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc);
-                });
-            }
-            else
-            {
-                foreach (var rootEntry in rootEntries)
-                {
-                    EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc, rootEntry);
-                }
-            }
-
+                //TODO: Parallel breaks the progress percentage, need to fix.
+                EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
+            });
             ProgressFunc(_progressCount[0], ProgressEnd); // end of Progress
         }
 
@@ -147,7 +134,7 @@ namespace cdeLib
                         return true;
                     }
 
-                    if (progressCount[0] % ProgressModifier == 0) //wiggle room for multithreaded updates.
+                    if (progressCount[0] % ProgressModifier == 0)
                     {
                         ProgressFunc(progressCount[0], ProgressEnd);
                         // only check for cancel on progress modifier.
@@ -165,8 +152,10 @@ namespace cdeLib
                         }
                     }
                 }
+
                 return true;
             }
+
             return FindFunc;
         }
 

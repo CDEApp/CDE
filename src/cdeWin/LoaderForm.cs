@@ -58,6 +58,11 @@ namespace cdeWin
         private void BackgroundWorker_RunWorkerCompleted(
             object sender, RunWorkerCompletedEventArgs e)
         {
+            if (e.Error != null)
+            {
+                MessageBox.Show($"There was an error loading catalogs {e.Error.Message}");
+            }
+
             Close();
         }
 
@@ -107,16 +112,25 @@ namespace cdeWin
 
             var rootEntries = new ConcurrentStack<RootEntry>();
 
-            Parallel.ForEach(cacheFiles,
-                (cacheFile) =>
-                {
-                    var re = repo.LoadDirCache(cacheFile);
-                    Interlocked.Increment(ref fileCounter);
-                    rootEntries.Push(re);
+            try
+            {
+                Parallel.ForEach(cacheFiles,
+                    (cacheFile) =>
+                    {
+                        var re = repo.LoadDirCache(cacheFile);
+                        Interlocked.Increment(ref fileCounter);
+                        rootEntries.Push(re);
 
-                    worker.ReportProgress((int)((float)fileCounter / (float)totalFiles * 100),
-                        new LoadingState(fileCounter, totalFiles));
-                });
+                        worker.ReportProgress((int) ((float) fileCounter / (float) totalFiles * 100),
+                            new LoadingState(fileCounter, totalFiles));
+                    });
+            }
+            catch (AggregateException ex)
+            {
+                _logger.Error(ex, "Error loading catalogs");
+                throw;
+            }
+
             return rootEntries.ToList();
         }
 
