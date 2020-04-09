@@ -360,7 +360,7 @@ namespace cdeWin
                 throw new InvalidOperationException("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
             }
             _list = list;
-            _listSize = _list == null ? 0 : _list.Count();
+            _listSize = _list?.Count() ?? 0;
             _listView.VirtualListSize = _listSize;
             ForceDraw();
             return _listSize;

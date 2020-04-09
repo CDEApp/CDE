@@ -100,7 +100,8 @@ namespace cdeWin
         private void SetCatalogListView()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = catalogHelper.SetList(new List<RootEntry>(_rootEntries));
+            var list = _rootEntries != null ? new List<RootEntry>(_rootEntries) : null;
+            var count = catalogHelper.SetList(list);
             catalogHelper.SortList();
             _clientForm.SetCatalogsLoadedStatus(count);
             _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
