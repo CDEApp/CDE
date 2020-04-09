@@ -20,7 +20,7 @@ steps:
 - task: CopyFiles@2
   displayName: 'Copy artifacts'
   inputs: 
-    SourceFolder: '$(Build.SourcesDirectory)/publish/cde'
+    SourceFolder: '$(Build.SourcesDirectory)/publish'
     contents: '**\*' 
     targetFolder: $(Build.ArtifactStagingDirectory)/
     cleanTargetFolder: true    
