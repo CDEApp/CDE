@@ -50,7 +50,8 @@ namespace cdeWin
 
         public static void ExplorerOpen(string path)
         {
-            Process.Start(path);
+            var p = new Process {StartInfo = new ProcessStartInfo(path) {UseShellExecute = true}};
+            p.Start();
         }
 
         public static void ExplorerExplore(string path)
