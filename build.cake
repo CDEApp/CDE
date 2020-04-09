@@ -1,4 +1,4 @@
-#tool "nuget:?package=GitVersion.CommandLine&version=4.0.0"
+#tool "nuget:?package=GitVersion.CommandLine&version=5.2.4"
 
 // Alternate version possible using dotnet tool installs but running cake twice to get module isn't worth it.
 // // #module nuget:?package=Cake.DotNetTool.Module&version=0.3.1
@@ -36,6 +36,7 @@ var publishDir = "./publish";
 GitVersion gitVersionInfo;
 string nugetVersion = "1.0.0";
 string informationalVersion = "1.0.0";
+string semver = "1.0.0";
 bool isMasterBranch = false;
 
 try {
@@ -48,6 +49,7 @@ try {
     // Package Version
     nugetVersion = gitVersionInfo.NuGetVersion;
     informationalVersion = gitVersionInfo.InformationalVersion;
+    semver = gitVersionInfo.FullSemVer;
     isMasterBranch = gitVersionInfo.BranchName == "master";
 }
 catch
@@ -70,7 +72,7 @@ Setup(context =>
 {
     if (gitVersionInfo != null)
     {
-        Information("Building Version {0} on {1}", nugetVersion, gitVersionInfo.BranchName);
+        Information("Building Version {0} on {1}", informationalVersion, gitVersionInfo.BranchName);
     }
     else
     {
@@ -86,7 +88,7 @@ Teardown(context =>
 {
     if (gitVersionInfo != null)
     {
-        Information("Finished building Version {0} on {1}", nugetVersion, gitVersionInfo.BranchName);
+        Information("Finished building Version {0} on {1}", informationalVersion, gitVersionInfo.BranchName);
     }
     else
     {
@@ -128,7 +130,7 @@ Task("Build")
            		{
            			Configuration = configuration,
            			ArgumentCustomization = args => args
-                           .Append($"/p:Version={nugetVersion}")
+                           .Append($"/p:Version={semver}")
                            // .Append($"--verbosity normal")
            		});
 	});
@@ -161,13 +163,13 @@ Task("Pack")
     // Create the self-contained packages for each runtime ID defined
     foreach(var rid in GetProjectRuntimeIds(@".\src\cde\cde.csproj"))
     {
-        DoPackage("cde", "netcoreapp3.1", nugetVersion, rid);
+        DoPackage("cde", "netcoreapp3.1", semver, rid);
         
     }
 
 foreach(var rid in GetProjectRuntimeIds(@".\src\cdeWin\cdeWin.csproj"))
     {
-        DoPackage("cdeWin", "netcoreapp3.1", nugetVersion, rid);
+        DoPackage("cdeWin", "netcoreapp3.1", semver, rid);
         
     }
 	
@@ -192,7 +194,7 @@ private void DoPackage(string project, string framework, string version, string 
         OutputDirectory = publishedTo,
         Framework = framework,
 		ArgumentCustomization = args => args
-		    .Append($"/p:Version={nugetVersion}")
+		    .Append($"/p:Version={semver}")
 		    .Append($"--verbosity normal")
 		    .Append($"/p:PublishSingleFile=true") // try it
             .Append($"/p:SelfContained=false") // try it
