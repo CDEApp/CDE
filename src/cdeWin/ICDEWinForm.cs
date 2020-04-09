@@ -69,7 +69,7 @@ namespace cdeWin
         List<string> GetSearchTextBoxAutoComplete();
         void SelectDirectoryPane();
         float DirectoryPanelSplitterRatio { get; set; }
-        string SetDirectoryPathTextbox { get; set; }
+        string SetDirectoryPathTextBox { get; set; }
         TreeNode DirectoryTreeViewSelectedNode { get; set; }
         void SetSearchResultStatus(int i);
         void SetTotalFileEntriesLoadedStatus(int i);
@@ -111,7 +111,7 @@ namespace cdeWin
 
         void MessageBox(string message);
 		void AboutDialog();
-		void Addline(string format, params object[] args);
+		void AddLine(string format, params object[] args);
         ICommonEntry GetSelectedTreeItem();
     }
 }

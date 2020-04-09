@@ -218,6 +218,9 @@ namespace cdeDataStructure3.Entities
         }
 
 
+        /// <summary>
+        /// Check if Path is a bad path
+        /// </summary>
         /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
         public bool IsBadPath()
         {

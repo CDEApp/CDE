@@ -86,7 +86,9 @@ namespace cdeWin
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
-		}
+            this._backgroundWorker = new System.ComponentModel.BackgroundWorker();
+            this._backgroundWorker.WorkerReportsProgress = true;
+        }
 
 		#endregion
 

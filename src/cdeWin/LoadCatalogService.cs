@@ -2,21 +2,29 @@ using System.Collections.Generic;
 using Util;
 using cdeLib;
 using cdeLib.Entities;
+using Serilog;
 
 namespace cdeWin
 {
     public interface ILoadCatalogService
     {
-        List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
+        IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
     }
 
     public class LoadCatalogService : ILoadCatalogService
     {
-        public List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        private readonly ILogger _logger;
+
+        public LoadCatalogService(ILogger logger)
         {
-            List<RootEntry> rootEntries;
+            _logger = logger;
+        }
+
+        public IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        {
+            IList<RootEntry> rootEntries;
             var cachePathList = new[] { ".", config.ConfigPath };
-            var loaderForm = new LoaderForm(config, cachePathList, timeIt);
+            var loaderForm = new LoaderForm(config, cachePathList, timeIt, _logger);
 
             try
             {

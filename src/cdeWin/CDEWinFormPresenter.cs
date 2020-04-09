@@ -23,7 +23,7 @@ namespace cdeWin
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         private readonly ICDEWinForm _clientForm;
-        private List<RootEntry> _rootEntries;
+        private IList<RootEntry> _rootEntries;
         private readonly IConfig _config;
 
         private readonly string[] _directoryVals;
@@ -65,14 +65,14 @@ namespace cdeWin
             InitialiseLog(timeIt);
         }
 
-        private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        private IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
             return _loadCatalogService?.LoadRootEntries(config, timeIt);
         }
 
         private void InitialiseLog(TimeIt timeIt)
         {
-            _clientForm.Addline("{0} v{1}", _config.ProductName, _config.Version);
+            _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
             LogTimeIt(timeIt);
         }
 
@@ -82,10 +82,10 @@ namespace cdeWin
             {
                 foreach (var labelElapsed in timeIt.ElapsedList)
                 {
-                    _clientForm.Addline("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+                    _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
                 }
 
-                _clientForm.Addline("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
+                _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
                     timeIt.TotalMsec);
             }
         }
@@ -100,7 +100,7 @@ namespace cdeWin
         private void SetCatalogListView()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = catalogHelper.SetList(_rootEntries);
+            var count = catalogHelper.SetList(new List<RootEntry>(_rootEntries));
             catalogHelper.SortList();
             _clientForm.SetCatalogsLoadedStatus(count);
             _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
@@ -236,7 +236,7 @@ namespace cdeWin
         public class BgWorkerParam
         {
             public FindOptions Options;
-            public List<RootEntry> RootEntries;
+            public IList<RootEntry> RootEntries;
             public BgWorkerState State;
         }
 
@@ -550,7 +550,7 @@ namespace cdeWin
             _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList());
             directoryHelper.SetList(_directoryList);
             directoryHelper.SortList();
-            _clientForm.SetDirectoryPathTextbox = commonEntry.FullPath;
+            _clientForm.SetDirectoryPathTextBox = commonEntry.FullPath;
         }
 
         public void DirectoryRetrieveVirtualItem()
@@ -711,7 +711,7 @@ namespace cdeWin
             {
                 var firstIndex = indices.First();
                 var dirEntry = _directoryList[firstIndex];
-                _clientForm.SetDirectoryPathTextbox = indicesCount > 1
+                _clientForm.SetDirectoryPathTextBox = indicesCount > 1
                     ? _directoryListCommonEntry.FullPath
                     : _directoryListCommonEntry.MakeFullPath(dirEntry);
             }
@@ -1088,8 +1088,8 @@ namespace cdeWin
             // set root entries.
             SetCatalogListView();
 
-            _clientForm.Addline(string.Empty);
-            _clientForm.Addline("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
+            _clientForm.AddLine(string.Empty);
+            _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
             LogTimeIt(timeIt);
         }
     }

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading;
 using System.Windows.Forms;
+using Serilog;
 
 namespace cdeWin
 {
@@ -26,7 +27,7 @@ namespace cdeWin
             // TODO consider using (var config = new Config()) { } - with Save built in.
             var config = new Config("cdeWinView.cfg", ProductName, Version);
             var mainForm = new CDEWinForm(config);
-            var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService());
+            var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService(Log.Logger));
             config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();

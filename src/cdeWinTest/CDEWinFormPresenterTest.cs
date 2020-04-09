@@ -444,7 +444,7 @@ namespace cdeWinTest
                 List<ICommonEntry> list = null;
                 _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => list = x));
                 var pathTextBoxValue = string.Empty;
-                _mockForm.SetDirectoryPathTextbox = Arg.Do<string>(x => pathTextBoxValue = x);
+                _mockForm.SetDirectoryPathTextBox = Arg.Do<string>(x => pathTextBoxValue = x);
 
                 // ACT
                 _sutPresenter.DirectoryTreeViewAfterSelect();
