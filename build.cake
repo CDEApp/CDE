@@ -41,7 +41,8 @@ bool isMasterBranch = false;
 try {
     // Git Version \\(^_^)//
     gitVersionInfo = GitVersion(new GitVersionSettings {
-        OutputType = GitVersionOutput.Json
+        OutputType = GitVersionOutput.Json,
+        UpdateAssemblyInfo = true
     });
 
     // Package Version
