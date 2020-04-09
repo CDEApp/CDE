@@ -68,7 +68,7 @@ namespace cdeWin
     /// <summary>
     /// Consolidated code for ListView operation in VirtualMode.
     /// Only ListView events required are enabled.
-    /// Several property setters add Event handlers as required so dont call them more than once.
+    /// Several property setters add Event handlers as required so don't call them more than once.
     /// </summary>
     public class ListViewHelper<T> : IListViewHelper<T> where T : class
     {
