@@ -162,6 +162,13 @@ Task("Pack")
     foreach(var rid in GetProjectRuntimeIds(@".\src\cde\cde.csproj"))
     {
         DoPackage("cde", "netcoreapp3.1", nugetVersion, rid);
+        
+    }
+
+foreach(var rid in GetProjectRuntimeIds(@".\src\cdeWin\cdeWin.csproj"))
+    {
+        DoPackage("cdeWin", "netcoreapp3.1", nugetVersion, rid);
+        
     }
 	
 	// // Create a Zip for each runtime for testing
