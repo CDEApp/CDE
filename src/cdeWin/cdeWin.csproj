@@ -5,6 +5,7 @@
     <TargetFramework>netcoreapp3.1</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
+    <ApplicationIcon>CDE-logo-02_GFI.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
