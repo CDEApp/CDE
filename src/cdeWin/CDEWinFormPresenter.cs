@@ -23,7 +23,7 @@ namespace cdeWin
         private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
         private readonly ICDEWinForm _clientForm;
-        private IList<RootEntry> _rootEntries;
+        private List<RootEntry> _rootEntries;
         private readonly IConfig _config;
 
         private readonly string[] _directoryVals;
@@ -65,7 +65,7 @@ namespace cdeWin
             InitialiseLog(timeIt);
         }
 
-        private IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
             return _loadCatalogService?.LoadRootEntries(config, timeIt);
         }
@@ -100,8 +100,7 @@ namespace cdeWin
         private void SetCatalogListView()
         {
             var catalogHelper = _clientForm.CatalogListViewHelper;
-            var list = _rootEntries != null ? new List<RootEntry>(_rootEntries) : null;
-            var count = catalogHelper.SetList(list);
+            var count = catalogHelper.SetList(_rootEntries);
             catalogHelper.SortList();
             _clientForm.SetCatalogsLoadedStatus(count);
             _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());

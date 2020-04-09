@@ -7,7 +7,7 @@ namespace cdeWin
 {
     public interface ILoadCatalogService
     {
-        IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
+        List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
     }
 
     public class LoadCatalogService : ILoadCatalogService
@@ -19,9 +19,9 @@ namespace cdeWin
             _logger = logger;
         }
 
-        public IList<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        public List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
         {
-            IList<RootEntry> rootEntries;
+            List<RootEntry> rootEntries;
             var cachePathList = new[] { ".", config.ConfigPath };
             var loaderForm = new LoaderForm(config, cachePathList, timeIt, _logger);
 

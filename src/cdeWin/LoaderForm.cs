@@ -98,7 +98,7 @@ namespace cdeWin
             _logger.Debug("Time to load catalogs {time}", _timeIt.TotalMsec);
         }
 
-        public IList<RootEntry> LoadCatalogs(BackgroundWorker worker)
+        public List<RootEntry> LoadCatalogs(BackgroundWorker worker)
         {
             var repo = new CatalogRepository(Log.Logger);
             var cacheFiles = repo.GetCacheFileList(_cdeList);
@@ -134,7 +134,7 @@ namespace cdeWin
             return rootEntries.ToList();
         }
 
-        public IList<RootEntry> RootEntries { get; private set; }
+        public List<RootEntry> RootEntries { get; private set; }
     }
 
     public class LoadingState
