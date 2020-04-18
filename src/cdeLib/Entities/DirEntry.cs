@@ -355,6 +355,16 @@ namespace cdeLib.Entities
         [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
+        public RootEntry GetRootEntry()
+        {
+            ICommonEntry entry = this;
+            while (entry.TheRootEntry == null)
+            {
+                entry = entry.ParentCommonEntry;
+            }
+            return entry.TheRootEntry;
+        }
+
         // ReSharper disable MemberCanBePrivate.Global
         [ProtoMember(3, IsRequired = false)]
         [FlatBufferItem(3)]

@@ -13,6 +13,8 @@ namespace cdeLib.Entities
         bool IsDefaultSort { get; set; }
         int PathCompareWithDirTo(ICommonEntry de);
         RootEntry TheRootEntry { get; set; }
+        RootEntry GetRootEntry();
+
         IList<DirEntry> Children { get; }
 
         public void AddChild(DirEntry child);

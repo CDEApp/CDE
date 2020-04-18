@@ -692,6 +692,11 @@ namespace cdeLib.Entities
         [IgnoreMember]
         public RootEntry TheRootEntry { get; set; }
 
+        public RootEntry GetRootEntry()
+        {
+            return this;
+        }
+
         [ProtoMember(15, IsRequired = false)]
         [FlatBufferItem(15)]
         [Key(15)]

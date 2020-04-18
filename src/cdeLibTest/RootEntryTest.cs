@@ -3,8 +3,10 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
+using FluentAssertions;
 using NSubstitute;
 using NUnit.Framework;
+using Shouldly;
 
 namespace cdeLibTest
 {
@@ -122,8 +124,7 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            // Assert.That(volName, Is.EqualTo(@"VolName"));
-            Assert.That(fileName, Is.EqualTo("C.cde"));
+            fileName.ShouldStartWith("C-");
         }
 
         [Test]
@@ -137,7 +138,7 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("D"));
             Assert.That(volRoot, Is.EqualTo(@"D:\"));
-            Assert.That(fileName, Is.EqualTo("D.cde"));
+            fileName.ShouldStartWith("D-");
         }
 
         [Test]
@@ -149,7 +150,8 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder.cde"));
+            fileName.ShouldStartWith("C");
+            fileName.ShouldEndWith("C__MyTestFolder.cde");
         }
 
         [Test]
@@ -161,7 +163,8 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder_Mine.cde"));
+            fileName.ShouldStartWith("C-");
+            fileName.ShouldEndWith("C__MyTestFolder_Mine.cde");
         }
 
         [Test]
@@ -174,7 +177,8 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo("C-C__Stuff_MyTestFolder_Mine.cde"));
+            fileName.ShouldEndWith("C__Stuff_MyTestFolder_Mine.cde");
+            fileName.ShouldStartWith("C");
         }
 
         [Test]
@@ -187,7 +191,8 @@ namespace cdeLibTest
 
             Assert.That(hint, Is.EqualTo("C"));
             Assert.That(volRoot, Is.EqualTo(@"C:\"));
-            Assert.That(fileName, Is.EqualTo("C-C__MyTestFolder_Mine.cde"));
+            Assert.That(fileName.Take(1), Is.EqualTo("C"));
+            fileName.ShouldContain("C__MyTestFolder_Mine.cde");
         }
 
         [Test]
