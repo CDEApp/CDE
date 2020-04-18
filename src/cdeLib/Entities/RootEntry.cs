@@ -157,7 +157,7 @@ namespace cdeLib.Entities
         {
             string fileName;
             volumeRoot = GetDirectoryRoot(scanPath);
-            // volumeName = GetVolumeName(volumeRoot);
+            var volumeName = GetVolumeName(volumeRoot);
             hint = GetDriverLetterHint(scanPath, volumeRoot);
             var filenameSafePath = SafeFileName(scanPath);
             if (IsUnc(scanPath))
@@ -169,11 +169,11 @@ namespace cdeLib.Entities
                 // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (volumeRoot == scanPath)
                 {
-                    fileName = $"{hint}.cde";
+                    fileName = $"{hint}-{volumeName}.cde";
                 }
                 else
                 {
-                    fileName = $"{hint}-{filenameSafePath}.cde";
+                    fileName = $"{hint}-{volumeName}-{filenameSafePath}.cde";
                 }
             }
 
@@ -207,12 +207,12 @@ namespace cdeLib.Entities
 
         // VolumeName is a windows specific thing....
         // QUESTION: delete this field entirely
-        // public virtual string GetVolumeName(string rootPath)
-        // {
-        //     var pathRoot = System.IO.Path.GetPathRoot(rootPath);
-        //     // var driveInfo = new DriveInfo(pathRoot);
-        //     return pathRoot;
-        // }
+        public virtual string GetVolumeName(string rootPath)
+        {
+            var pathRoot = System.IO.Path.GetPathRoot(rootPath);
+            var driveInfo = new DriveInfo(pathRoot);
+            return driveInfo.VolumeLabel;
+        }
 
         #endregion
 
