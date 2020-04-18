@@ -104,8 +104,8 @@ Task("Clean")
     .Does(() =>
     {
         // CleanDirectories(artifactsDirectory);
-        CleanDirectories("./**/obj");
-        CleanDirectories("./**/bin");
+        //CleanDirectories("./**/obj");
+        //CleanDirectories("./**/bin");
         CleanDirectories("./test/**/TestResults");
     }
 );
