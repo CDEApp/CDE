@@ -529,10 +529,8 @@ namespace cdeWin
 
             _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
-            if (pairDirEntry.ParentDE.TheRootEntry != null)
-            {
-                _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.TheRootEntry.DefaultFileName;
-            }
+            //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
+            _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName; 
 
             searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
         }
@@ -745,13 +743,12 @@ namespace cdeWin
 
                 case 3:
                     compareResult = _config.MyCompareInfo.Compare(
-                        pde1.ParentDE.TheRootEntry.ActualFileName,
-                        pde2.ParentDE.TheRootEntry.ActualFileName,
+                        pde1.ParentDE.GetRootEntry().ActualFileName,
+                        pde2.ParentDE.GetRootEntry().ActualFileName,
                         _config.MyCompareOptions);
                     break;
 
                 case 4: // SearchResult ListView Path column
-                    //var compareResult = _myCompareInfo.Compare(pde1.FullPath, pde2.FullPath, MyCompareOptions);
                     compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
                         _config.MyCompareOptions);
                     if (compareResult == 0)
