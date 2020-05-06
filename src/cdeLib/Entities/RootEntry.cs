@@ -210,8 +210,16 @@ namespace cdeLib.Entities
         public virtual string GetVolumeName(string rootPath)
         {
             var pathRoot = System.IO.Path.GetPathRoot(rootPath);
-            var driveInfo = new DriveInfo(pathRoot);
-            return driveInfo.VolumeLabel;
+            try
+            {
+                var driveInfo = new DriveInfo(pathRoot);
+                return driveInfo.VolumeLabel;
+            }
+            catch (ArgumentException ex)
+            {
+                Log.Logger.Warning(ex, "Error Getting Volume Name, its ok we'll continue.");
+                return string.Empty;
+            }
         }
 
         #endregion
