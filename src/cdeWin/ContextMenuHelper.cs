@@ -33,7 +33,7 @@ namespace cdeWin
 
         public EventHandler TreeViewHandler
         {
-            get { return _viewTreeHandler; }
+            get => _viewTreeHandler;
             set
             {
                 _viewTreeHandler = value;
@@ -45,7 +45,7 @@ namespace cdeWin
 
         public EventHandler OpenHandler
         {
-            get { return _openHandler; }
+            get => _openHandler;
             set
             {
                 _openHandler = value;
@@ -57,7 +57,7 @@ namespace cdeWin
 
         public EventHandler ExploreHandler
         {
-            get { return _exploreHandler; }
+            get => _exploreHandler;
             set
             {
                 _exploreHandler = value;
@@ -69,7 +69,7 @@ namespace cdeWin
 
         public EventHandler PropertiesHandler
         {
-            get { return _propertiesHandler; }
+            get => _propertiesHandler;
             set
             {
                 _propertiesHandler = value;
@@ -81,7 +81,7 @@ namespace cdeWin
 
         public EventHandler SelectAllHandler
         {
-            get { return _selectAllHandler; }
+            get => _selectAllHandler;
             set
             {
                 _selectAllHandler = value;
@@ -105,7 +105,7 @@ namespace cdeWin
 
         public EventHandler CopyFullNameHandler
         {
-            get { return _copyFullNameHandler; }
+            get => _copyFullNameHandler;
             set
             {
                 _copyFullNameHandler = value;
@@ -117,7 +117,7 @@ namespace cdeWin
 
         public EventHandler ParentHandler
         {
-            get { return _parentHandler; }
+            get => _parentHandler;
             set
             {
                 _parentHandler = value;
@@ -132,7 +132,7 @@ namespace cdeWin
         /// </summary>
         public CancelEventHandler CancelOpeningEventHandler
         {
-            get { return _cancelOpeningEventHandler; }
+            get => _cancelOpeningEventHandler;
             set
             {
                 _cancelOpeningEventHandler = value;
@@ -197,6 +197,15 @@ namespace cdeWin
             {
                 _parent.Click += _parentHandler;
             }
+
+            _copyFullName.Dispose();
+            _explore.Dispose();
+            _menu.Dispose();
+            _open.Dispose();
+            _parent.Dispose();
+            _properties.Dispose();
+            _selectAll.Dispose();
+            _viewTree.Dispose();
         }
     }
 }

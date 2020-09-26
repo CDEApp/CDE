@@ -4,7 +4,7 @@ namespace cdeWin
 {
     public delegate DateTime AddTimeUnitFunc(DateTime dateTime, int units);
 
-    public class AddTimeUtil
+    public static class AddTimeUtil
     {
         public static DateTime AddMinute(DateTime dateTime, int count)
         {

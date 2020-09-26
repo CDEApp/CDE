@@ -104,7 +104,7 @@ namespace cdeDataStructure3.Entities
             var destinationPath = destination.Path;
 
             //if (sourcePath != destinationPath)
-            if (string.Compare(sourcePath, destinationPath, true) != 0)
+            if (string.Compare(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase) != 0)
             {
                 throw new ArgumentException("source and destination must have same root path.");
             }
@@ -127,7 +127,7 @@ namespace cdeDataStructure3.Entities
                     {
                         var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
 
-                        // find if theres a destination entry available.
+                        // find if there's a destination entry available.
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
                         var destinationDirEntry = baseDestinationEntry.Children

@@ -11,15 +11,9 @@ namespace cdeDataStructure3.Entities
         private CommonEntry _parentDirEntry;
         private IEnumerator<DirEntry> _childEnumerator;
 
-        public PairDirEntry Current
-        {
-            get { return _current; }
-        }
+        public PairDirEntry Current => _current;
 
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        object IEnumerator.Current => Current;
 
         public PairDirEntryEnumerator(RootEntry rootEntry)
         {
