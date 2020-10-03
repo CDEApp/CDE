@@ -217,7 +217,7 @@ namespace cdeWin
         private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
         {
             vals[0] = rootEntry.Path;
-            vals[1] = string.Empty; // rootEntry.VolumeName;
+            vals[1] = rootEntry.VolumeName; // rootEntry.VolumeName;
             vals[2] = rootEntry.DirEntryCount.ToString();
             vals[3] = rootEntry.FileEntryCount.ToString();
             vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();

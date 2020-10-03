@@ -96,6 +96,11 @@ namespace cdeLib.Entities
         [Key(11)]
         public virtual int Version { get; set; } = 3;
 
+        [ProtoMember(18, IsRequired = false)]
+        [FlatBufferItem(18)]
+        [Key(18)]
+        public virtual string VolumeName { get; set; }
+
         [IgnoreMember]
         public string ActualFileName { get; set; }
 
@@ -138,8 +143,9 @@ namespace cdeLib.Entities
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
             var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
-            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong)driveInfo.AvailableBytes;
-            if (driveInfo.TotalBytes != null) TotalSpace = (ulong)driveInfo.TotalBytes;
+            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
+            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
+            VolumeName = this.GetVolumeName(GetDirectoryRoot(pathRoot));
             return startPath;
         }
 
@@ -155,6 +161,7 @@ namespace cdeLib.Entities
 
         public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot)
         {
+            const string ext = ".cde";
             string fileName;
             volumeRoot = GetDirectoryRoot(scanPath);
             var volumeName = GetVolumeName(volumeRoot);
@@ -162,18 +169,18 @@ namespace cdeLib.Entities
             var filenameSafePath = SafeFileName(scanPath);
             if (IsUnc(scanPath))
             {
-                fileName = $"{hint}-{filenameSafePath.Substring(2)}.cde";
+                fileName = $"{hint}-{filenameSafePath.Substring(2)}{ext}";
             }
             else
             {
                 // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
                 if (volumeRoot == scanPath)
                 {
-                    fileName = $"{hint}-{volumeName}.cde";
+                    fileName = $"{hint}-{volumeName}{ext}";
                 }
                 else
                 {
-                    fileName = $"{hint}-{volumeName}-{filenameSafePath}.cde";
+                    fileName = $"{hint}-{volumeName}-{filenameSafePath}{ext}";
                 }
             }
 
@@ -188,16 +195,9 @@ namespace cdeLib.Entities
             return System.IO.Path.GetFullPath(path);
         }
 
-        // UNCLEAR what this is here for? so commenting out for now.
-        // public virtual bool IsPathRooted(string path)
-        // {
-        //     // return Filesystem.Path.IsPathRooted(path);
-        //     return Path.;
-        // }
-
         public virtual bool IsUnc(string path)
         {
-            return System.IO.Path.IsPathFullyQualified(path) && path.StartsWith("\\\\");
+            return System.IO.Path.IsPathFullyQualified(path) && PathIsUnc(path);
         }
 
         public virtual string GetDirectoryRoot(string path)
@@ -205,11 +205,28 @@ namespace cdeLib.Entities
             return Directory.GetDirectoryRoot(path);
         }
 
-        // VolumeName is a windows specific thing....
-        // QUESTION: delete this field entirely
+        private bool PathIsUnc(string path)
+        {
+            return path.StartsWith("\\\\");
+        }
+
+        /// <summary>
+        /// VolumeName is a windows specific thing.
+        /// Ignored if path is unc.
+        /// </summary>
+        /// <param name="rootPath"></param>
+        /// <returns>Volume Name or string.empty when can't</returns>
         public virtual string GetVolumeName(string rootPath)
         {
+            if (PathIsUnc(rootPath))
+            {
+                Log.Logger.Verbose("Cannot obtain Volume Name of path {Path}", rootPath);
+                return string.Empty;
+            }
+
             var pathRoot = System.IO.Path.GetPathRoot(rootPath);
+            if (string.IsNullOrEmpty(pathRoot))
+                return string.Empty;
             try
             {
                 var driveInfo = new DriveInfo(pathRoot);
@@ -262,7 +279,7 @@ namespace cdeLib.Entities
         /// Safe for windows which is the least forgiving filesystem I currently believe.
         /// </summary>
         /// <param name="path"></param>
-        public static string SafeFileName(string path)
+        private static string SafeFileName(string path)
         {
             return path.Replace('\\', '_')
                 .Replace('$', '_')
@@ -323,12 +340,10 @@ namespace cdeLib.Entities
 
         private void AddPathsWithUnauthorisedExceptions(string directory)
         {
-            if (PathsWithUnauthorisedExceptions == null)
-            {
-                PathsWithUnauthorisedExceptions = new List<string>();
-            }
+            PathsWithUnauthorisedExceptions ??= new List<string>();
             PathsWithUnauthorisedExceptions.Add(directory);
         }
+
         [IgnoreMember]
         public int EntryCountThreshold { get; set; }
 
@@ -416,7 +431,7 @@ namespace cdeLib.Entities
             return config.CompareWithInfo(Description, re.Description);
         }
 
-        //direntry import
+        // direntry import
         [IgnoreMember]
         public virtual DateTime Modified
         {
@@ -440,6 +455,7 @@ namespace cdeLib.Entities
         public virtual long ModifiedTicks { get; set; }
 
         #region BitFields based properties
+
         [IgnoreMember]
         public bool IsDirectory
         {
@@ -456,6 +472,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsModifiedBad
         {
@@ -472,6 +489,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsReparsePoint
         {
@@ -488,6 +506,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsHashDone
         {
@@ -504,6 +523,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsPartialHash
         {
@@ -520,6 +540,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsDefaultSort
         {
@@ -536,6 +557,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         #endregion
 
         /// <summary>
@@ -559,7 +581,7 @@ namespace cdeLib.Entities
         // For testing convenience.
         public void SetHash(int hash)
         {
-            Hash.HashB = (ulong)hash;
+            Hash.HashB = (ulong) hash;
             IsHashDone = true;
         }
 
@@ -598,14 +620,17 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsDirectory && !de.IsDirectory)
             {
                 return -1; // this before de
             }
+
             if (!IsDirectory && de.IsDirectory)
             {
                 return 1; // this after de
             }
+
             //if (IsDirectory && de.IsDirectory)
             //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
             //    // really cheap to calculate dir size.... i think i should fill it in ?
@@ -613,11 +638,7 @@ namespace cdeLib.Entities
             //}
             // the cast breaks this.
             var sizeCompare = Size.CompareTo(de.Size);
-            if (sizeCompare == 0)
-            {
-                return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
-            }
-            return sizeCompare;
+            return sizeCompare == 0 ? MyCompareInfo.Compare(Path, de.Path, MyCompareOptions) : sizeCompare;
         }
 
         public int ModifiedCompareTo(ICommonEntry de)
@@ -626,18 +647,22 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsModifiedBad && !de.IsModifiedBad)
             {
                 return -1; // this before de
             }
+
             if (!IsModifiedBad && de.IsModifiedBad)
             {
                 return 1; // this after de
             }
+
             if (IsModifiedBad && de.IsModifiedBad)
             {
                 return 0;
             }
+
             return DateTime.Compare(Modified, de.Modified);
         }
 
@@ -648,14 +673,17 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsDirectory && !de.IsDirectory)
             {
                 return -1; // this before de
             }
+
             if (!IsDirectory && de.IsDirectory)
             {
                 return 1; // this after de
             }
+
             return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
         }
 
@@ -679,19 +707,23 @@ namespace cdeLib.Entities
                         {
                             dirEntry.PathProblem = PathProblem;
                         }
+
                         ++dirEntryCount;
                     }
                     else
                     {
                         //dirEntry.PathProblem = dirEntry.IsBadPath();
                     }
+
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
                     childrenDirEntryCount += dirEntry.DirEntryCount;
                 }
+
                 fileEntryCount += Children.Count - dirEntryCount;
                 dirEntryCount += childrenDirEntryCount;
             }
+
             FileEntryCount = fileEntryCount;
             DirEntryCount = dirEntryCount;
             Size = size;
@@ -749,7 +781,7 @@ namespace cdeLib.Entities
 
         public void TraverseTreePair(TraverseFunc func)
         {
-            TraverseTreePair(new List<ICommonEntry> { this }, func);
+            TraverseTreePair(new List<ICommonEntry> {this}, func);
         }
 
         /// <summary>
@@ -758,17 +790,25 @@ namespace cdeLib.Entities
         /// <param name="rootEntries">Entries to traverse</param>
         /// <param name="traverseFunc">TraversalFunc</param>
         /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
-        public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc, RootEntry catalogRootEntry = null)
+        public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc,
+            RootEntry catalogRootEntry = null)
         {
-            if (traverseFunc == null) { return; } // nothing to do.
+            if (traverseFunc == null)
+            {
+                return;
+            } // nothing to do.
 
             var funcContinue = true;
-            var dirs = new Stack<ICommonEntry>(rootEntries.Reverse()); // Reverse to keep same traversal order as prior code.
+            var dirs = new Stack<ICommonEntry>(rootEntries
+                .Reverse()); // Reverse to keep same traversal order as prior code.
 
             while (funcContinue && dirs.Count > 0)
             {
                 var commonEntry = dirs.Pop();
-                if (commonEntry.Children == null) { continue; } // empty directories may not have Children initialized.
+                if (commonEntry.Children == null)
+                {
+                    continue;
+                } // empty directories may not have Children initialized.
 
                 foreach (var dirEntry in commonEntry.Children)
                 {
@@ -776,6 +816,7 @@ namespace cdeLib.Entities
                     {
                         commonEntry.TheRootEntry = catalogRootEntry;
                     }
+
                     funcContinue = traverseFunc(commonEntry, dirEntry);
                     if (!funcContinue)
                     {
@@ -811,7 +852,7 @@ namespace cdeLib.Entities
             // traverse every source entry copy across the meta data that matches on destination entry
             // if it adds value to destination.
             // if destination is not there source not processed.
-            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
+            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
 
             while (dirs.Count > 0)
             {
@@ -859,7 +900,8 @@ namespace cdeLib.Entities
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, sourceDirEntry as ICommonEntry, destinationDirEntry as ICommonEntry));
+                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry,
+                                    (ICommonEntry) destinationDirEntry));
                             }
                         }
                     }
@@ -882,14 +924,12 @@ namespace cdeLib.Entities
             {
                 activatedDirEntryList.Add(entry);
             }
+
             activatedDirEntryList.Reverse(); // list now from root to this.
             return activatedDirEntryList;
         }
 
-        public bool ExistsOnFileSystem()
-        {   // CommonEntry is always a directory ? - not really.
-            return System.IO.Directory.Exists(FullPath);
-        }
+        public bool ExistsOnFileSystem() => Directory.Exists(FullPath);
 
         /// <summary>
         /// Is bad path
