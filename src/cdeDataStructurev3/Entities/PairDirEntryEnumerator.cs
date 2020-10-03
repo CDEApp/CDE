@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace cdeDataStructure3.Entities
@@ -10,6 +11,7 @@ namespace cdeDataStructure3.Entities
         private Stack<CommonEntry> _entries;
         private CommonEntry _parentDirEntry;
         private IEnumerator<DirEntry> _childEnumerator;
+        private bool isDisposed;
 
         public PairDirEntry Current => _current;
 
@@ -40,10 +42,24 @@ namespace cdeDataStructure3.Entities
             return entries;
         }
 
+
+
         public void Dispose()
         {
-            _current = null;
-            _entries = null;
+           Dispose(true);
+           GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed) return;
+            if (disposing)
+            {
+                _current = null;
+                _entries = null;
+            }
+
+            isDisposed = true;
         }
 
         public bool MoveNext()

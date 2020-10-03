@@ -1,6 +1,6 @@
 ﻿using MediatR;
 
-namespace cdeLib.Cache
+namespace cdeLib.Catalog
 {
     public class CreateCacheCommand : IRequest
     {
@@ -10,5 +10,6 @@ namespace cdeLib.Cache
         }
 
         public string Path { get; }
+        public string Description { get; set; }
     }
 }

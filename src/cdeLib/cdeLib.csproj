@@ -11,6 +11,7 @@
     <PackageReference Include="FlatSharp" Version="3.3.1" />
     <PackageReference Include="FlatSharp.Runtime" Version="3.3.1" />
     <PackageReference Include="FlatSharp.Unsafe" Version="3.3.1" />
+    <PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
     <PackageReference Include="MediatR" Version="8.1.0" />
     <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="5.3.0" />
     <PackageReference Include="MessagePack" Version="2.2.60" />

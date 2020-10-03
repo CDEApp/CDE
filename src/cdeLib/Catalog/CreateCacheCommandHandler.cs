@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Threading;
 using System.Threading.Tasks;
-using cdeLib.Catalog;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
+using JetBrains.Annotations;
 using MediatR;
 
-namespace cdeLib.Cache
+namespace cdeLib.Catalog
 {
+    [UsedImplicitly]
     public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
     {
         private readonly IConfiguration _configuration;
@@ -45,11 +46,15 @@ namespace cdeLib.Cache
 
                 re.SortAllChildrenByPath();
                 re.SetSummaryFields();
+                if (!string.IsNullOrEmpty(request.Description))
+                {
+                    re.Description = request.Description;
+                }
                 await _catalogRepository.Save(re);
                 var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
-                Console.WriteLine($"Scanned Path {re.Path}");
+                Console.WriteLine($"Scanned path {re.Path}");
                 Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-                Console.WriteLine($"Saved Scanned Path {re.DefaultFileName}");
+                Console.WriteLine($"Saved scanned path {re.DefaultFileName}");
                 Console.WriteLine(
                     $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0}");
             }

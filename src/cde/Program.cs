@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
 using cdeLib;
-using cdeLib.Cache;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Entities;
@@ -57,7 +56,7 @@ namespace cde
                         , FindPathOptions,
                         UpgradeOptions, UpdateOptions>(
                         args)
-                    .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
+                    .WithParsed<ScanOptions>(opts => CreateCache(opts))
                     .WithParsed<FindOptions>(opts =>
                     {
                         findService.StaticFind(opts.Value, "--find",
@@ -192,9 +191,9 @@ namespace cde
             task.Wait();
         }
 
-        public static int CreateCache(string path)
+        public static int CreateCache(ScanOptions opts)
         {
-            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(path)).ConfigureAwait(false));
+            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(opts.Path){Description = opts.Description}).ConfigureAwait(false));
             task.Wait();
             return 0;
         }

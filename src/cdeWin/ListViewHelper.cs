@@ -72,9 +72,12 @@ namespace cdeWin
     /// </summary>
     public class ListViewHelper<T> : IListViewHelper<T> where T : class
     {
+        private bool isDisposed;
         private int _listSize;
         private List<T> _list;
+
         private readonly DoubleBufferListView _listView;
+
         // very simple caching of ListViewItem's, just remembers the previous index - its a big win for how simple.
         private ListViewItem _cacheListViewItem;
         private int _cacheIndex;
@@ -83,6 +86,7 @@ namespace cdeWin
         /// Used by virtual mode ListView
         /// </summary>
         public int RetrieveItemIndex { get; set; }
+
         /// <summary>
         /// Used by virtual mode ListView
         /// </summary>
@@ -120,7 +124,8 @@ namespace cdeWin
         {
             get => _retrieveVirtualItem;
             set
-            {   // not adding retrieve virtual item events here as _list may not be set
+            {
+                // not adding retrieve virtual item events here as _list may not be set
                 // was getting some odd errors earlier, this may address the null 
                 // ListViewItem we got outside of visual studio in release builds.
                 _retrieveVirtualItem = value;
@@ -132,6 +137,7 @@ namespace cdeWin
                 }
             }
         }
+
         private EventAction _retrieveVirtualItem;
 
         /// <summary>
@@ -150,6 +156,7 @@ namespace cdeWin
                 }
             }
         }
+
         private EventAction _columnClick;
 
         /// <summary>
@@ -168,6 +175,7 @@ namespace cdeWin
                 }
             }
         }
+
         private EventAction _itemActivate;
 
         public ContextMenuStrip ContextMenu
@@ -183,6 +191,7 @@ namespace cdeWin
                 }
             }
         }
+
         private ContextMenuStrip _contextMenu;
 
         /// <summary>
@@ -202,6 +211,7 @@ namespace cdeWin
                 }
             }
         }
+
         private EventAction _itemSelectionChanged;
 
         public bool MultiSelect
@@ -233,8 +243,10 @@ namespace cdeWin
                 RenderItem = null;
                 _retrieveVirtualItem();
                 _cacheIndex = itemIndex;
-                _cacheListViewItem = RenderItem ?? throw new Exception("ListViewItem not retrieved... for " + typeof(T));
+                _cacheListViewItem =
+                    RenderItem ?? throw new Exception("ListViewItem not retrieved... for " + typeof(T));
             }
+
             e.Item = _cacheListViewItem;
         }
 
@@ -259,7 +271,8 @@ namespace cdeWin
             ListViewItemSelectionChanged();
         }
 
-        private void MyVirtualItemsSelectionRangeChanged(object sender, ListViewVirtualItemsSelectionRangeChangedEventArgs e)
+        private void MyVirtualItemsSelectionRangeChanged(object sender,
+            ListViewVirtualItemsSelectionRangeChangedEventArgs e)
         {
             ListViewItemSelectionChanged();
         }
@@ -332,6 +345,7 @@ namespace cdeWin
                 minimumItem.Focused = true;
                 minimumItem.EnsureVisible();
             }
+
             _listView.Select();
         }
 
@@ -357,8 +371,10 @@ namespace cdeWin
         {
             if (_columnClick != null && ColumnSortCompare == null)
             {
-                throw new InvalidOperationException("ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
+                throw new InvalidOperationException(
+                    "ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
             }
+
             _list = list;
             _listSize = _list?.Count() ?? 0;
             _listView.VirtualListSize = _listSize;
@@ -372,13 +388,15 @@ namespace cdeWin
             if (SortColumn == newSortColumn)
             {
                 ColumnSortOrder = ColumnSortOrder == SortOrder.Ascending
-                            ? SortOrder.Descending : SortOrder.Ascending;
+                    ? SortOrder.Descending
+                    : SortOrder.Ascending;
             }
             else
             {
                 SortColumn = newSortColumn;
                 ColumnSortOrder = SortOrder.Ascending;
             }
+
             SortList();
         }
 
@@ -398,9 +416,9 @@ namespace cdeWin
         private void SetColumnSortArrow()
         {
             _listView.SetSortIcon(SortColumn,
-                                  (ColumnSortOrder == SortOrder.Ascending)
-                                      ? SortOrder.Descending
-                                      : SortOrder.Ascending); // column state is inverted some how ?
+                (ColumnSortOrder == SortOrder.Ascending)
+                    ? SortOrder.Descending
+                    : SortOrder.Ascending); // column state is inverted some how ?
         }
 
         public void ActionOnSelectedItems(Action<IEnumerable<T>> action)
@@ -433,6 +451,7 @@ namespace cdeWin
             {
                 return null;
             }
+
             var itemIndex = _listView.SelectedIndices[0];
             var item = _list[itemIndex];
             return item;
@@ -454,6 +473,7 @@ namespace cdeWin
             {
                 return null;
             }
+
             var item = _list[AfterActivateIndex];
             AfterActivateIndex = -1;
             return item;
@@ -461,39 +481,55 @@ namespace cdeWin
 
         public void Dispose()
         {
-            if (_retrieveVirtualItem != null)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed) return;
+
+            if (disposing)
             {
-                _listView.CacheVirtualItems -= MyCacheVirtualItems;
-                _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
+                if (_retrieveVirtualItem != null)
+                {
+                    _listView.CacheVirtualItems -= MyCacheVirtualItems;
+                    _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
+                }
+
+                if (_columnClick != null)
+                {
+                    _listView.ColumnClick -= MyColumnClick;
+                }
+
+                if (_itemActivate != null)
+                {
+                    _listView.ItemActivate -= MyItemActivate;
+                }
+
+                _contextMenu?.Dispose();
+                if (_itemSelectionChanged != null)
+                {
+                    _listView.SelectedIndexChanged -= MySelectedIndexChanged;
+                    _listView.VirtualItemsSelectionRangeChanged -= MyVirtualItemsSelectionRangeChanged;
+                }
             }
-            if (_columnClick != null)
-            {
-                _listView.ColumnClick -= MyColumnClick;
-            }
-            if (_itemActivate != null)
-            {
-                _listView.ItemActivate -= MyItemActivate;
-            }
-            _contextMenu?.Dispose();
-            if (_itemSelectionChanged != null)
-            {
-                _listView.SelectedIndexChanged -= MySelectedIndexChanged;
-                _listView.VirtualItemsSelectionRangeChanged -= MyVirtualItemsSelectionRangeChanged;
-            }
+
+            isDisposed = true;
         }
 
         private ListViewItem GetListViewItemAtMouse()
         {
             var mouseLoc = _listView.PointToClient(Control.MousePosition);
-            var listNodeAtMousePosition = _listView.GetItemAt(mouseLoc.X, mouseLoc.Y);
-            return listNodeAtMousePosition;
+            return _listView.GetItemAt(mouseLoc.X, mouseLoc.Y);
         }
 
         public void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
         {
             var listViewItem = GetListViewItemAtMouse();
             if (listViewItem == null)
-            {   // cancel context menu if no list view item at right click.
+            {
+                // cancel context menu if no list view item at right click.
                 e.Cancel = true;
             }
         }

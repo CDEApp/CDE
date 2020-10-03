@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace cdeDataStructure3.Entities
@@ -7,6 +8,7 @@ namespace cdeDataStructure3.Entities
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
+        private bool isDisposed;
         private Stack<CommonEntry> _entries;
         private IEnumerator<DirEntry> _childEnumerator;
 
@@ -22,7 +24,7 @@ namespace cdeDataStructure3.Entities
 
         public DirEntryEnumerator(RootEntry rootEntry)
         {
-            _rootEntries = new List<RootEntry> { rootEntry };
+            _rootEntries = new List<RootEntry> {rootEntry};
             Reset();
         }
 
@@ -42,13 +44,24 @@ namespace cdeDataStructure3.Entities
                     entries.Push(re);
                 }
             }
+
             return entries;
         }
 
         public void Dispose()
         {
-            _current = null;
-            _entries = null;
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed) return;
+            if (disposing)
+            {
+                _childEnumerator?.Dispose();
+                isDisposed = true;
+            }
         }
 
         public bool MoveNext()

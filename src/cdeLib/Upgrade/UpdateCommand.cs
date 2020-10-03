@@ -15,7 +15,7 @@ namespace cdeLib.Upgrade
     public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
     {
         private readonly ICatalogRepository _catalogRepository;
-        private ILogger _logger;
+        private readonly ILogger _logger;
 
         public UpdateCommandHandler(ICatalogRepository catalogRepository, ILogger logger)
         {

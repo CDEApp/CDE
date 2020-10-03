@@ -1,6 +1,7 @@
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
+using ObjectDisposedException = System.ObjectDisposedException;
 
 namespace cdeWin
 {
@@ -20,16 +21,22 @@ namespace cdeWin
     public class ContextMenuHelper : IDisposable
     {
         // Fields set on ContextMenuStrip remove space for icons on left of menu for items.
-        private readonly ContextMenuStrip _menu = new ContextMenuStrip { ShowCheckMargin = false, ShowImageMargin = false };
+        private readonly ContextMenuStrip _menu = new ContextMenuStrip
+            {ShowCheckMargin = false, ShowImageMargin = false};
 
+        private bool isDisposed;
         private readonly ToolStripMenuItem _viewTree = new ToolStripMenuItem("View Tree");
         private readonly ToolStripMenuItem _open = new ToolStripMenuItem("Open");
         private readonly ToolStripMenuItem _explore = new ToolStripMenuItem("Explore");
         private readonly ToolStripMenuItem _properties = new ToolStripMenuItem("Properties"); // like explorer
+
         private readonly ToolStripMenuItem _selectAll = new ToolStripMenuItem("Select All");
+
         //private readonly ToolStripMenuItem _copyBaseName = new ToolStripMenuItem("Copy Base Names");
         private readonly ToolStripMenuItem _copyFullName = new ToolStripMenuItem("Copy Full Path to Clipboard");
-        private readonly ToolStripMenuItem _parent = new ToolStripMenuItem("Parent"); // for Directory listview parent ? not useful SearchResult
+
+        private readonly ToolStripMenuItem
+            _parent = new ToolStripMenuItem("Parent"); // for Directory listview parent ? not useful SearchResult
 
         public EventHandler TreeViewHandler
         {
@@ -41,6 +48,7 @@ namespace cdeWin
                 _menu.Items.Add(_viewTree);
             }
         }
+
         private EventHandler _viewTreeHandler;
 
         public EventHandler OpenHandler
@@ -53,6 +61,7 @@ namespace cdeWin
                 _menu.Items.Add(_open);
             }
         }
+
         private EventHandler _openHandler;
 
         public EventHandler ExploreHandler
@@ -65,6 +74,7 @@ namespace cdeWin
                 _menu.Items.Add(_explore);
             }
         }
+
         private EventHandler _exploreHandler;
 
         public EventHandler PropertiesHandler
@@ -77,6 +87,7 @@ namespace cdeWin
                 _menu.Items.Add(_properties);
             }
         }
+
         private EventHandler _propertiesHandler;
 
         public EventHandler SelectAllHandler
@@ -89,6 +100,7 @@ namespace cdeWin
                 _menu.Items.Add(_selectAll);
             }
         }
+
         private EventHandler _selectAllHandler;
 
         //public EventHandler CopyBaseNameHandler
@@ -113,6 +125,7 @@ namespace cdeWin
                 _menu.Items.Add(_copyFullName);
             }
         }
+
         private EventHandler _copyFullNameHandler;
 
         public EventHandler ParentHandler
@@ -125,6 +138,7 @@ namespace cdeWin
                 _menu.Items.Add(_parent);
             }
         }
+
         private EventHandler _parentHandler;
 
         /// <summary>
@@ -139,10 +153,12 @@ namespace cdeWin
                 _menu.Opening += value;
             }
         }
+
         private CancelEventHandler _cancelOpeningEventHandler;
 
         public ContextMenuHelper()
-        {   // set all keys here rather than in individual setters for handlers.
+        {
+            // set all keys here rather than in individual setters for handlers.
             _viewTree.ShortcutKeyDisplayString = "Enter"; // for documentation of ItemActivate which is Enter.
             _open.ShortcutKeys = Keys.Control | Keys.Enter;
             _explore.ShortcutKeys = Keys.Control | Keys.E;
@@ -160,52 +176,72 @@ namespace cdeWin
                 menuItem.ShowShortcutKeys = true;
                 menuItem.DisplayStyle = ToolStripItemDisplayStyle.Text;
             }
+
             return _menu;
         }
 
         public void Dispose()
         {
-            if (_viewTreeHandler != null)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (isDisposed) return;
+
+            if (disposing)
             {
-                _viewTree.Click -= _viewTreeHandler;
-            }
-            if (_openHandler != null)
-            {
-                _open.Click -= _openHandler;
-            }
-            if (_exploreHandler != null)
-            {
-                _explore.Click -= _exploreHandler;
-            }
-            if (_propertiesHandler != null)
-            {
-                _properties.Click -= _propertiesHandler;
-            }
-            if (_selectAllHandler != null)
-            {
-                _selectAll.Click -= _selectAllHandler;
-            }
-            //if (_copyBaseNameHandler != null)
-            //{
-            //    _copyBaseName.Click -= _copyBaseNameHandler;
-            //}
-            if (_copyFullNameHandler != null)
-            {
-                _copyFullName.Click -= _copyFullNameHandler;
-            }
-            if (_parentHandler != null)
-            {
-                _parent.Click += _parentHandler;
+                if (_viewTreeHandler != null)
+                {
+                    _viewTree.Click -= _viewTreeHandler;
+                }
+
+                if (_openHandler != null)
+                {
+                    _open.Click -= _openHandler;
+                }
+
+                if (_exploreHandler != null)
+                {
+                    _explore.Click -= _exploreHandler;
+                }
+
+                if (_propertiesHandler != null)
+                {
+                    _properties.Click -= _propertiesHandler;
+                }
+
+                if (_selectAllHandler != null)
+                {
+                    _selectAll.Click -= _selectAllHandler;
+                }
+
+                //if (_copyBaseNameHandler != null)
+                //{
+                //    _copyBaseName.Click -= _copyBaseNameHandler;
+                //}
+                if (_copyFullNameHandler != null)
+                {
+                    _copyFullName.Click -= _copyFullNameHandler;
+                }
+
+                if (_parentHandler != null)
+                {
+                    _parent.Click += _parentHandler;
+                }
+
+                _copyFullName.Dispose();
+                _explore.Dispose();
+                _menu.Dispose();
+                _open.Dispose();
+                _parent.Dispose();
+                _properties.Dispose();
+                _selectAll.Dispose();
+                _viewTree.Dispose();
             }
 
-            _copyFullName.Dispose();
-            _explore.Dispose();
-            _menu.Dispose();
-            _open.Dispose();
-            _parent.Dispose();
-            _properties.Dispose();
-            _selectAll.Dispose();
-            _viewTree.Dispose();
+            isDisposed = true;
         }
     }
 }

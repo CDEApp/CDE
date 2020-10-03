@@ -45,6 +45,7 @@ namespace cdeLib
         {
             _current = null;
             _entries = null;
+            _childEnumerator?.Dispose();
         }
 
         public bool MoveNext()

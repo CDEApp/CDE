@@ -66,6 +66,8 @@ namespace cdeWin
             Close();
         }
 
+
+
         // This event handler updates the progress bar.
         private void BackgroundWorker_ProgressChanged(object sender,
             ProgressChangedEventArgs e)
