@@ -19,7 +19,7 @@
       <PackageReference Include="CommandLineParser" Version="2.8.0" />
       <PackageReference Include="MediatR" Version="8.1.0" />
       <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="5.3.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="1.0.566">
+      <PackageReference Include="Meziantou.Analyzer" Version="1.0.569">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>

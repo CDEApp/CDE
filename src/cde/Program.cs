@@ -78,21 +78,21 @@ namespace cde
                         findService.StaticFind(opts.Value, "--greppath",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
-                    .WithParsed<ReplGrepPathOptions>(opts => { FindRepl(FindService.ParamGreppath, opts.Value); })
-                    .WithParsed<ReplGrepOptions>(opts => { FindRepl(FindService.ParamGrep, opts.Value); })
-                    .WithParsed<ReplFindOptions>(opts => { FindRepl(FindService.ParamFind, opts.Value); })
-                    .WithParsed<HashOptions>(opts => { HashCatalog(); })
-                    .WithParsed<DupesOptions>(opts => { FindDupes(); })
-                    .WithParsed<TreeDumpOptions>(opts => { PrintPathsHaveHashEnumerator(); })
+                    .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGreppath, opts.Value))
+                    .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
+                    .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
+                    .WithParsed<HashOptions>(opts => HashCatalog())
+                    .WithParsed<DupesOptions>(opts => FindDupes())
+                    .WithParsed<TreeDumpOptions>(opts => PrintPathsHaveHashEnumerator())
                     .WithParsed<LoadWaitOptions>(opts =>
                     {
                         _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
                         Console.ReadLine();
                     })
-                    .WithParsed<ReplOptions>(opts => { InvokeRepl(); })
-                    .WithParsed<PopulousFoldersOptions>(opts => { FindPopulous(opts.Count); })
-                    .WithParsed<UpgradeOptions>(opts => { Upgrade(); })
-                    .WithNotParsed(errs => { Environment.Exit(1); });
+                    .WithParsed<ReplOptions>(opts => InvokeRepl())
+                    .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
+                    .WithParsed<UpgradeOptions>(opts => Upgrade())
+                    .WithNotParsed(errs => Environment.Exit(1));
                 return 0;
             }
         }

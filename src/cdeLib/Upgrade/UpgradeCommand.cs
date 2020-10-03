@@ -8,11 +8,11 @@ namespace cdeLib.Upgrade
     {
     }
 
-    // Can't copy hashes, since we changed hashed algorithm to murmur previous was md5.
     public class MapV3ToV4Catalog
     {
         public RootEntry Map(cdeDataStructure3.Entities.RootEntry src)
         {
+            // Can't copy hashes, since the hashed algorithm changed to murmur previous was md5.
             var newRootEntry = new RootEntry
             {
                 ActualFileName = src.ActualFileName,
@@ -24,12 +24,7 @@ namespace cdeLib.Upgrade
                 TotalSpace = src.TotalSpace,
                 ScanStartUTC = src.ScanStartUTC,
                 ScanEndUTC = src.ScanEndUTC,
-                BitFields = (Flags)(byte)src.BitFields,
-                // Hash = new Hash16
-                // {
-                //     HashA = src.Hash.HashA,
-                //     HashB = src.Hash.HashB
-                // },
+                BitFields = (Flags) (byte) src.BitFields,
                 Modified = src.Modified,
                 Size = src.Size,
                 Path = src.Path
@@ -47,15 +42,11 @@ namespace cdeLib.Upgrade
 
         private static DirEntry MapDirEntry(cdeDataStructure3.Entities.DirEntry src)
         {
+            // Can't copy hashes, since the hashed algorithm changed to murmur previous was md5.
             var newDirEntry = new DirEntry
             {
                 Modified = src.Modified,
-                // Hash = new Hash16
-                // {
-                //     HashA = src.Hash.HashA,
-                //     HashB = src.Hash.HashB
-                // },
-                BitFields = (Flags)(byte)src.BitFields,
+                BitFields = (Flags) (byte) src.BitFields,
                 Size = src.Size
             };
             newDirEntry.SetPath(src.Path);

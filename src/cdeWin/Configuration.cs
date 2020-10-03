@@ -15,13 +15,13 @@ namespace cdeWin
     public class WindowConfig
     {
         /// <summary>
-        /// -1 means dont set this value. 
+        /// -1 means don't set this value.
         /// </summary>
         [ProtoMember(1)]
         public int Left;
 
         /// <summary>
-        /// -1 means dont set this value. 
+        /// -1 means don't set this value.
         /// </summary>
         [ProtoMember(2)]
         public int Top;
@@ -290,10 +290,7 @@ namespace cdeWin
             _configFullFileName = Path.Combine(_configPath, _configFileName);
         }
 
-        public string ConfigPath
-        {
-            get { return _configPath; }
-        }
+        public string ConfigPath => _configPath;
 
         private Configuration Read(string fileName)
         {
@@ -301,10 +298,8 @@ namespace cdeWin
             {
                 try
                 {
-                    using (var fs = File.Open(fileName, FileMode.Open))
-                    {
-                        return Read(fs);
-                    }
+                    using var fs = File.Open(fileName, FileMode.Open);
+                    return Read(fs);
                 }
                 // ReSharper disable once EmptyGeneralCatchClause
                 catch { }
@@ -318,12 +313,11 @@ namespace cdeWin
         }
 
         public bool Save(string fileName)
-        {   // we do want exception to percolate out if there is a problem.
-            using (var newFs = File.Open(fileName, FileMode.Create))
-            {
-                Write(newFs);
-                return true;
-            }
+        {
+            // we do want exception to percolate out if there is a problem.
+            using var newFs = File.Open(fileName, FileMode.Create);
+            Write(newFs);
+            return true;
         }
 
         private Configuration Read(Stream input)
@@ -374,9 +368,6 @@ namespace cdeWin
 
         public void RestoreConfig(ICDEWinForm form)
         {
-            //var a = Default.CatalogListView.Columns.Count;
-            //var b = Active.CatalogListView.Columns.Count;
-
             form.DirectoryListViewHelper.SetColumnConfigs(
                 RestoreColumnConfig(Default.DirectoryListView, Active.DirectoryListView));
             form.SearchResultListViewHelper.SetColumnConfigs(
@@ -429,7 +420,7 @@ namespace cdeWin
                 columnMismatch = !initial.Columns.SequenceEqual(active.Columns, comparer);
             }
 
-            // if column count miss match or column missmatch replace columns with initial.
+            // if column count miss match or column mismatch replace columns with initial.
             if (initial.Columns.Count != active.Columns.Count
                 || columnMismatch)
             {
@@ -439,30 +430,22 @@ namespace cdeWin
         }
 
         // improve test easy on CDEWinFormPresenter.
-        public int DefaultSearchResultColumnCount
-        {
-            get { return Active != null ? ColumnCount(Default.SearchResultListView) : 0; }
-        }
+        public int DefaultSearchResultColumnCount => Active != null ? ColumnCount(Default.SearchResultListView) : 0;
 
         // improve test easy on CDEWinFormPresenter.
-        public int DefaultDirectoryColumnCount
-        {
-            get { return Active != null ? ColumnCount(Default.DirectoryListView) : 0; }
-        }
+        public int DefaultDirectoryColumnCount => Active != null ? ColumnCount(Default.DirectoryListView) : 0;
 
         // improve test easy on CDEWinFormPresenter.
-        public int DefaultCatalogColumnCount
-        {
-            get { return Active != null ? ColumnCount(Default.CatalogListView) : 0; }
-        }
+        public int DefaultCatalogColumnCount => Active != null ? ColumnCount(Default.CatalogListView) : 0;
 
         private static int ColumnCount(ListViewConfig lvc)
         {
-            return lvc != null && lvc.Columns != null ? lvc.Columns.Count : 0;
+            return lvc?.Columns?.Count ?? 0;
         }
 
-        public CompareInfo MyCompareInfo { get { return CompareInfo.GetCompareInfo("en-US"); } }
-        public CompareOptions MyCompareOptions { get { return CompareOptions.IgnoreCase | CompareOptions.StringSort; } }
+        public CompareInfo MyCompareInfo => CompareInfo.GetCompareInfo("en-US");
+        public CompareOptions MyCompareOptions => CompareOptions.IgnoreCase | CompareOptions.StringSort;
+
         public int CompareWithInfo(string s1, string s2)
         {
             return MyCompareInfo.Compare(s1, s2, MyCompareOptions);
