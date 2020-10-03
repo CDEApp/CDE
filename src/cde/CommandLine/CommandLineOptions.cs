@@ -1,8 +1,19 @@
 ﻿using CommandLine;
+
 // ReSharper disable ClassNeverInstantiated.Global
 
 namespace cde.CommandLine
 {
+    [Verb("update", HelpText = "Update catalog metadata.")]
+    public class UpdateOptions
+    {
+        [Value(0, HelpText = "Catalog to update")]
+        public string FileName { get; set; }
+
+        [Option("desc", HelpText = "Description to set")]
+        public string Description { get; set; }
+    }
+
     [Verb("scan", HelpText = "Scans path and creates a cache file.")]
     public class ScanOptions
     {

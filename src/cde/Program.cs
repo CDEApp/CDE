@@ -55,7 +55,7 @@ namespace cde
                         ReplGrepOptions, ReplFindOptions,
                         HashOptions, DupesOptions, TreeDumpOptions, LoadWaitOptions, ReplOptions, PopulousFoldersOptions
                         , FindPathOptions,
-                        UpgradeOptions>(
+                        UpgradeOptions, UpdateOptions>(
                         args)
                     .WithParsed<ScanOptions>(opts => CreateCache(opts.Path))
                     .WithParsed<FindOptions>(opts =>
@@ -92,6 +92,7 @@ namespace cde
                     .WithParsed<ReplOptions>(opts => InvokeRepl())
                     .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
                     .WithParsed<UpgradeOptions>(opts => Upgrade())
+                    .WithParsed<UpdateOptions>(Update)
                     .WithNotParsed(errs => Environment.Exit(1));
                 return 0;
             }
@@ -163,6 +164,14 @@ namespace cde
 
                 findService.StaticFind(pattern, paramString, rootEntries);
             } while (true);
+        }
+
+        private static void Update(UpdateOptions opts)
+        {
+            var task = Task.Run(async () =>
+                await Mediatr.Send(new UpdateCommand {FileName = opts.FileName, Description = opts.Description})
+                    .ConfigureAwait(false));
+            task.Wait();
         }
 
         private static void Upgrade()
