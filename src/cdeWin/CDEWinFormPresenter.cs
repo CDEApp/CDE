@@ -176,7 +176,7 @@ namespace cdeWin
         }
 
         /// <summary>
-        /// A node with children gets a dummy child node so Treeview shows node as expandable.
+        /// A node with children gets a dummy child node so Tree view shows node as expandable.
         /// </summary>
         private static void SetDummyChildNode(TreeNode treeNode, ICommonEntry commonEntry)
         {
@@ -195,7 +195,6 @@ namespace cdeWin
         {
             return new TreeNode(name)
             {
-                //ImageIndex = 0, 
                 Tag = tag
             };
         }
@@ -214,10 +213,10 @@ namespace cdeWin
             catalogHelper.RenderItem = lvi;
         }
 
-        private Color CreateRowValuesForRootEntry(string[] vals, RootEntry rootEntry, Color listViewForeColor)
+        private Color CreateRowValuesForRootEntry(IList<string> vals, RootEntry rootEntry, Color listViewForeColor)
         {
             vals[0] = rootEntry.Path;
-            vals[1] = rootEntry.VolumeName; // rootEntry.VolumeName;
+            vals[1] = rootEntry.VolumeName;
             vals[2] = rootEntry.DirEntryCount.ToString();
             vals[3] = rootEntry.FileEntryCount.ToString();
             vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();
@@ -226,7 +225,7 @@ namespace cdeWin
             vals[7] = rootEntry.AvailSpace.ToHRString();
             vals[8] = rootEntry.TotalSpace.ToHRString();
             vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[10] = $"{rootEntry.ScanDurationMilliseconds:0.} msec";
+            vals[10] = $"{TimeSpan.FromMilliseconds(rootEntry.ScanDurationMilliseconds).TotalSeconds:0.} sec";
             vals[11] = rootEntry.ActualFileName;
             vals[12] = rootEntry.Description;
 
