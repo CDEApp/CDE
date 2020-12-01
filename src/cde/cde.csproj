@@ -15,18 +15,18 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Autofac" Version="5.2.0" />
+      <PackageReference Include="Autofac" Version="6.0.0" />
       <PackageReference Include="CommandLineParser" Version="2.8.0" />
-      <PackageReference Include="JetBrains.Annotations" Version="2020.1.0" />
-      <PackageReference Include="MediatR" Version="8.1.0" />
-      <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="5.3.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="1.0.569">
+      <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
+      <PackageReference Include="MediatR" Version="9.0.0" />
+      <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="7.0.0" />
+      <PackageReference Include="Meziantou.Analyzer" Version="1.0.620">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
-      <PackageReference Include="Microsoft.Extensions.Configuration" Version="3.1.8" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="3.1.8" />
-      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="3.1.8" />
+      <PackageReference Include="Microsoft.Extensions.Configuration" Version="5.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="5.0.0" />
+      <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="5.0.0" />
       <PackageReference Include="SerilogTimings" Version="2.3.0" />
     </ItemGroup>
 
