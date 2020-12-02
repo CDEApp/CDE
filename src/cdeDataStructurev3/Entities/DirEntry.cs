@@ -182,9 +182,9 @@ namespace cdeDataStructure3.Entities
             Modified = fs.LastWriteTime;
             IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
             IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;
-            if (fs is FileInfo)
+            if (fs is FileInfo info)
             {
-                Size = ((FileInfo)fs).Length;
+                Size = info.Length;
             }
             else
             {

@@ -27,7 +27,7 @@ namespace cde
             return builder.Build();
         }
 
-        private static void ConfigureLogger(IConfigurationRoot config)
+        private static void ConfigureLogger(IConfiguration config)
         {
             Log.Logger = new LoggerConfiguration()
                 .ReadFrom.Configuration(config)

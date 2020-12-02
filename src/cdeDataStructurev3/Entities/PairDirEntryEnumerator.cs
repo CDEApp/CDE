@@ -42,8 +42,6 @@ namespace cdeDataStructure3.Entities
             return entries;
         }
 
-
-
         public void Dispose()
         {
            Dispose(true);

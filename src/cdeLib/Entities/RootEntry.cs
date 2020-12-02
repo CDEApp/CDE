@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.IO;
 using System.Linq;
@@ -23,8 +22,6 @@ namespace cdeLib.Entities
     [ProtoContract]
     [FlatBufferTable]
     [MessagePackObject]
-    [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
-    [SuppressMessage("ReSharper", "VirtualMemberNeverOverridden.Global")]
     public class RootEntry : object, ICommonEntry
     {
         private const string MatchAll = "*";
@@ -398,13 +395,10 @@ namespace cdeLib.Entities
 
             TraverseTreePair((p, d) =>
             {
-                if (d.IsDirectory)
+                if (d.IsDirectory && d.Children?.Count > 1)
                 {
-                    if (d.Children != null && d.Children.Count > 1)
-                    {
-                        d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
-                        d.IsDefaultSort = true;
-                    }
+                    d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
+                    d.IsDefaultSort = true;
                 }
 
                 return true;

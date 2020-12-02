@@ -8,7 +8,7 @@ namespace cdeWin
     {
         public static AutoCompleteStringCollection ToAutoCompleteStringCollection(this IEnumerable<string> enumerable)
         {
-            if (enumerable == null) throw new ArgumentNullException("enumerable");
+            if (enumerable == null) throw new ArgumentNullException(nameof(enumerable));
             var autoComplete = new AutoCompleteStringCollection();
             foreach (var item in enumerable)
             {

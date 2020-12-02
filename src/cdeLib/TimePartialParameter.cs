@@ -1,13 +1,10 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace cdeLib
 {
     /// <summary>
     /// Unspecified values per format are returned as zero if no error.
     /// </summary>
-    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    [SuppressMessage("ReSharper", "ConvertToConstant.Local")]
     public class TimePartialParameter
     {
         // "HH:MM:SS"; example

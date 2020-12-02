@@ -1,18 +1,15 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 
 namespace cdeLib
 {
     /// <summary>
     /// Unspecified values as per format are returned as 1 for Month and Day and Zero for other fields.
     /// </summary>
-    [SuppressMessage("ReSharper", "FieldCanBeMadeReadOnly.Local")]
-    [SuppressMessage("ReSharper", "ConvertToConstant.Local")]
     public class DateTimePartialParameter
     {
         private readonly string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
 
-        // a Parsing Expression Grammar mgith be a better way to do this.... PEG
+        // a Parsing Expression Grammar might be a better way to do this.... PEG
         // - http://en.wikipedia.org/wiki/Parsing_expression_grammar
 
         private readonly int _year;
@@ -67,8 +64,8 @@ namespace cdeLib
                     return;
                 }
 
-                // If 'T' is not used as seperator between Date and Time then error
-                if (SeperatorIsNotValid(splitOnDash[2], 'T'))
+                // If 'T' is not used as separator between Date and Time then error
+                if (SeparatorIsNotValid(splitOnDash[2], 'T'))
                 {
                     _e = new ArgumentException(
                         $"The separator between Date and Time must be 'T' as part of format '{_format}'");
@@ -105,22 +102,22 @@ namespace cdeLib
             }
         }
 
-        private static bool SeperatorIsNotValid(string str, char validSeperator)
+        private static bool SeparatorIsNotValid(string str, char validSeparator)
         {
-            var badSeperator = false;
+            var badSeparator = false;
             foreach (var c in str)
             {
                 if (c >= '0' && c <= '9')
                 {
                     continue;
                 }
-                if (c != validSeperator)
+                if (c != validSeparator)
                 {
-                    badSeperator = true;
+                    badSeparator = true;
                 }
                 break;
             }
-            return badSeperator;
+            return badSeparator;
         }
 
         public DateTime GetDate()

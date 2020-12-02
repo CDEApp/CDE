@@ -376,7 +376,7 @@ namespace cdeWin
             }
 
             _list = list;
-            _listSize = _list?.Count() ?? 0;
+            _listSize = _list?.Count ?? 0;
             _listView.VirtualListSize = _listSize;
             ForceDraw();
             return _listSize;

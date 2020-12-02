@@ -247,7 +247,7 @@ namespace cdeWin
 
             // ReSharper disable InconsistentNaming
             //private const int SMTO_NORMAL = 0x0000;
-            private const int SMTO_BLOCK = 0x0001;
+            // private const int SMTO_BLOCK = 0x0001;
             //private const int SMTO_NOTIMEOUTIFNOTHUNG = 0x0008;
             // ReSharper restore InconsistentNaming
 

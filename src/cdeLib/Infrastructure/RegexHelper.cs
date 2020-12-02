@@ -7,11 +7,11 @@ namespace cdeLib.Infrastructure
     {
         public static string GetRegexErrorMessage(string testPattern)
         {
-            if ((testPattern != null) && (testPattern.Trim().Length > 0))
+            if ((testPattern?.Trim().Length > 0))
             {
                 try
                 {
-                    Regex.Match("", testPattern);
+                    _ = Regex.Match("", testPattern);
                 }
                 catch (ArgumentException ae)
                 {
@@ -22,7 +22,7 @@ namespace cdeLib.Infrastructure
             {
                 return "Bad Regex: Pattern is Null or Empty.";
             }
-            return (String.Empty);
+            return string.Empty;
         }
     }
 }

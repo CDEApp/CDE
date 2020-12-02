@@ -1,13 +1,10 @@
 using System;
-using System.Diagnostics.CodeAnalysis;
 using cdeLib;
 using NUnit.Framework;
 
 namespace cdeLibTest
 {
     [TestFixture]
-    [SuppressMessage("ReSharper", "ConvertToConstant.Local")]
-    [SuppressMessage("ReSharper", "NotAccessedVariable")]
     public class TimePartialParameterTest
     {
         [Test]
