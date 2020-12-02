@@ -7,9 +7,11 @@ namespace cdeWin
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+#pragma warning disable 414
+        private System.ComponentModel.IContainer components = null;
+#pragma warning restore 414
 
-		/// <summary>
+        /// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
 		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>

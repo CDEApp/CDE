@@ -1,4 +1,5 @@
-#tool "nuget:?package=GitVersion.CommandLine&version=5.2.4"
+// https://cakebuild.net/dsl/gitversion/
+#tool "nuget:?package=GitVersion.CommandLine"
 
 // Alternate version possible using dotnet tool installs but running cake twice to get module isn't worth it.
 // // #module nuget:?package=Cake.DotNetTool.Module&version=0.3.1

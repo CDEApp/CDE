@@ -25,7 +25,7 @@ namespace cdeLib.Module
 
             // this will add all your Request- and NotificationHandler
             // that are located in the same project as your program-class
-            builder.AddMediatR(typeof(CdelibModule).Assembly);
+            builder.RegisterMediatR(typeof(CdelibModule).Assembly);
         }
     }
 }

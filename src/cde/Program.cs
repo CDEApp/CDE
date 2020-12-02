@@ -1,7 +1,5 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
@@ -24,16 +22,6 @@ namespace cde
     {
         private static IContainer _container;
         private static IMediator Mediatr { get; set; }
-
-        public static string Version
-        {
-            get
-            {
-                var asm = Assembly.GetExecutingAssembly();
-                var fvi = FileVersionInfo.GetVersionInfo(asm.Location);
-                return $"{fvi.ProductName} v{fvi.ProductMajorPart}.{fvi.ProductMinorPart}";
-            }
-        }
 
         public static void InitProgram(string[] args)
         {
@@ -125,7 +113,7 @@ namespace cde
                         Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
                         Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
                         Console.WriteLine("  C-l - clear console to top");
-                        Console.WriteLine("  C-r - reverse seach history");
+                        Console.WriteLine("  C-r - reverse search history");
                         Console.WriteLine("  A-b - move backward word");
                         Console.WriteLine("  A-f - move forward word");
                         Console.WriteLine("  A-d - delete word forward");
