@@ -17,7 +17,7 @@ using System.Xml;
 var target = Argument("target", "Default");
 var configuration = Argument("configuration", "Release");
 var testFilter = Argument("where", "");
-var netcoreAppVersion = Argument("netcoreapp", "3.1");
+var netcoreAppVersion = Argument("net", "5.0.100");
 
 ///////////////////////////////////////////////////////////////////////////////
 // GLOBAL VARIABLES
@@ -163,13 +163,13 @@ Task("Pack")
     // Create the self-contained packages for each runtime ID defined
     foreach(var rid in GetProjectRuntimeIds(@".\src\cde\cde.csproj"))
     {
-        DoPackage("cde", "netcoreapp3.1", semver, rid);
+        DoPackage("cde", "net5.0", semver, rid);
         
     }
 
 foreach(var rid in GetProjectRuntimeIds(@".\src\cdeWin\cdeWin.csproj"))
     {
-        DoPackage("cdeWin", "netcoreapp3.1", semver, rid);
+        DoPackage("cdeWin", "net5.0-windows", semver, rid);
         
     }
 	

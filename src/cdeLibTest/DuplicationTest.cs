@@ -156,7 +156,7 @@ namespace cdeLibTest
         private string AssemblyPathLocation()
         {
             var assembly = Assembly.GetExecutingAssembly();
-            var codebase = new Uri(assembly.CodeBase);
+            var codebase = new Uri(assembly.Location);
             var path = codebase.LocalPath;
             return System.IO.Path.GetDirectoryName(path);
         }
