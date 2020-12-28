@@ -68,7 +68,7 @@ namespace cdeLib
                 {
                     var de = _childEnumerator.Current;
                     _current = new PairDirEntry(_parentDirEntry, de);
-                    if (de.IsDirectory && de.Children != null && de.Children.Count > 0)
+                    if (de.IsDirectory && de.Children?.Count > 0)
                     {
                         _entries.Push(de);
                     }

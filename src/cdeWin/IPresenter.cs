@@ -48,8 +48,7 @@ namespace cdeWin
             {
                 var eventInfo = viewEvents[viewDefinedEvent];
                 var eventName = viewDefinedEvent.Substring(2);
-                MethodInfo presenterMethodInfo;
-                if (!presenterEventHandlers.TryGetValue(eventName, out presenterMethodInfo))
+                if (!presenterEventHandlers.TryGetValue(eventName, out var presenterMethodInfo))
                 {
                     throw new Exception(
                         $"\n\nThere is no event handler for event '{eventInfo.Name}' on presenter '{GetType().FullName}' expected '{eventName}'\n\n");

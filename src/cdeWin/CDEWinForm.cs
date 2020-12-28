@@ -176,9 +176,9 @@ namespace cdeWin
             SearchResultListViewHelper = new ListViewHelper<PairDirEntry>(searchResultListView)
             {
                 // ReSharper disable PossibleNullReferenceException
-                RetrieveVirtualItem = () => { OnSearchResultRetrieveVirtualItem(); },
-                ItemActivate = () => { OnSearchResultListViewItemActivate(); },
-                ColumnClick = () => { OnSearchResultListViewColumnClick(); },
+                RetrieveVirtualItem = () => OnSearchResultRetrieveVirtualItem(),
+                ItemActivate = () => OnSearchResultListViewItemActivate(),
+                ColumnClick = () => OnSearchResultListViewColumnClick(),
                 // ReSharper restore PossibleNullReferenceException
                 ContextMenu = CreateSearchResultContextMenu(),
             };

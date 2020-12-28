@@ -21,7 +21,7 @@ namespace cdeWin
             {
                 if (mutuallyExclusiveCheckBoxs.FirstOrDefault(x => x == primaryCheckbox) != null)
                 {
-                    throw new ArgumentException("Primary checkbox cannot appear in other parameter sequences.", "mutuallyExclusiveCheckBoxs");
+                    throw new ArgumentException("Primary checkbox cannot appear in other parameter sequences.", nameof(mutuallyExclusiveCheckBoxs));
                 }
             }
 

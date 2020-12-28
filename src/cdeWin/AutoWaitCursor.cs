@@ -15,26 +15,26 @@ using System.Windows.Forms;
 namespace cdeWin
 {
     /// <summary>
-    /// This static utility class can be used to automatically show a wait cursor when the application 
+    /// This static utility class can be used to automatically show a wait cursor when the application
     /// is busy (ie not responding to user input). The class automatically monitors the application
     /// state, removing the need for manually changing the cursor.
     /// </summary>
     /// <example>
     /// To use, simply insert the following line in your Application startup code
-    /// 
+    ///
     ///		private void Form1_Load(object sender, System.EventArgs e)
     ///		{
     ///			AutoWaitCursor.Cursor = Cursors.WaitCursor;
     ///			AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
-    ///			// Set the window handle to the handle of the main form in your application 
+    ///			// Set the window handle to the handle of the main form in your application
     ///			AutoWaitCursor.MainWindowHandle = this.Handle;
     ///			AutoWaitCursor.Start();
     ///		}
-    ///	
+    ///
     /// This installs changes to cursor after 100ms of blocking work (ie. work carried out on the main application thread).
-    /// 
+    ///
     /// Note, the above code GLOBALLY replaces the following:
-    /// 
+    ///
     /// public void DoWork()
     /// {
     ///		try
@@ -414,7 +414,7 @@ namespace cdeWin
             }
 
             /// <summary>
-            /// Thread callback method. 
+            /// Thread callback method.
             /// Loops calling SetWaitCursor and RestoreCursor until Disposed.
             /// </summary>
             private void ThreadCallbackLoop()
@@ -493,7 +493,7 @@ namespace cdeWin
             }
 
             /// <summary>
-            /// Waits for the ResetEvent (set by Dispose and Reset), 
+            /// Waits for the ResetEvent (set by Dispose and Reset),
             /// since Start has been called we *have* to call RestoreCursor once the thread is idle again.
             /// </summary>
             private void WaitForIdle()
