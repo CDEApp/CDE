@@ -15,12 +15,12 @@
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Autofac" Version="6.0.0" />
+      <PackageReference Include="Autofac" Version="6.1.0" />
       <PackageReference Include="CommandLineParser" Version="2.8.0" />
       <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
       <PackageReference Include="MediatR" Version="9.0.0" />
       <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="7.0.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="1.0.620">
+      <PackageReference Include="Meziantou.Analyzer" Version="1.0.642">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
