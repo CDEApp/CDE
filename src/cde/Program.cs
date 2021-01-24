@@ -47,22 +47,22 @@ namespace cde
                     .WithParsed<ScanOptions>(opts => CreateCache(opts))
                     .WithParsed<FindOptions>(opts =>
                     {
-                        findService.StaticFind(opts.Value, "--find",
+                        findService.Find(opts.Value, "--find",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<FindPathOptions>(opts =>
                     {
-                        findService.StaticFind(opts.Value, "--findpath",
+                        findService.Find(opts.Value, "--findpath",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<GrepOptions>(opts =>
                     {
-                        findService.StaticFind(opts.Value, "--grep",
+                        findService.Find(opts.Value, "--grep",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<GrepPathOptions>(opts =>
                     {
-                        findService.StaticFind(opts.Value, "--greppath",
+                        findService.Find(opts.Value, "--greppath",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGreppath, opts.Value))
@@ -136,8 +136,12 @@ namespace cde
             var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
             var findService = _container.Resolve<IFindService>();
 
-            findService.StaticFind(firstPattern, paramString, rootEntries);
-            do
+            if (!string.IsNullOrEmpty(firstPattern))
+                findService.Find(firstPattern, paramString, rootEntries);
+
+            Console.WriteLine("Issue --help for available params");
+
+            while (true)
             {
                 if (Hack.BreakConsoleFlag)
                     Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behaviour in loop.
@@ -149,8 +153,37 @@ namespace cde
                     break;
                 }
 
-                findService.StaticFind(pattern, paramString, rootEntries);
-            } while (true);
+                if (pattern.StartsWith("--"))
+                {
+                    var command = pattern.Substring(2);
+                    switch (command.ToLower())
+                    {
+                        case "includefiles":
+                            findService.IncludeFiles = !findService.IncludeFiles;
+                            Console.WriteLine("IncludeFiles:" + findService.IncludeFiles);
+                            break;
+                        case "includefolders":
+                            findService.IncludeFolders = !findService.IncludeFolders;
+                            Console.WriteLine("IncludeFolders:" + findService.IncludeFolders);
+                            break;
+                        case "help":
+                            Console.WriteLine("Valid optiosn are");
+                            Console.WriteLine("--includefiles");
+                            Console.WriteLine("--includefolders");
+                            break;
+                        case "clear":
+                            Console.Clear();
+                            break;
+                        default:
+                            Console.WriteLine("unknown command " + command);
+                            break;
+                    }
+                }
+                else
+                {
+                    findService.Find(pattern, paramString, rootEntries);
+                }
+            }
         }
 
         private static void Update(UpdateOptions opts)
@@ -181,7 +214,9 @@ namespace cde
 
         public static int CreateCache(ScanOptions opts)
         {
-            var task = Task.Run(async () => await Mediatr.Send(new CreateCacheCommand(opts.Path){Description = opts.Description}).ConfigureAwait(false));
+            var task = Task.Run(async () =>
+                await Mediatr.Send(new CreateCacheCommand(opts.Path) {Description = opts.Description})
+                    .ConfigureAwait(false));
             task.Wait();
             return 0;
         }

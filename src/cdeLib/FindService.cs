@@ -6,8 +6,10 @@ namespace cdeLib
 {
     public interface IFindService
     {
-        void StaticFind(string pattern, string param, IList<RootEntry> rootEntries);
-        void StaticFind(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
+        void Find(string pattern, string param, IList<RootEntry> rootEntries);
+        void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
+        bool IncludeFiles { get; set; }
+        bool IncludeFolders { get; set; }
     }
 
     public class FindService : IFindService
@@ -16,16 +18,25 @@ namespace cdeLib
         public const string ParamFindpath = "--findpath";
         public const string ParamGrep = "--grep";
         public const string ParamGreppath = "--greppath";
-        public static readonly List<string> FindParams = new List<string> { ParamFind, ParamFindpath, ParamGrep, ParamGreppath };
 
-        public void StaticFind(string pattern, string param, IList<RootEntry> rootEntries)
+        public FindService()
+        {
+            IncludeFolders = true;
+            IncludeFiles = true;
+        }
+
+        public bool IncludeFiles { get; set; }
+
+        public bool IncludeFolders { get; set; }
+
+        public void Find(string pattern, string param, IList<RootEntry> rootEntries)
         {
             var regexMode = param == ParamGrep || param == ParamGreppath;
             var includePath = param == ParamGreppath || param == ParamFindpath;
-            StaticFind(pattern, regexMode, includePath, rootEntries);
+            Find(pattern, regexMode, includePath, rootEntries);
         }
 
-        public void StaticFind(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
+        public void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
         {
             var totalFound = 0L;
             var findOptions = new FindOptions
@@ -33,8 +44,8 @@ namespace cdeLib
                 Pattern = pattern,
                 RegexMode = regexMode,
                 IncludePath = includePath,
-                IncludeFiles = true,
-                IncludeFolders = true,
+                IncludeFiles = IncludeFiles,
+                IncludeFolders = IncludeFolders,
                 LimitResultCount = int.MaxValue,
                 VisitorFunc = (p, d) =>
                 {
