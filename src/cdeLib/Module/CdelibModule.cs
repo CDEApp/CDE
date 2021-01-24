@@ -1,5 +1,6 @@
 ﻿using Autofac;
 using cdeLib.Catalog;
+using cdeLib.Duplicates;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;

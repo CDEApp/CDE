@@ -8,7 +8,7 @@ namespace cdeLib
     public class TimePartialParameter
     {
         // "HH:MM:SS"; example
-        private static readonly string Format = "<HH>:<MM>:<SS>";
+        private const string Format = "<HH>:<MM>:<SS>";
 
         private readonly int _hour;  // 0 - 23
         public int Hour

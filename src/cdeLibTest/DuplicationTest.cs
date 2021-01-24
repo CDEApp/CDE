@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using cde;
 using cde.CommandLine;
 using cdeLib.Catalog;
+using cdeLib.Duplicates;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;

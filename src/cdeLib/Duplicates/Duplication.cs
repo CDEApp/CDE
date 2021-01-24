@@ -10,7 +10,7 @@ using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;
 using Dawn;
 
-namespace cdeLib
+namespace cdeLib.Duplicates
 {
     public class Duplication
     {
@@ -238,13 +238,9 @@ namespace cdeLib
                     _duplicationStatistics.TotalFileBytes += de.Size;
                     _duplicationStatistics.BytesNotProcessed += de.Size <= hashResponse.BytesHashed ? 0 : de.Size - hashResponse.BytesHashed;
                     if (de.IsPartialHash)
-                    {
-                        _duplicationStatistics.PartialHashes += 1;
-                    }
+                        _duplicationStatistics.PartialHashes++;
                     else
-                    {
-                        _duplicationStatistics.FullHashes += 1;
-                    }
+                        _duplicationStatistics.FullHashes++;
                     if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                     {
                         _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",

@@ -2,6 +2,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
+using cdeLib.Duplicates;
 using cdeLib.Infrastructure;
 using MediatR;
 
