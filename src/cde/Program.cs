@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
@@ -153,10 +154,10 @@ namespace cde
                     break;
                 }
 
-                if (pattern.StartsWith("--"))
+                if (pattern.StartsWith("--", StringComparison.CurrentCulture))
                 {
                     var command = pattern.Substring(2);
-                    switch (command.ToLower())
+                    switch (command.ToLower(CultureInfo.CurrentCulture))
                     {
                         case "includefiles":
                             findService.IncludeFiles = !findService.IncludeFiles;

@@ -23,7 +23,6 @@ namespace cde
             builder.RegisterLogger();
 
             builder.RegisterModule<CdelibModule>();
-            Log.Logger.Debug("Building Container");
             return builder.Build();
         }
 
