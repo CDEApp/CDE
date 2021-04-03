@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
@@ -61,6 +62,7 @@ namespace cdeWin
             SetSearchButton(true);
             RegisterListViewSorters();
             SetCatalogListView();
+            SetMemoryStatus();
 
             InitialiseLog(timeIt);
         }
@@ -104,6 +106,18 @@ namespace cdeWin
             catalogHelper.SortList();
             _clientForm.SetCatalogsLoadedStatus(count);
             _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
+        }
+
+        private void SetMemoryStatus()
+        {
+            double memory;
+            using (Process proc = Process.GetCurrentProcess())
+            {
+                // The proc.PrivateMemorySize64 will returns the private memory usage in byte.
+                // Would like to Convert it to Megabyte? divide it by 2^20
+                memory = proc.PrivateMemorySize64 / (1024 * 1024);
+            }
+            _clientForm.SetMemoryStatus($"Memory used: {memory}MB");
         }
 
         private void SetSearchButton(bool search)

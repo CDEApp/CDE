@@ -76,6 +76,8 @@ namespace cdeWin
         void SetSearchResultStatus(int i);
         void SetTotalFileEntriesLoadedStatus(int i);
         void SetCatalogsLoadedStatus(int i);
+        void SetMemoryStatus(string msg);
+
         void SetSearchTimeStatus(string s);
         bool SearchButtonEnable { get; set; }
         string SearchButtonText { get; set; }

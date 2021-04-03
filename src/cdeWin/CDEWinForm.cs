@@ -503,6 +503,11 @@ namespace cdeWin
             catalogsLoadedStatus.Text = "Catalogs " + i.ToString(CultureInfo.InvariantCulture);
         }
 
+        public void SetMemoryStatus(string msg)
+        {
+            toolStripStatusMemory.Text = msg;
+        }
+
         public void SetSearchTimeStatus(string s)
         {
             if (searchTimeStatus.Text.Equals(s)) return;
@@ -651,6 +656,11 @@ namespace cdeWin
         {
             // ReSharper disable once PossibleNullReferenceException
             OnFormShown();
+        }
+
+        private void mainStatusStrip_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
+        {
+
         }
     }
 }
