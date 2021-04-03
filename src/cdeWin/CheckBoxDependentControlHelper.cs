@@ -11,23 +11,20 @@ namespace cdeWin
     public class CheckBoxDependentControlHelper // <T>
     {
         private readonly CheckBox _primaryCheckBox;
-        private readonly IEnumerable<Control> _depedentControls;
-        private readonly IEnumerable<CheckBox> _mutuallyExclusiveCheckBoxs;
+        private readonly IEnumerable<Control> _dependentControls;
+        private readonly IEnumerable<CheckBox> _mutuallyExclusiveCheckBoxes;
 
         // ReSharper disable PossibleMultipleEnumeration
-        public CheckBoxDependentControlHelper(CheckBox primaryCheckbox, IEnumerable<Control> depedentControls, IEnumerable<CheckBox> mutuallyExclusiveCheckBoxs)
+        public CheckBoxDependentControlHelper(CheckBox primaryCheckbox, IEnumerable<Control> dependentControls, IEnumerable<CheckBox> mutuallyExclusiveCheckBoxes)
         {
-            if (mutuallyExclusiveCheckBoxs != null)
+            if (mutuallyExclusiveCheckBoxes?.FirstOrDefault(x => x == primaryCheckbox) != null)
             {
-                if (mutuallyExclusiveCheckBoxs.FirstOrDefault(x => x == primaryCheckbox) != null)
-                {
-                    throw new ArgumentException("Primary checkbox cannot appear in other parameter sequences.", nameof(mutuallyExclusiveCheckBoxs));
-                }
+                throw new ArgumentException("Primary checkbox cannot appear in other parameter sequences.", nameof(mutuallyExclusiveCheckBoxes));
             }
 
             _primaryCheckBox = primaryCheckbox;
-            _depedentControls = depedentControls;
-            _mutuallyExclusiveCheckBoxs = mutuallyExclusiveCheckBoxs;
+            _dependentControls = dependentControls;
+            _mutuallyExclusiveCheckBoxes = mutuallyExclusiveCheckBoxes;
             _primaryCheckBox.CheckedChanged += CheckboxChanged;
             SetDependentControlState(_primaryCheckBox.Checked);
         }
@@ -40,16 +37,16 @@ namespace cdeWin
 
         private void SetDependentControlState(bool boxChecked)
         {
-            if (boxChecked && _mutuallyExclusiveCheckBoxs != null)
+            if (boxChecked && _mutuallyExclusiveCheckBoxes != null)
             {
-                foreach (var mutuallyExclusiveControl in _mutuallyExclusiveCheckBoxs)
+                foreach (var mutuallyExclusiveControl in _mutuallyExclusiveCheckBoxes)
                 {
                     mutuallyExclusiveControl.Checked = false;
                 }
             }
-            if (_depedentControls != null)
+            if (_dependentControls != null)
             {
-                foreach (var dependentControl in _depedentControls)
+                foreach (var dependentControl in _dependentControls)
                 {
                     dependentControl.Enabled = boxChecked;
                 }

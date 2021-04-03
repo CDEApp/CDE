@@ -35,6 +35,7 @@ namespace cdeWin
         public event EventAction OnSearchResultContextMenuViewTreeClick;
         public event EventAction OnSearchResultContextMenuOpenClick;
         public event EventAction OnSearchResultContextMenuExploreClick;
+        public event EventAction OnSearchResultContextMenuExploreAltClick;
         public event EventAction OnSearchResultContextMenuPropertiesClick;
         public event EventAction OnSearchResultContextMenuSelectAllClick;
         public event EventAction OnSearchResultContextMenuCopyFullPathClick;
@@ -405,6 +406,7 @@ namespace cdeWin
                 TreeViewHandler = (s, e) => OnSearchResultContextMenuViewTreeClick(),
                 OpenHandler = (s, e) => OnSearchResultContextMenuOpenClick(),
                 ExploreHandler = (s, e) => OnSearchResultContextMenuExploreClick(),
+                ExploreAltHandler = (s, e) => OnSearchResultContextMenuExploreAltClick(),
                 PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
                 SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
                 //CopyBaseNameHandler = (s, e) => (),

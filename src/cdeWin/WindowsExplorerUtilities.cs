@@ -1,8 +1,8 @@
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using cdeWin.Cfg;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Win32;
 
 namespace cdeWin
 {
@@ -49,7 +49,7 @@ namespace cdeWin
 
         public static void ShowFileProperties(string Filename)
         {
-            SHELLEXECUTEINFO info = new SHELLEXECUTEINFO();
+            var info = new SHELLEXECUTEINFO();
             info.cbSize = Marshal.SizeOf(info);
             info.lpVerb = "properties";
             info.lpFile = Filename;
@@ -69,24 +69,16 @@ namespace cdeWin
             Process.Start("explorer.exe", "/select,\"" + path + "\"");
         }
 
-        public static void TotalCommanderExplore(string path)
+        public static void ExplorerAltExplore(string path)
         {
             var explorerAltConfig = new ExplorerAltOptions();
             Program.Configuration.GetSection("ExplorerAlt").Bind(explorerAltConfig);
-            var execPath = explorerAltConfig.Path;
-            if (string.IsNullOrEmpty(execPath))
+            if (!string.IsNullOrEmpty(explorerAltConfig.Path))
             {
-                //Registry.CurrentUser.OpenSubKey("Software\\Ghisler\\Total Commander");
-                //var installDir = Registry.GetValue(keyName, valueName, "default");
-                execPath = "C:\\program files\\totalcmd\\totalcmd64.exe";
+                var execPath = explorerAltConfig.Path;
+                var args = explorerAltConfig.Arguments.Replace("{path}", path);
+                Process.Start(execPath, args);
             }
-
-            Process.Start(execPath, "/O /T /R=" + path);
         }
-    }
-
-    public class ExplorerAltOptions
-    {
-        public string Path { get; set; }
     }
 }

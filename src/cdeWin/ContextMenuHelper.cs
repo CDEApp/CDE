@@ -1,7 +1,6 @@
 using System;
 using System.ComponentModel;
 using System.Windows.Forms;
-using ObjectDisposedException = System.ObjectDisposedException;
 
 namespace cdeWin
 {
@@ -21,24 +20,23 @@ namespace cdeWin
     public class ContextMenuHelper : IDisposable
     {
         // Fields set on ContextMenuStrip remove space for icons on left of menu for items.
-        private readonly ContextMenuStrip _menu = new ContextMenuStrip
-            {ShowCheckMargin = false, ShowImageMargin = false};
+        private readonly ContextMenuStrip _menu = new() {ShowCheckMargin = false, ShowImageMargin = false};
 
         private bool isDisposed;
-        private readonly ToolStripMenuItem _viewTree = new ToolStripMenuItem("View Tree");
-        private readonly ToolStripMenuItem _open = new ToolStripMenuItem("Open");
-        private readonly ToolStripMenuItem _explore = new ToolStripMenuItem("Explore");
-        private readonly ToolStripMenuItem _exploreAlt = new ToolStripMenuItem("Explore Alt");
+        private readonly ToolStripMenuItem _viewTree = new("View Tree");
+        private readonly ToolStripMenuItem _open = new("Open");
+        private readonly ToolStripMenuItem _explore = new("Explore");
+        private readonly ToolStripMenuItem _exploreAlt = new("Explore Alt");
         
-        private readonly ToolStripMenuItem _properties = new ToolStripMenuItem("Properties"); // like explorer
+        private readonly ToolStripMenuItem _properties = new("Properties"); // like explorer
 
-        private readonly ToolStripMenuItem _selectAll = new ToolStripMenuItem("Select All");
+        private readonly ToolStripMenuItem _selectAll = new("Select All");
 
         //private readonly ToolStripMenuItem _copyBaseName = new ToolStripMenuItem("Copy Base Names");
-        private readonly ToolStripMenuItem _copyFullName = new ToolStripMenuItem("Copy Full Path to Clipboard");
+        private readonly ToolStripMenuItem _copyFullName = new("Copy Full Path to Clipboard");
 
         private readonly ToolStripMenuItem
-            _parent = new ToolStripMenuItem("Parent"); // for Directory listview parent ? not useful SearchResult
+            _parent = new("Parent"); // for Directory list view parent ? not useful SearchResult
 
         public EventHandler TreeViewHandler
         {
@@ -222,6 +220,11 @@ namespace cdeWin
                     _explore.Click -= _exploreHandler;
                 }
 
+                if (_exploreAltHandler != null)
+                {
+                    _exploreAlt.Click -= _exploreAltHandler;
+                }
+
                 if (_propertiesHandler != null)
                 {
                     _properties.Click -= _propertiesHandler;
@@ -248,6 +251,7 @@ namespace cdeWin
 
                 _copyFullName.Dispose();
                 _explore.Dispose();
+                _exploreAlt.Dispose();
                 _menu.Dispose();
                 _open.Dispose();
                 _parent.Dispose();

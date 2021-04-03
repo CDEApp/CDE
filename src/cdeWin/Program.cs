@@ -35,16 +35,23 @@ namespace cdeWin
             config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
+            LoadAppSettingsConfig();
+            Application.Run(mainForm);
+            SaveAppState(config, mainForm);
+        }
 
+        private static void SaveAppState(Config config, CDEWinForm mainForm)
+        {
+            config.Active.MainWindowConfig.RecordForm(mainForm);
+            config.Save();
+        }
+
+        private static void LoadAppSettingsConfig()
+        {
             Configuration = new ConfigurationBuilder()
                 .SetBasePath(Directory.GetParent(AppContext.BaseDirectory).FullName)
                 .AddJsonFile("appsettings.json", false)
                 .Build();
-
-            Application.Run(mainForm);
-
-            config.Active.MainWindowConfig.RecordForm(mainForm);
-            config.Save();
         }
 
         private static void UIThreadException(object sender, ThreadExceptionEventArgs t)

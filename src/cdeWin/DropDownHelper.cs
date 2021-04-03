@@ -18,7 +18,7 @@ namespace cdeWin
 
         public int SelectedIndex
         {
-            get { return _comboBox.SelectedIndex; }
+            get => _comboBox.SelectedIndex;
             set
             {
                 if (value >= 0)
@@ -28,9 +28,6 @@ namespace cdeWin
             }
         }
 
-        public T SelectedValue
-        {
-            get { return ((ComboBoxItem<T>)_comboBox.SelectedItem).Value; }
-        }
+        public T SelectedValue => ((ComboBoxItem<T>)_comboBox.SelectedItem).Value;
     }
 }

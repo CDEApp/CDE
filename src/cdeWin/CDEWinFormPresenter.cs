@@ -830,7 +830,7 @@ namespace cdeWin
         public void DirectoryTreeContextMenuExploreAltClick()
         {
             DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-                WindowsExplorerUtilities.TotalCommanderExplore(ce.FullPath));
+                WindowsExplorerUtilities.ExplorerAltExplore(ce.FullPath));
         }
 
         public void DirectoryTreeContextMenuPropertiesClick()
@@ -966,6 +966,12 @@ namespace cdeWin
         {
             SearchResultGetContextMenuPairDirEntryThatExists(pde =>
                 WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+        }
+
+        public void SearchResultContextMenuExploreAltClick()
+        {
+            SearchResultGetContextMenuPairDirEntryThatExists(pde =>
+                WindowsExplorerUtilities.ExplorerAltExplore(pde.FullPath));
         }
 
         public void SearchResultContextMenuPropertiesClick()

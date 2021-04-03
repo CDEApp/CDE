@@ -5,7 +5,7 @@
     <TargetFramework>net5.0-windows</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <RuntimeIdentifiers>win-x64</RuntimeIdentifiers>
-    <ApplicationIcon>CDE-logo-02_GFI.ico</ApplicationIcon>
+    <ApplicationIcon>Resources\CDE-logo-02_GFI.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

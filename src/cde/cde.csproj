@@ -20,7 +20,7 @@
       <PackageReference Include="JetBrains.Annotations" Version="2020.3.0" />
       <PackageReference Include="MediatR" Version="9.0.0" />
       <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="7.1.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="1.0.649">
+      <PackageReference Include="Meziantou.Analyzer" Version="1.0.650">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
