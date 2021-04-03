@@ -1,4 +1,3 @@
-using System;
 using System.Windows.Forms;
 
 namespace cdeWin
@@ -17,10 +16,10 @@ namespace cdeWin
             _upDown.Maximum = int.MaxValue;
         }
 
-        public Decimal Field
+        public decimal Field
         {
-            get { return _upDown.Value; }
-            set { _upDown.Value = value; }
+            get => _upDown.Value;
+            set => _upDown.Value = value;
         }
     }
 }

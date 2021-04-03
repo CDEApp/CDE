@@ -28,6 +28,8 @@ namespace cdeWin
         private readonly ToolStripMenuItem _viewTree = new ToolStripMenuItem("View Tree");
         private readonly ToolStripMenuItem _open = new ToolStripMenuItem("Open");
         private readonly ToolStripMenuItem _explore = new ToolStripMenuItem("Explore");
+        private readonly ToolStripMenuItem _exploreAlt = new ToolStripMenuItem("Explore Alt");
+        
         private readonly ToolStripMenuItem _properties = new ToolStripMenuItem("Properties"); // like explorer
 
         private readonly ToolStripMenuItem _selectAll = new ToolStripMenuItem("Select All");
@@ -75,7 +77,19 @@ namespace cdeWin
             }
         }
 
+        public EventHandler ExploreAltHandler
+        {
+            get => _exploreHandler;
+            set
+            {
+                _exploreAltHandler = value;
+                _exploreAlt.Click += _exploreAltHandler;
+                _menu.Items.Add(_exploreAlt);
+            }
+        }
+
         private EventHandler _exploreHandler;
+        private EventHandler _exploreAltHandler;
 
         public EventHandler PropertiesHandler
         {
@@ -162,6 +176,7 @@ namespace cdeWin
             _viewTree.ShortcutKeyDisplayString = "Enter"; // for documentation of ItemActivate which is Enter.
             _open.ShortcutKeys = Keys.Control | Keys.Enter;
             _explore.ShortcutKeys = Keys.Control | Keys.E;
+            _exploreAlt.ShortcutKeys = Keys.Control | Keys.T;
             _properties.ShortcutKeys = Keys.Alt | Keys.Enter;
             _selectAll.ShortcutKeys = Keys.Control | Keys.A;
             _parent.ShortcutKeys = Keys.Control | Keys.Back;

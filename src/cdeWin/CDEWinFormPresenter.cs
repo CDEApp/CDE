@@ -827,6 +827,12 @@ namespace cdeWin
                 WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
         }
 
+        public void DirectoryTreeContextMenuExploreAltClick()
+        {
+            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
+                WindowsExplorerUtilities.TotalCommanderExplore(ce.FullPath));
+        }
+
         public void DirectoryTreeContextMenuPropertiesClick()
         {
             DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>

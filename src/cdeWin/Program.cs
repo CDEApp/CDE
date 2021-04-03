@@ -1,12 +1,16 @@
 ﻿using System;
+using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using Microsoft.Extensions.Configuration;
 using Serilog;
 
 namespace cdeWin
 {
     internal static class Program
     {
+        public static IConfigurationRoot Configuration;
+
         public static string Version => Application.ProductVersion;
 
         public static string ProductName => Application.ProductName;
@@ -31,6 +35,12 @@ namespace cdeWin
             config.RestoreConfigFormBase(mainForm);
             config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
             //mainPresenter.Display();
+
+            Configuration = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetParent(AppContext.BaseDirectory).FullName)
+                .AddJsonFile("appsettings.json", false)
+                .Build();
+
             Application.Run(mainForm);
 
             config.Active.MainWindowConfig.RecordForm(mainForm);

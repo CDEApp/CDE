@@ -63,6 +63,7 @@ namespace cdeWin
 
         public event EventAction OnDirectoryTreeContextMenuOpenClick;
         public event EventAction OnDirectoryTreeContextMenuExploreClick;
+        public event EventAction OnDirectoryTreeContextMenuExploreAltClick;
         public event EventAction OnDirectoryTreeContextMenuPropertiesClick;
 
         public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
@@ -337,6 +338,7 @@ namespace cdeWin
                 // ReSharper disable PossibleNullReferenceException
                 OpenHandler = (s, e) => OnDirectoryTreeContextMenuOpenClick(),
                 ExploreHandler = (s, e) => OnDirectoryTreeContextMenuExploreClick(),
+                ExploreAltHandler = (s, e) => OnDirectoryTreeContextMenuExploreAltClick(),
                 PropertiesHandler = (s, e) => OnDirectoryTreeContextMenuPropertiesClick(),
                 //SelectAllHandler = not useful in tree
                 //CopyBaseNameHandler = (s, e) => (),

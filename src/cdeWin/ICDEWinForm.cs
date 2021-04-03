@@ -50,6 +50,7 @@ namespace cdeWin
 
         event EventAction OnDirectoryTreeContextMenuOpenClick;
         event EventAction OnDirectoryTreeContextMenuExploreClick;
+        event EventAction OnDirectoryTreeContextMenuExploreAltClick;
         event EventAction OnDirectoryTreeContextMenuPropertiesClick;
 
         TreeNode DirectoryTreeViewNodes { get; set; }
