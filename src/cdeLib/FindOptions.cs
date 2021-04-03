@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using RootEntry = cdeLib.Entities.RootEntry;
@@ -85,12 +87,16 @@ namespace cdeLib
             var findFunc = GetFindFunc(_progressCount, limitCount);
             // ReSharper disable PossibleMultipleEnumeration
 
+            var watch = new System.Diagnostics.Stopwatch();
+            watch.Start();
             Parallel.ForEach(rootEntries, (rootEntry) =>
             {
                 //TODO: Parallel breaks the progress percentage, need to fix.
                 EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
             });
             ProgressFunc(_progressCount[0], ProgressEnd); // end of Progress
+            watch.Stop();
+            Debug.WriteLine($"Execution Time: {watch.ElapsedMilliseconds} ms");
         }
 
         public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
@@ -108,11 +114,11 @@ namespace cdeLib
             }
             else
             {
-                matcher = (p, d) => d.Path.IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
+                matcher = (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
                 if (IncludePath)
                 {
                     matcher = (p, d) =>
-                        p.MakeFullPath(d).IndexOf(Pattern, StringComparison.InvariantCultureIgnoreCase) >= 0;
+                        p.MakeFullPath(d).Contains(Pattern, StringComparison.OrdinalIgnoreCase);
                 }
             }
 
@@ -125,9 +131,7 @@ namespace cdeLib
 
             bool FindFunc(ICommonEntry p, ICommonEntry dirEntry)
             {
-                lock (_countLock)
-                {
-                    ++progressCount[0];
+                Interlocked.Increment(ref progressCount[0]);
                     if (progressCount[0] <= SkipCount)
                     {
                         // skip enforced
@@ -151,8 +155,6 @@ namespace cdeLib
                             return false; // end the find.
                         }
                     }
-                }
-
                 return true;
             }
 
