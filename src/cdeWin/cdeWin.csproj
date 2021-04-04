@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <None Remove="appsettings.json" />
+    <None Remove="Resources\CDE-logo-02_GFI.ico" />
   </ItemGroup>
 
   <ItemGroup>
@@ -28,6 +29,10 @@
     <PackageReference Include="Serilog" Version="2.10.0" />
     <PackageReference Include="Serilog.Sinks.Debug" Version="2.0.0" />
     <PackageReference Include="Serilog.Sinks.Seq" Version="5.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Resources\CDE-logo-02_GFI.ico" />
   </ItemGroup>
 
 </Project>
