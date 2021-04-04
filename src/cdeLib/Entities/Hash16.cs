@@ -103,7 +103,7 @@ namespace cdeLib.Entities
             public static int StaticGetHashCode(Hash16 obj)
             {
                 // quite likely a bad choice for hash.
-                return ((((int)(obj.HashA >> 32)) * 31 +
+                return (((int)(obj.HashA >> 32) * 31 +
                        (int)(obj.HashA & 0xFFFFFFFF)) * 31 +
                        (int)(obj.HashB >> 32)) * 31 +
                        (int)(obj.HashB & 0xFFFFFFFF);

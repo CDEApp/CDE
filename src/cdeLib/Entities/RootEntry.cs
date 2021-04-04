@@ -52,12 +52,12 @@ namespace cdeLib.Entities
         [ProtoMember(6, IsRequired = true)]
         [FlatBufferItem(6)]
         [Key(6)]
-        public virtual ulong AvailSpace { get; set; }
+        public virtual long AvailSpace { get; set; }
 
         [ProtoMember(7, IsRequired = true)]
         [FlatBufferItem(7)]
         [Key(7)]
-        public virtual ulong TotalSpace { get; set; }
+        public virtual long TotalSpace { get; set; }
 
         [IgnoreMember]
         public virtual DateTime ScanStartUTC
@@ -139,8 +139,8 @@ namespace cdeLib.Entities
             var pathRoot = System.IO.Path.GetPathRoot(startPath);
 
             var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
-            if (driveInfo.AvailableBytes != null) AvailSpace = (ulong) driveInfo.AvailableBytes;
-            if (driveInfo.TotalBytes != null) TotalSpace = (ulong) driveInfo.TotalBytes;
+            if (driveInfo.AvailableBytes != null) AvailSpace = driveInfo.AvailableBytes.Value;
+            if (driveInfo.TotalBytes != null) TotalSpace = driveInfo.TotalBytes.Value;
             VolumeName = this.GetVolumeName(GetDirectoryRoot(pathRoot));
             return startPath;
         }
@@ -552,13 +552,13 @@ namespace cdeLib.Entities
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public uint FileEntryCount { get; set; }
+        public long FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public uint DirEntryCount { get; set; }
+        public long DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
         {

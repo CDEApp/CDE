@@ -8,6 +8,7 @@ using System.Linq;
 using System.Windows.Forms;
 using ProtoBuf;
 using cdeLib;
+using cdeLib.Entities;
 
 namespace cdeWin
 {
@@ -103,7 +104,7 @@ namespace cdeWin
         {
             foreach (var liveColumn in liveColumns)
             {
-                var saveCol = Columns.FirstOrDefault(x => x.Name == liveColumn.Name);
+                var saveCol = Columns.Find(x => x.Name == liveColumn.Name);
                 if (saveCol != null)
                 {
                     saveCol.Width = liveColumn.Width;
@@ -209,7 +210,7 @@ namespace cdeWin
         private string _configPath;
         private string _configFullFileName;
 
-        public Configuration Default = new Configuration
+        public Configuration Default = new()
         {
             MainWindowConfig = new WindowConfig
             {
@@ -222,39 +223,39 @@ namespace cdeWin
             {
                 Columns = new List<ColumnConfig>
                 {
-                    new ColumnConfig { Name="Name", Width=260},
-                    new ColumnConfig { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Modified", Width=130},
-                    new ColumnConfig { Name="Catalog", Width=130},
-                    new ColumnConfig { Name="Path", Width=400},
+                    new() { Name="Name", Width=260},
+                    new() { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Modified", Width=130},
+                    new() { Name="Catalog", Width=130},
+                    new() { Name="Path", Width=400},
                 }
             },
             DirectoryListView = new ListViewConfig
             {
                 Columns = new List<ColumnConfig>
                 {
-                    new ColumnConfig { Name="Name", Width=260},
-                    new ColumnConfig { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Modified", Width=130 },
+                    new() { Name="Name", Width=260},
+                    new() { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Modified", Width=130 },
                 }
             },
             CatalogListView = new ListViewConfig
             {
                 Columns = new List<ColumnConfig>
                 {
-                    new ColumnConfig { Name="Root Path", Width=100},
-                    new ColumnConfig { Name="Volume Name", Width=100},
-                    new ColumnConfig { Name="Dirs", Width=60, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Files", Width=60, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Dir+File", Width=60, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Drive Hint", Width=60},
-                    new ColumnConfig { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Available", Width=70, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Size", Width=70, Alignment = HorizontalAlignment.Right },
-                    new ColumnConfig { Name="Created", Width=130 },
-                    new ColumnConfig { Name="Scan Time", Width=70, Alignment = HorizontalAlignment.Right},
-                    new ColumnConfig { Name="Catalog File", Width=150 },
-                    new ColumnConfig { Name="Description", Width=150 },
+                    new() { Name="Root Path", Width=100},
+                    new() { Name="Volume Name", Width=100},
+                    new() { Name="Dirs", Width=60, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Files", Width=60, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Dir+File", Width=60, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Drive Hint", Width=60},
+                    new() { Name="Used", Width=70, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Available", Width=70, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Size", Width=70, Alignment = HorizontalAlignment.Right },
+                    new() { Name="Created", Width=130 },
+                    new() { Name="Scan Time", Width=70, Alignment = HorizontalAlignment.Right},
+                    new() { Name="Catalog File", Width=150 },
+                    new() { Name="Description", Width=150 },
                 }
             },
             DirectoryPaneSplitterRatio = -1f,
@@ -443,12 +444,13 @@ namespace cdeWin
             return lvc?.Columns?.Count ?? 0;
         }
 
-        public CompareInfo MyCompareInfo => CompareInfo.GetCompareInfo("en-US");
-        public CompareOptions MyCompareOptions => CompareOptions.IgnoreCase | CompareOptions.StringSort;
+        public CompareInfo MyCompareInfo => DirEntryConsts.MyCompareInfo;
+
+        public CompareOptions MyCompareOptions => DirEntryConsts.MyCompareOptions;
 
         public int CompareWithInfo(string s1, string s2)
         {
-            return MyCompareInfo.Compare(s1, s2, MyCompareOptions);
+            return DirEntryConsts.MyCompareInfo.Compare(s1, s2, DirEntryConsts.MyCompareOptions);
         }
     }
 }

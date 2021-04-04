@@ -159,13 +159,13 @@ namespace cdeLib.Entities
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public uint FileEntryCount { get; set; }
+        public long FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public uint DirEntryCount { get; set; }
+        public long DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
         {
@@ -401,18 +401,7 @@ namespace cdeLib.Entities
         [ProtoMember(4, IsRequired = true)]
         [FlatBufferItem(4)]
         [Key(4)]
-        public virtual long Size
-        {
-            get => SizeBacking;
-            set => this.SizeBacking = (uint) value;
-        }
-
-        /// <summary>
-        /// Cheating here - changing protobuf members is not trivial.
-        /// So in memory we'll use UInt32 but still save as long.  Gain memory reduction but on disk is same size.
-        /// </summary>
-        [IgnoreMember]
-        public virtual uint SizeBacking { get; set; }
+        public virtual long Size { get; set; }
 
         /// <summary>
         /// RootEntry this is the root path, DirEntry this is the entry name.

@@ -8,7 +8,7 @@ namespace cdeLibTest.TestHelpers
 
     public static class FileHelper
     {
-        private static readonly Random Random = new Random();
+        private static readonly Random Random = new();
 
         private static readonly string ProjectPath =
             Path.GetDirectoryName(

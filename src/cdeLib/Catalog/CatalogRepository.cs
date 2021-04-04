@@ -68,7 +68,7 @@ namespace cdeLib.Catalog
 
         public IList<RootEntry> Load(IList<string> cdeList)
         {
-            using (Operation.Time("Loading Catalogs {Count}", cdeList.Count()))
+            using (Operation.Time("Loading Catalogs {Count}", cdeList.Count))
             {
                 var results = new ConcurrentBag<RootEntry>();
                 Parallel.ForEach(cdeList, file =>

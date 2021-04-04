@@ -55,11 +55,11 @@ namespace cdeWin
 
         #region Member Variables
 
-        private static readonly TimeSpan DefaultDelay = new TimeSpan(0, 0, 0, 0, 25);
+        private static readonly TimeSpan DefaultDelay = new(0, 0, 0, 0, 25);
         /// <summary>
         /// The application state monitor class (which monitors the application busy status).
         /// </summary>
-        private static readonly ApplicationStateMonitor _appStateMonitor = new ApplicationStateMonitor(Cursors.WaitCursor, DefaultDelay);
+        private static readonly ApplicationStateMonitor _appStateMonitor = new(Cursors.WaitCursor, DefaultDelay);
 
         #endregion
 

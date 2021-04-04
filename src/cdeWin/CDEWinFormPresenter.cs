@@ -207,7 +207,7 @@ namespace cdeWin
 
         private static TreeNode NewTreeNode(string name, object tag = null)
         {
-            return new TreeNode(name)
+            return new(name)
             {
                 Tag = tag
             };
@@ -543,7 +543,7 @@ namespace cdeWin
             _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
             //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
-            _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName; 
+            _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName;
 
             searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
         }

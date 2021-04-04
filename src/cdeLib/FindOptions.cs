@@ -164,17 +164,17 @@ namespace cdeLib
         public TraverseFunc GetFindPredicate()
         {
             return (p, d) =>
-                ((d.IsDirectory && IncludeFolders) || (!d.IsDirectory && IncludeFiles))
-                && (!FromSizeEnable || (FromSizeEnable && d.Size >= FromSize))
-                && (!ToSizeEnable || (ToSizeEnable && d.Size <= ToSize))
-                && (!FromDateEnable || (FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate))
-                && (!ToDateEnable || (ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate))
-                && (!FromHourEnable || (FromHourEnable && !d.IsModifiedBad
-                                                       && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds))
-                && (!ToHourEnable || (ToHourEnable && !d.IsModifiedBad
-                                                   && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds))
-                && (!NotOlderThanEnable || (NotOlderThanEnable
-                                            && !d.IsModifiedBad && d.Modified >= NotOlderThan))
+                (d.IsDirectory && IncludeFolders || !d.IsDirectory && IncludeFiles)
+                && (!FromSizeEnable || FromSizeEnable && d.Size >= FromSize)
+                && (!ToSizeEnable || ToSizeEnable && d.Size <= ToSize)
+                && (!FromDateEnable || FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate)
+                && (!ToDateEnable || ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate)
+                && (!FromHourEnable || FromHourEnable && !d.IsModifiedBad
+                                                      && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds)
+                && (!ToHourEnable || ToHourEnable && !d.IsModifiedBad
+                                                  && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds)
+                && (!NotOlderThanEnable || NotOlderThanEnable
+                    && !d.IsModifiedBad && d.Modified >= NotOlderThan)
                 && PatternMatcher(p, d);
         }
     }

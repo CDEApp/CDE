@@ -251,7 +251,9 @@ namespace Mono.Terminal
                 Console.Write(rendered_text[i]);
 
             if ((shown_prompt.Length + rendered_text.Length) > max_rendered)
+            {
                 max_rendered = shown_prompt.Length + rendered_text.Length;
+            }
             else
             {
                 var max_extra = max_rendered - shown_prompt.Length;

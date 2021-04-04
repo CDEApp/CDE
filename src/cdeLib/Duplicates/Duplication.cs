@@ -131,7 +131,7 @@ namespace cdeLib.Duplicates
 
             _logger.LogInfo("After initial partial hashing phase.");
             var perf =
-                $"{(_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds)) / (1024.0 * 1024.0):F2} MB/s";
+                $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
             var statsMessage =
                 $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB  NotProcessed: {_duplicationStatistics.BytesNotProcessed / (1024 * 1024):F2} MB  Perf: {perf}\nTotal Data Encountered: {_duplicationStatistics.TotalFileBytes / (1024 * 1024):F2} MB\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
             _logger.LogInfo(statsMessage);
@@ -143,7 +143,7 @@ namespace cdeLib.Duplicates
             _logger.LogInfo("After hashing completed.");
             timer.Stop();
             perf =
-                $"{(_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds)) / (1024.0 * 1024.0):F2} MB/s";
+                $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
             statsMessage =
                 $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB Perf: {perf}\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
             _logger.LogInfo(statsMessage);

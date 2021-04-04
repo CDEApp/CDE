@@ -7,7 +7,7 @@ namespace cdeLib.Infrastructure
     {
         public static string GetRegexErrorMessage(string testPattern)
         {
-            if ((testPattern?.Trim().Length > 0))
+            if (testPattern?.Trim().Length > 0)
             {
                 try
                 {

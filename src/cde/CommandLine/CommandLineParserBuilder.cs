@@ -8,7 +8,7 @@ namespace cde.CommandLine
     {
         public static Parser Build()
         {
-            return new Parser(cfg =>
+            return new(cfg =>
             {
                 cfg.CaseSensitive = false;
                 cfg.AutoHelp = true;

@@ -35,8 +35,8 @@ namespace cdeLib.Entities
 
         bool IsDirectory { get; set; }
         bool PathProblem { get; set; }
-        uint FileEntryCount { get; set; }
-        uint DirEntryCount { get; set; }
+        long FileEntryCount { get; set; }
+        long DirEntryCount { get; set; }
         DateTime Modified { get; set; }
         bool IsHashDone { get; set; }
         bool IsPartialHash { get; set; }

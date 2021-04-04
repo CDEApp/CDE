@@ -23,8 +23,8 @@ namespace cdeWinTest
         protected DirEntry _dirEntry;
         protected PairDirEntry _pairDirEntry;
 
-        protected List<RootEntry> _emptyRootList = new List<RootEntry>();
-        protected List<RootEntry> _rootList = new List<RootEntry>();
+        protected List<RootEntry> _emptyRootList = new();
+        protected List<RootEntry> _rootList = new();
         // protected TreeNode _treeViewAfterSelectNode;
         private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
