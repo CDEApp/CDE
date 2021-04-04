@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using cdeLib.Extensions;
@@ -361,10 +360,10 @@ namespace cdeLib.Entities
         {
             TraverseTreePair((p, d) =>
             {
-                if (d.IsDirectory)
-                {
-                    d.FullPath = p.MakeFullPath(d);
-                }
+                // if (d.IsDirectory)
+                // {
+                //     d.FullPath = p.MakeFullPath(d);
+                // }
 
                 d.ParentCommonEntry = p;
                 return true;
@@ -378,11 +377,6 @@ namespace cdeLib.Entities
         {
             TraverseTreePair((p, d) =>
             {
-                if (d.IsDirectory)
-                {
-                    d.FullPath = null;
-                }
-
                 d.ParentCommonEntry = null;
                 return true;
             });
@@ -558,13 +552,13 @@ namespace cdeLib.Entities
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public long FileEntryCount { get; set; }
+        public uint FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public long DirEntryCount { get; set; }
+        public uint DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
         {
@@ -604,10 +598,6 @@ namespace cdeLib.Entities
             }
         }
 
-        // TODO: these need to be centralised.
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
-
         public int SizeCompareWithDirTo(ICommonEntry de)
         {
             if (de == null)
@@ -632,7 +622,7 @@ namespace cdeLib.Entities
             //}
             // the cast breaks this.
             var sizeCompare = Size.CompareTo(de.Size);
-            return sizeCompare == 0 ? MyCompareInfo.Compare(Path, de.Path, MyCompareOptions) : sizeCompare;
+            return sizeCompare == 0 ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions) : sizeCompare;
         }
 
         public int ModifiedCompareTo(ICommonEntry de)
@@ -678,7 +668,7 @@ namespace cdeLib.Entities
                 return 1; // this after de
             }
 
-            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+            return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
         }
 
         // can this be done with TraverseTree ?
@@ -718,8 +708,8 @@ namespace cdeLib.Entities
                 dirEntryCount += childrenDirEntryCount;
             }
 
-            FileEntryCount = fileEntryCount;
-            DirEntryCount = dirEntryCount;
+            FileEntryCount = (uint) fileEntryCount;
+            DirEntryCount = (uint) dirEntryCount;
             Size = size;
         }
 
@@ -865,7 +855,7 @@ namespace cdeLib.Entities
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
                         var destinationDirEntry = baseDestinationEntry.Children
-                            .FirstOrDefault(x => (x.Path == sourceEntry.Path));
+                            .FirstOrDefault(x => x.Path == sourceEntry.Path);
 
                         if (destinationDirEntry == null)
                         {
@@ -878,11 +868,11 @@ namespace cdeLib.Entities
                         {
                             // copy hash if none in destination.
                             // copy hash as upgrade to full if dest currently partial.
-                            if ((sourceDirEntry.IsHashDone)
-                                && (!destinationDirEntry.IsHashDone)
+                            if (sourceDirEntry.IsHashDone
+                                && !destinationDirEntry.IsHashDone
                                 ||
-                                (sourceDirEntry.IsHashDone)
-                                && (destinationDirEntry.IsHashDone)
+                                sourceDirEntry.IsHashDone
+                                && destinationDirEntry.IsHashDone
                                 && !sourceDirEntry.IsPartialHash
                                 && destinationDirEntry.IsPartialHash)
                             {

@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using FlatSharp.Attributes;
@@ -51,6 +50,7 @@ namespace cdeLib.Entities
         public virtual Flags BitFields { get; set; }
 
         #region BitFields based properties
+
         [IgnoreMember]
         public bool IsDirectory
         {
@@ -135,6 +135,7 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         [IgnoreMember]
         public bool IsDefaultSort
         {
@@ -151,19 +152,20 @@ namespace cdeLib.Entities
                 }
             }
         }
+
         #endregion
 
         /// <summary>
         /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public long FileEntryCount { get; set; }
+        public uint FileEntryCount { get; set; }
 
         /// <summary>
         /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         [IgnoreMember]
-        public long DirEntryCount { get; set; }
+        public uint DirEntryCount { get; set; }
 
         public void SetHash(byte[] hash)
         {
@@ -180,7 +182,7 @@ namespace cdeLib.Entities
             }
             else
             {
-                Hash.HashB = (ulong)hash;
+                Hash.HashB = (ulong) hash;
             }
 
             IsHashDone = true;
@@ -234,9 +236,6 @@ namespace cdeLib.Entities
             }
         }
 
-        // TODO: these need to be centralised.
-        private const CompareOptions MyCompareOptions = CompareOptions.IgnoreCase | CompareOptions.StringSort;
-        private static readonly CompareInfo MyCompareInfo = CompareInfo.GetCompareInfo("en-US");
 
         public int SizeCompareWithDirTo(ICommonEntry de)
         {
@@ -244,14 +243,17 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsDirectory && !de.IsDirectory)
             {
                 return -1; // this before de
             }
+
             if (!IsDirectory && de.IsDirectory)
             {
                 return 1; // this after de
             }
+
             //if (IsDirectory && de.IsDirectory)
             //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
             //    // really cheap to calculate dir size.... i think i should fill it in ?
@@ -261,8 +263,9 @@ namespace cdeLib.Entities
             var sizeCompare = Size.CompareTo(de.Size);
             if (sizeCompare == 0)
             {
-                return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+                return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
             }
+
             return sizeCompare;
         }
 
@@ -272,18 +275,22 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsModifiedBad && !de.IsModifiedBad)
             {
                 return -1; // this before de
             }
+
             if (!IsModifiedBad && de.IsModifiedBad)
             {
                 return 1; // this after de
             }
+
             if (IsModifiedBad && de.IsModifiedBad)
             {
                 return 0;
             }
+
             return DateTime.Compare(Modified, de.Modified);
         }
 
@@ -294,15 +301,18 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
+
             if (IsDirectory && !de.IsDirectory)
             {
                 return -1; // this before de
             }
+
             if (!IsDirectory && de.IsDirectory)
             {
                 return 1; // this after de
             }
-            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+
+            return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
         }
 
         public int PathCompareTo(ICommonEntry de)
@@ -311,7 +321,8 @@ namespace cdeLib.Entities
             {
                 return -1; // this before de
             }
-            return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+
+            return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
         }
 
         // can this be done with TraverseTree ?
@@ -334,8 +345,10 @@ namespace cdeLib.Entities
                         {
                             dirEntry.PathProblem = PathProblem;
                         }
+
                         ++dirEntryCount;
                     }
+
                     // else
                     // {
                     //     dirEntry.PathProblem = dirEntry.IsBadPath();
@@ -344,11 +357,13 @@ namespace cdeLib.Entities
                     fileEntryCount += dirEntry.FileEntryCount;
                     childrenDirEntryCount += dirEntry.DirEntryCount;
                 }
+
                 fileEntryCount += Children.Count - dirEntryCount;
                 dirEntryCount += childrenDirEntryCount;
             }
-            FileEntryCount = fileEntryCount;
-            DirEntryCount = dirEntryCount;
+
+            FileEntryCount = (uint) fileEntryCount;
+            DirEntryCount = (uint) dirEntryCount;
             Size = size;
         }
 
@@ -362,6 +377,7 @@ namespace cdeLib.Entities
             {
                 entry = entry.ParentCommonEntry;
             }
+
             return entry.TheRootEntry;
         }
 
@@ -378,13 +394,25 @@ namespace cdeLib.Entities
             {
                 Children = new List<DirEntry>();
             }
+
             Children.Add(child);
         }
 
         [ProtoMember(4, IsRequired = true)]
         [FlatBufferItem(4)]
         [Key(4)]
-        public virtual long Size { get; set; }
+        public virtual long Size
+        {
+            get => SizeBacking;
+            set => this.SizeBacking = (uint) value;
+        }
+
+        /// <summary>
+        /// Cheating here - changing protobuf members is not trivial.
+        /// So in memory we'll use UInt32 but still save as long.  Gain memory reduction but on disk is same size.
+        /// </summary>
+        [IgnoreMember]
+        public virtual uint SizeBacking { get; set; }
 
         /// <summary>
         /// RootEntry this is the root path, DirEntry this is the entry name.
@@ -401,7 +429,11 @@ namespace cdeLib.Entities
         /// Populated on load, not saved to disk.
         /// </summary>
         [IgnoreMember]
-        public string FullPath { get; set; }
+        //public string FullPath { get; set; }
+        public string FullPath
+        {
+            get => ParentCommonEntry.MakeFullPath(this);
+        }
 
         /// <summary>
         /// True if entry name ends with Space or Period which is a problem on windows file systems.
@@ -413,7 +445,7 @@ namespace cdeLib.Entities
 
         public void TraverseTreePair(TraverseFunc func)
         {
-            EntryHelper.TraverseTreePair(new List<ICommonEntry> { this }, func);
+            EntryHelper.TraverseTreePair(new List<ICommonEntry> {this}, func);
         }
 
         public void TraverseTreesCopyHash(ICommonEntry destination)
@@ -437,7 +469,7 @@ namespace cdeLib.Entities
             // traverse every source entry copy across the meta data that matches on destination entry
             // if it adds value to destination.
             // if destination is not there source not processed.
-            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
+            dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
 
             while (dirs.Count > 0)
             {
@@ -456,7 +488,7 @@ namespace cdeLib.Entities
                         // size of dir is irrelevant. date of dir we don't care about.
                         var sourceEntry = sourceDirEntry;
                         var destinationDirEntry = baseDestinationEntry.Children
-                            .FirstOrDefault(x => (x.Path == sourceEntry.Path));
+                            .FirstOrDefault(x => x.Path == sourceEntry.Path);
 
                         if (destinationDirEntry == null)
                         {
@@ -469,11 +501,11 @@ namespace cdeLib.Entities
                         {
                             // copy hash if none in destination.
                             // copy hash as upgrade to full if dest currently partial.
-                            if ((sourceDirEntry.IsHashDone)
-                                && (!destinationDirEntry.IsHashDone)
+                            if (sourceDirEntry.IsHashDone
+                                && !destinationDirEntry.IsHashDone
                                 ||
-                                (sourceDirEntry.IsHashDone)
-                                && (destinationDirEntry.IsHashDone)
+                                sourceDirEntry.IsHashDone
+                                && destinationDirEntry.IsHashDone
                                 && !sourceDirEntry.IsPartialHash
                                 && destinationDirEntry.IsPartialHash)
                             {
@@ -485,7 +517,7 @@ namespace cdeLib.Entities
                         {
                             if (destinationDirEntry.IsDirectory)
                             {
-                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
+                                dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry, (ICommonEntry) destinationDirEntry));
                             }
                         }
                     }
@@ -519,16 +551,18 @@ namespace cdeLib.Entities
         public IList<ICommonEntry> GetListFromRoot()
         {
             var activatedDirEntryList = new List<ICommonEntry>(8);
-            for (var entry = (ICommonEntry)this; entry != null; entry = entry.ParentCommonEntry)
+            for (var entry = (ICommonEntry) this; entry != null; entry = entry.ParentCommonEntry)
             {
                 activatedDirEntryList.Add(entry);
             }
+
             activatedDirEntryList.Reverse(); // list now from root to this.
             return activatedDirEntryList;
         }
 
         public bool ExistsOnFileSystem()
-        {   // CommonEntry is always a directory ? - not really.
+        {
+            // CommonEntry is always a directory ? - not really.
             return Directory.Exists(FullPath);
         }
 

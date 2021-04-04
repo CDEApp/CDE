@@ -31,12 +31,12 @@ namespace cdeLib.Entities
         /// <summary>
         /// Populated on load, not saved to disk.
         /// </summary>
-        string FullPath { get; set; }
+        string FullPath { get; }
 
         bool IsDirectory { get; set; }
         bool PathProblem { get; set; }
-        long FileEntryCount { get; set; }
-        long DirEntryCount { get; set; }
+        uint FileEntryCount { get; set; }
+        uint DirEntryCount { get; set; }
         DateTime Modified { get; set; }
         bool IsHashDone { get; set; }
         bool IsPartialHash { get; set; }

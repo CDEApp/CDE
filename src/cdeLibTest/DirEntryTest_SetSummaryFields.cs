@@ -118,7 +118,7 @@ namespace cdeLibTest
         public void SetSummaryFields_de3a_DirEntryCount_correct()
         {
             var testEntry = de3a;
-            testEntry.DirEntryCount = -1;
+            testEntry.DirEntryCount = 1;
             testEntry.SetSummaryFields();
 
             Assert.That(testEntry.DirEntryCount, Is.EqualTo(0));
@@ -128,7 +128,7 @@ namespace cdeLibTest
         public void SetSummaryFields_de3a_FileEntryCount_correct()
         {
             var testEntry = de3a;
-            testEntry.DirEntryCount = -1;
+            testEntry.DirEntryCount = 1;
             testEntry.SetSummaryFields();
 
             Assert.That(testEntry.FileEntryCount, Is.EqualTo(1));

@@ -1,5 +1,4 @@
-﻿using cdeLib;
-using cdeLib.Entities;
+﻿using cdeLib.Entities;
 using NUnit.Framework;
 using NSubstitute;
 using Shouldly;
@@ -54,7 +53,7 @@ namespace cdeLibTest
         public void TraverseTree_SingleChildTree_CallsActionOnChild()
         {
             // only looks at Children for recurse.
-            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" };
+            var de1 = new DirEntry(true) { Path = "d1" };
             var de2 = new DirEntry { Path = "d2" };
             de1.AddChild(de2);
             var mockAction = Substitute.For<TraverseFunc>();
@@ -69,7 +68,7 @@ namespace cdeLibTest
         {
             var actionCalled = false;
             // only looks at Children for recurse.
-            var de1 = new DirEntry(true) { Path = "d1", FullPath = "Mooo" };
+            var de1 = new DirEntry(true) { Path = "d1"};
             var de2 = new DirEntry { Path = "d2" };
             de1.AddChild(de2);
 

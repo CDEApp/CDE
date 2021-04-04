@@ -310,9 +310,9 @@ namespace cdeLibTest
             re.SetInMemoryFields();
 
             Assert.That(re.FullPath, Is.EqualTo(@"C:\"));
-            Assert.That(fe1.FullPath, Is.Null);// Is.EqualTo(@"C:\fe1")); FullPath only set on directories to save memory.
+            //Assert.That(fe1.FullPath, Is.Null);// Is.EqualTo(@"C:\fe1")); FullPath only set on directories to save memory.
             Assert.That(de2.FullPath, Is.EqualTo(@"C:\de2"));
-            Assert.That(fe3.FullPath, Is.Null);//Is.EqualTo(@"C:\de2\fe3"));
+            //Assert.That(fe3.FullPath, Is.Null);//Is.EqualTo(@"C:\de2\fe3"));
         }
     }
     // ReSharper restore InconsistentNaming

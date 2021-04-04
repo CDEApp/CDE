@@ -346,7 +346,7 @@ namespace cdeWinTest
                     @"T:\", string.Empty/*"TestVolume"*/, "0", "1", "1",
                     "Z", "531 B", "736.6 KB", "639 KB",
                     "2011/12", // "/02 03:15:13",
-                    "34 msec",
+                    "0 sec",
                     @".\TestRootEntry.cde",
                     "Test Root Entry Description"
                 };
