@@ -188,10 +188,10 @@ namespace cdeWin
             DirectoryListViewHelper = new ListViewHelper<ICommonEntry>(directoryListView)
             {
                 // ReSharper disable PossibleNullReferenceException
-                RetrieveVirtualItem = () => { OnDirectoryRetrieveVirtualItem(); },
-                ItemActivate = () => { OnDirectoryListViewItemActivate(); },
-                ColumnClick = () => { OnDirectoryListViewColumnClick(); },
-                ItemSelectionChanged = () => { OnDirectoryListViewItemSelectionChanged(); },
+                RetrieveVirtualItem = () => OnDirectoryRetrieveVirtualItem(),
+                ItemActivate = () => OnDirectoryListViewItemActivate(),
+                ColumnClick = () => OnDirectoryListViewColumnClick(),
+                ItemSelectionChanged = () => OnDirectoryListViewItemSelectionChanged(),
                 // ReSharper restore PossibleNullReferenceException
                 ContextMenu = CreateDirectoryContextMenu(),
             };
@@ -210,9 +210,9 @@ namespace cdeWin
             {
                 MultiSelect = false,
                 // ReSharper disable PossibleNullReferenceException
-                RetrieveVirtualItem = () => { OnCatalogRetrieveVirtualItem(); },
-                ItemActivate = () => { OnCatalogListViewItemActivate(); },
-                ColumnClick = () => { OnCatalogListViewColumnClick(); },
+                RetrieveVirtualItem = () => OnCatalogRetrieveVirtualItem(),
+                ItemActivate = () => OnCatalogListViewItemActivate(),
+                ColumnClick = () => OnCatalogListViewColumnClick()
                 // ReSharper restore PossibleNullReferenceException
             };
 
@@ -660,7 +660,6 @@ namespace cdeWin
 
         private void mainStatusStrip_ItemClicked(object sender, ToolStripItemClickedEventArgs e)
         {
-
         }
     }
 }

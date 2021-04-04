@@ -260,7 +260,7 @@ namespace cdeWinTest
                 _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
                 TreeNode treeNodeSet = null;
                 _mockForm.DirectoryTreeViewNodes =
-                    Arg.Do<TreeNode>(node => { treeNodeSet = node; });
+                    Arg.Do<TreeNode>(node => treeNodeSet = node);
                 FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
 
                 // ACT
@@ -336,7 +336,7 @@ namespace cdeWinTest
                 _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM}"); // make local time zone irrelevant for test.
                 _mockCatalogListViewHelper.RetrieveItemIndex.Returns(0);
                 ListViewItem setRenderItem = null;
-                _mockCatalogListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => { setRenderItem = lvi; });
+                _mockCatalogListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
 
                 // ACT                
                 _sutPresenter.CatalogRetrieveVirtualItem();
@@ -410,7 +410,7 @@ namespace cdeWinTest
                 _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(0);
 
                 ListViewItem setRenderItem = null;
-                _mockSearchResultListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => { setRenderItem = lvi; });
+                _mockSearchResultListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
 
                 // ACT
                 _sutPresenter.SearchResultRetrieveVirtualItem();

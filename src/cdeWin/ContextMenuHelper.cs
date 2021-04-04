@@ -8,14 +8,14 @@ namespace cdeWin
     /// Context Menu Strip creation for fixed names with configurable handlers.
     /// Only those handlers that are set will appear in Menu.
     /// Usage:
-    /// 
+    ///
     /// var helper = new ContextMenuHelper
     /// {
     ///   TreeViewHandler = MyTreeViewHandler,
     ///   OpenHandler = MyOpenHandler,
     /// };
     /// var myContextMenuStrip = helper.GetContextMenuStrip();
-    /// 
+    ///
     /// </summary>
     public class ContextMenuHelper : IDisposable
     {
@@ -27,7 +27,7 @@ namespace cdeWin
         private readonly ToolStripMenuItem _open = new("Open");
         private readonly ToolStripMenuItem _explore = new("Explore");
         private readonly ToolStripMenuItem _exploreAlt = new("Explore Alt");
-        
+
         private readonly ToolStripMenuItem _properties = new("Properties"); // like explorer
 
         private readonly ToolStripMenuItem _selectAll = new("Select All");

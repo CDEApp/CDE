@@ -121,9 +121,9 @@ namespace cdeLibTest
             var dp1 = dp.First();
 
             // ReSharper disable PossibleNullReferenceException
-            var f1 = dp1.Value.FirstOrDefault(x => x.ChildDE == de4).ChildDE;
+            var f1 = dp1.Value.Find(x => x.ChildDE == de4).ChildDE;
             Assert.That(f1, Is.EqualTo(de4));
-            var f2 = dp1.Value.FirstOrDefault(x => x.ChildDE == de5).ChildDE;
+            var f2 = dp1.Value.Find(x => x.ChildDE == de5).ChildDE;
             Assert.That(f2, Is.EqualTo(de5));
             // ReSharper restore PossibleNullReferenceException
         }

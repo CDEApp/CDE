@@ -469,7 +469,7 @@ namespace cdeWin
         private T GetActivateItem()
         {
             Console.Out.WriteLine("X02 GetActivateItem AfterActivateIndex" + AfterActivateIndex);
-            if (!(AfterActivateIndex >= 0) || _list == null)
+            if (AfterActivateIndex < 0 || _list == null)
             {
                 return null;
             }

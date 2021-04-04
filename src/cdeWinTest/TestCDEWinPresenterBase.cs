@@ -117,10 +117,7 @@ namespace cdeWinTest
 
         protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
         {
-            lvh.ActionOnActivateItem(Arg.Do<Action<T>>(x =>
-            {
-                Console.Out.WriteLine("called ActionOnActivateItem()");
-            }));
+            lvh.ActionOnActivateItem(Arg.Do<Action<T>>(x => Console.Out.WriteLine("called ActionOnActivateItem()")));
         }
 
         protected void MockDirectoryTreeViewAfterSelect(

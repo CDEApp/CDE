@@ -48,7 +48,7 @@ namespace cdeLib.Infrastructure.Hashing
 
                             h1 ^= k1;
                             h1 = rotl32(h1, 13);
-                            h1 = h1 * 5 + 0xe6546b64;
+                            h1 = (h1 * 5) + 0xe6546b64;
                             break;
                         case 3:
                             k1 = (uint)
