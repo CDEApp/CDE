@@ -19,7 +19,6 @@ namespace cdeWin
         private static void Main()
         {
             LoggingBootstrap.CreateLogger();
-
             Application.ThreadException += UIThreadException;
             Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
             AppDomain.CurrentDomain.UnhandledException += CurrentDomainUnhandledException;

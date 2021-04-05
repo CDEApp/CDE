@@ -30,6 +30,7 @@ namespace cdeWin
         /// </summary>
         private void InitializeComponent()
         {
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(CDEWinForm));
             this.directoryTreeView = new System.Windows.Forms.TreeView();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -87,8 +88,8 @@ namespace cdeWin
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.catalogsLoadedStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.totalFileEntriesStatus = new System.Windows.Forms.ToolStripStatusLabel();
-            this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusMemory = new System.Windows.Forms.ToolStripStatusLabel();
+            this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchTimeStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusLabelRightAlign = new System.Windows.Forms.ToolStripStatusLabel();
             this.menuStrip1.SuspendLayout();
@@ -759,6 +760,17 @@ namespace cdeWin
             this.totalFileEntriesStatus.Text = "Entries 0";
             this.totalFileEntriesStatus.ToolTipText = "Total File Entries in loaded catalogs";
             // 
+            // toolStripStatusMemory
+            // 
+            this.toolStripStatusMemory.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
+            this.toolStripStatusMemory.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenInner;
+            this.toolStripStatusMemory.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
+            this.toolStripStatusMemory.Name = "toolStripStatusMemory";
+            this.toolStripStatusMemory.Size = new System.Drawing.Size(133, 19);
+            this.toolStripStatusMemory.Text = "toolStripStatusMemory";
+            // 
             // searchResultsStatus
             // 
             this.searchResultsStatus.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
@@ -770,17 +782,6 @@ namespace cdeWin
             this.searchResultsStatus.Size = new System.Drawing.Size(95, 19);
             this.searchResultsStatus.Text = "Search Results 0";
             this.searchResultsStatus.ToolTipText = "Search Results Found (upto maximum)";
-            // 
-            // toolStripStatusMemory
-            // 
-            this.toolStripStatusMemory.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
-            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
-            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
-            this.toolStripStatusMemory.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenInner;
-            this.toolStripStatusMemory.DisplayStyle = System.Windows.Forms.ToolStripItemDisplayStyle.Text;
-            this.toolStripStatusMemory.Name = "toolStripStatusMemory";
-            this.toolStripStatusMemory.Size = new System.Drawing.Size(133, 19);
-            this.toolStripStatusMemory.Text = "toolStripStatusMemory";
             // 
             // searchTimeStatus
             // 
@@ -804,6 +805,7 @@ namespace cdeWin
             this.Controls.Add(this.mainTabControl);
             this.Controls.Add(this.mainStatusStrip);
             this.Controls.Add(this.menuStrip1);
+            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MinimumSize = new System.Drawing.Size(464, 340);
