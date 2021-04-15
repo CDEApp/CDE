@@ -1039,7 +1039,7 @@ namespace cdeWin
             var compareResult = column switch
             {
                 0 => re1.Path.CompareTo(re2.Path),
-                1 => 0, // re1.VolumeName.CompareTo(re2.VolumeName);
+                1 => string.Compare((string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName), string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
                 2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
                 3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
                 4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
