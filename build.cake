@@ -164,14 +164,12 @@ Task("Pack")
     // Create the self-contained packages for each runtime ID defined
     foreach(var rid in GetProjectRuntimeIds(@".\src\cde\cde.csproj"))
     {
-        DoPackage("cde", "net5.0", semver, rid);
-        
+        DoPackage("cde", "net6.0", semver, rid);
     }
 
 foreach(var rid in GetProjectRuntimeIds(@".\src\cdeWin\cdeWin.csproj"))
     {
-        DoPackage("cdeWin", "net5.0-windows", semver, rid);
-        
+        DoPackage("cdeWin", "net6.0-windows7.0", semver, rid);
     }
 	
 	// // Create a Zip for each runtime for testing
@@ -198,9 +196,7 @@ private void DoPackage(string project, string framework, string version, string 
 		    .Append($"/p:Version={semver}")
 		    .Append($"--verbosity normal")
 		    .Append($"/p:PublishSingleFile=true") // try it
-            .Append($"/p:SelfContained=false") // try it
-
-        // .Append($"/p:PublishTrimmed=true") // mutually exclusive with self contained false
+            .Append("--no-self-contained")
     };
     if (!string.IsNullOrEmpty(runtimeId))
     {
