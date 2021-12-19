@@ -8,19 +8,12 @@ namespace cdeDataStructure3.Entities
     {
         private readonly IEnumerable<RootEntry> _rootEntries;
         private DirEntry _current;
-        private bool isDisposed;
+        private bool _isDisposed;
         private Stack<CommonEntry> _entries;
         private IEnumerator<DirEntry> _childEnumerator;
 
-        public DirEntry Current
-        {
-            get { return _current; }
-        }
-
-        object IEnumerator.Current
-        {
-            get { return Current; }
-        }
+        public DirEntry Current => _current;
+        object IEnumerator.Current => Current;
 
         public DirEntryEnumerator(RootEntry rootEntry)
         {
@@ -39,7 +32,7 @@ namespace cdeDataStructure3.Entities
             var entries = new Stack<CommonEntry>();
             foreach (var re in rootEntries)
             {
-                if (re.Children != null && re.Children.Count > 0)
+                if (re.Children is { Count: > 0 })
                 {
                     entries.Push(re);
                 }
@@ -56,11 +49,11 @@ namespace cdeDataStructure3.Entities
 
         protected virtual void Dispose(bool disposing)
         {
-            if (isDisposed) return;
+            if (_isDisposed) return;
             if (disposing)
             {
                 _childEnumerator?.Dispose();
-                isDisposed = true;
+                _isDisposed = true;
             }
         }
 
@@ -81,7 +74,7 @@ namespace cdeDataStructure3.Entities
                 if (_childEnumerator.MoveNext())
                 {
                     _current = _childEnumerator.Current;
-                    if (_current.IsDirectory && _current.Children != null && _current.Children.Count > 0)
+                    if (_current.IsDirectory && _current.Children is { Count: > 0 })
                     {
                         _entries.Push(_current);
                     }

@@ -69,19 +69,19 @@ namespace cde
                     .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGreppath, opts.Value))
                     .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
                     .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
-                    .WithParsed<HashOptions>(opts => HashCatalog())
-                    .WithParsed<DupesOptions>(opts => FindDupes())
-                    .WithParsed<TreeDumpOptions>(opts => PrintPathsHaveHashEnumerator())
-                    .WithParsed<LoadWaitOptions>(opts =>
+                    .WithParsed<HashOptions>(_ => HashCatalog())
+                    .WithParsed<DupesOptions>(_ => FindDupes())
+                    .WithParsed<TreeDumpOptions>(_ => PrintPathsHaveHashEnumerator())
+                    .WithParsed<LoadWaitOptions>(_ =>
                     {
                         _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
                         Console.ReadLine();
                     })
-                    .WithParsed<ReplOptions>(opts => InvokeRepl())
+                    .WithParsed<ReplOptions>(_ => InvokeRepl())
                     .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
-                    .WithParsed<UpgradeOptions>(opts => Upgrade())
+                    .WithParsed<UpgradeOptions>(_ => Upgrade())
                     .WithParsed<UpdateOptions>(Update)
-                    .WithNotParsed(errs => Environment.Exit(1));
+                    .WithNotParsed(_ => Environment.Exit(1));
                 return 0;
             }
         }
@@ -168,7 +168,7 @@ namespace cde
                             Console.WriteLine("IncludeFolders:" + findService.IncludeFolders);
                             break;
                         case "help":
-                            Console.WriteLine("Valid optiosn are");
+                            Console.WriteLine("Valid options are");
                             Console.WriteLine("--includefiles");
                             Console.WriteLine("--includefolders");
                             break;

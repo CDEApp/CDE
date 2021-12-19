@@ -140,19 +140,10 @@ namespace cdeDataStructure3.Entities
         }
 
         #region Methods virtual to assist testing.
-
-        // TODO may not be needed with move to dotnetcore3.0 and System.IO
         public virtual string GetFullPath(string path)
         {
             return System.IO.Path.GetFullPath(path);
         }
-
-        // UNCLEAR what this is here for? so commenting out for now.
-        // public virtual bool IsPathRooted(string path)
-        // {
-        //     // return Filesystem.Path.IsPathRooted(path);
-        //     return Path.;
-        // }
 
         public virtual bool IsUnc(string path)
         {
@@ -190,7 +181,7 @@ namespace cdeDataStructure3.Entities
                 //     path = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
                 // }
 
-                path = char.ToUpper(path[0]) + path.Substring(1);
+                path = char.ToUpper(path[0]) + path[1..];
             }
 
             return path;
@@ -404,7 +395,7 @@ namespace cdeDataStructure3.Entities
             {
                 if (d.IsDirectory)
                 {
-                    if (d.Children != null && d.Children.Count > 1)
+                    if (d.Children is { Count: > 1 })
                     {
                         d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
                         d.IsDefaultSort = true;

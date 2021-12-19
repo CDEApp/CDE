@@ -12,9 +12,9 @@ namespace cdeDataStructure3.Entities
             }
 
             var sb = new StringBuilder();
-            for (var i = 0; i < bytes.Length; i++)
+            foreach (var t in bytes)
             {
-                sb.Append(bytes[i].ToString("x2"));
+                sb.Append(t.ToString("x2"));
             }
 
             return sb.ToString();

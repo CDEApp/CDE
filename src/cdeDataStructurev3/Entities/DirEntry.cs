@@ -70,7 +70,7 @@ namespace cdeDataStructure3.Entities
 
         public bool IsModifiedBad
         {
-            get { return (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad; }
+            get => (BitFields & Flags.ModifiedBad) == Flags.ModifiedBad;
             set
             {
                 if (value)
@@ -86,7 +86,7 @@ namespace cdeDataStructure3.Entities
 
         public bool IsReparsePoint
         {
-            get { return (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint; }
+            get => (BitFields & Flags.ReparsePoint) == Flags.ReparsePoint;
             set
             {
                 if (value)
@@ -102,7 +102,7 @@ namespace cdeDataStructure3.Entities
 
         public bool IsHashDone
         {
-            get { return (BitFields & Flags.HashDone) == Flags.HashDone; }
+            get => (BitFields & Flags.HashDone) == Flags.HashDone;
             set
             {
                 if (value)
@@ -151,12 +151,12 @@ namespace cdeDataStructure3.Entities
         #endregion
 
         /// <summary>
-        /// if this is a directory number of files contained in its heirarchy
+        /// if this is a directory number of files contained in its hierarchy
         /// </summary>
         public long FileEntryCount;
 
         /// <summary>
-        /// if this is a directory number of dirs contained in its heirarchy
+        /// if this is a directory number of dirs contained in its hierarchy
         /// </summary>
         public long DirEntryCount;
 

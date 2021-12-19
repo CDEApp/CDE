@@ -59,7 +59,7 @@ namespace cdeDataStructure3.Infrastructure
         /// <param name="cancel">An optional <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
         /// <returns>A <see cref="Task"/> containing the <see cref="FileSystemProperties"/> for this entry.</returns>
         public static async Task<FileSystemProperties> GetPropertiesAsync(string volumeIdentifier,
-            CancellationToken cancel = default(CancellationToken))
+            CancellationToken cancel = default)
         {
             return await Task.Run(() =>
             {
