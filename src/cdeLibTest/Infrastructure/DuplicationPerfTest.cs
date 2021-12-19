@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.Versioning;
 using System.Threading;
 using cdeLib.Infrastructure.Hashing;
 using cdeLibTest.Infrastructure.Hashing;
@@ -18,6 +19,8 @@ namespace cdeLibTest.Infrastructure
         /// MurmurHash3: 2903.31 MB/s(861)
         /// </summary>
         [Test, Explicit("Only for benchmarking")]
+        [SupportedOSPlatform("linux")]
+        [SupportedOSPlatform("windows")]
         public void PerformanceHashTest()
         {
             var tests = new Dictionary<string, IHashAlgorithm>

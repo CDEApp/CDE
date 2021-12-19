@@ -810,7 +810,7 @@ namespace cdeWin
             this.Margin = new System.Windows.Forms.Padding(4, 3, 4, 3);
             this.MinimumSize = new System.Drawing.Size(464, 340);
             this.Name = "CDEWinForm";
-            this.Text = "cdeWinView";
+            this.Text = "CDE";
             this.Shown += new System.EventHandler(this.CDEWinFormShown);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
