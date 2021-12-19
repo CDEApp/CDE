@@ -50,7 +50,7 @@ namespace cdeLib.Catalog
                         {
                             var serializer = new FlatBufferSerializer(
                                 new FlatBufferSerializerOptions());
-                            return serializer.Parse<RootEntry>(new UnsafeArrayInputBuffer(bytes));
+                            return serializer.Parse<RootEntry>(bytes);
                         }
                     case SerializerProtocol.MessagePack:
                         return MessagePackSerializer.Deserialize<RootEntry>(input);
