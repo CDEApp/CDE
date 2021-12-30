@@ -21,6 +21,7 @@ namespace cde
 
             ConfigureLogger(config);
             builder.RegisterInstance(config);
+            builder.RegisterType<cdeLib.Infrastructure.Logger>().As<cdeLib.Infrastructure.ILogger>();
             builder.RegisterLogger();
 
             builder.RegisterModule<CdelibModule>();
