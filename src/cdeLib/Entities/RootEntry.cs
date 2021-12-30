@@ -308,11 +308,7 @@ namespace cdeLib.Entities
                         }
 
                         ++entryCount;
-                        if (entryCount > EntryCountThreshold)
-                        {
-                            SimpleScanCountEvent?.Invoke();
-                            entryCount = 0;
-                        }
+                        SimpleScanCountEvent?.Invoke(entryCount, fsInfo.FullName);
 
                         if (Hack.BreakConsoleFlag)
                         {
@@ -344,7 +340,7 @@ namespace cdeLib.Entities
         public int EntryCountThreshold { get; set; }
 
         [IgnoreMember]
-        public Action SimpleScanCountEvent { get; set; }
+        public Action<int, string> SimpleScanCountEvent { get; set; }
 
         [IgnoreMember]
         public Action SimpleScanEndEvent { get; set; }

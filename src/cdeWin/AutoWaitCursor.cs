@@ -6,11 +6,11 @@ using System.Windows.Forms;
 // ReSharper disable UnusedMember.Local
 
 // This found at http://www.vbusers.com/codecsharp/codeget.asp?ThreadID=58&PostID=1&NumReplies=0
-// Stackoverflow question i asked in relation to problem.
+// StackOverflow question i asked in relation to problem.
 // http://stackoverflow.com/questions/27763003/windows-forms-app-with-autowaitcursor-crashing-in-vs2013ce-debugger-if-platfor
 // With a good response, fixed the crash in debugger.
-// Also setup for ApplicationExit so splash form does not cause autowait to exit.
-// Unless you are running blocking tasks on your gui thread autowait is not overly active.
+// Also setup for ApplicationExit so splash form does not cause AutoWait to exit.
+// Unless you are running blocking tasks on your gui thread AutoWait is not overly active.
 
 namespace cdeWin
 {
@@ -469,7 +469,7 @@ namespace cdeWin
             private bool _IsApplicationBusy(TimeSpan delay, IntPtr windowHandle)
             {
                 // ReSharper disable InconsistentNaming
-                const int INFINITE = Int32.MaxValue;
+                const int INFINITE = int.MaxValue;
                 const int WM_NULL = 0;
                 // ReSharper restore InconsistentNaming
                 IntPtr result;// = 0;
@@ -498,7 +498,7 @@ namespace cdeWin
             /// </summary>
             private void WaitForIdle()
             {
-                // Wait indefinately until the application is idle
+                // Wait indefinitely until the application is idle
                 _IsApplicationBusy(TimeSpan.MaxValue, _mainWindowHandle);
             }
 

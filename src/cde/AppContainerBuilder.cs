@@ -2,6 +2,7 @@ using Autofac;
 using AutofacSerilogIntegration;
 using cde.Config;
 using cdeLib.Module;
+using MediatR.Extensions.Autofac.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -23,6 +24,7 @@ namespace cde
             builder.RegisterLogger();
 
             builder.RegisterModule<CdelibModule>();
+            builder.RegisterMediatR(typeof(AppContainerBuilder).Assembly);
             return builder.Build();
         }
 

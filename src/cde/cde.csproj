@@ -4,7 +4,7 @@
         <OutputType>Exe</OutputType>
         <TargetFramework>net6.0</TargetFramework>
         <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
-        <ApplicationIcon>CDE-logo-02_GFI.ico</ApplicationIcon>
+        <ApplicationIcon>Resources\CDE-logo-02_GFI.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -20,7 +20,7 @@
       <PackageReference Include="JetBrains.Annotations" Version="2021.3.0" />
       <PackageReference Include="MediatR" Version="9.0.0" />
       <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="7.4.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="1.0.681">
+      <PackageReference Include="Meziantou.Analyzer" Version="1.0.683">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -28,6 +28,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="6.0.0" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
       <PackageReference Include="SerilogTimings" Version="2.3.0" />
+      <PackageReference Include="Spectre.Console" Version="0.43.0" />
     </ItemGroup>
 
     <ItemGroup>
