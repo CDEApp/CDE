@@ -224,8 +224,8 @@ namespace cde
 
         public static void CreateCache(ScanOptions opts)
         {
-            var task = Task.Run(() =>
-                Mediatr.Send(new CreateCacheCommand(opts.Path) {Description = opts.Description})
+            var task = Task.Run(async () => 
+                await Mediatr.Send(new CreateCacheCommand(opts.Path) {Description = opts.Description})
                     .ConfigureAwait(false));
             task.Wait();
         }
