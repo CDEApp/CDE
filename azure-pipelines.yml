@@ -4,15 +4,15 @@ trigger:
 - feature/*
 
 pool:
-  vmImage: 'windows-latest'
+  vmImage: 'windows-2022'
 
 steps:
-- task: UseDotNet@2
-  displayName: 'Use .NET Core sdk'
-  inputs:
-    packageType: sdk
-    version: 5.0.100
-    installationPath: $(Agent.ToolsDirectory)/dotnet
+# - task: UseDotNet@2
+#   displayName: 'Use .NET Core sdk'
+  # inputs:
+  #   packageType: sdk
+  #   version: 5.0.100
+  #   installationPath: $(Agent.ToolsDirectory)/dotnet
 - task: PowerShell@2
   displayName: Build App
   inputs:
