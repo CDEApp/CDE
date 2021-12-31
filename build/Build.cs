@@ -78,6 +78,7 @@ class Build : NukeBuild
         .Produces(ArtifactsDirectory / "*.*")
         .Executes(() =>
         {
+            EnsureCleanDirectory(ArtifactsDirectory);
             DotNetPack(s => s
                 .SetProject(Solution)
                 .SetOutputDirectory(ArtifactsDirectory)
@@ -96,6 +97,8 @@ class Build : NukeBuild
                     .SetProject("src/cde/cde.csproj")
                     .SetConfiguration(Configuration)
                     .SetOutput(ArtifactsDirectory + "/cde")
+                    .SetRuntime("win10-x64")
+                    .SetPublishSingleFile(true)
                     .SetSelfContained(false)
                 //.SetFramework()
             );
@@ -104,6 +107,8 @@ class Build : NukeBuild
                     .SetProject("src/cdewin/cdewin.csproj")
                     .SetConfiguration(Configuration)
                     .SetOutput(ArtifactsDirectory + "/cdewin")
+                    .SetRuntime("win10-x64")
+                    .SetPublishSingleFile(true)
                     .SetSelfContained(false)
                 //.SetFramework()
             );

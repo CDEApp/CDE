@@ -42,6 +42,7 @@ public class ScanProgressConsole
                     if (ScanCount > reportCounter)
                     {
                         var elapsedSec = sw.ElapsedMilliseconds / 1000;
+                        if (elapsedSec < 1) elapsedSec = 1;
                         var scansPerSec = ScanCount / elapsedSec;
                         Messages.Enqueue($"Scanned {ScanCount} messages. Avg {scansPerSec:0}/sec");
                         reportCounter += increment;

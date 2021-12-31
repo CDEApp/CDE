@@ -27,7 +27,8 @@ namespace cde.ScanProgress
 
         public async Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
         {
-            var mainLoopTask = MainLoop(request, cancellationToken);
+            var mainLoopTask  = Task.Factory.StartNew(() => MainLoop(request, cancellationToken));
+            //var mainLoopTask = MainLoop(request, cancellationToken);
             var console = new ScanProgressConsole();
             console.Start(mainLoopTask, cancellationToken);
             await mainLoopTask.ConfigureAwait(false);
@@ -36,6 +37,7 @@ namespace cde.ScanProgress
 
         private async Task MainLoop(CreateCacheCommand request, CancellationToken cancellationToken)
         {
+            //await Task.Yield(); //If this isn't here this exits early!?!
             var re = new RootEntry(_configuration);
             try
             {
@@ -68,16 +70,19 @@ namespace cde.ScanProgress
                 await _catalogRepository.Save(re).ConfigureAwait(false);
                 var scanTimeSpan = re.ScanEndUTC - re.ScanStartUTC;
                 Console.WriteLine();
+                // Console.WriteLine("*X*");
                 Log.Information("Scanned Path {Path}", re.Path);
                 Log.Information("Scan time {ScanTime:0.00} msecs", scanTimeSpan.TotalMilliseconds);
                 Log.Information("Saved scanned path {Path}", re.DefaultFileName);
                 Log.Information(
                     "Files {FileCount:0,0} Dirs {DirCount:0,0} Total Size of Files {Size:0,0}", re.FileEntryCount, re.DirEntryCount, re.Size);
+                // Console.WriteLine("***");
             }
             catch (ArgumentException ex)
             {
                 Log.Error(ex, "Error: {ErrorMessage}", ex.Message);
             }
+            //await Task.Yield(); //If this isn't here this exits early!?!
         }
 
         private void PrintExceptions(string path, Exception ex)
