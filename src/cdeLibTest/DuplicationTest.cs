@@ -176,7 +176,7 @@ namespace cdeLibTest
             }
 
             Program.InitProgram(Array.Empty<string>());
-            Program.CreateCache(new ScanOptions() {Path = testPath});
+            Program.CreateCache(new ScanOptions {Path = testPath});
             Program.HashCatalog();
 
             // run tests.

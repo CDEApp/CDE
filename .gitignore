@@ -66,3 +66,5 @@ src/.vs/config/applicationhost.config
 
 /src/cdeLibTest/Test2/*
 /publish/*
+/artifacts/*
+/build/bin/*

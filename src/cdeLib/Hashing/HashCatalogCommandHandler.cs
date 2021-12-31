@@ -5,17 +5,18 @@ using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Infrastructure;
 using MediatR;
+using Serilog;
 
 namespace cdeLib.Hashing
 {
     public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
     {
         private readonly Duplication _duplication;
-        private readonly ILogger _logger;
+        private readonly Serilog.ILogger _logger;
         private readonly IApplicationDiagnostics _applicationDiagnostics;
         private readonly ICatalogRepository _catalogRepository;
 
-        public HashCatalogCommandHandler(ILogger logger, IApplicationDiagnostics applicationDiagnostics,
+        public HashCatalogCommandHandler(Serilog.ILogger logger, IApplicationDiagnostics applicationDiagnostics,
             Duplication duplication, ICatalogRepository catalogRepository)
         {
             _logger = logger;
@@ -26,23 +27,23 @@ namespace cdeLib.Hashing
 
         public async Task<Unit> Handle(HashCatalogCommand request, CancellationToken cancellationToken)
         {
-            _logger.LogInfo("Memory pre-catalog load: {0}",
+            _logger.Information("Memory pre-catalog load: {0}",
                 _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var rootEntries = _catalogRepository.LoadCurrentDirCache();
-            _logger.LogInfo("Memory post-catalog load: {0}",
+            _logger.Information("Memory post-catalog load: {0}",
                 _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             var stopwatch = Stopwatch.StartNew();
             await _duplication.ApplyHash(rootEntries).ConfigureAwait(false);
 
             foreach (var rootEntry in rootEntries)
             {
-                _logger.LogDebug("Saving Catalog {0}", rootEntry.DefaultFileName);
+                _logger.Information("Saving Catalog {0}", rootEntry.DefaultFileName);
                 await _catalogRepository.Save(rootEntry).ConfigureAwait(false);
             }
 
             var ts = stopwatch.Elapsed;
             var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
-            _logger.LogInfo("Hash Took {0}, Memory: {1}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+            _logger.Information("Hash Took {0}, Memory: {1}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
             return Unit.Value;
         }
     }
