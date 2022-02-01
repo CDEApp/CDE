@@ -331,7 +331,6 @@ namespace cdeLib.Entities
             var size = 0L;
             var dirEntryCount = 0L;
             var fileEntryCount = 0L;
-            //PathProblem = IsBadPath();
 
             if (IsDirectory && Children != null)
             {
@@ -349,10 +348,6 @@ namespace cdeLib.Entities
                         ++dirEntryCount;
                     }
 
-                    // else
-                    // {
-                    //     dirEntry.PathProblem = dirEntry.IsBadPath();
-                    // }
                     size += dirEntry.Size;
                     fileEntryCount += dirEntry.FileEntryCount;
                     childrenDirEntryCount += dirEntry.DirEntryCount;

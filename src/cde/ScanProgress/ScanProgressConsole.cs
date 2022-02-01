@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ public class ScanProgressConsole
 
     private static void WriteLogMessage(string message)
     {
-        AnsiConsole.MarkupLine($"[grey]LOG:[/] {message}[grey]...[/]");
+        AnsiConsole.MarkupLine($"[grey]LOG:[/]{Markup.Escape(message)}[grey]...[/]");
     }
 
     public void Start(Task mainLoopTask, CancellationToken cancellationToken)
@@ -48,10 +49,18 @@ public class ScanProgressConsole
                         reportCounter += increment;
                     }
 
-                    ctx.Status(msg);
+                    try
+                    {
+                        ctx.Status(Markup.Escape(msg));
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(ex.Message);
+                    }
+
                     ctx.Spinner(Spinner.Known.Star);
                     ctx.SpinnerStyle(Style.Parse("green"));
-                    
+
                     var dequeueMessages = true;
                     while (dequeueMessages)
                     {
@@ -65,6 +74,7 @@ public class ScanProgressConsole
                             WriteLogMessage(msg);
                         }
                     }
+
                     Thread.Sleep(updateIntervalMs);
                 }
             });

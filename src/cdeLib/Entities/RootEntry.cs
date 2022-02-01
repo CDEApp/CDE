@@ -356,11 +356,6 @@ namespace cdeLib.Entities
         {
             TraverseTreePair((p, d) =>
             {
-                // if (d.IsDirectory)
-                // {
-                //     d.FullPath = p.MakeFullPath(d);
-                // }
-
                 d.ParentCommonEntry = p;
                 return true;
             });
