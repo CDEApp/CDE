@@ -494,7 +494,19 @@ namespace cdeWin
                 if (_retrieveVirtualItem != null)
                 {
                     _listView.CacheVirtualItems -= MyCacheVirtualItems;
-                    _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
+                    //
+                    // If we don't do this we don't get the weird crash on exist of cdeWin
+                    // NullReferenceException
+                    // System.Windows.Forms.ListView.ListViewNativeItemCollection.get_Item(Int32 displayIndex)
+                    // at
+                    // get_focusedItem()
+                    //
+                    // On dispose it must be trying to be called after we remove it and it kaboom
+                    // This is local method to this Class it will never be anything else but this method
+                    // Removing it at dispose when we exit seems like it's not actually important anyway
+                    // by not removing this we don't get the odd crash.
+                    //
+                    // _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
                 }
 
                 if (_columnClick != null)
