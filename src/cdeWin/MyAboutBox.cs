@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 
 namespace cdeWin
@@ -11,7 +12,7 @@ namespace cdeWin
         {
             InitializeComponent();
             _config = config;
-            linkEmail.Text = _config.ContactEmail;
+            linkRepository.Text = _config.LinkRepository;
             tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
         }
 
@@ -26,19 +27,11 @@ namespace cdeWin
             Close();
         }
 
-        private void linkEmail_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+        private void linkRepository_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
             try
             {
-                var proc = new System.Diagnostics.Process
-                {
-                    StartInfo =
-                    {
-                        FileName =
-                            $"mailto:{_config.ContactEmail}?subject=About {_config.ProductName} v{_config.Version}"
-                    }
-                };
-                proc.Start();
+                Process.Start(new ProcessStartInfo(_config.LinkRepository) { UseShellExecute = true });
             }
             catch
             {

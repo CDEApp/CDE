@@ -178,8 +178,7 @@ namespace cdeWin
         string DateFormatYMDHMS { get; }
         string DateCustomFormatYMD { get; }
         string DateCustomFormatHMS { get; }
-        string ContactEmail { get; }
-
+        string LinkRepository { get; }
         Configuration Active { get; set; }
         void RecordConfig(ICDEWinForm form);
         int DefaultSearchResultColumnCount { get; }
@@ -200,8 +199,8 @@ namespace cdeWin
         public string DateFormatYMDHMS => "{0:yyyy/MM/dd HH:mm:ss}";
         public string DateCustomFormatYMD => "yyyy/MM/dd";
         public string DateCustomFormatHMS => "HH:mm:ss";
-        public string ContactEmail => "rluiten@racs.com.au";
-
+        public string LinkRepository => $"https://github.com/CDEApp/CDE";
+        
         public string Version { get; }
         public string ProductName { get; }
 
