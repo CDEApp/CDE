@@ -1,7 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
@@ -32,6 +32,28 @@ namespace cde
             Mediatr = _container.Resolve<IMediator>();
         }
 
+        private static ParserResult<object> GetParserResult(IEnumerable<string> args)
+        {
+            var parser = CommandLineParserBuilder.Build();
+            return parser.ParseArguments<
+                ScanOptions,
+                FindOptions,
+                GrepOptions,
+                GrepPathOptions,
+                ReplGrepPathOptions,
+                ReplGrepOptions,
+                ReplFindOptions,
+                HashOptions,
+                DupesOptions,
+                TreeDumpOptions,
+                LoadWaitOptions,
+                ReplOptions,
+                PopulousFoldersOptions,
+                FindPathOptions,
+                UpgradeOptions,
+                UpdateOptions>(args);
+        }
+
         private static int Main(string[] args)
         {
             InitProgram(args);
@@ -41,14 +63,7 @@ namespace cde
                 using (Operation.Time("Main App"))
                 {
                     var findService = _container.Resolve<IFindService>();
-
-                    var parser = CommandLineParserBuilder.Build();
-                    parser.ParseArguments<ScanOptions, FindOptions, GrepOptions, GrepPathOptions, ReplGrepPathOptions,
-                            ReplGrepOptions, ReplFindOptions,
-                            HashOptions, DupesOptions, TreeDumpOptions, LoadWaitOptions, ReplOptions, PopulousFoldersOptions
-                            , FindPathOptions,
-                            UpgradeOptions, UpdateOptions>(
-                            args)
+                    GetParserResult(args)
                         .WithParsed<ScanOptions>(opts => CreateCache(opts))
                         .WithParsed<FindOptions>(opts =>
                         {
