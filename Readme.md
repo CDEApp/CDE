@@ -2,7 +2,8 @@
 
 [TOC]
 
-# Overhaul to .net core 3 app started late Oct 2019.
+- Overhaul to .net core 3 app started late Oct 2019.
+- Its on .Net 6 as of 2022 some time
 
 ---
 
@@ -23,7 +24,7 @@ Stuff is not all working.
 
 This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file system entries with assorted criteria.
 
-It is written in C# and requires .Net 4.7.2
+It is was originally written in C# and required .Net 4.7.2
 
 It was inspired by and old and faithful utility called Cathy I have used in the past found at [Cathy's Website](http://www.mtg.sk/rva/). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
 
@@ -59,28 +60,9 @@ It is built with ASP.Net, MVC, SignalR, Bootstrap and Angular.js.
 
 ### Contact Author
 
-My name is Robin and you can contact me about cde using `rob at EMAIL ADDRESS` # need email address
+My name is Robin and you can contact me about cde on the github repository site.
 
-This application will continue to evolve driven by my own and a few friends desires however the rate of change to date has not been very fast. It may evolve faster if there is sufficient interest from the public.
-
-#### License Shareware Snowball
-
-cde is currently released in June 2015 as a variant of **Shareware**, I would think of as **Shareware Snowball**.
-
-If you like it enough I would appreciate a donation to cdeDonationAddress@gmail.com.
-
-If you don't feel its reached your donation threshold then apply this rule.
-
-1. Consider some other shareware software you like and have not donated for yet.
-1. Add the perceived value of **cde** to this other shareware's value to you.
-1. If this combination of value reaches your threshold for donation then donate to the other shareware software and consider yourself donated for cde as well.
-
-I have no problem with individuals using this tool for themselves in a commercial environment and they can apply a donation threshold rule as they see fit.
-
-If have deployed cde in a commercial environment for users other than your self for more than a testing period of 6 weeks then I think you have allready passed a value threshold.
-
-As a small incentive a 64 build of cde and cdeWin is available to people who donate for cde.
-The 64 bit build is really only of value to people dealing with a very large number of file system entries, as the 32 bit version of cdeWin can deal with over 11 million file system entries using just over 1.5 GB of ram.
+This application will continue to evolve driven by my own and a few friends desires however the rate of change to date has not been very fast.
 
 ## Details
 
