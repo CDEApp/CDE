@@ -100,7 +100,6 @@ class Build : NukeBuild
                     .SetRuntime("win10-x64")
                     .SetPublishSingleFile(true)
                     .SetSelfContained(false)
-                //.SetFramework()
             );
 
             DotNetPublish(s => s
@@ -110,7 +109,6 @@ class Build : NukeBuild
                     .SetRuntime("win10-x64")
                     .SetPublishSingleFile(true)
                     .SetSelfContained(false)
-                //.SetFramework()
             );
         });
 
