@@ -4,41 +4,40 @@ using cdeLib.Catalog;
 using MediatR;
 using Serilog;
 
-namespace cdeLib.Upgrade
+namespace cdeLib.Upgrade;
+
+public class UpdateCommand : IRequest
 {
-    public class UpdateCommand : IRequest
+    public string FileName { get; set; }
+    public string Description { get; set; }
+}
+
+public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
+{
+    private readonly ICatalogRepository _catalogRepository;
+    private readonly ILogger _logger;
+
+    public UpdateCommandHandler(ICatalogRepository catalogRepository, ILogger logger)
     {
-        public string FileName { get; set; }
-        public string Description { get; set; }
+        _catalogRepository = catalogRepository;
+        _logger = logger;
     }
 
-    public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
+    public async Task<Unit> Handle(UpdateCommand request, CancellationToken cancellationToken)
     {
-        private readonly ICatalogRepository _catalogRepository;
-        private readonly ILogger _logger;
+        var rootEntry = _catalogRepository.LoadDirCache(request.FileName);
+        var isDirty = false;
 
-        public UpdateCommandHandler(ICatalogRepository catalogRepository, ILogger logger)
+        if (!string.IsNullOrEmpty(request.Description))
         {
-            _catalogRepository = catalogRepository;
-            _logger = logger;
+            _logger.Information("updating catalog {FileName} with description {Desc}", request.FileName,
+                request.Description);
+            rootEntry.Description = request.Description;
+            isDirty = true;
         }
 
-        public async Task<Unit> Handle(UpdateCommand request, CancellationToken cancellationToken)
-        {
-            var rootEntry = _catalogRepository.LoadDirCache(request.FileName);
-            var isDirty = false;
-
-            if (!string.IsNullOrEmpty(request.Description))
-            {
-                _logger.Information("updating catalog {FileName} with description {Desc}", request.FileName,
-                    request.Description);
-                rootEntry.Description = request.Description;
-                isDirty = true;
-            }
-
-            if (isDirty)
-                await _catalogRepository.Save(rootEntry);
-            return await Unit.Task;
-        }
+        if (isDirty)
+            await _catalogRepository.Save(rootEntry);
+        return await Unit.Task;
     }
 }

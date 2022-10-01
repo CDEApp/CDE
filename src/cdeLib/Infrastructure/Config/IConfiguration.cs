@@ -1,11 +1,10 @@
-namespace cdeLib.Infrastructure.Config
-{
-    public interface IConfiguration
-    {
-        int ProgressUpdateInterval { get; }
-        int HashFirstPassSize { get; }
-        int DegreesOfParallelism { get; }
+namespace cdeLib.Infrastructure.Config;
 
-        AppConfigurationSection Config { get; }
-    }
+public interface IConfiguration
+{
+    int ProgressUpdateInterval { get; }
+    int HashFirstPassSize { get; }
+    int DegreesOfParallelism { get; }
+
+    AppConfigurationSection Config { get; }
 }

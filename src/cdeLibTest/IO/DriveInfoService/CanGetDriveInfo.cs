@@ -2,29 +2,28 @@
 using NUnit.Framework;
 using Shouldly;
 
-namespace cdeLibTest.IO.DriveInfoService
+namespace cdeLibTest.IO.DriveInfoService;
+
+public class CanGetDriveInfo
 {
-    public class CanGetDriveInfo
+    private readonly cdeLib.IO.DriveInfoService _driveInfoService;
+
+    public CanGetDriveInfo()
     {
-        private readonly cdeLib.IO.DriveInfoService _driveInfoService;
+        _driveInfoService = new cdeLib.IO.DriveInfoService();
+    }
 
-        public CanGetDriveInfo()
+    [Test]
+    public void GetDriveInfoForLocalDriveOnWindows()
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
         {
-            _driveInfoService = new cdeLib.IO.DriveInfoService();
-        }
+            var result = _driveInfoService.GetDriveSpace("C:\\");
+            result.TotalBytes.ShouldNotBeNull();
+            result.TotalBytes.Value.ShouldBeGreaterThan(0);
 
-        [Test]
-        public void GetDriveInfoForLocalDriveOnWindows()
-        {
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                var result = _driveInfoService.GetDriveSpace("C:\\");
-                result.TotalBytes.ShouldNotBeNull();
-                result.TotalBytes.Value.ShouldBeGreaterThan(0);
-
-                result.AvailableBytes.ShouldNotBeNull();
-                result.AvailableBytes.Value.ShouldBeGreaterThan(0);
-            }
+            result.AvailableBytes.ShouldNotBeNull();
+            result.AvailableBytes.Value.ShouldBeGreaterThan(0);
         }
     }
 }

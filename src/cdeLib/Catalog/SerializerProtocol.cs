@@ -1,9 +1,8 @@
-﻿namespace cdeLib.Catalog
+﻿namespace cdeLib.Catalog;
+
+public enum SerializerProtocol
 {
-    public enum SerializerProtocol
-    {
-        Protobuf,
-        Flatbuffers,
-        MessagePack
-    }
+    Protobuf,
+    Flatbuffers,
+    MessagePack
 }

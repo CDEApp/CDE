@@ -3,38 +3,37 @@ using Util;
 using cdeLib.Entities;
 using Serilog;
 
-namespace cdeWin
+namespace cdeWin;
+
+public interface ILoadCatalogService
 {
-    public interface ILoadCatalogService
+    List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
+}
+
+public class LoadCatalogService : ILoadCatalogService
+{
+    private readonly ILogger _logger;
+
+    public LoadCatalogService(ILogger logger)
     {
-        List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
+        _logger = logger;
     }
 
-    public class LoadCatalogService : ILoadCatalogService
+    public List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
     {
-        private readonly ILogger _logger;
+        List<RootEntry> rootEntries;
+        var cachePathList = new[] { ".", config.ConfigPath };
+        var loaderForm = new LoaderForm(config, cachePathList, timeIt, _logger);
 
-        public LoadCatalogService(ILogger logger)
+        try
         {
-            _logger = logger;
+            loaderForm.ShowDialog();
         }
-
-        public List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        finally
         {
-            List<RootEntry> rootEntries;
-            var cachePathList = new[] { ".", config.ConfigPath };
-            var loaderForm = new LoaderForm(config, cachePathList, timeIt, _logger);
-
-            try
-            {
-                loaderForm.ShowDialog();
-            }
-            finally
-            {
-                rootEntries = loaderForm.RootEntries;
-                loaderForm.Dispose();
-            }
-            return rootEntries;
+            rootEntries = loaderForm.RootEntries;
+            loaderForm.Dispose();
         }
+        return rootEntries;
     }
 }

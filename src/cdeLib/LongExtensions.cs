@@ -1,28 +1,27 @@
 using System;
 
-namespace cdeLib
+namespace cdeLib;
+
+public static class LongExtensions
 {
-    public static class LongExtensions
+    /// <summary>
+    /// Format a long as a string of GB/MB/KB
+    /// </summary>
+    /// <param name="bytes"></param>
+    /// <returns></returns>
+    public static string FormatAsBytes(this long bytes)
     {
-        /// <summary>
-        /// Format a long as a string of GB/MB/KB
-        /// </summary>
-        /// <param name="bytes"></param>
-        /// <returns></returns>
-        public static string FormatAsBytes(this long bytes)
+        const int scale = 1024;
+        var orders = new[] { "GB", "MB", "KB", "Bytes" };
+        var max = (long)Math.Pow(scale, orders.Length - 1);
+
+        foreach (var order in orders)
         {
-            const int scale = 1024;
-            var orders = new[] { "GB", "MB", "KB", "Bytes" };
-            var max = (long)Math.Pow(scale, orders.Length - 1);
+            if (bytes > max)
+                return $"{decimal.Divide(bytes, max):##.##} {order}";
 
-            foreach (var order in orders)
-            {
-                if (bytes > max)
-                    return $"{decimal.Divide(bytes, max):##.##} {order}";
-
-                max /= scale;
-            }
-            return "0 Bytes";
+            max /= scale;
         }
+        return "0 Bytes";
     }
 }

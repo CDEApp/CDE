@@ -15,157 +15,156 @@ using Serilog;
 using SerilogTimings;
 using ILogger = Serilog.ILogger;
 
-namespace cdeLib.Catalog
+namespace cdeLib.Catalog;
+
+public class CatalogRepository : ICatalogRepository
 {
-    public class CatalogRepository : ICatalogRepository
+    private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
+    private readonly ILogger _logger;
+
+    public CatalogRepository(ILogger logger)
     {
-        private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
-        private readonly ILogger _logger;
+        _logger = logger;
+    }
 
-        public CatalogRepository(ILogger logger)
+    public RootEntry Read(string file)
+    {
+        try
         {
-            _logger = logger;
-        }
+            using var input = File.OpenRead(file);
 
-        public RootEntry Read(string file)
-        {
-            try
-            {
-                using var input = File.OpenRead(file);
-
-                switch (_serializerProtocol)
-                {
-                    case SerializerProtocol.Protobuf:
-                        return Serializer.Deserialize<RootEntry>(input);
-                    case SerializerProtocol.Flatbuffers:
-
-                        byte[] bytes;
-                        using (Operation.Time("ToByteArray"))
-                        {
-                            bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
-                        }
-
-                        using (Operation.Time("Deserialize"))
-                        {
-                            var serializer = new FlatBufferSerializer(
-                                new FlatBufferSerializerOptions());
-                            return serializer.Parse<RootEntry>(bytes);
-                        }
-                    case SerializerProtocol.MessagePack:
-                        return MessagePackSerializer.Deserialize<RootEntry>(input);
-
-                    default:
-                        throw new Exception("Invalid Serializer Protocol");
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "Error Reading catalogue {FileName}", file);
-                throw;
-            }
-        }
-
-        public IList<RootEntry> Load(IList<string> cdeList)
-        {
-            using (Operation.Time("Loading Catalogs {Count}", cdeList.Count))
-            {
-                var results = new ConcurrentBag<RootEntry>();
-                Parallel.ForEach(cdeList, file =>
-                {
-                    var newRootEntry = LoadDirCache(file);
-                    if (newRootEntry != null)
-                    {
-                        results.Add(newRootEntry);
-                    }
-
-                    _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
-                        Thread.CurrentThread.ManagedThreadId);
-                });
-
-                return results.ToList();
-            }
-        }
-
-        public IList<RootEntry> LoadCurrentDirCache()
-        {
-            return Load(GetCacheFileList(new[] {"./"}));
-        }
-
-        /// <summary>
-        /// This gets .cde files in current dir or one directory down.
-        /// Use directory permissions to control who can load what .cde files one dir down if you like.
-        /// </summary>
-        public IList<string> GetCacheFileList(IEnumerable<string> paths)
-        {
-            var cacheFilePaths = new List<string>();
-            foreach (var path in paths)
-            {
-                cacheFilePaths.AddRange(GetCdeFiles(path));
-
-                foreach (var childPath in Directory.GetDirectories(path))
-                {
-                    try
-                    {
-                        cacheFilePaths.AddRange(GetCdeFiles(childPath));
-                    }
-                    // ReSharper disable once EmptyGeneralCatchClause
-                    catch
-                    {
-                    } // if cant list folders don't care.
-                }
-            }
-
-            return cacheFilePaths;
-        }
-
-        private static IEnumerable<string> GetCdeFiles(string path)
-        {
-            return FileSystemHelper.GetFilesWithExtension(path, "cde");
-        }
-
-        public RootEntry LoadDirCache(string file)
-        {
-            if (!File.Exists(file)) return null;
-            try
-            {
-                using var fileStream = File.OpenRead(file);
-                var rootEntry = Read(file);
-                if (rootEntry == null) return null;
-                rootEntry.ActualFileName = file;
-                rootEntry.SetInMemoryFields();
-                return rootEntry;
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Error(ex, "Error Reading file");
-                throw;
-            }
-        }
-
-        public async Task Save(RootEntry rootEntry)
-        {
-            var fileName = rootEntry.ActualFileName ?? rootEntry.DefaultFileName;
             switch (_serializerProtocol)
             {
                 case SerializerProtocol.Protobuf:
-                    await using (var newFs = File.OpenWrite(fileName))
+                    return Serializer.Deserialize<RootEntry>(input);
+                case SerializerProtocol.Flatbuffers:
+
+                    byte[] bytes;
+                    using (Operation.Time("ToByteArray"))
                     {
-                        Serializer.Serialize(newFs, rootEntry);
+                        bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
                     }
 
-                    break;
-                case SerializerProtocol.Flatbuffers:
-                    var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
-                    var buffer = new byte[maxBytesNeeded];
-                    FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                    await File.WriteAllBytesAsync(fileName, buffer);
-                    break;
+                    using (Operation.Time("Deserialize"))
+                    {
+                        var serializer = new FlatBufferSerializer(
+                            new FlatBufferSerializerOptions());
+                        return serializer.Parse<RootEntry>(bytes);
+                    }
                 case SerializerProtocol.MessagePack:
-                    await File.WriteAllBytesAsync(fileName, MessagePackSerializer.Serialize(rootEntry));
-                    break;
+                    return MessagePackSerializer.Deserialize<RootEntry>(input);
+
                 default:
                     throw new Exception("Invalid Serializer Protocol");
             }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error Reading catalogue {FileName}", file);
+            throw;
+        }
+    }
+
+    public IList<RootEntry> Load(IList<string> cdeList)
+    {
+        using (Operation.Time("Loading Catalogs {Count}", cdeList.Count))
+        {
+            var results = new ConcurrentBag<RootEntry>();
+            Parallel.ForEach(cdeList, file =>
+            {
+                var newRootEntry = LoadDirCache(file);
+                if (newRootEntry != null)
+                {
+                    results.Add(newRootEntry);
+                }
+
+                _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
+                    Thread.CurrentThread.ManagedThreadId);
+            });
+
+            return results.ToList();
+        }
+    }
+
+    public IList<RootEntry> LoadCurrentDirCache()
+    {
+        return Load(GetCacheFileList(new[] {"./"}));
+    }
+
+    /// <summary>
+    /// This gets .cde files in current dir or one directory down.
+    /// Use directory permissions to control who can load what .cde files one dir down if you like.
+    /// </summary>
+    public IList<string> GetCacheFileList(IEnumerable<string> paths)
+    {
+        var cacheFilePaths = new List<string>();
+        foreach (var path in paths)
+        {
+            cacheFilePaths.AddRange(GetCdeFiles(path));
+
+            foreach (var childPath in Directory.GetDirectories(path))
+            {
+                try
+                {
+                    cacheFilePaths.AddRange(GetCdeFiles(childPath));
+                }
+                // ReSharper disable once EmptyGeneralCatchClause
+                catch
+                {
+                } // if cant list folders don't care.
+            }
+        }
+
+        return cacheFilePaths;
+    }
+
+    private static IEnumerable<string> GetCdeFiles(string path)
+    {
+        return FileSystemHelper.GetFilesWithExtension(path, "cde");
+    }
+
+    public RootEntry LoadDirCache(string file)
+    {
+        if (!File.Exists(file)) return null;
+        try
+        {
+            using var fileStream = File.OpenRead(file);
+            var rootEntry = Read(file);
+            if (rootEntry == null) return null;
+            rootEntry.ActualFileName = file;
+            rootEntry.SetInMemoryFields();
+            return rootEntry;
+        }
+        catch (Exception ex)
+        {
+            Log.Logger.Error(ex, "Error Reading file");
+            throw;
+        }
+    }
+
+    public async Task Save(RootEntry rootEntry)
+    {
+        var fileName = rootEntry.ActualFileName ?? rootEntry.DefaultFileName;
+        switch (_serializerProtocol)
+        {
+            case SerializerProtocol.Protobuf:
+                await using (var newFs = File.OpenWrite(fileName))
+                {
+                    Serializer.Serialize(newFs, rootEntry);
+                }
+
+                break;
+            case SerializerProtocol.Flatbuffers:
+                var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
+                var buffer = new byte[maxBytesNeeded];
+                FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
+                await File.WriteAllBytesAsync(fileName, buffer);
+                break;
+            case SerializerProtocol.MessagePack:
+                await File.WriteAllBytesAsync(fileName, MessagePackSerializer.Serialize(rootEntry));
+                break;
+            default:
+                throw new Exception("Invalid Serializer Protocol");
         }
     }
 }

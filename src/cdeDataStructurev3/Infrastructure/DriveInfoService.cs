@@ -1,43 +1,42 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
 
-namespace cdeDataStructure3.Infrastructure
+namespace cdeDataStructure3.Infrastructure;
+
+public interface IDriveInfoService
 {
-    public interface IDriveInfoService
-    {
-        DriveInformation GetDriveSpace(string path);
-    }
+    DriveInformation GetDriveSpace(string path);
+}
 
-    public class DriveInfoService : IDriveInfoService
+public class DriveInfoService : IDriveInfoService
+{
+    public DriveInformation GetDriveSpace(string path)
     {
-        public DriveInformation GetDriveSpace(string path)
+        if (IsUncPath(path))
         {
-            if (IsUncPath(path))
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                var props = FileSystemProperties.GetProperties(path);
+                return new DriveInformation
                 {
-                    var props = FileSystemProperties.GetProperties(path);
-                    return new DriveInformation
-                    {
-                        TotalBytes = props.TotalBytes,
-                        AvailableBytes = props.AvailableBytes
-                    };
-                }
-
-                return new DriveInformation();
+                    TotalBytes = props.TotalBytes,
+                    AvailableBytes = props.AvailableBytes
+                };
             }
 
-            var driveInfo = new DriveInfo(path);
-            return new DriveInformation
-            {
-                AvailableBytes = driveInfo.AvailableFreeSpace,
-                TotalBytes = driveInfo.TotalSize
-            };
+            return new DriveInformation();
         }
 
-        public bool IsUncPath(string path)
+        var driveInfo = new DriveInfo(path);
+        return new DriveInformation
         {
-            return path.StartsWith("\\");
-        }
+            AvailableBytes = driveInfo.AvailableFreeSpace,
+            TotalBytes = driveInfo.TotalSize
+        };
+    }
+
+    public bool IsUncPath(string path)
+    {
+        return path.StartsWith("\\");
     }
 }

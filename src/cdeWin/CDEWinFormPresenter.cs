@@ -11,1098 +11,1097 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 
-namespace cdeWin
+namespace cdeWin;
+
+public interface ICDEWinFormPresenter : IPresenter
 {
-    public interface ICDEWinFormPresenter : IPresenter
+}
+
+public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
+{
+    private const string DummyNodeName = "_dummyNode";
+    private readonly Color _listViewForeColor = Color.Black;
+    private readonly Color _listViewDirForeColor = Color.DarkBlue;
+
+    private readonly ICDEWinForm _clientForm;
+    private List<RootEntry> _rootEntries;
+    private readonly IConfig _config;
+
+    private readonly string[] _directoryVals;
+    private readonly string[] _searchVals;
+    private readonly string[] _catalogVals;
+
+    private List<PairDirEntry> _searchResultList;
+    private List<ICommonEntry> _directoryList;
+
+    /// <summary>
+    /// The entry that is the parent of the Directory List View displayed items.
+    /// </summary>
+    private ICommonEntry _directoryListCommonEntry;
+
+    private BackgroundWorker _bgWorker;
+    private bool _isSearchButton;
+    private readonly ILoadCatalogService _loadCatalogService;
+
+    public CDEWinFormPresenter(
+        ICDEWinForm form,
+        IConfig config,
+        ILoadCatalogService loadCatalogService = null)
+        : base(form)
+    {
+        var timeIt = new TimeIt();
+        _clientForm = form;
+        _config = config;
+        _loadCatalogService = loadCatalogService;
+        _rootEntries = LoadRootEntries(config, timeIt);
+
+        _searchVals = new string[_config.DefaultSearchResultColumnCount];
+        _directoryVals = new string[_config.DefaultDirectoryColumnCount];
+        _catalogVals = new string[_config.DefaultCatalogColumnCount];
+
+        SetSearchButton(true);
+        RegisterListViewSorters();
+        SetCatalogListView();
+        SetMemoryStatus();
+
+        InitialiseLog(timeIt);
+    }
+
+    private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+    {
+        return _loadCatalogService?.LoadRootEntries(config, timeIt);
+    }
+
+    private void InitialiseLog(TimeIt timeIt)
+    {
+        _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
+        LogTimeIt(timeIt);
+    }
+
+    private void LogTimeIt(TimeIt timeIt)
+    {
+        if (timeIt != null)
+        {
+            foreach (var labelElapsed in timeIt.ElapsedList)
+            {
+                _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+            }
+
+            _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
+                timeIt.TotalMsec);
+        }
+    }
+
+    private void RegisterListViewSorters()
+    {
+        _clientForm.SearchResultListViewHelper.ColumnSortCompare = SearchResultCompare;
+        _clientForm.DirectoryListViewHelper.ColumnSortCompare = DirectoryCompare;
+        _clientForm.CatalogListViewHelper.ColumnSortCompare = RootCompare;
+    }
+
+    private void SetCatalogListView()
+    {
+        var catalogHelper = _clientForm.CatalogListViewHelper;
+        var count = catalogHelper.SetList(_rootEntries);
+        catalogHelper.SortList();
+        _clientForm.SetCatalogsLoadedStatus(count);
+        _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
+    }
+
+    private void SetMemoryStatus()
+    {
+        double memory;
+        using (Process proc = Process.GetCurrentProcess())
+        {
+            // The proc.PrivateMemorySize64 will returns the private memory usage in byte.
+            // Would like to Convert it to Megabyte? divide it by 2^20
+            memory = proc.PrivateMemorySize64 / (1024 * 1024);
+        }
+        _clientForm.SetMemoryStatus($"Memory used: {memory}MB");
+    }
+
+    private void SetSearchButton(bool search)
+    {
+        _isSearchButton = search;
+        _clientForm.SearchButtonText = _isSearchButton ? "Search" : "Cancel Search";
+        _clientForm.SearchButtonBackColor = _isSearchButton ? default : Color.LightCoral;
+    }
+
+    public void Display()
+    {
+        try
+        {
+            _clientForm.ShowDialog();
+        }
+        finally
+        {
+            _clientForm.Dispose();
+        }
+    }
+
+    public void FormShown()
+    {
+        // setup our sort arrow icons, this requires windows message loop afaik.
+        _clientForm.CatalogListViewHelper.SortList();
+        _clientForm.SearchResultListViewHelper.SortList();
+        _clientForm.DirectoryListViewHelper.SortList();
+    }
+
+    public void FormActivated()
     {
     }
 
-    public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
+    public void DirectoryTreeViewBeforeExpandNode()
     {
-        private const string DummyNodeName = "_dummyNode";
-        private readonly Color _listViewForeColor = Color.Black;
-        private readonly Color _listViewDirForeColor = Color.DarkBlue;
+        CreateNodesPreExpand(_clientForm.DirectoryTreeViewActiveBeforeExpandNode);
+    }
 
-        private readonly ICDEWinForm _clientForm;
-        private List<RootEntry> _rootEntries;
-        private readonly IConfig _config;
-
-        private readonly string[] _directoryVals;
-        private readonly string[] _searchVals;
-        private readonly string[] _catalogVals;
-
-        private List<PairDirEntry> _searchResultList;
-        private List<ICommonEntry> _directoryList;
-
-        /// <summary>
-        /// The entry that is the parent of the Directory List View displayed items.
-        /// </summary>
-        private ICommonEntry _directoryListCommonEntry;
-
-        private BackgroundWorker _bgWorker;
-        private bool _isSearchButton;
-        private readonly ILoadCatalogService _loadCatalogService;
-
-        public CDEWinFormPresenter(
-            ICDEWinForm form,
-            IConfig config,
-            ILoadCatalogService loadCatalogService = null)
-            : base(form)
+    private static void CreateNodesPreExpand(TreeNode parentNode)
+    {
+        if (HasDummyChildNode(parentNode))
         {
-            var timeIt = new TimeIt();
-            _clientForm = form;
-            _config = config;
-            _loadCatalogService = loadCatalogService;
-            _rootEntries = LoadRootEntries(config, timeIt);
+            // Replace Dummy with real nodes now visible.
+            parentNode.Nodes.Clear();
+            AddAllDirectoriesChildren(parentNode, (ICommonEntry)parentNode.Tag);
+        }
+    }
 
-            _searchVals = new string[_config.DefaultSearchResultColumnCount];
-            _directoryVals = new string[_config.DefaultDirectoryColumnCount];
-            _catalogVals = new string[_config.DefaultCatalogColumnCount];
+    private static bool HasDummyChildNode(TreeNode parentNode)
+    {
+        return parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName;
+    }
 
+    private static void AddAllDirectoriesChildren(TreeNode treeNode, ICommonEntry dirEntry)
+    {
+        foreach (var subDirEntry in dirEntry.Children)
+        {
+            AddDirectoryChildren(treeNode, subDirEntry);
+        }
+    }
+
+    private static void AddDirectoryChildren(TreeNode treeNode, ICommonEntry dirEntry)
+    {
+        if (dirEntry.IsDirectory)
+        {
+            var newTreeNode = NewTreeNode(dirEntry);
+            treeNode.Nodes.Add(newTreeNode);
+            SetDummyChildNode(newTreeNode, dirEntry);
+        }
+    }
+
+    /// <summary>
+    /// A node with children gets a dummy child node so Tree view shows node as expandable.
+    /// </summary>
+    private static void SetDummyChildNode(TreeNode treeNode, ICommonEntry commonEntry)
+    {
+        if (commonEntry.Children?.Any(entry => entry.IsDirectory) == true)
+        {
+            treeNode.Nodes.Add(NewTreeNode(DummyNodeName));
+        }
+    }
+
+    private static TreeNode NewTreeNode(ICommonEntry commonEntry)
+    {
+        return NewTreeNode(commonEntry.Path, commonEntry);
+    }
+
+    private static TreeNode NewTreeNode(string name, object tag = null)
+    {
+        return new(name)
+        {
+            Tag = tag
+        };
+    }
+
+    public void CatalogRetrieveVirtualItem()
+    {
+        var catalogHelper = _clientForm.CatalogListViewHelper;
+        if (_rootEntries == null || _rootEntries.Count == 0)
+        {
+            return;
+        }
+
+        var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
+        var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
+        var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
+        catalogHelper.RenderItem = lvi;
+    }
+
+    private Color CreateRowValuesForRootEntry(IList<string> vals, RootEntry rootEntry, Color listViewForeColor)
+    {
+        vals[0] = rootEntry.Path;
+        vals[1] = rootEntry.VolumeName;
+        vals[2] = rootEntry.DirEntryCount.ToString();
+        vals[3] = rootEntry.FileEntryCount.ToString();
+        vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();
+        vals[5] = rootEntry.DriveLetterHint;
+        vals[6] = rootEntry.Size.ToHRString();
+        vals[7] = rootEntry.AvailSpace.ToHRString();
+        vals[8] = rootEntry.TotalSpace.ToHRString();
+        vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
+        vals[10] = $"{TimeSpan.FromMilliseconds(rootEntry.ScanDurationMilliseconds).TotalSeconds:0.} sec";
+        vals[11] = rootEntry.ActualFileName;
+        vals[12] = rootEntry.Description;
+
+        return listViewForeColor;
+    }
+
+    public class BgWorkerParam
+    {
+        public FindOptions Options;
+        public IList<RootEntry> RootEntries;
+        public BgWorkerState State;
+    }
+
+    public class BgWorkerState
+    {
+        public int ListCount;
+        public List<PairDirEntry> List;
+        public int Counter;
+        public int End;
+    }
+
+    public void Search()
+    {
+        if (!_isSearchButton)
+        {
+            CancelSearch();
             SetSearchButton(true);
-            RegisterListViewSorters();
-            SetCatalogListView();
-            SetMemoryStatus();
-
-            InitialiseLog(timeIt);
+            return;
         }
 
-        private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+        if (RegexIsBad()
+            || FromToSizeInvalid()
+            || FromToDateInvalid()
+            || FromToHourInvalid())
         {
-            return _loadCatalogService?.LoadRootEntries(config, timeIt);
+            return;
         }
 
-        private void InitialiseLog(TimeIt timeIt)
+        _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
+
+        var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
+
+        SetSearchButton(false);
+
+        _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
+        _bgWorker.DoWork += BgWorkerDoWork;
+        _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
+        _bgWorker.ProgressChanged += BgWorkerProgressChanged;
+
+        var findOptions = new FindOptions
         {
-            _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
-            LogTimeIt(timeIt);
+            LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
+            Pattern = optimisedPattern,
+            RegexMode = _clientForm.RegexMode,
+            IncludePath = _clientForm.IncludePathInSearch,
+            IncludeFiles = _clientForm.IncludeFiles,
+            IncludeFolders = _clientForm.IncludeFolders,
+            // This many file system entries before progress
+            // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
+            ProgressModifier = 50000,
+            Worker = _bgWorker,
+            FromSizeEnable = _clientForm.FromSize.Checked,
+            FromSize = FromSizeValue(),
+            ToSizeEnable = _clientForm.ToSize.Checked,
+            ToSize = ToSizeValue(),
+            FromDateEnable = _clientForm.FromDate.Checked,
+            FromDate = _clientForm.FromDateValue.Date,
+            ToDateEnable = _clientForm.ToDate.Checked,
+            ToDate = _clientForm.ToDateValue.Date,
+            FromHourEnable = _clientForm.FromHour.Checked,
+            FromHour = _clientForm.FromHourValue.TimeOfDay,
+            ToHourEnable = _clientForm.ToHour.Checked,
+            ToHour = _clientForm.ToHourValue.TimeOfDay,
+            NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
+            NotOlderThan = NotOlderThanValue(),
+        };
+
+        var param = new BgWorkerParam
+        {
+            Options = findOptions,
+            RootEntries = _rootEntries,
+            State = new BgWorkerState()
+        };
+        _bgWorker.RunWorkerAsync(param);
+    }
+
+    private bool FromToDateInvalid()
+    {
+        if (_clientForm.FromDate.Checked
+            && _clientForm.ToDate.Checked
+            && _clientForm.FromDateValue.Date >= _clientForm.ToDateValue.Date)
+        {
+            _clientForm.MessageBox(
+                "The From Date Field is greater than the To Date field no search results possible.");
+            return true;
         }
 
-        private void LogTimeIt(TimeIt timeIt)
+        return false;
+    }
+
+    private bool FromToHourInvalid()
+    {
+        if (_clientForm.FromHour.Checked
+            && _clientForm.ToHour.Checked
+            && _clientForm.FromHourValue.TimeOfDay.TotalSeconds >= _clientForm.ToHourValue.TimeOfDay.TotalSeconds)
         {
-            if (timeIt != null)
+            _clientForm.MessageBox(
+                "The From Hour Field is greater than the To Hour field no search results possible.");
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool RegexIsBad()
+    {
+        if (_clientForm.RegexMode)
+        {
+            var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
+            if (!string.IsNullOrEmpty(regexError))
             {
-                foreach (var labelElapsed in timeIt.ElapsedList)
+                _clientForm.MessageBox(regexError);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private bool FromToSizeInvalid()
+    {
+        if (_clientForm.FromSize.Checked
+            && _clientForm.ToSize.Checked
+            && FromSizeValue() > ToSizeValue())
+        {
+            _clientForm.MessageBox(
+                "The From Size Field is greater than the To Size field no search results possible.");
+            return true;
+        }
+
+        return false;
+    }
+
+    private long FromSizeValue()
+    {
+        var value = _clientForm.FromSizeDropDownHelper.SelectedValue;
+        return (long)(_clientForm.FromSizeValue.Field * value);
+    }
+
+    private long ToSizeValue()
+    {
+        var value = _clientForm.ToSizeDropDownHelper.SelectedValue;
+        return (long)(_clientForm.ToSizeValue.Field * value);
+    }
+
+    private DateTime NotOlderThanValue()
+    {
+        var dropDownValueFunc = _clientForm.NotOlderThanDropDownHelper.SelectedValue;
+        var fieldValue = (int)_clientForm.NotOlderThanValue.Field;
+        var now = DateTime.Now; // Option to set this to date of newest scanned Catalog
+        return dropDownValueFunc(now, -fieldValue); // subtract as we are going back in time.
+    }
+
+    // Assumes well formed regex pattern input.
+    // As search is substring match remove leading and trailing wildcards.
+    protected string OptimiseRegexPattern(string pattern)
+    {
+        if (_clientForm.RegexMode && pattern != null)
+        {
+            bool changeMade;
+            do
+            {
+                changeMade = false;
+                if (pattern.StartsWith(".*"))
                 {
-                    _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
+                    pattern = pattern.Substring(2);
+                    changeMade = true;
                 }
 
-                _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
-                    timeIt.TotalMsec);
-            }
-        }
-
-        private void RegisterListViewSorters()
-        {
-            _clientForm.SearchResultListViewHelper.ColumnSortCompare = SearchResultCompare;
-            _clientForm.DirectoryListViewHelper.ColumnSortCompare = DirectoryCompare;
-            _clientForm.CatalogListViewHelper.ColumnSortCompare = RootCompare;
-        }
-
-        private void SetCatalogListView()
-        {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            var count = catalogHelper.SetList(_rootEntries);
-            catalogHelper.SortList();
-            _clientForm.SetCatalogsLoadedStatus(count);
-            _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
-        }
-
-        private void SetMemoryStatus()
-        {
-            double memory;
-            using (Process proc = Process.GetCurrentProcess())
-            {
-                // The proc.PrivateMemorySize64 will returns the private memory usage in byte.
-                // Would like to Convert it to Megabyte? divide it by 2^20
-                memory = proc.PrivateMemorySize64 / (1024 * 1024);
-            }
-            _clientForm.SetMemoryStatus($"Memory used: {memory}MB");
-        }
-
-        private void SetSearchButton(bool search)
-        {
-            _isSearchButton = search;
-            _clientForm.SearchButtonText = _isSearchButton ? "Search" : "Cancel Search";
-            _clientForm.SearchButtonBackColor = _isSearchButton ? default : Color.LightCoral;
-        }
-
-        public void Display()
-        {
-            try
-            {
-                _clientForm.ShowDialog();
-            }
-            finally
-            {
-                _clientForm.Dispose();
-            }
-        }
-
-        public void FormShown()
-        {
-            // setup our sort arrow icons, this requires windows message loop afaik.
-            _clientForm.CatalogListViewHelper.SortList();
-            _clientForm.SearchResultListViewHelper.SortList();
-            _clientForm.DirectoryListViewHelper.SortList();
-        }
-
-        public void FormActivated()
-        {
-        }
-
-        public void DirectoryTreeViewBeforeExpandNode()
-        {
-            CreateNodesPreExpand(_clientForm.DirectoryTreeViewActiveBeforeExpandNode);
-        }
-
-        private static void CreateNodesPreExpand(TreeNode parentNode)
-        {
-            if (HasDummyChildNode(parentNode))
-            {
-                // Replace Dummy with real nodes now visible.
-                parentNode.Nodes.Clear();
-                AddAllDirectoriesChildren(parentNode, (ICommonEntry)parentNode.Tag);
-            }
-        }
-
-        private static bool HasDummyChildNode(TreeNode parentNode)
-        {
-            return parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName;
-        }
-
-        private static void AddAllDirectoriesChildren(TreeNode treeNode, ICommonEntry dirEntry)
-        {
-            foreach (var subDirEntry in dirEntry.Children)
-            {
-                AddDirectoryChildren(treeNode, subDirEntry);
-            }
-        }
-
-        private static void AddDirectoryChildren(TreeNode treeNode, ICommonEntry dirEntry)
-        {
-            if (dirEntry.IsDirectory)
-            {
-                var newTreeNode = NewTreeNode(dirEntry);
-                treeNode.Nodes.Add(newTreeNode);
-                SetDummyChildNode(newTreeNode, dirEntry);
-            }
-        }
-
-        /// <summary>
-        /// A node with children gets a dummy child node so Tree view shows node as expandable.
-        /// </summary>
-        private static void SetDummyChildNode(TreeNode treeNode, ICommonEntry commonEntry)
-        {
-            if (commonEntry.Children?.Any(entry => entry.IsDirectory) == true)
-            {
-                treeNode.Nodes.Add(NewTreeNode(DummyNodeName));
-            }
-        }
-
-        private static TreeNode NewTreeNode(ICommonEntry commonEntry)
-        {
-            return NewTreeNode(commonEntry.Path, commonEntry);
-        }
-
-        private static TreeNode NewTreeNode(string name, object tag = null)
-        {
-            return new(name)
-            {
-                Tag = tag
-            };
-        }
-
-        public void CatalogRetrieveVirtualItem()
-        {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            if (_rootEntries == null || _rootEntries.Count == 0)
-            {
-                return;
-            }
-
-            var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
-            var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
-            var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
-            catalogHelper.RenderItem = lvi;
-        }
-
-        private Color CreateRowValuesForRootEntry(IList<string> vals, RootEntry rootEntry, Color listViewForeColor)
-        {
-            vals[0] = rootEntry.Path;
-            vals[1] = rootEntry.VolumeName;
-            vals[2] = rootEntry.DirEntryCount.ToString();
-            vals[3] = rootEntry.FileEntryCount.ToString();
-            vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();
-            vals[5] = rootEntry.DriveLetterHint;
-            vals[6] = rootEntry.Size.ToHRString();
-            vals[7] = rootEntry.AvailSpace.ToHRString();
-            vals[8] = rootEntry.TotalSpace.ToHRString();
-            vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
-            vals[10] = $"{TimeSpan.FromMilliseconds(rootEntry.ScanDurationMilliseconds).TotalSeconds:0.} sec";
-            vals[11] = rootEntry.ActualFileName;
-            vals[12] = rootEntry.Description;
-
-            return listViewForeColor;
-        }
-
-        public class BgWorkerParam
-        {
-            public FindOptions Options;
-            public IList<RootEntry> RootEntries;
-            public BgWorkerState State;
-        }
-
-        public class BgWorkerState
-        {
-            public int ListCount;
-            public List<PairDirEntry> List;
-            public int Counter;
-            public int End;
-        }
-
-        public void Search()
-        {
-            if (!_isSearchButton)
-            {
-                CancelSearch();
-                SetSearchButton(true);
-                return;
-            }
-
-            if (RegexIsBad()
-                || FromToSizeInvalid()
-                || FromToDateInvalid()
-                || FromToHourInvalid())
-            {
-                return;
-            }
-
-            _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
-
-            var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
-
-            SetSearchButton(false);
-
-            _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
-            _bgWorker.DoWork += BgWorkerDoWork;
-            _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
-            _bgWorker.ProgressChanged += BgWorkerProgressChanged;
-
-            var findOptions = new FindOptions
-            {
-                LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
-                Pattern = optimisedPattern,
-                RegexMode = _clientForm.RegexMode,
-                IncludePath = _clientForm.IncludePathInSearch,
-                IncludeFiles = _clientForm.IncludeFiles,
-                IncludeFolders = _clientForm.IncludeFolders,
-                // This many file system entries before progress
-                // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
-                ProgressModifier = 50000,
-                Worker = _bgWorker,
-                FromSizeEnable = _clientForm.FromSize.Checked,
-                FromSize = FromSizeValue(),
-                ToSizeEnable = _clientForm.ToSize.Checked,
-                ToSize = ToSizeValue(),
-                FromDateEnable = _clientForm.FromDate.Checked,
-                FromDate = _clientForm.FromDateValue.Date,
-                ToDateEnable = _clientForm.ToDate.Checked,
-                ToDate = _clientForm.ToDateValue.Date,
-                FromHourEnable = _clientForm.FromHour.Checked,
-                FromHour = _clientForm.FromHourValue.TimeOfDay,
-                ToHourEnable = _clientForm.ToHour.Checked,
-                ToHour = _clientForm.ToHourValue.TimeOfDay,
-                NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
-                NotOlderThan = NotOlderThanValue(),
-            };
-
-            var param = new BgWorkerParam
-            {
-                Options = findOptions,
-                RootEntries = _rootEntries,
-                State = new BgWorkerState()
-            };
-            _bgWorker.RunWorkerAsync(param);
-        }
-
-        private bool FromToDateInvalid()
-        {
-            if (_clientForm.FromDate.Checked
-                && _clientForm.ToDate.Checked
-                && _clientForm.FromDateValue.Date >= _clientForm.ToDateValue.Date)
-            {
-                _clientForm.MessageBox(
-                    "The From Date Field is greater than the To Date field no search results possible.");
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool FromToHourInvalid()
-        {
-            if (_clientForm.FromHour.Checked
-                && _clientForm.ToHour.Checked
-                && _clientForm.FromHourValue.TimeOfDay.TotalSeconds >= _clientForm.ToHourValue.TimeOfDay.TotalSeconds)
-            {
-                _clientForm.MessageBox(
-                    "The From Hour Field is greater than the To Hour field no search results possible.");
-                return true;
-            }
-
-            return false;
-        }
-
-        private bool RegexIsBad()
-        {
-            if (_clientForm.RegexMode)
-            {
-                var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
-                if (!string.IsNullOrEmpty(regexError))
+                if (pattern.EndsWith(".*"))
                 {
-                    _clientForm.MessageBox(regexError);
-                    return true;
+                    pattern = pattern.Substring(0, pattern.Length - 2);
+                    changeMade = true;
                 }
-            }
-
-            return false;
+            } while (changeMade);
         }
 
-        private bool FromToSizeInvalid()
+        return pattern;
+    }
+
+    private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
+    {
+        var worker = (BackgroundWorker)sender;
+        var argument = (BgWorkerParam)e.Argument;
+        var findOptions = argument.Options;
+        var rootEntries = argument.RootEntries;
+        var state = argument.State;
+
+        var list = new List<PairDirEntry>(500);
+        state.ListCount = list.Count; // 0
+        state.List = list;
+        worker.ReportProgress(0, state);
+        findOptions.VisitorFunc = (p, d) =>
         {
-            if (_clientForm.FromSize.Checked
-                && _clientForm.ToSize.Checked
-                && FromSizeValue() > ToSizeValue())
+            list.Add(new PairDirEntry(p, d));
+            return true;
+        };
+        findOptions.ProgressFunc = (counter, end) =>
+        {
+            state.ListCount = list.Count; // concurrency !
+            state.List = list; // concurrency !!!!
+            state.Counter = counter;
+            state.End = end;
+            worker.ReportProgress((int)(100.0 * counter / end), state);
+        };
+        findOptions.Find(rootEntries);
+        state.ListCount = list.Count;
+        state.List = list;
+        var completePercent = (int)(100.0 * state.Counter / state.End);
+        if (state.End - state.Counter < findOptions.ProgressModifier)
+        {
+            completePercent = 100;
+        }
+
+        worker.ReportProgress(completePercent, state);
+        //worker.ReportProgress(100, state);
+        e.Result = list;
+    }
+
+    private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
+    {
+        var searchHelper = _clientForm.SearchResultListViewHelper;
+        int count;
+
+        if (e == null)
+        {
+            count = 0;
+        }
+        else
+        {
+            if (e.Error != null)
             {
-                _clientForm.MessageBox(
-                    "The From Size Field is greater than the To Size field no search results possible.");
-                return true;
-            }
-
-            return false;
-        }
-
-        private long FromSizeValue()
-        {
-            var value = _clientForm.FromSizeDropDownHelper.SelectedValue;
-            return (long)(_clientForm.FromSizeValue.Field * value);
-        }
-
-        private long ToSizeValue()
-        {
-            var value = _clientForm.ToSizeDropDownHelper.SelectedValue;
-            return (long)(_clientForm.ToSizeValue.Field * value);
-        }
-
-        private DateTime NotOlderThanValue()
-        {
-            var dropDownValueFunc = _clientForm.NotOlderThanDropDownHelper.SelectedValue;
-            var fieldValue = (int)_clientForm.NotOlderThanValue.Field;
-            var now = DateTime.Now; // Option to set this to date of newest scanned Catalog
-            return dropDownValueFunc(now, -fieldValue); // subtract as we are going back in time.
-        }
-
-        // Assumes well formed regex pattern input.
-        // As search is substring match remove leading and trailing wildcards.
-        protected string OptimiseRegexPattern(string pattern)
-        {
-            if (_clientForm.RegexMode && pattern != null)
-            {
-                bool changeMade;
-                do
-                {
-                    changeMade = false;
-                    if (pattern.StartsWith(".*"))
-                    {
-                        pattern = pattern.Substring(2);
-                        changeMade = true;
-                    }
-
-                    if (pattern.EndsWith(".*"))
-                    {
-                        pattern = pattern.Substring(0, pattern.Length - 2);
-                        changeMade = true;
-                    }
-                } while (changeMade);
-            }
-
-            return pattern;
-        }
-
-        private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
-        {
-            var worker = (BackgroundWorker)sender;
-            var argument = (BgWorkerParam)e.Argument;
-            var findOptions = argument.Options;
-            var rootEntries = argument.RootEntries;
-            var state = argument.State;
-
-            var list = new List<PairDirEntry>(500);
-            state.ListCount = list.Count; // 0
-            state.List = list;
-            worker.ReportProgress(0, state);
-            findOptions.VisitorFunc = (p, d) =>
-            {
-                list.Add(new PairDirEntry(p, d));
-                return true;
-            };
-            findOptions.ProgressFunc = (counter, end) =>
-            {
-                state.ListCount = list.Count; // concurrency !
-                state.List = list; // concurrency !!!!
-                state.Counter = counter;
-                state.End = end;
-                worker.ReportProgress((int)(100.0 * counter / end), state);
-            };
-            findOptions.Find(rootEntries);
-            state.ListCount = list.Count;
-            state.List = list;
-            var completePercent = (int)(100.0 * state.Counter / state.End);
-            if (state.End - state.Counter < findOptions.ProgressModifier)
-            {
-                completePercent = 100;
-            }
-
-            worker.ReportProgress(completePercent, state);
-            //worker.ReportProgress(100, state);
-            e.Result = list;
-        }
-
-        private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-        {
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            int count;
-
-            if (e == null)
-            {
+                _clientForm.MessageBox(e.Error.Message);
                 count = 0;
+            }
+            else if (e.Cancelled)
+            {
+                count = searchHelper.SetList(_searchResultList);
             }
             else
             {
-                if (e.Error != null)
-                {
-                    _clientForm.MessageBox(e.Error.Message);
-                    count = 0;
-                }
-                else if (e.Cancelled)
-                {
-                    count = searchHelper.SetList(_searchResultList);
-                }
-                else
-                {
-                    var resultList = (List<PairDirEntry>)e.Result;
-                    count = SetSearchResultList(resultList);
-                }
+                var resultList = (List<PairDirEntry>)e.Result;
+                count = SetSearchResultList(resultList);
             }
-
-            _clientForm.SetSearchResultStatus(count);
-            searchHelper.SortList();
-            SetSearchButton(true);
-            _bgWorker.Dispose();
-            _bgWorker = null;
         }
 
-        private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
-        {
-            var state = (BgWorkerState)e.UserState;
-            var p = e.ProgressPercentage;
-            _clientForm.SetSearchTimeStatus("% " + p
+        _clientForm.SetSearchResultStatus(count);
+        searchHelper.SortList();
+        SetSearchButton(true);
+        _bgWorker.Dispose();
+        _bgWorker = null;
+    }
+
+    private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
+    {
+        var state = (BgWorkerState)e.UserState;
+        var p = e.ProgressPercentage;
+        _clientForm.SetSearchTimeStatus("% " + p
             //+ " lc " + state.ListCount
             //+ " ctr " + state.Counter
             //+ " end " + state.End
-            );
+        );
 
-            var count = SetSearchResultList(state.List);
-            _clientForm.SetSearchResultStatus(count);
+        var count = SetSearchResultList(state.List);
+        _clientForm.SetSearchResultStatus(count);
+    }
+
+    protected int SetSearchResultList(List<PairDirEntry> list)
+    {
+        _searchResultList = list;
+        return _clientForm.SearchResultListViewHelper.SetList(list);
+    }
+
+    public void CancelSearch()
+    {
+        _bgWorker?.CancelAsync();
+    }
+
+    public void SearchResultRetrieveVirtualItem()
+    {
+        var searchHelper = _clientForm.SearchResultListViewHelper;
+        if (_searchResultList == null || _searchResultList.Count == 0)
+        {
+            return;
         }
 
-        protected int SetSearchResultList(List<PairDirEntry> list)
+        var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
+        var dirEntry = pairDirEntry.ChildDE;
+        var itemColor = CreateRowValuesForDirectory(_searchVals, dirEntry, _listViewForeColor);
+
+        _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
+
+        //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
+        _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName;
+
+        searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
+    }
+
+    public void DirectoryTreeViewAfterSelect()
+    {
+        var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
+        SetDirectoryListView((ICommonEntry)selectedNode.Tag);
+    }
+
+    public void SetDirectoryListView(ICommonEntry commonEntry)
+    {
+        _directoryListCommonEntry = commonEntry;
+        var directoryHelper = _clientForm.DirectoryListViewHelper;
+        _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList());
+        directoryHelper.SetList(_directoryList);
+        directoryHelper.SortList();
+        _clientForm.SetDirectoryPathTextBox = commonEntry.FullPath;
+    }
+
+    public void DirectoryRetrieveVirtualItem()
+    {
+        var directoryHelper = _clientForm.DirectoryListViewHelper;
+        if (_directoryList == null || _directoryList.Count == 0)
         {
-            _searchResultList = list;
-            return _clientForm.SearchResultListViewHelper.SetList(list);
+            return;
         }
 
-        public void CancelSearch()
+        var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
+        var itemColor = CreateRowValuesForDirectory(_directoryVals, dirEntry, _listViewForeColor);
+        var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
+        directoryHelper.RenderItem = lvi;
+    }
+
+    private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
+    {
+        vals[0] = dirEntry.Path;
+        vals[1] = dirEntry.Size.ToString();
+        if (dirEntry.IsDirectory)
         {
-            _bgWorker?.CancelAsync();
-        }
-
-        public void SearchResultRetrieveVirtualItem()
-        {
-            var searchHelper = _clientForm.SearchResultListViewHelper;
-            if (_searchResultList == null || _searchResultList.Count == 0)
-            {
-                return;
-            }
-
-            var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
-            var dirEntry = pairDirEntry.ChildDE;
-            var itemColor = CreateRowValuesForDirectory(_searchVals, dirEntry, _listViewForeColor);
-
-            _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
-
-            //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
-            _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName;
-
-            searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
-        }
-
-        public void DirectoryTreeViewAfterSelect()
-        {
-            var selectedNode = _clientForm.DirectoryTreeViewActiveAfterSelectNode;
-            SetDirectoryListView((ICommonEntry)selectedNode.Tag);
-        }
-
-        public void SetDirectoryListView(ICommonEntry commonEntry)
-        {
-            _directoryListCommonEntry = commonEntry;
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList());
-            directoryHelper.SetList(_directoryList);
-            directoryHelper.SortList();
-            _clientForm.SetDirectoryPathTextBox = commonEntry.FullPath;
-        }
-
-        public void DirectoryRetrieveVirtualItem()
-        {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            if (_directoryList == null || _directoryList.Count == 0)
-            {
-                return;
-            }
-
-            var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
-            var itemColor = CreateRowValuesForDirectory(_directoryVals, dirEntry, _listViewForeColor);
-            var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
-            directoryHelper.RenderItem = lvi;
-        }
-
-        private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
-        {
-            vals[0] = dirEntry.Path;
-            vals[1] = dirEntry.Size.ToString();
+            itemColor = _listViewDirForeColor;
             if (dirEntry.IsDirectory)
             {
-                itemColor = _listViewDirForeColor;
-                if (dirEntry.IsDirectory)
+                var val = dirEntry.Size.ToHRString()
+                          + " <Dir";
+                if (dirEntry.IsReparsePoint)
                 {
-                    var val = dirEntry.Size.ToHRString()
-                              + " <Dir";
-                    if (dirEntry.IsReparsePoint)
-                    {
-                        val += " R";
-                    }
-                    vals[1] = val + ">";
+                    val += " R";
+                }
+                vals[1] = val + ">";
+            }
+        }
+
+        vals[2] = dirEntry.IsModifiedBad
+            ? "<Bad Date>"
+            : string.Format(_config.DateFormatYMDHMS, dirEntry.Modified);
+        return itemColor;
+    }
+
+    // before form closes capture any changed configuration.
+    public void MyFormClosing()
+    {
+        _config.RecordConfig(_clientForm);
+        _clientForm.CleanUp();
+    }
+
+    public void CatalogListViewItemActivate()
+    {
+        _clientForm.CatalogListViewHelper.ActionOnActivateItem(GoToDirectoryRoot);
+    }
+
+    private void GoToDirectoryRoot(RootEntry newRoot)
+    {
+        var currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes?.Tag;
+        if (currentRoot == null || currentRoot != newRoot)
+        {
+            SetNewDirectoryRoot(newRoot);
+        }
+        _clientForm.SelectDirectoryPane();
+    }
+
+    private TreeNode SetNewDirectoryRoot(RootEntry newRoot)
+    {
+        var newRootNode = BuildRootNode(newRoot);
+        _clientForm.DirectoryTreeViewNodes = newRootNode;
+        _clientForm.DirectoryListViewHelper.InitSort();
+        return newRootNode;
+    }
+
+    private static TreeNode BuildRootNode(RootEntry rootEntry)
+    {
+        var rootTreeNode = NewTreeNode(rootEntry);
+        SetDummyChildNode(rootTreeNode, rootEntry);
+        return rootTreeNode;
+    }
+
+    public void DirectoryListViewItemActivate()
+    {
+        _clientForm.DirectoryListViewHelper.ActionOnActivateItem(d =>
+        {
+            if (d.IsDirectory)
+            {
+                SetDirectoryWithExpand(d);
+            }
+        });
+    }
+
+    private void SetDirectoryWithExpand(ICommonEntry dirEntry)
+    {
+        var activatedDirEntryList = dirEntry.GetListFromRoot();
+
+        SetDirectoryWithExpand(activatedDirEntryList);
+    }
+
+    private void SetDirectoryWithExpand(IEnumerable<ICommonEntry> activatedDirEntryList)
+    {
+        var currentRootNode = _clientForm.DirectoryTreeViewNodes;
+        var currentRoot = (RootEntry)currentRootNode?.Tag;
+
+        TreeNode workingTreeNode = null;
+        RootEntry newRoot = null;
+        foreach (var entry in activatedDirEntryList)
+        {
+            if (newRoot == null)
+            {
+                newRoot = (RootEntry)entry;
+                if (currentRoot != newRoot)
+                {
+                    currentRootNode = SetNewDirectoryRoot(newRoot);
+                    currentRoot = newRoot;
+                }
+
+                workingTreeNode = currentRootNode; // starting at rootnode.
+            }
+            else
+            {
+                if (((DirEntry)entry).IsDirectory && workingTreeNode != null)
+                {
+                    CreateNodesPreExpand(workingTreeNode);
+                    workingTreeNode.Expand();
+                    object findTag = entry;
+                    var nodeForCurrentEntry = workingTreeNode.Nodes.Cast<TreeNode>()
+                        .FirstOrDefault(node => node.Tag == findTag);
+                    workingTreeNode = nodeForCurrentEntry;
                 }
             }
-
-            vals[2] = dirEntry.IsModifiedBad
-                ? "<Bad Date>"
-                : string.Format(_config.DateFormatYMDHMS, dirEntry.Modified);
-            return itemColor;
         }
 
-        // before form closes capture any changed configuration.
-        public void MyFormClosing()
+        if (workingTreeNode != null)
         {
-            _config.RecordConfig(_clientForm);
-            _clientForm.CleanUp();
-        }
+            CreateNodesPreExpand(workingTreeNode);
+            workingTreeNode.Expand();
+            _clientForm.DirectoryTreeViewSelectedNode = workingTreeNode;
 
-        public void CatalogListViewItemActivate()
-        {
-            _clientForm.CatalogListViewHelper.ActionOnActivateItem(GoToDirectoryRoot);
-        }
+            // This is required or item under cursor after double click is selected.
+            // not sure why ? some sort of left over click on new ListView content.
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            directoryHelper.DeselectAllItems();
+            //_clientForm.DirectoryListViewDeselectItems();
 
-        private void GoToDirectoryRoot(RootEntry newRoot)
-        {
-            var currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes?.Tag;
-            if (currentRoot == null || currentRoot != newRoot)
-            {
-                SetNewDirectoryRoot(newRoot);
-            }
             _clientForm.SelectDirectoryPane();
         }
+    }
 
-        private TreeNode SetNewDirectoryRoot(RootEntry newRoot)
+    public void SearchResultListViewItemActivate()
+    {
+        _clientForm.SearchResultListViewHelper.ActionOnActivateItem(ViewFileInDirectoryTab);
+    }
+
+    public void DirectoryListViewItemSelectionChanged()
+    {
+        var directoryHelper = _clientForm.DirectoryListViewHelper;
+        var indices = directoryHelper.SelectedIndices;
+        var indicesCount = directoryHelper.SelectedIndicesCount;
+        if (indicesCount > 0)
         {
-            var newRootNode = BuildRootNode(newRoot);
-            _clientForm.DirectoryTreeViewNodes = newRootNode;
-            _clientForm.DirectoryListViewHelper.InitSort();
-            return newRootNode;
+            var firstIndex = indices.First();
+            var dirEntry = _directoryList[firstIndex];
+            _clientForm.SetDirectoryPathTextBox = indicesCount > 1
+                ? _directoryListCommonEntry.FullPath
+                : _directoryListCommonEntry.MakeFullPath(dirEntry);
         }
+    }
 
-        private static TreeNode BuildRootNode(RootEntry rootEntry)
-        {
-            var rootTreeNode = NewTreeNode(rootEntry);
-            SetDummyChildNode(rootTreeNode, rootEntry);
-            return rootTreeNode;
-        }
+    public void SearchResultListViewColumnClick()
+    {
+        _clientForm.SearchResultListViewHelper.ListViewColumnClick();
+    }
 
-        public void DirectoryListViewItemActivate()
+    private int SearchResultCompare(PairDirEntry pde1, PairDirEntry pde2)
+    {
+        int compareResult;
+        var de1 = pde1.ChildDE;
+        var de2 = pde2.ChildDE;
+        var searchResultHelper = _clientForm.SearchResultListViewHelper;
+        var sortColumn = searchResultHelper.SortColumn;
+        switch (sortColumn)
         {
-            _clientForm.DirectoryListViewHelper.ActionOnActivateItem(d =>
-            {
-                if (d.IsDirectory)
+            case 0: // SearchResult ListView Name column
+                compareResult = de1.PathCompareWithDirTo(de2);
+                break;
+
+            case 1: // SearchResult ListView Size column
+                compareResult = de1.SizeCompareWithDirTo(de2);
+                break;
+
+            case 2: // SearchResult ListView Modified column
+                compareResult = de1.ModifiedCompareTo(de2);
+                break;
+
+            case 3:
+                compareResult = _config.MyCompareInfo.Compare(
+                    pde1.ParentDE.GetRootEntry().ActualFileName,
+                    pde2.ParentDE.GetRootEntry().ActualFileName,
+                    _config.MyCompareOptions);
+                break;
+
+            case 4: // SearchResult ListView Path column
+                compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
+                    _config.MyCompareOptions);
+                if (compareResult == 0)
                 {
-                    SetDirectoryWithExpand(d);
+                    compareResult = _config.MyCompareInfo.Compare(de1.Path, de2.Path, _config.MyCompareOptions);
                 }
-            });
+
+                break;
+
+            default:
+                throw new Exception($"Problem column {sortColumn} not handled for sort.");
         }
 
-        private void SetDirectoryWithExpand(ICommonEntry dirEntry)
+        if (searchResultHelper.ColumnSortOrder == SortOrder.Descending)
         {
-            var activatedDirEntryList = dirEntry.GetListFromRoot();
-
-            SetDirectoryWithExpand(activatedDirEntryList);
+            compareResult *= -1;
         }
 
-        private void SetDirectoryWithExpand(IEnumerable<ICommonEntry> activatedDirEntryList)
+        return compareResult;
+    }
+
+    public void DirectoryListViewColumnClick()
+    {
+        _clientForm.DirectoryListViewHelper.ListViewColumnClick();
+    }
+
+    private int DirectoryCompare(ICommonEntry de1, ICommonEntry de2)
+    {
+        var directoryHelper = _clientForm.DirectoryListViewHelper;
+        var column = directoryHelper.SortColumn;
+        var compareResult = column switch
         {
-            var currentRootNode = _clientForm.DirectoryTreeViewNodes;
-            var currentRoot = (RootEntry)currentRootNode?.Tag;
-
-            TreeNode workingTreeNode = null;
-            RootEntry newRoot = null;
-            foreach (var entry in activatedDirEntryList)
-            {
-                if (newRoot == null)
-                {
-                    newRoot = (RootEntry)entry;
-                    if (currentRoot != newRoot)
-                    {
-                        currentRootNode = SetNewDirectoryRoot(newRoot);
-                        currentRoot = newRoot;
-                    }
-
-                    workingTreeNode = currentRootNode; // starting at rootnode.
-                }
-                else
-                {
-                    if (((DirEntry)entry).IsDirectory && workingTreeNode != null)
-                    {
-                        CreateNodesPreExpand(workingTreeNode);
-                        workingTreeNode.Expand();
-                        object findTag = entry;
-                        var nodeForCurrentEntry = workingTreeNode.Nodes.Cast<TreeNode>()
-                            .FirstOrDefault(node => node.Tag == findTag);
-                        workingTreeNode = nodeForCurrentEntry;
-                    }
-                }
-            }
-
-            if (workingTreeNode != null)
-            {
-                CreateNodesPreExpand(workingTreeNode);
-                workingTreeNode.Expand();
-                _clientForm.DirectoryTreeViewSelectedNode = workingTreeNode;
-
-                // This is required or item under cursor after double click is selected.
-                // not sure why ? some sort of left over click on new ListView content.
-                var directoryHelper = _clientForm.DirectoryListViewHelper;
-                directoryHelper.DeselectAllItems();
-                //_clientForm.DirectoryListViewDeselectItems();
-
-                _clientForm.SelectDirectoryPane();
-            }
-        }
-
-        public void SearchResultListViewItemActivate()
-        {
-            _clientForm.SearchResultListViewHelper.ActionOnActivateItem(ViewFileInDirectoryTab);
-        }
-
-        public void DirectoryListViewItemSelectionChanged()
-        {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            var indices = directoryHelper.SelectedIndices;
-            var indicesCount = directoryHelper.SelectedIndicesCount;
-            if (indicesCount > 0)
-            {
-                var firstIndex = indices.First();
-                var dirEntry = _directoryList[firstIndex];
-                _clientForm.SetDirectoryPathTextBox = indicesCount > 1
-                    ? _directoryListCommonEntry.FullPath
-                    : _directoryListCommonEntry.MakeFullPath(dirEntry);
-            }
-        }
-
-        public void SearchResultListViewColumnClick()
-        {
-            _clientForm.SearchResultListViewHelper.ListViewColumnClick();
-        }
-
-        private int SearchResultCompare(PairDirEntry pde1, PairDirEntry pde2)
-        {
-            int compareResult;
-            var de1 = pde1.ChildDE;
-            var de2 = pde2.ChildDE;
-            var searchResultHelper = _clientForm.SearchResultListViewHelper;
-            var sortColumn = searchResultHelper.SortColumn;
-            switch (sortColumn)
-            {
-                case 0: // SearchResult ListView Name column
-                    compareResult = de1.PathCompareWithDirTo(de2);
-                    break;
-
-                case 1: // SearchResult ListView Size column
-                    compareResult = de1.SizeCompareWithDirTo(de2);
-                    break;
-
-                case 2: // SearchResult ListView Modified column
-                    compareResult = de1.ModifiedCompareTo(de2);
-                    break;
-
-                case 3:
-                    compareResult = _config.MyCompareInfo.Compare(
-                        pde1.ParentDE.GetRootEntry().ActualFileName,
-                        pde2.ParentDE.GetRootEntry().ActualFileName,
-                        _config.MyCompareOptions);
-                    break;
-
-                case 4: // SearchResult ListView Path column
-                    compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
-                        _config.MyCompareOptions);
-                    if (compareResult == 0)
-                    {
-                        compareResult = _config.MyCompareInfo.Compare(de1.Path, de2.Path, _config.MyCompareOptions);
-                    }
-
-                    break;
-
-                default:
-                    throw new Exception($"Problem column {sortColumn} not handled for sort.");
-            }
-
-            if (searchResultHelper.ColumnSortOrder == SortOrder.Descending)
-            {
-                compareResult *= -1;
-            }
-
-            return compareResult;
-        }
-
-        public void DirectoryListViewColumnClick()
-        {
-            _clientForm.DirectoryListViewHelper.ListViewColumnClick();
-        }
-
-        private int DirectoryCompare(ICommonEntry de1, ICommonEntry de2)
-        {
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            var column = directoryHelper.SortColumn;
-            var compareResult = column switch
-            {
-                0 => // SearchResult ListView Name column
+            0 => // SearchResult ListView Name column
                 de1.PathCompareWithDirTo(de2),
-                1 => // SearchResult ListView Size column
+            1 => // SearchResult ListView Size column
                 de1.SizeCompareWithDirTo(de2),
-                2 => // SearchResult ListView Modified column
+            2 => // SearchResult ListView Modified column
                 de1.ModifiedCompareTo(de2),
-                _ => throw new Exception($"Problem column {column} not handled for sort.")
-            };
+            _ => throw new Exception($"Problem column {column} not handled for sort.")
+        };
 
-            if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
+        if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
+        {
+            compareResult *= -1;
+        }
+
+        return compareResult;
+    }
+
+    public void ExitMenuItem()
+    {
+        _clientForm.Close();
+    }
+
+    public void AboutMenuItem()
+    {
+        _clientForm.AboutDialog();
+    }
+
+    private void DirectoryTreeGetContextMenuPairDirEntryThatExists(Action<ICommonEntry> gotContextAction)
+    {
+        var selectedCommonEntry = _clientForm.GetSelectedTreeItem();
+        if (selectedCommonEntry.ExistsOnFileSystem())
+        {
+            gotContextAction(selectedCommonEntry);
+        }
+    }
+
+    public void DirectoryTreeContextMenuOpenClick()
+    {
+        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ExplorerOpen(ce.FullPath));
+    }
+
+    public void DirectoryTreeContextMenuExploreClick()
+    {
+        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
+            WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
+    }
+
+    public void DirectoryTreeContextMenuExploreAltClick()
+    {
+        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
+            WindowsExplorerUtilities.ExplorerAltExplore(ce.FullPath));
+    }
+
+    public void DirectoryTreeContextMenuPropertiesClick()
+    {
+        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
+            WindowsExplorerUtilities.ShowFileProperties(ce.FullPath));
+    }
+
+    private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
+    {
+        _clientForm.DirectoryListViewHelper.ActionOnSelectedItem(d =>
+        {
+            var pde = new PairDirEntry(_directoryListCommonEntry, d);
+            if (pde.ExistsOnFileSystem())
             {
-                compareResult *= -1;
+                gotContextAction(pde);
             }
+        });
+    }
 
-            return compareResult;
-        }
+    private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<ICommonEntry>> gotContextAction)
+    {
+        _clientForm.DirectoryListViewHelper.ActionOnSelectedItems(gotContextAction);
+    }
 
-        public void ExitMenuItem()
+    public void DirectoryContextMenuViewTreeClick()
+    {
+        DirectoryGetContextMenuPairDirEntryThatExists(ViewFolderInDirectoryTab);
+    }
+
+    private void ViewFolderInDirectoryTab(PairDirEntry pde)
+    {
+        var dirEntry = pde.ChildDE;
+        if (dirEntry.IsDirectory)
         {
-            _clientForm.Close();
-        }
-
-        public void AboutMenuItem()
-        {
-            _clientForm.AboutDialog();
-        }
-
-        private void DirectoryTreeGetContextMenuPairDirEntryThatExists(Action<ICommonEntry> gotContextAction)
-        {
-            var selectedCommonEntry = _clientForm.GetSelectedTreeItem();
-            if (selectedCommonEntry.ExistsOnFileSystem())
-            {
-                gotContextAction(selectedCommonEntry);
-            }
-        }
-
-        public void DirectoryTreeContextMenuOpenClick()
-        {
-            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ExplorerOpen(ce.FullPath));
-        }
-
-        public void DirectoryTreeContextMenuExploreClick()
-        {
-            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-                WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
-        }
-
-        public void DirectoryTreeContextMenuExploreAltClick()
-        {
-            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-                WindowsExplorerUtilities.ExplorerAltExplore(ce.FullPath));
-        }
-
-        public void DirectoryTreeContextMenuPropertiesClick()
-        {
-            DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-                WindowsExplorerUtilities.ShowFileProperties(ce.FullPath));
-        }
-
-        private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
-        {
-            _clientForm.DirectoryListViewHelper.ActionOnSelectedItem(d =>
-            {
-                var pde = new PairDirEntry(_directoryListCommonEntry, d);
-                if (pde.ExistsOnFileSystem())
-                {
-                    gotContextAction(pde);
-                }
-            });
-        }
-
-        private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<ICommonEntry>> gotContextAction)
-        {
-            _clientForm.DirectoryListViewHelper.ActionOnSelectedItems(gotContextAction);
-        }
-
-        public void DirectoryContextMenuViewTreeClick()
-        {
-            DirectoryGetContextMenuPairDirEntryThatExists(ViewFolderInDirectoryTab);
-        }
-
-        private void ViewFolderInDirectoryTab(PairDirEntry pde)
-        {
-            var dirEntry = pde.ChildDE;
-            if (dirEntry.IsDirectory)
-            {
-                SetDirectoryWithExpand(dirEntry);
-            }
-        }
-
-        private void ViewFileInDirectoryTab(PairDirEntry pde)
-        {
-            var dirEntry = pde.ChildDE;
             SetDirectoryWithExpand(dirEntry);
-            SelectFileInDirectoryTab(dirEntry);
         }
+    }
 
-        private void SelectFileInDirectoryTab(ICommonEntry dirEntry)
+    private void ViewFileInDirectoryTab(PairDirEntry pde)
+    {
+        var dirEntry = pde.ChildDE;
+        SetDirectoryWithExpand(dirEntry);
+        SelectFileInDirectoryTab(dirEntry);
+    }
+
+    private void SelectFileInDirectoryTab(ICommonEntry dirEntry)
+    {
+        if (!dirEntry.IsDirectory)
         {
-            if (!dirEntry.IsDirectory)
+            var index = _directoryList.IndexOf(dirEntry);
+            var directoryHelper = _clientForm.DirectoryListViewHelper;
+            directoryHelper.SelectItem(index);
+        }
+    }
+
+    public void DirectoryContextMenuOpenClick()
+    {
+        DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+    }
+
+    public void DirectoryContextMenuExploreClick()
+    {
+        DirectoryGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+    }
+
+    public void DirectoryContextMenuPropertiesClick()
+    {
+        DirectoryGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+    }
+
+    public void DirectoryContextMenuSelectAllClick()
+    {
+        _clientForm.DirectoryListViewHelper.SelectAllItems();
+    }
+
+    public void DirectoryContextMenuParentClick()
+    {
+        var entryList = _directoryListCommonEntry.GetListFromRoot();
+        if (entryList.Count > 1)
+        {
+            entryList.RemoveAt(entryList.Count - 1);
+            SetDirectoryWithExpand(entryList);
+        }
+    }
+
+    public void DirectoryContextMenuCopyFullPathClick()
+    {
+        DirectoryGetContextMenuPairDirEntrys(enumerableDirEntry =>
+        {
+            // we dont have parent dir entry here ... 
+            var s = new StringBuilder();
+            foreach (var dirEntry in enumerableDirEntry)
             {
-                var index = _directoryList.IndexOf(dirEntry);
-                var directoryHelper = _clientForm.DirectoryListViewHelper;
-                directoryHelper.SelectItem(index);
-            }
-        }
-
-        public void DirectoryContextMenuOpenClick()
-        {
-            DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
-        }
-
-        public void DirectoryContextMenuExploreClick()
-        {
-            DirectoryGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
-        }
-
-        public void DirectoryContextMenuPropertiesClick()
-        {
-            DirectoryGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
-        }
-
-        public void DirectoryContextMenuSelectAllClick()
-        {
-            _clientForm.DirectoryListViewHelper.SelectAllItems();
-        }
-
-        public void DirectoryContextMenuParentClick()
-        {
-            var entryList = _directoryListCommonEntry.GetListFromRoot();
-            if (entryList.Count > 1)
-            {
-                entryList.RemoveAt(entryList.Count - 1);
-                SetDirectoryWithExpand(entryList);
-            }
-        }
-
-        public void DirectoryContextMenuCopyFullPathClick()
-        {
-            DirectoryGetContextMenuPairDirEntrys(enumerableDirEntry =>
-            {
-                // we dont have parent dir entry here ... 
-                var s = new StringBuilder();
-                foreach (var dirEntry in enumerableDirEntry)
-                {
-                    var pde = new PairDirEntry(_directoryListCommonEntry, dirEntry);
-                    s.Append(pde.FullPath).Append(Environment.NewLine);
-                }
-
-                Clipboard.SetText(s.ToString());
-            });
-        }
-
-        private void SearchResultGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
-        {
-            _clientForm.SearchResultListViewHelper.ActionOnSelectedItem(pde =>
-            {
-                if (pde.ExistsOnFileSystem())
-                {
-                    gotContextAction(pde);
-                }
-            });
-        }
-
-        private void SearchResultGetContextMenuPairDirEntrys(Action<IEnumerable<PairDirEntry>> gotContextAction)
-        {
-            _clientForm.SearchResultListViewHelper.ActionOnSelectedItems(gotContextAction);
-        }
-
-        public void SearchResultContextMenuViewTreeClick()
-        {
-            SearchResultGetContextMenuPairDirEntryThatExists(ViewFileInDirectoryTab);
-        }
-
-        public void SearchResultContextMenuOpenClick()
-        {
-            SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
-        }
-
-        public void SearchResultContextMenuExploreClick()
-        {
-            SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
-        }
-
-        public void SearchResultContextMenuExploreAltClick()
-        {
-            SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ExplorerAltExplore(pde.FullPath));
-        }
-
-        public void SearchResultContextMenuPropertiesClick()
-        {
-            SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-                WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
-        }
-
-        public void SearchResultContextMenuSelectAllClick()
-        {
-            _clientForm.SearchResultListViewHelper.SelectAllItems();
-        }
-
-        public void SearchResultContextMenuCopyFullPathClick()
-        {
-            SearchResultGetContextMenuPairDirEntrys(listPDE =>
-            {
-                var s = new StringBuilder();
-                foreach (var pairDirEntry in listPDE)
-                {
-                    s.Append(pairDirEntry.FullPath).Append(Environment.NewLine);
-                }
-
-                Clipboard.SetText(s.ToString());
-            });
-        }
-
-        public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
-        {
-            var lvItem = new ListViewItem(vals[0]) { ForeColor = firstColumnForeColor, Tag = tag };
-            // a bug this doesn't work under mouse cursor { UseItemStyleForSubItems = false };
-            // lvItem.SubItems[0].ForeColor = firstColumnForeColor;
-            for (var i = 1; i < vals.Length; ++i)
-            {
-                lvItem.SubItems.Add(vals[i]);
-                //lvItem.SubItems[i].ForeColor = _listViewForeColor; // set others to other than item
+                var pde = new PairDirEntry(_directoryListCommonEntry, dirEntry);
+                s.Append(pde.FullPath).Append(Environment.NewLine);
             }
 
-            return lvItem;
-        }
+            Clipboard.SetText(s.ToString());
+        });
+    }
 
-        public void CatalogListViewColumnClick()
+    private void SearchResultGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
+    {
+        _clientForm.SearchResultListViewHelper.ActionOnSelectedItem(pde =>
         {
-            _clientForm.CatalogListViewHelper.ListViewColumnClick();
-        }
+            if (pde.ExistsOnFileSystem())
+            {
+                gotContextAction(pde);
+            }
+        });
+    }
 
-        private int RootCompare(RootEntry re1, RootEntry re2)
+    private void SearchResultGetContextMenuPairDirEntrys(Action<IEnumerable<PairDirEntry>> gotContextAction)
+    {
+        _clientForm.SearchResultListViewHelper.ActionOnSelectedItems(gotContextAction);
+    }
+
+    public void SearchResultContextMenuViewTreeClick()
+    {
+        SearchResultGetContextMenuPairDirEntryThatExists(ViewFileInDirectoryTab);
+    }
+
+    public void SearchResultContextMenuOpenClick()
+    {
+        SearchResultGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+    }
+
+    public void SearchResultContextMenuExploreClick()
+    {
+        SearchResultGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+    }
+
+    public void SearchResultContextMenuExploreAltClick()
+    {
+        SearchResultGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ExplorerAltExplore(pde.FullPath));
+    }
+
+    public void SearchResultContextMenuPropertiesClick()
+    {
+        SearchResultGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+    }
+
+    public void SearchResultContextMenuSelectAllClick()
+    {
+        _clientForm.SearchResultListViewHelper.SelectAllItems();
+    }
+
+    public void SearchResultContextMenuCopyFullPathClick()
+    {
+        SearchResultGetContextMenuPairDirEntrys(listPDE =>
         {
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            var column = catalogHelper.SortColumn;
-            var compareResult = column switch
+            var s = new StringBuilder();
+            foreach (var pairDirEntry in listPDE)
             {
-                0 => re1.Path.CompareTo(re2.Path),
-                1 => string.Compare((string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName), string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
-                2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
-                3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
-                4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
-                5 => re1.DriveLetterHint.CompareTo(re2.DriveLetterHint),
-                6 => re1.Size.CompareTo(re2.Size),
-                7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
-                8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
-                9 => re1.ScanStartUTC.CompareTo(re2.ScanStartUTC),
-                10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
-                11 => re1.ActualFileName.CompareTo(re2.ActualFileName),
-                12 => re1.DescriptionCompareTo(re2, _config),
-                _ => throw new Exception($"Problem column {column} not handled for sort.")
-            };
-
-            if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
-            {
-                compareResult *= -1;
+                s.Append(pairDirEntry.FullPath).Append(Environment.NewLine);
             }
 
-            return compareResult;
-        }
+            Clipboard.SetText(s.ToString());
+        });
+    }
 
-        public void AdvancedSearchCheckboxChanged()
+    public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
+    {
+        var lvItem = new ListViewItem(vals[0]) { ForeColor = firstColumnForeColor, Tag = tag };
+        // a bug this doesn't work under mouse cursor { UseItemStyleForSubItems = false };
+        // lvItem.SubItems[0].ForeColor = firstColumnForeColor;
+        for (var i = 1; i < vals.Length; ++i)
         {
-            var isAdvanced = _clientForm.IsAdvancedSearchMode;
-            SetAdvancedSearch(isAdvanced);
+            lvItem.SubItems.Add(vals[i]);
+            //lvItem.SubItems[i].ForeColor = _listViewForeColor; // set others to other than item
         }
 
-        private void SetAdvancedSearch(bool value)
+        return lvItem;
+    }
+
+    public void CatalogListViewColumnClick()
+    {
+        _clientForm.CatalogListViewHelper.ListViewColumnClick();
+    }
+
+    private int RootCompare(RootEntry re1, RootEntry re2)
+    {
+        var catalogHelper = _clientForm.CatalogListViewHelper;
+        var column = catalogHelper.SortColumn;
+        var compareResult = column switch
         {
-            _clientForm.IsAdvancedSearchMode = value;
-        }
+            0 => re1.Path.CompareTo(re2.Path),
+            1 => string.Compare((string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName), string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
+            2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
+            3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
+            4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
+            5 => re1.DriveLetterHint.CompareTo(re2.DriveLetterHint),
+            6 => re1.Size.CompareTo(re2.Size),
+            7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
+            8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
+            9 => re1.ScanStartUTC.CompareTo(re2.ScanStartUTC),
+            10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
+            11 => re1.ActualFileName.CompareTo(re2.ActualFileName),
+            12 => re1.DescriptionCompareTo(re2, _config),
+            _ => throw new Exception($"Problem column {column} not handled for sort.")
+        };
 
-        public void ReloadCatalogs()
+        if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
         {
-            // clear all current list views and tree views.
-            var catalogHelper = _clientForm.CatalogListViewHelper;
-            catalogHelper.SetList(null);
-            var searchResultHelper = _clientForm.SearchResultListViewHelper;
-            searchResultHelper.SetList(null);
-            var directoryListHelper = _clientForm.DirectoryListViewHelper;
-            directoryListHelper.SetList(null);
-
-            var previousRootEntries = _rootEntries;
-            foreach (var rootEntry in previousRootEntries)
-            {
-                rootEntry.ClearCommonEntryFields();
-            }
-
-            var timeIt = new TimeIt();
-            _rootEntries = LoadRootEntries(_config, timeIt);
-            if (_rootEntries.Count > 1)
-            {
-                // this resets the tree view and directory list view
-                SetNewDirectoryRoot(_rootEntries.First());
-            }
-
-            // set root entries.
-            SetCatalogListView();
-
-            _clientForm.AddLine(string.Empty);
-            _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
-            LogTimeIt(timeIt);
+            compareResult *= -1;
         }
+
+        return compareResult;
+    }
+
+    public void AdvancedSearchCheckboxChanged()
+    {
+        var isAdvanced = _clientForm.IsAdvancedSearchMode;
+        SetAdvancedSearch(isAdvanced);
+    }
+
+    private void SetAdvancedSearch(bool value)
+    {
+        _clientForm.IsAdvancedSearchMode = value;
+    }
+
+    public void ReloadCatalogs()
+    {
+        // clear all current list views and tree views.
+        var catalogHelper = _clientForm.CatalogListViewHelper;
+        catalogHelper.SetList(null);
+        var searchResultHelper = _clientForm.SearchResultListViewHelper;
+        searchResultHelper.SetList(null);
+        var directoryListHelper = _clientForm.DirectoryListViewHelper;
+        directoryListHelper.SetList(null);
+
+        var previousRootEntries = _rootEntries;
+        foreach (var rootEntry in previousRootEntries)
+        {
+            rootEntry.ClearCommonEntryFields();
+        }
+
+        var timeIt = new TimeIt();
+        _rootEntries = LoadRootEntries(_config, timeIt);
+        if (_rootEntries.Count > 1)
+        {
+            // this resets the tree view and directory list view
+            SetNewDirectoryRoot(_rootEntries.First());
+        }
+
+        // set root entries.
+        SetCatalogListView();
+
+        _clientForm.AddLine(string.Empty);
+        _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
+        LogTimeIt(timeIt);
     }
 }

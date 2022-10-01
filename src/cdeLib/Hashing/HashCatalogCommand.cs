@@ -1,8 +1,7 @@
 ﻿using MediatR;
 
-namespace cdeLib.Hashing
+namespace cdeLib.Hashing;
+
+public class HashCatalogCommand : IRequest
 {
-    public class HashCatalogCommand : IRequest
-    {
-    }
 }

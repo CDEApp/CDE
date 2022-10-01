@@ -2,108 +2,107 @@
 using System.Collections;
 using System.Collections.Generic;
 
-namespace cdeDataStructure3.Entities
+namespace cdeDataStructure3.Entities;
+
+public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
 {
-    public class DirEntryEnumerator : IEnumerator<DirEntry>, IEnumerable<DirEntry>
+    private readonly IEnumerable<RootEntry> _rootEntries;
+    private DirEntry _current;
+    private bool _isDisposed;
+    private Stack<CommonEntry> _entries;
+    private IEnumerator<DirEntry> _childEnumerator;
+
+    public DirEntry Current => _current;
+    object IEnumerator.Current => Current;
+
+    public DirEntryEnumerator(RootEntry rootEntry)
     {
-        private readonly IEnumerable<RootEntry> _rootEntries;
-        private DirEntry _current;
-        private bool _isDisposed;
-        private Stack<CommonEntry> _entries;
-        private IEnumerator<DirEntry> _childEnumerator;
+        _rootEntries = new List<RootEntry> {rootEntry};
+        Reset();
+    }
 
-        public DirEntry Current => _current;
-        object IEnumerator.Current => Current;
+    public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
+    {
+        _rootEntries = rootEntries;
+        Reset();
+    }
 
-        public DirEntryEnumerator(RootEntry rootEntry)
+    private static Stack<CommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
+    {
+        var entries = new Stack<CommonEntry>();
+        foreach (var re in rootEntries)
         {
-            _rootEntries = new List<RootEntry> {rootEntry};
-            Reset();
-        }
-
-        public DirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
-        {
-            _rootEntries = rootEntries;
-            Reset();
-        }
-
-        private static Stack<CommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
-        {
-            var entries = new Stack<CommonEntry>();
-            foreach (var re in rootEntries)
+            if (re.Children is { Count: > 0 })
             {
-                if (re.Children is { Count: > 0 })
-                {
-                    entries.Push(re);
-                }
-            }
-
-            return entries;
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool disposing)
-        {
-            if (_isDisposed) return;
-            if (disposing)
-            {
-                _childEnumerator?.Dispose();
-                _isDisposed = true;
+                entries.Push(re);
             }
         }
 
-        public bool MoveNext()
+        return entries;
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (_isDisposed) return;
+        if (disposing)
         {
-            _current = null;
-            if (_childEnumerator == null)
+            _childEnumerator?.Dispose();
+            _isDisposed = true;
+        }
+    }
+
+    public bool MoveNext()
+    {
+        _current = null;
+        if (_childEnumerator == null)
+        {
+            if (_entries.Count > 0)
             {
-                if (_entries.Count > 0)
+                var de = _entries.Pop();
+                _childEnumerator = de.Children.GetEnumerator();
+            }
+        }
+
+        if (_childEnumerator != null)
+        {
+            if (_childEnumerator.MoveNext())
+            {
+                _current = _childEnumerator.Current;
+                if (_current.IsDirectory && _current.Children is { Count: > 0 })
                 {
-                    var de = _entries.Pop();
-                    _childEnumerator = de.Children.GetEnumerator();
+                    _entries.Push(_current);
                 }
             }
-
-            if (_childEnumerator != null)
+            else
             {
-                if (_childEnumerator.MoveNext())
-                {
-                    _current = _childEnumerator.Current;
-                    if (_current.IsDirectory && _current.Children is { Count: > 0 })
-                    {
-                        _entries.Push(_current);
-                    }
-                }
-                else
-                {
-                    _childEnumerator = null;
-                    MoveNext();
-                }
+                _childEnumerator = null;
+                MoveNext();
             }
-
-            return _current != null;
         }
 
-        public void Reset()
-        {
-            _current = null;
-            _entries = StackOfRoots(_rootEntries);
-            _childEnumerator = null;
-        }
+        return _current != null;
+    }
 
-        IEnumerator<DirEntry> IEnumerable<DirEntry>.GetEnumerator()
-        {
-            return new DirEntryEnumerator(_rootEntries);
-        }
+    public void Reset()
+    {
+        _current = null;
+        _entries = StackOfRoots(_rootEntries);
+        _childEnumerator = null;
+    }
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return new DirEntryEnumerator(_rootEntries);
-        }
+    IEnumerator<DirEntry> IEnumerable<DirEntry>.GetEnumerator()
+    {
+        return new DirEntryEnumerator(_rootEntries);
+    }
+
+    IEnumerator IEnumerable.GetEnumerator()
+    {
+        return new DirEntryEnumerator(_rootEntries);
     }
 }

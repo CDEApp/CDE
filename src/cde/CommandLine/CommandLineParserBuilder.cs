@@ -2,31 +2,30 @@
 using System.Globalization;
 using CommandLine;
 
-namespace cde.CommandLine
+namespace cde.CommandLine;
+
+public static class CommandLineParserBuilder
 {
-    public static class CommandLineParserBuilder
+    public static Parser Build()
     {
-        public static Parser Build()
+        return new(cfg =>
         {
-            return new(cfg =>
+            cfg.CaseSensitive = false;
+            cfg.AutoHelp = true;
+            cfg.AutoVersion = true;
+            cfg.ParsingCulture = CultureInfo.InvariantCulture;
+            cfg.HelpWriter = Console.Error;
+            try
             {
-                cfg.CaseSensitive = false;
-                cfg.AutoHelp = true;
-                cfg.AutoVersion = true;
-                cfg.ParsingCulture = CultureInfo.InvariantCulture;
-                cfg.HelpWriter = Console.Error;
-                try
-                {
-                    cfg.MaximumDisplayWidth = Console.WindowWidth;
-                    if (cfg.MaximumDisplayWidth >= 1)
-                        return;
-                    cfg.MaximumDisplayWidth = 80;
-                }
-                catch
-                {
-                    cfg.MaximumDisplayWidth = 80;
-                }
-            });
-        }
+                cfg.MaximumDisplayWidth = Console.WindowWidth;
+                if (cfg.MaximumDisplayWidth >= 1)
+                    return;
+                cfg.MaximumDisplayWidth = 80;
+            }
+            catch
+            {
+                cfg.MaximumDisplayWidth = 80;
+            }
+        });
     }
 }
