@@ -8,7 +8,7 @@ public class ConfigBuilder
     public IConfigurationRoot Build(string[] args)
     {
         return new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())   //required for single file application or it goes hunting in temp folder when it extracts.
+            .SetBasePath(Directory.GetCurrentDirectory())   // required for single file application or it goes hunting in temp folder when it extracts.
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddCommandLine(args)
             .Build();

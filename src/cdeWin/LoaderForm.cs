@@ -121,7 +121,7 @@ public partial class LoaderForm : Form
                     Interlocked.Increment(ref fileCounter);
                     rootEntries.Push(re);
 
-                    worker.ReportProgress((int) ((float) fileCounter / (float) totalFiles * 100),
+                    worker.ReportProgress((int) (fileCounter / (float) totalFiles * 100),
                         new LoadingState(fileCounter, totalFiles));
                 });
         }

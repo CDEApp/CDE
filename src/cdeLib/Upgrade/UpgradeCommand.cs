@@ -52,6 +52,7 @@ public class MapV3ToV4Catalog
         newDirEntry.SetPath(src.Path);
 
         if (src.Children == null) return newDirEntry;
+
         foreach (var newChild in src.Children.Select(MapDirEntry))
         {
             newDirEntry.AddChild(newChild);

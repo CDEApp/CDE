@@ -53,7 +53,7 @@ public class FindOptions
     public BackgroundWorker Worker { get; set; }
     public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
 
-    private readonly object _countLock = new object();
+    private readonly object _countLock = new ();
 
     public FindOptions()
     {

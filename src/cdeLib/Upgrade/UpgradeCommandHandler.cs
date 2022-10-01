@@ -10,7 +10,7 @@ public class UpgradeCommandHandler : IRequestHandler<UpgradeCommand>
 {
     private readonly ICatalogRepository _catalogRepository;
     private readonly ILogger _logger;
-    private readonly MapV3ToV4Catalog _mapV3ToV4Catalog = new MapV3ToV4Catalog();
+    private readonly MapV3ToV4Catalog _mapV3ToV4Catalog = new ();
 
     public UpgradeCommandHandler(ICatalogRepository catalogRepository, ILogger logger)
     {

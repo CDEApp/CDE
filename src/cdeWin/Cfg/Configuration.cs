@@ -167,10 +167,6 @@ public class Configuration
     public DateTime ToHourValue;
     [ProtoMember(25)]
     public int PatternHistoryMaximum;
-
-    public Configuration()
-    {
-    }
 }
 
 public interface IConfig : IConfigCdeLib

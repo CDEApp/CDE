@@ -4,7 +4,6 @@ using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
-using Humanizer;
 using Serilog;
 using Spectre.Console;
 
@@ -18,7 +17,7 @@ public class ScanProgressConsole
 
     public static bool ScanIsComplete { get; set; } = false;
 
-    public static readonly Queue<string> Messages = new();
+    private static readonly Queue<string> Messages = new();
 
     string NormalizeLength(string value, int maxLength)
     {

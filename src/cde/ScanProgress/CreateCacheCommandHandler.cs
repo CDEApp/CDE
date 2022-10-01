@@ -5,6 +5,7 @@ using cdeLib;
 using cdeLib.Catalog;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
+using Humanizer;
 using JetBrains.Annotations;
 using MediatR;
 using Serilog;
@@ -18,7 +19,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
     private readonly ICatalogRepository _catalogRepository;
     private readonly IMediator _mediator;
 
-    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository, IMediator mediator)
+    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
+        IMediator mediator)
     {
         _configuration = configuration;
         _catalogRepository = catalogRepository;
@@ -27,7 +29,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
     public async Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
-        var mainLoopTask  = Task.Factory.StartNew(() => MainLoop(request, cancellationToken));
+        var mainLoopTask = Task.Factory.StartNew(() => MainLoop(request, cancellationToken), cancellationToken);
         var console = new ScanProgressConsole();
         console.Start(mainLoopTask, cancellationToken);
         await mainLoopTask.ConfigureAwait(false);
@@ -39,10 +41,10 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         var re = new RootEntry(_configuration);
         try
         {
-            re.SimpleScanCountEvent = (int count, string currentFile) =>
+            re.SimpleScanCountEvent = (count, currentFile) =>
                 _mediator.Publish(new ScanProgressEvent(count, currentFile), cancellationToken);
             re.SimpleScanEndEvent = () => _mediator.Publish(new ScanCompletedEvent(), cancellationToken);
-            re.ExceptionEvent = PrintExceptions;
+            re.ExceptionEvent = PrintException;
 
             re.PopulateRoot(request.Path);
             if (Hack.BreakConsoleFlag)
@@ -53,8 +55,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
             if (oldRoot != null)
             {
-                Log.Information("Found cache \"{FileName}\"",re.DefaultFileName);
-                Log.Information("Updating hashes on new scan from cache file");
+                Log.Information("Found cache \"{FileName}\"", re.DefaultFileName);
+                Log.Information("Updating hashes for new scan from cache file");
                 oldRoot.TraverseTreesCopyHash(re);
             }
 
@@ -66,13 +68,12 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             }
 
             await _catalogRepository.Save(re).ConfigureAwait(false);
-            var scanTimeSpan = re.ScanEndUTC - re.ScanStartUTC;
             Console.WriteLine();
-            Log.Information("Scanned Path {Path}", re.Path);
-            Log.Information("Scan time {ScanTime:0.00} msecs", scanTimeSpan.TotalMilliseconds);
-            Log.Information("Saved scanned path {Path}", re.DefaultFileName);
+            Log.Information("Scanned path {Path}", re.Path);
+            Log.Information("Saved to {Path}", re.DefaultFileName);
             Log.Information(
-                "Files {FileCount:0,0} Dirs {DirCount:0,0} Total Size of Files {Size:0,0}", re.FileEntryCount, re.DirEntryCount, re.Size);
+                "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
+                re.DirEntryCount, re.Size.Bytes().Humanize());
         }
         catch (ArgumentException ex)
         {
@@ -80,7 +81,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         }
     }
 
-    private void PrintExceptions(string path, Exception ex)
+    private void PrintException(string path, Exception ex)
     {
         Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
     }

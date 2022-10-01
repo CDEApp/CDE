@@ -17,22 +17,26 @@ public static class StringExtension
     /// <returns></returns>
     public static string GetRelativePath(this string fullPath, string rootPath)
     {
-        if (String.IsNullOrEmpty(rootPath) || String.IsNullOrEmpty(fullPath))
+        if (string.IsNullOrEmpty(rootPath) || string.IsNullOrEmpty(fullPath))
         {
             return null;
         }
+
         if (fullPath.Equals(rootPath))
         {
             return string.Empty;
         }
+
         if (!System.IO.Path.EndsInDirectorySeparator(rootPath))
         {
             rootPath += System.IO.Path.DirectorySeparatorChar;
         }
+
         if (fullPath.Contains(rootPath))
         {
             return fullPath.Substring(rootPath.Length);
         }
+
         return null;
     }
 }

@@ -64,7 +64,7 @@ public static class Program
             {
                 var findService = _container.Resolve<IFindService>();
                 GetParserResult(args)
-                    .WithParsed<ScanOptions>(opts => CreateCache(opts))
+                    .WithParsed<ScanOptions>(CreateCache)
                     .WithParsed<FindOptions>(opts =>
                     {
                         findService.Find(opts.Value, "--find",
@@ -85,7 +85,7 @@ public static class Program
                         findService.Find(opts.Value, "--greppath",
                             _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
-                    .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGreppath, opts.Value))
+                    .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGrepPath, opts.Value))
                     .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
                     .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
                     .WithParsed<HashOptions>(_ => HashCatalog())
@@ -112,11 +112,10 @@ public static class Program
 
     private static void InvokeRepl()
     {
-        var le = new LineEditor(null);
-        string s;
+        var le = new LineEditor(name: null);
         var running = true;
 
-        while (running && (s = le.Edit("shell> ", string.Empty)) != null)
+        while (running && le.Edit("shell> ", string.Empty) is { } s)
         {
             Console.WriteLine($"----> [{s}]");
             switch (s)
@@ -185,11 +184,11 @@ public static class Program
                 {
                     case "includefiles":
                         findService.IncludeFiles = !findService.IncludeFiles;
-                        Console.WriteLine("IncludeFiles:" + findService.IncludeFiles);
+                        Console.WriteLine($"IncludeFiles:{findService.IncludeFiles}");
                         break;
                     case "includefolders":
                         findService.IncludeFolders = !findService.IncludeFolders;
-                        Console.WriteLine("IncludeFolders:" + findService.IncludeFolders);
+                        Console.WriteLine($"IncludeFolders:{findService.IncludeFolders}");
                         break;
                     case "help":
                         Console.WriteLine("Valid options are");
@@ -200,7 +199,7 @@ public static class Program
                         Console.Clear();
                         break;
                     default:
-                        Console.WriteLine("unknown command " + command);
+                        Console.WriteLine($"unknown command {command}");
                         break;
                 }
             }

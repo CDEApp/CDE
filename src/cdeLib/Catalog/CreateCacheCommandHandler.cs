@@ -58,7 +58,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
             Console.WriteLine($"Saved scanned path {re.DefaultFileName}");
             Console.WriteLine(
-                $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0}");
+                $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0} bytes");
         }
         catch (ArgumentException aex)
         {

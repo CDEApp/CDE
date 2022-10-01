@@ -58,8 +58,7 @@ public sealed class Hash16 : object
         {
             var a = BitConverter.GetBytes(HashA);
             var b = BitConverter.GetBytes(HashB);
-            return ByteArrayHelper.ByteArrayToString(a)
-                   + ByteArrayHelper.ByteArrayToString(b);
+            return $"{ByteArrayHelper.ByteArrayToString(a)}{ByteArrayHelper.ByteArrayToString(b)}";
         }
     }
 

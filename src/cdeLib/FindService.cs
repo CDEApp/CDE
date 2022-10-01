@@ -15,9 +15,9 @@ public interface IFindService
 public class FindService : IFindService
 {
     public const string ParamFind = "--find";
-    public const string ParamFindpath = "--findpath";
+    public const string ParamFindPath = "--findpath";
     public const string ParamGrep = "--grep";
-    public const string ParamGreppath = "--greppath";
+    public const string ParamGrepPath = "--greppath";
 
     public FindService()
     {
@@ -31,8 +31,8 @@ public class FindService : IFindService
 
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
-        var regexMode = param == ParamGrep || param == ParamGreppath;
-        var includePath = param == ParamGreppath || param == ParamFindpath;
+        var regexMode = param == ParamGrep || param == ParamGrepPath;
+        var includePath = param == ParamGrepPath || param == ParamFindPath;
         Find(pattern, regexMode, includePath, rootEntries);
     }
 

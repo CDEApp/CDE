@@ -17,12 +17,11 @@ public class Duplication
     private readonly IConfiguration _configuration;
 
     private readonly Dictionary<ICommonEntry, List<PairDirEntry>> _duplicateFile =
-        new Dictionary<ICommonEntry, List<PairDirEntry>>(new CommonEntryEqualityComparer());
+        new(new CommonEntryEqualityComparer());
 
-    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize =
-        new Dictionary<long, List<PairDirEntry>>();
+    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new();
 
-    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new HashSet<ICommonEntry>();
+    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new();
 
     protected readonly DuplicationStatistics _duplicationStatistics;
     private readonly ILogger _logger;
@@ -347,7 +346,7 @@ public class Duplication
 
     public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
     {
-        //TODO: What if we don't have hash? go and create it? -- Rob votes not.
+        // TODO: What if we don't have hash? go and create it? -- Rob votes not.
         var dupePairs = GetDupePairs(rootEntries)
             .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
         foreach (var dupe in dupePairs)
