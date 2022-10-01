@@ -5,6 +5,7 @@ using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using Humanizer;
+using Serilog;
 using Spectre.Console;
 
 namespace cde.ScanProgress;
@@ -32,57 +33,64 @@ public class ScanProgressConsole
     public void Start(Task mainLoopTask, CancellationToken cancellationToken)
     {
         const int increment = 10000;
-        const int updateIntervalMs = 250;
+        const int updateIntervalMs = 500;
         var sw = new Stopwatch();
         sw.Start();
         AnsiConsole.Status()
-            .AutoRefresh(true)
+            .AutoRefresh(enabled: true)
             .Spinner(Spinner.Known.Default)
             .Start("Thinking...", ctx =>
             {
                 var reportCounter = increment;
                 while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested && !ScanIsComplete)
                 {
-                    var msg = NormalizeLength($"Scanned {ScanCount.ToString("N0", new NumberFormatInfo())} files. At: {CurrentFile}",
-                        AnsiConsole.Profile.Out.Width - 6);
-                    if (ScanCount > reportCounter)
-                    {
-                        var elapsedSec = sw.ElapsedMilliseconds / 1000;
-                        if (elapsedSec < 1) elapsedSec = 1;
-                        var scansPerSec = ScanCount / elapsedSec;
-                        Messages.Enqueue(
-                            $"Scanned {ScanCount.ToString("N0", new NumberFormatInfo())} files. Avg {scansPerSec.ToString("N0", new NumberFormatInfo())}/sec");
-                        reportCounter += increment;
-                    }
-
-                    try
-                    {
-                        ctx.Status(Markup.Escape(msg));
-                    }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine(ex.Message);
-                    }
-
-                    ctx.Spinner(Spinner.Known.Star);
-                    ctx.SpinnerStyle(Style.Parse("green"));
-
-                    var dequeueMessages = true;
-                    while (dequeueMessages)
-                    {
-                        Messages.TryDequeue(out msg);
-                        if (string.IsNullOrEmpty(msg))
-                        {
-                            dequeueMessages = false;
-                        }
-                        else
-                        {
-                            WriteLogMessage(msg);
-                        }
-                    }
-
-                    Thread.Sleep(updateIntervalMs);
+                    reportCounter = ShowProgress(reportCounter, sw, increment, ctx, updateIntervalMs);
                 }
             });
+    }
+
+    private int ShowProgress(int reportCounter, Stopwatch sw, int increment, StatusContext ctx, int updateIntervalMs)
+    {
+        var defaultNumberFormat = new NumberFormatInfo();
+        var msg = NormalizeLength($"Scanned {ScanCount.ToString("N0", defaultNumberFormat)} files. At: {CurrentFile}",
+            AnsiConsole.Profile.Out.Width - 6);
+        if (ScanCount > reportCounter)
+        {
+            var elapsedSec = sw.ElapsedMilliseconds / 1000;
+            if (elapsedSec < 1) elapsedSec = 1;
+            var scansPerSec = ScanCount / elapsedSec;
+            Messages.Enqueue(
+                $"Scanned {ScanCount.ToString("N0", defaultNumberFormat)} files. Avg {scansPerSec.ToString("N0", defaultNumberFormat)}/sec");
+            reportCounter += increment;
+        }
+
+        try
+        {
+            ctx.Status(Markup.Escape(msg));
+        }
+        catch (Exception ex)
+        {
+            Log.Logger.Error(ex, "Error writing Status");
+        }
+
+        ctx.Spinner(Spinner.Known.Star);
+        ctx.SpinnerStyle(Style.Parse("green"));
+
+        var dequeueMessages = true;
+        while (dequeueMessages)
+        {
+            Messages.TryDequeue(out msg);
+            if (string.IsNullOrEmpty(msg))
+            {
+                dequeueMessages = false;
+            }
+            else
+            {
+                WriteLogMessage(msg);
+            }
+        }
+
+        Thread.Sleep(updateIntervalMs);
+        return reportCounter;
     }
 }

@@ -60,7 +60,7 @@ namespace cde
             Console.CancelKeyPress += BreakConsole;
             try
             {
-                using (Operation.Time("Main App"))
+                using (Operation.Time("App"))
                 {
                     var findService = _container.Resolve<IFindService>();
                     GetParserResult(args)
