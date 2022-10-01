@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
+using Humanizer;
 using Spectre.Console;
 
 namespace cde.ScanProgress;
@@ -10,7 +12,9 @@ namespace cde.ScanProgress;
 public class ScanProgressConsole
 {
     public static int ScanCount { get; set; }
+
     public static string CurrentFile { get; set; }
+
     public static bool ScanIsComplete { get; set; } = false;
 
     public static readonly Queue<string> Messages = new();
@@ -39,13 +43,15 @@ public class ScanProgressConsole
                 var reportCounter = increment;
                 while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested && !ScanIsComplete)
                 {
-                    var msg = NormalizeLength($"Scanned {ScanCount} files. At: {CurrentFile}", AnsiConsole.Profile.Out.Width - 6);
+                    var msg = NormalizeLength($"Scanned {ScanCount.ToString("N0", new NumberFormatInfo())} files. At: {CurrentFile}",
+                        AnsiConsole.Profile.Out.Width - 6);
                     if (ScanCount > reportCounter)
                     {
                         var elapsedSec = sw.ElapsedMilliseconds / 1000;
                         if (elapsedSec < 1) elapsedSec = 1;
                         var scansPerSec = ScanCount / elapsedSec;
-                        Messages.Enqueue($"Scanned {ScanCount} messages. Avg {scansPerSec:0}/sec");
+                        Messages.Enqueue(
+                            $"Scanned {ScanCount.ToString("N0", new NumberFormatInfo())} files. Avg {scansPerSec.ToString("N0", new NumberFormatInfo())}/sec");
                         reportCounter += increment;
                     }
 

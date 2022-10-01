@@ -53,8 +53,8 @@ namespace cde.ScanProgress
                 var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
                 if (oldRoot != null)
                 {
-                    Log.Information($"Found cache \"{re.DefaultFileName}\"");
-                    Log.Information("Updating hashes on new scan from cache file.");
+                    Log.Information("Found cache \"{FileName}\"",re.DefaultFileName);
+                    Log.Information("Updating hashes on new scan from cache file");
                     oldRoot.TraverseTreesCopyHash(re);
                 }
 

@@ -230,7 +230,7 @@ namespace cdeLib.Entities
             }
             catch (ArgumentException ex)
             {
-                Log.Logger.Warning(ex, "Error Getting Volume Name, its ok we'll continue.");
+                Log.Logger.Warning(ex, "Error Getting Volume Name, its ok we'll continue");
                 return string.Empty;
             }
         }
@@ -573,7 +573,7 @@ namespace cdeLib.Entities
             }
             catch (ArgumentOutOfRangeException ex)
             {
-                Log.Logger.Error(ex, "Error getting WriteTime for {0}, using CreationTime instead.", fs.Name);
+                Log.Logger.Error(ex, "Error getting WriteTime for {Name}, using CreationTime instead", fs.Name);
                 Modified = fs.CreationTime;
             }
 
@@ -607,7 +607,7 @@ namespace cdeLib.Entities
             }
 
             //if (IsDirectory && de.IsDirectory)
-            //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+            //{   // sort by path if both dirs and sorting by Size ? maybe fill in size in field Hmm ? 
             //    // really cheap to calculate dir size.... i think i should fill it in ?
             //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
             //}
