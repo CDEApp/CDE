@@ -9,7 +9,6 @@ using cdeLib.Entities;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using FlatSharp;
-using FlatSharp.Unsafe;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
