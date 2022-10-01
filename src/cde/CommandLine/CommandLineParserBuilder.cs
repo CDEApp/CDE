@@ -8,8 +8,9 @@ public static class CommandLineParserBuilder
 {
     public static Parser Build()
     {
-        return new(cfg =>
+        return new Parser(cfg =>
         {
+            cfg.HelpWriter = null;
             cfg.CaseSensitive = false;
             cfg.AutoHelp = true;
             cfg.AutoVersion = true;

@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
@@ -24,6 +26,7 @@ namespace cde;
 public static class Program
 {
     private static IContainer _container;
+
     private static IMediator Mediatr { get; set; }
 
     public static void InitProgram(string[] args)
@@ -63,7 +66,7 @@ public static class Program
             using (Operation.Time("App"))
             {
                 var findService = _container.Resolve<IFindService>();
-                GetParserResult(args)
+                var parsedResult = GetParserResult(args)
                     .WithParsed<ScanOptions>(CreateCache)
                     .WithParsed<FindOptions>(opts =>
                     {
@@ -99,8 +102,8 @@ public static class Program
                     .WithParsed<ReplOptions>(_ => InvokeRepl())
                     .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
                     .WithParsed<UpgradeOptions>(_ => Upgrade())
-                    .WithParsed<UpdateOptions>(Update)
-                    .WithNotParsed(_ => Environment.Exit(1));
+                    .WithParsed<UpdateOptions>(Update);
+                parsedResult.WithNotParsed(errs => CustomHelpText.DisplayHelp(parsedResult));
                 return 0;
             }
         }
@@ -213,7 +216,7 @@ public static class Program
     private static void Update(UpdateOptions opts)
     {
         var task = Task.Run(async () =>
-            await Mediatr.Send(new UpdateCommand {FileName = opts.FileName, Description = opts.Description})
+            await Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description })
                 .ConfigureAwait(false));
         task.Wait();
     }
@@ -238,8 +241,8 @@ public static class Program
 
     public static void CreateCache(ScanOptions opts)
     {
-        var task = Task.Run(async () => 
-            await Mediatr.Send(new CreateCacheCommand(opts.Path) {Description = opts.Description})
+        var task = Task.Run(async () =>
+            await Mediatr.Send(new CreateCacheCommand(opts.Path) { Description = opts.Description })
                 .ConfigureAwait(false));
         task.Wait();
     }

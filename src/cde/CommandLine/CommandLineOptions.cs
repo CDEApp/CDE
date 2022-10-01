@@ -71,7 +71,7 @@ public class HashOptions
 {
 }
 
-[Verb("dupes", HelpText = "List all duplicate files (that have already been hash computed")]
+[Verb("dupes", HelpText = "List all duplicate files (that already have hash computed")]
 public class DupesOptions
 {
 }
@@ -86,7 +86,7 @@ public class LoadWaitOptions
 {
 }
 
-[Verb("repl", HelpText = "Start repl console. Enter readline mode - trying it out not useful yet...")]
+[Verb("repl", HelpText = "Start repl console. Enter readline mode")]
 public class ReplOptions
 {
 }

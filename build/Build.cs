@@ -1,4 +1,5 @@
 using System;
+using JetBrains.Annotations;
 using Microsoft.Build.Evaluation;
 using Microsoft.Build.Locator;
 using Nuke.Common;
@@ -50,7 +51,10 @@ class Build : NukeBuild
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
+    string RunTime = "win10-x64";
 
+
+    [UsedImplicitly]
     Target Clean => _ => _
         .Before(Restore)
         .Executes(() =>
@@ -76,13 +80,14 @@ class Build : NukeBuild
             DotNetPack(s => s
                 .SetProject(Solution)
                 .SetOutputDirectory(ArtifactsDirectory)
-                .SetIncludeSymbols(true)
+                .EnableIncludeSymbols()
                 .SetConfiguration(Configuration)
                 .EnableNoRestore()
                 .EnableNoBuild()
             );
         });
 
+    [UsedImplicitly]
     Target Publish => _ => _
         .DependsOn(Pack)
         .Executes(() =>
@@ -90,19 +95,19 @@ class Build : NukeBuild
             DotNetPublish(s => s
                     .SetProject("src/cde/cde.csproj")
                     .SetConfiguration(Configuration)
-                    .SetOutput(ArtifactsDirectory + "/cde")
-                    .SetRuntime("win10-x64")
-                    .SetPublishSingleFile(true)
-                    .SetSelfContained(false)
+                    .SetOutput($"{ArtifactsDirectory}/cde")
+                    .SetRuntime(RunTime)
+                    .EnablePublishSingleFile()
+                    .DisableSelfContained()
             );
 
             DotNetPublish(s => s
                     .SetProject("src/cdewin/cdewin.csproj")
                     .SetConfiguration(Configuration)
-                    .SetOutput(ArtifactsDirectory + "/cdewin")
-                    .SetRuntime("win10-x64")
-                    .SetPublishSingleFile(true)
-                    .SetSelfContained(false)
+                    .SetOutput($"{ArtifactsDirectory}/cdewin")
+                    .SetRuntime(RunTime)
+                    .EnablePublishSingleFile()
+                    .DisableSelfContained()
             );
         });
 
