@@ -68,3 +68,4 @@ src/.vs/config/applicationhost.config
 /publish/*
 /artifacts/*
 /build/bin/*
+**/Properties/launchSettings.json
