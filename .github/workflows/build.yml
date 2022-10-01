@@ -13,6 +13,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+        with:
+            #fetch depth 0 or gitversion breaks since it can't obtain the required tags etc. 
+            fetch-depth: 0
       - name: Setup .NET
         uses: actions/setup-dotnet@v3
         with:
