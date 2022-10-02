@@ -1,0 +1,110 @@
+# Changelog
+
+## 2022- vNEXT
+
+- improvement: Reduce filesize a bit
+- improvement (CDE): Tidy up help commands
+- improvement (CDE): Better display of progress
+- fix (CDEWin): Fix error on close.
+
+## 2017/06/04 11:42 cdeWin v1.7.1.0, cde v1.7.1.0
+
+- Fixed bug in cdeWin explore to file/folder.
+
+## 2016/06/19 20:22 cdeWin v1.6.0.0, cde v1.6
+
+- Clean up.
+- Added populousfolders.
+
+## 2014/12/19 08:13 cdeWin v1.5.0.0, cde v1.5
+
+- Updated VS.
+- Updated to latest AlphaFS can now hash files with names could not open before.
+- example. files with a trailing "fullstop" or "hash" in file name or folder path.
+- Bumped version.
+
+## 2014/08/18 xx:xx cdeWin v1.4.0.0, cde v1.4
+
+- Updated AlphaFS library to 1.6Dev to address filestream open problem discovered.
+
+## 2014/08/17 19:48 cdeWin v1.2.8.0, cde v1.3
+
+- Fixed bug in duplicate file finding, likely many large files were not found as duplicates.
+
+## 2013/12/17 17:42 v1.2.8.0
+
+- Modified progress reporting, search button turns pinkish while searching now as well.
+
+## 2013/11/11 16:03 v1.2.7.0
+
+- No longer focuses pattern search box whenever window activated. Was to annoying.
+- Now sorts Directory Tab list view columns consistently.
+
+## 2013/02/01 23:48 v.1.2.6.0
+
+- Added Right Click Context Copy Full path to clipboard for selected items in Search Result Pane.
+- Also shortcut to ctrl-c.
+
+## 2013/02/01 13:20 v.1.2.5.0
+
+- Fixed a bug catalogs were not sorted at first level directory. (old bug)
+
+## 2012/09/12 15:13 v1.2.4.0
+
+- Fixing sorty by column For columns > 6 in Catalog tab.
+- Added new column to Catalog tab for Scan Duration.
+- Fixed a thrown exception in contact author in about box if mailto: was setup.
+- Added a Reload catalogs button to the Catalog tab. It will use more ram using it.
+
+## 2012/07/16 20:35 v1.2.3.0
+
+- Renamed the Space and Used columns in catalog list view to "Available" "Size".
+- Added a Used Column which shows Size of catalog.
+- These fields previously were previously miss labelled.
+
+## 2012/07/13 cdeWin v1.2.2.0
+
+- Directory Tree view now has context menu.
+- Context menus dont appear unless an item is under cursor now.
+- Fixed NPE starting cdeWin with no profile config.
+
+##2012/07/11 cdeWin v1.2.1.0 
+
+- Shows column sort order arrows now, really bugged me I didnt have them.
+
+## 2012/07/11 cdeWin v1.2.0.0
+
+- Much much improved auto complete on the Pattern entry field.
+- up down arrow now navigates back/forward through history, drop down arrow now shows history.
+- It limits itself to remembering 50 patterns
+
+##2012/07/09 cdeWin v1.1.0.0
+
+- About box, contact link.
+- Loader window at startup, with logging.
+
+## 2012/03/13 cdeWin 
+
+- Read lock cde files.
+- Fixed build for .Net 4 references even with .Net 4.5 installed.
+- Icon.
+- Load cde files one directory down as well as current dir.
+
+## 2012/01/15 cdeWin 
+
+- Fixed a redraw problem in Directory pane list view.
+
+## 2012/01/04 cdeWin
+
+- Added advanced search
+- Moved configuration file to profile storage.
+- Loads catalogs from current dir and profile dir.
+
+## 2011/12/30 cdeWin
+
+- Fixed list view render crashes in caching.
+
+##2011/12/26 cdeWin
+
+- Initial gui viewer version.
+
