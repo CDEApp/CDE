@@ -120,7 +120,7 @@ When it creates new catalog files it will detect an old catalog file for the giv
 
 Only Last Modified Time of file system entries is captured into .cde files.
 
-### cde -find String
+### cde find String
 
 #### Valid Options for this mode
 
