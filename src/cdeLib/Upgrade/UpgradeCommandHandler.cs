@@ -1,11 +1,13 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
+using JetBrains.Annotations;
 using MediatR;
 using Serilog;
 
 namespace cdeLib.Upgrade;
 
+[UsedImplicitly]
 public class UpgradeCommandHandler : IRequestHandler<UpgradeCommand>
 {
     private readonly ICatalogRepository _catalogRepository;
@@ -24,7 +26,7 @@ public class UpgradeCommandHandler : IRequestHandler<UpgradeCommand>
         _logger.Debug("Loading catalogs");
         foreach (var cat in cdeDataStructure3.Entities.RootEntry.LoadCurrentDirCache())
         {
-            _logger.Debug("Upgrading Catalog {name}", cat.ActualFileName);
+            _logger.Debug("Upgrading Catalog {Name}", cat.ActualFileName);
 
             // map to new structure
             var newRootEntry = _mapV3ToV4Catalog.Map(cat);

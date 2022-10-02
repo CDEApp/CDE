@@ -31,7 +31,7 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
         var entries = new Stack<ICommonEntry>();
         foreach (var re in rootEntries)
         {
-            if (re.Children != null && re.Children.Count > 0)
+            if (re.Children is { Count: > 0 })
             {
                 entries.Push(re);
             }

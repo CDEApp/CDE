@@ -11,6 +11,7 @@ public struct Hash16
 {
     [ProtoMember(1, IsRequired = true)]
     public ulong HashA; // first 8 bytes
+
     [ProtoMember(2, IsRequired = true)]
     public ulong HashB; // last 8 bytes
 
@@ -38,16 +39,8 @@ public struct Hash16
         HashB = (ulong)hash;
     }
 
-    public string HashAsString
-    {
-        get
-        {
-            var a = BitConverter.GetBytes(HashA);
-            var b = BitConverter.GetBytes(HashB);
-            return ByteArrayHelper.ByteArrayToString(a)
-                   + ByteArrayHelper.ByteArrayToString(b);
-        }
-    }
+    public string HashAsString =>
+        $"{ByteArrayHelper.ByteArrayToString(BitConverter.GetBytes(HashA))}{ByteArrayHelper.ByteArrayToString(BitConverter.GetBytes(HashB))}";
 
     public override string ToString()
     {
@@ -58,7 +51,6 @@ public struct Hash16
     {
         public bool Equals(Hash16 x, Hash16 y)
         {
-            //return x.HashA == y.HashA && x.HashB == y.HashB;
             return StaticEquals(x, y);
         }
 
