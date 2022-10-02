@@ -10,7 +10,7 @@ using Serilog;
 
 namespace cdeLib.Entities;
 
-[DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.HashB}")]
+[DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash != null ? Hash.HashB : 0}")]
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
