@@ -1,22 +1,8 @@
-# cde = Catalog Directory Entries
+# cde - Catalog Directory Entries
 
 [TOC]
 
-- Overhaul to .net core 3 app started late Oct 2019.
-- Its on .Net 6 as of 2022 some time
-
 ---
-
-Chunks of readme are irrelevant.
-Stuff is not all working.
-
----
-
-## Continuous integration
-
-| Build server                | Platform      | Build status                                                                                                                                                        | Tests                                                                                                                                                   |
-|-----------------------------|---------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| Azure Pipelines             | Windows         | [![Build Status](https://dev.azure.com/cdeapplication/CDE/_apis/build/status/CDEApp.CDE?branchName=master)](https://dev.azure.com/cdeapplication/CDE/_build/latest?definitionId=1&branchName=master) |
 
 ## Introduction
 
@@ -24,15 +10,13 @@ Stuff is not all working.
 
 This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file system entries with assorted criteria.
 
-It is was originally written in C# and required .Net 4.7.2
-
-It was inspired by and old and faithful utility called Cathy I have used in the past found at [Cathy's Website](http://www.mtg.sk/rva/). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
+It is inspired by and old and faithful utility called Cathy I have used in the past found at [Cathy's Website](http://www.mtg.sk/rva/). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
 
 #### cde
 
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
 
-The executable `cde.exe` can be copied around by it self to be used anywhere that .Net 4.0 is available. The cde.config file is optional for cde.exe and it allows you to control some settings. [cde.config](#cde.config)
+The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation. [cde.config](#cde.config)
 
 #### cdeWin
 
@@ -42,13 +26,13 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
 
 - This file is normally located in the Local Application Data folder of the current user.
 - On standard Windows 10 machine its path would be
-    - `C:\Users\username\AppData\Local\cde`
+  - `C:\Users\username\AppData\Local\cde`
 - If a file called cdeWinView.cfg exists in the current directory when cdeWin launches it will use the current directory for the configuration file and not the Local Application Data Folder.
 - This file saves and restores information about cdeWin window and controls.
-    - window location
-    - search patterns
-    - size of all the columns in list views
-    - values of fields in the search parameters
+  - window location
+  - search patterns
+  - size of all the columns in list views
+  - values of fields in the search parameters
 
 The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .Net 4.0 is available with the behavior of the cdeWinView.cfg file as described just above.
 
@@ -76,20 +60,21 @@ This application will continue to evolve driven by my own and a few friends desi
   - Renaming files is not a problem if you are not using hashes or don't care about hashes.
   - Duplicating a catalog to a different name will cause cde to load both original and duplicate as it does not check for duplicates catalog file contents.
 - example catalog file names
-  
-    ```batch
-    cde --scan c:\users\
-    ```
 
-    Produces a cde file name of `C-V3Win7-C__users.cde` on my machine.
+  ```batch
+  cde scan c:\users\
+  ```
 
-    ```batch
-    cde --scan \\unc\toothless\c$\users
-    ```
+  Produces a cde file name of `C-V3Win7-C__users.cde` on my machine.
 
-    Produces a cde file name of `UNC-toothless_c__users_.cde`  on my home network.
+  ```batch
+  cde scan \\unc\toothless\c$\users
+  ```
+
+  Produces a cde file name of `UNC-toothless_c__users_.cde` on my home network.
 
 - All catalog files in the current directory, or one directory below current directory will be loaded by cde or cdeWin when they are started.
+
   - The main reason for loading also from one directory down is to allow for file system permission to be applied to folders in the current directory to limit what catalog files are loaded by the current useres identity.
 
 - Catalog files can contain MD5 Hashes for files as well if they have been added by using the "-hash" option.
@@ -97,7 +82,8 @@ This application will continue to evolve driven by my own and a few friends desi
 - When hashing cde strives to only hash files that are of the same length as this means they could have the same content.
 
 - When hashing cde tries to avoid work, by only hashing a fixed byte at the start of large files, to try and collect just enough information about a file to exclude it from being a duplicate of another file.
-    - partial hashes are promoted to a hash of the entire file if another file is encountered with the same file length and a matching partial hash.
+
+  - partial hashes are promoted to a hash of the entire file if another file is encountered with the same file length and a matching partial hash.
 
 - When scanning a file system that you allready have a catalog file for, cde will scan the file system and then load the old catalog file looking for any hashes in the old catalog file that still match on file paths, file names and file sizes to copy to the newly updated catalog file. So the work of hashing a file system with unchanged files should not be lost.
 
@@ -108,16 +94,16 @@ Some options only apply to some modes, in those cases the mode parameter must oc
 Valid:
 
 ```batch
-cde -find afilename -path
+cde find afilename -path
 ```
 
 Invalid:
 
 ```batch
-cde -path -find afilename
+cde path -find afilename
 ```
 
-### cde -scan Path
+### cde scan Path
 
 #### Valid Options for this mode
 
@@ -130,7 +116,7 @@ cde -path -find afilename
 
 This is the mode of operation that creates and updates catalog files.
 
-When it creates new catalog files it will detect an old catalog file for the given scan target   and copy any Hash values from the old file to the new file for matching  file paths, file dates and sizes.
+When it creates new catalog files it will detect an old catalog file for the given scan target and copy any Hash values from the old file to the new file for matching file paths, file dates and sizes.
 
 Only Last Modified Time of file system entries is captured into .cde files.
 
@@ -151,7 +137,7 @@ Only Last Modified Time of file system entries is captured into .cde files.
 
 This is the mode for finding files in your catalogs using assorted filter criteria. If you wish to sort and browse it is suggested you use use cdeWin rather than cde.
 
-### cde -hash
+### cde hash
 
 #### Valid Options for this mode
 
@@ -172,11 +158,11 @@ It will hash files in descending file size order.
 
 If you have Hash running in Phase one and hit Ctrl-C it will actualy move from Phase one of hashing to Phase two where files are checked if they need to be promoted to Full Hash to determine uniqueness.
 This second phase can also be interrupted with Ctrl-C.
-By doing this you can  limit the hashing of  files to try and run Dupes on a subset of the larger files in the cataloged file system.
+By doing this you can limit the hashing of files to try and run Dupes on a subset of the larger files in the cataloged file system.
 
 You can also use the option -minSize to limit the size of Hashed files and Dupes reported files
 
-### cde -dupes
+### cde dupes
 
 #### Valid Options for this mode
 
@@ -189,7 +175,6 @@ You can also use the option -minSize to limit the size of Hashed files and Dupes
 [`-maxTime`](#parameter-options)
 [`-minHourAge`](#parameter-options)
 
-
 This mode looks for duplicate files in all catalog files available.
 It does no hashing itself and is very fast, however it does depend on hash being availabe in the catalog file and will not find any duplicated if no hashing has been done. So you will need to run Hash mode before using Dupes.
 
@@ -197,7 +182,7 @@ Dupes does not look at files on the file system at all, so if you run Dupes on a
 
 Consider using -minHourAge to limit Hash and Dupes work if your are cleanign up file systems.
 
-### cde -dump
+### cde dump
 
 #### Valid Options for this mode
 
@@ -207,24 +192,24 @@ Output the full tree of file entries in the catologs in text format.
 
 ### Parameter Options
 
-| | Parameter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description |
-| ---: | :--- | :--- |
-| | `-basePath {Path}` | Defines the set of base paths to search, hash or find entries from, if not specified it defaults to the root of each catalog loaded. May take multiple parameters or be used multiple times as a parameter. If the path specified appears in more than one catalog file you will get results for every match.
-| | `-path` | Include the path to a file when finding matching entry names.
-| | `-grep` | The search parameter is treated as a regular expression for finding matches.
-| | `-repl` | The first search will occur and the cde will prompte for subsequent searches when search complete.  An empty search exits the loop.
-| | `-minSize {Size}` | Minimum size of file in bytes to include in processing.
-| | `-maxSize {Size}` | Maximum size of file in bytes to include in processing.
-| | `-minHours {Int}` | Minimum age of file in hours to include in processing.
-| | `-minDate {DateTime}` | Minimum date and time inclusive to include in processing.
-| | `-maxDate {DateTime}` | Maxnimum date and time inclusive to include in processing.
-| | `-minTime {T}` | Minimum time inclusive to include in processing. This ignores the date part of file time.
-| | `-maxTime {T}` | Maximum time inclusive to include in processing. This ignores the date part of file time.
-| | `-maxResults {Int}` | Maximum number of results returned by cde.
-| | `-exclude {Regex}` | A filter to exclude only entries that match these regexes for processing.
-| | `-include {Regex}` | A filter to include only entries that match these Regexes for processing.
+|     | Parameter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description                                                                                                                                                                                                                                                                                                   |
+| --: | :-------------------------------------------------------------------------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+|     | `-basePath {Path}`                                                                                              | Defines the set of base paths to search, hash or find entries from, if not specified it defaults to the root of each catalog loaded. May take multiple parameters or be used multiple times as a parameter. If the path specified appears in more than one catalog file you will get results for every match. |
+|     | `-path`                                                                                                         | Include the path to a file when finding matching entry names.                                                                                                                                                                                                                                                 |
+|     | `-grep`                                                                                                         | The search parameter is treated as a regular expression for finding matches.                                                                                                                                                                                                                                  |
+|     | `-repl`                                                                                                         | The first search will occur and the cde will prompte for subsequent searches when search complete. An empty search exits the loop.                                                                                                                                                                            |
+|     | `-minSize {Size}`                                                                                               | Minimum size of file in bytes to include in processing.                                                                                                                                                                                                                                                       |
+|     | `-maxSize {Size}`                                                                                               | Maximum size of file in bytes to include in processing.                                                                                                                                                                                                                                                       |
+|     | `-minHours {Int}`                                                                                               | Minimum age of file in hours to include in processing.                                                                                                                                                                                                                                                        |
+|     | `-minDate {DateTime}`                                                                                           | Minimum date and time inclusive to include in processing.                                                                                                                                                                                                                                                     |
+|     | `-maxDate {DateTime}`                                                                                           | Maxnimum date and time inclusive to include in processing.                                                                                                                                                                                                                                                    |
+|     | `-minTime {T}`                                                                                                  | Minimum time inclusive to include in processing. This ignores the date part of file time.                                                                                                                                                                                                                     |
+|     | `-maxTime {T}`                                                                                                  | Maximum time inclusive to include in processing. This ignores the date part of file time.                                                                                                                                                                                                                     |
+|     | `-maxResults {Int}`                                                                                             | Maximum number of results returned by cde.                                                                                                                                                                                                                                                                    |
+|     | `-exclude {Regex}`                                                                                              | A filter to exclude only entries that match these regexes for processing.                                                                                                                                                                                                                                     |
+|     | `-include {Regex}`                                                                                              | A filter to include only entries that match these Regexes for processing.                                                                                                                                                                                                                                     |
 
-##### Date Time  Format for parameters
+##### Date Time Format for parameters
 
 `<YYYY>-<MONTH>-<DD>T<HH>:<MM>:<SS>`
 
@@ -262,11 +247,11 @@ Valid Examples:
 
 The following suffixes case independent on size fields modify there value.
 
-| Suffix | Description | Multiplier
-|--------| ------------|-------------
-| KB | Kilobytes | 1000
-| MB | Megabytes | 1000^2
-| GB | Gigabytes | 1000^3
+| Suffix | Description | Multiplier |
+| ------ | ----------- | ---------- |
+| KB     | Kilobytes   | 1000       |
+| MB     | Megabytes   | 1000^2     |
+| GB     | Gigabytes   | 1000^3     |
 
 Suffixes must follow number with no spaces.
 
@@ -276,28 +261,30 @@ Suffixes must follow number with no spaces.
 
 There are 3 values that can be modified to change cde behaviour.
 
-- `ProgressUpdateInterval`  which defaults to 5000.
-    - the number of file entries scanned before a "." it output to console as a progress indicator.
+- `ProgressUpdateInterval` which defaults to 5000.
+
+  - the number of file entries scanned before a "." it output to console as a progress indicator.
 
 - `Hash.FirstPassSizeInBytes` which defaults to 655356 bytes.
-    - If you change cde.config after creating catalog files that contain collected hashes you need to recreate those hash files by deleting the catalog files, recreating with scan them and then hashing them again.
+
+  - If you change cde.config after creating catalog files that contain collected hashes you need to recreate those hash files by deleting the catalog files, recreating with scan them and then hashing them again.
 
 - `Hash.DegreesOfParallelism` which defaults to 2.
-    - hashing will automatically try to do hashing on different file systems in parallel.
-    - This setting defines how many concurrent processes will be hashing files on one file system.
+  - hashing will automatically try to do hashing on different file systems in parallel.
+  - This setting defines how many concurrent processes will be hashing files on one file system.
 
 ### Examples
 
 To create a cde catalog for C:\ drive.
 
 ```batch
-cde --scan C:\
+cde scan C:\
 ```
 
 To find files containing word "system.dll" in catalogs in current directory.
 
 ```batch
-cde --find system.dll
+cde find system.dll
 ```
 
 ### Catalog file sizes and memory usage
@@ -305,15 +292,15 @@ cde --find system.dll
 These are examples and actual file sizes and memory footprints may vary depending
 on the length of file and folder names.
 
-| Count Files and Folders | Description | Memory at Launch | File Size
-| ---: | --- | --- | --- |
-| no files or folders | 32 bit cde | 18MB | 0
-| 8,000 in one catalog | 32 bit cde | 19MB | 500KB
-| 500,000,000 in one catalog  | 32 bit cde | 96MB | 22MB
-| 1,500,000,000 in one catalog | 32 bit cde | 275MB | 65MB
-| 2,000,000,000 in 3 catalogs | 32 bit cde | 360MB | 77 MB
-| 11,000,000,000 in 7 catalogs | 32 bit cde | 1.52 GB | 500 MB
-| 11,000,000,000 in 7 catalogs | 64 bit cde | 2.5 GB | 500 MB
+|      Count Files and Folders | Description | Memory at Launch | File Size |
+| ---------------------------: | ----------- | ---------------- | --------- |
+|          no files or folders | 32 bit cde  | 18MB             | 0         |
+|         8,000 in one catalog | 32 bit cde  | 19MB             | 500KB     |
+|   500,000,000 in one catalog | 32 bit cde  | 96MB             | 22MB      |
+| 1,500,000,000 in one catalog | 32 bit cde  | 275MB            | 65MB      |
+|  2,000,000,000 in 3 catalogs | 32 bit cde  | 360MB            | 77 MB     |
+| 11,000,000,000 in 7 catalogs | 32 bit cde  | 1.52 GB          | 500 MB    |
+| 11,000,000,000 in 7 catalogs | 64 bit cde  | 2.5 GB           | 500 MB    |
 
 The 64 or AnyCPU build on a 64 bit Windows uses a lot more memory than the 32 bit version.
 
@@ -321,12 +308,10 @@ The catalog files are not compressed internally as the use cases I have had till
 
 ### Acknowledgements
 
-The following sofwtare is used in the Development of this application.
+The following software is used in the Development of this application.
 
 - [protobuf-net](https://code.google.com/p/protobuf-net/)
-- [AlphaFS](https://alphafs.codeplex.com/)
 - [NUnit](http://www.nunit.org/)
-- [NDesk.Options](http://www.ndesk.org/Options)
 
 The web version uses. (not available currently)
 
@@ -334,13 +319,3 @@ The web version uses. (not available currently)
 - [Bootstrap](http://getbootstrap.com/)
 - [autofac](http://autofac.org/)
 - [SignalR](http://signalr.net/)
-
-
-# dotnetcore3.0 notes
-
-# Single file binary, not massive
-
-* `dotnet publish -r win-x86 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true`
-* `dotnet publish -r win-x86 -c Release /p:PublishSingleFile=true /p:PublishTrimmed=true /p:ReadyToRun=true`
-* `dotnet publish -r win-x86 -c Release --self-contained=false /p:PublishSingleFile=true /p:ReadyToRun=true`
-
