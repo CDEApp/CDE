@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib;
@@ -73,7 +74,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             Log.Information("Saved to {Path}", re.DefaultFileName);
             Log.Information(
                 "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
-                re.DirEntryCount, re.Size.Bytes().Humanize());
+                re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));
         }
         catch (ArgumentException ex)
         {
