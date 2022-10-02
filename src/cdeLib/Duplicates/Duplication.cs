@@ -303,8 +303,7 @@ public class Duplication
             {
                 var fullPath = EntryHelper.MakeFullPath(parentEntry, dirEntry);
                 // TODO not sure we need this GetFullPath since dotnetcore3.0
-                var longFullPath = System.IO.Path.GetFullPath(fullPath);
-                await CalculateHash(longFullPath, dirEntry, false);
+                await CalculateHash(System.IO.Path.GetFullPath(fullPath), dirEntry, false);
                 if (Hack.BreakConsoleFlag)
                 {
                     Console.WriteLine("\n * Break key detected exiting full hashing phase outer.");
@@ -346,7 +345,6 @@ public class Duplication
 
     public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
     {
-        // TODO: What if we don't have hash? go and create it? -- Rob votes not.
         var dupePairs = GetDupePairs(rootEntries)
             .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
         foreach (var dupe in dupePairs)
