@@ -75,9 +75,8 @@ public static class WindowsExplorerUtilities
         Program.Configuration.GetSection("ExplorerAlt").Bind(explorerAltConfig);
         if (!string.IsNullOrEmpty(explorerAltConfig.Path))
         {
-            var execPath = explorerAltConfig.Path;
             var args = explorerAltConfig.Arguments.Replace("{path}", path);
-            Process.Start(execPath, args);
+            Process.Start(explorerAltConfig.Path, args);
         }
     }
 }
