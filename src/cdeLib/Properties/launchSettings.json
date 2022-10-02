@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "cdeLib": {
+      "commandName": "Project",
+      "commandLineArgs": "--scan c:\\temp"
+    }
+  }
+}

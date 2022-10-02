@@ -1,28 +1,27 @@
 ﻿using System;
 using System.Text.RegularExpressions;
 
-namespace cdeLib.Infrastructure
+namespace cdeLib.Infrastructure;
+
+public static class RegexHelper
 {
-    public class RegexHelper
+    public static string GetRegexErrorMessage(string testPattern)
     {
-        public static string GetRegexErrorMessage(string testPattern)
+        if (testPattern?.Trim().Length > 0)
         {
-            if ((testPattern != null) && (testPattern.Trim().Length > 0))
+            try
             {
-                try
-                {
-                    Regex.Match("", testPattern);
-                }
-                catch (ArgumentException ae)
-                {
-                    return $"Bad Regex: {ae.Message}.";
-                }
+                _ = Regex.Match("", testPattern);
             }
-            else
+            catch (ArgumentException ae)
             {
-                return "Bad Regex: Pattern is Null or Empty.";
+                return $"Bad Regex: {ae.Message}.";
             }
-            return (String.Empty);
         }
+        else
+        {
+            return "Bad Regex: Pattern is Null or Empty.";
+        }
+        return string.Empty;
     }
 }

@@ -1,24 +1,29 @@
-﻿namespace cdeWin
+﻿using cdeWin.Properties;
+
+namespace cdeWin
 {
 	partial class LoaderForm
 	{
 		/// <summary>
 		/// Required designer variable.
 		/// </summary>
-		private System.ComponentModel.IContainer components = null;
+#pragma warning disable 414
+        private System.ComponentModel.IContainer components = null;
+#pragma warning restore 414
 
-		/// <summary>
+        /// <summary>
 		/// Clean up any resources being used.
 		/// </summary>
 		/// <param name="disposing">true if managed resources should be disposed; otherwise, false.</param>
 		protected override void Dispose(bool disposing)
 		{
-			if (disposing && (components != null))
-			{
-				components.Dispose();
-			}
-			base.Dispose(disposing);
-		}
+            if (disposing)
+            {
+                _backgroundWorker?.Dispose();
+            }
+
+            base.Dispose(disposing);
+        }
 
 		#region Windows Form Designer generated code
 
@@ -28,7 +33,7 @@
 		/// </summary>
 		private void InitializeComponent()
 		{
-			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(LoaderForm));
+			System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SharedResources));
 			this.pictureCDEIcon = new System.Windows.Forms.PictureBox();
 			this.barLoading = new System.Windows.Forms.ProgressBar();
 			this.lblProgressMessage = new System.Windows.Forms.Label();
@@ -37,7 +42,8 @@
 			// 
 			// pictureCDEIcon
 			// 
-			this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+			// this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+			this.pictureCDEIcon.Image = ((System.Drawing.Image) (resources.GetObject("cdeWin-Logo")));
 			this.pictureCDEIcon.Location = new System.Drawing.Point(12, 12);
 			this.pictureCDEIcon.Name = "pictureCDEIcon";
 			this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);
@@ -70,7 +76,7 @@
 			this.Controls.Add(this.lblProgressMessage);
 			this.Controls.Add(this.barLoading);
 			this.Controls.Add(this.pictureCDEIcon);
-			this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+			// this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
 			this.MaximizeBox = false;
 			this.MinimizeBox = false;
 			this.Name = "LoaderForm";
@@ -83,7 +89,9 @@
 			this.ResumeLayout(false);
 			this.PerformLayout();
 
-		}
+            this._backgroundWorker = new System.ComponentModel.BackgroundWorker();
+            this._backgroundWorker.WorkerReportsProgress = true;
+        }
 
 		#endregion
 

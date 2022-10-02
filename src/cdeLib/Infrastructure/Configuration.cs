@@ -1,56 +1,30 @@
-using System;
-using System.Configuration;
+using cdeLib.Infrastructure.Config;
+using Microsoft.Extensions.Configuration;
+using IConfiguration = cdeLib.Infrastructure.Config.IConfiguration;
 
-namespace cdeLib.Infrastructure
+namespace cdeLib.Infrastructure;
+
+/// <summary>
+/// Configuration to talk to app.config
+/// </summary>
+public class Configuration : IConfiguration
 {
-    public interface IConfiguration
+    public Configuration(IConfigurationRoot configurationRoot)
     {
-        int ProgressUpdateInterval { get; }
-        int HashFirstPassSize { get; }
-        int DegreesOfParallelism { get; }
+        Config = configurationRoot.GetSection("AppConfig").Get<AppConfigurationSection>();
     }
+
+    public AppConfigurationSection Config { get; }
 
     /// <summary>
-    /// Configuration to talk to app.config
+    /// Get the loop interval for progress updates.
     /// </summary>
-    public class Configuration : IConfiguration
-    {
-        /// <summary>
-        /// Get the loop interval for progress updates.
-        /// </summary>
-        public int ProgressUpdateInterval
-        {
-            get
-            {
-                int result;
-                Int32.TryParse(ConfigurationManager.AppSettings["ProgressUpdateInterval"], out result);
-                if (result <= 0)
-                    result = 10000;
-                return result;
-            }
-        }
+    public int ProgressUpdateInterval => Config.Display.ProgressUpdateInterval;
 
-        /// <summary>
-        /// Size in bytes to use for a firstRunHashSize
-        /// </summary>
-        public int HashFirstPassSize
-        { get {
-            int result;
-            Int32.TryParse(ConfigurationManager.AppSettings["Hash.FirstPassSizeInBytes"], out result);
-            if (result <= 1024)
-                result = 1024;
-            return result;
-            
-        }}
+    /// <summary>
+    /// Size in bytes to use for a firstRunHashSize
+    /// </summary>
+    public int HashFirstPassSize => Config.Hashing.FirstPassSizeInBytes;
 
-        public int DegreesOfParallelism
-        {
-            get
-            {
-                int result;
-                Int32.TryParse(ConfigurationManager.AppSettings["Hash.DegreesOfParallelism"], out result);
-                return result;
-            }
-        }
-    }
+    public int DegreesOfParallelism => Config.Hashing.DegreesOfParallelism;
 }

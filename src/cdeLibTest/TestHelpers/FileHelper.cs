@@ -1,16 +1,48 @@
-﻿namespace cdeLibTest.TestHelpers
+﻿using System.IO;
+using NUnit.Framework;
+
+namespace cdeLibTest.TestHelpers;
+
+using System;
+using System.Linq;
+
+public static class FileHelper
 {
-    using System;
-    using System.Linq;
+    private static readonly Random Random = new();
 
-    public class FileHelper
+    private static readonly string ProjectPath =
+        Path.GetDirectoryName(
+            Path.GetDirectoryName(Path.GetDirectoryName(TestContext.CurrentContext.TestDirectory)));
+
+    public static readonly string TestDir = Path.Combine(ProjectPath, "Test");
+
+    public static string RandomString(int length)
     {
-        private static readonly Random Random = new Random();
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        return new string(Enumerable.Repeat(chars, length).Select(s => s[Random.Next(s.Length)]).ToArray());
+    }
 
-        public static string RandomString(int length)
+    public static void WriteAllText(string data, string path, string fileName)
+    {
+        var fullFilePath = Path.Combine(path, fileName);
+        File.WriteAllText(fullFilePath, data);
+    }
+
+    public static void WriteFile(byte[] data, string path, string fileName)
+    {
+        var fullFilePath = Path.Combine(path, fileName);
+        var fs = new FileStream(fullFilePath, FileMode.Create);
+        WriteFile(data, fs);
+    }
+
+    private static void WriteFile(byte[] data, Stream fs)
+    {
+        BinaryWriter bw;
+        using (bw = new BinaryWriter(fs))
         {
-            const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-            return new string(Enumerable.Repeat(chars, length).Select(s => s[Random.Next(s.Length)]).ToArray());
+            bw.Write(data);
+            bw.Close();
+            fs.Close();
         }
     }
 }

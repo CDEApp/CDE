@@ -4,6 +4,7 @@ using cdeLib;
 using NSubstitute;
 using cdeLibTest;
 using Received = NSubstitute.Received;
+using Shouldly;
 
 namespace cdeLibSpec
 {
@@ -30,19 +31,19 @@ namespace cdeLibSpec
                 findOptions = new FindOptions();
             };
 
-            specify = () => findOptions.LimitResultCount.should_be(10000);
+            specify = () => findOptions.LimitResultCount.ShouldBe(10000);
 
-            specify = () => findOptions.SkipCount.should_be(0);
+            specify = () => findOptions.SkipCount.ShouldBe(0);
 
-            specify = () => findOptions.ProgressModifier.should_be(int.MaxValue);
+            specify = () => findOptions.ProgressModifier.ShouldBe(int.MaxValue);
 
-            specify = () => findOptions.IncludeFiles.should_be_true();
+            specify = () => findOptions.IncludeFiles.ShouldBeTrue();
 
-            specify = () => findOptions.IncludeFolders.should_be_true();
+            specify = () => findOptions.IncludeFolders.ShouldBeTrue();
 
-            specify = () => findOptions.IncludePath.should_be_false();
+            specify = () => findOptions.IncludePath.ShouldBeFalse();
 
-            specify = () => findOptions.RegexMode.should_be_false();
+            specify = () => findOptions.RegexMode.ShouldBeFalse();
         }
 
         public void given_FindOptions_with_matcherAll()
@@ -85,14 +86,14 @@ namespace cdeLibSpec
 
                     it["find returns true if found returns true"] = () => {
                         visitorFunc(null, null).ReturnsForAnyArgs(true);
-                        findFunc(rootEntry, testFile).should_be_true();
+                        findFunc(rootEntry, testFile).ShouldBeTrue();
                     };
 
                     it["find returns false if found returns false"] = () => {
                         // findprecicate is seperate from foundVisitor :(........ 
                         // this is borked.
                         visitorFunc(null, null).ReturnsForAnyArgs(false);
-                        findFunc(rootEntry, testFile).should_be_false();
+                        findFunc(rootEntry, testFile).ShouldBeFalse();
                     };
                 };
 
@@ -108,7 +109,7 @@ namespace cdeLibSpec
 
                     it["find returns false if found returns true"] = () => {
                         visitorFunc(null, null).ReturnsForAnyArgs(true);
-                        findFunc(rootEntry, testFile).should_be_false();
+                        findFunc(rootEntry, testFile).ShouldBeFalse();
                     };
                 };
 
@@ -184,25 +185,25 @@ namespace cdeLibSpec
                     it["can't find \"x\""] = () => {
                         findOptions.Pattern = "x";
                         var matcher = findOptions.GetPatternMatcher();
-                        matcher(rootEntry, testFile).should_be_false();
+                        matcher(rootEntry, testFile).ShouldBeFalse();
                     };
 
                     it["can find \"estFi\""] = () => {
                         findOptions.Pattern = "estFi";
                         var matcher = findOptions.GetPatternMatcher();
-                        matcher(rootEntry, testFile).should_be_true();
+                        matcher(rootEntry, testFile).ShouldBeTrue();
                     };
 
                     it["can find \"testfile\" [note case variance]"] = () => {
                         findOptions.Pattern = "testfile";
                         var matcher = findOptions.GetPatternMatcher();
-                        matcher(rootEntry, testFile).should_be_true();
+                        matcher(rootEntry, testFile).ShouldBeTrue();
                     };
 
                     it["can't find string \"C:\""] = () => {
                         findOptions.Pattern = @"C:";
                         var matcher = findOptions.GetPatternMatcher();
-                        matcher(rootEntry, testFile).should_be_false();
+                        matcher(rootEntry, testFile).ShouldBeFalse();
                     };
                 };
 
@@ -214,7 +215,7 @@ namespace cdeLibSpec
                     it["can find string \"C:\" in name including path "] = () => {
                         findOptions.Pattern = @"C:";
                         var matcher = findOptions.GetPatternMatcher();
-                        matcher(rootEntry, testFile).should_be_true();
+                        matcher(rootEntry, testFile).ShouldBeTrue();
                     };
                 };
             };
@@ -260,9 +261,6 @@ namespace cdeLibSpec
             describe["given test entry tree"] = () =>
             {
                 // ReSharper disable TooWideLocalVariableScope
-                DirEntry de2a;
-                DirEntry de2b;
-                DirEntry de2c;
                 DirEntry de3a = null;
                 DirEntry de4a = null;
                 // ReSharper restore TooWideLocalVariableScope
@@ -273,7 +271,7 @@ namespace cdeLibSpec
                 before = () =>
                 {
                     // NOTE: test tree entry entry  is de2c,de2a,de2b,de3a,de4a
-                    re = RootEntryTestBase.NewTestRootEntry(out de2a, out de2b, out de2c, out de3a, out de4a);
+                    re = RootEntryTestBase.NewTestRootEntry(out _, out _, out _, out de3a, out de4a);
                     re.SetInMemoryFields();
                     matcherAll = Substitute.For<Func<CommonEntry, DirEntry, bool>>();
                     matcherAll(null, null).ReturnsForAnyArgs(true);
@@ -304,7 +302,7 @@ namespace cdeLibSpec
 
                         specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
-                        specify = () => findOptions.ProgressCount.should_be(2);
+                        specify = () => findOptions.ProgressCount.ShouldBe(2);
                     };
 
                     describe["given find limit 4"] = () =>
@@ -317,7 +315,7 @@ namespace cdeLibSpec
 
                         specify = () => visitorFunc.ReceivedWithAnyArgs(4).Invoke(null, null);
 
-                        specify = () => findOptions.ProgressCount.should_be(4);
+                        specify = () => findOptions.ProgressCount.ShouldBe(4);
                     };
 
                     describe["given large limit"] = () =>
@@ -333,7 +331,7 @@ namespace cdeLibSpec
 
                             specify = () => visitorFunc.ReceivedWithAnyArgs(5).Invoke(null, null);
 
-                            specify = () => findOptions.ProgressCount.should_be(5);
+                            specify = () => findOptions.ProgressCount.ShouldBe(5);
                         };
 
                         describe["and given SkipCount 5"] = () =>
@@ -346,7 +344,7 @@ namespace cdeLibSpec
 
                             specify = () => visitorFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
 
-                            specify = () => findOptions.ProgressCount.should_be(5);
+                            specify = () => findOptions.ProgressCount.ShouldBe(5);
                         };
 
                         describe["and given SkipCount 6"] = () =>
@@ -359,7 +357,7 @@ namespace cdeLibSpec
 
                             specify = () => visitorFunc.ReceivedWithAnyArgs(0).Invoke(null, null);
 
-                            specify = () => findOptions.ProgressCount.should_be(5);
+                            specify = () => findOptions.ProgressCount.ShouldBe(5);
                         };
 
                     };
@@ -375,7 +373,7 @@ namespace cdeLibSpec
 
                         specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
-                        specify = () => findOptions.ProgressCount.should_be(4);
+                        specify = () => findOptions.ProgressCount.ShouldBe(4);
                     };
 
                     describe["When find limit 2, pattern 'a' with Skip count 2"] = () =>
@@ -390,7 +388,7 @@ namespace cdeLibSpec
 
                         specify = () => visitorFunc.ReceivedWithAnyArgs(2).Invoke(null, null);
 
-                        specify = () => findOptions.ProgressCount.Is(5);
+                        specify = () => findOptions.ProgressCount.ShouldBe(5);
 
                         it["found received in expected order"] =
                             () => Received.InOrder(() =>

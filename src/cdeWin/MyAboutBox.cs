@@ -1,49 +1,45 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Windows.Forms;
 
-namespace cdeWin
+namespace cdeWin;
+
+public partial class MyAboutBox : Form
 {
-    public partial class MyAboutBox : Form
+    private readonly IConfig _config;
+
+    public MyAboutBox(IConfig config)
     {
-		private readonly IConfig _config;
+        InitializeComponent();
+        _config = config;
+        linkRepository.Text = _config.LinkRepository;
+        tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
+    }
 
-        public MyAboutBox(IConfig config)
-        {
-            InitializeComponent();
-        	_config = config;
-			linkEmail.Text = _config.ContactEmail;
-			tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
-		}
+    public static void MyShow(Form parentForm, IConfig config)
+    {
+        var m = new MyAboutBox(config);
+        m.ShowDialog(parentForm);
+    }
 
-        public static void MyShow(Form parentForm, IConfig config)
+    private void OkButtonClick(object sender, EventArgs e)
+    {
+        Close();
+    }
+
+    private void linkRepository_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
+    {
+        try
         {
-			var m = new MyAboutBox(config);
-            m.ShowDialog(parentForm);
+            Process.Start(new ProcessStartInfo(_config.LinkRepository) { UseShellExecute = true });
         }
-
-        private void OkButtonClick(object sender, EventArgs e)
+        catch
         {
-            Close();
         }
+    }
 
-		private void linkEmail_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
-		{
-		    try
-		    {
-                var proc = new System.Diagnostics.Process();
-                proc.StartInfo.FileName =
-                    $"mailto:{_config.ContactEmail}?subject=About {_config.ProductName} v{_config.Version}";
-                proc.Start();
-		    }
-		    catch (Exception)
-		    {
-		    }
-		}
-
-		private void MyAboutBox_Load(object sender, EventArgs e)
-		{
-			Text = $"About {_config.ProductName} v{_config.Version}";
-		}
-
+    private void MyAboutBox_Load(object sender, EventArgs e)
+    {
+        Text = $"About {_config.ProductName} v{_config.Version}";
     }
 }

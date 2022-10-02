@@ -1,4 +1,6 @@
-﻿namespace cdeWin
+﻿using cdeWin.Properties;
+
+namespace cdeWin
 {
     partial class MyAboutBox
     {
@@ -28,12 +30,12 @@
         /// </summary>
         private void InitializeComponent()
         {
-            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MyAboutBox));
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(SharedResources));
             this.bottomPanel = new System.Windows.Forms.Panel();
             this.okButton = new System.Windows.Forms.Button();
             this.topPanel = new System.Windows.Forms.Panel();
             this.tbVersion = new System.Windows.Forms.TextBox();
-            this.linkEmail = new System.Windows.Forms.LinkLabel();
+            this.linkRepository = new System.Windows.Forms.LinkLabel();
             this.pictureCDEIcon = new System.Windows.Forms.PictureBox();
             this.pictureHeronLogo = new System.Windows.Forms.PictureBox();
             this.messageTextBox = new System.Windows.Forms.TextBox();
@@ -68,7 +70,7 @@
             // 
             this.topPanel.BackColor = System.Drawing.Color.White;
             this.topPanel.Controls.Add(this.tbVersion);
-            this.topPanel.Controls.Add(this.linkEmail);
+            this.topPanel.Controls.Add(this.linkRepository);
             this.topPanel.Controls.Add(this.pictureCDEIcon);
             this.topPanel.Controls.Add(this.pictureHeronLogo);
             this.topPanel.Controls.Add(this.messageTextBox);
@@ -85,20 +87,21 @@
             this.tbVersion.Size = new System.Drawing.Size(153, 20);
             this.tbVersion.TabIndex = 5;
             // 
-            // linkEmail
+            // linkRepository
             // 
-            this.linkEmail.AutoSize = true;
-            this.linkEmail.Location = new System.Drawing.Point(12, 365);
-            this.linkEmail.Name = "linkEmail";
-            this.linkEmail.Size = new System.Drawing.Size(69, 13);
-            this.linkEmail.TabIndex = 4;
-            this.linkEmail.TabStop = true;
-            this.linkEmail.Text = "emailAddress";
-            this.linkEmail.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkEmail_LinkClicked);
+            this.linkRepository.AutoSize = true;
+            this.linkRepository.Location = new System.Drawing.Point(12, 365);
+            this.linkRepository.Name = "linkRepository";
+            this.linkRepository.Size = new System.Drawing.Size(69, 13);
+            this.linkRepository.TabIndex = 4;
+            this.linkRepository.TabStop = true;
+            this.linkRepository.Text = "repositoryAddress";
+            this.linkRepository.LinkClicked += new System.Windows.Forms.LinkLabelLinkClickedEventHandler(this.linkRepository_LinkClicked);
             // 
             // pictureCDEIcon
             // 
-            this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+            //this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
+            this.pictureCDEIcon.Image = ((System.Drawing.Image) (resources.GetObject("cdeWin-Logo")));
             this.pictureCDEIcon.Location = new System.Drawing.Point(218, 234);
             this.pictureCDEIcon.Name = "pictureCDEIcon";
             this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);
@@ -108,7 +111,8 @@
             // 
             // pictureHeronLogo
             // 
-            this.pictureHeronLogo.Image = global::cdeWin.Properties.Resources.heron_200_black;
+            //this.pictureHeronLogo.Image = global::cdeWin.Properties.Resources.heron_200_black;
+            this.pictureHeronLogo.Image = ((System.Drawing.Image) (resources.GetObject("alert-heron-image")));
             this.pictureHeronLogo.Location = new System.Drawing.Point(12, 12);
             this.pictureHeronLogo.Name = "pictureHeronLogo";
             this.pictureHeronLogo.Size = new System.Drawing.Size(200, 286);
@@ -126,8 +130,7 @@
             this.messageTextBox.ReadOnly = true;
             this.messageTextBox.Size = new System.Drawing.Size(270, 33);
             this.messageTextBox.TabIndex = 1;
-            this.messageTextBox.Text = "This is a viewer for catalog files created with \"cde\".\r\nYou can contact me by cli" +
-    "cking on the address below.";
+            this.messageTextBox.Text = "This is a viewer for catalog files created with \"cde\".\r\nClick link below for github repository of this tool.";
             // 
             // MyAboutBox
             // 
@@ -139,7 +142,7 @@
             this.Controls.Add(this.topPanel);
             this.Controls.Add(this.bottomPanel);
             this.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedToolWindow;
-            this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
+            // this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MaximizeBox = false;
             this.MinimizeBox = false;
             this.Name = "MyAboutBox";
@@ -164,7 +167,7 @@
         private System.Windows.Forms.TextBox messageTextBox;
         private System.Windows.Forms.PictureBox pictureHeronLogo;
         private System.Windows.Forms.PictureBox pictureCDEIcon;
-		private System.Windows.Forms.LinkLabel linkEmail;
+		private System.Windows.Forms.LinkLabel linkRepository;
 		private System.Windows.Forms.TextBox tbVersion;
     }
 }

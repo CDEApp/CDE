@@ -1,688 +1,523 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Windows.Forms;
-using NUnit.Framework;
-using Rhino.Mocks;
-using Util;
 using cdeLib;
+using cdeLib.Entities;
+using cdeLib.Infrastructure.Config;
 using cdeWin;
-using Is = NUnit.Framework.Is;
+using JetBrains.Annotations;
+using NUnit.Framework;
+using Util;
+using NSubstitute;
 
-//using Is = NUnit.Framework.Is;
+namespace cdeWinTest;
 
-//using Is = NUnit.Framework.Is;
-
-namespace cdeWinTest
+[UsedImplicitly]
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Design", "RCS1102:Make class static.", Justification = "<Pending>")]
+public class CDEWinFormPresenterTest
 {
-    public class CDEWinFormPresenterTest
+    // ReSharper disable InconsistentNaming
+    [TestFixture]
+    public class ConstructorTest : TestCDEWinPresenterBase
     {
-        // ReSharper disable InconsistentNaming
-        [TestFixture]
-        public class ConstructorTest : TestCDEWinPresenterBase
+        [SetUp]
+        public override void RunBeforeEveryTest()
         {
-            [SetUp]
-            override public void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-            }
-
-            [Test]
-            public void Always_Set_Search_Button()
-            {
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SearchButtonText = Arg<string>.Is.Anything);
-                var comparisonParam = args.Count > 0 ? (string)(args[0][0]) : "ValueWasNotSetItAppears";
-                Assert.That(comparisonParam, Is.EqualTo("Search"), "SearchButtonText is not the expected \"Search\".");
-            }
-
-            [Test]
-            public void Always_Catalog_SortList()
-            {
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                _mockCatalogListViewHelper.AssertWasCalled(x => x.SetList(Arg<List<RootEntry>>.Is.Anything));
-            }
-
-            [Test]
-            public void Always_Register_SearchResult_Sorter()
-            {
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                _mockSearchResultListViewHelper.AssertWasCalled(x => x.ColumnSortCompare = Arg<Comparison<PairDirEntry>>.Is.Anything);
-            }
-
-            [Test]
-            public void Always_Register_Catalog_Sorter()
-            {
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                _mockCatalogListViewHelper.AssertWasCalled(x => x.ColumnSortCompare = Arg<Comparison<DirEntry>>.Is.Anything);
-            }
-
-            [Test]
-            public void Always_Register_Directory_Sorter()
-            {
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                _mockDirectoryListViewHelper.AssertWasCalled(x => x.ColumnSortCompare = Arg<Comparison<DirEntry>>.Is.Anything);
-            }
-
-            [Ignore("This test is not a valid scenario for production, as null root entry list should not happen.")]
-            [Test]
-            public void With_Null_RootEntry_List()
-            {
-                _mockCatalogListViewHelper.Stub(x => x.SetList(Arg<List<RootEntry>>.Is.Same(null)))
-                    .Return(3);
-
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
-                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
-                Assert.That(comparisonParam, Is.EqualTo(3), "SetCatalogsLoadedStatus expected same as result of SetList 3.");
-            }
-
-            [Test]
-            public void With_Empty_RootEntry_List()
-            {
-                _mockCatalogListViewHelper.Stub(x => x.SetList(Arg<List<RootEntry>>.Is.Same(null)))
-                    .Return(0);
-
-                new CDEWinFormPresenter(_mockForm, _stubConfig);
-
-                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
-                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
-                Assert.That(comparisonParam, Is.EqualTo(0), "SetCatalogsLoadedStatus expected same as result of SetList 0.");
-            }
-
-            [Test]
-            public void With_RootEntry_List()
-            {
-                InitRootWithDir();
-                _mockCatalogListViewHelper.Stub(x => x.SetList(Arg<List<RootEntry>>.Is.Same(_rootList)))
-                    .Return(1);
-
-                var _loadCatalogsService = MockRepository.GenerateStub<ILoadCatalogService>();
-                _loadCatalogsService.Stub(x => x.LoadRootEntries(Arg<IConfig>.Is.Anything, Arg<TimeIt>.Is.Anything))
-                    .Return(_rootList);
-
-                new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
-
-                var args = _mockForm.GetArgumentsForCallsMadeOn(x => x.SetCatalogsLoadedStatus(Arg<int>.Is.Anything));
-                var comparisonParam = args.Count > 0 ? (int)(args[0][0]) : -1;
-                Assert.That(comparisonParam, Is.EqualTo(1), "SetCatalogsLoadedStatus expected same as result of SetList 1.");
-            }
+            base.RunBeforeEveryTest();
         }
 
-        [TestFixture]
-        public class DirectoryTreeViewBeforeExpandNode : TestCDEWinPresenterBase
+        [Test]
+        public void Always_Set_Search_Button()
         {
-            private const string ChildrenPendingDummyNodeName = "_dummyNode";
-            private CDEWinFormPresenter _sutPresenter;
+            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-                InitRootWithDir();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
-            }
-
-            [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
-            [Test]
-            public void With_TreeViewRoot_Null_Throws_Exception()
-            {
-                _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
-                    .Return(null);
-
-                Assert.Throws<NullReferenceException>(()=>_sutPresenter.DirectoryTreeViewBeforeExpandNode());
-            }
-
-            [Test]
-            public void With_Out_Dummy_Child_Does_Nothing()
-            {
-                var testTreeNode = new TreeNode("testTreeNode");
-                _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
-                    .Return(testTreeNode);
-
-                _sutPresenter.DirectoryTreeViewBeforeExpandNode();
-
-                Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(0), "It appears child nodes were added thats wrong for a test node with no dummy children marking children needed.");
-                Assert.That(testTreeNode.Text, Is.EqualTo("testTreeNode"), "Node text changed values thats wrong.");
-            }
-
-            [Test]
-            public void With_Dummy_Child_Replaces_Dummy_With_Children()
-            {
-                InitRootWithDir();
-                var testTreeNode = new TreeNode("testTreeNode");
-                testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry which has its own children.
-                var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
-                testTreeNode.Nodes.Add(dummyChildNode);
-
-                _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
-                    .Return(testTreeNode);
-
-                _sutPresenter.DirectoryTreeViewBeforeExpandNode();
-
-                Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(1), "It appears a child node was not added.");
-                var child = testTreeNode.Nodes[0];
-                Assert.That(child.Text, Is.EqualTo("Test1"), "Dummy child node was not converted to child of our CommonEntry.");
-                Assert.That(child.Nodes.Count, Is.EqualTo(0), "A CommonEntry with no children appears to have had one added.");
-            }
-
-            [Test]
-            public void Dummy_Converted_To_Children_Files_Not_Added_To_TreeView()
-            {
-                InitRootWithDirDirFileWithDir();
-                var testTreeNode = new TreeNode("testTreeNode");
-                testTreeNode.Tag = _rootEntry; // require a pointer to valid DirEntry with children.
-                var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
-                testTreeNode.Nodes.Add(dummyChildNode);
-
-                _mockForm.Stub(x => x.DirectoryTreeViewActiveBeforeExpandNode)
-                    .Return(testTreeNode);
-
-                _sutPresenter.DirectoryTreeViewBeforeExpandNode();
-
-                Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(2), "Two child nodes were expected one for each Entry that is a directory.");
-                var child1 = testTreeNode.Nodes[0];
-                var child2 = testTreeNode.Nodes[1];
-                Assert.That(child1.Text, Is.EqualTo("Test1"), "First Child has not got expected name.");
-                Assert.That(child2.Text, Is.EqualTo("Test3"), "Second Child has not got expected name.");
-                var childOfChild = child1.Nodes[0];
-                Assert.That(childOfChild.Text, Is.EqualTo(ChildrenPendingDummyNodeName), "New Child with children did not get dummy child created for its Children.");
-            }
+            _mockForm.Received().SearchButtonText = "Search";
         }
 
-        [TestFixture]
-        public class SearchResultListViewItemActivate : TestCDEWinPresenterBase
+        [Test]
+        public void Always_Catalog_SortList()
         {
-            private CDEWinFormPresenter _sutPresenter;
+            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
-            [SetUp]
-            override public void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-                InitRootWithDir();
-				_sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
-            }
-
-            [Test]
-            public void Callback_ViewFileInDirectoryTab_With_File()
-            {
-                // Hmmm this is asserting a lot in one [Test].
-                // - break it up into multiple tests 1 assert each ?
-                Object treeViewRootNodeArg = null;
-                Object listViewListArg = null;
-                InitRootWithFile();
-
-                // Directory TreeView gets a new root node, since there is no previous one loaded.
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
-                    .Repeat.Times(1)
-                    .WhenCalled(a => treeViewRootNodeArg = a.Arguments[0]);
-
-                MockTreeViewAfterSelect(_sutPresenter);
-
-                // Directory ListView gets children of root
-                _mockDirectoryListViewHelper.Stub(x => x.SetList(Arg<List<DirEntry>>.Is.Anything))
-                    .Return(1)
-                    .WhenCalled(a => listViewListArg = a.Arguments[0]);
-
-                // Select the item in list view
-                _mockDirectoryListViewHelper.Stub(x => x.SelectItem(Arg<int>.Is.Anything))
-                    .Repeat.Times(1);
-
-                // Go to Directory pane
-                _mockForm.Stub(x => x.SelectDirectoryPane())
-                    .Repeat.Times(1);
-
-                //TracePresenterAction(_mockSearchResultListViewHelper);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with SearchResultListView our activated item is a PairDirEntry.
-                _sutPresenter.SearchResultListViewItemActivate();
-                var action = GetPresenterAction(_mockSearchResultListViewHelper);
-                action(_pairDirEntry);
-
-                _mockDirectoryListViewHelper.VerifyAllExpectations();
-                _mockForm.VerifyAllExpectations();
-                Assert.That(_treeViewAfterSelectNode.Text, Is.EqualTo(@"T:\"), "ListView selected node text value not expected.");
-
-                var treeViewRootNode = (TreeNode)treeViewRootNodeArg;
-                Assert.That(treeViewRootNode.Text, Is.EqualTo(@"T:\"), "TreeView root node Text value not expected");
-
-                var list = (List<DirEntry>)listViewListArg;
-                Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasnt expected");
-                Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasnt expected");
-            }
-
-            [Test]
-            public void Callback_ViewFileInDirectoryTab_With_File_On_Same_RootEntry_Does_Not_Set_Root()
-            {
-                InitRootWithFile();
-
-                var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes)
-                    .Repeat.Times(1)    // enforcing repeat makes this a fragile test ?
-                    .Return(testRootTreeNode);
-
-                // verify does not set DirectoryTreeViewNodes
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
-                    .WhenCalled(a => Assert.Fail("GoToDirectoryRoot tried to set DirectoryTreeViewNodes"));
-
-                MockTreeViewAfterSelect(_sutPresenter);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with SearchResultListView our activated item is a PairDirEntry.
-                _sutPresenter.SearchResultListViewItemActivate();
-                var action = GetPresenterAction(_mockSearchResultListViewHelper);
-                action(_pairDirEntry);
-
-                _mockForm.VerifyAllExpectations();
-            }
-
-            [Test]
-            public void Callback_ViewFileInDirectoryTab_With_Directory_Does_Not_Select_File_In_ListView()
-            {
-                InitRootWithDir();
-                //MockTreeViewAfterSelect(_sutPresenter); // as we dont try to select file we dont need to mock AfterSelect behaviour.
-
-                // Select the item in list view
-                _mockDirectoryListViewHelper.Stub(x => x.SelectItem(Arg<int>.Is.Anything))
-                    .WhenCalled(a => Assert.Fail("Select Item was called on ListView for viewin a File Entry in Directory Tab."));
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with SearchResultListView our activated item is a PairDirEntry.
-                _sutPresenter.SearchResultListViewItemActivate();
-                var action = GetPresenterAction(_mockSearchResultListViewHelper);
-                action(_pairDirEntry);
-            }
+            // It's null because we have no fake setup for _rootEntries configured with fakes.
+            _mockCatalogListViewHelper.Received().SetList(null);
         }
 
-        [TestFixture]
-        public class CatalogListViewItemActivate : TestCDEWinPresenterBase
+        [Test]
+        public void Always_Register_Result_Sorters()
         {
-            private CDEWinFormPresenter _sutPresenter;
+            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-                InitRootWithDir();
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
-                InitRootWithFile();
-            }
-
-            [Test]
-            public void Callback_GoToDirectoryRoot_On_Same_RootEntry_Does_Not_Set_Root()
-            {
-                var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes)
-                    .Repeat.Times(1)    // enforcing repeat makes this a fragile test ?
-                    .Return(testRootTreeNode);
-
-                // verify does not set DirectoryTreeViewNodes
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
-                    .WhenCalled(a => Assert.Fail("GoToDirectoryRoot tried to set DirectoryTreeViewNodes"));
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with CatalogListView our activated item is a RootEntry.
-                _sutPresenter.CatalogListViewItemActivate();
-                var action = GetPresenterAction(_mockCatalogListViewHelper);
-                action(_rootEntry);
-
-                _mockForm.VerifyAllExpectations();
-            }
-
-            [Test]
-            public void Callback_GoToDirectoryRoot_On_Different_RootEntry_Sets_New_Root()
-            {
-                var alternateRootEntry = new RootEntry { Path = "alternate" };
-                var testRootTreeNode = new TreeNode("Moo") { Tag = alternateRootEntry };
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes)
-                    .Repeat.Times(1) // enforcing repeat makes this a fragile test ?
-                    .Return(testRootTreeNode);
-
-                // verify does set DirectoryTreeViewNodes
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
-                    .Repeat.Times(1);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with CatalogListView our activated item is a RootEntry.
-                _sutPresenter.CatalogListViewItemActivate();
-                var action = GetPresenterAction(_mockCatalogListViewHelper);
-                action(_rootEntry);
-
-                _mockForm.VerifyAllExpectations();
-            }
-
-            [Test]
-            public void Callback_GoToDirectoryRoot_On_Null_RootNode_Sets_New_Root()
-            {
-                // verify does set DirectoryTreeViewNodes
-                _mockForm.Stub(x => x.DirectoryTreeViewNodes = Arg<TreeNode>.Is.Anything)
-                    .Repeat.Times(1);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with CatalogListView our activated item is a RootEntry.
-                _sutPresenter.CatalogListViewItemActivate();
-                var action = GetPresenterAction(_mockCatalogListViewHelper);
-                action(_rootEntry);
-
-                _mockForm.VerifyAllExpectations();
-            }
-
-            [Test]
-            public void Callback_GoToDirectoryRoot_Sets_Directory_Pane()
-            {
-                // Go to Directory pane
-                _mockForm.Stub(x => x.SelectDirectoryPane())
-                    .Repeat.Times(1);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with CatalogListView our activated item is a RootEntry.
-                _sutPresenter.CatalogListViewItemActivate();
-                var action = GetPresenterAction(_mockCatalogListViewHelper);
-                action(_rootEntry);
-
-                _mockForm.VerifyAllExpectations();
-            }
-
-            [Test]
-            public void Callback_GoToDirectoryRoot_On_Null_RootNode_Calls_InitSort()
-            {
-                // Initialise Sort on ListView when Root Set.
-                _mockDirectoryListViewHelper.Stub(x => x.InitSort())
-                    .Repeat.Times(1);
-
-                // ACTIVATE public method.... due to call back nature the action() call below is the actual operation.
-                // with CatalogListView our activated item is a RootEntry.
-                _sutPresenter.CatalogListViewItemActivate();
-                var action = GetPresenterAction(_mockCatalogListViewHelper);
-                action(_rootEntry);
-
-                _mockForm.VerifyAllExpectations();
-                _mockDirectoryListViewHelper.VerifyAllExpectations();
-            }
+            _mockSearchResultListViewHelper.ColumnSortCompare = Arg.Any<Comparison<PairDirEntry>>();
+            _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<RootEntry>>();
+            _mockDirectoryListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
         }
 
-        [TestFixture]
-        public class CatalogRetrieveVirtualItem : TestCDEWinPresenterBase
+        [Test]
+        public void With_Null_RootEntry_List_SetsCatalogsLoaded()
         {
-            private CDEWinFormPresenter _sutPresenter;
+            // null should not happen at runtime but its ok for this test.
+            _mockCatalogListViewHelper.SetList(null).Returns(3);
 
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
+            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
-                _stubConfig.Stub(x => x.DefaultCatalogColumnCount)
-                    .Return(13); // enough spaces for catalog list view items.
-                _stubConfig.Stub(x => x.DateFormatYMDHMS)
-                    .Return("{0:yyyy/MM/dd HH:mm:ss}");
-
-                InitRootWithFile();
-
-                var _loadCatalogsService = MockRepository.GenerateStub<ILoadCatalogService>();
-                _loadCatalogsService.Stub(x => x.LoadRootEntries(Arg<IConfig>.Is.Anything, Arg<TimeIt>.Is.Anything))
-                    .Return(_rootList);
-
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
-            }
-
-            /// <summary>
-            /// This is not something that should happen as listview wont ask for 
-            /// an Item Index that is outside bounds of the setup ListView.
-            /// </summary>
-            [Test]
-            public void Invalid_ItemIndex_Throws_Exception()
-            {
-                _mockCatalogListViewHelper.Stub(x => x.RetrieveItemIndex)
-                    .Return(1);
-
-               Assert.Throws<ArgumentOutOfRangeException>(()=>_sutPresenter.CatalogRetrieveVirtualItem());
-            }
-
-            [Test]
-            public void Produces_ListView_Field()
-            {
-                // dont forget there is a ToLocalTime() call in catalog rendering....
-                _mockCatalogListViewHelper.Stub(x => x.RetrieveItemIndex)
-                    .Return(0);
-
-                _sutPresenter.CatalogRetrieveVirtualItem();
-
-                var args = _mockCatalogListViewHelper
-                    .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
-                var listViewItem = (ListViewItem)(args[0][0]);
-                var expectedValues = new[]
-                {   
-                    @"T:\","TestVolume","0","1","1",
-                    "Z","531 B","736.6 KB","639 KB",
-                    "2011/12/02 03:15:13",  // Fragile, this depends on time zone of test machine at moment.
-                    "34 msec",
-                    @".\TestRootEntry.cde",
-                    "Test Root Entry Description"
-                };
-                listViewItem.AssertListViewSubItemEqualValues(expectedValues);
-            }
+            _mockForm.Received().SetCatalogsLoadedStatus(3);
         }
-
-        [TestFixture]
-        public class SearchResultRetrieveVirtualItem : TestCDEWinPresenterBase
-        {
-            private TestPresenterSetSearch _sutPresenter;
-
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-
-                _stubConfig.Stub(x => x.DefaultSearchResultColumnCount)
-                    .Return(4); // enough spaces for search result list view items.
-                _stubConfig.Stub(x => x.DateFormatYMDHMS)
-                    .Return("{0:yyyy/MM/dd HH:mm:ss}");
-
-                InitRootWithFile();
-                _sutPresenter = new TestPresenterSetSearch(_mockForm, _stubConfig);
-            }
-
-            [Test]
-            public void Nothing_Bombs_If_No_ListViewEntries()
-            {
-                _sutPresenter.TestSetSearchResultList(null);
-
-                _sutPresenter.SearchResultRetrieveVirtualItem();
-            }
-
-            [Test]
-            public void Nothing_Bombs_With_List_Empty_Does_Nothing()
-            {
-                var pairDirList = new List<PairDirEntry>();
-                _sutPresenter.TestSetSearchResultList(pairDirList);
-
-                _sutPresenter.SearchResultRetrieveVirtualItem();
-            }
-
-            /// <summary>
-            /// This is not something that should happen as listview wont ask for 
-            /// an Item Index that is outside bounds of the setup ListView.
-            /// </summary>
-            [Test]
-            public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
-            {
-                var pairDirList = new List<PairDirEntry> { _pairDirEntry };
-                _sutPresenter.TestSetSearchResultList(pairDirList);
-
-                _mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
-                    .Return(1);
-
-                Assert.Throws<ArgumentOutOfRangeException>(()=>_sutPresenter.SearchResultRetrieveVirtualItem());
-            }
-
-            [Test]
-            public void Valid_DirEntry()
-            {
-                var pairDirList = new List<PairDirEntry> { _pairDirEntry };
-                _sutPresenter.TestSetSearchResultList(pairDirList);
-                _mockSearchResultListViewHelper.Stub(x => x.RetrieveItemIndex)
-                    .Return(0);
-
-                _sutPresenter.SearchResultRetrieveVirtualItem();
-
-                var args = _mockSearchResultListViewHelper
-                    .GetArgumentsForCallsMadeOn(x => x.RenderItem = Arg<ListViewItem>.Is.Anything);
-                var listViewItem = (ListViewItem)(args[0][0]);
-                var expectedValues = new[]
-                {   // Fragile, this depends on time zone of test machine at moment.
-                    "Test", "531", "2010/11/02 18:16:12", @"T:\"
-                };
-                listViewItem.AssertListViewSubItemEqualValues(expectedValues);
-            }
-
-            public class TestPresenterSetSearch : CDEWinFormPresenter
-            {
-                public TestPresenterSetSearch(ICDEWinForm form, IConfig config): base(form, config, null)
-                {
-                }
-
-                public int TestSetSearchResultList(List<PairDirEntry> list)
-                {
-                    return SetSearchResultList(list);
-                }
-            }
-        }
-
-        [TestFixture]
-        public class DirectoryTreeViewAfterSelect : TestCDEWinPresenterBase
-        {
-            private CDEWinFormPresenter _sutPresenter;
-
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-                InitRootWithFile();
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
-            }
-
-            [Test]
-            public void Set_ListView_List()
-            {
-                var testRootTreeNode = new TreeNode("MyTestNode") {Tag = _rootEntry};
-                _mockForm.Stub(x => x.DirectoryTreeViewActiveAfterSelectNode)
-                    .Return(testRootTreeNode);
-
-                // Directory ListView gets children of root
-                object listViewListArg = null;
-                _mockDirectoryListViewHelper.Stub(x => x.SetList(Arg<List<DirEntry>>.Is.Anything))
-                    .Return(1)
-                    .WhenCalled(a => listViewListArg = a.Arguments[0]);
-
-                _sutPresenter.DirectoryTreeViewAfterSelect();
-
-                var list = (List<DirEntry>) listViewListArg;
-                Assert.That(list, Is.Not.Null);
-                Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasnt expected");
-                Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasnt expected");
-
-                var args = _mockForm
-                    .GetArgumentsForCallsMadeOn(x => x.SetDirectoryPathTextbox = Arg<string>.Is.Anything);
-                var pathTextBoxValue = (string) (args[0][0]);
-
-                Assert.That(pathTextBoxValue, Is.EqualTo(@"T:\"));
-            }
-        }
-
-        [TestFixture]
-        public class DirectoryRetrieveVirtualItem : TestCDEWinPresenterBase
-        {
-            private CDEWinFormPresenter _sutPresenter;
-
-            [SetUp]
-            public override void RunBeforeEveryTest()
-            {
-                base.RunBeforeEveryTest();
-
-                _stubConfig.Stub(x => x.DefaultDirectoryColumnCount)
-                    .Return(3); // enough spaces for directory list view items.
-                InitRootWithFile();
-                _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
-            }
-
-            [Test]
-            public void Nothing_Bombs_If_No_ListViewEntries()
-            {
-                //_sutPresenter.TestSetSearchResultList(null);
-
-                _sutPresenter.DirectoryRetrieveVirtualItem();
-            }
-
-            [Test]
-            public void Nothing_Bombs_With_List_Empty_Does_Nothing()
-            {
-                //_sutPresenter.TestSetSearchResultList(null);
-                //
-                MockTreeViewAfterSelect(_sutPresenter);
-
-                _sutPresenter.DirectoryRetrieveVirtualItem();
-            }
-        }
-
-        // ReSharper restore InconsistentNaming
     }
 
-    public static class ListViewTestExtension
+    [TestFixture]
+    public class DirectoryTreeViewBeforeExpandNode : TestCDEWinPresenterBase
     {
-        public static void AssertListViewSubItemEqualValues(this ListViewItem listViewItem, string[] expectedValues)
+        private const string ChildrenPendingDummyNodeName = "_dummyNode";
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
         {
-            for (var i = 0; i < expectedValues.Length; i++)
+            base.RunBeforeEveryTest();
+            InitRootWithDir();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+        }
+
+        [Test]
+        public void With_RootEntry_List_SetsTotalFileEntries()
+        {
+            var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
+            _loadCatalogsService
+                .LoadRootEntries(Arg.Any<IConfig>(), Arg.Any<TimeIt>())
+                .Returns(_rootList);
+
+            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
+
+            _mockForm.Received().SetTotalFileEntriesLoadedStatus(1);
+        }
+
+        [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
+        [Test]
+        public void With_TreeViewRoot_Null_Throws_Exception()
+        {
+            _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(null as TreeNode);
+
+            Assert.Throws<NullReferenceException>(() => _sutPresenter.DirectoryTreeViewBeforeExpandNode());
+        }
+
+        [Test]
+        public void With_Out_Dummy_Child_Does_Nothing()
+        {
+            var testTreeNode = new TreeNode("testTreeNode");
+            _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(testTreeNode);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(0),
+                "It appears child nodes were added that's wrong for a test node with no dummy children marking children needed.");
+            Assert.That(testTreeNode.Text, Is.EqualTo("testTreeNode"), "Node text changed values that's wrong.");
+        }
+
+        [Test]
+        public void With_Dummy_Child_Replaces_Dummy_With_Children()
+        {
+            var testTreeNode = new TreeNode("testTreeNode") { Tag = _rootEntry };
+            // require a pointer to valid DirEntry which has its own children.
+            var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
+            testTreeNode.Nodes.Add(dummyChildNode);
+            _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(testTreeNode);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(1), "It appears a child node was not added.");
+            var child = testTreeNode.Nodes[0];
+            Assert.That(child.Text, Is.EqualTo("Test1"),
+                "Dummy child node was not converted to child of our CommonEntry.");
+            Assert.That(child.Nodes.Count, Is.EqualTo(0),
+                "A CommonEntry with no children appears to have had one added.");
+        }
+
+        [Test]
+        public void Dummy_Converted_To_Children_Files_Not_Added_To_TreeView()
+        {
+            InitRootWithDirDirFileWithDir();
+            var testTreeNode = new TreeNode("testTreeNode") { Tag = _rootEntry }; // require a pointer to valid DirEntry with children.
+            var dummyChildNode = new TreeNode(ChildrenPendingDummyNodeName);
+            testTreeNode.Nodes.Add(dummyChildNode);
+            _mockForm.DirectoryTreeViewActiveBeforeExpandNode.Returns(testTreeNode);
+
+            _sutPresenter.DirectoryTreeViewBeforeExpandNode();
+
+            Assert.That(testTreeNode.Nodes.Count, Is.EqualTo(2),
+                "Two child nodes were expected one for each Entry that is a directory.");
+            var child1 = testTreeNode.Nodes[0];
+            var child2 = testTreeNode.Nodes[1];
+            Assert.That(child1.Text, Is.EqualTo("Test1"), "First Child has not got expected name.");
+            Assert.That(child2.Text, Is.EqualTo("Test3"), "Second Child has not got expected name.");
+            var childOfChild = child1.Nodes[0];
+            Assert.That(childOfChild.Text, Is.EqualTo(ChildrenPendingDummyNodeName),
+                "New Child with children did not get dummy child created for its Children.");
+        }
+    }
+
+    [TestFixture]
+    public class SearchResultListViewItemActivate : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+        }
+
+        //////////////////////////////////////////////////////////////////////////////////////////
+        // REMINDER ListViewHelper AfterActivateIndex
+        //  - is read by SearchResultListViewItemActivate for what is activated.
+        //  But this is short circuited by setup of which passes the PairDirEntry directly
+        //  - _mockSearchResultListViewHelper.ActionOnActivateItem.
+        //////////////////////////////////////////////////////////////////////////////////////////
+
+        [Test]
+        public void Search_Activate_File_Item_Sets_TreeView_Sets_FileListView()
+        {
+            InitRootWithFile();
+            TreeNode treeViewSelectedNode = null;
+            MockDirectoryTreeViewAfterSelect(_sutPresenter, x => treeViewSelectedNode = x);
+            TreeNode treeViewRootNode = null;
+            _mockForm.DirectoryTreeViewNodes = Arg.Do<TreeNode>(x => treeViewRootNode = x);
+            List<ICommonEntry> listViewListArg = null;
+            _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => listViewListArg = x));
+            FakeItemActivateWithValue(_mockSearchResultListViewHelper, _pairDirEntry);
+
+            // ACT
+            _sutPresenter.SearchResultListViewItemActivate();
+
+            _mockForm.Received(1).DirectoryTreeViewNodes = Arg.Any<TreeNode>();
+            Assert.That(treeViewSelectedNode.Text, Is.EqualTo(@"T:\"),
+                "ListView selected node text value not expected.");
+            Assert.That(treeViewRootNode.Text, Is.EqualTo(@"T:\"), "TreeView root node Text value not expected");
+            Assert.That(listViewListArg.Count, Is.EqualTo(1), "The list set on ListViewHelper wasn't expected");
+            Assert.That(listViewListArg[0].Path, Is.EqualTo("Test"),
+                "The list set on ListViewHelper wasn't expected");
+        }
+
+        // Show RootNode in TreeView and File in File view 
+        [Test]
+        public void Search_Activate_Dir_Item_Sets_TreeView_Empty_FileListView()
+        {
+            InitRootWithDir();
+            TreeNode treeViewSelectedNode = null;
+            MockDirectoryTreeViewAfterSelect(_sutPresenter, node => treeViewSelectedNode = node);
+            TreeNode treeViewRootNode = null;
+            _mockForm.DirectoryTreeViewNodes = Arg.Do<TreeNode>(x => treeViewRootNode = x);
+            List<ICommonEntry> listViewListArg = null;
+            _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => listViewListArg = x));
+            FakeItemActivateWithValue(_mockSearchResultListViewHelper, _pairDirEntry);
+
+            // ACT
+            _sutPresenter.SearchResultListViewItemActivate(); // activating from search result
+
+            _mockForm.Received(1).DirectoryTreeViewNodes = treeViewRootNode;
+            Assert.That(treeViewSelectedNode.Text, Is.EqualTo("Test1"),
+                "TreeView root node Text value not expected");
+            _mockDirectoryListViewHelper.Received(1).SetList(Arg.Any<List<ICommonEntry>>());
+            Assert.That(listViewListArg.Count, Is.EqualTo(0), "Nothing displayed in list view for empty folder");
+        }
+    }
+
+    [TestFixture]
+    public class CatalogListViewItemActivate : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+        private readonly IConfiguration _config = Substitute.For<IConfiguration>();
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            _config.ProgressUpdateInterval.Returns(5000);
+            base.RunBeforeEveryTest();
+            InitRootWithDir();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
+            InitRootWithFile();
+        }
+
+        [Test]
+        public void Catalog_Activate_On_Same_RootEntry_Does_Not_Set_Root()
+        {
+            var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
+            _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+
+            // ACT
+            _sutPresenter.CatalogListViewItemActivate();
+
+            _mockForm.DidNotReceiveWithAnyArgs().DirectoryTreeViewNodes = Arg.Any<TreeNode>();
+        }
+
+        [Test]
+        public void Catalog_Activate_On_Different_RootEntry_Sets_New_Root()
+        {
+            var alternateRootEntry = new RootEntry(_config) { Path = "alternate" };
+            var testRootTreeNode = new TreeNode("Moo") { Tag = alternateRootEntry };
+            _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
+            TreeNode treeNodeSet = null;
+            _mockForm.DirectoryTreeViewNodes =
+                Arg.Do<TreeNode>(node => treeNodeSet = node);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+
+            // ACT
+            _sutPresenter.CatalogListViewItemActivate();
+
+            // _mockForm.Received(1).DirectoryTreeViewNodes = Arg.Any<TreeNode>();
+            Assert.That(treeNodeSet.Tag, Is.EqualTo(_rootEntry));
+        }
+
+        [Test]
+        public void Catalog_Activate_GoToDirectoryRoot_On_Null_RootNode_Sets_New_Root()
+        {
+            _mockForm.DirectoryTreeViewNodes.Returns((TreeNode)null);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+
+            // ACT                
+            _sutPresenter.CatalogListViewItemActivate();
+
+            _mockForm.Received(1).DirectoryTreeViewNodes = Arg.Any<TreeNode>();
+        }
+
+        [Test]
+        public void Callback_GoToDirectoryRoot_Sets_Directory_Pane()
+        {
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+
+            _sutPresenter.CatalogListViewItemActivate();
+
+            _mockForm.Received(1).SelectDirectoryPane();
+        }
+
+        [Test]
+        public void Callback_GoToDirectoryRoot_Setting_RootNode_Calls_InitSort()
+        {
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+
+            _sutPresenter.CatalogListViewItemActivate();
+
+            _mockDirectoryListViewHelper.Received(1).InitSort();
+        }
+
+        [Ignore("Invalid test as calling action with null isn't allowed in app")]
+        [Test]
+        public void ItemActive_Setting_Value_Null_Throws_Exception()
+        {
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, null);
+
+            _sutPresenter.CatalogListViewItemActivate();
+        }
+    }
+
+    [TestFixture]
+    public class CatalogRetrieveVirtualItem : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            _stubConfig.DefaultCatalogColumnCount.Returns(13); // enough spaces for catalog list view items.
+            _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM/dd HH:mm:ss}");
+            InitRootWithFile();
+            var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
+            _loadCatalogsService.LoadRootEntries(Arg.Any<IConfig>(), Arg.Any<TimeIt>())
+                .Returns(_rootList);
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
+        }
+
+        [Test]
+        public void Produces_ListView_Field()
+        {
+            _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM}"); // make local time zone irrelevant for test.
+            _mockCatalogListViewHelper.RetrieveItemIndex.Returns(0);
+            ListViewItem setRenderItem = null;
+            _mockCatalogListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
+
+            // ACT                
+            _sutPresenter.CatalogRetrieveVirtualItem();
+
+            var expectedValues = new[]
             {
-                var expect = expectedValues[i];
-                var got = listViewItem.SubItems[i].Text;
-                if (expect != got)
-                {
-                    Assert.Fail($"At index {i} expected item \"{expect}\" did not match \"{got}\"");
-                }
-                else
-                {
-                    Console.WriteLine($"{i} {expect}");
-                }
+                @"T:\", string.Empty/*"TestVolume"*/, "0", "1", "1",
+                "Z", "531 B", "736.6 KB", "639 KB",
+                "2011/12", // "/02 03:15:13",
+                "0 sec",
+                @".\TestRootEntry.cde",
+                "Test Root Entry Description"
+            };
+            setRenderItem.AssertListViewSubItemEqualValues(expectedValues);
+        }
+    }
+
+    [TestFixture]
+    public class SearchResultRetrieveVirtualItem : TestCDEWinPresenterBase
+    {
+        private TestPresenterSetSearch _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            _stubConfig.DefaultSearchResultColumnCount
+                .Returns(5); // enough spaces for search result list view items.
+            _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM/dd HH:mm:ss}");
+
+            InitRootWithFile();
+            _sutPresenter = new TestPresenterSetSearch(_mockForm, _stubConfig);
+        }
+
+        [Test]
+        public void Nothing_Bombs_If_No_ListViewEntries()
+        {
+            _sutPresenter.TestSetSearchResultList(null);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+        }
+
+        [Test]
+        public void Nothing_Bombs_With_List_Empty_Does_Nothing()
+        {
+            var pairDirList = new List<PairDirEntry>();
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+        }
+
+        /// <summary>
+        /// This is not something that should happen as list view wont ask for
+        /// an Item Index that is outside bounds of the setup ListView.
+        /// </summary>
+        [Test]
+        public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
+        {
+            var pairDirList = new List<PairDirEntry> { _pairDirEntry };
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+            _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(1);
+
+            Assert.Throws<ArgumentOutOfRangeException>(() => _sutPresenter.SearchResultRetrieveVirtualItem());
+        }
+
+        [Test]
+        public void Valid_DirEntry()
+        {
+            var pairDirList = new List<PairDirEntry> { _pairDirEntry };
+            _sutPresenter.TestSetSearchResultList(pairDirList);
+            _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(0);
+
+            ListViewItem setRenderItem = null;
+            _mockSearchResultListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
+
+            // ACT
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+
+            var expectedValues = new[]
+            {   // Fragile, this depends on time zone of test machine at moment.
+                "Test", "531", "2010/11/02 18:16:12", "TestRootEntry.cde", @"T:\"
+            };
+            setRenderItem.AssertListViewSubItemEqualValues(expectedValues);
+        }
+    }
+
+    [TestFixture]
+    public class DirectoryTreeViewAfterSelect : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+            InitRootWithFile();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+        }
+
+        [Test]
+        public void Set_ListView_List()
+        {
+            var testRootTreeNode = new TreeNode("MyTestNode") { Tag = _rootEntry };
+            _mockForm.DirectoryTreeViewActiveAfterSelectNode = testRootTreeNode;
+            List<ICommonEntry> list = null;
+            _mockDirectoryListViewHelper.SetList(Arg.Do<List<ICommonEntry>>(x => list = x));
+            var pathTextBoxValue = string.Empty;
+            _mockForm.SetDirectoryPathTextBox = Arg.Do<string>(x => pathTextBoxValue = x);
+
+            // ACT
+            _sutPresenter.DirectoryTreeViewAfterSelect();
+
+            Assert.That(list, Is.Not.Null);
+            Assert.That(list.Count, Is.EqualTo(1), "The list set on ListViewHelper wasn't expected");
+            Assert.That(list[0].Path, Is.EqualTo("Test"), "The list set on ListViewHelper wasn't expected");
+            Assert.That(list[0].Size, Is.EqualTo(531), "The list set on ListViewHelper wasn't expected");
+            Assert.That(pathTextBoxValue, Is.EqualTo(@"T:\"));
+        }
+    }
+
+    [TestFixture]
+    public class DirectoryRetrieveVirtualItem : TestCDEWinPresenterBase
+    {
+        private CDEWinFormPresenter _sutPresenter;
+
+        [SetUp]
+        public override void RunBeforeEveryTest()
+        {
+            base.RunBeforeEveryTest();
+
+            _stubConfig.DefaultDirectoryColumnCount.Returns(3); // enough spaces for directory list view items.
+            InitRootWithFile();
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+        }
+
+        [Test]
+        public void Nothing_Bombs_If_No_ListViewEntries()
+        {
+            _sutPresenter.DirectoryRetrieveVirtualItem();
+        }
+
+        [Test]
+        public void Nothing_Bombs_With_List_Empty_Does_Nothing()
+        {
+            MockDirectoryTreeViewAfterSelect(_sutPresenter);
+
+            _sutPresenter.DirectoryRetrieveVirtualItem();
+        }
+    }
+    // ReSharper restore InconsistentNaming
+}
+
+public static class ListViewTestExtension
+{
+    public static void AssertListViewSubItemEqualValues(this ListViewItem listViewItem, string[] expectedValues)
+    {
+        for (var i = 0; i < expectedValues.Length; i++)
+        {
+            var expect = expectedValues[i];
+            var got = listViewItem.SubItems[i].Text;
+            if (expect != got)
+            {
+                Assert.Fail($"At index {i} expected item \"{expect}\" did not match \"{got}\"");
+            }
+            else
+            {
+                // ReSharper disable once LocalizableElement
+                Console.WriteLine($"{i} {expect}");
             }
         }
     }
 }
 
-//namespace Test.Fohjin.DDD.Scenarios.Opening_the_bank_application
-//{
-//    public class When_in_the_GUI_openeing_the_bank_application : PresenterTestFixture<ClientSearchFormPresenter>
-//    {
-//        private List<ClientReport> _clientReports;
+public class TestPresenterSetSearch : CDEWinFormPresenter
+{
+    public TestPresenterSetSearch(ICDEWinForm form, IConfig config) : base(form, config, null)
+    {
+    }
 
-//        protected override void SetupDependencies()
-//        {
-//            _clientReports = new List<ClientReport> { new ClientReport(Guid.NewGuid(), "Client Name") };
-//            OnDependency<IReportingRepository>()
-//                .Setup(x => x.GetByExample<ClientReport>(null))
-//                .Returns(_clientReports);
-//        }
-
-//        protected override void When()
-//        {
-//            Presenter.Display();
-//        }
-
-//        [Then]
-//        public void Then_show_dialog_will_be_called_on_the_view()
-//        {
-//            On<IClientSearchFormView>().VerifyThat.Method(x => x.ShowDialog()).WasCalled();
-//        }
-
-//        [Then]
-//        public void Then_client_report_data_from_the_reporting_repository_is_being_loaded_into_the_view()
-//        {
-//            On<IClientSearchFormView>().VerifyThat.ValueIsSetFor(x => x.Clients = _clientReports);
-//        }
-//    }
-//}
+    public int TestSetSearchResultList(List<PairDirEntry> list)
+    {
+        return SetSearchResultList(list);
+    }
+}

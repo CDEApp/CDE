@@ -1,11 +1,10 @@
 using System.Globalization;
 
-namespace cdeLib
+namespace cdeLib;
+
+public interface IConfigCdeLib
 {
-	public interface IConfigCdeLib
-	{
-		CompareInfo MyCompareInfo { get; }
-		CompareOptions MyCompareOptions { get; }
-		int CompareWithInfo(string s1, string s2);
-	}
+    CompareInfo MyCompareInfo { get; }
+    CompareOptions MyCompareOptions { get; }
+    int CompareWithInfo(string s1, string s2);
 }

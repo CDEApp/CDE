@@ -1,19 +1,18 @@
-namespace cdeWin
+namespace cdeWin;
+
+public class ComboBoxItem<TValue>
 {
-    public class ComboBoxItem<TValue>
+    public string Text { get; private set; }
+    public TValue Value { get; private set; }
+
+    public ComboBoxItem(string text, TValue value)
     {
-        public string Text { get; private set; }
-        public TValue Value { get; private set; }
+        Text = text;
+        Value = value;
+    }
 
-        public ComboBoxItem(string text, TValue value)
-        {
-            Text = text;
-            Value = value;
-        }
-
-        public override string ToString()
-        {
-            return Text;
-        }
+    public override string ToString()
+    {
+        return Text;
     }
 }

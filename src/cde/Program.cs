@@ -1,363 +1,288 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using Autofac;
+using cde.CommandLine;
 using cdeLib;
-using cdeLib.Infrastructure;
-
+using cdeLib.Catalog;
+using cdeLib.Duplicates;
+using cdeLib.Entities;
+using cdeLib.Hashing;
+using cdeLib.Upgrade;
+using CommandLine;
+using MediatR;
 using Mono.Terminal;
+using Serilog;
+using SerilogTimings;
+using FindOptions = cde.CommandLine.FindOptions;
+using IContainer = Autofac.IContainer;
 
-namespace cde
+namespace cde;
+
+public static class Program
 {
-    public static class Program
+    private static IContainer _container;
+
+    private static IMediator Mediatr { get; set; }
+
+    public static void InitProgram(string[] args)
     {
-        public static IContainer Container;
-        public static string Version
+        _container = AppContainerBuilder.BuildContainer(args);
+        Mediatr = _container.Resolve<IMediator>();
+    }
+
+    private static ParserResult<object> GetParserResult(IEnumerable<string> args)
+    {
+        var parser = CommandLineParserBuilder.Build();
+        return parser.ParseArguments<
+            ScanOptions,
+            FindOptions,
+            GrepOptions,
+            GrepPathOptions,
+            ReplGrepPathOptions,
+            ReplGrepOptions,
+            ReplFindOptions,
+            HashOptions,
+            DupesOptions,
+            TreeDumpOptions,
+            LoadWaitOptions,
+            ReplOptions,
+            PopulousFoldersOptions,
+            FindPathOptions,
+            UpgradeOptions,
+            UpdateOptions>(args);
+    }
+
+    private static int Main(string[] args)
+    {
+        InitProgram(args);
+        Console.CancelKeyPress += BreakConsole;
+        try
         {
-            get
+            using (Operation.Time("App"))
             {
-                var asm = Assembly.GetExecutingAssembly();
-                var fvi = FileVersionInfo.GetVersionInfo(asm.Location);
-                return $"{fvi.ProductName} v{fvi.ProductMajorPart}.{fvi.ProductMinorPart}";
+                var findService = _container.Resolve<IFindService>();
+                var parsedResult = GetParserResult(args)
+                    .WithParsed<ScanOptions>(CreateCache)
+                    .WithParsed<FindOptions>(opts =>
+                    {
+                        findService.Find(opts.Value, "--find",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<FindPathOptions>(opts =>
+                    {
+                        findService.Find(opts.Value, "--findpath",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<GrepOptions>(opts =>
+                    {
+                        findService.Find(opts.Value, "--grep",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<GrepPathOptions>(opts =>
+                    {
+                        findService.Find(opts.Value, "--greppath",
+                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                    })
+                    .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGrepPath, opts.Value))
+                    .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
+                    .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
+                    .WithParsed<HashOptions>(_ => HashCatalog())
+                    .WithParsed<DupesOptions>(_ => FindDupes())
+                    .WithParsed<TreeDumpOptions>(_ => PrintPathsHaveHashEnumerator())
+                    .WithParsed<LoadWaitOptions>(_ =>
+                    {
+                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+                        Console.ReadLine();
+                    })
+                    .WithParsed<ReplOptions>(_ => InvokeRepl())
+                    .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
+                    .WithParsed<UpgradeOptions>(_ => Upgrade())
+                    .WithParsed<UpdateOptions>(Update);
+                parsedResult.WithNotParsed(errs => CustomHelpText.DisplayHelp(parsedResult));
+                return 0;
             }
         }
-
-        private static void Main(string[] args)
+        finally
         {
-            Container = BootStrapper.Components();
-            Console.CancelKeyPress += BreakConsole;
-            if (args.Length ==0)
-            {
-                ShowHelp();
-                return;
-            }
-            var param0 = args[0].ToLowerInvariant();
-            if (args.Length == 2 && param0 == "--scan")
-            {
-                CreateCache(args[1]);
-            }
-            else if (args.Length == 2 && param0 == "--scan2")
-            {
-                CreateCache2(args[1]);
-            }
-            else if (args.Length == 2 && Find.FindParams.Contains(param0))
-            {
-                Find.StaticFind(args[1], param0);
-            }
-            else if (args.Length == 2 && param0 == "--replgreppath")
-            {
-                FindRepl(Find.ParamGreppath, args[1]);
-            }
-            else if (args.Length == 2 && param0 == "--replgrep")
-            {
-                FindRepl(Find.ParamGrep, args[1]);
-            }
-            else if (args.Length == 2 && param0 == "--replfind")
-            {
-                FindRepl(Find.ParamFind, args[1]);
-            }
-            else if (args.Length == 1 && param0 == "--hash")
-            {
-                CreateMd5OnCache();
-            }
-            else if (args.Length == 1 && param0 == "--hash2")
-            {
-                CreateMd5OnCache2();
-            }
-            else if (args.Length == 1 && param0 == "--dupes")
-            {
-                FindDupes();
-            }
-            else if (args.Length == 1 && param0 == "--treedump1")
-            {
-                PrintPathsHaveHashEnumerator();
-            }
-            else if (args.Length == 1 && param0 == "--treedump2")
-            {
-                EntryStore.PrintPathsHaveHash();
-            }
-            else if (args.Length == 1 && param0 == "--version")
-            {
-                Console.WriteLine(Version);
-            }
-            else if (args.Length == 1 && param0 == "--loadwait")
-            {
-                Console.WriteLine(Version);
-                RootEntry.LoadCurrentDirCache();
-                Console.ReadLine();
-            }
-            else if (args.Length == 1 && param0 == "--loadwait2")
-            {
-                Console.WriteLine(Version);
-                EntryStore.LoadCurrentDirCache();
-                Console.ReadLine();
-            }
-            else if (args.Length == 1 && param0 == "--repl")
-            {
-                var le = new LineEditor(null);
-                string s;
-                var running = true;
+            Log.CloseAndFlush();
+        }
+    }
 
-                while (running && (s = le.Edit("shell> ", string.Empty)) != null)
-                {
-                    Console.WriteLine($"----> [{s}]");
-                    switch (s)
-                    {
-                        case "quit":
-                            running = false;
-                            break;
-                        case "history":
-                        case "!":
-                            le.CmdHistoryDump();
-                            break;
-                        case "help":
-                        case "?":
-                            Console.WriteLine("Builtin Commands:");
-                            Console.WriteLine("  quit - quit, ");
-                            Console.WriteLine("  help - show help, ? - show help");
-                            Console.WriteLine("  history - show history, ! - show history");
-                            Console.WriteLine("Keystrokes:");
-                            Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
-                            Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
-                            Console.WriteLine("  C-l - clear console to top");
-                            Console.WriteLine("  C-r - reverse seach history");
-                            Console.WriteLine("  A-b - move backward word");
-                            Console.WriteLine("  A-f - move forward word");
-                            Console.WriteLine("  A-d - delete word forward");
-                            Console.WriteLine("  A-Backspace - delete word backward");
-                            break;
-                    }
-                }
-            }
-            else if (args.Length == 2 && param0 == "--populousfolders")
+    private static void InvokeRepl()
+    {
+        var le = new LineEditor(name: null);
+        var running = true;
+
+        while (running && le.Edit("shell> ", string.Empty) is { } s)
+        {
+            Console.WriteLine($"----> [{s}]");
+            switch (s)
             {
-                int count;
-                if (int.TryParse(args[1], out count))
+                case "quit":
+                    running = false;
+                    break;
+                case "history":
+                case "!":
+                    le.CmdHistoryDump();
+                    break;
+                case "help":
+                case "?":
+                    Console.WriteLine("Builtin Commands:");
+                    Console.WriteLine("  quit - quit, ");
+                    Console.WriteLine("  help - show help, ? - show help");
+                    Console.WriteLine("  history - show history, ! - show history");
+                    Console.WriteLine("Keystrokes:");
+                    Console.WriteLine("  Home, End, Left, Right,  Up, Down, Back, Del, Tab");
+                    Console.WriteLine("  C-a,  C-e,  C-b,   C-f, C-p,  C-n,       C-d");
+                    Console.WriteLine("  C-l - clear console to top");
+                    Console.WriteLine("  C-r - reverse search history");
+                    Console.WriteLine("  A-b - move backward word");
+                    Console.WriteLine("  A-f - move forward word");
+                    Console.WriteLine("  A-d - delete word forward");
+                    Console.WriteLine("  A-Backspace - delete word backward");
+                    break;
+            }
+        }
+    }
+
+    private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
+    {
+        Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
+        Hack.BreakConsoleFlag = true;
+        e.Cancel = true;
+    }
+
+    // repl = read-eval-print-loop
+    private static void FindRepl(string paramString, string firstPattern)
+    {
+        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        var findService = _container.Resolve<IFindService>();
+
+        if (!string.IsNullOrEmpty(firstPattern))
+            findService.Find(firstPattern, paramString, rootEntries);
+
+        Console.WriteLine("Issue --help for available params");
+
+        while (true)
+        {
+            if (Hack.BreakConsoleFlag)
+                Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behaviour in loop.
+            Console.Write("Enter string to search <nothing exits>: ");
+            var pattern = Console.ReadLine();
+            if (string.IsNullOrEmpty(pattern))
+            {
+                Console.WriteLine("Exiting...");
+                break;
+            }
+
+            if (pattern.StartsWith("--", StringComparison.CurrentCulture))
+            {
+                var command = pattern[2..];
+                switch (command.ToLower(CultureInfo.CurrentCulture))
                 {
-                   FindPouplous(count);
-                }
-                else
-                {
-                    Console.WriteLine("Populous folders option requires an integer as second parameter");
+                    case "includefiles":
+                        findService.IncludeFiles = !findService.IncludeFiles;
+                        Console.WriteLine($"IncludeFiles:{findService.IncludeFiles}");
+                        break;
+                    case "includefolders":
+                        findService.IncludeFolders = !findService.IncludeFolders;
+                        Console.WriteLine($"IncludeFolders:{findService.IncludeFolders}");
+                        break;
+                    case "help":
+                        Console.WriteLine("Valid options are");
+                        Console.WriteLine("--includefiles");
+                        Console.WriteLine("--includefolders");
+                        break;
+                    case "clear":
+                        Console.Clear();
+                        break;
+                    default:
+                        Console.WriteLine($"unknown command {command}");
+                        break;
                 }
             }
             else
             {
-                ShowHelp();
+                findService.Find(pattern, paramString, rootEntries);
             }
         }
+    }
 
-        private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
-        {
-            Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
-            Hack.BreakConsoleFlag = true;
-            e.Cancel = true;
-        }
+    private static void Update(UpdateOptions opts)
+    {
+        var task = Task.Run(async () =>
+            await Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description })
+                .ConfigureAwait(false));
+        task.Wait();
+    }
 
-        // repl = read-eval-print-loop
-        private static void FindRepl(string parmString, string firstPattern)
+    private static void Upgrade()
+    {
+        var task = Task.Run(async () => await Mediatr.Send(new UpgradeCommand()).ConfigureAwait(false));
+        task.Wait();
+    }
+
+    private static void FindDupes()
+    {
+        var task = Task.Run(async () => await Mediatr.Send(new FindDuplicatesCommand()).ConfigureAwait(false));
+        task.Wait();
+    }
+
+    public static void HashCatalog()
+    {
+        var task = Task.Run(async () => await Mediatr.Send(new HashCatalogCommand()).ConfigureAwait(false));
+        task.Wait();
+    }
+
+    public static void CreateCache(ScanOptions opts)
+    {
+        var task = Task.Run(async () =>
+            await Mediatr.Send(new CreateCacheCommand(opts.Path) { Description = opts.Description })
+                .ConfigureAwait(false));
+        task.Wait();
+    }
+
+    private static void PrintPathsHaveHashEnumerator()
+    {
+        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        foreach (var pairDirEntry in EntryHelper.GetPairDirEntries(rootEntries))
         {
-            Find.GetDirCache();
-            Find.StaticFind(firstPattern, parmString);
-            do
+            var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
+            var bang = pairDirEntry.PathProblem ? "!" : " ";
+            Console.WriteLine($"{hash}{bang}{pairDirEntry.FullPath}");
+            if (Hack.BreakConsoleFlag)
             {
-                if (Hack.BreakConsoleFlag) 
-                    Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behavouir in loop.
-                Console.Write("Enter string to search <nothing exits>: ");
-                var pattern = Console.ReadLine();
-                if (pattern == string.Empty)
-                {
-                    Console.WriteLine("Exiting...");
-                    break;
-                }
-                Find.StaticFind(pattern, parmString);
-            } while (true);
-        }
-
-        private static void ShowHelp()
-        {
-            Console.WriteLine(Version);
-            Console.WriteLine("Usage: cde --version");
-            Console.WriteLine("       display version.");
-            Console.WriteLine("Usage: cde --scan <path>");
-            Console.WriteLine("       scans path and creates a cache file.");
-            Console.WriteLine("       copies hashes from old cache file to new one if old found.");
-            Console.WriteLine("Usage: cde --find <string>");
-            Console.WriteLine("       uses all cache files available searches for <string>");
-            Console.WriteLine("       as substring of on file name.");
-            Console.WriteLine("Usage: cde --findpath <string>");
-            Console.WriteLine("       uses all cache files available searches for <string>");
-            Console.WriteLine("       as regex match on full path to file name.");
-            Console.WriteLine("Usage: cde --grep <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex>");
-            Console.WriteLine("       as regex match on file name.");
-            Console.WriteLine("Usage: cde --greppath <regex>");
-            Console.WriteLine("       uses all cache files available searches for <regex>");
-            Console.WriteLine("       as regex match on full path to file name.");
-            Console.WriteLine("Usage: cde --hash ");
-            Console.WriteLine("       Calculate hash (MD5) for all entries in cache file");
-            Console.WriteLine("Usage: cde --dupes ");
-            Console.WriteLine("       Show duplicates. Must of already run --hash first to compute file hashes");
-            Console.WriteLine("Usage: cde --repl");
-            Console.WriteLine("       Enter readline mode - trying it out not useful yet...");
-            Console.WriteLine("Usage: cde --replGreppath <regex>");
-            Console.WriteLine("Usage: cde --replGrep <regex>");
-            Console.WriteLine("Usage: cde --replFind <regex>");
-            Console.WriteLine("       read-eval-print loops version of the 3 find options.");
-            Console.WriteLine("       This one is repl it doesnt exit unless you press enter with no search term.");
-            Console.WriteLine("Usage: cde --populousfolders <minimumcount>");
-            Console.WriteLine("       output folders containing more than <minimumcount> entires.");
-        }
-
-        private static void FindDupes()
-        {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            var duplication = Container.Resolve<Duplication>();
-            duplication.FindDuplicates(rootEntries);
-        }
-
-        public static void CreateMd5OnCache()
-        {
-            var logger = Container.Resolve<ILogger>();
-            var diagnostics = Container.Resolve<IApplicationDiagnostics>();
-            logger.LogInfo("Memory pre-catload: {0}",diagnostics.GetMemoryAllocated().FormatAsBytes());
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            logger.LogInfo("Memory post-catload: {0}", diagnostics.GetMemoryAllocated().FormatAsBytes());
-            var duplication = Container.Resolve<Duplication>();
-            var sw = new Stopwatch();
-            sw.Start();
-            
-            duplication.ApplyMd5Checksum(rootEntries);
-
-            foreach (var rootEntry in rootEntries)
-            {
-                logger.LogDebug("Saving {0}", rootEntry.DefaultFileName);
-                rootEntry.SaveRootEntry();
-            }
-
-            sw.Stop();
-            var ts = sw.Elapsed;
-            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds/10:00}";
-            Console.WriteLine($"Hash took : {elapsedTime}");
-        }
-
-        private static void CreateMd5OnCache2()
-        {
-            var rootEntries = EntryStore.LoadCurrentDirCache();
-            var re = rootEntries.FirstOrDefault();
-            re?.ApplyMd5Checksum();
-        }
-
-        static void CreateCache2(string path)
-        {
-            //Process objProcess = Process.GetCurrentProcess();
-            //long gcMemStart = GC.GetTotalMemory(true);
-            //long processMemStart = objProcess.PrivateMemorySize64;
-
-            var e = new EntryStore { SimpleScanCountEvent = ScanCountPrintDot, SimpleScanEndEvent = ScanEndofEntries, EntryCountThreshold = 10000 };
-            e.SetRoot(path);
-            e.Root.ScanStartUTC = DateTime.UtcNow;
-            e.RecurseTree();
-            e.Root.ScanEndUTC = DateTime.UtcNow;
-            e.SaveToFile();
-            var scanTimeSpan = (e.Root.ScanEndUTC - e.Root.ScanStartUTC);
-            Console.WriteLine($"Scanned Path {e.Root.Path}");
-            Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-            Console.WriteLine($"Saved Scanned Path {e.Root.DefaultFileName}");
-        }
-
-        public static void CreateCache(string path)
-        {
-            var re = new RootEntry();
-            try
-            {
-                re.SimpleScanCountEvent = ScanCountPrintDot;
-                re.SimpleScanEndEvent = ScanEndofEntries;
-                re.ExceptionEvent = PrintExceptions;
-
-                re.PopulateRoot(path);
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
-                    return;
-                }
-
-                var oldRoot = RootEntry.LoadDirCache(re.DefaultFileName);
-                if (oldRoot != null)
-                {
-                    Console.WriteLine($"Found cache \"{re.DefaultFileName}\"");
-                    Console.WriteLine("Updating hashs on new scan from found cache file.");
-                    oldRoot.TraverseTreesCopyHash(re);
-                }
-                re.SortAllChildrenByPath();
-                re.SaveRootEntry();
-                var scanTimeSpan = (re.ScanEndUTC - re.ScanStartUTC);
-                Console.WriteLine($"Scanned Path {re.Path}");
-                Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
-                Console.WriteLine($"Saved Scanned Path {re.DefaultFileName}");
-                Console.WriteLine(
-                    $"Files {re.FileEntryCount:0,0} Dirs {re.DirEntryCount:0,0} Total Size of Files {re.Size:0,0}");
-            }
-            catch (ArgumentException aex)
-            {
-                Console.WriteLine($"Error: {aex.Message}");
+                break;
             }
         }
+    }
 
-        private static void PrintExceptions(string path, Exception ex)
-        {
-            Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
-        }
+    private static void FindPopulous(int minimumCount)
+    {
+        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        var entries = EntryHelper.GetDirEntries(rootEntries);
+        var largeEntries = entries
+            .Where(e => e.Children != null && e.Children.Count > minimumCount)
+            .ToList();
+        largeEntries.Sort(CompareDirEntries);
 
-        private static void ScanCountPrintDot()
+        foreach (var e in largeEntries.Where(e => e.Children != null && e.Children.Count > minimumCount))
         {
-            Console.Write(".");
-        }
-
-        private static void ScanEndofEntries()
-        {
-            Console.WriteLine(string.Empty);
-        }
-
-        private static void PrintPathsHaveHashEnumerator()
-        {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            var pdee = CommonEntry.GetPairDirEntries(rootEntries);
-            foreach (var pairDirEntry in pdee)      
+            Console.WriteLine($"{e.FullPath} {e.Children.Count}");
+            if (Hack.BreakConsoleFlag)
             {
-                var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
-                var bang = pairDirEntry.PathProblem ? "!" : " ";
-                Console.WriteLine($"{hash}{bang}{pairDirEntry.FullPath}");
-                if (Hack.BreakConsoleFlag)
-                {
-                    break;
-                }
+                break;
             }
         }
-        
-        private static void FindPouplous(int minimumCount)
-        {
-            var rootEntries = RootEntry.LoadCurrentDirCache();
-            var entries = CommonEntry.GetDirEntries(rootEntries);
-            var largeEntries = entries
-                .Where(e => e.Children != null && e.Children.Count > minimumCount)
-                .ToList();
-            largeEntries.Sort(CompareDirEntries);
+    }
 
-            foreach (var e in largeEntries.Where(e => e.Children != null && e.Children.Count > minimumCount))
-            {
-                Console.WriteLine($"{e.FullPath} {e.Children.Count}");
-                if (Hack.BreakConsoleFlag)
-                {
-                    break;
-                }
-            }
-        }
-
-        private static int CompareDirEntries(DirEntry x, DirEntry y)
-        {
-            return y.Children.Count - x.Children.Count;
-        }
+    private static int CompareDirEntries(ICommonEntry x, ICommonEntry y)
+    {
+        return y.Children.Count - x.Children.Count;
     }
 }

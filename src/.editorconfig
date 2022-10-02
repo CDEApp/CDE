@@ -1,0 +1,4 @@
+﻿[*.cs]
+
+# RCS1226: Add paragraph to documentation comment.
+dotnet_diagnostic.RCS1226.severity = silent
