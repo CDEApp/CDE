@@ -97,8 +97,3 @@ public class PopulousFoldersOptions
     [Value(0, Required = true, HelpText = "output folders containing more than <minimumCount> entries.")]
     public int Count { get; [UsedImplicitly] set; }
 }
-
-[Verb("upgrade", HelpText = "Upgrade catalogues to v4 structure")]
-public class UpgradeOptions
-{
-}
