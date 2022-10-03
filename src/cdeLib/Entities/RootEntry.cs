@@ -787,11 +787,6 @@ public class RootEntry : object, ICommonEntry
 
             foreach (var dirEntry in commonEntry.Children)
             {
-                if (catalogRootEntry != null)
-                {
-                    commonEntry.TheRootEntry = catalogRootEntry;
-                }
-
                 funcContinue = traverseFunc(commonEntry, dirEntry);
                 if (!funcContinue)
                 {

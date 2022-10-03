@@ -543,7 +543,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
         //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
-        _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.ParentDE.GetRootEntry().DefaultFileName;
+        _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.GetRootEntry().DefaultFileName;
 
         searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
     }
@@ -756,8 +756,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
             case 3:
                 compareResult = _config.MyCompareInfo.Compare(
-                    pde1.ParentDE.GetRootEntry().ActualFileName,
-                    pde2.ParentDE.GetRootEntry().ActualFileName,
+                    pde1.GetRootEntry().ActualFileName,
+                    pde2.GetRootEntry().ActualFileName,
                     _config.MyCompareOptions);
                 break;
 

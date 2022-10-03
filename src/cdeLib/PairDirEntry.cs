@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.IO;
 using cdeLib.Entities;
+using JetBrains.Annotations;
 
 namespace cdeLib;
 
@@ -10,6 +11,12 @@ public class PairDirEntry
     public readonly ICommonEntry ParentDE;
 
     public readonly ICommonEntry ChildDE;
+
+    /// <summary>
+    /// RootEntry for this pair dir, if not set looked up and cached in GetRootEntry().
+    /// </summary>
+    [CanBeNull]
+    private RootEntry _rootEntry;
 
     /// <summary>
     /// true if path or parent path ends with bad characters for NTFS, like Space or Period
@@ -35,5 +42,28 @@ public class PairDirEntry
         return ChildDE.IsDirectory
             ? Directory.Exists(path)
             : File.Exists(path);
+    }
+
+    /// <summary>
+    /// Get the RootEntry of a PairDirEntry.
+    /// This is lazy and cached so we don't store RootEntry on DirEntry only here.
+    /// This could be done eagerly in constructor, but for non displayed results
+    /// its probably not worth doing eagerly.
+    /// </summary>
+    /// <returns>The RootEntry for any pair dire entry.</returns>
+    public RootEntry GetRootEntry()
+    {
+        // ReSharper disable once InvertIf
+        if (_rootEntry == null)
+        {
+            var rootEntryCursor = ParentDE;
+            while (rootEntryCursor.ParentCommonEntry != null)
+            {
+                rootEntryCursor = rootEntryCursor.ParentCommonEntry;
+            }
+            _rootEntry = rootEntryCursor as RootEntry; // every DirEntry has a RootEntry
+        }
+
+        return _rootEntry;
     }
 }

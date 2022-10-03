@@ -12,8 +12,6 @@ public interface ICommonEntry
 {
     bool IsDefaultSort { get; set; }
     int PathCompareWithDirTo(ICommonEntry de);
-    RootEntry TheRootEntry { get; set; }
-    RootEntry GetRootEntry();
 
     IList<DirEntry> Children { get; }
 
