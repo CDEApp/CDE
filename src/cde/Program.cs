@@ -53,7 +53,6 @@ public static class Program
             ReplOptions,
             PopulousFoldersOptions,
             FindPathOptions,
-            UpgradeOptions,
             UpdateOptions>(args);
     }
 
@@ -101,7 +100,6 @@ public static class Program
                     })
                     .WithParsed<ReplOptions>(_ => InvokeRepl())
                     .WithParsed<PopulousFoldersOptions>(opts => FindPopulous(opts.Count))
-                    .WithParsed<UpgradeOptions>(_ => Upgrade())
                     .WithParsed<UpdateOptions>(Update);
                 parsedResult.WithNotParsed(errs => CustomHelpText.DisplayHelp(parsedResult));
                 return 0;
@@ -218,12 +216,6 @@ public static class Program
         var task = Task.Run(async () =>
             await Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description })
                 .ConfigureAwait(false));
-        task.Wait();
-    }
-
-    private static void Upgrade()
-    {
-        var task = Task.Run(async () => await Mediatr.Send(new UpgradeCommand()).ConfigureAwait(false));
         task.Wait();
     }
 
