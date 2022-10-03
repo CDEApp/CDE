@@ -60,11 +60,6 @@ public static class EntryHelper
 
             foreach (var dirEntry in rootEntry.Children)
             {
-                if (catalogRootEntry != null)
-                {
-                    rootEntry.TheRootEntry = catalogRootEntry;
-                }
-
                 funcContinue = traverseFunc(rootEntry, dirEntry);
                 if (!funcContinue)
                 {
