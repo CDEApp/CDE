@@ -1,9 +1,5 @@
 # cde - Catalog Directory Entries
 
-[TOC]
-
----
-
 ## Introduction
 
 ### What is cde
