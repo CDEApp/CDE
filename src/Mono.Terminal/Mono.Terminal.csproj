@@ -4,4 +4,8 @@
     <TargetFramework>net6.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Update="MinVer" Version="4.3.0" />
+  </ItemGroup>
+
 </Project>

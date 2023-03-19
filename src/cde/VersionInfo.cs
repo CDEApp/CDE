@@ -2,7 +2,7 @@
 
 namespace cde;
 
-public class VersionInfo
+public static class VersionInfo
 {
     public static string GetInformationalVersion() =>
         Assembly

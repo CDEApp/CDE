@@ -4,7 +4,7 @@ using CommandLine.Text;
 
 namespace cde.CommandLine;
 
-public class CustomHelpText
+public static class CustomHelpText
 {
     /// <summary>
     /// Custom Help Text which is essential the default, but we strip the extra line space between verbs.
