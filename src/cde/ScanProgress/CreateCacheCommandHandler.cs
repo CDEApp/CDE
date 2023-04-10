@@ -28,13 +28,12 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         _mediator = mediator;
     }
 
-    public async Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
+    public async Task Handle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
         var mainLoopTask = Task.Factory.StartNew(() => MainLoop(request, cancellationToken), cancellationToken);
         var console = new ScanProgressConsole();
         console.Start(mainLoopTask, cancellationToken);
         await mainLoopTask.ConfigureAwait(false);
-        return Unit.Value;
     }
 
     private async Task MainLoop(CreateCacheCommand request, CancellationToken cancellationToken)

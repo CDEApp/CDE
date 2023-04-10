@@ -22,7 +22,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         _mediator = mediator;
     }
 
-    public async Task<Unit> Handle(CreateCacheCommand request, CancellationToken cancellationToken)
+    public async Task Handle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
         var re = new RootEntry(_configuration);
         try
@@ -35,7 +35,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             if (Hack.BreakConsoleFlag)
             {
                 Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
-                return Unit.Value;
+                return;
             }
 
             var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
@@ -65,7 +65,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             Console.WriteLine($"Error: {aex.Message}");
         }
 
-        return Unit.Value;
+        return;
     }
 
     private void PrintExceptions(string path, Exception ex)

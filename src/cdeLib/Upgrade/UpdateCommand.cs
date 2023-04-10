@@ -23,7 +23,7 @@ public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
         _logger = logger;
     }
 
-    public async Task<Unit> Handle(UpdateCommand request, CancellationToken cancellationToken)
+    public async Task Handle(UpdateCommand request, CancellationToken cancellationToken)
     {
         var rootEntry = _catalogRepository.LoadDirCache(request.FileName);
         var isDirty = false;
@@ -38,6 +38,5 @@ public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
 
         if (isDirty)
             await _catalogRepository.Save(rootEntry);
-        return await Unit.Task;
     }
 }

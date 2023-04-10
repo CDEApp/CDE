@@ -25,7 +25,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         _catalogRepository = catalogRepository;
     }
 
-    public async Task<Unit> Handle(HashCatalogCommand request, CancellationToken cancellationToken)
+    public async Task Handle(HashCatalogCommand request, CancellationToken cancellationToken)
     {
         _logger.Information("Memory pre-catalog load: {0}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
@@ -44,6 +44,5 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         var ts = stopwatch.Elapsed;
         var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
         _logger.Information("Hash Took {0}, Memory: {1}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-        return Unit.Value;
     }
 }
