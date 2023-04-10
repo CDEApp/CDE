@@ -826,10 +826,7 @@ public class RootEntry : object, ICommonEntry
 
         while (dirs.Count > 0)
         {
-            var t = dirs.Pop();
-            var workPath = t.Item1;
-            var baseSourceEntry = t.Item2;
-            var baseDestinationEntry = t.Item3;
+            var (workPath, baseSourceEntry, baseDestinationEntry) = dirs.Pop();
 
             if (baseSourceEntry.Children != null)
             {

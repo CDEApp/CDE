@@ -1,6 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
+using JetBrains.Annotations;
 using MediatR;
 using Serilog;
 
@@ -12,6 +13,7 @@ public class UpdateCommand : IRequest
     public string Description { get; set; }
 }
 
+[UsedImplicitly]
 public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
 {
     private readonly ICatalogRepository _catalogRepository;
@@ -30,7 +32,7 @@ public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
 
         if (!string.IsNullOrEmpty(request.Description))
         {
-            _logger.Information("updating catalog {FileName} with description {Desc}", request.FileName,
+            _logger.Information("updating catalog {FileName} with description {Description}", request.FileName,
                 request.Description);
             rootEntry.Description = request.Description;
             isDirty = true;

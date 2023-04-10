@@ -168,9 +168,9 @@ public class Duplication
         }
 
         var flatDirEntry = new PairDirEntry(ce, de);
-        if (_duplicateFileSize.ContainsKey(de.Size))
+        if (_duplicateFileSize.TryGetValue(de.Size, out var value))
         {
-            _duplicateFileSize[de.Size].Add(flatDirEntry);
+            value.Add(flatDirEntry);
         }
         else
         {
@@ -323,9 +323,9 @@ public class Duplication
         }
 
         var info = new PairDirEntry(parentEntry, dirEntry);
-        if (_duplicateFile.ContainsKey(dirEntry))
+        if (_duplicateFile.TryGetValue(dirEntry, out var value))
         {
-            _duplicateFile[dirEntry].Add(info);
+            value.Add(info);
         }
         else
         {

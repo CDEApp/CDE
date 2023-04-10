@@ -33,7 +33,6 @@ internal static class Program
         var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService(Log.Logger));
         config.RestoreConfigFormBase(mainForm);
         config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
-        //mainPresenter.Display();
         LoadAppSettingsConfig();
         Application.Run(mainForm);
         SaveAppState(config, mainForm);

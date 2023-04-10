@@ -345,7 +345,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             //CopyFullNameHandler = (s, e) => (),
             ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
             // ReSharper restore PossibleNullReferenceException
-            CancelOpeningEventHandler = (s, e) => DirectoryTreeContextMenuOpening(s, e),
+            CancelOpeningEventHandler = DirectoryTreeContextMenuOpening,
         };
 
         return menuHelper.GetContextMenuStrip();

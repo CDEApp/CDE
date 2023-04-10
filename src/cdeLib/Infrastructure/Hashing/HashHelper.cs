@@ -20,33 +20,31 @@ public class HashHelper
         var hashResponse = new HashResponse();
         try
         {
-            await using (Stream stream = File.OpenRead(filename))
+            await using Stream stream = File.OpenRead(filename);
+            long totalBytesRead;
+            var streamLength = stream.Length;
+            if (bytesToHash == null)
             {
-                long totalBytesRead;
-                var streamLength = stream.Length;
-                if (bytesToHash == null)
-                {
-                    //avoid 'Array dimensions exceeded supported range', don't use byte[]
-                    totalBytesRead = streamLength;
-                    hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.HashStream(stream));
-                }
-                else
-                {
-                    var buf = new byte[bytesToHash.Value];
-                    var bytesRead = await stream.ReadAsync(buf, 0, buf.Length);
-
-                    totalBytesRead = bytesRead;
-                    while (bytesRead > 0 && totalBytesRead <= bytesToHash)
-                    {
-                        bytesRead = stream.Read(buf, 0, buf.Length);
-                        totalBytesRead += bytesRead;
-                    }
-                    hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(buf));
-                }
-
-                hashResponse.BytesHashed = totalBytesRead;
-                hashResponse.IsPartialHash = streamLength > bytesToHash;
+                //avoid 'Array dimensions exceeded supported range', don't use byte[]
+                totalBytesRead = streamLength;
+                hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.HashStream(stream));
             }
+            else
+            {
+                var buf = new byte[bytesToHash.Value];
+                var bytesRead = await stream.ReadAsync(buf, 0, buf.Length);
+
+                totalBytesRead = bytesRead;
+                while (bytesRead > 0 && totalBytesRead <= bytesToHash)
+                {
+                    bytesRead = stream.Read(buf, 0, buf.Length);
+                    totalBytesRead += bytesRead;
+                }
+                hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(buf));
+            }
+
+            hashResponse.BytesHashed = totalBytesRead;
+            hashResponse.IsPartialHash = streamLength > bytesToHash;
 
             return hashResponse;
         }

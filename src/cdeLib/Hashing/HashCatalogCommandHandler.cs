@@ -4,11 +4,12 @@ using System.Threading.Tasks;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Infrastructure;
+using JetBrains.Annotations;
 using MediatR;
-using Serilog;
 
 namespace cdeLib.Hashing;
 
+[UsedImplicitly]
 public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 {
     private readonly Duplication _duplication;
@@ -27,22 +28,22 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
     public async Task Handle(HashCatalogCommand request, CancellationToken cancellationToken)
     {
-        _logger.Information("Memory pre-catalog load: {0}",
+        _logger.Information("Memory pre-catalog load: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         var rootEntries = _catalogRepository.LoadCurrentDirCache();
-        _logger.Information("Memory post-catalog load: {0}",
+        _logger.Information("Memory post-catalog load: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         var stopwatch = Stopwatch.StartNew();
         await _duplication.ApplyHash(rootEntries).ConfigureAwait(false);
 
         foreach (var rootEntry in rootEntries)
         {
-            _logger.Information("Saving Catalog {0}", rootEntry.DefaultFileName);
+            _logger.Information("Saving catalog {Filename}", rootEntry.DefaultFileName);
             await _catalogRepository.Save(rootEntry).ConfigureAwait(false);
         }
 
         var ts = stopwatch.Elapsed;
         var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
-        _logger.Information("Hash Took {0}, Memory: {1}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+        _logger.Information("Hash Took {ElapsedTime}, Memory: {Memory}", elapsedTime, _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
     }
 }

@@ -32,11 +32,6 @@ public static class StringExtension
             rootPath += System.IO.Path.DirectorySeparatorChar;
         }
 
-        if (fullPath.Contains(rootPath))
-        {
-            return fullPath.Substring(rootPath.Length);
-        }
-
-        return null;
+        return fullPath.Contains(rootPath) ? fullPath.Substring(rootPath.Length) : null;
     }
 }

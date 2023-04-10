@@ -659,7 +659,7 @@ namespace Mono.Terminal
 					}
 					last = p;
 				}
-			mismatch:
+                mismatch:
 				var prefix = completion.Prefix;
 				if (last != -1)
 				{
@@ -1136,18 +1136,14 @@ namespace Mono.Terminal
 			{
 				// csharp heuristics
 				if (wasCompleting)
-				{
-					if (insertedChar == ' ')
-					{
-						return false;
-					}
-					return true;
-				}
+                {
+                    return insertedChar != ' ';
+                }
 				// If we were not completing, determine if we want to now
 				if (insertedChar == '.')
 				{
 					// Avoid completing for numbers "1.2" for example
-					if (cursor > 1 && Char.IsDigit(text[cursor - 2]))
+					if (cursor > 1 && char.IsDigit(text[cursor - 2]))
 					{
 						for (int p = cursor - 3; p >= 0; p--)
 						{
@@ -1182,7 +1178,7 @@ namespace Mono.Terminal
 			}
 		}
 
-		void EditLoop()
+        private void EditLoop()
 		{
 			ConsoleKeyInfo cki;
 
@@ -1375,18 +1371,15 @@ namespace Mono.Terminal
 				head = tail = cursor = 0;
 
 				if (File.Exists(histfile))
-				{
-					using (StreamReader sr = File.OpenText(histfile))
-					{
-						string line;
+                {
+                    using StreamReader sr = File.OpenText(histfile);
 
-						while ((line = sr.ReadLine()) != null)
-						{
-							if (line != "")
-								Append(line);
-						}
-					}
-				}
+                    while (sr.ReadLine() is { } line)
+                    {
+                        if (line != "")
+                            Append(line);
+                    }
+                }
 			}
 
 			public void Close()
@@ -1395,17 +1388,15 @@ namespace Mono.Terminal
 					return;
 
 				try
-				{
-					using (StreamWriter sw = File.CreateText(histfile))
-					{
-						int start = (count == history.Length) ? head : tail;
-						for (int i = start; i < start + count; i++)
-						{
-							int p = i % history.Length;
-							sw.WriteLine(history[p]);
-						}
-					}
-				}
+                {
+                    using StreamWriter sw = File.CreateText(histfile);
+                    int start = (count == history.Length) ? head : tail;
+                    for (int i = start; i < start + count; i++)
+                    {
+                        int p = i % history.Length;
+                        sw.WriteLine(history[p]);
+                    }
+                }
 				catch
 				{
 					// ignore
@@ -1455,34 +1446,26 @@ namespace Mono.Terminal
 
 			public bool PreviousAvailable()
 			{
-				//Console.WriteLine ("h={0} t={1} cursor={2}", head, tail, cursor);
 				if (count == 0)
 					return false;
-				int next = cursor - 1;
+				var next = cursor - 1;
 				if (next < 0)
 					next = count - 1;
 
-				if (next == head)
-					return false;
-
-				return true;
-			}
+				return next != head;
+            }
 
 			public bool NextAvailable()
 			{
 				if (count == 0)
 					return false;
 				int next = (cursor + 1) % history.Length;
-				if (next == head)
-					return false;
-				return true;
-			}
+				return next != head;
+            }
 
 
-			//
 			// Returns: a string with the previous line contents, or
 			// nul if there is no data in the history to move to.
-			//
 			public string Previous()
 			{
 				if (!PreviousAvailable())

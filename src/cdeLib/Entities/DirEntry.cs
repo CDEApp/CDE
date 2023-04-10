@@ -182,7 +182,7 @@ public class DirEntry : ICommonEntry
         }
         else
         {
-            Hash.HashB = (ulong) hash;
+            Hash.HashB = (ulong)hash;
         }
 
         IsHashDone = true;
@@ -244,29 +244,26 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        if (IsDirectory && !de.IsDirectory)
+        switch (IsDirectory)
         {
-            return -1; // this before de
+            case true when !de.IsDirectory:
+                return -1; // this before de
+            case false when de.IsDirectory:
+                return 1; // this after de
+            default:
+            {
+                //if (IsDirectory && de.IsDirectory)
+                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+                //    // really cheap to calculate dir size.... i think i should fill it in ?
+                //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+                //}
+                // the cast breaks this.
+                var sizeCompare = Size.CompareTo(de.Size);
+                return sizeCompare == 0
+                    ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+                    : sizeCompare;
+            }
         }
-
-        if (!IsDirectory && de.IsDirectory)
-        {
-            return 1; // this after de
-        }
-
-        //if (IsDirectory && de.IsDirectory)
-        //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
-        //    // really cheap to calculate dir size.... i think i should fill it in ?
-        //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
-        //}
-        // the cast breaks this.
-        var sizeCompare = Size.CompareTo(de.Size);
-        if (sizeCompare == 0)
-        {
-            return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
-        }
-
-        return sizeCompare;
     }
 
     public int ModifiedCompareTo(ICommonEntry de)
@@ -357,8 +354,8 @@ public class DirEntry : ICommonEntry
             dirEntryCount += childrenDirEntryCount;
         }
 
-        FileEntryCount = (uint) fileEntryCount;
-        DirEntryCount = (uint) dirEntryCount;
+        FileEntryCount = (uint)fileEntryCount;
+        DirEntryCount = (uint)dirEntryCount;
         Size = size;
     }
 
@@ -415,7 +412,7 @@ public class DirEntry : ICommonEntry
 
     public void TraverseTreePair(TraverseFunc func)
     {
-        EntryHelper.TraverseTreePair(new List<ICommonEntry> {this}, func);
+        EntryHelper.TraverseTreePair(new List<ICommonEntry> { this }, func);
     }
 
     public void TraverseTreesCopyHash(ICommonEntry destination)
@@ -439,14 +436,11 @@ public class DirEntry : ICommonEntry
         // traverse every source entry copy across the meta data that matches on destination entry
         // if it adds value to destination.
         // if destination is not there source not processed.
-        dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
+        dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
 
         while (dirs.Count > 0)
         {
-            var t = dirs.Pop();
-            var workPath = t.Item1;
-            var baseSourceEntry = t.Item2;
-            var baseDestinationEntry = t.Item3;
+            var (workPath, baseSourceEntry, baseDestinationEntry) = dirs.Pop();
 
             if (baseSourceEntry.Children != null)
             {
@@ -487,7 +481,7 @@ public class DirEntry : ICommonEntry
                     {
                         if (destinationDirEntry.IsDirectory)
                         {
-                            dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry, (ICommonEntry) destinationDirEntry));
+                            dirs.Push(Tuple.Create(fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
                         }
                     }
                 }
@@ -521,7 +515,7 @@ public class DirEntry : ICommonEntry
     public IList<ICommonEntry> GetListFromRoot()
     {
         var activatedDirEntryList = new List<ICommonEntry>(8);
-        for (var entry = (ICommonEntry) this; entry != null; entry = entry.ParentCommonEntry)
+        for (var entry = (ICommonEntry)this; entry != null; entry = entry.ParentCommonEntry)
         {
             activatedDirEntryList.Add(entry);
         }
