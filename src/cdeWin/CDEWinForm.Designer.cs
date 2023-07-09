@@ -329,7 +329,7 @@ namespace cdeWin
             // 
             // searchControlAdvancedPanel
             // 
-            this.searchControlAdvancedPanel.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
+            this.searchControlAdvancedPanel.BorderStyle = System.Windows.Forms.BorderStyle.None;
             this.searchControlAdvancedPanel.Controls.Add(this.fromDateCheckbox);
             this.searchControlAdvancedPanel.Controls.Add(this.fromDateTimePicker);
             this.searchControlAdvancedPanel.Controls.Add(this.toDateCheckbox);
@@ -351,7 +351,7 @@ namespace cdeWin
             this.searchControlAdvancedPanel.Location = new System.Drawing.Point(5, 89);
             this.searchControlAdvancedPanel.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
             this.searchControlAdvancedPanel.Name = "searchControlAdvancedPanel";
-            this.searchControlAdvancedPanel.Size = new System.Drawing.Size(884, 125);
+            this.searchControlAdvancedPanel.Size = new System.Drawing.Size(894, 125);
             this.searchControlAdvancedPanel.TabIndex = 25;
             // 
             // fromDateCheckbox
