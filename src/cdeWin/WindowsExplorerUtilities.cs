@@ -1,8 +1,11 @@
 using System;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using cdeWin.Cfg;
 using Microsoft.Extensions.Configuration;
+using Serilog;
 
 namespace cdeWin;
 
@@ -44,15 +47,18 @@ public static class WindowsExplorerUtilities
         public IntPtr hProcess;
     }
 
+    // ReSharper disable once InconsistentNaming
     private const int SW_SHOW = 5;
+
+    // ReSharper disable once InconsistentNaming
     private const uint SEE_MASK_INVOKEIDLIST = 12;
 
-    public static void ShowFileProperties(string Filename)
+    public static void ShowFileProperties(string filename)
     {
         var info = new SHELLEXECUTEINFO();
         info.cbSize = Marshal.SizeOf(info);
         info.lpVerb = "properties";
-        info.lpFile = Filename;
+        info.lpFile = filename;
         info.nShow = SW_SHOW;
         info.fMask = SEE_MASK_INVOKEIDLIST;
         ShellExecuteEx(ref info);
@@ -60,7 +66,7 @@ public static class WindowsExplorerUtilities
 
     public static void ExplorerOpen(string path)
     {
-        var p = new Process {StartInfo = new ProcessStartInfo(path) {UseShellExecute = true}};
+        var p = new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } };
         p.Start();
     }
 
@@ -75,6 +81,21 @@ public static class WindowsExplorerUtilities
         Program.Configuration.GetSection("ExplorerAlt").Bind(explorerAltConfig);
         if (string.IsNullOrEmpty(explorerAltConfig.Path)) return;
         var args = explorerAltConfig.Arguments.Replace("{path}", path);
-        Process.Start(explorerAltConfig.Path, args);
+        try
+        {
+            Process.Start(explorerAltConfig.Path, args);
+        }
+        catch (Win32Exception ex)
+        {
+            Log.Logger.Warning("ExplorerAltExplore: {Exception}", ex.Message);
+            NotifyOnError(ex);
+        }
+    }
+
+    private static void NotifyOnError(Win32Exception ex)
+    {
+        MessageBox.Show(
+            "Error occurred launching ExplorerAlt, ensure you have configured it correctly in appsettings.json " +
+            ex.Message, "Error");
     }
 }
