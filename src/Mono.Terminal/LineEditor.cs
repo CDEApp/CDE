@@ -160,7 +160,7 @@ namespace Mono.Terminal
 
 			public static Handler Alt(char c, ConsoleKey k, KeyHandler h)
 			{
-				ConsoleKeyInfo cki = new ConsoleKeyInfo((char)c, k, false, true, false);
+				ConsoleKeyInfo cki = new ConsoleKeyInfo(c, k, false, true, false);
 				return new Handler(cki, h);
 			}
 		}
@@ -257,10 +257,10 @@ namespace Mono.Terminal
 				if (terminfo_driver == null)
 					return;
 
-				var unix_reset_colors_str = (terminfo_driver?.GetType()?.GetField("origPair", BindingFlags.Instance | BindingFlags.NonPublic))?.GetValue(terminfo_driver) as string;
+				var unix_reset_colors_str = terminfo_driver.GetType().GetField("origPair", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(terminfo_driver) as string;
 
 				if (unix_reset_colors_str != null)
-					unix_reset_colors = Encoding.UTF8.GetBytes((string)unix_reset_colors_str);
+					unix_reset_colors = Encoding.UTF8.GetBytes(unix_reset_colors_str);
 				unix_raw_output = Console.OpenStandardOutput();
 			}
 			catch (Exception e)
@@ -282,7 +282,7 @@ namespace Mono.Terminal
 			Console.Write(shown_prompt);
 			Console.Write(rendered_text);
 
-			int max = System.Math.Max(rendered_text.Length + shown_prompt.Length, max_rendered);
+			int max = Math.Max(rendered_text.Length + shown_prompt.Length, max_rendered);
 
 			for (int i = rendered_text.Length + shown_prompt.Length; i < max_rendered; i++)
 				Console.Write(' ');
@@ -329,7 +329,7 @@ namespace Mono.Terminal
 
 			for (int i = 0; i < text.Length; i++)
 			{
-				int c = (int)text[i];
+				int c = text[i];
 				if (c < 26)
 				{
 					if (c == '\t')
@@ -337,7 +337,7 @@ namespace Mono.Terminal
 					else
 					{
 						rendered_text.Append('^');
-						rendered_text.Append((char)(c + (int)'A' - 1));
+						rendered_text.Append((char)(c + 'A' - 1));
 					}
 				}
 				else
@@ -351,9 +351,7 @@ namespace Mono.Terminal
 
 			for (int i = 0; i < pos; i++)
 			{
-				int c;
-
-				c = (int)text[i];
+				var c = (int)text[i];
 
 				if (c < 26)
 				{
@@ -556,7 +554,7 @@ namespace Mono.Terminal
 		void ShowCompletions(string prefix, string[] completions)
 		{
 			// Ensure we have space, determine window size
-			int window_height = System.Math.Min(completions.Length, Console.WindowHeight / 5);
+			int window_height = Math.Min(completions.Length, Console.WindowHeight / 5);
 			int target_line = Console.WindowHeight - window_height - 1;
 			if (Console.CursorTop > target_line)
 			{
@@ -578,8 +576,8 @@ namespace Mono.Terminal
 			int window_width = 12;
 			int plen = prefix.Length;
 			foreach (var s in completions)
-				window_width = System.Math.Max(plen + s.Length, window_width);
-			window_width = System.Math.Min(window_width, MaxWidth);
+				window_width = Math.Max(plen + s.Length, window_width);
+			window_width = Math.Min(window_width, MaxWidth);
 
 			if (current_completion == null)
 			{
@@ -1028,7 +1026,7 @@ namespace Mono.Terminal
 			{
 				// The cursor is at the end of the string
 
-				p = text.ToString().LastIndexOf(search);
+				p = text.ToString().LastIndexOf(search, StringComparison.Ordinal);
 				if (p != -1)
 				{
 					match_at = p;
@@ -1043,7 +1041,7 @@ namespace Mono.Terminal
 				int start = (cursor == match_at) ? cursor - 1 : cursor;
 				if (start != -1)
 				{
-					p = text.ToString().LastIndexOf(search, start);
+					p = text.ToString().LastIndexOf(search, start, StringComparison.Ordinal);
 					if (p != -1)
 					{
 						match_at = p;
@@ -1079,7 +1077,7 @@ namespace Mono.Terminal
 			{
 				if (search == "")
 				{
-					if (last_search != "" && last_search != null)
+					if (!string.IsNullOrEmpty(last_search))
 					{
 						search = last_search;
 						SetSearchPrompt(search);
@@ -1122,7 +1120,7 @@ namespace Mono.Terminal
 		{
 			// Do not abort our program:
 			a.Cancel = true;
-
+		
 			// Interrupt the editor
 			edit_thread.Abort();
 		}
@@ -1194,12 +1192,9 @@ namespace Mono.Terminal
 						HideCompletions();
 						continue;
 					}
-					else
-					{
-						cki = Console.ReadKey(true);
 
-						mod = ConsoleModifiers.Alt;
-					}
+					cki = Console.ReadKey(true);
+					mod = ConsoleModifiers.Alt;
 				}
 				else
 					mod = cki.Modifiers;

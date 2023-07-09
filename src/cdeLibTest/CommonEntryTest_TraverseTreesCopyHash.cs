@@ -1,8 +1,6 @@
 ﻿using System;
 
-using cdeLib;
 using cdeLib.Entities;
-using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;

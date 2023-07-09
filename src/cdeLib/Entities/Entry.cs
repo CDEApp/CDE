@@ -71,7 +71,7 @@ public class Entry : object
         HashDone = 1 << 4,
         [Description("The Hash if done was a partial.")]
         PartialHash = 1 << 5
-    };
+    }
 
     [ProtoMember(9, IsRequired = true)]
     [FlatBufferItem(9)]

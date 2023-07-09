@@ -115,7 +115,7 @@ public partial class LoaderForm : Form
         try
         {
             Parallel.ForEach(cacheFiles,
-                (cacheFile) =>
+                cacheFile =>
                 {
                     var re = repo.LoadDirCache(cacheFile);
                     Interlocked.Increment(ref fileCounter);

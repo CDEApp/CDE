@@ -44,7 +44,7 @@ class Build : NukeBuild
     AbsolutePath TestsDirectory => RootDirectory / "tests";
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
-    string RunTime = "win10-x64";
+    readonly string RunTime = "win10-x64";
 
 
     [UsedImplicitly]

@@ -107,7 +107,7 @@ public class TestCDEWinPresenter_OptimiseRegexPattern_Regex : TestCDEWinPresente
 
 public class TestOptimise : CDEWinFormPresenter
 {
-    public TestOptimise(ICDEWinForm form, IConfig config) : base(form, config, null)
+    public TestOptimise(ICDEWinForm form, IConfig config) : base(form, config)
     {
     }
 

@@ -92,8 +92,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public event EventAction OnReloadCatalogs;
 
-    private readonly ComboBoxItem<int>[] _byteSizeUnits = new[]
-    {
+    private readonly ComboBoxItem<int>[] _byteSizeUnits = {
         new ComboBoxItem<int>("byte(s)", 1),
         new ComboBoxItem<int>("KB(s)", 1000),
         new ComboBoxItem<int>("KiB(s)", 1024),
@@ -103,8 +102,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         new ComboBoxItem<int>("GIB(s)", 1024 * 1024 * 1024)
     };
 
-    private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = new[]
-    {
+    private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = {
         new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
         new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
         new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
@@ -112,8 +110,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear)
     };
 
-    private readonly ComboBoxItem<int>[] _limitResultValues = new[]
-    {
+    private readonly ComboBoxItem<int>[] _limitResultValues = {
         new ComboBoxItem<int>("Max Results 1000", 1000),
         new ComboBoxItem<int>("Max Results 10000", 10000),
         new ComboBoxItem<int>("Max Results 100000", 100000),
@@ -202,8 +199,8 @@ public partial class CDEWinForm : Form, ICDEWinForm
         // Enter in pattern Text Box fires Search Button.
         // TODO move this logic into presenter... not here..
         // means fire event for each of GotFocus, LostFocus. and handle in presenter.
-        patternComboBox.GotFocus += (s, e) => AcceptButton = searchButton;
-        patternComboBox.LostFocus += (s, e) => AcceptButton = null;
+        patternComboBox.GotFocus += (_, _) => AcceptButton = searchButton;
+        patternComboBox.LostFocus += (_, _) => AcceptButton = null;
 
         CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
         {
@@ -318,7 +315,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         picker.CustomFormat = _config.DateCustomFormatYMD;
     }
 
-    private void SetToolTip(Control c, string s)
+    private static void SetToolTip(Control c, string s)
     {
         var tip = new ToolTip();
         tip.SetToolTip(c, s);

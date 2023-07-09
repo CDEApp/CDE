@@ -195,7 +195,7 @@ public class Config : IConfig
     public string DateFormatYMDHMS => "{0:yyyy/MM/dd HH:mm:ss}";
     public string DateCustomFormatYMD => "yyyy/MM/dd";
     public string DateCustomFormatHMS => "HH:mm:ss";
-    public string LinkRepository => $"https://github.com/CDEApp/CDE";
+    public string LinkRepository => "https://github.com/CDEApp/CDE";
         
     public string Version { get; }
     public string ProductName { get; }
@@ -316,7 +316,7 @@ public class Config : IConfig
         return true;
     }
 
-    private Configuration Read(Stream input)
+    private static Configuration Read(Stream input)
     {
         return Serializer.Deserialize<Configuration>(input);
     }
@@ -397,7 +397,7 @@ public class Config : IConfig
         }
     }
 
-    private DateTime DateOrNow(DateTime dateValue)
+    private static DateTime DateOrNow(DateTime dateValue)
     {
         if (dateValue <= DateTime.MinValue
             || dateValue >= DateTime.MaxValue)

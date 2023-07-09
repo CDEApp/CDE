@@ -22,7 +22,7 @@ public class ContextMenuHelper : IDisposable
     // Fields set on ContextMenuStrip remove space for icons on left of menu for items.
     private readonly ContextMenuStrip _menu = new() {ShowCheckMargin = false, ShowImageMargin = false};
 
-    private bool isDisposed;
+    private bool _isDisposed;
     private readonly ToolStripMenuItem _viewTree = new("View Tree");
     private readonly ToolStripMenuItem _open = new("Open");
     private readonly ToolStripMenuItem _explore = new("Explore");
@@ -201,7 +201,7 @@ public class ContextMenuHelper : IDisposable
 
     protected virtual void Dispose(bool disposing)
     {
-        if (isDisposed) return;
+        if (_isDisposed) return;
 
         if (disposing)
         {
@@ -260,6 +260,6 @@ public class ContextMenuHelper : IDisposable
             _viewTree.Dispose();
         }
 
-        isDisposed = true;
+        _isDisposed = true;
     }
 }

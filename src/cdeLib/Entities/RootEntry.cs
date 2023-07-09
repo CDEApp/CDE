@@ -668,7 +668,6 @@ public class RootEntry : object, ICommonEntry
         var size = 0L;
         var dirEntryCount = 0L;
         var fileEntryCount = 0L;
-        //PathProblem = IsBadPath();
 
         if (Children != null)
         {
@@ -685,11 +684,7 @@ public class RootEntry : object, ICommonEntry
 
                     ++dirEntryCount;
                 }
-                else
-                {
-                    //dirEntry.PathProblem = dirEntry.IsBadPath();
-                }
-
+         
                 size += dirEntry.Size;
                 fileEntryCount += dirEntry.FileEntryCount;
                 childrenDirEntryCount += dirEntry.DirEntryCount;

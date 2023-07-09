@@ -18,12 +18,10 @@ public class DoubleBufferListView : ListView
     public void SetColumnHeaders(IEnumerable<ColumnConfig> columns)
     {
         Clear();
-        if (columns != null)
+        if (columns == null) return;
+        foreach (var col in columns)
         {
-            foreach (var col in columns)
-            {
-                Columns.Add(col.Name, col.Width, col.Alignment);
-            }
+            Columns.Add(col.Name, col.Width, col.Alignment);
         }
     }
 }

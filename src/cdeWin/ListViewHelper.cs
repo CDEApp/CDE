@@ -71,7 +71,7 @@ public interface IListViewHelper<T> : IDisposable where T : class
 /// </summary>
 public class ListViewHelper<T> : IListViewHelper<T> where T : class
 {
-    private bool isDisposed;
+    private bool _isDisposed;
     private int _listSize;
     private List<T> _list;
 
@@ -128,12 +128,10 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
             // was getting some odd errors earlier, this may address the null 
             // ListViewItem we got outside of visual studio in release builds.
             _retrieveVirtualItem = value;
-            if (_retrieveVirtualItem != null)
-            {
-                // TODO AUDIT - this should probably add if not null, and remove if null?
-                _listView.CacheVirtualItems += MyCacheVirtualItems;
-                _listView.RetrieveVirtualItem += MyRetrieveVirtualItem;
-            }
+            if (_retrieveVirtualItem == null) return;
+            // TODO AUDIT - this should probably add if not null, and remove if null?
+            _listView.CacheVirtualItems += MyCacheVirtualItems;
+            _listView.RetrieveVirtualItem += MyRetrieveVirtualItem;
         }
     }
 
@@ -202,12 +200,10 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         set
         {
             _itemSelectionChanged = value;
-            if (_itemSelectionChanged != null)
-            {
-                // TODO AUDIT - this should probably add if not null, and remove if null?
-                _listView.SelectedIndexChanged += MySelectedIndexChanged;
-                _listView.VirtualItemsSelectionRangeChanged += MyVirtualItemsSelectionRangeChanged;
-            }
+            if (_itemSelectionChanged == null) return;
+            // TODO AUDIT - this should probably add if not null, and remove if null?
+            _listView.SelectedIndexChanged += MySelectedIndexChanged;
+            _listView.VirtualItemsSelectionRangeChanged += MyVirtualItemsSelectionRangeChanged;
         }
     }
 
@@ -258,11 +254,9 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     private void MyItemActivate(object sender, EventArgs e)
     {
         // Only activate if single item selected for now.
-        if (_listView.SelectedIndices.Count == 1)
-        {
-            AfterActivateIndex = _listView.SelectedIndices[0];
-            _itemActivate();
-        }
+        if (_listView.SelectedIndices.Count != 1) return;
+        AfterActivateIndex = _listView.SelectedIndices[0];
+        _itemActivate();
     }
 
     private void MySelectedIndexChanged(object sender, EventArgs e)
@@ -402,20 +396,18 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     public void SortList()
     {
         SetColumnSortArrow();
-        if (_list != null)
-        {
-            var selectedItems = GetSelectedItems().ToList(); // ToList() need results before deselect
-            DeselectAllItems();
-            _list.Sort(ColumnSortCompare);
-            SelectItems(selectedItems);
-            ForceDraw();
-        }
+        if (_list == null) return;
+        var selectedItems = GetSelectedItems().ToList(); // ToList() need results before deselect
+        DeselectAllItems();
+        _list.Sort(ColumnSortCompare);
+        SelectItems(selectedItems);
+        ForceDraw();
     }
 
     private void SetColumnSortArrow()
     {
         _listView.SetSortIcon(SortColumn,
-            (ColumnSortOrder == SortOrder.Ascending)
+            ColumnSortOrder == SortOrder.Ascending
                 ? SortOrder.Descending
                 : SortOrder.Ascending); // column state is inverted some how ?
     }
@@ -486,7 +478,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     protected virtual void Dispose(bool disposing)
     {
-        if (isDisposed) return;
+        if (_isDisposed) return;
 
         if (disposing)
         {
@@ -526,7 +518,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
             }
         }
 
-        isDisposed = true;
+        _isDisposed = true;
     }
 
     private ListViewItem GetListViewItemAtMouse()

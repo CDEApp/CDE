@@ -35,6 +35,7 @@ public partial class MyAboutBox : Form
         }
         catch
         {
+            // ignored
         }
     }
 

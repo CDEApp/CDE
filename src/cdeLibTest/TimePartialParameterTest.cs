@@ -10,7 +10,7 @@ public class TimePartialParameterTest
     [Test]
     public void Hour_Parameter()
     {
-        var args = "12";
+        const string args = "12";
         var d = new TimePartialParameter(args);
         Assert.That(d.Hour, Is.EqualTo(12));
         Assert.That(d.Minute, Is.EqualTo(0));
@@ -20,10 +20,9 @@ public class TimePartialParameterTest
     [Test]
     public void Too_Large_Hour_Parameter()
     {
-        var args = "24";
-        var value = 0;
+        const string args = "24";
 
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => _ = (new TimePartialParameter(args)).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
     }
 

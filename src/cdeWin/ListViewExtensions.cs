@@ -33,16 +33,16 @@ public static class ListViewExtensions
         [Flags]
         public enum Mask
         {
-            Format = 0x4,       // HDI_FORMAT
-        };
+            Format = 0x4       // HDI_FORMAT
+        }
 
         [Flags]
         public enum Format
         {
             SortDown = 0x200,   // HDF_SORTDOWN
-            SortUp = 0x400,     // HDF_SORTUP
-        };
-    };
+            SortUp = 0x400    // HDF_SORTUP
+        }
+    }
 
     public const int LVM_FIRST = 0x1000;
     public const int LVM_GETHEADER = LVM_FIRST + 31;
@@ -59,8 +59,8 @@ public static class ListViewExtensions
 
     public static void SetSortIcon(this ListView listViewControl, int columnIndex, SortOrder order)
     {
-        IntPtr columnHeader = SendMessage(listViewControl.Handle, LVM_GETHEADER, IntPtr.Zero, IntPtr.Zero);
-        for (int columnNumber = 0; columnNumber <= listViewControl.Columns.Count - 1; columnNumber++)
+        var columnHeader = SendMessage(listViewControl.Handle, LVM_GETHEADER, IntPtr.Zero, IntPtr.Zero);
+        for (var columnNumber = 0; columnNumber <= listViewControl.Columns.Count - 1; columnNumber++)
         {
             var columnPtr = new IntPtr(columnNumber);
             var item = new HDITEM

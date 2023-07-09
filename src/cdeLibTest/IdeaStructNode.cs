@@ -28,7 +28,7 @@ public enum Flags
     PartialHash = 1 << 5,
     [Description("The Children are allready in default order.")]
     DefaultSort = 1 << 6
-};
+}
 
 internal class MyCatalogClass
 {

@@ -27,7 +27,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         var re = new RootEntry(_configuration);
         try
         {
-            re.SimpleScanCountEvent = (int count, string currentFile) => _mediator.Publish(new ScanProgressEvent(count, currentFile), cancellationToken);
+            re.SimpleScanCountEvent = (count, currentFile) => _mediator.Publish(new ScanProgressEvent(count, currentFile), cancellationToken);
             re.SimpleScanEndEvent = ScanEndOfEntries;
             re.ExceptionEvent = PrintExceptions;
 
@@ -64,8 +64,6 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         {
             Console.WriteLine($"Error: {aex.Message}");
         }
-
-        return;
     }
 
     private void PrintExceptions(string path, Exception ex)

@@ -38,7 +38,7 @@ internal static class Program
         SaveAppState(config, mainForm);
     }
 
-    private static void SaveAppState(Config config, CDEWinForm mainForm)
+    private static void SaveAppState(Config config, Form mainForm)
     {
         config.Active.MainWindowConfig.RecordForm(mainForm);
         config.Save();

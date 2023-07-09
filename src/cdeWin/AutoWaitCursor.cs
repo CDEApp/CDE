@@ -230,7 +230,7 @@ public class AutoWaitCursor
 
         // FROM http://www.pinvoke.net/default.aspx/user32.SendMessageTimeout, this fixes the crash in vs2015 64bit Debug mode in vshost.exe
         [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        public static extern IntPtr SendMessageTimeout(
+        private static extern IntPtr SendMessageTimeout(
             IntPtr windowHandle,
             uint msg,
             IntPtr wParam,
@@ -318,7 +318,7 @@ public class AutoWaitCursor
         /// <summary>
         /// Set the Cursor to wait.
         /// </summary>
-        public void SetWaitCursor()
+        private void SetWaitCursor()
         {
             // Start is called in a new Thread, grab the new Thread Id so we can attach to Main thread's input
             _callbackThreadId = GetCurrentThreadId();
@@ -333,7 +333,7 @@ public class AutoWaitCursor
         /// <summary>
         /// Finish showing the Cursor (switch back to previous Cursor)
         /// </summary>
-        public void RestoreCursor()
+        private void RestoreCursor()
         {
             // Restore the cursor
             Cursor.Current = _oldCursor;
@@ -474,7 +474,7 @@ public class AutoWaitCursor
         /// If the application doesn't respond with the timespan, will return false,
         /// else returns true.
         /// </summary>
-        private bool _IsApplicationBusy(TimeSpan delay, IntPtr windowHandle)
+        private static bool _IsApplicationBusy(TimeSpan delay, IntPtr windowHandle)
         {
             // ReSharper disable InconsistentNaming
             const int INFINITE = int.MaxValue;

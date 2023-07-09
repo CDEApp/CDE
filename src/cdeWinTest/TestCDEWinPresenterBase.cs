@@ -98,13 +98,13 @@ public class TestCDEWinPresenterBase
         {
             Path = "Test3",
             Size = 12312,
-            Modified = new DateTime(2009, 10, 03, 19, 17, 13, DateTimeKind.Unspecified),
+            Modified = new DateTime(2009, 10, 03, 19, 17, 13, DateTimeKind.Unspecified)
         };
         var dirEntry4 = new DirEntry
         {
             Path = "Test4",
             Size = 32312,
-            Modified = new DateTime(2008, 10, 04, 20, 18, 14, DateTimeKind.Unspecified),
+            Modified = new DateTime(2008, 10, 04, 20, 18, 14, DateTimeKind.Unspecified)
         };
         _dirEntry.AddChild(dirEntry2);
         _rootEntry.AddChild(dirEntry3);
@@ -117,7 +117,7 @@ public class TestCDEWinPresenterBase
 
     protected void TracePresenterAction<T>(IListViewHelper<T> lvh) where T : class
     {
-        lvh.ActionOnActivateItem(Arg.Do<Action<T>>(x => Console.Out.WriteLine("called ActionOnActivateItem()")));
+        lvh.ActionOnActivateItem(Arg.Do<Action<T>>(_ => Console.Out.WriteLine("called ActionOnActivateItem()")));
     }
 
     protected void MockDirectoryTreeViewAfterSelect(

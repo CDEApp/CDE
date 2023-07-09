@@ -30,7 +30,7 @@ public abstract class Presenter<TView> where TView : class, IView
         }
     }
 
-    private bool IsTestMode(TView view)
+    private static bool IsTestMode(TView view)
     {
         // In past Rhino.Mocks in GetViewEvents() returned method names, not sure how.
         // Now the result from mock view is no methods and this IPresenter wiring fails.
@@ -47,7 +47,7 @@ public abstract class Presenter<TView> where TView : class, IView
         foreach (var viewDefinedEvent in viewDefinedEvents)
         {
             var eventInfo = viewEvents[viewDefinedEvent];
-            var eventName = viewDefinedEvent.Substring(2);
+            var eventName = viewDefinedEvent[2..];
             if (!presenterEventHandlers.TryGetValue(eventName, out var presenterMethodInfo))
             {
                 throw new Exception(
@@ -74,7 +74,7 @@ public abstract class Presenter<TView> where TView : class, IView
             .ToDictionary(x => x.Key, x => x.Value);
     }
 
-    private static bool Contains(ICollection<string> actionProperties, EventInfo x)
+    private static bool Contains(ICollection<string> actionProperties, MemberInfo x)
     {
         return actionProperties.Contains(x.Name);
     }

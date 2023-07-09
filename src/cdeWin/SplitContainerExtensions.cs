@@ -14,7 +14,7 @@ public static class SplitContainerExtensions
         var currentSize = splitter.GetSplitterSize();
         var newDistance = (int)(currentSize * splitterRatio);
         if (newDistance >= splitter.Panel1MinSize   // Set splitter if Valid splitter distance
-            && newDistance <= (currentSize - splitter.Panel2MinSize))
+            && newDistance <= currentSize - splitter.Panel2MinSize)
         {
             splitter.SplitterDistance = newDistance;
         }

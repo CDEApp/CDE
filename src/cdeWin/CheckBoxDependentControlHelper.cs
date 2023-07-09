@@ -56,7 +56,7 @@ public class CheckBoxDependentControlHelper // <T>
 
     public bool Checked
     {
-        get { return _primaryCheckBox.Checked; }
-        set { _primaryCheckBox.Checked = value; }
+        get => _primaryCheckBox.Checked;
+        set => _primaryCheckBox.Checked = value;
     }
 }

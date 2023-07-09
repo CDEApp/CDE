@@ -80,16 +80,14 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private void LogTimeIt(TimeIt timeIt)
     {
-        if (timeIt != null)
+        if (timeIt == null) return;
+        foreach (var labelElapsed in timeIt.ElapsedList)
         {
-            foreach (var labelElapsed in timeIt.ElapsedList)
-            {
-                _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
-            }
-
-            _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
-                timeIt.TotalMsec);
+            _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
         }
+
+        _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
+            timeIt.TotalMsec);
     }
 
     private void RegisterListViewSorters()
@@ -111,7 +109,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private void SetMemoryStatus()
     {
         double memory;
-        using (Process proc = Process.GetCurrentProcess())
+        using (var proc = Process.GetCurrentProcess())
         {
             // The proc.PrivateMemorySize64 will returns the private memory usage in byte.
             // Would like to Convert it to Megabyte? divide it by 2^20
@@ -158,12 +156,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private static void CreateNodesPreExpand(TreeNode parentNode)
     {
-        if (HasDummyChildNode(parentNode))
-        {
-            // Replace Dummy with real nodes now visible.
-            parentNode.Nodes.Clear();
-            AddAllDirectoriesChildren(parentNode, (ICommonEntry)parentNode.Tag);
-        }
+        if (!HasDummyChildNode(parentNode)) return;
+        // Replace Dummy with real nodes now visible.
+        parentNode.Nodes.Clear();
+        AddAllDirectoriesChildren(parentNode, (ICommonEntry)parentNode.Tag);
     }
 
     private static bool HasDummyChildNode(TreeNode parentNode)
@@ -865,7 +861,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         });
     }
 
-    private void DirectoryGetContextMenuPairDirEntrys(Action<IEnumerable<ICommonEntry>> gotContextAction)
+    private void DirectoryGetContextMenuPairDirEntries(Action<IEnumerable<ICommonEntry>> gotContextAction)
     {
         _clientForm.DirectoryListViewHelper.ActionOnSelectedItems(gotContextAction);
     }
@@ -935,7 +931,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public void DirectoryContextMenuCopyFullPathClick()
     {
-        DirectoryGetContextMenuPairDirEntrys(enumerableDirEntry =>
+        DirectoryGetContextMenuPairDirEntries(enumerableDirEntry =>
         {
             // we dont have parent dir entry here ... 
             var s = new StringBuilder();
