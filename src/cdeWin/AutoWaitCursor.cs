@@ -408,7 +408,11 @@ public class AutoWaitCursor
         private void CreateMonitorThread()
         {
             // Create the monitor thread
-            _callbackThread = new Thread(ThreadCallbackLoop) { Name = "AutoWaitCursorCallback", IsBackground = true };
+            _callbackThread = new Thread(ThreadCallbackLoop)
+            {
+                Name = "AutoWaitCursorCallback", 
+                IsBackground = true
+            };
             // Start the thread
             _callbackThread.Start();
         }
@@ -419,45 +423,49 @@ public class AutoWaitCursor
         /// </summary>
         private void ThreadCallbackLoop()
         {
+            bool continueLoop = true;
+
+            while (continueLoop && !_isDisposed && _isStarted)
+            {
+                try
+                {
+                    DoWorkOrSleep();
+                }
+                catch (ThreadAbortException)
+                {
+                    continueLoop = false;
+                    // The thread is being aborted - exit gracefully.
+                }
+            }
+        }
+
+        private void DoWorkOrSleep()
+        {
+            if (!_enabled || _mainWindowHandle == IntPtr.Zero)
+            {
+                Thread.Sleep(_delay);
+            }
+            else if (_IsApplicationBusy(_delay, _mainWindowHandle))
+            {
+                ProcessCursorChangeAndIdleState();
+            }
+        }
+        
+        private void ProcessCursorChangeAndIdleState()
+        {
             try
             {
-                do
-                {
-                    if (!_enabled || _mainWindowHandle == IntPtr.Zero)
-                    {
-                        // Just sleep
-                        Thread.Sleep(_delay);
-                    }
-                    else
-                    {
-                        // Wait for start
-                        if (_IsApplicationBusy(_delay, _mainWindowHandle))
-                        {
-                            try
-                            {
-                                SetWaitCursor();
-                                WaitForIdle();
-                            }
-                            finally
-                            {
-                                // Always calls Finish (even if we are Disabled)
-                                RestoreCursor();
-                                // Store the time the application became inactive
-                                _inactiveStart = DateTime.Now;
-                            }
-                        }
-                        else
-                        {
-                            // Wait before checking again
-                            Thread.Sleep(25);
-                        }
-                    }
-                } while (!_isDisposed && _isStarted);
+                SetWaitCursor();
+                WaitForIdle();
             }
-            catch (ThreadAbortException)
+            finally
             {
-                // The thread is being aborted, just reset the abort and exit gracefully
-                Thread.ResetAbort();
+                // Always calls Finish (even if we are Disabled)
+                RestoreCursor();
+                // Store the time the application became inactive
+                _inactiveStart = DateTime.Now;
+                // Wait before checking again
+                Thread.Sleep(25);
             }
         }
 
