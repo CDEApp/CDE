@@ -222,7 +222,7 @@ public class Config : IConfig
                 new() { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
                 new() { Name="Modified", Width=130},
                 new() { Name="Catalog", Width=130},
-                new() { Name="Path", Width=400},
+                new() { Name="Path", Width=400}
             }
         },
         DirectoryListView = new ListViewConfig
@@ -231,7 +231,7 @@ public class Config : IConfig
             {
                 new() { Name="Name", Width=260},
                 new() { Name="Size", Width=90, Alignment = HorizontalAlignment.Right },
-                new() { Name="Modified", Width=130 },
+                new() { Name="Modified", Width=130 }
             }
         },
         CatalogListView = new ListViewConfig
@@ -250,7 +250,7 @@ public class Config : IConfig
                 new() { Name="Created", Width=130 },
                 new() { Name="Scan Time", Width=70, Alignment = HorizontalAlignment.Right},
                 new() { Name="Catalog File", Width=150 },
-                new() { Name="Description", Width=150 },
+                new() { Name="Description", Width=150 }
             }
         },
         DirectoryPaneSplitterRatio = -1f,
@@ -261,7 +261,7 @@ public class Config : IConfig
         FromSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
         ToSizeDropDownIndex = -1, // initial default value is set by win forms configuration code
         NotOlderThanDropDownIndex = -1, // initial default value is set by win forms configuration code
-        PatternHistoryMaximum = 50,
+        PatternHistoryMaximum = 50
     };
 
     public Configuration Loaded;

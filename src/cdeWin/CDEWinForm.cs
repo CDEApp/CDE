@@ -178,7 +178,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             ItemActivate = () => OnSearchResultListViewItemActivate(),
             ColumnClick = () => OnSearchResultListViewColumnClick(),
             // ReSharper restore PossibleNullReferenceException
-            ContextMenu = CreateSearchResultContextMenu(),
+            ContextMenu = CreateSearchResultContextMenu()
         };
 
         DirectoryListViewHelper = new ListViewHelper<ICommonEntry>(directoryListView)
@@ -189,7 +189,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             ColumnClick = () => OnDirectoryListViewColumnClick(),
             ItemSelectionChanged = () => OnDirectoryListViewItemSelectionChanged(),
             // ReSharper restore PossibleNullReferenceException
-            ContextMenu = CreateDirectoryContextMenu(),
+            ContextMenu = CreateDirectoryContextMenu()
         };
 
         directoryTreeView.BeforeExpand += DirectoryTreeViewOnBeforeExpand;
@@ -342,7 +342,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             //CopyFullNameHandler = (s, e) => (),
             ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
             // ReSharper restore PossibleNullReferenceException
-            CancelOpeningEventHandler = DirectoryTreeContextMenuOpening,
+            CancelOpeningEventHandler = DirectoryTreeContextMenuOpening
         };
 
         return menuHelper.GetContextMenuStrip();
@@ -389,7 +389,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
             ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
             // ReSharper restore PossibleNullReferenceException
-            CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e),
+            CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e)
         };
         return menuHelper.GetContextMenuStrip();
     }
@@ -408,7 +408,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             //CopyBaseNameHandler = (s, e) => (),
             CopyFullNameHandler = (s, e) => OnSearchResultContextMenuCopyFullPathClick(),
             // ReSharper restore PossibleNullReferenceException
-            CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e),
+            CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e)
         };
         return menuHelper.GetContextMenuStrip();
     }
@@ -508,7 +508,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     {
         if (searchTimeStatus.Text.Equals(s)) return;
         searchTimeStatus.Text = s;
-        this.mainStatusStrip.Update(); //Added since it is not updating this automagically.
+        mainStatusStrip.Update(); //Added since it is not updating this automagically.
     }
 
     public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)

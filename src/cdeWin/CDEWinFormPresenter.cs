@@ -310,7 +310,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             ToHourEnable = _clientForm.ToHour.Checked,
             ToHour = _clientForm.ToHourValue.TimeOfDay,
             NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
-            NotOlderThan = NotOlderThanValue(),
+            NotOlderThan = NotOlderThanValue()
         };
 
         var param = new BgWorkerParam
@@ -411,13 +411,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
                 changeMade = false;
                 if (pattern.StartsWith(".*"))
                 {
-                    pattern = pattern.Substring(2);
+                    pattern = pattern[2..];
                     changeMade = true;
                 }
 
                 if (pattern.EndsWith(".*"))
                 {
-                    pattern = pattern.Substring(0, pattern.Length - 2);
+                    pattern = pattern[..^2];
                     changeMade = true;
                 }
             } while (changeMade);
@@ -1035,7 +1035,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var compareResult = column switch
         {
             0 => re1.Path.CompareTo(re2.Path),
-            1 => string.Compare((string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName), string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
+            1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName, string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
             2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
             3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
             4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
