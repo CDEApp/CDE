@@ -12,7 +12,7 @@
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Build.Locator" Version="1.5.5" />
-    <PackageReference Include="Nuke.Common" Version="6.3.0" />
+    <PackageReference Include="Nuke.Common" Version="7.0.2" />
     <PackageDownload Include="GitVersion.Tool" Version="[5.6.7]" />
   </ItemGroup>
 

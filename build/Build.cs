@@ -9,8 +9,8 @@ using Nuke.Common.IO;
 using Nuke.Common.ProjectModel;
 using Nuke.Common.Tools.DotNet;
 using Nuke.Common.Utilities.Collections;
-using static Nuke.Common.IO.FileSystemTasks;
 using static Nuke.Common.Tools.DotNet.DotNetTasks;
+// ReSharper disable AllUnderscoreLocalParameterName
 
 [ShutdownDotNetAfterServerBuild]
 class Build : NukeBuild
@@ -40,8 +40,11 @@ class Build : NukeBuild
     [GitRepository] readonly GitRepository GitRepository;
 
     AbsolutePath SourceDirectory => RootDirectory / "src";
+
     AbsolutePath OutputDirectory => RootDirectory / "output";
+
     AbsolutePath TestsDirectory => RootDirectory / "tests";
+
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
     readonly string RunTime = "win10-x64";
@@ -52,8 +55,8 @@ class Build : NukeBuild
         .Before(Restore)
         .Executes(() =>
         {
-            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(DeleteDirectory);
-            EnsureCleanDirectory(OutputDirectory);
+            SourceDirectory.GlobDirectories("**/bin", "**/obj").ForEach(x => x.DeleteDirectory());
+            OutputDirectory.CreateOrCleanDirectory();
         });
 
     Target Restore => _ => _
@@ -69,7 +72,7 @@ class Build : NukeBuild
         .Produces(ArtifactsDirectory / "*.*")
         .Executes(() =>
         {
-            EnsureCleanDirectory(ArtifactsDirectory);
+            ArtifactsDirectory.CreateOrCleanDirectory();
             DotNetPack(s => s
                 .SetProject(Solution)
                 .SetOutputDirectory(ArtifactsDirectory)
@@ -86,21 +89,21 @@ class Build : NukeBuild
         .Executes(() =>
         {
             DotNetPublish(s => s
-                    .SetProject("src/cde/cde.csproj")
-                    .SetConfiguration(Configuration)
-                    .SetOutput($"{ArtifactsDirectory}/cde")
-                    .SetRuntime(RunTime)
-                    .EnablePublishSingleFile()
-                    .DisableSelfContained()
+                .SetProject("src/cde/cde.csproj")
+                .SetConfiguration(Configuration)
+                .SetOutput($"{ArtifactsDirectory}/cde")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .DisableSelfContained()
             );
 
             DotNetPublish(s => s
-                    .SetProject("src/cdewin/cdewin.csproj")
-                    .SetConfiguration(Configuration)
-                    .SetOutput($"{ArtifactsDirectory}/cdewin")
-                    .SetRuntime(RunTime)
-                    .EnablePublishSingleFile()
-                    .DisableSelfContained()
+                .SetProject("src/cdewin/cdewin.csproj")
+                .SetConfiguration(Configuration)
+                .SetOutput($"{ArtifactsDirectory}/cdewin")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .DisableSelfContained()
             );
         });
 

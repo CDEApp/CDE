@@ -23,7 +23,7 @@
       <PackageReference Include="JetBrains.Annotations" Version="2023.2.0" />
       <PackageReference Include="MediatR" Version="12.1.0" />
       <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="11.0.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="2.0.32">
+      <PackageReference Include="Meziantou.Analyzer" Version="2.0.63">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
@@ -34,7 +34,7 @@
       <PackageReference Include="Serilog.Settings.Configuration" Version="7.0.0" />
       <PackageReference Include="Serilog.Sinks.Console" Version="4.1.0" />
       <PackageReference Include="SerilogTimings" Version="3.0.1" />
-      <PackageReference Include="Spectre.Console" Version="0.46.0" />
+      <PackageReference Include="Spectre.Console" Version="0.47.0" />
     </ItemGroup>
 
     <ItemGroup>
