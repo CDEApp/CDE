@@ -204,8 +204,7 @@ public class DirEntry : ICommonEntry
 
     public void SetPath(string path)
     {
-        this.Path = path;
-        PathProblem = IsBadPath();
+        Path = path;
     }
 
     public DirEntry(FileSystemInfo fs) : this()
@@ -321,11 +320,6 @@ public class DirEntry : ICommonEntry
                 if (dirEntry.IsDirectory)
                 {
                     dirEntry.SetSummaryFields();
-                    if (PathProblem) // infects child entries
-                    {
-                        dirEntry.PathProblem = PathProblem;
-                    }
-
                     ++dirEntryCount;
                 }
 
@@ -388,8 +382,9 @@ public class DirEntry : ICommonEntry
     /// If this entry is a directory this infects all child entries as well.
     /// Populated on load not saved to disk.
     /// </summary>
-    [Key(7)]
-    public bool PathProblem { get; set; } = false;
+    //[Key(7)]
+    [IgnoreMember]
+    public bool PathProblem => IsBadPath();
 
     public void TraverseTreePair(TraverseFunc func)
     {

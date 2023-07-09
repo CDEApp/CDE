@@ -679,11 +679,6 @@ public class RootEntry : object, ICommonEntry
                 if (dirEntry.IsDirectory)
                 {
                     dirEntry.SetSummaryFields();
-                    if (PathProblem) // infects child entries
-                    {
-                        dirEntry.PathProblem = PathProblem;
-                    }
-
                     ++dirEntryCount;
                 }
 
