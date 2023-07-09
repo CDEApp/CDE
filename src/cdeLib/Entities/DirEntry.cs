@@ -16,6 +16,8 @@ namespace cdeLib.Entities;
 [MessagePackObject]
 public class DirEntry : ICommonEntry
 {
+    private string _path;
+
     [IgnoreMember]
     public virtual DateTime Modified
     {
@@ -365,7 +367,11 @@ public class DirEntry : ICommonEntry
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string Path { get; set; }
+    public virtual string Path
+    {
+        get => _path;
+        set => _path = string.Intern(value);
+    }
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
