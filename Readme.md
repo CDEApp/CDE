@@ -30,7 +30,7 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
   - size of all the columns in list views
   - values of fields in the search parameters
 
-The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .Net 4.0 is available with the behavior of the cdeWinView.cfg file as described just above.
+The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .Net7 is available with the behavior of the cdeWinView.cfg file as described just above.
 
 #### cdeWeb (unreleased)
 
