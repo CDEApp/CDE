@@ -32,7 +32,7 @@ public interface ICommonEntry
     string FullPath { get; }
 
     bool IsDirectory { get; set; }
-    bool PathProblem { get; set; }
+    bool PathProblem { get; }
     long FileEntryCount { get; set; }
     long DirEntryCount { get; set; }
     DateTime Modified { get; set; }

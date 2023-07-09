@@ -668,7 +668,7 @@ public class RootEntry : object, ICommonEntry
         var size = 0L;
         var dirEntryCount = 0L;
         var fileEntryCount = 0L;
-        PathProblem = IsBadPath();
+        //PathProblem = IsBadPath();
 
         if (Children != null)
         {
@@ -752,7 +752,7 @@ public class RootEntry : object, ICommonEntry
     /// Populated on load not saved to disk.
     /// </summary>
     [IgnoreMember]
-    public bool PathProblem { get; set; }
+    public bool PathProblem => IsBadPath();
 
     public void TraverseTreePair(TraverseFunc func)
     {
