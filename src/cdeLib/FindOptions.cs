@@ -87,8 +87,7 @@ public class FindOptions
         var findFunc = GetFindFunc(_progressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
 
-        var watch = new System.Diagnostics.Stopwatch();
-        watch.Start();
+        var watch = Stopwatch.StartNew();
         Parallel.ForEach(rootEntries, (rootEntry) =>
         {
             //TODO: Parallel breaks the progress percentage, need to fix.
