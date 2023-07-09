@@ -6,6 +6,7 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeWin;
+using cdeWin.Cfg;
 using NSubstitute;
 
 namespace cdeWinTest;

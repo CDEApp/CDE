@@ -10,6 +10,7 @@ using Util;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
+using cdeWin.Cfg;
 
 namespace cdeWin;
 

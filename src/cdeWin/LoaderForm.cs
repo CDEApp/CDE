@@ -9,6 +9,7 @@ using System.Windows.Forms;
 using Util;
 using cdeLib.Catalog;
 using cdeLib.Entities;
+using cdeWin.Cfg;
 using Dawn;
 using Serilog;
 

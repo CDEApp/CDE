@@ -5,6 +5,7 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeWin;
+using cdeWin.Cfg;
 using JetBrains.Annotations;
 using NUnit.Framework;
 using Util;

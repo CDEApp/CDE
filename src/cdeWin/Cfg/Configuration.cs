@@ -6,11 +6,11 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
-using ProtoBuf;
 using cdeLib;
 using cdeLib.Entities;
+using ProtoBuf;
 
-namespace cdeWin;
+namespace cdeWin.Cfg;
 
 [ProtoContract]
 public class WindowConfig
@@ -171,8 +171,11 @@ public class Configuration
 
 public interface IConfig : IConfigCdeLib
 {
+    // ReSharper disable once InconsistentNaming
     string DateFormatYMDHMS { get; }
+    // ReSharper disable once InconsistentNaming
     string DateCustomFormatYMD { get; }
+    // ReSharper disable once InconsistentNaming
     string DateCustomFormatHMS { get; }
     string LinkRepository { get; }
     Configuration Active { get; set; }
@@ -407,7 +410,7 @@ public class Config : IConfig
         return dateValue;
     }
 
-    public List<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
+    private static IEnumerable<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
     {
         var columnMismatch = false;
         if (initial.Columns.Count == active.Columns.Count)

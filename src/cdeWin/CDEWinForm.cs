@@ -6,6 +6,7 @@ using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
+using cdeWin.Cfg;
 using Util;
 
 namespace cdeWin;
