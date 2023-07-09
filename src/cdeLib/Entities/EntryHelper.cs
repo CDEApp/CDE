@@ -34,9 +34,7 @@ public static class EntryHelper
     /// </summary>
     /// <param name="rootEntries">Entries to traverse</param>
     /// <param name="traverseFunc">TraversalFunc</param>
-    /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
-    public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc,
-        RootEntry catalogRootEntry = null)
+    public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc)
     {
         if (traverseFunc == null)
         {

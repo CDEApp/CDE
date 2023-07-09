@@ -16,6 +16,8 @@ namespace cdeLib.Entities;
 [MessagePackObject]
 public class DirEntry : ICommonEntry
 {
+    private string _path;
+
     [IgnoreMember]
     public virtual DateTime Modified
     {
@@ -41,8 +43,6 @@ public class DirEntry : ICommonEntry
     /// </summary>
     [IgnoreMember]
     public bool HashSpecified => IsHashDone;
-
-    //public string HashAsString { get { return ByteArrayHelper.ByteArrayToString(Hash); } }
 
     [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
     [FlatBufferItem(6)]
@@ -206,8 +206,7 @@ public class DirEntry : ICommonEntry
 
     public void SetPath(string path)
     {
-        this.Path = path;
-        PathProblem = IsBadPath();
+        Path = path;
     }
 
     public DirEntry(FileSystemInfo fs) : this()
@@ -219,7 +218,7 @@ public class DirEntry : ICommonEntry
         }
         catch (ArgumentOutOfRangeException ex)
         {
-            Log.Logger.Error(ex, "Error getting WriteTime for {0}, using CreationTime instead.", fs.Name);
+            Log.Logger.Error(ex, "Error getting WriteTime for {Filename}, using CreationTime instead", fs.Name);
             Modified = fs.CreationTime;
         }
 
@@ -273,22 +272,13 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        if (IsModifiedBad && !de.IsModifiedBad)
+        return IsModifiedBad switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsModifiedBad && de.IsModifiedBad)
-        {
-            return 1; // this after de
-        }
-
-        if (IsModifiedBad && de.IsModifiedBad)
-        {
-            return 0;
-        }
-
-        return DateTime.Compare(Modified, de.Modified);
+            true when !de.IsModifiedBad => -1,
+            false when de.IsModifiedBad => 1,
+            true when de.IsModifiedBad => 0,
+            _ => DateTime.Compare(Modified, de.Modified)
+        };
     }
 
     // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
@@ -299,17 +289,12 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        if (IsDirectory && !de.IsDirectory)
+        return IsDirectory switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsDirectory && de.IsDirectory)
-        {
-            return 1; // this after de
-        }
-
-        return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
+            true when !de.IsDirectory => -1,
+            false when de.IsDirectory => 1,
+            _ => DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+        };
     }
 
     public int PathCompareTo(ICommonEntry de)
@@ -337,11 +322,6 @@ public class DirEntry : ICommonEntry
                 if (dirEntry.IsDirectory)
                 {
                     dirEntry.SetSummaryFields();
-                    if (PathProblem) // infects child entries
-                    {
-                        dirEntry.PathProblem = PathProblem;
-                    }
-
                     ++dirEntryCount;
                 }
 
@@ -368,7 +348,7 @@ public class DirEntry : ICommonEntry
 
     public void AddChild(DirEntry child)
     {
-        if (this.Children == null)
+        if (Children == null)
         {
             Children = new List<DirEntry>();
         }
@@ -387,7 +367,11 @@ public class DirEntry : ICommonEntry
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string Path { get; set; }
+    public virtual string Path
+    {
+        get => _path;
+        set => _path = string.Intern(value);
+    }
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
@@ -397,18 +381,16 @@ public class DirEntry : ICommonEntry
     /// </summary>
     [IgnoreMember]
     //public string FullPath { get; set; }
-    public string FullPath
-    {
-        get => ParentCommonEntry.MakeFullPath(this);
-    }
+    public string FullPath => ParentCommonEntry.MakeFullPath(this);
 
     /// <summary>
     /// True if entry name ends with Space or Period which is a problem on windows file systems.
     /// If this entry is a directory this infects all child entries as well.
     /// Populated on load not saved to disk.
     /// </summary>
-    [Key(7)]
-    public bool PathProblem { get; set; } = false;
+    //[Key(7)]
+    [IgnoreMember]
+    public bool PathProblem => IsBadPath();
 
     public void TraverseTreePair(TraverseFunc func)
     {
@@ -538,6 +520,9 @@ public class DirEntry : ICommonEntry
     {
         // This probably needs to check all parent paths if this is a root entry.
         // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
-        return !string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."));
+        return (!string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."))) || ParentCommonEntry is
+        {
+            PathProblem: true
+        };
     }
 }

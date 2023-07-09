@@ -560,7 +560,7 @@ public class RootEntry : object, ICommonEntry
     // For testing convenience.
     public void SetHash(int hash)
     {
-        Hash.HashB = (ulong) hash;
+        Hash.HashB = (ulong)hash;
         IsHashDone = true;
     }
 
@@ -613,7 +613,9 @@ public class RootEntry : object, ICommonEntry
         //}
         // the cast breaks this.
         var sizeCompare = Size.CompareTo(de.Size);
-        return sizeCompare == 0 ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions) : sizeCompare;
+        return sizeCompare == 0
+            ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+            : sizeCompare;
     }
 
     public int ModifiedCompareTo(ICommonEntry de)
@@ -677,14 +679,9 @@ public class RootEntry : object, ICommonEntry
                 if (dirEntry.IsDirectory)
                 {
                     dirEntry.SetSummaryFields();
-                    if (PathProblem) // infects child entries
-                    {
-                        dirEntry.PathProblem = PathProblem;
-                    }
-
                     ++dirEntryCount;
                 }
-         
+
                 size += dirEntry.Size;
                 fileEntryCount += dirEntry.FileEntryCount;
                 childrenDirEntryCount += dirEntry.DirEntryCount;
@@ -694,8 +691,8 @@ public class RootEntry : object, ICommonEntry
             dirEntryCount += childrenDirEntryCount;
         }
 
-        FileEntryCount = (uint) fileEntryCount;
-        DirEntryCount = (uint) dirEntryCount;
+        FileEntryCount = (uint)fileEntryCount;
+        DirEntryCount = (uint)dirEntryCount;
         Size = size;
     }
 
@@ -751,7 +748,7 @@ public class RootEntry : object, ICommonEntry
 
     public void TraverseTreePair(TraverseFunc func)
     {
-        TraverseTreePair(new List<ICommonEntry> {this}, func);
+        TraverseTreePair(new List<ICommonEntry> { this }, func);
     }
 
     /// <summary>
@@ -817,7 +814,7 @@ public class RootEntry : object, ICommonEntry
         // traverse every source entry copy across the meta data that matches on destination entry
         // if it adds value to destination.
         // if destination is not there source not processed.
-        dirs.Push(Tuple.Create(sourcePath, (ICommonEntry) source, destination));
+        dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
 
         while (dirs.Count > 0)
         {
@@ -862,8 +859,8 @@ public class RootEntry : object, ICommonEntry
                     {
                         if (destinationDirEntry.IsDirectory)
                         {
-                            dirs.Push(Tuple.Create(fullPath, (ICommonEntry) sourceDirEntry,
-                                (ICommonEntry) destinationDirEntry));
+                            dirs.Push(Tuple.Create(fullPath, (ICommonEntry)sourceDirEntry,
+                                (ICommonEntry)destinationDirEntry));
                         }
                     }
                 }

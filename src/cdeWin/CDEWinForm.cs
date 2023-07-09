@@ -93,28 +93,28 @@ public partial class CDEWinForm : Form, ICDEWinForm
     public event EventAction OnReloadCatalogs;
 
     private readonly ComboBoxItem<int>[] _byteSizeUnits = {
-        new ComboBoxItem<int>("byte(s)", 1),
-        new ComboBoxItem<int>("KB(s)", 1000),
-        new ComboBoxItem<int>("KiB(s)", 1024),
-        new ComboBoxItem<int>("MB(s)", 1000 * 1000),
-        new ComboBoxItem<int>("MiB(s)", 1024 * 1024),
-        new ComboBoxItem<int>("GB(s)", 1000 * 1000 * 1000),
-        new ComboBoxItem<int>("GIB(s)", 1024 * 1024 * 1024)
+        new("byte(s)", 1),
+        new("KB(s)", 1000),
+        new("KiB(s)", 1024),
+        new("MB(s)", 1000 * 1000),
+        new("MiB(s)", 1024 * 1024),
+        new("GB(s)", 1000 * 1000 * 1000),
+        new("GIB(s)", 1024 * 1024 * 1024)
     };
 
     private readonly ComboBoxItem<AddTimeUnitFunc>[] _durationUnits = {
-        new ComboBoxItem<AddTimeUnitFunc>("Minute(s)", AddTimeUtil.AddMinute),
-        new ComboBoxItem<AddTimeUnitFunc>("Hour(s)", AddTimeUtil.AddHour),
-        new ComboBoxItem<AddTimeUnitFunc>("Day(s)", AddTimeUtil.AddDay),
-        new ComboBoxItem<AddTimeUnitFunc>("Month(s)", AddTimeUtil.AddMonth),
-        new ComboBoxItem<AddTimeUnitFunc>("Year(s)", AddTimeUtil.AddYear)
+        new("Minute(s)", AddTimeUtil.AddMinute),
+        new("Hour(s)", AddTimeUtil.AddHour),
+        new("Day(s)", AddTimeUtil.AddDay),
+        new("Month(s)", AddTimeUtil.AddMonth),
+        new("Year(s)", AddTimeUtil.AddYear)
     };
 
     private readonly ComboBoxItem<int>[] _limitResultValues = {
-        new ComboBoxItem<int>("Max Results 1000", 1000),
-        new ComboBoxItem<int>("Max Results 10000", 10000),
-        new ComboBoxItem<int>("Max Results 100000", 100000),
-        new ComboBoxItem<int>("Unlimited Results", int.MaxValue)
+        new("Max Results 1000", 1000),
+        new("Max Results 10000", 10000),
+        new("Max Results 100000", 100000),
+        new("Unlimited Results", int.MaxValue)
     };
 
     private readonly IConfig _config;
