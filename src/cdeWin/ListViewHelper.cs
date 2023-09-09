@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Forms;
+using cdeWin.Cfg;
 
 namespace cdeWin;
 // think about making Presenter<> look for all members that implement IPresenterHelper

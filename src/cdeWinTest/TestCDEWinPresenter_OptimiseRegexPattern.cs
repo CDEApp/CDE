@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using cdeWin;
+using cdeWin.Cfg;
 
 namespace cdeWinTest;
 

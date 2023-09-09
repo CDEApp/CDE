@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using cdeWin.Cfg;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
