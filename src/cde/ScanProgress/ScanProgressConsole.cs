@@ -15,7 +15,7 @@ public class ScanProgressConsole
 
     public static string CurrentFile { get; set; }
 
-    public static bool ScanIsComplete { get; set; } = false;
+    public static bool ScanIsComplete { get; set; }
 
     private static readonly Queue<string> Messages = new();
 

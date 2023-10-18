@@ -185,7 +185,7 @@ namespace Mono.Terminal
 
 		public LineEditor(string name, int histsize)
 		{
-			handlers = new Handler[] {
+			handlers = new[] {
 				new Handler (ConsoleKey.Home,       CmdHome),
 				new Handler (ConsoleKey.End,        CmdEnd),
 				new Handler (ConsoleKey.LeftArrow,  CmdLeft),

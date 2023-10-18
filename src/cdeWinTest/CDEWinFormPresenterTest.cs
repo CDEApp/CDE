@@ -77,7 +77,7 @@ public class CDEWinFormPresenterTest
         {
             base.RunBeforeEveryTest();
             InitRootWithDir();
-            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
         }
 
         [Test]
@@ -166,7 +166,7 @@ public class CDEWinFormPresenterTest
         public override void RunBeforeEveryTest()
         {
             base.RunBeforeEveryTest();
-            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
         }
 
         //////////////////////////////////////////////////////////////////////////////////////////
@@ -434,7 +434,7 @@ public class CDEWinFormPresenterTest
         {
             base.RunBeforeEveryTest();
             InitRootWithFile();
-            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
         }
 
         [Test]
