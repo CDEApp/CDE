@@ -30,7 +30,7 @@ public static class Program
     public static void InitProgram(string[] args)
     {
         _container = AppContainerBuilder.BuildContainer(args);
-        Mediatr = _container.Resolve<IMediator>();
+        Mediatr = Resolve<IMediator>();
     }
 
     private static ParserResult<object> GetParserResult(IEnumerable<string> args)
@@ -62,28 +62,28 @@ public static class Program
         {
             using (Operation.Time("App"))
             {
-                var findService = _container.Resolve<IFindService>();
+                var findService = Resolve<IFindService>();
                 var parsedResult = GetParserResult(args)
                     .WithParsed<ScanOptions>(CreateCache)
                     .WithParsed<FindOptions>(opts =>
                     {
                         findService.Find(opts.Value, "--find",
-                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<FindPathOptions>(opts =>
                     {
                         findService.Find(opts.Value, "--findpath",
-                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<GrepOptions>(opts =>
                     {
                         findService.Find(opts.Value, "--grep",
-                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<GrepPathOptions>(opts =>
                     {
                         findService.Find(opts.Value, "--greppath",
-                            _container.Resolve<ICatalogRepository>().LoadCurrentDirCache());
+                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
                     })
                     .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGrepPath, opts.Value))
                     .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
@@ -93,7 +93,7 @@ public static class Program
                     .WithParsed<TreeDumpOptions>(_ => PrintPathsHaveHashEnumerator())
                     .WithParsed<LoadWaitOptions>(_ =>
                     {
-                        _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+                        Resolve<ICatalogRepository>().LoadCurrentDirCache();
                         Console.ReadLine();
                     })
                     .WithParsed<ReplOptions>(_ => InvokeRepl())
@@ -107,6 +107,11 @@ public static class Program
         {
             Log.CloseAndFlush();
         }
+    }
+
+    private static T Resolve<T>()
+    {
+        return _container.Resolve<T>();
     }
 
     private static void InvokeRepl()
@@ -129,7 +134,7 @@ public static class Program
                 case "help":
                 case "?":
                     Console.WriteLine("Builtin Commands:");
-                    Console.WriteLine("  quit - quit, ");
+                    Console.WriteLine("  quit - quit,");
                     Console.WriteLine("  help - show help, ? - show help");
                     Console.WriteLine("  history - show history, ! - show history");
                     Console.WriteLine("Keystrokes:");
@@ -156,8 +161,8 @@ public static class Program
     // repl = read-eval-print-loop
     private static void FindRepl(string paramString, string firstPattern)
     {
-        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
-        var findService = _container.Resolve<IFindService>();
+        var rootEntries = Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        var findService = Resolve<IFindService>();
 
         if (!string.IsNullOrEmpty(firstPattern))
             findService.Find(firstPattern, paramString, rootEntries);
@@ -211,15 +216,14 @@ public static class Program
 
     private static void Update(UpdateOptions opts)
     {
-        var task = Task.Run(async () =>
-            await Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description })
-                .ConfigureAwait(false));
+        var task = Task.Run(() =>
+            Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description }));
         task.Wait();
     }
 
     private static void FindDupes()
     {
-        var task = Task.Run(async () => await Mediatr.Send(new FindDuplicatesCommand()).ConfigureAwait(false));
+        var task = Task.Run(() => Mediatr.Send(new FindDuplicatesCommand()));
         task.Wait();
     }
 
@@ -239,7 +243,7 @@ public static class Program
 
     private static void PrintPathsHaveHashEnumerator()
     {
-        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        var rootEntries = Resolve<ICatalogRepository>().LoadCurrentDirCache();
         foreach (var pairDirEntry in EntryHelper.GetPairDirEntries(rootEntries))
         {
             var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
@@ -254,7 +258,7 @@ public static class Program
 
     private static void FindPopulous(int minimumCount)
     {
-        var rootEntries = _container.Resolve<ICatalogRepository>().LoadCurrentDirCache();
+        var rootEntries = Resolve<ICatalogRepository>().LoadCurrentDirCache();
         var entries = EntryHelper.GetDirEntries(rootEntries);
         var largeEntries = entries
             .Where(e => e.Children != null && e.Children.Count > minimumCount)
