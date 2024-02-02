@@ -1,15 +1,10 @@
 ﻿using System;
-using System.Runtime.Serialization;
 
 namespace cdeLib.Infrastructure.Exceptions;
 
 public class CatalogReadException : Exception
 {
     public CatalogReadException()
-    {
-    }
-
-    protected CatalogReadException(SerializationInfo info, StreamingContext context) : base(info, context)
     {
     }
 
