@@ -1122,7 +1122,7 @@ namespace Mono.Terminal
 			a.Cancel = true;
 		
 			// Interrupt the editor
-			edit_thread.Abort();
+			edit_thread.Interrupt();
 		}
 
 		//
@@ -1176,12 +1176,13 @@ namespace Mono.Terminal
 			}
 		}
 
-        private void EditLoop()
+        private void EditLoop(CancellationToken cancellationToken)
 		{
 			ConsoleKeyInfo cki;
 
 			while (!done)
 			{
+				cancellationToken.ThrowIfCancellationRequested();
 				ConsoleModifiers mod;
 
 				cki = Console.ReadKey(true);
@@ -1283,16 +1284,19 @@ namespace Mono.Terminal
 			InitText(initial);
 			history.Append(initial);
 
+			CancellationTokenSource cts = new CancellationTokenSource();
+			
 			do
 			{
 				try
 				{
-					EditLoop();
+					EditLoop(cts.Token);
 				}
-				catch (ThreadAbortException)
+				catch (OperationCanceledException)
 				{
+					cts = new CancellationTokenSource(); // Reset cancellation token source
 					searching = 0;
-					Thread.ResetAbort();
+					//Thread.ResetAbort();
 					Console.WriteLine();
 					SetPrompt(prompt);
 					SetText("");
