@@ -14,6 +14,7 @@ using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
+using NUnit.Framework.Legacy;
 using Serilog;
 using ILogger = cdeLib.Infrastructure.ILogger;
 
@@ -205,7 +206,7 @@ internal class DuplicationTest
         var itemToVerify = dupePairEnum.SingleOrDefault(x => x.Key.Path.Contains("CDE_testFile"));
 
         //Assert we have at least a count of the number of dupe files we originally created.
-        Assert.GreaterOrEqual(itemToVerify.Value.Count, dupeCount);
+        ClassicAssert.GreaterOrEqual(itemToVerify.Value.Count, dupeCount);
 
         //TODO: Cleanup test.
     }

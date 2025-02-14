@@ -135,6 +135,7 @@ public partial class LoaderForm : Form
         return rootEntries.ToList();
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public List<RootEntry> RootEntries { get; private set; }
 }
 
