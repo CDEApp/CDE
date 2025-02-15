@@ -8,6 +8,7 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeWin.Cfg;
 using Util;
+using System.ComponentModel;
 
 namespace cdeWin;
 /* Passive view hackery http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view 
@@ -67,28 +68,47 @@ public partial class CDEWinForm : Form, ICDEWinForm
     public event EventAction OnDirectoryTreeContextMenuExploreAltClick;
     public event EventAction OnDirectoryTreeContextMenuPropertiesClick;
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public TreeNode DirectoryTreeViewActiveAfterSelectNode { get; set; }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper FromDate { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper ToDate { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper FromHour { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper ToHour { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper FromSize { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper ToSize { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper NotOlderThan { get; set; }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DropDownHelper<int> LimitResultHelper { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DropDownHelper<int> FromSizeDropDownHelper { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DropDownHelper<int> ToSizeDropDownHelper { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DropDownHelper<AddTimeUnitFunc> NotOlderThanDropDownHelper { get; set; }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public UpDownHelper FromSizeValue { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public UpDownHelper ToSizeValue { get; set; }
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public UpDownHelper NotOlderThanValue { get; set; }
 
     public event EventAction OnReloadCatalogs;
@@ -434,18 +454,24 @@ public partial class CDEWinForm : Form, ICDEWinForm
         OnDirectoryTreeViewBeforeExpandNode();
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string Pattern
     {
         get => patternComboBox.Text;
         set => patternComboBox.Text = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool RegexMode
     {
         get => regexCheckbox.Checked;
         set => regexCheckbox.Checked = value;
     }
 
+    /// <summary>
+    /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
+    /// </summary>
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     /// <summary>
     /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
     /// </summary>
@@ -473,12 +499,14 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public bool IncludeFolders => findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 2;
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int FindEntryFilter
     {
         get => findComboBox.SelectedIndex;
         set => findComboBox.SelectedIndex = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool IncludePathInSearch
     {
         get => whatToSearchComboBox.SelectedIndex == 0;
@@ -563,42 +591,49 @@ public partial class CDEWinForm : Form, ICDEWinForm
         // ReSharper restore RedundantCheckBeforeAssignment
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public float DirectoryPanelSplitterRatio
     {
         get => directorySplitContainer.GetSplitterRatio();
         set => directorySplitContainer.SetSplitterRatio(value);
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string SetDirectoryPathTextBox
     {
         get => directoryPathTextBox.Text;
         set => directoryPathTextBox.Text = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public TreeNode DirectoryTreeViewSelectedNode
     {
         get => directoryTreeView.SelectedNode;
         set => directoryTreeView.SelectedNode = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool SearchButtonEnable
     {
         get => searchButton.Enabled;
         set => searchButton.Enabled = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public string SearchButtonText
     {
         get => searchButton.Text;
         set => searchButton.Text = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public Color SearchButtonBackColor
     {
         get => searchButton.BackColor;
         set => searchButton.BackColor = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool IsAdvancedSearchMode
     {
         get => advancedSearchCheckBox.Checked;
@@ -610,24 +645,27 @@ public partial class CDEWinForm : Form, ICDEWinForm
         }
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DateTime FromDateValue
     {
         get => fromDateTimePicker.Value;
         set => fromDateTimePicker.Value = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DateTime ToDateValue
     {
         get => toDateTimePicker.Value;
         set => toDateTimePicker.Value = value;
     }
 
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DateTime FromHourValue
     {
         get => fromHourTimePicker.Value;
         set => fromHourTimePicker.Value = value;
     }
-
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public DateTime ToHourValue
     {
         get => toHourTimePicker.Value;

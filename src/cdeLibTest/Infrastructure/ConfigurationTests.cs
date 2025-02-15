@@ -2,6 +2,7 @@ using cde.Config;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 
 namespace cdeLibTest.Infrastructure;
 
@@ -14,6 +15,6 @@ public class ConfigurationTests
         var config = configurationBuilder.Build(System.Array.Empty<string>());
         IConfiguration configuration = new Configuration(config);
         var sut = configuration.ProgressUpdateInterval;
-        Assert.IsNotNull(sut);
+        ClassicAssert.IsNotNull(sut);
     }
 }

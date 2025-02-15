@@ -369,9 +369,29 @@ public class DirEntry : ICommonEntry
     [Key(5)]
     public virtual string Path
     {
-        get => _path;
-        set => _path = string.Intern(value);
+        //NOTE: Separating the extension from the path is more memory efficient (300MB saved on 6000MB load) but slower.
+        get
+        {
+            //return _path;
+            return string.IsNullOrEmpty(_extension) ? _path : $"{_path}{_extension}";
+        }
+        set
+        {
+            //_path = string.Intern(value);
+            var ext = System.IO.Path.GetExtension(value);
+            if (!string.IsNullOrEmpty(ext))
+            {
+                _extension = string.Intern(ext);
+                _path = string.Intern(value[..^ext.Length]);
+            }
+            else
+            {
+                _path = string.Intern(value);    
+            }
+        }
     }
+
+    private string _extension;
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
@@ -520,7 +540,7 @@ public class DirEntry : ICommonEntry
     {
         // This probably needs to check all parent paths if this is a root entry.
         // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
-        return (!string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."))) || ParentCommonEntry is
+        return (!string.IsNullOrEmpty(Path) && (Path.EndsWith(' ') || Path.EndsWith('.'))) || ParentCommonEntry is
         {
             PathProblem: true
         };

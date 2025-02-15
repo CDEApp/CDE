@@ -11,6 +11,7 @@ using cdeLib.Infrastructure.Hashing;
 using cdeLibTest.TestHelpers;
 using NSubstitute;
 using NUnit.Framework;
+using NUnit.Framework.Legacy;
 using Serilog;
 using ILogger = cdeLib.Infrastructure.ILogger;
 
@@ -130,7 +131,7 @@ public class DuplicationTests
     {
         var fullFileName = Path.Combine(_testDir, "testset2");
         var hash = await _hashHelper.GetHashResponseFromFile(fullFileName, null);
-        Assert.IsNotNull(hash.Hash);
+        ClassicAssert.IsNotNull(hash.Hash);
     }
     // ReSharper restore InconsistentNaming
 }

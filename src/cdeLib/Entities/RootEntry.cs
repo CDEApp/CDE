@@ -260,7 +260,7 @@ public class RootEntry : object, ICommonEntry
                 path = path.TrimEnd(System.IO.Path.DirectorySeparatorChar);
             }
 
-            path = char.ToUpper(path[0]) + path.Substring(1);
+            path = char.ToUpper(path[0]) + path[1..];
         }
 
         return path;
@@ -418,7 +418,7 @@ public class RootEntry : object, ICommonEntry
         get => DateTime.FromBinary(ModifiedTicks);
     }
 
-    [ProtoMember(12, IsRequired = false)] // is there a better default value than 0 here
+    [ProtoMember(12, IsRequired = false)]
     [FlatBufferItem(12)]
     [Key(12)]
     public virtual Flags BitFields { get; set; }
