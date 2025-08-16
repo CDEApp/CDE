@@ -55,8 +55,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
             if (oldRoot != null)
             {
-                Log.Information("Found cache \"{FileName}\"", re.DefaultFileName);
-                Log.Information("Updating hashes for new scan from cache file");
+                Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", re.DefaultFileName);
                 oldRoot.TraverseTreesCopyHash(re);
             }
 
@@ -68,9 +67,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             }
 
             await _catalogRepository.Save(re).ConfigureAwait(false);
-            Console.WriteLine();
-            Log.Information("Scanned path {Path}", re.Path);
-            Log.Information("Saved to {Path}", re.DefaultFileName);
+            Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path,re.DefaultFileName);
             Log.Information(
                 "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
                 re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));

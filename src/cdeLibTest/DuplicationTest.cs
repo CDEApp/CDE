@@ -205,7 +205,7 @@ internal class DuplicationTest
 
         var itemToVerify = dupePairEnum.SingleOrDefault(x => x.Key.Path.Contains("CDE_testFile"));
 
-        //Assert we have at least a count of the number of dupe files we originally created.
+        // Assert we have at least a count of the number of dupe files we originally created.
         ClassicAssert.GreaterOrEqual(itemToVerify.Value.Count, dupeCount);
 
         //TODO: Cleanup test.

@@ -31,8 +31,8 @@ public class FindService : IFindService
 
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
-        var regexMode = param == ParamGrep || param == ParamGrepPath;
-        var includePath = param == ParamGrepPath || param == ParamFindPath;
+        var regexMode = param is ParamGrep or ParamGrepPath;
+        var includePath = param is ParamGrepPath or ParamFindPath;
         Find(pattern, regexMode, includePath, rootEntries);
     }
 
