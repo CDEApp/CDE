@@ -14,7 +14,7 @@ public class CommonEntryEqualityComparer : IEqualityComparer<ICommonEntry>
         return StaticGetHashCode(obj);
     }
 
-    public static bool StaticEquals(ICommonEntry x, ICommonEntry y)
+    private static bool StaticEquals(ICommonEntry x, ICommonEntry y)
     {
         if (x == null || y == null
                       || !x.IsHashDone || !y.IsHashDone)
@@ -26,7 +26,7 @@ public class CommonEntryEqualityComparer : IEqualityComparer<ICommonEntry>
                && x.Size == y.Size;
     }
 
-    public static int StaticGetHashCode(ICommonEntry obj)
+    private static int StaticGetHashCode(ICommonEntry obj)
     {
         // quite likely a bad choice for hash.
         // if Hash not set then. avoid using it...
@@ -54,7 +54,7 @@ public class DirEntryEqualityComparer : IEqualityComparer<DirEntry>
         return StaticGetHashCode(obj);
     }
 
-    public static bool StaticEquals(DirEntry x, DirEntry y)
+    private static bool StaticEquals(DirEntry x, DirEntry y)
     {
         if (x == null || y == null
                       || !x.IsHashDone || !y.IsHashDone)
@@ -66,10 +66,10 @@ public class DirEntryEqualityComparer : IEqualityComparer<DirEntry>
                && x.Size == y.Size;
     }
 
-    public static int StaticGetHashCode(DirEntry obj)
+    private static int StaticGetHashCode(DirEntry obj)
     {
         // quite likely a bad choice for hash.
-        // if Hash not set then. avoid using it...
+        // if Hash is not set then. avoid using it...
         if (obj.IsHashDone)
         {
             return (Hash16.EqualityComparer.StaticGetHashCode(obj.Hash) * 31 +
