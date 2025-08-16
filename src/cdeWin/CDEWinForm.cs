@@ -515,17 +515,17 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public void SetSearchResultStatus(int i)
     {
-        searchResultsStatus.Text = "Search Results " + i.ToString(CultureInfo.InvariantCulture);
+        searchResultsStatus.Text = @"Search Results " + i.ToString(CultureInfo.InvariantCulture);
     }
 
     public void SetTotalFileEntriesLoadedStatus(int i)
     {
-        totalFileEntriesStatus.Text = "Entries " + i.ToString(CultureInfo.InvariantCulture);
+        totalFileEntriesStatus.Text = @"Entries " + i.ToString(CultureInfo.InvariantCulture);
     }
 
     public void SetCatalogsLoadedStatus(int i)
     {
-        catalogsLoadedStatus.Text = "Catalogs " + i.ToString(CultureInfo.InvariantCulture);
+        catalogsLoadedStatus.Text = @"Catalogs " + i.ToString(CultureInfo.InvariantCulture);
     }
 
     public void SetMemoryStatus(string msg)
