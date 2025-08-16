@@ -879,7 +879,7 @@ public class RootEntry : object, ICommonEntry
     public IList<ICommonEntry> GetListFromRoot()
     {
         var activatedDirEntryList = new List<ICommonEntry>(8);
-        for (var entry = this as ICommonEntry; entry != null; entry = entry.ParentCommonEntry)
+        for (ICommonEntry entry = this; entry != null; entry = entry.ParentCommonEntry)
         {
             activatedDirEntryList.Add(entry);
         }
