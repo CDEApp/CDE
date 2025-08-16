@@ -49,6 +49,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         : base(form)
     {
         var timeIt = new TimeIt();
+        var watch = Stopwatch.StartNew();
         _clientForm = form;
         _config = config;
         _loadCatalogService = loadCatalogService;
@@ -62,19 +63,18 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         RegisterListViewSorters();
         SetCatalogListView();
         SetMemoryStatus();
-
-        InitialiseLog(timeIt);
+        InitialiseLog();
+        _clientForm.AddLine("Total Load time was {0} msec", watch.ElapsedMilliseconds);
     }
 
     private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
     {
-        return _loadCatalogService?.LoadRootEntries(config, timeIt);
+        return _loadCatalogService?.LoadRootEntries(config);
     }
 
-    private void InitialiseLog(TimeIt timeIt)
+    private void InitialiseLog()
     {
         _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
-        LogTimeIt(timeIt);
     }
 
     private void LogTimeIt(TimeIt timeIt)
@@ -113,6 +113,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             // ReSharper disable once PossibleLossOfFraction
             memory = proc.PrivateMemorySize64 / (1024 * 1024);
         }
+
         _clientForm.SetMemoryStatus($"Memory used: {memory} MB");
     }
 
@@ -591,6 +592,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
                 {
                     val += " R";
                 }
+
                 vals[1] = val + ">";
             }
         }
@@ -620,6 +622,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         {
             SetNewDirectoryRoot(newRoot);
         }
+
         _clientForm.SelectDirectoryPane();
     }
 
@@ -760,7 +763,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
                 break;
 
             case 4: // SearchResult ListView Path column
-                compareResult = string.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, StringComparison.OrdinalIgnoreCase);
+                compareResult = string.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
+                    StringComparison.OrdinalIgnoreCase);
                 if (compareResult == 0)
                 {
                     compareResult = string.Compare(de1.Path, de2.Path, StringComparison.OrdinalIgnoreCase);
@@ -1036,7 +1040,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var compareResult = column switch
         {
             0 => string.Compare(re1.Path, re2.Path, StringComparison.Ordinal),
-            1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName, string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
+            1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName,
+                string.IsNullOrEmpty(re2.VolumeName) ? "" : re2.VolumeName, StringComparison.Ordinal),
             2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
             3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
             4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),

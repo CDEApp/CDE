@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Util;
 using cdeLib.Entities;
 using cdeWin.Cfg;
 using Serilog;
@@ -8,7 +7,7 @@ namespace cdeWin;
 
 public interface ILoadCatalogService
 {
-    List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt);
+    List<RootEntry> LoadRootEntries(IConfig config);
 }
 
 public class LoadCatalogService : ILoadCatalogService
@@ -20,7 +19,7 @@ public class LoadCatalogService : ILoadCatalogService
         _logger = logger;
     }
 
-    public List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
+    public List<RootEntry> LoadRootEntries(IConfig config)
     {
         List<RootEntry> rootEntries;
         var cachePathList = new[] { ".", config.ConfigPath };
@@ -35,6 +34,7 @@ public class LoadCatalogService : ILoadCatalogService
             rootEntries = loaderForm.RootEntries;
             loaderForm.Dispose();
         }
+
         return rootEntries;
     }
 }

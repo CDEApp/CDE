@@ -23,7 +23,7 @@ public class TimeIt
     /// </summary>
     public TimeIt()
     {
-        _runningLabel = String.Empty;
+        _runningLabel = string.Empty;
         _watch = new Stopwatch();
         _elapsedList = new List<LabelElapsed>(20);
     }

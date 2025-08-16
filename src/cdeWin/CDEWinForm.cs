@@ -241,7 +241,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
         searchButton.Click += (s, e) => OnSearch();
         // ReSharper restore PossibleNullReferenceException
-        SetToolTip(searchButton, "Cancel Search is not immediate, wait for a progress update.");
+        SetToolTip(searchButton, "Cancel search is not immediate, wait for a progress update.");
 
         // ReSharper disable once PossibleNullReferenceException
         reloadCatalogsButton.Click += (s, e) => OnReloadCatalogs();

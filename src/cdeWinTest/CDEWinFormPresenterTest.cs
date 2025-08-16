@@ -8,7 +8,6 @@ using cdeWin;
 using cdeWin.Cfg;
 using JetBrains.Annotations;
 using NUnit.Framework;
-using Util;
 using NSubstitute;
 
 namespace cdeWinTest;
@@ -85,7 +84,7 @@ public class CDEWinFormPresenterTest
         {
             var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
             _loadCatalogsService
-                .LoadRootEntries(Arg.Any<IConfig>(), Arg.Any<TimeIt>())
+                .LoadRootEntries(Arg.Any<IConfig>())
                 .Returns(_rootList);
 
             var _ = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
@@ -326,7 +325,7 @@ public class CDEWinFormPresenterTest
             _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM/dd HH:mm:ss}");
             InitRootWithFile();
             var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
-            _loadCatalogsService.LoadRootEntries(Arg.Any<IConfig>(), Arg.Any<TimeIt>())
+            _loadCatalogsService.LoadRootEntries(Arg.Any<IConfig>())
                 .Returns(_rootList);
             _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
         }
