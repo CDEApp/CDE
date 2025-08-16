@@ -50,9 +50,7 @@ public class TimePartialParameter
         }
     }
 
-    public TimePartialParameter(string str) : this(str, Format) { }
-
-    public TimePartialParameter(string str, string activeFormat)
+    public TimePartialParameter(string str, string activeFormat = Format)
     {
         var activeFormat1 = activeFormat;
         var splitOnColon = str.Split(':');
@@ -65,15 +63,15 @@ public class TimePartialParameter
         }
         _hour = hour;
 
-        if (splitOnColon.Length > 1) // may have hour specified
+        if (splitOnColon.Length > 1) // may have an hour specified
         {
-            if (splitOnColon[1].Length == 0) // just a ':' is allowed with no value. just set hour value.
+            if (splitOnColon[1].Length == 0) // A ':' is allowed with no value. Set the hour value.
             {
                 return;
             }
 
             int.TryParse(splitOnColon[1], out var minute);
-            if (minute == 0 || minute > 59)
+            if (minute is 0 or > 59)
             {
                 _e = new ArgumentException(
                     $"Require valid integer 1-59 or for Minute <MM> as part of format '{activeFormat1}'");
@@ -84,13 +82,13 @@ public class TimePartialParameter
 
         if (splitOnColon.Length > 2) // may have second specified
         {
-            if (splitOnColon[2].Length == 0) // just a ':' is allowed with no value. just set hour and minute value.
+            if (splitOnColon[2].Length == 0) // A ':' is allowed with no value. Set hour and minute value.
             {
                 return;
             }
 
             int.TryParse(splitOnColon[2], out var second);
-            if (second == 0 || second > 59)
+            if (second is 0 or > 59)
             {
                 _e = new ArgumentException(
                     $"Require valid integer 1-59 or for Second <SS> as part of format '{activeFormat1}'");
