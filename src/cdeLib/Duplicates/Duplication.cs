@@ -17,9 +17,9 @@ public class Duplication
     private readonly IConfiguration _configuration;
 
     private readonly Dictionary<ICommonEntry, List<PairDirEntry>> _duplicateFile =
-        new(new CommonEntryEqualityComparer());
+        new(capacity: 16384, new CommonEntryEqualityComparer());
 
-    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new();
+    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new(capacity: 8192);
 
     private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new();
 
@@ -58,9 +58,13 @@ public class Duplication
         _logger.LogInfo("Total files found with at least 1 other file of same length {0}", totalEntriesInSizeDupes);
         _logger.LogInfo("Longest list of same sized files is {0} for size {1} ", longestListLength, longestListSize);
 
-        // flatten
+        // flatten - optimized without LINQ
         _logger.LogDebug("Flatten List..");
-        var flatList = newMatches.SelectMany(dirlist => dirlist.Value).ToList();
+        var flatList = new List<PairDirEntry>(newMatches.Sum(kvp => kvp.Value.Count));
+        foreach (var kvp in newMatches)
+        {
+            flatList.AddRange(kvp.Value);
+        }
         _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // group by volume/network share
@@ -74,11 +78,25 @@ public class Duplication
         //
         // by ordering from largest to smallest the larger files are hashed first
         // so a break of process and then running of dupes is a win for larger files.
-        var descendingFlatList = flatList.OrderByDescending(
-            pde => pde.ChildDE.IsDirectory ? 0 : pde.ChildDE.Size); // directories last
+        // Optimized sorting without LINQ chains
+        flatList.Sort((pde1, pde2) => {
+            var size1 = pde1.ChildDE.IsDirectory ? 0 : pde1.ChildDE.Size;
+            var size2 = pde2.ChildDE.IsDirectory ? 0 : pde2.ChildDE.Size;
+            return size2.CompareTo(size1); // descending
+        });
 
-        var groupedByDirectoryRoot = descendingFlatList
-            .GroupBy(x => System.IO.Directory.GetDirectoryRoot(x.FullPath));
+        // Group by directory root without LINQ
+        var groupedByDirectoryRoot = new Dictionary<string, List<PairDirEntry>>();
+        foreach (var pde in flatList)
+        {
+            var root = System.IO.Directory.GetDirectoryRoot(pde.FullPath);
+            if (!groupedByDirectoryRoot.TryGetValue(root, out var group))
+            {
+                group = new List<PairDirEntry>();
+                groupedByDirectoryRoot[root] = group;
+            }
+            group.Add(pde);
+        }
         _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // parallel at the grouping level, hopefully this is one group per disk.
@@ -95,7 +113,7 @@ public class Duplication
 
         try
         {
-            Parallel.ForEach(groupedByDirectoryRoot, outerOptions, (grp, loopState) =>
+            Parallel.ForEach(groupedByDirectoryRoot.Values, outerOptions, (grp, _) =>
             {
                 var parallelOptions = new ParallelOptions
                 {
@@ -108,7 +126,7 @@ public class Duplication
                 // Then the full hash phase will start and you can hit break again to stop it after a while.
                 // to be able to then run --dupes on the larger hashed files.
                 grp.AsParallel()
-                    .ForEachInApproximateOrder(parallelOptions, async (flatFile, innerLoopState) =>
+                    .ForEachInApproximateOrder(parallelOptions, async (flatFile, _) =>
                     {
                         _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
                         await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
@@ -154,8 +172,31 @@ public class Duplication
         EntryHelper.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
         _logger.LogDebug("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
 
-        // Remove the single values from the dictionary.  DOESN'T SEEM TO CLEAR MEMORY ??? GC Force?
-        _duplicateFileSize.Where(kvp => kvp.Value.Count == 1).ToList().ForEach(x => _duplicateFileSize.Remove(x.Key));
+        // Remove the single values from the dictionary - optimized without LINQ
+        var keysToRemove = CollectionPool.GetStringList();
+        try
+        {
+            foreach (var kvp in _duplicateFileSize)
+            {
+                if (kvp.Value.Count == 1)
+                {
+                    keysToRemove.Add(kvp.Key.ToString());
+                }
+            }
+            
+            // Remove keys in separate loop to avoid modification during enumeration
+            foreach (var keyStr in keysToRemove)
+            {
+                if (long.TryParse(keyStr, out var key))
+                {
+                    _duplicateFileSize.Remove(key);
+                }
+            }
+        }
+        finally
+        {
+            CollectionPool.ReturnStringList(keysToRemove);
+        }
         _logger.LogDebug("Deleted entries from dictionary: {0}, dupeDictCount {1}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
         return _duplicateFileSize;
     }
@@ -167,6 +208,7 @@ public class Duplication
             return true;
         }
 
+        // Create persistent PairDirEntry for storage in dictionary
         var flatDirEntry = new PairDirEntry(ce, de);
         if (_duplicateFileSize.TryGetValue(de.Size, out var value))
         {
@@ -174,7 +216,8 @@ public class Duplication
         }
         else
         {
-            _duplicateFileSize[de.Size] = new List<PairDirEntry> { flatDirEntry };
+            // Pre-allocate list with reasonable capacity for similar-sized files
+            _duplicateFileSize[de.Size] = new List<PairDirEntry>(capacity: 4) { flatDirEntry };
         }
         return true;
     }
@@ -196,19 +239,35 @@ public class Duplication
         var commonEntries = rootEntries as RootEntry[] ?? rootEntries.ToArray();
         EntryHelper.TraverseTreePair(commonEntries, BuildDuplicateListIncludePartialHash);
 
-        var foundDupes = _duplicateFile.Where(d => d.Value.Count > 1).ToArray();
-        var totalEntriesInDupes = foundDupes.Sum(x => x.Value.Count);
-        var longestListLength = foundDupes.Length > 0 ? foundDupes.Max(x => x.Value.Count) : 0;
-        _logger.LogInfo("Found {0} duplication collections.", foundDupes.Length);
+        // Optimized duplicate detection without LINQ
+        var foundDupes = new List<KeyValuePair<ICommonEntry, List<PairDirEntry>>>();
+        var totalEntriesInDupes = 0;
+        var longestListLength = 0;
+        
+        foreach (var kvp in _duplicateFile)
+        {
+            if (kvp.Value.Count > 1)
+            {
+                foundDupes.Add(kvp);
+                totalEntriesInDupes += kvp.Value.Count;
+                if (kvp.Value.Count > longestListLength)
+                {
+                    longestListLength = kvp.Value.Count;
+                }
+            }
+        }
+        _logger.LogInfo("Found {0} duplication collections.", foundDupes.Count);
         _logger.LogInfo("Total files found with at least 1 other file duplicate {0}",
             totalEntriesInDupes);
         _logger.LogInfo("Longest list of duplicate files is {0}", longestListLength);
 
-        foreach (var keyValuePair in foundDupes)
+        // Optimized HashSet population
+        foreach (var kvp in foundDupes)
         {
-            foreach (var pairDirEntry in keyValuePair.Value)
+            var entries = kvp.Value;
+            for (int i = 0; i < entries.Count; i++)
             {
-                _dirEntriesRequiringFullHashing.Add(pairDirEntry.ChildDE);
+                _dirEntriesRequiringFullHashing.Add(entries[i].ChildDE);
             }
         }
         EntryHelper.TraverseTreePair(commonEntries, CalculateFullHash);
@@ -322,6 +381,7 @@ public class Duplication
             return true;
         }
 
+        // Create persistent PairDirEntry for storage in dictionary
         var info = new PairDirEntry(parentEntry, dirEntry);
         if (_duplicateFile.TryGetValue(dirEntry, out var value))
         {
@@ -329,7 +389,8 @@ public class Duplication
         }
         else
         {
-            _duplicateFile[dirEntry] = new List<PairDirEntry> { info };
+            // Pre-allocate list with reasonable capacity for duplicates
+            _duplicateFile[dirEntry] = new List<PairDirEntry>(capacity: 2) { info };
         }
         return true;
     }
@@ -345,19 +406,35 @@ public class Duplication
 
     public void FindDuplicates(IEnumerable<RootEntry> rootEntries)
     {
-        var dupePairs = GetDupePairs(rootEntries)
-            .OrderByDescending(kvp => kvp.Key.Size); // output larger duplicate files earlier
+        var dupePairs = GetDupePairs(rootEntries);
+        
+        // Sort by descending size without LINQ
+        dupePairs.Sort((kvp1, kvp2) => kvp2.Key.Size.CompareTo(kvp1.Key.Size));
+        
         foreach (var dupe in dupePairs)
         {
             _logger.LogInfo("-------------------------------------- {0}", dupe.Key.Size);
-            dupe.Value.ForEach(v => Console.WriteLine("{0}", v.FullPath));
+            var entries = dupe.Value;
+            foreach (var t in entries)
+            {
+                Console.WriteLine("{0}", t.FullPath);
+            }
         }
     }
 
-    public IList<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
+    public List<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
     {
         EntryHelper.TraverseTreePair(rootEntries, BuildDuplicateList);
-        var moreThanOneFile = _duplicateFile.Where(d => d.Value.Count > 1).ToList();
+        
+        // Optimized filtering without LINQ
+        var moreThanOneFile = new List<KeyValuePair<ICommonEntry, List<PairDirEntry>>>();
+        foreach (var kvp in _duplicateFile)
+        {
+            if (kvp.Value.Count > 1)
+            {
+                moreThanOneFile.Add(kvp);
+            }
+        }
 
         _logger.LogInfo("Count of list of all hashes of files with same sizes {0}",
             _duplicateFile.Count);
