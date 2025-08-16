@@ -259,7 +259,7 @@ public class DirEntry : ICommonEntry
                 // the cast breaks this.
                 var sizeCompare = Size.CompareTo(de.Size);
                 return sizeCompare == 0
-                    ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+                    ? string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
                     : sizeCompare;
             }
         }
@@ -293,7 +293,7 @@ public class DirEntry : ICommonEntry
         {
             true when !de.IsDirectory => -1,
             false when de.IsDirectory => 1,
-            _ => DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
         };
     }
 
@@ -304,7 +304,7 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
+        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
     }
 
     // can this be done with TraverseTree ?

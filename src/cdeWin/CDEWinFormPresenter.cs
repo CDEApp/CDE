@@ -752,18 +752,17 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
                 break;
 
             case 3:
-                compareResult = _config.MyCompareInfo.Compare(
+                compareResult = string.Compare(
                     pde1.GetRootEntry().ActualFileName,
                     pde2.GetRootEntry().ActualFileName,
-                    _config.MyCompareOptions);
+                    StringComparison.OrdinalIgnoreCase);
                 break;
 
             case 4: // SearchResult ListView Path column
-                compareResult = _config.MyCompareInfo.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
-                    _config.MyCompareOptions);
+                compareResult = string.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath, StringComparison.OrdinalIgnoreCase);
                 if (compareResult == 0)
                 {
-                    compareResult = _config.MyCompareInfo.Compare(de1.Path, de2.Path, _config.MyCompareOptions);
+                    compareResult = string.Compare(de1.Path, de2.Path, StringComparison.OrdinalIgnoreCase);
                 }
 
                 break;

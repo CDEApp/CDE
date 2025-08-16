@@ -614,7 +614,7 @@ public class RootEntry : object, ICommonEntry
         // the cast breaks this.
         var sizeCompare = Size.CompareTo(de.Size);
         return sizeCompare == 0
-            ? DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions)
+            ? string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
             : sizeCompare;
     }
 
@@ -661,7 +661,7 @@ public class RootEntry : object, ICommonEntry
             return 1; // this after de
         }
 
-        return DirEntryConsts.MyCompareInfo.Compare(Path, de.Path, DirEntryConsts.MyCompareOptions);
+        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
     }
 
     // can this be done with TraverseTree ?

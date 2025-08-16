@@ -69,7 +69,7 @@ public class DirEntryEqualityComparer : IEqualityComparer<DirEntry>
     private static int StaticGetHashCode(DirEntry obj)
     {
         // quite likely a bad choice for hash.
-        // if Hash is not set then. avoid using it...
+        // if Hash is not set, then avoid using it.
         if (obj.IsHashDone)
         {
             return (Hash16.EqualityComparer.StaticGetHashCode(obj.Hash) * 31 +

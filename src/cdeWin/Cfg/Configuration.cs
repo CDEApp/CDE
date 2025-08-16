@@ -442,12 +442,8 @@ public class Config : IConfig
         return lvc?.Columns?.Count ?? 0;
     }
 
-    public CompareInfo MyCompareInfo => DirEntryConsts.MyCompareInfo;
-
-    public CompareOptions MyCompareOptions => DirEntryConsts.MyCompareOptions;
-
     public int CompareWithInfo(string s1, string s2)
     {
-        return DirEntryConsts.MyCompareInfo.Compare(s1, s2, DirEntryConsts.MyCompareOptions);
+        return string.Compare(s1, s2, StringComparison.OrdinalIgnoreCase);
     }
 }
