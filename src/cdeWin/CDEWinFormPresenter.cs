@@ -14,9 +14,7 @@ using cdeWin.Cfg;
 
 namespace cdeWin;
 
-public interface ICDEWinFormPresenter : IPresenter
-{
-}
+public interface ICDEWinFormPresenter : IPresenter;
 
 public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 {
@@ -523,7 +521,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         return _clientForm.SearchResultListViewHelper.SetList(list);
     }
 
-    public void CancelSearch()
+    private void CancelSearch()
     {
         _bgWorker?.CancelAsync();
     }
@@ -554,11 +552,11 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         SetDirectoryListView((ICommonEntry)selectedNode.Tag);
     }
 
-    public void SetDirectoryListView(ICommonEntry commonEntry)
+    private void SetDirectoryListView(ICommonEntry commonEntry)
     {
         _directoryListCommonEntry = commonEntry;
         var directoryHelper = _clientForm.DirectoryListViewHelper;
-        _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList());
+        _directoryList = new List<ICommonEntry>(commonEntry.Children?.ToList() ?? []);
         directoryHelper.SetList(_directoryList);
         directoryHelper.SortList();
         _clientForm.SetDirectoryPathTextBox = commonEntry.FullPath;
@@ -1037,18 +1035,18 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var column = catalogHelper.SortColumn;
         var compareResult = column switch
         {
-            0 => re1.Path.CompareTo(re2.Path),
+            0 => string.Compare(re1.Path, re2.Path, StringComparison.Ordinal),
             1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName, string.IsNullOrEmpty(re2.VolumeName) ? "": re2.VolumeName, StringComparison.Ordinal),
             2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
             3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
             4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
-            5 => re1.DriveLetterHint.CompareTo(re2.DriveLetterHint),
+            5 => string.Compare(re1.DriveLetterHint, re2.DriveLetterHint, StringComparison.Ordinal),
             6 => re1.Size.CompareTo(re2.Size),
             7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
             8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
             9 => re1.ScanStartUTC.CompareTo(re2.ScanStartUTC),
             10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
-            11 => re1.ActualFileName.CompareTo(re2.ActualFileName),
+            11 => string.Compare(re1.ActualFileName, re2.ActualFileName, StringComparison.Ordinal),
             12 => re1.DescriptionCompareTo(re2, _config),
             _ => throw new Exception($"Problem column {column} not handled for sort.")
         };
