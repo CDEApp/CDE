@@ -84,7 +84,7 @@ public class FileStreamManager : IDisposable
         {
             await using var stream = CreateReadStream(filePath);
             var buffer = new byte[stream.Length];
-            await stream.ReadAsync(buffer, 0, buffer.Length);
+            await stream.ReadExactlyAsync(buffer);
             return buffer;
         }
         finally
@@ -138,6 +138,7 @@ public class FileStreamManager : IDisposable
 /// </summary>
 public static class FileStreams
 {
+    // ReSharper disable once InconsistentNaming
     private static readonly Lazy<FileStreamManager> _instance = 
         new(() => new FileStreamManager(), LazyThreadSafetyMode.ExecutionAndPublication);
 
