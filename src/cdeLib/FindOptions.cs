@@ -36,12 +36,16 @@ public class FindOptions
     public bool NotOlderThanEnable { get; set; }
     public DateTime NotOlderThan { get; set; }
     public int ProgressEnd { get; set; }
-    public int ProgressCount => _progressCount[0];
-    private readonly int[] _progressCount = [0];
+    private int _threadSafeProgressCount;
+    private volatile int _lastReportedProgress;
+    
+    private readonly int[] _dummyProgressCount = new int[1];
     public int SkipCount { get; set; }
+    
+    public int ProgressCount => _threadSafeProgressCount;
 
     /// <summary>
-    /// Called for every entry that matches predicate entry.
+    /// Called for every entry that matches the predicate entry.
     /// </summary>
     public TraverseFunc VisitorFunc { get; set; }
 
@@ -79,10 +83,10 @@ public class FindOptions
         // ReSharper disable PossibleMultipleEnumeration
         ProgressEnd = rootEntries.TotalFileEntries();
         // ReSharper restore PossibleMultipleEnumeration
-        ProgressFunc(_progressCount[0], ProgressEnd); // Start of process Progress report.
+        ProgressFunc(_threadSafeProgressCount, ProgressEnd); // Start of process Progress report.
         PatternMatcher = GetPatternMatcher();
 
-        var findFunc = GetFindFunc(_progressCount, limitCount);
+        var findFunc = GetFindFunc(_dummyProgressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
 
         var watch = Stopwatch.StartNew();
@@ -91,7 +95,7 @@ public class FindOptions
             //TODO: Parallel breaks the progress percentage, need to fix.
             EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
         });
-        ProgressFunc(_progressCount[0], ProgressEnd); // end of Progress
+        ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
         watch.Stop();
         Debug.WriteLine($"Execution Time: {watch.ElapsedMilliseconds} ms");
     }
@@ -128,17 +132,20 @@ public class FindOptions
 
         bool FindFunc(ICommonEntry p, ICommonEntry dirEntry)
         {
-            Interlocked.Increment(ref progressCount[0]);
-            if (progressCount[0] <= SkipCount)
+            var currentCount = Interlocked.Increment(ref _threadSafeProgressCount);
+            progressCount[0] = currentCount;
+            
+            if (currentCount <= SkipCount)
             {
                 // skip enforced
                 return true;
             }
 
-            if (progressCount[0] % ProgressModifier == 0)
+            // Use lock-free progress reporting with reduced frequency
+            if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
             {
-                ProgressFunc(progressCount[0], ProgressEnd);
-                // only check for cancel on progress modifier.
+                ProgressFunc(currentCount, ProgressEnd);
+                // only check for cancel on progress reports.
                 if (Worker?.CancellationPending == true)
                 {
                     return false; // end the find.
@@ -156,6 +163,27 @@ public class FindOptions
         }
 
         return FindFunc;
+    }
+    
+    public void ResetProgress()
+    {
+        _threadSafeProgressCount = 0;
+        _lastReportedProgress = 0;
+    }
+    
+    private bool ShouldReportProgress(int currentCount)
+    {
+        // Report progress every ProgressModifier entries, but use lock-free comparison
+        if (currentCount % ProgressModifier != 0)
+            return false;
+            
+        // Only report if we haven't reported this value recently (reduces duplicate reports in parallel)
+        var lastReported = _lastReportedProgress;
+        if (currentCount <= lastReported + ProgressModifier / 2)
+            return false;
+            
+        // Try to update last reported (lock-free)
+        return Interlocked.CompareExchange(ref _lastReportedProgress, currentCount, lastReported) == lastReported;
     }
 
     public TraverseFunc GetFindPredicate()

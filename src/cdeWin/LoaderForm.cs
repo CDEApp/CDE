@@ -104,7 +104,9 @@ public partial class LoaderForm : Form
         var repo = new CatalogRepository(Log.Logger);
         var cacheFiles = repo.GetCacheFileList(_cdeList);
         var totalFiles = cacheFiles.Count;
-        var fileCounter = 0;
+        var volatileFileCounter = 0;
+        var progressReportThreshold = Math.Max(1, totalFiles / 20);
+        
         UpdateUI(() =>
         {
             barLoading.Step = 1;
@@ -119,11 +121,14 @@ public partial class LoaderForm : Form
                 cacheFile =>
                 {
                     var re = repo.LoadDirCache(cacheFile);
-                    Interlocked.Increment(ref fileCounter);
+                    var currentCount = Interlocked.Increment(ref volatileFileCounter);
                     rootEntries.Push(re);
 
-                    worker.ReportProgress((int) (fileCounter / (float) totalFiles * 100),
-                        new LoadingState(fileCounter, totalFiles));
+                    if (currentCount % progressReportThreshold == 0)
+                    {
+                        worker.ReportProgress((int) (currentCount / (float) totalFiles * 100),
+                            new LoadingState(currentCount, totalFiles));
+                    }
                 });
         }
         catch (AggregateException ex)
@@ -131,7 +136,8 @@ public partial class LoaderForm : Form
             _logger.Error(ex, "Error loading catalogs");
             throw;
         }
-
+        
+        worker.ReportProgress(100, new LoadingState(volatileFileCounter, totalFiles));
         return rootEntries.ToList();
     }
 

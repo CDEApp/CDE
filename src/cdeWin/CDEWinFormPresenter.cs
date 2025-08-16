@@ -267,19 +267,23 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             return;
         }
 
+        // Change button to "Cancel Search" immediately for responsive UI
+        SetSearchButton(false);
+        Application.DoEvents(); // Force UI refresh
+
         if (RegexIsBad()
             || FromToSizeInvalid()
             || FromToDateInvalid()
             || FromToHourInvalid())
         {
+            // Reset button if validation fails
+            SetSearchButton(true);
             return;
         }
 
         _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
         var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
-
-        SetSearchButton(false);
 
         _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
         _bgWorker.DoWork += BgWorkerDoWork;
