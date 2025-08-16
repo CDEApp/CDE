@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -96,10 +97,10 @@ public class FindOptions
             return;
         }
 
-        int[] limitCount = { LimitResultCount };
+        int[] limitCount = [LimitResultCount];
         if (ProgressFunc == null || ProgressModifier == 0)
         {
-            // dummy func and huge progressModifier so wont call progressFunc anyway.
+            // dummy func and huge progressModifier so won't call progressFunc anyway.
             ProgressFunc = delegate { };
             ProgressModifier = int.MaxValue;
         }
@@ -110,16 +111,25 @@ public class FindOptions
         ProgressFunc(_threadSafeProgressCount, ProgressEnd); // Start of process Progress report.
         PatternMatcher = GetPatternMatcher();
 
+        var parallelOptions = new ParallelOptions
+        {
+            MaxDegreeOfParallelism = Math.Min(Environment.ProcessorCount, 8),
+            CancellationToken = CancellationToken.None
+        };
+
+        // Pre-sort for better initial distribution
+        var sortedRootEntries = rootEntries.OrderByDescending(x => x.DirEntryCount).ToArray();
+
         var findFunc = GetFindFunc(_dummyProgressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
 
-        var watch = Stopwatch.StartNew();
-        Parallel.ForEach(rootEntries, (rootEntry) =>
+        Parallel.ForEach(sortedRootEntries, parallelOptions, (rootEntry) =>
         {
-            //TODO: Parallel breaks the progress percentage, need to fix.
-            EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc);
+            var singleEntryArray = new ICommonEntry[] { rootEntry };
+            EntryHelper.TraverseTreePair(singleEntryArray, findFunc);
         });
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
+    }
 
     /// <summary>
     /// High-performance async find with work stealing for better load balancing
@@ -243,7 +253,6 @@ public class FindOptions
 
     public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
-        Func<ICommonEntry, ICommonEntry, bool> matcher;
         if (RegexMode)
         {
             var regex = RegexCache.GetOrAdd(Pattern, pattern =>
@@ -260,7 +269,7 @@ public class FindOptions
             : (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
     }
 
-    public TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
+    private TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
     {
         var findPredicate = GetFindPredicate();
 
@@ -308,20 +317,36 @@ public class FindOptions
 
     private bool ShouldReportProgress(int currentCount)
     {
-        // Report progress every ProgressModifier entries, but use lock-free comparison
-        if (currentCount % ProgressModifier != 0)
+        // Adaptive progress reporting frequency for async operations
+        var adaptiveModifier = Math.Max(ProgressModifier / 4, 100); // More frequent updates for async
+
+        // Report progress every adaptiveModifier entries, but use lock-free comparison
+        if (currentCount % adaptiveModifier != 0)
             return false;
 
         // Only report if we haven't reported this value recently (reduces duplicate reports in parallel)
         var lastReported = _lastReportedProgress;
-        if (currentCount <= lastReported + ProgressModifier / 2)
+        var minimumDelta = adaptiveModifier / 2;
+
+        if (currentCount <= lastReported + minimumDelta)
             return false;
 
-        // Try to update last reported (lock-free)
-        return Interlocked.CompareExchange(ref _lastReportedProgress, currentCount, lastReported) == lastReported;
+        // Try to update last reported (lock-free with retry limit for better async performance)
+        var originalLastReported = lastReported;
+        var result = Interlocked.CompareExchange(ref _lastReportedProgress, currentCount, lastReported) ==
+                     originalLastReported;
+
+        // If CAS failed, check if someone else already reported a more recent progress
+        if (!result)
+        {
+            var currentLastReported = _lastReportedProgress;
+            return currentCount > currentLastReported + minimumDelta;
+        }
+
+        return true;
     }
 
-    public TraverseFunc GetFindPredicate()
+    private TraverseFunc GetFindPredicate()
     {
         return (p, d) =>
             (d.IsDirectory && IncludeFolders || !d.IsDirectory && IncludeFiles)
