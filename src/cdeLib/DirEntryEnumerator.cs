@@ -49,6 +49,11 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
     public bool MoveNext()
     {
         _current = null;
+        return ProcessNextEntry();
+    }
+
+    private bool ProcessNextEntry()
+    {
         if (_childEnumerator == null)
         {
             if (_entries.Count > 0)
@@ -63,7 +68,7 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
             if (_childEnumerator.MoveNext())
             {
                 _current = _childEnumerator.Current;
-                if (_current.IsDirectory && _current.Children != null && _current.Children.Count > 0)
+                if (_current.IsDirectory && _current.Children is { Count: > 0 })
                 {
                     _entries.Push(_current);
                 }
