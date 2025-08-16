@@ -37,7 +37,7 @@ public class FindOptions
     public DateTime NotOlderThan { get; set; }
     public int ProgressEnd { get; set; }
     public int ProgressCount => _progressCount[0];
-    private readonly int[] _progressCount = new[] {0};
+    private readonly int[] _progressCount = [0];
     public int SkipCount { get; set; }
 
     /// <summary>
@@ -52,8 +52,6 @@ public class FindOptions
 
     public BackgroundWorker Worker { get; set; }
     public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
-
-    private readonly object _countLock = new ();
 
     public FindOptions()
     {
