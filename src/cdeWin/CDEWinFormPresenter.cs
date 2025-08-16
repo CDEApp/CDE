@@ -284,7 +284,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
 
         _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
-        _bgWorker.DoWork += BgWorkerDoWork;
+        _bgWorker.DoWork +=BgWorkerDoWork;
         _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
         _bgWorker.ProgressChanged += BgWorkerProgressChanged;
 

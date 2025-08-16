@@ -114,7 +114,7 @@ namespace cdeWeb
             };
 
             results.Start("Find");
-            findOptions.Find(_rootEntries);
+            findOptions.FindAsync(_rootEntries).GetAwaiter().GetResult();
             results.Stop();
             return results;
         }
@@ -143,7 +143,7 @@ namespace cdeWeb
             };
 
             results.Start("Find");
-            findOptions.Find(_rootEntries);
+            findOptions.FindAsync(_rootEntries).GetAwaiter().GetResult();
             results.Stop();
             return results;
         }

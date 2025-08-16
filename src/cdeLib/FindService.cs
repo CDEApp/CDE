@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using cdeLib.Entities;
+using Serilog;
 
 namespace cdeLib;
 
@@ -8,7 +10,11 @@ public interface IFindService
 {
     void Find(string pattern, string param, IList<RootEntry> rootEntries);
     void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
+    Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries);
+    Task FindAsync(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
+
     bool IncludeFiles { get; set; }
+
     bool IncludeFolders { get; set; }
 }
 
@@ -38,6 +44,19 @@ public class FindService : IFindService
 
     public void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
     {
+        // Use async version for better performance
+        FindAsync(pattern, regexMode, includePath, rootEntries).GetAwaiter().GetResult();
+    }
+
+    public async Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries)
+    {
+        var regexMode = param is ParamGrep or ParamGrepPath;
+        var includePath = param is ParamGrepPath or ParamFindPath;
+        await FindAsync(pattern, regexMode, includePath, rootEntries);
+    }
+
+    public async Task FindAsync(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
+    {
         var totalFound = 0L;
         var findOptions = new FindOptions
         {
@@ -55,10 +74,11 @@ public class FindService : IFindService
             },
         };
 
-        findOptions.Find(rootEntries);
-
-        Console.WriteLine(totalFound > 0
-            ? $"Found a total of {totalFound} entries. Matching pattern \"{pattern}\""
-            : "No entries found in cached information.");
+        var timer = System.Diagnostics.Stopwatch.StartNew();
+        await findOptions.FindAsync(rootEntries);
+        timer.Stop();
+        Log.Logger.Information(
+            "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
+            timer.ElapsedMilliseconds, pattern, totalFound);
     }
 }

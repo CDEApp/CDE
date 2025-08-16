@@ -120,8 +120,123 @@ public class FindOptions
             EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc);
         });
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
+
+    /// <summary>
+    /// High-performance async find with work stealing for better load balancing
+    /// </summary>
+    public async Task FindAsync(IEnumerable<RootEntry> rootEntries, CancellationToken cancellationToken = default)
+    {
+        if (VisitorFunc == null)
+        {
+            return;
+        }
+
+        // Setup progress tracking
+        int[] limitCount = [LimitResultCount];
+        if (ProgressFunc == null || ProgressModifier == 0)
+        {
+            ProgressFunc = delegate { };
+            ProgressModifier = int.MaxValue;
+        }
+
+        ProgressEnd = rootEntries.TotalFileEntries();
+        ProgressFunc(_threadSafeProgressCount, ProgressEnd);
+        PatternMatcher = GetPatternMatcher();
+
+        var watch = Stopwatch.StartNew();
+
+        // Create work-stealing traversal with optimal concurrency
+        var maxConcurrency = Math.Min(Environment.ProcessorCount, 8); // Cap at 8 for I/O bound operations
+
+        var traversal = new Infrastructure.WorkStealingTreeTraversal(maxConcurrency, cancellationToken);
+
+        // Create async processor function
+        var asyncProcessor = CreateAsyncProcessor(limitCount);
+
+        try
+        {
+            // Execute parallel traversal with work stealing
+            await traversal.TraverseAsync(rootEntries, asyncProcessor);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        {
+            // Handle cancellation gracefully
+        }
+
+        ProgressFunc(ProgressEnd, ProgressEnd); // Always report 100%
         watch.Stop();
-        Debug.WriteLine($"Execution Time: {watch.ElapsedMilliseconds} ms");
+        Debug.WriteLine($"Async Execution Time: {watch.ElapsedMilliseconds} ms");
+    }
+
+    /// <summary>
+    /// Create an async processor function for work stealing traversal
+    /// </summary>
+    private Func<ICommonEntry, ICommonEntry, Task<bool>> CreateAsyncProcessor(int[] limitCount)
+    {
+        return async (parent, dirEntry) =>
+        {
+            // Handle null parent (root entries)
+            var p = parent ?? dirEntry;
+
+            var currentCount = Interlocked.Increment(ref _threadSafeProgressCount);
+
+            if (currentCount <= SkipCount)
+            {
+                return true; // Skip enforced
+            }
+
+            // Optimized async progress reporting with batching
+            if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
+            {
+                // Use ConfigureAwait(false) for better performance in async context
+                // Fire-and-forget progress reporting to avoid blocking worker threads
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        ProgressFunc(currentCount, ProgressEnd);
+                        // Small delay to prevent overwhelming the UI thread
+                        await Task.Delay(1).ConfigureAwait(false);
+                    }
+                    catch
+                    {
+                        // Ignore progress reporting errors to prevent work interruption
+                    }
+                });
+
+                // Check for cancellation with minimal overhead
+                if (Worker?.CancellationPending == true)
+                {
+                    return false;
+                }
+            }
+
+            // Apply find predicate
+            var findPredicate = GetFindPredicate();
+            if (findPredicate(p, dirEntry))
+            {
+                // Execute visitor function
+                var shouldContinue = VisitorFunc(p, dirEntry);
+                if (!shouldContinue || Interlocked.Decrement(ref limitCount[0]) <= 0)
+                {
+                    return false;
+                }
+            }
+
+            // Optimized cooperative cancellation with adaptive yielding
+            if (currentCount % 2000 == 0) // Reduced frequency for better performance
+            {
+                // Use ConfigureAwait(false) to avoid unnecessary context switching
+                await Task.Delay(0).ConfigureAwait(false);
+            }
+            else if (currentCount % 500 == 0)
+            {
+                // Lighter yield for more frequent cooperation
+                await Task.Yield();
+            }
+
+            return true;
+        };
     }
 
     private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
