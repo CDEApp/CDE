@@ -14,7 +14,7 @@ public partial class MyAboutBox : Form
         InitializeComponent();
         _config = config;
         linkRepository.Text = _config.LinkRepository;
-        tbVersion.Text = $"{_config.ProductName} v{_config.Version}";
+        tbVersion.Text = $@"{_config.ProductName} v{_config.Version}";
     }
 
     public static void MyShow(Form parentForm, IConfig config)
@@ -42,6 +42,6 @@ public partial class MyAboutBox : Form
 
     private void MyAboutBox_Load(object sender, EventArgs e)
     {
-        Text = $"About {_config.ProductName} v{_config.Version}";
+        Text = $@"About {_config.ProductName} v{_config.Version}";
     }
 }
