@@ -22,7 +22,7 @@ public static class EntryHelper
     {
         return new PairDirEntryEnumerator(rootEntries);
     }
-    
+
     public static IEnumerable<IPairDirEntry> GetPairDirEntriesPooled(IEnumerable<RootEntry> rootEntries)
     {
         return new PairDirEntryEnumerator(rootEntries, usePooling: true);
@@ -32,7 +32,7 @@ public static class EntryHelper
     {
         var parentPath = parentEntry.FullPath ?? "pnull";
         var childPath = dirEntry.Path ?? "dnull";
-        
+
         // Use StringBuilder from pool for complex paths
         if (parentPath.Length + childPath.Length > 260) // MAX_PATH
         {
@@ -50,12 +50,12 @@ public static class EntryHelper
                 PoolManager.ReturnStringBuilder(sb);
             }
         }
-    
+
         // Cache frequently accessed paths
         var cacheKey = $"{parentPath}|{childPath}";
         return PathCache.GetOrAdd(cacheKey, _ => System.IO.Path.Combine(parentPath, childPath));
     }
-    
+
     private static readonly ConcurrentDictionary<string, string> PathCache = new(StringComparer.OrdinalIgnoreCase);
 
 
@@ -66,37 +66,39 @@ public static class EntryHelper
     /// <param name="traverseFunc">TraversalFunc</param>
     public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc)
     {
-        if (traverseFunc == null)
+        if (traverseFunc == null) return;
+
+        // Use array for better cache locality and avoid Reverse() allocation
+        var rootArray = rootEntries as ICommonEntry[] ?? rootEntries.ToArray();
+
+        // Pre-allocate stack with estimated capacity to reduce reallocations
+        var estimatedCapacity = rootArray.Length * 8; // Heuristic based on typical tree depth
+        var stack = new Stack<ICommonEntry>(estimatedCapacity);
+
+        // Add in reverse order without creating intermediate collection
+        for (int i = rootArray.Length - 1; i >= 0; i--)
         {
-            // nothing to do.
-            return;
+            if (rootArray[i]?.Children != null)
+                stack.Push(rootArray[i]);
         }
 
-        var funcContinue = true;
-        var rootEntryStack = new Stack<ICommonEntry>(rootEntries
-            .Reverse()); // Reverse to keep same traversal order as prior code.
-
-        while (funcContinue && rootEntryStack.Count > 0)
+        while (stack.Count > 0)
         {
-            var rootEntry = rootEntryStack.Pop();
+            var current = stack.Pop();
+            var children = current.Children;
 
-            // empty directories may not have Children initialized.
-            if (rootEntry.Children == null)
+            if (children == null) continue;
+
+            // Process children in batch to improve cache locality
+            foreach (var child in children)
             {
-                continue;
-            }
+                if (!traverseFunc(current, child))
+                    return; // Early termination - exit immediately
 
-            foreach (var dirEntry in rootEntry.Children)
-            {
-                funcContinue = traverseFunc(rootEntry, dirEntry);
-                if (!funcContinue)
+                // Only push directories with children to avoid unnecessary stack operations
+                if (child.IsDirectory && child.Children?.Count > 0)
                 {
-                    break;
-                }
-
-                if (dirEntry.IsDirectory)
-                {
-                    rootEntryStack.Push(dirEntry);
+                    stack.Push(child);
                 }
             }
         }
