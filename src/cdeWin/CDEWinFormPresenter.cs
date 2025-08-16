@@ -11,6 +11,7 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeWin.Cfg;
+using Serilog;
 
 namespace cdeWin;
 
@@ -454,7 +455,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             state.End = end;
             worker.ReportProgress((int)(100.0 * counter / end), state);
         };
+        var timer = Stopwatch.StartNew();
         findOptions.Find(rootEntries);
+        //findOptions.FindAsync(rootEntries).GetAwaiter().GetResult();
+        timer.Stop();
+        Log.Logger.Information(
+            "Search execution time: {ExecutionTime} ms, Total found {TotalFound}",
+            timer.ElapsedMilliseconds, list.Count);
         state.ListCount = list.Count;
         state.List = list;
         var completePercent = (int)(100.0 * state.Counter / state.End);
@@ -464,7 +471,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         }
 
         worker.ReportProgress(completePercent, state);
-        //worker.ReportProgress(100, state);
         e.Result = list;
     }
 
