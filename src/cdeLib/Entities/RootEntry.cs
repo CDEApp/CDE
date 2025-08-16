@@ -898,6 +898,6 @@ public class RootEntry : object, ICommonEntry
     {
         // This probably needs to check all parent paths if this is a root entry.
         // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
-        return !string.IsNullOrEmpty(Path) && (Path.EndsWith(" ") || Path.EndsWith("."));
+        return !string.IsNullOrEmpty(Path) && (Path.EndsWith(' ') || Path.EndsWith('.'));
     }
 }
