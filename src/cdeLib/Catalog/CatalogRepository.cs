@@ -21,6 +21,7 @@ public class CatalogRepository : ICatalogRepository
 {
     private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
     private readonly ILogger _logger;
+    private static readonly Infrastructure.BufferPool BufferPool = new(64 * 1024, 50);
 
     public CatalogRepository(ILogger logger)
     {
@@ -53,6 +54,42 @@ public class CatalogRepository : ICatalogRepository
                     }
                 case SerializerProtocol.MessagePack:
                     return MessagePackSerializer.Deserialize<RootEntry>(input);
+
+                default:
+                    throw new Exception("Invalid Serializer Protocol");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.Error(ex, "Error Reading catalogue {FileName}", file);
+            throw;
+        }
+    }
+
+    public async Task<RootEntry> ReadAsync(string file)
+    {
+        try
+        {
+            switch (_serializerProtocol)
+            {
+                case SerializerProtocol.Protobuf:
+                    await using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true))
+                    {
+                        return Serializer.Deserialize<RootEntry>(input);
+                    }
+                case SerializerProtocol.Flatbuffers:
+                    var bytes = await File.ReadAllBytesAsync(file);
+                    using (Operation.Time("Deserialize"))
+                    {
+                        var serializer = new FlatBufferSerializer(
+                            new FlatBufferSerializerOptions());
+                        return serializer.Parse<RootEntry>(bytes);
+                    }
+                case SerializerProtocol.MessagePack:
+                    await using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true))
+                    {
+                        return await MessagePackSerializer.DeserializeAsync<RootEntry>(input);
+                    }
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");
@@ -128,8 +165,25 @@ public class CatalogRepository : ICatalogRepository
         if (!File.Exists(file)) return null;
         try
         {
-            using var fileStream = File.OpenRead(file);
             var rootEntry = Read(file);
+            if (rootEntry == null) return null;
+            rootEntry.ActualFileName = file;
+            rootEntry.SetInMemoryFields();
+            return rootEntry;
+        }
+        catch (Exception ex)
+        {
+            Log.Logger.Error(ex, "Error Reading file");
+            throw;
+        }
+    }
+
+    public async Task<RootEntry> LoadDirCacheAsync(string file)
+    {
+        if (!File.Exists(file)) return null;
+        try
+        {
+            var rootEntry = await ReadAsync(file);
             if (rootEntry == null) return null;
             rootEntry.ActualFileName = file;
             rootEntry.SetInMemoryFields();
