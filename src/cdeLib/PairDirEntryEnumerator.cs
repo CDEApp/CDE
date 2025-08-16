@@ -5,30 +5,27 @@ using cdeLib.Infrastructure;
 
 namespace cdeLib;
 
-public sealed class PairDirEntryEnumerator : IEnumerator<IPairDirEntry>, IEnumerable<IPairDirEntry>
+public sealed class PairDirEntryEnumerator : IEnumerator<PairDirEntry>, IEnumerable<PairDirEntry>
 {
     private readonly IEnumerable<RootEntry> _rootEntries;
-    private IPairDirEntry _current;
+    private PairDirEntry _current;
     private Stack<ICommonEntry> _entries;
     private ICommonEntry _parentDirEntry;
     private IEnumerator<ICommonEntry> _childEnumerator;
-    private readonly bool _usePooling;
 
-    public IPairDirEntry Current => _current;
+    public PairDirEntry Current => _current;
 
     object IEnumerator.Current => Current;
 
-    public PairDirEntryEnumerator(RootEntry rootEntry, bool usePooling = false)
+    public PairDirEntryEnumerator(RootEntry rootEntry)
     {
         _rootEntries = new List<RootEntry> { rootEntry };
-        _usePooling = usePooling;
         Reset();
     }
 
-    public PairDirEntryEnumerator(IEnumerable<RootEntry> rootEntries, bool usePooling = false)
+    public PairDirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
     {
         _rootEntries = rootEntries;
-        _usePooling = usePooling;
         Reset();
     }
 
@@ -48,12 +45,6 @@ public sealed class PairDirEntryEnumerator : IEnumerator<IPairDirEntry>, IEnumer
 
     public void Dispose()
     {
-        // Return pooled entry if we're using pooling
-        if (_usePooling && _current is PooledPairDirEntry pooledEntry)
-        {
-            PairDirEntryPool.Return(pooledEntry);
-        }
-
         _current = null;
 
         if (_entries != null)
@@ -67,12 +58,6 @@ public sealed class PairDirEntryEnumerator : IEnumerator<IPairDirEntry>, IEnumer
 
     public bool MoveNext()
     {
-        // Return previous pooled entry if we're using pooling
-        if (_usePooling && _current is PooledPairDirEntry previousPooledEntry)
-        {
-            PairDirEntryPool.Return(previousPooledEntry);
-        }
-
         _current = null;
         if (_childEnumerator == null)
         {
@@ -90,9 +75,7 @@ public sealed class PairDirEntryEnumerator : IEnumerator<IPairDirEntry>, IEnumer
             if (_childEnumerator.MoveNext())
             {
                 var de = _childEnumerator.Current;
-                _current = _usePooling
-                    ? PairDirEntryPool.Get(_parentDirEntry, de)
-                    : new PairDirEntry(_parentDirEntry, de);
+                _current = new PairDirEntry(_parentDirEntry, de);
                 if (de.IsDirectory && de.Children?.Count > 0)
                 {
                     _entries.Push(de);
@@ -115,13 +98,13 @@ public sealed class PairDirEntryEnumerator : IEnumerator<IPairDirEntry>, IEnumer
         _childEnumerator = null;
     }
 
-    IEnumerator<IPairDirEntry> IEnumerable<IPairDirEntry>.GetEnumerator()
+    IEnumerator<PairDirEntry> IEnumerable<PairDirEntry>.GetEnumerator()
     {
-        return new PairDirEntryEnumerator(_rootEntries, _usePooling);
+        return new PairDirEntryEnumerator(_rootEntries);
     }
 
     IEnumerator IEnumerable.GetEnumerator()
     {
-        return new PairDirEntryEnumerator(_rootEntries, _usePooling);
+        return new PairDirEntryEnumerator(_rootEntries);
     }
 }

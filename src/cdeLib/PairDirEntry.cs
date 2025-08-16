@@ -6,16 +6,11 @@ using JetBrains.Annotations;
 namespace cdeLib;
 
 [DebuggerDisplay("Size = {ChildDE.Size}")]
-public class PairDirEntry : IPairDirEntry
+public class PairDirEntry
 {
     public readonly ICommonEntry ParentDE;
 
     public readonly ICommonEntry ChildDE;
-    
-    // Interface implementations
-    ICommonEntry IPairDirEntry.ParentDE => ParentDE;
-    ICommonEntry IPairDirEntry.ChildDE => ChildDE;
-    bool IPairDirEntry.PathProblem => PathProblem;
 
     /// <summary>
     /// RootEntry for this pair dir, if not set looked up and cached in GetRootEntry().

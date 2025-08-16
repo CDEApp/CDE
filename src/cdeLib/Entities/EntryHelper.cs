@@ -18,14 +18,9 @@ public static class EntryHelper
         return new DirEntryEnumerator(rootEntries);
     }
 
-    public static IEnumerable<IPairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
+    public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
     {
         return new PairDirEntryEnumerator(rootEntries);
-    }
-
-    public static IEnumerable<IPairDirEntry> GetPairDirEntriesPooled(IEnumerable<RootEntry> rootEntries)
-    {
-        return new PairDirEntryEnumerator(rootEntries, usePooling: true);
     }
 
     public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
