@@ -7,33 +7,28 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
-using Util;
 using cdeLib.Catalog;
 using cdeLib.Entities;
 using cdeWin.Cfg;
-using Dawn;
 using Serilog;
 using SerilogTimings;
-using SerilogTimings.Extensions;
 
 namespace cdeWin;
 
 public partial class LoaderForm : Form
 {
     private readonly IEnumerable<string> _cdeList;
-    private readonly TimeIt _timeIt;
     private readonly ILogger _logger;
     private BackgroundWorker _backgroundWorker;
 
-    public LoaderForm(IConfig config, IEnumerable<string> cdeList, TimeIt timeIt, ILogger logger)
+    public LoaderForm(IConfig config, IEnumerable<string> cdeList, ILogger logger)
     {
         InitializeComponent();
         InitializeBackgroundWorker();
         _cdeList = cdeList;
-        _timeIt = timeIt;
         _logger = logger;
 
-        // Set to top left of application if it is available.
+        // Set to the the top left of the application if it is available.
         config.RestoreConfigFormTopLeft(this);
 
         AutoWaitCursor.Cursor = Cursors.WaitCursor;
@@ -73,7 +68,11 @@ public partial class LoaderForm : Form
         Close();
     }
 
-    // This event handler updates the progress bar.
+    /// <summary>
+    /// This event handler updates the progress bar.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="e"></param>
     private void BackgroundWorker_ProgressChanged(object sender,
         ProgressChangedEventArgs e)
     {
@@ -82,7 +81,7 @@ public partial class LoaderForm : Form
         lblProgressMessage.Text = $@"Loading catalog {state.FileCount} of {state.TotalFiles}";
     }
 
-    private void UpdateUI(Action action)
+    private void UpdateUi(Action action)
     {
         if (InvokeRequired)
         {
@@ -105,15 +104,15 @@ public partial class LoaderForm : Form
 
     private List<RootEntry> LoadCatalogs(BackgroundWorker worker)
     {
-        var repo = new CatalogRepository(Log.Logger);
+        using var repo = new CatalogRepository(Log.Logger);
         var cacheFiles = repo.GetCacheFileList(_cdeList);
         var totalFiles = cacheFiles.Count;
         var volatileFileCounter = 0;
         var progressReportThreshold = Math.Max(1, totalFiles / 50); // More frequent updates
         var lastProgressReport = DateTime.UtcNow;
-        var progressReportInterval = TimeSpan.FromMilliseconds(100); // Report every 100ms max
+        var progressReportInterval = TimeSpan.FromMilliseconds(100); // Report every 100 ms max
 
-        UpdateUI(() =>
+        UpdateUi(() =>
         {
             barLoading.Step = 1;
             barLoading.Maximum = totalFiles;
@@ -165,32 +164,6 @@ public partial class LoaderForm : Form
         return rootEntries.ToList();
     }
 
-    private static RootEntry LoadCatalogOptimized(CatalogRepository repo, string cacheFile)
-    {
-        try
-        {
-            // Check file existence first to avoid expensive operations
-            if (!File.Exists(cacheFile)) return null;
-
-            // Get file info to pre-allocate buffer size
-            var fileInfo = new FileInfo(cacheFile);
-            if (fileInfo.Length == 0) return null;
-
-            // Load with optimized buffer size
-            var rootEntry = repo.Read(cacheFile);
-            if (rootEntry == null) return null;
-
-            rootEntry.ActualFileName = cacheFile;
-            rootEntry.SetInMemoryFields();
-            return rootEntry;
-        }
-        catch (Exception ex)
-        {
-            Log.Logger.Warning(ex, "Failed to load catalog file {CacheFile}, skipping", cacheFile);
-            return null; // Continue processing other files
-        }
-    }
-
     private static async Task<RootEntry> LoadCatalogOptimizedAsync(CatalogRepository repo, string cacheFile)
     {
         try
@@ -215,17 +188,4 @@ public partial class LoaderForm : Form
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public List<RootEntry> RootEntries { get; private set; }
-}
-
-public class LoadingState
-{
-    public LoadingState(int fileCount, int totalFiles)
-    {
-        FileCount = fileCount;
-        TotalFiles = totalFiles;
-    }
-
-    public int FileCount { get; set; }
-
-    public int TotalFiles { get; set; }
 }

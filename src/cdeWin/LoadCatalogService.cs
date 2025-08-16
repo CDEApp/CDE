@@ -24,7 +24,7 @@ public class LoadCatalogService : ILoadCatalogService
     {
         List<RootEntry> rootEntries;
         var cachePathList = new[] { ".", config.ConfigPath };
-        var loaderForm = new LoaderForm(config, cachePathList, timeIt, _logger);
+        var loaderForm = new LoaderForm(config, cachePathList, _logger);
 
         try
         {
