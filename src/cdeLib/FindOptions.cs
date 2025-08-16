@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
@@ -14,34 +15,56 @@ namespace cdeLib;
 public class FindOptions
 {
     public string Pattern { get; set; }
+
     public bool RegexMode { get; set; }
+
     public bool IncludePath { get; set; }
+
     public bool IncludeFiles { get; set; }
+
     public bool IncludeFolders { get; set; }
+
     public int LimitResultCount { get; set; } // consider making this a multiple of ProgressModifier
+
     public int ProgressModifier { get; set; }
 
     public bool FromSizeEnable { get; set; }
+
     public long FromSize { get; set; }
+
     public bool ToSizeEnable { get; set; }
+
     public long ToSize { get; set; }
+
     public bool FromDateEnable { get; set; }
+
     public DateTime FromDate { get; set; }
+
     public bool ToDateEnable { get; set; }
+
     public DateTime ToDate { get; set; }
+
     public bool FromHourEnable { get; set; }
+
     public TimeSpan FromHour { get; set; }
+
     public bool ToHourEnable { get; set; }
+
     public TimeSpan ToHour { get; set; }
+
     public bool NotOlderThanEnable { get; set; }
+
     public DateTime NotOlderThan { get; set; }
+
     public int ProgressEnd { get; set; }
+
     private int _threadSafeProgressCount;
     private volatile int _lastReportedProgress;
-    
+
     private readonly int[] _dummyProgressCount = new int[1];
+
     public int SkipCount { get; set; }
-    
+
     public int ProgressCount => _threadSafeProgressCount;
 
     /// <summary>
@@ -55,6 +78,7 @@ public class FindOptions
     public Action<int, int> ProgressFunc { get; set; }
 
     public BackgroundWorker Worker { get; set; }
+
     public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
 
     public FindOptions()
@@ -72,7 +96,7 @@ public class FindOptions
             return;
         }
 
-        int[] limitCount = {LimitResultCount};
+        int[] limitCount = { LimitResultCount };
         if (ProgressFunc == null || ProgressModifier == 0)
         {
             // dummy func and huge progressModifier so wont call progressFunc anyway.
@@ -93,37 +117,32 @@ public class FindOptions
         Parallel.ForEach(rootEntries, (rootEntry) =>
         {
             //TODO: Parallel breaks the progress percentage, need to fix.
-            EntryHelper.TraverseTreePair(new List<ICommonEntry> {rootEntry}, findFunc);
+            EntryHelper.TraverseTreePair(new List<ICommonEntry> { rootEntry }, findFunc);
         });
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
         watch.Stop();
         Debug.WriteLine($"Execution Time: {watch.ElapsedMilliseconds} ms");
     }
 
+    private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
+
     public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
         Func<ICommonEntry, ICommonEntry, bool> matcher;
         if (RegexMode)
         {
-            var regex = new Regex(Pattern,
-                RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-            matcher = (p, d) => regex.IsMatch(d.Path);
-            if (IncludePath)
-            {
-                matcher = (p, d) => regex.IsMatch(p.MakeFullPath(d));
-            }
-        }
-        else
-        {
-            matcher = (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
-            if (IncludePath)
-            {
-                matcher = (p, d) =>
-                    p.MakeFullPath(d).Contains(Pattern, StringComparison.OrdinalIgnoreCase);
-            }
+            var regex = RegexCache.GetOrAdd(Pattern, pattern =>
+                new Regex(pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
+
+            return IncludePath
+                ? (p, d) => regex.IsMatch(p.MakeFullPath(d))
+                : (p, d) => regex.IsMatch(d.Path);
         }
 
-        return matcher;
+        // String matching with StringComparison for better performance
+        return IncludePath
+            ? (p, d) => p.MakeFullPath(d).Contains(Pattern, StringComparison.OrdinalIgnoreCase)
+            : (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
     }
 
     public TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
@@ -134,7 +153,7 @@ public class FindOptions
         {
             var currentCount = Interlocked.Increment(ref _threadSafeProgressCount);
             progressCount[0] = currentCount;
-            
+
             if (currentCount <= SkipCount)
             {
                 // skip enforced
@@ -159,29 +178,30 @@ public class FindOptions
                     return false; // end the find.
                 }
             }
+
             return true;
         }
 
         return FindFunc;
     }
-    
+
     public void ResetProgress()
     {
         _threadSafeProgressCount = 0;
         _lastReportedProgress = 0;
     }
-    
+
     private bool ShouldReportProgress(int currentCount)
     {
         // Report progress every ProgressModifier entries, but use lock-free comparison
         if (currentCount % ProgressModifier != 0)
             return false;
-            
+
         // Only report if we haven't reported this value recently (reduces duplicate reports in parallel)
         var lastReported = _lastReportedProgress;
         if (currentCount <= lastReported + ProgressModifier / 2)
             return false;
-            
+
         // Try to update last reported (lock-free)
         return Interlocked.CompareExchange(ref _lastReportedProgress, currentCount, lastReported) == lastReported;
     }

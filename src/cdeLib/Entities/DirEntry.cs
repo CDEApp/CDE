@@ -506,7 +506,7 @@ public class DirEntry : ICommonEntry
         return new DirEntryEnumerator(rootEntries);
     }
 
-    public static IEnumerable<PairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
+    public static IEnumerable<IPairDirEntry> GetPairDirEntries(IEnumerable<RootEntry> rootEntries)
     {
         return new PairDirEntryEnumerator(rootEntries);
     }

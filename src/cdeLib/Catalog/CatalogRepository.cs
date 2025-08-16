@@ -17,11 +17,13 @@ using ILogger = Serilog.ILogger;
 
 namespace cdeLib.Catalog;
 
-public class CatalogRepository : ICatalogRepository
+public class CatalogRepository : ICatalogRepository, IDisposable
 {
     private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
     private readonly ILogger _logger;
     private static readonly Infrastructure.BufferPool BufferPool = new(64 * 1024, 50);
+    private readonly FileStreamManager _fileStreamManager = FileStreams.Instance;
+    private bool _disposed;
 
     public CatalogRepository(ILogger logger)
     {
@@ -73,12 +75,12 @@ public class CatalogRepository : ICatalogRepository
             switch (_serializerProtocol)
             {
                 case SerializerProtocol.Protobuf:
-                    await using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true))
+                    await using (var input = _fileStreamManager.CreateReadStream(file))
                     {
                         return Serializer.Deserialize<RootEntry>(input);
                     }
                 case SerializerProtocol.Flatbuffers:
-                    var bytes = await File.ReadAllBytesAsync(file);
+                    var bytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
                     using (Operation.Time("Deserialize"))
                     {
                         var serializer = new FlatBufferSerializer(
@@ -86,7 +88,7 @@ public class CatalogRepository : ICatalogRepository
                         return serializer.Parse<RootEntry>(bytes);
                     }
                 case SerializerProtocol.MessagePack:
-                    await using (var input = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 64 * 1024, useAsync: true))
+                    await using (var input = _fileStreamManager.CreateReadStream(file))
                     {
                         return await MessagePackSerializer.DeserializeAsync<RootEntry>(input);
                     }
@@ -134,25 +136,34 @@ public class CatalogRepository : ICatalogRepository
     /// </summary>
     public IList<string> GetCacheFileList(IEnumerable<string> paths)
     {
-        var cacheFilePaths = new List<string>();
-        foreach (var path in paths)
+        var cacheFilePaths = CollectionPool.GetStringList();
+        try
         {
-            cacheFilePaths.AddRange(GetCdeFiles(path));
-
-            foreach (var childPath in Directory.GetDirectories(path))
+            foreach (var path in paths)
             {
-                try
-                {
-                    cacheFilePaths.AddRange(GetCdeFiles(childPath));
-                }
-                // ReSharper disable once EmptyGeneralCatchClause
-                catch
-                {
-                } // if cant list folders don't care.
-            }
-        }
+                cacheFilePaths.AddRange(GetCdeFiles(path));
 
-        return cacheFilePaths;
+                foreach (var childPath in Directory.GetDirectories(path))
+                {
+                    try
+                    {
+                        cacheFilePaths.AddRange(GetCdeFiles(childPath));
+                    }
+                    // ReSharper disable once EmptyGeneralCatchClause
+                    catch
+                    {
+                    } // if cant list folders don't care.
+                }
+            }
+
+            // Return a new list to avoid pool corruption, since this list will be used externally
+            var result = new List<string>(cacheFilePaths);
+            return result;
+        }
+        finally
+        {
+            CollectionPool.ReturnStringList(cacheFilePaths);
+        }
     }
 
     private static IEnumerable<string> GetCdeFiles(string path)
@@ -202,7 +213,7 @@ public class CatalogRepository : ICatalogRepository
         switch (_serializerProtocol)
         {
             case SerializerProtocol.Protobuf:
-                await using (var newFs = File.OpenWrite(fileName))
+                await using (var newFs = _fileStreamManager.CreateWriteStream(fileName))
                 {
                     Serializer.Serialize(newFs, rootEntry);
                 }
@@ -212,13 +223,34 @@ public class CatalogRepository : ICatalogRepository
                 var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
                 var buffer = new byte[maxBytesNeeded];
                 FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                await File.WriteAllBytesAsync(fileName, buffer);
+                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, buffer);
                 break;
             case SerializerProtocol.MessagePack:
-                await File.WriteAllBytesAsync(fileName, MessagePackSerializer.Serialize(rootEntry));
+                var data = MessagePackSerializer.Serialize(rootEntry);
+                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, data);
                 break;
             default:
                 throw new Exception("Invalid Serializer Protocol");
         }
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                // Dispose managed resources
+                BufferPool?.Clear();
+                // Note: FileStreamManager is a singleton, don't dispose it here
+            }
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(true);
+        GC.SuppressFinalize(this);
     }
 }

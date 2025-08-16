@@ -27,7 +27,7 @@ public class DirEntryTestBase
         De1.AddChild(Fe2);
         _re1.AddChild(De1);
         _re1.SetInMemoryFields();
-        RootEntries = new List<RootEntry> { _re1 };
+        RootEntries = [_re1];
     }
 }
 
