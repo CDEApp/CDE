@@ -96,10 +96,10 @@ internal class PerformanceTreeTraversal
         OutputStatLine("PairDirEntryEnumerator Large Make List", _repeatLarge, TestData.RootLargeCount, msecs);
 
         // Test pooled performance
-        msecs = DoPairDirEntryEnumeratorPooledCountTest(TestData.RootSmall, _repeatSmall);
-        OutputStatLine("PairDirEntryEnumerator Pooled Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
-        msecs = DoPairDirEntryEnumeratorPooledCountTest(TestData.RootLarge, _repeatLarge);
-        OutputStatLine("PairDirEntryEnumerator Pooled Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
+        // msecs = DoPairDirEntryEnumeratorPooledCountTest(TestData.RootSmall, _repeatSmall);
+        // OutputStatLine("PairDirEntryEnumerator Pooled Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
+        // msecs = DoPairDirEntryEnumeratorPooledCountTest(TestData.RootLarge, _repeatLarge);
+        // OutputStatLine("PairDirEntryEnumerator Pooled Large Count", _repeatLarge, TestData.RootLargeCount, msecs);
 
         msecs = DoDirEntryEnumeratorCountTest(TestData.RootSmall, _repeatSmall);
         OutputStatLine("DirEntryEnumerator Small Count", _repeatSmall, TestData.RootSmallCount, msecs);
@@ -143,19 +143,19 @@ internal class PerformanceTreeTraversal
         return sw.ElapsedMilliseconds;
     }
 
-    public long DoPairDirEntryEnumeratorPooledCountTest(RootEntry root, int repeatCount)
-    {
-        var sw = new Stopwatch();
-        sw.Start();
-        var rootEntries = new List<RootEntry> { root };
-        var pairDirEntries = EntryHelper.GetPairDirEntriesPooled(rootEntries);
-        for (var i = 0; i < repeatCount; i++)
-        {
-            pairDirEntries.Count();
-        }
-        sw.Stop();
-        return sw.ElapsedMilliseconds;
-    }
+    // public long DoPairDirEntryEnumeratorPooledCountTest(RootEntry root, int repeatCount)
+    // {
+    //     var sw = new Stopwatch();
+    //     sw.Start();
+    //     var rootEntries = new List<RootEntry> { root };
+    //     var pairDirEntries = EntryHelper.GetPairDirEntriesPooled(rootEntries);
+    //     for (var i = 0; i < repeatCount; i++)
+    //     {
+    //         pairDirEntries.Count();
+    //     }
+    //     sw.Stop();
+    //     return sw.ElapsedMilliseconds;
+    // }
 
     public long DoPairDirEntryEnumeratorTest(RootEntry root, int repeatCount)
     {
