@@ -251,20 +251,28 @@ public class FindOptions
 
     private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
 
-    public Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
+    private Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
+        // Cache properties locally to avoid repeated field access
+        var pattern = Pattern;
+        var includePath = IncludePath;
+        
+        // Fast path for empty pattern
+        if (string.IsNullOrEmpty(pattern))
+            return (p, d) => true;
+        
         if (RegexMode)
         {
-            var regex = RegexCache.GetOrAdd(Pattern, pattern =>
-                new Regex(pattern, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
+            var regex = RegexCache.GetOrAdd(pattern,p =>
+                new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
 
-            return IncludePath
+            return includePath
                 ? (p, d) => regex.IsMatch(p.MakeFullPath(d))
                 : (p, d) => regex.IsMatch(d.Path);
         }
 
         // String matching with StringComparison for better performance
-        return IncludePath
+        return includePath
             ? (p, d) => p.MakeFullPath(d).Contains(Pattern, StringComparison.OrdinalIgnoreCase)
             : (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
     }

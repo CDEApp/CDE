@@ -361,6 +361,8 @@ public class DirEntry : ICommonEntry
     [Key(4)]
     public virtual long Size { get; set; }
 
+    private static readonly char[] PathSeparators = { '\\', '/' };
+    
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
     /// </summary>
@@ -373,21 +375,42 @@ public class DirEntry : ICommonEntry
         get
         {
             //return _path;
-            return string.IsNullOrEmpty(_extension) ? _path : $"{_path}{_extension}";
+            //string.concat faster than string interpolation.
+            return string.IsNullOrEmpty(_extension) ? _path : string.Concat(_path, _extension);
         }
         set
         {
-            //_path = string.Intern(value);
-            var ext = System.IO.Path.GetExtension(value);
-            if (!string.IsNullOrEmpty(ext))
+            
+            if (string.IsNullOrEmpty(value))
             {
-                _extension = string.Intern(ext);
-                _path = string.Intern(value[..^ext.Length]);
+                _path = string.Intern(string.Empty);
+                _extension = null;
+                return;
+            }
+
+            var lastDot = value.LastIndexOf('.');
+            if (lastDot > 0 && lastDot > value.LastIndexOfAny(PathSeparators))
+            {
+                _extension = string.Intern(value[lastDot..]);
+                _path = string.Intern(value[..lastDot]);
             }
             else
             {
-                _path = string.Intern(value);    
+                _path = string.Intern(value);
+                _extension = null;
             }
+            
+            // //_path = string.Intern(value);
+            // var ext = System.IO.Path.GetExtension(value);
+            // if (!string.IsNullOrEmpty(ext))
+            // {
+            //     _extension = string.Intern(ext);
+            //     _path = string.Intern(value[..^ext.Length]);
+            // }
+            // else
+            // {
+            //     _path = string.Intern(value);    
+            // }
         }
     }
 

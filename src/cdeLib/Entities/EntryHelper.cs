@@ -25,33 +25,10 @@ public static class EntryHelper
 
     public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
     {
-        var parentPath = parentEntry.FullPath ?? "pnull";
-        var childPath = dirEntry.Path ?? "dnull";
-
-        // Use StringBuilder from pool for complex paths
-        if (parentPath.Length + childPath.Length > 260) // MAX_PATH
-        {
-            var sb = PoolManager.GetStringBuilder();
-            try
-            {
-                sb.Append(parentPath);
-                if (!parentPath.EndsWith('\\') && !childPath.StartsWith('\\'))
-                    sb.Append('\\');
-                sb.Append(childPath);
-                return sb.ToString();
-            }
-            finally
-            {
-                PoolManager.ReturnStringBuilder(sb);
-            }
-        }
-
-        // Cache frequently accessed paths
-        var cacheKey = $"{parentPath}|{childPath}";
-        return PathCache.GetOrAdd(cacheKey, _ => System.IO.Path.Combine(parentPath, childPath));
+        var a = parentEntry.FullPath ?? "pnull";
+        var b = dirEntry.Path ?? "dnull";
+        return System.IO.Path.Combine(a, b);
     }
-
-    private static readonly ConcurrentDictionary<string, string> PathCache = new(StringComparer.OrdinalIgnoreCase);
 
 
     /// <summary>
