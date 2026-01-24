@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using cdeLib.Entities;
+using cdeLib.Infrastructure;
 
 namespace cdeLib;
 
@@ -28,7 +29,7 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
 
     private static Stack<ICommonEntry> StackOfRoots(IEnumerable<RootEntry> rootEntries)
     {
-        var entries = new Stack<ICommonEntry>();
+        var entries = CollectionPool.GetCommonEntryStack();
         foreach (var re in rootEntries)
         {
             if (re.Children is { Count: > 0 })
@@ -42,7 +43,11 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
     public void Dispose()
     {
         _current = null;
-        _entries = null;
+        if (_entries != null)
+        {
+            CollectionPool.ReturnCommonEntryStack(_entries);
+            _entries = null;
+        }
         _childEnumerator?.Dispose();
     }
 
@@ -86,6 +91,10 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
     public void Reset()
     {
         _current = null;
+        if (_entries != null)
+        {
+            CollectionPool.ReturnCommonEntryStack(_entries);
+        }
         _entries = StackOfRoots(_rootEntries);
         _childEnumerator = null;
     }
