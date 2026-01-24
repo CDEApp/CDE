@@ -325,8 +325,17 @@ public class FindOptions
 
     private bool ShouldReportProgress(int currentCount)
     {
-        // Adaptive progress reporting frequency for async operations
-        var adaptiveModifier = Math.Max(ProgressModifier / 4, 100); // More frequent updates for async
+        // Adaptive progress reporting based on total entry count to reduce contention
+        // For large datasets, report less frequently to minimize overhead
+        var baseModifier = ProgressEnd switch
+        {
+            > 10_000_000 => 100_000,  // 10M+ entries: report every 100K
+            > 1_000_000 => 50_000,    // 1M+ entries: report every 50K
+            > 100_000 => 10_000,      // 100K+ entries: report every 10K
+            _ => 1_000                // Small datasets: report every 1K
+        };
+
+        var adaptiveModifier = Math.Max(ProgressModifier / 2, baseModifier);
 
         // Report progress every adaptiveModifier entries, but use lock-free comparison
         if (currentCount % adaptiveModifier != 0)
