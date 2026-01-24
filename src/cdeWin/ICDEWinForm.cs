@@ -79,6 +79,8 @@ public interface ICDEWinForm : IView
     void SetMemoryStatus(string msg);
 
     void SetSearchTimeStatus(string s);
+    void ShowLoadingProgress(bool visible);
+    void SetLoadingProgressValue(int percent);
     bool SearchButtonEnable { get; set; }
     string SearchButtonText { get; set; }
     Color SearchButtonBackColor { get; set; }

@@ -86,6 +86,7 @@ namespace cdeWin
             this.bottomLogButton = new System.Windows.Forms.Button();
             this.mainStatusStrip = new System.Windows.Forms.StatusStrip();
             this.catalogsLoadedStatus = new System.Windows.Forms.ToolStripStatusLabel();
+            this.loadingProgressBar = new System.Windows.Forms.ToolStripProgressBar();
             this.totalFileEntriesStatus = new System.Windows.Forms.ToolStripStatusLabel();
             this.toolStripStatusMemory = new System.Windows.Forms.ToolStripStatusLabel();
             this.searchResultsStatus = new System.Windows.Forms.ToolStripStatusLabel();
@@ -722,6 +723,7 @@ namespace cdeWin
             this.mainStatusStrip.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.mainStatusStrip.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.catalogsLoadedStatus,
+            this.loadingProgressBar,
             this.totalFileEntriesStatus,
             this.toolStripStatusMemory,
             this.searchResultsStatus,
@@ -746,11 +748,19 @@ namespace cdeWin
             this.catalogsLoadedStatus.Size = new System.Drawing.Size(83, 24);
             this.catalogsLoadedStatus.Text = "Catalogs 0";
             this.catalogsLoadedStatus.ToolTipText = "Catalogs Loaded";
-            // 
+            //
+            // loadingProgressBar
+            //
+            this.loadingProgressBar.Name = "loadingProgressBar";
+            this.loadingProgressBar.Size = new System.Drawing.Size(100, 22);
+            this.loadingProgressBar.Minimum = 0;
+            this.loadingProgressBar.Maximum = 100;
+            this.loadingProgressBar.Visible = false;
+            //
             // totalFileEntriesStatus
-            // 
-            this.totalFileEntriesStatus.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top) 
-            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right) 
+            //
+            this.totalFileEntriesStatus.BorderSides = ((System.Windows.Forms.ToolStripStatusLabelBorderSides)((((System.Windows.Forms.ToolStripStatusLabelBorderSides.Left | System.Windows.Forms.ToolStripStatusLabelBorderSides.Top)
+            | System.Windows.Forms.ToolStripStatusLabelBorderSides.Right)
             | System.Windows.Forms.ToolStripStatusLabelBorderSides.Bottom)));
             this.totalFileEntriesStatus.BorderStyle = System.Windows.Forms.Border3DStyle.SunkenInner;
             this.totalFileEntriesStatus.Name = "totalFileEntriesStatus";
@@ -907,6 +917,7 @@ namespace cdeWin
         private System.Windows.Forms.ToolStripStatusLabel totalFileEntriesStatus;
         private System.Windows.Forms.Button reloadCatalogsButton;
         private System.Windows.Forms.ToolStripStatusLabel toolStripStatusMemory;
+        private System.Windows.Forms.ToolStripProgressBar loadingProgressBar;
     }
 }
 

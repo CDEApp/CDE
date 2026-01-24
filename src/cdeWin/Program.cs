@@ -35,6 +35,10 @@ internal static class Program
         config.RestoreConfigFormBase(mainForm);
         config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
         LoadAppSettingsConfig();
+
+        // Start async loading after form is shown for immediate UI responsiveness
+        mainForm.Shown += async (s, e) => await mainPresenter.InitializeAsync();
+
         Application.Run(mainForm);
         SaveAppState(config, mainForm);
     }

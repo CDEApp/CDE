@@ -5,6 +5,8 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using Util;
 using cdeLib;
@@ -42,6 +44,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private BackgroundWorker _bgWorker;
     private bool _isSearchButton;
     private readonly ILoadCatalogService _loadCatalogService;
+    private CancellationTokenSource _loadingCts;
+    private bool _isLoadingCatalogs;
 
     public CDEWinFormPresenter(
         ICDEWinForm form,
@@ -49,12 +53,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         ILoadCatalogService loadCatalogService = null)
         : base(form)
     {
-        var timeIt = new TimeIt();
-        var watch = Stopwatch.StartNew();
         _clientForm = form;
         _config = config;
         _loadCatalogService = loadCatalogService;
-        _rootEntries = LoadRootEntries(config, timeIt);
+        _rootEntries = new List<RootEntry>();
 
         _searchVals = new string[_config.DefaultSearchResultColumnCount];
         _directoryVals = new string[_config.DefaultDirectoryColumnCount];
@@ -62,10 +64,81 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         SetSearchButton(true);
         RegisterListViewSorters();
-        SetCatalogListView();
-        SetMemoryStatus();
         InitialiseLog();
-        _clientForm.AddLine("Total Load time was {0} msec", watch.ElapsedMilliseconds);
+    }
+
+    public async Task InitializeAsync()
+    {
+        if (_isLoadingCatalogs) return;
+
+        _isLoadingCatalogs = true;
+        _loadingCts = new CancellationTokenSource();
+        var watch = Stopwatch.StartNew();
+
+        // Disable search during loading
+        _clientForm.SearchButtonEnable = false;
+        _clientForm.SearchButtonText = "Please wait..";
+        _clientForm.SetCatalogsLoadedStatus(0);
+        _clientForm.SetTotalFileEntriesLoadedStatus(0);
+        _clientForm.SetSearchTimeStatus("Loading catalogs...");
+        _clientForm.ShowLoadingProgress(true);
+        _clientForm.SetLoadingProgressValue(0);
+        SetMemoryStatus();
+
+        try
+        {
+            _rootEntries = await _loadCatalogService.LoadRootEntriesAsync(
+                _config,
+                OnLoadProgress,
+                _loadingCts.Token);
+
+            SetCatalogListView();
+            SetMemoryStatus();
+            _clientForm.AddLine("Total Load time was {0} msec", watch.ElapsedMilliseconds);
+            _clientForm.SetSearchTimeStatus("");
+        }
+        catch (OperationCanceledException)
+        {
+            _clientForm.AddLine("Catalog loading was cancelled");
+            _clientForm.SetSearchTimeStatus("Loading cancelled");
+        }
+        catch (Exception ex)
+        {
+            _clientForm.AddLine("Error loading catalogs: {0}", ex.Message);
+            _clientForm.SetSearchTimeStatus("Loading error");
+            Log.Error(ex, "Error loading catalogs");
+        }
+        finally
+        {
+            _isLoadingCatalogs = false;
+            _clientForm.ShowLoadingProgress(false);
+            _clientForm.SearchButtonText = "Search";
+            _clientForm.SearchButtonEnable = true;
+            _loadingCts?.Dispose();
+            _loadingCts = null;
+        }
+    }
+
+    private void OnLoadProgress(int current, int total, string message)
+    {
+        if (_clientForm is Control control && control.InvokeRequired)
+        {
+            control.BeginInvoke(() => OnLoadProgress(current, total, message));
+            return;
+        }
+
+        _clientForm.SetCatalogsLoadedStatus(current);
+        _clientForm.SetSearchTimeStatus(message);
+        if (total > 0)
+        {
+            _clientForm.SetLoadingProgressValue((current * 100) / total);
+        }
+        SetMemoryStatus();
+    }
+
+    public void CancelLoading()
+    {
+        _loadingCts?.Cancel();
     }
 
     private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
@@ -617,6 +690,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     // before form closes capture any changed configuration.
     public void MyFormClosing()
     {
+        CancelLoading();
         _config.RecordConfig(_clientForm);
         _clientForm.CleanUp();
     }
@@ -1086,8 +1160,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.IsAdvancedSearchMode = value;
     }
 
-    public void ReloadCatalogs()
+    public async void ReloadCatalogs()
     {
+        if (_isLoadingCatalogs) return;
+
         // clear all current list views and tree views.
         var catalogHelper = _clientForm.CatalogListViewHelper;
         catalogHelper.SetList(null);
@@ -1102,19 +1178,58 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             rootEntry.ClearCommonEntryFields();
         }
 
-        var timeIt = new TimeIt();
-        _rootEntries = LoadRootEntries(_config, timeIt);
-        if (_rootEntries.Count > 1)
-        {
-            // this resets the tree view and directory list view
-            SetNewDirectoryRoot(_rootEntries.First());
-        }
-
-        // set root entries.
-        SetCatalogListView();
-
         _clientForm.AddLine(string.Empty);
         _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
-        LogTimeIt(timeIt);
+
+        _isLoadingCatalogs = true;
+        _loadingCts = new CancellationTokenSource();
+        var watch = Stopwatch.StartNew();
+
+        _clientForm.SearchButtonEnable = false;
+        _clientForm.SearchButtonText = "Please wait..";
+        _clientForm.SetCatalogsLoadedStatus(0);
+        _clientForm.SetTotalFileEntriesLoadedStatus(0);
+        _clientForm.SetSearchTimeStatus("Reloading catalogs...");
+        _clientForm.ShowLoadingProgress(true);
+        _clientForm.SetLoadingProgressValue(0);
+        SetMemoryStatus();
+
+        try
+        {
+            _rootEntries = await _loadCatalogService.LoadRootEntriesAsync(
+                _config,
+                OnLoadProgress,
+                _loadingCts.Token);
+
+            if (_rootEntries.Count > 0)
+            {
+                SetNewDirectoryRoot(_rootEntries.First());
+            }
+
+            SetCatalogListView();
+            SetMemoryStatus();
+            _clientForm.AddLine("Reload time was {0} msec", watch.ElapsedMilliseconds);
+            _clientForm.SetSearchTimeStatus("");
+        }
+        catch (OperationCanceledException)
+        {
+            _clientForm.AddLine("Catalog reload was cancelled");
+            _clientForm.SetSearchTimeStatus("Reload cancelled");
+        }
+        catch (Exception ex)
+        {
+            _clientForm.AddLine("Error reloading catalogs: {0}", ex.Message);
+            _clientForm.SetSearchTimeStatus("Reload error");
+            Log.Error(ex, "Error reloading catalogs");
+        }
+        finally
+        {
+            _isLoadingCatalogs = false;
+            _clientForm.ShowLoadingProgress(false);
+            _clientForm.SearchButtonText = "Search";
+            _clientForm.SearchButtonEnable = true;
+            _loadingCts?.Dispose();
+            _loadingCts = null;
+        }
     }
 }

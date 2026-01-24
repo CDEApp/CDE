@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
@@ -37,10 +39,18 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Always_Catalog_SortList()
         {
-            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
+            var loadCatalogService = Substitute.For<ILoadCatalogService>();
+            loadCatalogService.LoadRootEntriesAsync(
+                    Arg.Any<IConfig>(),
+                    Arg.Any<Action<int, int, string>>(),
+                    Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(new List<RootEntry>()));
 
-            // It's null because we have no fake setup for _rootEntries configured with fakes.
-            _mockCatalogListViewHelper.Received().SetList(null);
+            var presenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogService);
+            presenter.InitializeAsync().GetAwaiter().GetResult();
+
+            // SetList is called with empty list after InitializeAsync
+            _mockCatalogListViewHelper.Received().SetList(Arg.Any<List<RootEntry>>());
         }
 
         [Test]
@@ -56,10 +66,17 @@ public class CDEWinFormPresenterTest
         [Test]
         public void With_Null_RootEntry_List_SetsCatalogsLoaded()
         {
-            // null should not happen at runtime but its ok for this test.
-            _mockCatalogListViewHelper.SetList(null).Returns(3);
+            _mockCatalogListViewHelper.SetList(Arg.Any<List<RootEntry>>()).Returns(3);
 
-            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
+            var loadCatalogService = Substitute.For<ILoadCatalogService>();
+            loadCatalogService.LoadRootEntriesAsync(
+                    Arg.Any<IConfig>(),
+                    Arg.Any<Action<int, int, string>>(),
+                    Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(new List<RootEntry>()));
+
+            var presenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogService);
+            presenter.InitializeAsync().GetAwaiter().GetResult();
 
             _mockForm.Received().SetCatalogsLoadedStatus(3);
         }
@@ -82,12 +99,16 @@ public class CDEWinFormPresenterTest
         [Test]
         public void With_RootEntry_List_SetsTotalFileEntries()
         {
-            var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
-            _loadCatalogsService
-                .LoadRootEntries(Arg.Any<IConfig>())
-                .Returns(_rootList);
+            var loadCatalogsService = Substitute.For<ILoadCatalogService>();
+            loadCatalogsService
+                .LoadRootEntriesAsync(
+                    Arg.Any<IConfig>(),
+                    Arg.Any<Action<int, int, string>>(),
+                    Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(_rootList));
 
-            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
+            var presenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogsService);
+            presenter.InitializeAsync().GetAwaiter().GetResult();
 
             _mockForm.Received().SetTotalFileEntriesLoadedStatus(1);
         }
@@ -324,10 +345,14 @@ public class CDEWinFormPresenterTest
             _stubConfig.DefaultCatalogColumnCount.Returns(13); // enough spaces for catalog list view items.
             _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM/dd HH:mm:ss}");
             InitRootWithFile();
-            var _loadCatalogsService = Substitute.For<ILoadCatalogService>();
-            _loadCatalogsService.LoadRootEntries(Arg.Any<IConfig>())
-                .Returns(_rootList);
-            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, _loadCatalogsService);
+            var loadCatalogsService = Substitute.For<ILoadCatalogService>();
+            loadCatalogsService.LoadRootEntriesAsync(
+                    Arg.Any<IConfig>(),
+                    Arg.Any<Action<int, int, string>>(),
+                    Arg.Any<CancellationToken>())
+                .Returns(Task.FromResult(_rootList));
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogsService);
+            _sutPresenter.InitializeAsync().GetAwaiter().GetResult();
         }
 
         [Test]

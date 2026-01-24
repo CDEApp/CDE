@@ -540,6 +540,17 @@ public partial class CDEWinForm : Form, ICDEWinForm
         mainStatusStrip.Update(); //Added since it is not updating this automagically.
     }
 
+    public void ShowLoadingProgress(bool visible)
+    {
+        loadingProgressBar.Visible = visible;
+        if (!visible) loadingProgressBar.Value = 0;
+    }
+
+    public void SetLoadingProgressValue(int percent)
+    {
+        loadingProgressBar.Value = Math.Clamp(percent, 0, 100);
+    }
+
     public void SetSearchTextBoxAutoComplete(IEnumerable<string> history)
     {
         patternComboBox.AutoCompleteMode = AutoCompleteMode.Suggest;
