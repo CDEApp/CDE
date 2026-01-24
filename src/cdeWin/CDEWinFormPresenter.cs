@@ -50,6 +50,17 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private CancellationTokenSource _loadingCts;
     private bool _isLoadingCatalogs;
 
+    // Loading animation - dots cycle through a wave pattern
+    private System.Windows.Forms.Timer _loadingAnimationTimer;
+    private int _loadingAnimationFrame;
+    private static readonly string[] LoadingAnimationFrames =
+    [
+        "Please wait ···",
+        "Please wait ··•",
+        "Please wait ·•·",
+        "Please wait •··"
+    ];
+
     public CDEWinFormPresenter(
         ICDEWinForm form,
         IConfig config,
@@ -80,7 +91,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         // Disable search during loading
         _clientForm.SearchButtonEnable = false;
-        _clientForm.SearchButtonText = "Please wait..";
+        StartLoadingAnimation();
         _clientForm.SetCatalogsLoadedStatus(0);
         _clientForm.SetTotalFileEntriesLoadedStatus(0);
         _clientForm.SetSearchTimeStatus("Loading catalogs...");
@@ -115,7 +126,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         {
             _isLoadingCatalogs = false;
             _clientForm.ShowLoadingProgress(false);
-            _clientForm.SearchButtonText = "Search";
+            StopLoadingAnimation();
             _clientForm.SearchButtonEnable = true;
             _loadingCts?.Dispose();
             _loadingCts = null;
@@ -142,6 +153,29 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public void CancelLoading()
     {
         _loadingCts?.Cancel();
+    }
+
+    private void StartLoadingAnimation()
+    {
+        _loadingAnimationFrame = 0;
+        _clientForm.SearchButtonText = LoadingAnimationFrames[0];
+
+        _loadingAnimationTimer?.Dispose();
+        _loadingAnimationTimer = new System.Windows.Forms.Timer { Interval = 300 };
+        _loadingAnimationTimer.Tick += (_, _) =>
+        {
+            _loadingAnimationFrame = (_loadingAnimationFrame + 1) % LoadingAnimationFrames.Length;
+            _clientForm.SearchButtonText = LoadingAnimationFrames[_loadingAnimationFrame];
+        };
+        _loadingAnimationTimer.Start();
+    }
+
+    private void StopLoadingAnimation()
+    {
+        _loadingAnimationTimer?.Stop();
+        _loadingAnimationTimer?.Dispose();
+        _loadingAnimationTimer = null;
+        _clientForm.SearchButtonText = "Search";
     }
 
     private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
@@ -1199,7 +1233,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var watch = Stopwatch.StartNew();
 
         _clientForm.SearchButtonEnable = false;
-        _clientForm.SearchButtonText = "Please wait..";
+        StartLoadingAnimation();
         _clientForm.SetCatalogsLoadedStatus(0);
         _clientForm.SetTotalFileEntriesLoadedStatus(0);
         _clientForm.SetSearchTimeStatus("Reloading catalogs...");
@@ -1239,7 +1273,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         {
             _isLoadingCatalogs = false;
             _clientForm.ShowLoadingProgress(false);
-            _clientForm.SearchButtonText = "Search";
+            StopLoadingAnimation();
             _clientForm.SearchButtonEnable = true;
             _loadingCts?.Dispose();
             _loadingCts = null;
