@@ -8,7 +8,7 @@ namespace cde.CommandLine;
 [Verb("scan", HelpText = "Scans path and creates a cache file.")]
 public class ScanOptions
 {
-    [Value(0, HelpText = "Path to scan")]
+    [Value(0, Required = true, HelpText = "Path to scan")]
     public string Path { get; [UsedImplicitly] set; }
 
     [Option("desc", HelpText = "Description to set")]
