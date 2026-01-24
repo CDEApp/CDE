@@ -440,7 +440,7 @@ public class DirEntry : ICommonEntry
 
     public void TraverseTreesCopyHash(ICommonEntry destination)
     {
-        var dirs = new Stack<Tuple<string, ICommonEntry, ICommonEntry>>();
+        var dirs = new Stack<(string, ICommonEntry, ICommonEntry)>();
         var source = this;
 
         if (source == null || destination == null)
@@ -459,7 +459,7 @@ public class DirEntry : ICommonEntry
         // traverse every source entry copy across the meta data that matches on destination entry
         // if it adds value to destination.
         // if destination is not there source not processed.
-        dirs.Push(Tuple.Create(sourcePath, (ICommonEntry)source, destination));
+        dirs.Push((sourcePath, source, destination));
 
         while (dirs.Count > 0)
         {
@@ -504,7 +504,7 @@ public class DirEntry : ICommonEntry
                     {
                         if (destinationDirEntry.IsDirectory)
                         {
-                            dirs.Push(Tuple.Create(fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
+                            dirs.Push((fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
                         }
                     }
                 }
