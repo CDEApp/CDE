@@ -61,6 +61,8 @@ public class FindOptions
 
     private int _threadSafeProgressCount;
     private volatile int _lastReportedProgress;
+    private long _lastProgressTimestamp;
+    private const long MinProgressIntervalTicks = 100 * TimeSpan.TicksPerMillisecond; // 100ms
 
     private readonly int[] _dummyProgressCount = new int[1];
 
@@ -183,6 +185,9 @@ public class FindOptions
     /// </summary>
     private Func<ICommonEntry, ICommonEntry, Task<bool>> CreateAsyncProcessor(int[] limitCount)
     {
+        // Cache predicate once outside the lambda to avoid per-entry delegate allocation
+        var findPredicate = GetFindPredicate();
+
         return async (parent, dirEntry) =>
         {
             // Handle null parent (root entries)
@@ -195,24 +200,23 @@ public class FindOptions
                 return true; // Skip enforced
             }
 
-            // Optimized async progress reporting with batching
+            // Rate-limited progress reporting with non-blocking UI update
             if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
             {
-                // Use ConfigureAwait(false) for better performance in async context
-                // Fire-and-forget progress reporting to avoid blocking worker threads
-                _ = Task.Run(async () =>
+                var now = Stopwatch.GetTimestamp();
+                var last = Interlocked.Read(ref _lastProgressTimestamp);
+                var elapsedMs = (now - last) * 1000 / Stopwatch.Frequency;
+
+                if (elapsedMs >= 100) // 100ms minimum between reports
                 {
-                    try
+                    if (Interlocked.CompareExchange(ref _lastProgressTimestamp, now, last) == last)
                     {
-                        ProgressFunc(currentCount, ProgressEnd);
-                        // Small delay to prevent overwhelming the UI thread
-                        await Task.Delay(1).ConfigureAwait(false);
+                        // Use ThreadPool to avoid blocking worker thread on UI marshaling
+                        var count = currentCount;
+                        var end = ProgressEnd;
+                        ThreadPool.QueueUserWorkItem(_ => ProgressFunc(count, end));
                     }
-                    catch
-                    {
-                        // Ignore progress reporting errors to prevent work interruption
-                    }
-                });
+                }
 
                 // Check for cancellation with minimal overhead
                 if (Worker?.CancellationPending == true)
@@ -221,8 +225,7 @@ public class FindOptions
                 }
             }
 
-            // Apply find predicate
-            var findPredicate = GetFindPredicate();
+            // Apply cached find predicate
             if (findPredicate(p, dirEntry))
             {
                 // Execute visitor function
@@ -256,25 +259,25 @@ public class FindOptions
         // Cache properties locally to avoid repeated field access
         var pattern = Pattern;
         var includePath = IncludePath;
-        
+
         // Fast path for empty pattern
         if (string.IsNullOrEmpty(pattern))
             return (p, d) => true;
-        
+
         if (RegexMode)
         {
-            var regex = RegexCache.GetOrAdd(pattern,p =>
+            var regex = RegexCache.GetOrAdd(pattern, p =>
                 new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
 
             return includePath
-                ? (p, d) => regex.IsMatch(p.MakeFullPath(d))
+                ? (p, d) => regex.IsMatch(EntryHelper.MakeFullPathPooled(p, d))
                 : (p, d) => regex.IsMatch(d.Path);
         }
 
         // String matching with StringComparison for better performance
         return includePath
-            ? (p, d) => p.MakeFullPath(d).Contains(Pattern, StringComparison.OrdinalIgnoreCase)
-            : (p, d) => d.Path.Contains(Pattern, StringComparison.OrdinalIgnoreCase);
+            ? (p, d) => EntryHelper.MakeFullPathPooled(p, d).Contains(pattern, StringComparison.OrdinalIgnoreCase)
+            : (p, d) => d.Path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
     }
 
     private TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
@@ -321,6 +324,7 @@ public class FindOptions
     {
         _threadSafeProgressCount = 0;
         _lastReportedProgress = 0;
+        _lastProgressTimestamp = 0;
     }
 
     private bool ShouldReportProgress(int currentCount)
@@ -363,20 +367,79 @@ public class FindOptions
         return true;
     }
 
+    /// <summary>
+    /// Builds an optimized predicate that only evaluates enabled filters.
+    /// This reduces branch mispredictions and avoids checking disabled filters.
+    /// </summary>
     private TraverseFunc GetFindPredicate()
     {
-        return (p, d) =>
-            (d.IsDirectory && IncludeFolders || !d.IsDirectory && IncludeFiles)
-            && (!FromSizeEnable || FromSizeEnable && d.Size >= FromSize)
-            && (!ToSizeEnable || ToSizeEnable && d.Size <= ToSize)
-            && (!FromDateEnable || FromDateEnable && !d.IsModifiedBad && d.Modified >= FromDate)
-            && (!ToDateEnable || ToDateEnable && !d.IsModifiedBad && d.Modified <= ToDate)
-            && (!FromHourEnable || FromHourEnable && !d.IsModifiedBad
-                                                  && FromHour.TotalSeconds <= d.Modified.TimeOfDay.TotalSeconds)
-            && (!ToHourEnable || ToHourEnable && !d.IsModifiedBad
-                                              && ToHour.TotalSeconds >= d.Modified.TimeOfDay.TotalSeconds)
-            && (!NotOlderThanEnable || NotOlderThanEnable
-                && !d.IsModifiedBad && d.Modified >= NotOlderThan)
-            && PatternMatcher(p, d);
+        // Start with type filter (always needed)
+        Func<ICommonEntry, ICommonEntry, bool> predicate;
+
+        if (IncludeFiles && IncludeFolders)
+            predicate = static (p, d) => true;
+        else if (IncludeFiles)
+            predicate = static (p, d) => !d.IsDirectory;
+        else if (IncludeFolders)
+            predicate = static (p, d) => d.IsDirectory;
+        else
+            return static (p, d) => false; // Nothing to find
+
+        // Chain only enabled size filters
+        if (FromSizeEnable)
+        {
+            var prev = predicate;
+            var fromSize = FromSize;
+            predicate = (p, d) => prev(p, d) && d.Size >= fromSize;
+        }
+
+        if (ToSizeEnable)
+        {
+            var prev = predicate;
+            var toSize = ToSize;
+            predicate = (p, d) => prev(p, d) && d.Size <= toSize;
+        }
+
+        // Chain only enabled date filters
+        if (FromDateEnable)
+        {
+            var prev = predicate;
+            var fromDate = FromDate;
+            predicate = (p, d) => prev(p, d) && !d.IsModifiedBad && d.Modified >= fromDate;
+        }
+
+        if (ToDateEnable)
+        {
+            var prev = predicate;
+            var toDate = ToDate;
+            predicate = (p, d) => prev(p, d) && !d.IsModifiedBad && d.Modified <= toDate;
+        }
+
+        // Chain only enabled hour filters
+        if (FromHourEnable)
+        {
+            var prev = predicate;
+            var fromHourSeconds = FromHour.TotalSeconds;
+            predicate = (p, d) => prev(p, d) && !d.IsModifiedBad && fromHourSeconds <= d.Modified.TimeOfDay.TotalSeconds;
+        }
+
+        if (ToHourEnable)
+        {
+            var prev = predicate;
+            var toHourSeconds = ToHour.TotalSeconds;
+            predicate = (p, d) => prev(p, d) && !d.IsModifiedBad && toHourSeconds >= d.Modified.TimeOfDay.TotalSeconds;
+        }
+
+        if (NotOlderThanEnable)
+        {
+            var prev = predicate;
+            var notOlderThan = NotOlderThan;
+            predicate = (p, d) => prev(p, d) && !d.IsModifiedBad && d.Modified >= notOlderThan;
+        }
+
+        // Pattern matcher last (most expensive)
+        var matcher = PatternMatcher;
+        var final = predicate;
+        return (p, d) => final(p, d) && matcher(p, d);
     }
 }

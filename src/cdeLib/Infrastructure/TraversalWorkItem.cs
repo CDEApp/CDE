@@ -1,5 +1,4 @@
-﻿using System.Linq;
-using cdeLib.Entities;
+﻿using cdeLib.Entities;
 
 namespace cdeLib.Infrastructure;
 
@@ -26,7 +25,10 @@ public class TraversalWorkItem
         // Simple heuristic: count immediate children + estimate for subdirectories
         if (!entry.IsDirectory || entry.Children == null)
             return 1;
-        
-        return 1 + entry.Children.Count + entry.Children.Count(c => c.IsDirectory) * 10;
+
+        var childCount = entry.Children.Count;
+        // Assume ~20% of children are directories (avoids LINQ iteration)
+        var estimatedDirs = childCount / 5;
+        return 1 + childCount + estimatedDirs * 10;
     }
 }

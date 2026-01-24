@@ -2,12 +2,17 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using System.Threading;
 using cdeLib.Infrastructure;
 
 namespace cdeLib.Entities;
 
 public static class EntryHelper
 {
+    private static readonly ThreadLocal<StringBuilder> PathBuilder =
+        new(() => new StringBuilder(512));
+
     public static IEnumerable<ICommonEntry> GetDirEntries(RootEntry rootEntry)
     {
         return new DirEntryEnumerator(rootEntry);
@@ -28,6 +33,31 @@ public static class EntryHelper
         var a = parentEntry.FullPath ?? "pnull";
         var b = dirEntry.Path ?? "dnull";
         return System.IO.Path.Combine(a, b);
+    }
+
+    /// <summary>
+    /// Creates a full path using a ThreadLocal StringBuilder to reduce allocations.
+    /// Still allocates the final string, but avoids intermediate allocations from Path.Combine.
+    /// </summary>
+    public static string MakeFullPathPooled(ICommonEntry parentEntry, ICommonEntry dirEntry)
+    {
+        var sb = PathBuilder.Value!;
+        sb.Clear();
+
+        var parentPath = parentEntry.FullPath;
+        if (parentPath != null)
+        {
+            sb.Append(parentPath);
+            if (sb.Length > 0)
+            {
+                var lastChar = sb[sb.Length - 1];
+                if (lastChar != '\\' && lastChar != '/')
+                    sb.Append(System.IO.Path.DirectorySeparatorChar);
+            }
+        }
+
+        sb.Append(dirEntry.Path ?? "dnull");
+        return sb.ToString();
     }
 
 

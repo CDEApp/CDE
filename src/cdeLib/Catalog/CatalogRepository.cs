@@ -89,12 +89,14 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                         return serializer.Parse<RootEntry>(bytes);
                     }
                 case SerializerProtocol.MessagePack:
-                    // Read file into memory first (async I/O), then deserialize synchronously.
+                    // Read file into memory first (async I/O), then deserialize on thread pool.
                     // This is faster than DeserializeAsync with a stream because:
                     // 1. No async state machine overhead during CPU-bound deserialization
                     // 2. MessagePack can work directly on the memory buffer without internal buffering
+                    // Task.Run ensures deserialization doesn't block the UI thread.
                     var msgPackBytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
-                    return MessagePackSerializer.Deserialize<RootEntry>(msgPackBytes, MessagePackConfig.Options);
+                    return await Task.Run(() =>
+                        MessagePackSerializer.Deserialize<RootEntry>(msgPackBytes, MessagePackConfig.Options));
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");
