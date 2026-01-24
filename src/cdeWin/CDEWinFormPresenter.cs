@@ -33,6 +33,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private readonly string[] _searchVals;
     private readonly string[] _catalogVals;
 
+    // Cache for formatted date strings
+    private readonly Dictionary<DateTime, string> _dateCache = new(1024);
+
     private List<PairDirEntry> _searchResultList;
     private List<ICommonEntry> _directoryList;
 
@@ -661,6 +664,19 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         directoryHelper.RenderItem = lvi;
     }
 
+    private string FormatDate(DateTime date)
+    {
+        if (_dateCache.TryGetValue(date, out var cached))
+            return cached;
+
+        var result = string.Format(_config.DateFormatYMDHMS, date);
+
+        if (_dateCache.Count < 10000)
+            _dateCache[date] = result;
+
+        return result;
+    }
+
     private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
     {
         vals[0] = dirEntry.Path;
@@ -683,7 +699,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         vals[2] = dirEntry.IsModifiedBad
             ? "<Bad Date>"
-            : string.Format(_config.DateFormatYMDHMS, dirEntry.Modified);
+            : FormatDate(dirEntry.Modified);
         return itemColor;
     }
 
@@ -1101,15 +1117,12 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
     {
-        var lvItem = new ListViewItem(vals[0]) { ForeColor = firstColumnForeColor, Tag = tag };
-        // a bug this doesn't work under mouse cursor { UseItemStyleForSubItems = false };
-        // lvItem.SubItems[0].ForeColor = firstColumnForeColor;
-        for (var i = 1; i < vals.Length; ++i)
+        // Use constructor that takes all subitems at once - avoids internal array resizes
+        var lvItem = new ListViewItem(vals)
         {
-            lvItem.SubItems.Add(vals[i]);
-            //lvItem.SubItems[i].ForeColor = _listViewForeColor; // set others to other than item
-        }
-
+            ForeColor = firstColumnForeColor,
+            Tag = tag
+        };
         return lvItem;
     }
 

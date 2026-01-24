@@ -78,9 +78,10 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     private readonly DoubleBufferListView _listView;
 
-    // very simple caching of ListViewItem's, just remembers the previous index - its a big win for how simple.
-    private ListViewItem _cacheListViewItem;
-    private int _cacheIndex;
+    // LRU-style cache for ListViewItems - holds recently rendered items
+    private const int CacheCapacity = 200;
+    private readonly Dictionary<int, ListViewItem> _itemCache = new(CacheCapacity);
+    private readonly Queue<int> _cacheOrder = new(CacheCapacity);
 
     /// <summary>
     /// Used by virtual mode ListView
@@ -217,33 +218,44 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     }
 
     /// <summary>
-    /// Simplest invalidation of ListViewItem cache.
-    /// Now a single line view will not cache for ever.
+    /// No-op during scroll - cache is managed in RetrieveVirtualItem.
+    /// Cache is cleared only in SetList() when data changes.
     /// </summary>
     private void MyCacheVirtualItems(object sender, CacheVirtualItemsEventArgs e)
     {
-        _cacheIndex = -1;
+        // No-op - cache invalidation happens in SetList() and SortList()
     }
 
     /// <summary>
-    /// Handles very simple caching of ListViewItem just the current Index is remembered.
+    /// Handles LRU caching of ListViewItems for improved scroll performance.
     /// </summary>
     private void MyRetrieveVirtualItem(object sender, RetrieveVirtualItemEventArgs e)
     {
         var itemIndex = e.ItemIndex;
-        // _cacheListViewItem null check is required...
-        // its possible its null when _cacheIndex == itemIndex.
-        if (_cacheIndex != itemIndex || _cacheListViewItem == null)
+
+        if (_itemCache.TryGetValue(itemIndex, out var cachedItem))
         {
-            RetrieveItemIndex = itemIndex;
-            RenderItem = null;
-            _retrieveVirtualItem();
-            _cacheIndex = itemIndex;
-            _cacheListViewItem =
-                RenderItem ?? throw new Exception("ListViewItem not retrieved... for " + typeof(T));
+            e.Item = cachedItem;
+            return;
         }
 
-        e.Item = _cacheListViewItem;
+        // Build new item
+        RetrieveItemIndex = itemIndex;
+        RenderItem = null;
+        _retrieveVirtualItem();
+
+        var newItem = RenderItem ?? throw new Exception("ListViewItem not retrieved for " + typeof(T));
+
+        // Add to cache with simple eviction
+        if (_cacheOrder.Count >= CacheCapacity)
+        {
+            var evictIndex = _cacheOrder.Dequeue();
+            _itemCache.Remove(evictIndex);
+        }
+        _itemCache[itemIndex] = newItem;
+        _cacheOrder.Enqueue(itemIndex);
+
+        e.Item = newItem;
     }
 
     private void MyColumnClick(object sender, ColumnClickEventArgs e)
@@ -369,6 +381,10 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
                 "ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
         }
 
+        // Clear cache when data changes
+        _itemCache.Clear();
+        _cacheOrder.Clear();
+
         _list = list;
         _listSize = _list?.Count ?? 0;
         _listView.VirtualListSize = _listSize;
@@ -396,6 +412,10 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     public void SortList()
     {
+        // Clear cache when sort changes item positions
+        _itemCache.Clear();
+        _cacheOrder.Clear();
+
         SetColumnSortArrow();
         if (_list == null) return;
         var selectedItems = GetSelectedItems().ToList(); // ToList() need results before deselect
