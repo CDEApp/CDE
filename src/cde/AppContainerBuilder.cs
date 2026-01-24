@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using Autofac;
 using AutofacSerilogIntegration;
@@ -17,34 +16,39 @@ namespace cde;
 /// </summary>
 public static class AppContainerBuilder
 {
+    /// <summary>
+    /// Build the DI container. Returns null if appsettings.json is missing.
+    /// </summary>
     public static IContainer BuildContainer(string[] args)
     {
+        ConfigureBootstrapLogger();
+
+        // Check for appsettings.json before attempting to build
+        if (!ConfigBuilder.AppSettingsExists())
+        {
+            var currentDir = Directory.GetCurrentDirectory();
+            Log.Logger.Warning(
+                "Configuration file '{FileName}' not found in '{Directory}'",
+                ConfigBuilder.AppSettingsFileName, currentDir);
+            Log.Logger.Warning(
+                "Please ensure appsettings.json is in the same directory as the executable");
+            return null;
+        }
+
         var builder = new ContainerBuilder();
+        var config = new ConfigBuilder().Build(args);
+        ConfigureLogger(config);
+        builder.RegisterInstance(config);
+        builder.RegisterType<cdeLib.Infrastructure.Logger>().As<cdeLib.Infrastructure.ILogger>();
+        builder.RegisterLogger();
 
-        try
-        {
-            ConfigureBootstrapLogger();
-            var config = new ConfigBuilder().Build(args);
-            ConfigureLogger(config);
-            builder.RegisterInstance(config);
-            builder.RegisterType<cdeLib.Infrastructure.Logger>().As<cdeLib.Infrastructure.ILogger>();
-            builder.RegisterLogger();
-
-            builder.RegisterModule<CdelibModule>();
-            var configuration = MediatRConfigurationBuilder
-                .Create(typeof(AppContainerBuilder).Assembly)
-                .WithAllOpenGenericHandlerTypesRegistered()
-                .Build();
-            builder.RegisterMediatR(configuration);
-            return builder.Build();
-        }
-        catch (FileNotFoundException e)
-        {
-            // We'll assume it's the missing appsettings.json file error.
-            Log.Logger.Error(e,
-                "Please ensure there is an appsettings.json file in the same directory as the executable");
-            throw;
-        }
+        builder.RegisterModule<CdelibModule>();
+        var configuration = MediatRConfigurationBuilder
+            .Create(typeof(AppContainerBuilder).Assembly)
+            .WithAllOpenGenericHandlerTypesRegistered()
+            .Build();
+        builder.RegisterMediatR(configuration);
+        return builder.Build();
     }
 
     private static void ConfigureBootstrapLogger()

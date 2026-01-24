@@ -27,10 +27,18 @@ public static class Program
 
     private static IMediator Mediatr { get; set; }
 
-    public static void InitProgram(string[] args)
+    /// <summary>
+    /// Initialize the program. Returns false if initialization failed (e.g., missing config).
+    /// </summary>
+    public static bool InitProgram(string[] args)
     {
         _container = AppContainerBuilder.BuildContainer(args);
+        if (_container == null)
+        {
+            return false;
+        }
         Mediatr = Resolve<IMediator>();
+        return true;
     }
 
     private static ParserResult<object> GetParserResult(IEnumerable<string> args)
@@ -56,7 +64,10 @@ public static class Program
 
     private static int Main(string[] args)
     {
-        InitProgram(args);
+        if (!InitProgram(args))
+        {
+            return 1; // Exit with error code if initialization failed
+        }
         Console.CancelKeyPress += BreakConsole;
         try
         {
