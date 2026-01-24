@@ -17,7 +17,7 @@ public class FileStreamManager : IDisposable
 
     public FileStreamManager()
     {
-        _bufferPool = new ObjectPool<byte[]>(() => new byte[64 * 1024], null, 50);
+        _bufferPool = new ObjectPool<byte[]>(() => new byte[256 * 1024], null, 50);
     }
 
     /// <summary>
@@ -32,7 +32,7 @@ public class FileStreamManager : IDisposable
             FileMode.Open,
             FileAccess.Read,
             FileShare.Read,
-            bufferSize: 64 * 1024,
+            bufferSize: 256 * 1024,
             useAsync: true);
     }
 
@@ -48,7 +48,7 @@ public class FileStreamManager : IDisposable
             FileMode.Create,
             FileAccess.Write,
             FileShare.None,
-            bufferSize: 64 * 1024,
+            bufferSize: 256 * 1024,
             useAsync: true);
     }
 
