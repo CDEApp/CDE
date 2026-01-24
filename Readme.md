@@ -6,7 +6,7 @@
 
 This is a utility to capture directory entries into catalog files for later processing and lookup. Processing includes capturing hashes, identifying duplicates and searching for file system entries with assorted criteria.
 
-It is inspired by and old and faithful utility called Cathy I have used in the past found at [Cathy's Website](http://www.mtg.sk/rva/). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
+It is inspired by old and faithful utility called Cathy I have used in the past (Website now gone). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
 
 #### cde
 
@@ -21,7 +21,7 @@ cdeWin is a Windows Forms application for searching, sorting and browsing of cat
 This application reads and writes a configuration file `cdeWinView.cfg`.
 
 - This file is normally located in the Local Application Data folder of the current user.
-- On standard Windows 10 machine its path would be
+- On Windows the path would be
   - `C:\Users\username\AppData\Local\cde`
 - If a file called cdeWinView.cfg exists in the current directory when cdeWin launches it will use the current directory for the configuration file and not the Local Application Data Folder.
 - This file saves and restores information about cdeWin window and controls.
