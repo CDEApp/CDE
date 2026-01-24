@@ -8,6 +8,7 @@ public interface ICatalogRepository
 {
     RootEntry Read(string fileName);
     IList<RootEntry> Load(IList<string> cdeList);
+    Task<IList<RootEntry>> LoadAsync(IList<string> cdeList);
     IList<RootEntry> LoadCurrentDirCache();
     Task Save(RootEntry rootEntry);
 

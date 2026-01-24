@@ -126,9 +126,29 @@ public class CatalogRepository : ICatalogRepository, IDisposable
         }
     }
 
+    public async Task<IList<RootEntry>> LoadAsync(IList<string> cdeList)
+    {
+        using (Operation.Time("Loading Catalogs Async {Count}", cdeList.Count))
+        {
+            var tasks = cdeList.Select(async file =>
+            {
+                var rootEntry = await LoadDirCacheAsync(file);
+                if (rootEntry != null)
+                {
+                    _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
+                        Thread.CurrentThread.ManagedThreadId);
+                }
+                return rootEntry;
+            }).ToList();
+
+            var results = await Task.WhenAll(tasks);
+            return results.Where(r => r != null).ToList()!;
+        }
+    }
+
     public IList<RootEntry> LoadCurrentDirCache()
     {
-        return Load(GetCacheFileList(new[] {"./"}));
+        return LoadAsync(GetCacheFileList(new[] {"./"})).GetAwaiter().GetResult();
     }
 
     /// <summary>
