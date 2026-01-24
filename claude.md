@@ -13,20 +13,20 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 ### Main Projects
 
 - **cde** - Command-line interface (CLI) application
-  - Target: .NET 9.0
+  - Target: .NET 10
   - Cross-platform: win-x64, linux-x64, osx-x64
   - Entry point for scan, find, hash, dupes, dump commands
   - Dependencies: Autofac, MediatR, CommandLineParser, Spectre.Console
 
 - **cdeLib** - Core library containing business logic
-  - Target: .NET 9.0
+  - Target: .NET 10
   - Contains all catalog operations, hashing, duplicate detection
   - Uses CQRS pattern with MediatR
-  - Serialization: Protobuf-net, MessagePack, FlatSharp
+  - Serialization: MessagePack, FlatSharp
   - Key dependencies: Autofac, MediatR, Serilog
 
 - **cdeWin** - Windows Forms GUI application
-  - Target: .NET 9.0 (Windows)
+  - Target: .NET 10 (Windows)
   - Browse, search, and navigate catalogs visually
   - Configuration stored in Local AppData or current directory
 
@@ -70,9 +70,8 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 ### Serialization
 
 Multiple serialization formats supported:
-- **Protobuf-net** - Primary catalog file format (.cde files)
-- **MessagePack** - Alternative serialization
-- **FlatSharp** - FlatBuffers support
+- **MessagePack** - Primary catalog file format (.cde files)
+- **FlatSharp** - FlatBuffers support (alternative)
 
 ### Hashing
 
@@ -158,7 +157,7 @@ Located in `cdeLib/Infrastructure/`:
 - **Loading**: All .cde files in current directory or one level down are loaded
 - **Content**: Directory tree with optional MD5 hashes
 - **Size**: Highly efficient - 500MB for 11 billion entries
-- **Format**: Protobuf binary serialization (not compressed)
+- **Format**: MessagePack binary serialization (not compressed)
 
 ## Common Operations
 
@@ -270,7 +269,7 @@ Standard .NET test runners (tests use NUnit, xUnit)
 
 - **Autofac** - Dependency injection
 - **MediatR** - Command/query pattern
-- **Protobuf-net** - Primary serialization
+- **MessagePack** - Primary serialization
 - **Serilog** - Structured logging
 - **CommandLineParser** - CLI argument parsing
 - **Spectre.Console** - Rich console output
