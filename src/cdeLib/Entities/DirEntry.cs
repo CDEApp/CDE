@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
@@ -193,7 +194,7 @@ public class DirEntry : ICommonEntry
         IsDirectory = isDirectory;
         if (isDirectory)
         {
-            Children = new List<DirEntry>();
+            Children = CollectionPool.GetDirEntryList();
         }
     }
 
@@ -224,7 +225,7 @@ public class DirEntry : ICommonEntry
         }
         else
         {
-            Children = new List<DirEntry>();
+            Children = CollectionPool.GetDirEntryList();
         }
     }
 
@@ -343,7 +344,7 @@ public class DirEntry : ICommonEntry
     {
         if (Children == null)
         {
-            Children = new List<DirEntry>();
+            Children = CollectionPool.GetDirEntryList();
         }
 
         Children.Add(child);
