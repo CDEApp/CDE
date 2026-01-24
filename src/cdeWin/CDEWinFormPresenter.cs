@@ -407,27 +407,32 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     // As search is substring match remove leading and trailing wildcards.
     protected string OptimiseRegexPattern(string pattern)
     {
-        if (_clientForm.RegexMode && pattern != null)
+        if (!_clientForm.RegexMode || string.IsNullOrEmpty(pattern))
         {
-            bool changeMade;
-            do
-            {
-                changeMade = false;
-                if (pattern.StartsWith(".*"))
-                {
-                    pattern = pattern[2..];
-                    changeMade = true;
-                }
-
-                if (pattern.EndsWith(".*"))
-                {
-                    pattern = pattern[..^2];
-                    changeMade = true;
-                }
-            } while (changeMade);
+            return pattern;
         }
 
-        return pattern;
+        // Single-pass optimization using Span to find trim boundaries
+        var span = pattern.AsSpan();
+        var start = 0;
+        var end = span.Length;
+
+        // Find start position (skip all leading ".*")
+        while (end - start >= 2 && span[start] == '.' && span[start + 1] == '*')
+        {
+            start += 2;
+        }
+
+        // Find end position (skip all trailing ".*")
+        while (end - start >= 2 && span[end - 2] == '.' && span[end - 1] == '*')
+        {
+            end -= 2;
+        }
+
+        // Return original if no changes, otherwise create single new string
+        return start == 0 && end == span.Length
+            ? pattern
+            : span[start..end].ToString();
     }
 
     private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
