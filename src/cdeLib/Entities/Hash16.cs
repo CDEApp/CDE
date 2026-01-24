@@ -60,15 +60,7 @@ public struct Hash16
     }
 
     [IgnoreMember]
-    public string HashAsString
-    {
-        get
-        {
-            var a = BitConverter.GetBytes(HashA);
-            var b = BitConverter.GetBytes(HashB);
-            return $"{ByteArrayHelper.ByteArrayToString(a)}{ByteArrayHelper.ByteArrayToString(b)}";
-        }
-    }
+    public string HashAsString => ByteArrayHelper.Hash16ToHexString(HashA, HashB);
 
     public override string ToString()
     {

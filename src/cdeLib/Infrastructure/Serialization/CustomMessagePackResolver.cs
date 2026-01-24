@@ -1,4 +1,3 @@
-using System;
 using cdeLib.Entities;
 using MessagePack;
 using MessagePack.Formatters;
@@ -8,7 +7,7 @@ namespace cdeLib.Infrastructure.Serialization;
 
 /// <summary>
 /// Custom MessagePack resolver that uses Hash16Formatter for Hash16 struct
-/// and falls back to standard resolver for everything else.
+/// and falls back to the standard resolver for everything else.
 /// </summary>
 public sealed class CustomMessagePackResolver : IFormatterResolver
 {
@@ -45,7 +44,7 @@ public sealed class CustomMessagePackResolver : IFormatterResolver
 }
 
 /// <summary>
-/// Helper class to get MessagePackSerializerOptions with custom resolver.
+/// Helper class to get MessagePackSerializerOptions with a custom resolver.
 /// </summary>
 public static class MessagePackConfig
 {

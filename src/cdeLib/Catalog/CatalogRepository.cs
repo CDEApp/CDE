@@ -20,7 +20,7 @@ namespace cdeLib.Catalog;
 
 public class CatalogRepository : ICatalogRepository, IDisposable
 {
-    private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; //hard coded for now.
+    private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
     private static readonly BufferPool BufferPool = new(64 * 1024, 50);
     private readonly FileStreamManager _fileStreamManager = FileStreams.Instance;
@@ -89,10 +89,12 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                         return serializer.Parse<RootEntry>(bytes);
                     }
                 case SerializerProtocol.MessagePack:
-                    await using (var input = _fileStreamManager.CreateReadStream(file))
-                    {
-                        return await MessagePackSerializer.DeserializeAsync<RootEntry>(input, MessagePackConfig.Options);
-                    }
+                    // Read file into memory first (async I/O), then deserialize synchronously.
+                    // This is faster than DeserializeAsync with a stream because:
+                    // 1. No async state machine overhead during CPU-bound deserialization
+                    // 2. MessagePack can work directly on the memory buffer without internal buffering
+                    var msgPackBytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
+                    return MessagePackSerializer.Deserialize<RootEntry>(msgPackBytes, MessagePackConfig.Options);
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");

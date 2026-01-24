@@ -160,7 +160,7 @@ public class FindOptions
 
         var traversal = new Infrastructure.WorkStealingTreeTraversal(maxConcurrency, cancellationToken);
 
-        // Create async processor function
+        // Create an async processor function
         var asyncProcessor = CreateAsyncProcessor(limitCount);
 
         try

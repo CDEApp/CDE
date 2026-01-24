@@ -1,4 +1,3 @@
-using System;
 using cdeLib.Entities;
 using MessagePack;
 using MessagePack.Formatters;
@@ -21,7 +20,7 @@ public sealed class Hash16Formatter : IMessagePackFormatter<Hash16>
             return;
         }
 
-        // Serialize as array of 2 ulongs
+        // Serialize as an array of 2 ulongs
         writer.WriteArrayHeader(2);
         writer.Write(value.HashA);
         writer.Write(value.HashB);
