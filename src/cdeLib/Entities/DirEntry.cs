@@ -10,7 +10,7 @@ using Serilog;
 
 namespace cdeLib.Entities;
 
-[DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash != null ? Hash.HashB : 0}")]
+[DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.IsSet ? Hash.HashB : 0}")]
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
@@ -32,6 +32,7 @@ public class DirEntry : ICommonEntry
 
     [ProtoMember(2, IsRequired = false)]
     [FlatBufferItem(2)]
+    [MessagePackFormatter(typeof(cdeLib.Infrastructure.Serialization.Hash16Formatter))]
     [Key(2)]
     public virtual Hash16 Hash { get; set; }
 
@@ -176,15 +177,7 @@ public class DirEntry : ICommonEntry
     // For testing convenience.
     public void SetHash(int hash)
     {
-        if (Hash == null)
-        {
-            Hash = new Hash16(hash);
-        }
-        else
-        {
-            Hash.HashB = (ulong)hash;
-        }
-
+        Hash = new Hash16(hash);
         IsHashDone = true;
     }
 
@@ -361,7 +354,7 @@ public class DirEntry : ICommonEntry
     [Key(4)]
     public virtual long Size { get; set; }
 
-    private static readonly char[] PathSeparators = { '\\', '/' };
+    private static readonly char[] PathSeparators = ['\\', '/'];
     
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
@@ -375,7 +368,8 @@ public class DirEntry : ICommonEntry
         get
         {
             //return _path;
-            //string.concat faster than string interpolation.
+            
+            // string.concat faster than string interpolation.
             return string.IsNullOrEmpty(_extension) ? _path : string.Concat(_path, _extension);
         }
         set
@@ -400,7 +394,10 @@ public class DirEntry : ICommonEntry
                 _extension = null;
             }
             
+            // Simpler code but slightly less performance:
+            
             // //_path = string.Intern(value);
+            
             // var ext = System.IO.Path.GetExtension(value);
             // if (!string.IsNullOrEmpty(ext))
             // {

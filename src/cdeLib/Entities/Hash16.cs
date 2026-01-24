@@ -12,7 +12,7 @@ namespace cdeLib.Entities;
 [ProtoContract]
 [FlatBufferStruct]
 [MessagePackObject]
-public sealed class Hash16 : object
+public struct Hash16
 {
     [ProtoMember(1, IsRequired = true)]
     [FlatBufferItem(0)]
@@ -24,9 +24,17 @@ public sealed class Hash16 : object
     [Key(1)]
     public ulong HashB { get; set; } // last 8 bytes
 
-    public Hash16()
-    {
-    }
+    /// <summary>
+    /// Returns true if this hash has been set (non-zero value).
+    /// Zero hash (both HashA and HashB are 0) is used as sentinel for "not set".
+    /// </summary>
+    [IgnoreMember]
+    public bool IsSet => HashA != 0 || HashB != 0;
+
+    /// <summary>
+    /// Returns an empty/unset hash (all zeros).
+    /// </summary>
+    public static Hash16 Empty => default;
 
     public Hash16(byte[] hash)
     {
@@ -74,7 +82,7 @@ public sealed class Hash16 : object
 
     public override bool Equals(object obj)
     {
-        return ReferenceEquals(this, obj) || obj is Hash16 other && Equals(other);
+        return obj is Hash16 other && Equals(other);
     }
 
     public override int GetHashCode()

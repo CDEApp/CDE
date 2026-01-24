@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
+using cdeLib.Infrastructure.Serialization;
 using FlatSharp;
 using MessagePack;
 using ProtoBuf;
@@ -55,7 +56,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                         return serializer.Parse<RootEntry>(bytes);
                     }
                 case SerializerProtocol.MessagePack:
-                    return MessagePackSerializer.Deserialize<RootEntry>(input);
+                    return MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");
@@ -90,7 +91,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 case SerializerProtocol.MessagePack:
                     await using (var input = _fileStreamManager.CreateReadStream(file))
                     {
-                        return await MessagePackSerializer.DeserializeAsync<RootEntry>(input);
+                        return await MessagePackSerializer.DeserializeAsync<RootEntry>(input, MessagePackConfig.Options);
                     }
 
                 default:
@@ -226,7 +227,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, buffer);
                 break;
             case SerializerProtocol.MessagePack:
-                var data = MessagePackSerializer.Serialize(rootEntry);
+                var data = MessagePackSerializer.Serialize(rootEntry, MessagePackConfig.Options);
                 await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, data);
                 break;
             default:

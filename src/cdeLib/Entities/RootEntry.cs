@@ -425,6 +425,7 @@ public class RootEntry : object, ICommonEntry
 
     [ProtoMember(13, IsRequired = false)]
     [FlatBufferItem(13)]
+    [MessagePackFormatter(typeof(cdeLib.Infrastructure.Serialization.Hash16Formatter))]
     [Key(13)]
     public virtual Hash16 Hash { get; set; }
 
@@ -553,14 +554,14 @@ public class RootEntry : object, ICommonEntry
 
     public void SetHash(byte[] hash)
     {
-        Hash.SetHash(hash);
+        Hash = new Hash16(hash);
         IsHashDone = true;
     }
 
     // For testing convenience.
     public void SetHash(int hash)
     {
-        Hash.HashB = (ulong)hash;
+        Hash = new Hash16(hash);
         IsHashDone = true;
     }
 

@@ -61,12 +61,12 @@ public class CommonEntryTest_TraverseTreesCopyHash
         _reSource.TraverseTreesCopyHash(_reDest);
 
         var x = new Hash16(09);
-        Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(x));
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
-        Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
-        Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
-        Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
+        Assert.That(_dde1.Hash, Is.EqualTo(x));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+        Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+        Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
     }
 
     [Test]
@@ -78,11 +78,11 @@ public class CommonEntryTest_TraverseTreesCopyHash
         _reSource.TraverseTreesCopyHash(_reDest);
 
         Assert.That(_dde1.IsHashDone, Is.False);
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
-        Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
-        Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
-        Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+        Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+        Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
     }
 
     [Test]
@@ -94,11 +94,11 @@ public class CommonEntryTest_TraverseTreesCopyHash
         _reSource.TraverseTreesCopyHash(_reDest);
 
         Assert.That(_dde1.IsHashDone, Is.False);
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
-        Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
-        Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
-        Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+        Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+        Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
     }
 
     [Test]
@@ -110,11 +110,11 @@ public class CommonEntryTest_TraverseTreesCopyHash
         _reSource.TraverseTreesCopyHash(_reDest);
 
         Assert.That(_dde1.IsHashDone, Is.False);
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
-        Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
-        Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
-        Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+        Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+        Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
     }
 
     [Test]
@@ -125,12 +125,12 @@ public class CommonEntryTest_TraverseTreesCopyHash
 
         _reSource.TraverseTreesCopyHash(_reDest);
 
-        Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
-        Assert.That(_dde5.Hash, Is.Not.Null); Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
-        Assert.That(_dde6.Hash, Is.Not.Null); Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
-        Assert.That(_dde7.Hash, Is.Not.Null); Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
+        Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde5.Hash, Is.EqualTo(new Hash16(12)));
+        Assert.That(_dde6.Hash, Is.EqualTo(new Hash16(13)));
+        Assert.That(_dde7.Hash, Is.EqualTo(new Hash16(14)));
     }
 
     [Test]
@@ -141,9 +141,9 @@ public class CommonEntryTest_TraverseTreesCopyHash
 
         _reSource.TraverseTreesCopyHash(_reDest);
 
-        Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
-        Assert.That(_dde2.Hash, Is.Not.Null); Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
-        Assert.That(_dde3.Hash, Is.Not.Null); Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
+        Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+        Assert.That(_dde2.Hash, Is.EqualTo(new Hash16(10)));
+        Assert.That(_dde3.Hash, Is.EqualTo(new Hash16(11)));
         Assert.That(_dde5.IsHashDone, Is.False);
         Assert.That(_dde6.IsHashDone, Is.False);
         Assert.That(_dde7.IsHashDone, Is.False);
@@ -158,7 +158,7 @@ public class CommonEntryTest_TraverseTreesCopyHash
 
         _reSource.TraverseTreesCopyHash(_reDest);
 
-        Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
+        Assert.That(_dde1.Hash, Is.EqualTo(new Hash16(09)));
     }
 
     [Test]
