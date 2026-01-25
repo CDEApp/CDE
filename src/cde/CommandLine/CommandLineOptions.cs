@@ -67,29 +67,19 @@ public class ReplFindOptions
 }
 
 [Verb("hash", HelpText = "Hash all catalogs in current directory")]
-public class HashOptions
-{
-}
+public class HashOptions;
 
 [Verb("dupes", HelpText = "List all duplicate files (that already have hash computed")]
-public class DupesOptions
-{
-}
+public class DupesOptions;
 
 [Verb("treedump1")]
-public class TreeDumpOptions
-{
-}
+public class TreeDumpOptions;
 
 [Verb("loadwait")]
-public class LoadWaitOptions
-{
-}
+public class LoadWaitOptions;
 
 [Verb("repl", HelpText = "Start repl console. Enter readline mode")]
-public class ReplOptions
-{
-}
+public class ReplOptions;
 
 [Verb("PopulousFolders", HelpText = "Show folders with <count> number of files")]
 public class PopulousFoldersOptions
