@@ -1,4 +1,4 @@
-﻿namespace cdeLib;
+﻿namespace cdeLib.Duplicates;
 
 /// <summary>
 /// Simple statistics holder for Duplication

@@ -32,7 +32,7 @@ public class DirEntry : ICommonEntry
 
     [ProtoMember(2, IsRequired = false)]
     [FlatBufferItem(2)]
-    [MessagePackFormatter(typeof(cdeLib.Infrastructure.Serialization.Hash16Formatter))]
+    [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(2)]
     public virtual Hash16 Hash { get; set; }
 
@@ -371,7 +371,7 @@ public class DirEntry : ICommonEntry
             //return _path;
             
             // string.concat faster than string interpolation.
-            return string.IsNullOrEmpty(_extension) ? _path : string.Concat(_path, _extension);
+            return string.IsNullOrEmpty(field) ? _path : string.Concat(_path, field);
         }
         set
         {
@@ -379,20 +379,20 @@ public class DirEntry : ICommonEntry
             if (string.IsNullOrEmpty(value))
             {
                 _path = string.Intern(string.Empty);
-                _extension = null;
+                field = null;
                 return;
             }
 
             var lastDot = value.LastIndexOf('.');
             if (lastDot > 0 && lastDot > value.LastIndexOfAny(PathSeparators))
             {
-                _extension = string.Intern(value[lastDot..]);
+                field = string.Intern(value[lastDot..]);
                 _path = string.Intern(value[..lastDot]);
             }
             else
             {
                 _path = string.Intern(value);
-                _extension = null;
+                field = null;
             }
             
             // Simpler code but slightly less performance:
@@ -411,8 +411,6 @@ public class DirEntry : ICommonEntry
             // }
         }
     }
-
-    private string _extension;
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
@@ -456,9 +454,9 @@ public class DirEntry : ICommonEntry
             throw new ArgumentException("source and destination must have same root path.");
         }
 
-        // traverse every source entry copy across the meta data that matches on destination entry
+        // traverse every source entry copy across the meta-data that matches on destination entry
         // if it adds value to destination.
-        // if destination is not there source not processed.
+        // if destination is not there source isn't processed.
         dirs.Push((sourcePath, source, destination));
 
         while (dirs.Count > 0)
@@ -508,7 +506,7 @@ public class DirEntry : ICommonEntry
                     {
                         // Only compute full path when needed for directories (avoids wasteful allocations for files)
                         var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
-                        dirs.Push((fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
+                        dirs.Push((fullPath, sourceDirEntry, destinationDirEntry));
                     }
                 }
             }

@@ -47,16 +47,10 @@ public struct Hash16
         HashB = (ulong)hash;
     }
 
-    public void SetHash(byte[] hash)
+    private void SetHash(byte[] hash)
     {
         HashA = BitConverter.ToUInt64(hash, 0); // swapped offset because of intel
-        HashB = hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : (ulong)0;
-    }
-
-    public void SetHash(int hash)
-    {
-        HashA = 0;
-        HashB = (ulong)hash;
+        HashB = hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : 0;
     }
 
     [IgnoreMember]

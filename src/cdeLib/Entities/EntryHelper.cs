@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
-using cdeLib.Infrastructure;
 
 namespace cdeLib.Entities;
 
@@ -50,7 +47,7 @@ public static class EntryHelper
             sb.Append(parentPath);
             if (sb.Length > 0)
             {
-                var lastChar = sb[sb.Length - 1];
+                var lastChar = sb[^1];
                 if (lastChar != '\\' && lastChar != '/')
                     sb.Append(System.IO.Path.DirectorySeparatorChar);
             }
@@ -59,7 +56,6 @@ public static class EntryHelper
         sb.Append(dirEntry.Path ?? "dnull");
         return sb.ToString();
     }
-
 
     /// <summary>
     /// Recursive traversal
@@ -77,8 +73,8 @@ public static class EntryHelper
         var estimatedCapacity = rootArray.Length * 8; // Heuristic based on typical tree depth
         var stack = new Stack<ICommonEntry>(estimatedCapacity);
 
-        // Add in reverse order without creating intermediate collection
-        for (int i = rootArray.Length - 1; i >= 0; i--)
+        // Add in reverse order without creating an intermediate collection
+        for (var i = rootArray.Length - 1; i >= 0; i--)
         {
             if (rootArray[i]?.Children != null)
                 stack.Push(rootArray[i]);
@@ -91,7 +87,7 @@ public static class EntryHelper
 
             if (children == null) continue;
 
-            // Process children in batch to improve cache locality
+            // Process children in a batch to improve cache locality
             foreach (var child in children)
             {
                 if (!traverseFunc(current, child))

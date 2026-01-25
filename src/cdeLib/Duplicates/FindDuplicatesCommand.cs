@@ -2,6 +2,4 @@
 
 namespace cdeLib.Duplicates;
 
-public sealed class FindDuplicatesCommand : IRequest
-{
-}
+public sealed class FindDuplicatesCommand : IRequest;

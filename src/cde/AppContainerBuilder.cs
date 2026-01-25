@@ -1,4 +1,3 @@
-using System;
 using System.IO;
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
@@ -7,7 +6,6 @@ using cde.Config;
 using cdeLib.Module;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
 using SlimMessageBus.Host;

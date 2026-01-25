@@ -2,12 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
 using cdeLib;
-using cdeLib.Entities;
 using ProtoBuf;
 
 namespace cdeWin.Cfg;

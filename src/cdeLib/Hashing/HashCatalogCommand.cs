@@ -2,6 +2,4 @@
 
 namespace cdeLib.Hashing;
 
-public class HashCatalogCommand : IRequest
-{
-}
+public class HashCatalogCommand : IRequest;
