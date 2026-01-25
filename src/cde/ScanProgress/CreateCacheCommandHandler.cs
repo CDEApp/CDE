@@ -30,7 +30,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
     public async Task OnHandle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
-        var mainLoopTask = Task.Factory.StartNew(() => MainLoop(request, cancellationToken), cancellationToken);
+        var mainLoopTask = Task.Run(() => MainLoop(request, cancellationToken), cancellationToken);
         var console = new ScanProgressConsole();
         console.Start(mainLoopTask, cancellationToken);
         await mainLoopTask.ConfigureAwait(false);
@@ -38,6 +38,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
     private async Task MainLoop(CreateCacheCommand request, CancellationToken cancellationToken)
     {
+        var sw = System.Diagnostics.Stopwatch.StartNew();
         var re = new RootEntry(_configuration);
         try
         {
@@ -50,6 +51,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             if (Hack.BreakConsoleFlag)
             {
                 Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
+                return;
             }
 
             var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
@@ -66,7 +68,21 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 re.Description = request.Description;
             }
 
+            ScanProgressConsole.EnqueueMessage("Saving catalog...");
             await _catalogRepository.Save(re).ConfigureAwait(false);
+            ScanProgressConsole.EnqueueMessage($"Saved to {re.DefaultFileName}");
+
+            // Calculate and display final scan summary
+            sw.Stop();
+            var elapsedSec = sw.ElapsedMilliseconds / 1000.0;
+            if (elapsedSec < 1) elapsedSec = 1;
+            var totalCount = re.FileEntryCount + re.DirEntryCount;
+            var scansPerSec = (long)(totalCount / elapsedSec);
+            var defaultNumberFormat = new NumberFormatInfo();
+            var scanCountText = totalCount.ToString("N0", defaultNumberFormat);
+            var scansPerSecText = scansPerSec.ToString("N0", defaultNumberFormat);
+            ScanProgressConsole.EnqueueMessage($"Total files scanned: {scanCountText}, Average: {scansPerSecText}/sec");
+
             Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path,re.DefaultFileName);
             Log.Information(
                 "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,

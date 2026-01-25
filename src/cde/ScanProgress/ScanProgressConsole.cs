@@ -36,7 +36,15 @@ public class ScanProgressConsole
         // Pad raw message to console width to clear previous content
         var paddedMessage = $"LOG:{message}".PadRight(width);
         // Use \r to return to start of line (status update behavior)
-        AnsiConsole.Markup($"\r[grey]{Markup.Escape(paddedMessage)}[/]");
+        AnsiConsole.Markup($"\r[grey]{Markup.Escape(paddedMessage)}[/]\n");
+    }
+
+    /// <summary>
+    /// Enqueue a message to be displayed in the console progress UI
+    /// </summary>
+    public static void EnqueueMessage(string message)
+    {
+        Messages.Enqueue(message);
     }
 
     public void Start(Task mainLoopTask, CancellationToken cancellationToken)
@@ -48,11 +56,25 @@ public class ScanProgressConsole
             .Spinner(Spinner.Known.Default)
             .Start("Thinking...", ctx =>
             {
-                while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested && !ScanIsComplete)
+                while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     ShowProgress(sw, ctx);
                 }
+
+                // Flush any remaining messages after the task completes
+                FlushMessages();
             });
+    }
+
+    private static void FlushMessages()
+    {
+        while (Messages.TryDequeue(out var msg))
+        {
+            if (!string.IsNullOrEmpty(msg))
+            {
+                WriteLogMessage(msg);
+            }
+        }
     }
 
     private long CalculateScansPerSecond(Stopwatch sw)

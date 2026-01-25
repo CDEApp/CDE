@@ -331,12 +331,28 @@ public class RootEntry : object, ICommonEntry
                 }
                 // Performance optimization: Redundant break check removed
             }
-            catch (UnauthorizedAccessException)
+            catch (UnauthorizedAccessException ex)
             {
+                Log.Logger.Warning("Access denied: {Path} - {Message}", directory, ex.Message);
+                AddPathsWithUnauthorisedExceptions(directory);
+            }
+            catch (IOException ex)
+            {
+                Log.Logger.Warning("Cannot access: {Path} - {Message}", directory, ex.Message);
+                AddPathsWithUnauthorisedExceptions(directory);
+            }
+            catch (Exception ex) when (ex is DirectoryNotFoundException || ex is PathTooLongException)
+            {
+                Log.Logger.Warning("Skipping: {Path} - {Message}", directory, ex.Message);
                 AddPathsWithUnauthorisedExceptions(directory);
             }
         }
 
+        // Fire final count event to ensure ScanCount is accurate for small folders
+        if (hasEventHandler)
+        {
+            SimpleScanCountEvent(entryCount, startPath);
+        }
         SimpleScanEndEvent?.Invoke();
     }
 
