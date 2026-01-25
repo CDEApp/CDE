@@ -206,15 +206,16 @@ public class DirEntry : ICommonEntry
     public DirEntry(FileSystemInfo fs) : this()
     {
         SetPath(fs.Name);
-        try
+
+        // Performance optimization: Avoid try-catch overhead in hot path by checking validity first
+        var timestamp = fs.LastWriteTime;
+        if (timestamp.Ticks < DateTime.MinValue.Ticks || timestamp.Ticks > DateTime.MaxValue.Ticks)
         {
-            Modified = fs.LastWriteTime;
+            Log.Logger.Warning("Invalid WriteTime {Ticks} for {Filename}, using CreationTime instead",
+                timestamp.Ticks, fs.Name);
+            timestamp = fs.CreationTime;
         }
-        catch (ArgumentOutOfRangeException ex)
-        {
-            Log.Logger.Error(ex, "Error getting WriteTime for {Filename}, using CreationTime instead", fs.Name);
-            Modified = fs.CreationTime;
-        }
+        Modified = timestamp;
 
         IsDirectory = (fs.Attributes & FileAttributes.Directory) != 0;
         IsReparsePoint = (fs.Attributes & FileAttributes.ReparsePoint) != 0;

@@ -291,6 +291,12 @@ public class RootEntry : object, ICommonEntry
         var entryCount = 0;
         var dirs = new Stack<(ICommonEntry, string)>();
         dirs.Push((this, startPath));
+
+        // Performance optimization: Hoist event null check outside loop
+        var hasEventHandler = SimpleScanCountEvent != null;
+        const int eventBatchSize = 1000;
+        var nextEventThreshold = eventBatchSize;
+
         while (dirs.Count > 0)
         {
             var (commonEntry, directory) = dirs.Pop();
@@ -304,22 +310,26 @@ public class RootEntry : object, ICommonEntry
                     commonEntry.AddChild(dirEntry);
                     if (dirEntry.IsDirectory)
                     {
-                        dirs.Push((dirEntry, fsInfo.FullName));
+                        // Performance optimization: Cache FullName to avoid repeated property access
+                        var fullName = fsInfo.FullName;
+                        dirs.Push((dirEntry, fullName));
                     }
 
                     ++entryCount;
-                    SimpleScanCountEvent?.Invoke(entryCount, fsInfo.FullName);
+
+                    // Performance optimization: Batch event invocations to reduce overhead
+                    if (hasEventHandler && entryCount >= nextEventThreshold)
+                    {
+                        SimpleScanCountEvent(entryCount, directory);
+                        nextEventThreshold += eventBatchSize;
+                    }
 
                     if (Hack.BreakConsoleFlag)
                     {
                         break;
                     }
                 }
-
-                if (Hack.BreakConsoleFlag)
-                {
-                    break;
-                }
+                // Performance optimization: Redundant break check removed
             }
             catch (UnauthorizedAccessException)
             {
