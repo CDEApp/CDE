@@ -85,6 +85,8 @@ public static class ListViewExtensions
                         item.fmt &= ~HDITEM.Format.SortUp;
                         item.fmt |= HDITEM.Format.SortDown;
                         break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(order), order, null);
                 }
             }
             else

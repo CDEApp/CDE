@@ -19,7 +19,7 @@ public class CheckBoxDependentControlHelper // <T>
     {
         if (mutuallyExclusiveCheckBoxes?.FirstOrDefault(x => x == primaryCheckbox) != null)
         {
-            throw new ArgumentException("Primary checkbox cannot appear in other parameter sequences.", nameof(mutuallyExclusiveCheckBoxes));
+            throw new ArgumentException(@"Primary checkbox cannot appear in other parameter sequences.", nameof(mutuallyExclusiveCheckBoxes));
         }
 
         _primaryCheckBox = primaryCheckbox;

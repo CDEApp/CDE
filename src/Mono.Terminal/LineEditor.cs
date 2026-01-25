@@ -38,6 +38,7 @@
 //   About 8 lines missing, type "Con<TAB>" and not enough lines are inserted at the bottom.
 // 
 //
+
 using System;
 using System.Text;
 using System.IO;
@@ -46,1330 +47,1340 @@ using System.Reflection;
 
 namespace Mono.Terminal
 {
+    public class LineEditor
+    {
+        public class Completion
+        {
+            public string[] Result;
+            public string Prefix;
 
-	public class LineEditor
-	{
+            public Completion(string prefix, string[] result)
+            {
+                Prefix = prefix;
+                Result = result;
+            }
+        }
+
+        public delegate Completion AutoCompleteHandler(string text, int pos);
+
+        // null does nothing, "csharp" uses some heuristics that make sense for C#
+        public string HeuristicsMode;
+
+        //static StreamWriter log;
+
+        // The text being edited.
+        StringBuilder text;
+
+        // The text as it is rendered (replaces (char)1 with ^A on display for example).
+        StringBuilder rendered_text;
+
+        // The prompt specified, and the prompt shown to the user.
+        string prompt;
+        string shown_prompt;
+
+        // The current cursor position, indexes into "text", for an index
+        // into rendered_text, use TextToRenderPos
+        int cursor;
+
+        // The row where we started displaying data.
+        int home_row;
+
+        // The maximum length that has been displayed on the screen
+        int max_rendered;
+
+        // If we are done editing, this breaks the interactive loop
+        bool done = false;
+
+        // The thread where the Editing started taking place
+        Thread edit_thread;
+
+        // Our object that tracks history
+        History history;
+
+        // The contents of the kill buffer (cut/paste in Emacs parlance)
+        string kill_buffer = "";
+
+        // The string being searched for
+        string search;
+        string last_search;
+
+        // whether we are searching (-1= reverse; 0 = no; 1 = forward)
+        int searching;
+
+        // The position where we found the match.
+        int match_at;
+
+        // Used to implement the Kill semantics (multiple Alt-Ds accumulate)
+        KeyHandler last_handler;
+
+        // If we have a popup completion, this is not null and holds the state.
+        CompletionState current_completion;
+
+        // If this is set, it contains an escape sequence to reset the Unix colors to the ones that were used on startup
+        static byte[] unix_reset_colors;
+
+        // This contains a raw stream pointing to stdout, used to bypass the TermInfoDriver
+        static Stream unix_raw_output;
+
+        delegate void KeyHandler();
+
+        struct Handler
+        {
+            public ConsoleKeyInfo CKI;
+            public KeyHandler KeyHandler;
+            public bool ResetCompletion;
+
+            public Handler(ConsoleKey key, KeyHandler h, bool resetCompletion = true)
+            {
+                CKI = new ConsoleKeyInfo((char)0, key, false, false, false);
+                KeyHandler = h;
+                ResetCompletion = resetCompletion;
+            }
+
+            public Handler(char c, KeyHandler h, bool resetCompletion = true)
+            {
+                KeyHandler = h;
+                // Use the "Zoom" as a flag that we only have a character.
+                CKI = new ConsoleKeyInfo(c, ConsoleKey.Zoom, false, false, false);
+                ResetCompletion = resetCompletion;
+            }
+
+            public Handler(ConsoleKeyInfo cki, KeyHandler h, bool resetCompletion = true)
+            {
+                CKI = cki;
+                KeyHandler = h;
+                ResetCompletion = resetCompletion;
+            }
+
+            public static Handler Control(char c, KeyHandler h, bool resetCompletion = true)
+            {
+                return new Handler((char)(c - 'A' + 1), h, resetCompletion);
+            }
+
+            public static Handler Alt(char c, ConsoleKey k, KeyHandler h)
+            {
+                ConsoleKeyInfo cki = new ConsoleKeyInfo(c, k, false, true, false);
+                return new Handler(cki, h);
+            }
+        }
+
+        /// <summary>
+        ///   Invoked when the user requests auto-completion using the tab character
+        /// </summary>
+        /// <remarks>
+        ///    The result is null for no values found, an array with a single
+        ///    string, in that case the string should be the text to be inserted
+        ///    for example if the word at pos is "T", the result for a completion
+        ///    of "ToString" should be "oString", not "ToString".
+        ///
+        ///    When there are multiple results, the result should be the full
+        ///    text
+        /// </remarks>
+        public AutoCompleteHandler AutoCompleteEvent;
+
+        static Handler[] handlers;
+
+        public LineEditor(string name) : this(name, 10)
+        {
+        }
+
+        public LineEditor(string name, int histsize)
+        {
+            handlers = new[]
+            {
+                new Handler(ConsoleKey.Home, CmdHome),
+                new Handler(ConsoleKey.End, CmdEnd),
+                new Handler(ConsoleKey.LeftArrow, CmdLeft),
+                new Handler(ConsoleKey.RightArrow, CmdRight),
+                new Handler(ConsoleKey.UpArrow, CmdUp, resetCompletion: false),
+                new Handler(ConsoleKey.DownArrow, CmdDown, resetCompletion: false),
+                new Handler(ConsoleKey.Enter, CmdDone, resetCompletion: false),
+                new Handler(ConsoleKey.Backspace, CmdBackspace, resetCompletion: false),
+                new Handler(ConsoleKey.Delete, CmdDeleteChar),
+                new Handler(ConsoleKey.Tab, CmdTabOrComplete, resetCompletion: false),
+
+                // Emacs keys
+                Handler.Control('A', CmdHome),
+                Handler.Control('E', CmdEnd),
+                Handler.Control('B', CmdLeft),
+                Handler.Control('F', CmdRight),
+                Handler.Control('P', CmdUp, resetCompletion: false),
+                Handler.Control('N', CmdDown, resetCompletion: false),
+                Handler.Control('K', CmdKillToEOF),
+                Handler.Control('Y', CmdYank),
+                Handler.Control('D', CmdDeleteChar),
+                Handler.Control('L', CmdRefresh),
+                Handler.Control('R', CmdReverseSearch),
+                Handler.Control('G', delegate { }),
+                Handler.Alt('B', ConsoleKey.B, CmdBackwardWord),
+                Handler.Alt('F', ConsoleKey.F, CmdForwardWord),
+
+                Handler.Alt('D', ConsoleKey.D, CmdDeleteWord),
+                Handler.Alt((char)8, ConsoleKey.Backspace, CmdDeleteBackword),
+
+                // DEBUG
+                //Handler.Control ('T', CmdDebug),
+
+                // quote
+                Handler.Control('Q', delegate { HandleChar(Console.ReadKey(true).KeyChar); })
+            };
+
+            rendered_text = new StringBuilder();
+            text = new StringBuilder();
+
+            history = new History(name, histsize);
+
+            GetUnixConsoleReset();
+        }
+
+        // On Unix, there is a "default" color which is not represented by any colors in
+        // ConsoleColor, and it is not possible to set is by setting the ForegroundColor or
+        // BackgroundColor properties, so we have to use the terminfo driver in Mono to
+        // fetch these values
+
+        void GetUnixConsoleReset()
+        {
+            //
+            // On Unix, we want to be able to reset the color for the pop-up completion
+            //
+            int p = (int)Environment.OSVersion.Platform;
+            var is_unix = (p == 4) || (p == 128);
+            if (!is_unix)
+                return;
+
+            // Sole purpose of this call is to initialize the Terminfo driver
+            var x = Console.CursorLeft;
+
+            try
+            {
+                var terminfo_driver = Type.GetType("System.ConsoleDriver")
+                    ?.GetField("driver", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
+                if (terminfo_driver == null)
+                    return;
+
+                if (terminfo_driver.GetType()
+                        .GetField("origPair", BindingFlags.Instance | BindingFlags.NonPublic)
+                        ?.GetValue(terminfo_driver) is string unix_reset_colors_str)
+                    unix_reset_colors = Encoding.UTF8.GetBytes(unix_reset_colors_str);
+                unix_raw_output = Console.OpenStandardOutput();
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Error: " + e);
+            }
+        }
+
+        void CmdDebug()
+        {
+            history.Dump();
+            Console.WriteLine();
+            Render();
+        }
+
+        void Render()
+        {
+            Console.Write(shown_prompt);
+            Console.Write(rendered_text);
+
+            int max = Math.Max(rendered_text.Length + shown_prompt.Length, max_rendered);
+
+            for (int i = rendered_text.Length + shown_prompt.Length; i < max_rendered; i++)
+                Console.Write(' ');
+            max_rendered = shown_prompt.Length + rendered_text.Length;
+
+            // Write one more to ensure that we always wrap around properly if we are at the
+            // end of a line.
+            Console.Write(' ');
+
+            UpdateHomeRow(max);
+        }
+
+        void UpdateHomeRow(int screenpos)
+        {
+            int lines = 1 + (screenpos / Console.WindowWidth);
+
+            home_row = Console.CursorTop - (lines - 1);
+            if (home_row < 0)
+                home_row = 0;
+        }
+
+
+        void RenderFrom(int pos)
+        {
+            int rpos = TextToRenderPos(pos);
+            int i;
+
+            for (i = rpos; i < rendered_text.Length; i++)
+                Console.Write(rendered_text[i]);
+
+            if ((shown_prompt.Length + rendered_text.Length) > max_rendered)
+                max_rendered = shown_prompt.Length + rendered_text.Length;
+            else
+            {
+                int max_extra = max_rendered - shown_prompt.Length;
+                for (; i < max_extra; i++)
+                    Console.Write(' ');
+            }
+        }
+
+        void ComputeRendered()
+        {
+            rendered_text.Length = 0;
+
+            for (int i = 0; i < text.Length; i++)
+            {
+                int c = text[i];
+                if (c < 26)
+                {
+                    if (c == '\t')
+                        rendered_text.Append("    ");
+                    else
+                    {
+                        rendered_text.Append('^');
+                        rendered_text.Append((char)(c + 'A' - 1));
+                    }
+                }
+                else
+                    rendered_text.Append((char)c);
+            }
+        }
+
+        int TextToRenderPos(int pos)
+        {
+            int p = 0;
+
+            for (int i = 0; i < pos; i++)
+            {
+                var c = (int)text[i];
+
+                if (c < 26)
+                {
+                    if (c == 9)
+                        p += 4;
+                    else
+                        p += 2;
+                }
+                else
+                    p++;
+            }
+
+            return p;
+        }
+
+        int TextToScreenPos(int pos)
+        {
+            return shown_prompt.Length + TextToRenderPos(pos);
+        }
+
+        string Prompt
+        {
+            get => prompt;
+            set => prompt = value;
+        }
+
+        int LineCount
+        {
+            get { return (shown_prompt.Length + rendered_text.Length) / Console.WindowWidth; }
+        }
+
+        void ForceCursor(int newpos)
+        {
+            cursor = newpos;
+
+            int actual_pos = shown_prompt.Length + TextToRenderPos(cursor);
+            int row = home_row + (actual_pos / Console.WindowWidth);
+            int col = actual_pos % Console.WindowWidth;
+
+            if (row >= Console.BufferHeight)
+                row = Console.BufferHeight - 1;
+            Console.SetCursorPosition(col, row);
+
+            //log.WriteLine ("Going to cursor={0} row={1} col={2} actual={3} prompt={4} ttr={5} old={6}", newpos, row, col, actual_pos, prompt.Length, TextToRenderPos (cursor), cursor);
+            //log.Flush ();
+        }
+
+        void UpdateCursor(int newpos)
+        {
+            if (cursor == newpos)
+                return;
+
+            ForceCursor(newpos);
+        }
+
+        void InsertChar(char c)
+        {
+            int prev_lines = LineCount;
+            text = text.Insert(cursor, c);
+            ComputeRendered();
+            if (prev_lines != LineCount)
+            {
+                Console.SetCursorPosition(0, home_row);
+                Render();
+                ForceCursor(++cursor);
+            }
+            else
+            {
+                RenderFrom(cursor);
+                ForceCursor(++cursor);
+                UpdateHomeRow(TextToScreenPos(cursor));
+            }
+        }
+
+        static void SaveExcursion(Action code)
+        {
+            var saved_col = Console.CursorLeft;
+            var saved_row = Console.CursorTop;
+            var saved_fore = Console.ForegroundColor;
+            var saved_back = Console.BackgroundColor;
+
+            code();
+
+            Console.CursorLeft = saved_col;
+            Console.CursorTop = saved_row;
+            if (unix_reset_colors != null)
+            {
+                unix_raw_output.Write(unix_reset_colors, 0, unix_reset_colors.Length);
+            }
+            else
+            {
+                Console.ForegroundColor = saved_fore;
+                Console.BackgroundColor = saved_back;
+            }
+        }
+
+        class CompletionState
+        {
+            public string Prefix;
+            public string[] Completions;
+            public int Col, Row, Width, Height;
+            int selected_item, top_item;
+
+            public CompletionState(int col, int row, int width, int height)
+            {
+                Col = col;
+                Row = row;
+                Width = width;
+                Height = height;
+
+                if (Col < 0)
+                    throw new ArgumentException("Cannot be less than zero" + Col, "Col");
+                if (Row < 0)
+                    throw new ArgumentException("Cannot be less than zero", "Row");
+                if (Width < 1)
+                    throw new ArgumentException("Cannot be less than one", "Width");
+                if (Height < 1)
+                    throw new ArgumentException("Cannot be less than one", "Height");
+            }
+
+            void DrawSelection()
+            {
+                for (int r = 0; r < Height; r++)
+                {
+                    int item_idx = top_item + r;
+                    bool selected = (item_idx == selected_item);
+
+                    Console.ForegroundColor = selected ? ConsoleColor.Black : ConsoleColor.Gray;
+                    Console.BackgroundColor = selected ? ConsoleColor.Cyan : ConsoleColor.Blue;
+
+                    var item = Prefix + Completions[item_idx];
+                    if (item.Length > Width)
+                        item = item.Substring(0, Width);
+
+                    Console.CursorLeft = Col;
+                    Console.CursorTop = Row + r;
+                    Console.Write(item);
+                    for (int space = item.Length; space <= Width; space++)
+                        Console.Write(" ");
+                }
+            }
+
+            public string Current
+            {
+                get { return Completions[selected_item]; }
+            }
+
+            public void Show()
+            {
+                SaveExcursion(DrawSelection);
+            }
+
+            public void SelectNext()
+            {
+                if (selected_item + 1 < Completions.Length)
+                {
+                    selected_item++;
+                    if (selected_item - top_item >= Height)
+                        top_item++;
+                    SaveExcursion(DrawSelection);
+                }
+            }
+
+            public void SelectPrevious()
+            {
+                if (selected_item > 0)
+                {
+                    selected_item--;
+                    if (selected_item < top_item)
+                        top_item = selected_item;
+                    SaveExcursion(DrawSelection);
+                }
+            }
+
+            void Clear()
+            {
+                for (int r = 0; r < Height; r++)
+                {
+                    Console.CursorLeft = Col;
+                    Console.CursorTop = Row + r;
+                    for (int space = 0; space <= Width; space++)
+                        Console.Write(" ");
+                }
+            }
+
+            public void Remove()
+            {
+                SaveExcursion(Clear);
+            }
+        }
+
+        void ShowCompletions(string prefix, string[] completions)
+        {
+            // Ensure we have space, determine window size
+            int window_height = Math.Min(completions.Length, Console.WindowHeight / 5);
+            int target_line = Console.WindowHeight - window_height - 1;
+            if (Console.CursorTop > target_line)
+            {
+                var delta = Console.CursorTop - target_line;
+                Console.CursorLeft = 0;
+                Console.CursorTop = Console.WindowHeight - 1;
+                for (int i = 0; i < delta + 1; i++)
+                {
+                    for (int c = Console.WindowWidth; c > 0; c--)
+                        Console.Write(" "); // To debug use ("{0}", i%10);
+                }
+
+                Console.CursorTop = target_line;
+                Console.CursorLeft = 0;
+                Render();
+            }
+
+            const int MaxWidth = 50;
+            int window_width = 12;
+            int plen = prefix.Length;
+            foreach (var s in completions)
+                window_width = Math.Max(plen + s.Length, window_width);
+            window_width = Math.Min(window_width, MaxWidth);
+
+            if (current_completion == null)
+            {
+                int left = Console.CursorLeft - prefix.Length;
+
+                if (left + window_width + 1 >= Console.WindowWidth)
+                    left = Console.WindowWidth - window_width - 1;
+
+                current_completion = new CompletionState(left, Console.CursorTop + 1, window_width, window_height)
+                {
+                    Prefix = prefix,
+                    Completions = completions,
+                };
+            }
+            else
+            {
+                current_completion.Prefix = prefix;
+                current_completion.Completions = completions;
+            }
+
+            current_completion.Show();
+            Console.CursorLeft = 0;
+        }
+
+        void HideCompletions()
+        {
+            if (current_completion == null)
+                return;
+            current_completion.Remove();
+            current_completion = null;
+        }
+
+        //
+        // Triggers the completion engine, if insertBestMatch is true, then this will
+        // insert the best match found, this behaves like the shell "tab" which will
+        // complete as much as possible given the options.
+        //
+        void Complete()
+        {
+            Completion completion = AutoCompleteEvent(text.ToString(), cursor);
+            string[] completions = completion.Result;
+            if (completions == null)
+            {
+                HideCompletions();
+                return;
+            }
+
+            int ncompletions = completions.Length;
+            if (ncompletions == 0)
+            {
+                HideCompletions();
+                return;
+            }
+
+            if (completions.Length == 1)
+            {
+                InsertTextAtCursor(completions[0]);
+                HideCompletions();
+            }
+            else
+            {
+                int last = -1;
+
+                for (int p = 0; p < completions[0].Length; p++)
+                {
+                    char c = completions[0][p];
+
+
+                    for (int i = 1; i < ncompletions; i++)
+                    {
+                        if (completions[i].Length < p)
+                            goto mismatch;
+
+                        if (completions[i][p] != c)
+                        {
+                            goto mismatch;
+                        }
+                    }
+
+                    last = p;
+                }
 
-		public class Completion
-		{
-			public string[] Result;
-			public string Prefix;
-
-			public Completion(string prefix, string[] result)
-			{
-				Prefix = prefix;
-				Result = result;
-			}
-		}
-
-		public delegate Completion AutoCompleteHandler(string text, int pos);
-
-		// null does nothing, "csharp" uses some heuristics that make sense for C#
-		public string HeuristicsMode;
-
-		//static StreamWriter log;
-
-		// The text being edited.
-		StringBuilder text;
-
-		// The text as it is rendered (replaces (char)1 with ^A on display for example).
-		StringBuilder rendered_text;
-
-		// The prompt specified, and the prompt shown to the user.
-		string prompt;
-		string shown_prompt;
-
-		// The current cursor position, indexes into "text", for an index
-		// into rendered_text, use TextToRenderPos
-		int cursor;
-
-		// The row where we started displaying data.
-		int home_row;
-
-		// The maximum length that has been displayed on the screen
-		int max_rendered;
-
-		// If we are done editing, this breaks the interactive loop
-		bool done = false;
-
-		// The thread where the Editing started taking place
-		Thread edit_thread;
-
-		// Our object that tracks history
-		History history;
-
-		// The contents of the kill buffer (cut/paste in Emacs parlance)
-		string kill_buffer = "";
-
-		// The string being searched for
-		string search;
-		string last_search;
-
-		// whether we are searching (-1= reverse; 0 = no; 1 = forward)
-		int searching;
-
-		// The position where we found the match.
-		int match_at;
-
-		// Used to implement the Kill semantics (multiple Alt-Ds accumulate)
-		KeyHandler last_handler;
-
-		// If we have a popup completion, this is not null and holds the state.
-		CompletionState current_completion;
-
-		// If this is set, it contains an escape sequence to reset the Unix colors to the ones that were used on startup
-		static byte[] unix_reset_colors;
-
-		// This contains a raw stream pointing to stdout, used to bypass the TermInfoDriver
-		static Stream unix_raw_output;
-
-		delegate void KeyHandler();
-
-		struct Handler
-		{
-			public ConsoleKeyInfo CKI;
-			public KeyHandler KeyHandler;
-			public bool ResetCompletion;
-
-			public Handler(ConsoleKey key, KeyHandler h, bool resetCompletion = true)
-			{
-				CKI = new ConsoleKeyInfo((char)0, key, false, false, false);
-				KeyHandler = h;
-				ResetCompletion = resetCompletion;
-			}
-
-			public Handler(char c, KeyHandler h, bool resetCompletion = true)
-			{
-				KeyHandler = h;
-				// Use the "Zoom" as a flag that we only have a character.
-				CKI = new ConsoleKeyInfo(c, ConsoleKey.Zoom, false, false, false);
-				ResetCompletion = resetCompletion;
-			}
-
-			public Handler(ConsoleKeyInfo cki, KeyHandler h, bool resetCompletion = true)
-			{
-				CKI = cki;
-				KeyHandler = h;
-				ResetCompletion = resetCompletion;
-			}
-
-			public static Handler Control(char c, KeyHandler h, bool resetCompletion = true)
-			{
-				return new Handler((char)(c - 'A' + 1), h, resetCompletion);
-			}
-
-			public static Handler Alt(char c, ConsoleKey k, KeyHandler h)
-			{
-				ConsoleKeyInfo cki = new ConsoleKeyInfo(c, k, false, true, false);
-				return new Handler(cki, h);
-			}
-		}
-
-		/// <summary>
-		///   Invoked when the user requests auto-completion using the tab character
-		/// </summary>
-		/// <remarks>
-		///    The result is null for no values found, an array with a single
-		///    string, in that case the string should be the text to be inserted
-		///    for example if the word at pos is "T", the result for a completion
-		///    of "ToString" should be "oString", not "ToString".
-		///
-		///    When there are multiple results, the result should be the full
-		///    text
-		/// </remarks>
-		public AutoCompleteHandler AutoCompleteEvent;
-
-		static Handler[] handlers;
-
-		public LineEditor(string name) : this(name, 10) { }
-
-		public LineEditor(string name, int histsize)
-		{
-			handlers = new[] {
-				new Handler (ConsoleKey.Home,       CmdHome),
-				new Handler (ConsoleKey.End,        CmdEnd),
-				new Handler (ConsoleKey.LeftArrow,  CmdLeft),
-				new Handler (ConsoleKey.RightArrow, CmdRight),
-				new Handler (ConsoleKey.UpArrow,    CmdUp, resetCompletion: false),
-				new Handler (ConsoleKey.DownArrow,  CmdDown, resetCompletion: false),
-				new Handler (ConsoleKey.Enter,      CmdDone, resetCompletion: false),
-				new Handler (ConsoleKey.Backspace,  CmdBackspace, resetCompletion: false),
-				new Handler (ConsoleKey.Delete,     CmdDeleteChar),
-				new Handler (ConsoleKey.Tab,        CmdTabOrComplete, resetCompletion: false),
-				
-				// Emacs keys
-				Handler.Control ('A', CmdHome),
-				Handler.Control ('E', CmdEnd),
-				Handler.Control ('B', CmdLeft),
-				Handler.Control ('F', CmdRight),
-				Handler.Control ('P', CmdUp, resetCompletion: false),
-				Handler.Control ('N', CmdDown, resetCompletion: false),
-				Handler.Control ('K', CmdKillToEOF),
-				Handler.Control ('Y', CmdYank),
-				Handler.Control ('D', CmdDeleteChar),
-				Handler.Control ('L', CmdRefresh),
-				Handler.Control ('R', CmdReverseSearch),
-				Handler.Control ('G', delegate {} ),
-				Handler.Alt ('B', ConsoleKey.B, CmdBackwardWord),
-				Handler.Alt ('F', ConsoleKey.F, CmdForwardWord),
-
-				Handler.Alt ('D', ConsoleKey.D, CmdDeleteWord),
-				Handler.Alt ((char) 8, ConsoleKey.Backspace, CmdDeleteBackword),
-				
-				// DEBUG
-				//Handler.Control ('T', CmdDebug),
-
-				// quote
-				Handler.Control ('Q', delegate { HandleChar (Console.ReadKey (true).KeyChar); })
-			};
-
-			rendered_text = new StringBuilder();
-			text = new StringBuilder();
-
-			history = new History(name, histsize);
-
-			GetUnixConsoleReset();
-			//if (File.Exists ("log"))File.Delete ("log");
-			//log = File.CreateText ("log"); 
-		}
-
-		// On Unix, there is a "default" color which is not represented by any colors in
-		// ConsoleColor and it is not possible to set is by setting the ForegroundColor or
-		// BackgroundColor properties, so we have to use the terminfo driver in Mono to
-		// fetch these values
-
-		void GetUnixConsoleReset()
-		{
-			//
-			// On Unix, we want to be able to reset the color for the pop-up completion
-			//
-			int p = (int)Environment.OSVersion.Platform;
-			var is_unix = (p == 4) || (p == 128);
-			if (!is_unix)
-				return;
-
-			// Sole purpose of this call is to initialize the Terminfo driver
-			var x = Console.CursorLeft;
-
-			try
-			{
-				var terminfo_driver = Type.GetType("System.ConsoleDriver")?.GetField("driver", BindingFlags.Static | BindingFlags.NonPublic)?.GetValue(null);
-				if (terminfo_driver == null)
-					return;
-
-				var unix_reset_colors_str = terminfo_driver.GetType().GetField("origPair", BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(terminfo_driver) as string;
-
-				if (unix_reset_colors_str != null)
-					unix_reset_colors = Encoding.UTF8.GetBytes(unix_reset_colors_str);
-				unix_raw_output = Console.OpenStandardOutput();
-			}
-			catch (Exception e)
-			{
-				Console.WriteLine("Error: " + e);
-			}
-		}
-
-
-		void CmdDebug()
-		{
-			history.Dump();
-			Console.WriteLine();
-			Render();
-		}
-
-		void Render()
-		{
-			Console.Write(shown_prompt);
-			Console.Write(rendered_text);
-
-			int max = Math.Max(rendered_text.Length + shown_prompt.Length, max_rendered);
-
-			for (int i = rendered_text.Length + shown_prompt.Length; i < max_rendered; i++)
-				Console.Write(' ');
-			max_rendered = shown_prompt.Length + rendered_text.Length;
-
-			// Write one more to ensure that we always wrap around properly if we are at the
-			// end of a line.
-			Console.Write(' ');
-
-			UpdateHomeRow(max);
-		}
-
-		void UpdateHomeRow(int screenpos)
-		{
-			int lines = 1 + (screenpos / Console.WindowWidth);
-
-			home_row = Console.CursorTop - (lines - 1);
-			if (home_row < 0)
-				home_row = 0;
-		}
-
-
-		void RenderFrom(int pos)
-		{
-			int rpos = TextToRenderPos(pos);
-			int i;
-
-			for (i = rpos; i < rendered_text.Length; i++)
-				Console.Write(rendered_text[i]);
-
-			if ((shown_prompt.Length + rendered_text.Length) > max_rendered)
-				max_rendered = shown_prompt.Length + rendered_text.Length;
-			else
-			{
-				int max_extra = max_rendered - shown_prompt.Length;
-				for (; i < max_extra; i++)
-					Console.Write(' ');
-			}
-		}
-
-		void ComputeRendered()
-		{
-			rendered_text.Length = 0;
-
-			for (int i = 0; i < text.Length; i++)
-			{
-				int c = text[i];
-				if (c < 26)
-				{
-					if (c == '\t')
-						rendered_text.Append("    ");
-					else
-					{
-						rendered_text.Append('^');
-						rendered_text.Append((char)(c + 'A' - 1));
-					}
-				}
-				else
-					rendered_text.Append((char)c);
-			}
-		}
-
-		int TextToRenderPos(int pos)
-		{
-			int p = 0;
-
-			for (int i = 0; i < pos; i++)
-			{
-				var c = (int)text[i];
-
-				if (c < 26)
-				{
-					if (c == 9)
-						p += 4;
-					else
-						p += 2;
-				}
-				else
-					p++;
-			}
-
-			return p;
-		}
-
-		int TextToScreenPos(int pos)
-		{
-			return shown_prompt.Length + TextToRenderPos(pos);
-		}
-
-		string Prompt
-		{
-			get { return prompt; }
-			set { prompt = value; }
-		}
-
-		int LineCount
-		{
-			get
-			{
-				return (shown_prompt.Length + rendered_text.Length) / Console.WindowWidth;
-			}
-		}
-
-		void ForceCursor(int newpos)
-		{
-			cursor = newpos;
-
-			int actual_pos = shown_prompt.Length + TextToRenderPos(cursor);
-			int row = home_row + (actual_pos / Console.WindowWidth);
-			int col = actual_pos % Console.WindowWidth;
-
-			if (row >= Console.BufferHeight)
-				row = Console.BufferHeight - 1;
-			Console.SetCursorPosition(col, row);
-
-			//log.WriteLine ("Going to cursor={0} row={1} col={2} actual={3} prompt={4} ttr={5} old={6}", newpos, row, col, actual_pos, prompt.Length, TextToRenderPos (cursor), cursor);
-			//log.Flush ();
-		}
-
-		void UpdateCursor(int newpos)
-		{
-			if (cursor == newpos)
-				return;
-
-			ForceCursor(newpos);
-		}
-
-		void InsertChar(char c)
-		{
-			int prev_lines = LineCount;
-			text = text.Insert(cursor, c);
-			ComputeRendered();
-			if (prev_lines != LineCount)
-			{
-
-				Console.SetCursorPosition(0, home_row);
-				Render();
-				ForceCursor(++cursor);
-			}
-			else
-			{
-				RenderFrom(cursor);
-				ForceCursor(++cursor);
-				UpdateHomeRow(TextToScreenPos(cursor));
-			}
-		}
-
-		static void SaveExcursion(Action code)
-		{
-			var saved_col = Console.CursorLeft;
-			var saved_row = Console.CursorTop;
-			var saved_fore = Console.ForegroundColor;
-			var saved_back = Console.BackgroundColor;
-
-			code();
-
-			Console.CursorLeft = saved_col;
-			Console.CursorTop = saved_row;
-			if (unix_reset_colors != null)
-			{
-				unix_raw_output.Write(unix_reset_colors, 0, unix_reset_colors.Length);
-			}
-			else
-			{
-				Console.ForegroundColor = saved_fore;
-				Console.BackgroundColor = saved_back;
-			}
-		}
-
-		class CompletionState
-		{
-			public string Prefix;
-			public string[] Completions;
-			public int Col, Row, Width, Height;
-			int selected_item, top_item;
-
-			public CompletionState(int col, int row, int width, int height)
-			{
-				Col = col;
-				Row = row;
-				Width = width;
-				Height = height;
-
-				if (Col < 0)
-					throw new ArgumentException("Cannot be less than zero" + Col, "Col");
-				if (Row < 0)
-					throw new ArgumentException("Cannot be less than zero", "Row");
-				if (Width < 1)
-					throw new ArgumentException("Cannot be less than one", "Width");
-				if (Height < 1)
-					throw new ArgumentException("Cannot be less than one", "Height");
-
-			}
-
-			void DrawSelection()
-			{
-				for (int r = 0; r < Height; r++)
-				{
-					int item_idx = top_item + r;
-					bool selected = (item_idx == selected_item);
-
-					Console.ForegroundColor = selected ? ConsoleColor.Black : ConsoleColor.Gray;
-					Console.BackgroundColor = selected ? ConsoleColor.Cyan : ConsoleColor.Blue;
-
-					var item = Prefix + Completions[item_idx];
-					if (item.Length > Width)
-						item = item.Substring(0, Width);
-
-					Console.CursorLeft = Col;
-					Console.CursorTop = Row + r;
-					Console.Write(item);
-					for (int space = item.Length; space <= Width; space++)
-						Console.Write(" ");
-				}
-			}
-
-			public string Current
-			{
-				get
-				{
-					return Completions[selected_item];
-				}
-			}
-
-			public void Show()
-			{
-				SaveExcursion(DrawSelection);
-			}
-
-			public void SelectNext()
-			{
-				if (selected_item + 1 < Completions.Length)
-				{
-					selected_item++;
-					if (selected_item - top_item >= Height)
-						top_item++;
-					SaveExcursion(DrawSelection);
-				}
-			}
-
-			public void SelectPrevious()
-			{
-				if (selected_item > 0)
-				{
-					selected_item--;
-					if (selected_item < top_item)
-						top_item = selected_item;
-					SaveExcursion(DrawSelection);
-				}
-			}
-
-			void Clear()
-			{
-				for (int r = 0; r < Height; r++)
-				{
-					Console.CursorLeft = Col;
-					Console.CursorTop = Row + r;
-					for (int space = 0; space <= Width; space++)
-						Console.Write(" ");
-				}
-			}
-
-			public void Remove()
-			{
-				SaveExcursion(Clear);
-			}
-		}
-
-		void ShowCompletions(string prefix, string[] completions)
-		{
-			// Ensure we have space, determine window size
-			int window_height = Math.Min(completions.Length, Console.WindowHeight / 5);
-			int target_line = Console.WindowHeight - window_height - 1;
-			if (Console.CursorTop > target_line)
-			{
-				var saved_left = Console.CursorLeft;
-				var delta = Console.CursorTop - target_line;
-				Console.CursorLeft = 0;
-				Console.CursorTop = Console.WindowHeight - 1;
-				for (int i = 0; i < delta + 1; i++)
-				{
-					for (int c = Console.WindowWidth; c > 0; c--)
-						Console.Write(" "); // To debug use ("{0}", i%10);
-				}
-				Console.CursorTop = target_line;
-				Console.CursorLeft = 0;
-				Render();
-			}
-
-			const int MaxWidth = 50;
-			int window_width = 12;
-			int plen = prefix.Length;
-			foreach (var s in completions)
-				window_width = Math.Max(plen + s.Length, window_width);
-			window_width = Math.Min(window_width, MaxWidth);
-
-			if (current_completion == null)
-			{
-				int left = Console.CursorLeft - prefix.Length;
-
-				if (left + window_width + 1 >= Console.WindowWidth)
-					left = Console.WindowWidth - window_width - 1;
-
-				current_completion = new CompletionState(left, Console.CursorTop + 1, window_width, window_height)
-				{
-					Prefix = prefix,
-					Completions = completions,
-				};
-			}
-			else
-			{
-				current_completion.Prefix = prefix;
-				current_completion.Completions = completions;
-			}
-			current_completion.Show();
-			Console.CursorLeft = 0;
-		}
-
-		void HideCompletions()
-		{
-			if (current_completion == null)
-				return;
-			current_completion.Remove();
-			current_completion = null;
-		}
-
-		//
-		// Triggers the completion engine, if insertBestMatch is true, then this will
-		// insert the best match found, this behaves like the shell "tab" which will
-		// complete as much as possible given the options.
-		//
-		void Complete()
-		{
-			Completion completion = AutoCompleteEvent(text.ToString(), cursor);
-			string[] completions = completion.Result;
-			if (completions == null)
-			{
-				HideCompletions();
-				return;
-			}
-
-			int ncompletions = completions.Length;
-			if (ncompletions == 0)
-			{
-				HideCompletions();
-				return;
-			}
-
-			if (completions.Length == 1)
-			{
-				InsertTextAtCursor(completions[0]);
-				HideCompletions();
-			}
-			else
-			{
-				int last = -1;
-
-				for (int p = 0; p < completions[0].Length; p++)
-				{
-					char c = completions[0][p];
-
-
-					for (int i = 1; i < ncompletions; i++)
-					{
-						if (completions[i].Length < p)
-							goto mismatch;
-
-						if (completions[i][p] != c)
-						{
-							goto mismatch;
-						}
-					}
-					last = p;
-				}
                 mismatch:
-				var prefix = completion.Prefix;
-				if (last != -1)
-				{
-					InsertTextAtCursor(completions[0].Substring(0, last + 1));
+                var prefix = completion.Prefix;
+                if (last != -1)
+                {
+                    InsertTextAtCursor(completions[0].Substring(0, last + 1));
 
-					// Adjust the completions to skip the common prefix
-					prefix += completions[0].Substring(0, last + 1);
-					for (int i = 0; i < completions.Length; i++)
-						completions[i] = completions[i].Substring(last + 1);
-				}
-				ShowCompletions(prefix, completions);
-				Render();
-				ForceCursor(cursor);
-			}
-		}
+                    // Adjust the completions to skip the common prefix
+                    prefix += completions[0].Substring(0, last + 1);
+                    for (int i = 0; i < completions.Length; i++)
+                        completions[i] = completions[i].Substring(last + 1);
+                }
 
-		//
-		// When the user has triggered a completion window, this will try to update
-		// the contents of it.   The completion window is assumed to be hidden at this
-		// point
-		// 
-		void UpdateCompletionWindow()
-		{
-			if (current_completion != null)
-				throw new Exception("This method should only be called if the window has been hidden");
+                ShowCompletions(prefix, completions);
+                Render();
+                ForceCursor(cursor);
+            }
+        }
 
-			Completion completion = AutoCompleteEvent(text.ToString(), cursor);
-			string[] completions = completion.Result;
-			if (completions == null)
-				return;
+        //
+        // When the user has triggered a completion window, this will try to update
+        // the contents of it.   The completion window is assumed to be hidden at this
+        // point
+        // 
+        void UpdateCompletionWindow()
+        {
+            if (current_completion != null)
+                throw new Exception("This method should only be called if the window has been hidden");
 
-			int ncompletions = completions.Length;
-			if (ncompletions == 0)
-				return;
+            Completion completion = AutoCompleteEvent(text.ToString(), cursor);
+            string[] completions = completion.Result;
+            if (completions == null)
+                return;
 
-			ShowCompletions(completion.Prefix, completion.Result);
-			Render();
-			ForceCursor(cursor);
-		}
+            int ncompletions = completions.Length;
+            if (ncompletions == 0)
+                return;
+
+            ShowCompletions(completion.Prefix, completion.Result);
+            Render();
+            ForceCursor(cursor);
+        }
 
 
-		//
-		// Commands
-		//
-		void CmdDone()
-		{
-			if (current_completion != null)
-			{
-				InsertTextAtCursor(current_completion.Current);
-				HideCompletions();
-				return;
-			}
-			done = true;
-		}
+        //
+        // Commands
+        //
+        void CmdDone()
+        {
+            if (current_completion != null)
+            {
+                InsertTextAtCursor(current_completion.Current);
+                HideCompletions();
+                return;
+            }
 
-		void CmdTabOrComplete()
-		{
-			bool complete = false;
+            done = true;
+        }
 
-			if (AutoCompleteEvent != null)
-			{
-				if (TabAtStartCompletes)
-					complete = true;
-				else
-				{
-					for (int i = 0; i < cursor; i++)
-					{
-						if (!Char.IsWhiteSpace(text[i]))
-						{
-							complete = true;
-							break;
-						}
-					}
-				}
+        void CmdTabOrComplete()
+        {
+            bool complete = false;
 
-				if (complete)
-					Complete();
-				else
-					HandleChar('\t');
-			}
-			else
-				HandleChar('t');
-		}
+            if (AutoCompleteEvent != null)
+            {
+                if (TabAtStartCompletes)
+                    complete = true;
+                else
+                {
+                    for (int i = 0; i < cursor; i++)
+                    {
+                        if (!Char.IsWhiteSpace(text[i]))
+                        {
+                            complete = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (complete)
+                    Complete();
+                else
+                    HandleChar('\t');
+            }
+            else
+                HandleChar('t');
+        }
 
         public void CmdHistoryDump()
         {
             history.Dump();
         }
-		void CmdHome()
-		{
-			UpdateCursor(0);
-		}
 
-		void CmdEnd()
-		{
-			UpdateCursor(text.Length);
-		}
+        void CmdHome()
+        {
+            UpdateCursor(0);
+        }
 
-		void CmdLeft()
-		{
-			if (cursor == 0)
-				return;
+        void CmdEnd()
+        {
+            UpdateCursor(text.Length);
+        }
 
-			UpdateCursor(cursor - 1);
-		}
+        void CmdLeft()
+        {
+            if (cursor == 0)
+                return;
 
-		void CmdBackwardWord()
-		{
-			int p = WordBackward(cursor);
-			if (p == -1)
-				return;
-			UpdateCursor(p);
-		}
+            UpdateCursor(cursor - 1);
+        }
 
-		void CmdForwardWord()
-		{
-			int p = WordForward(cursor);
-			if (p == -1)
-				return;
-			UpdateCursor(p);
-		}
+        void CmdBackwardWord()
+        {
+            int p = WordBackward(cursor);
+            if (p == -1)
+                return;
+            UpdateCursor(p);
+        }
 
-		void CmdRight()
-		{
-			if (cursor == text.Length)
-				return;
+        void CmdForwardWord()
+        {
+            int p = WordForward(cursor);
+            if (p == -1)
+                return;
+            UpdateCursor(p);
+        }
 
-			UpdateCursor(cursor + 1);
-		}
+        void CmdRight()
+        {
+            if (cursor == text.Length)
+                return;
 
-		void RenderAfter(int p)
-		{
-			ForceCursor(p);
-			RenderFrom(p);
-			ForceCursor(cursor);
-		}
+            UpdateCursor(cursor + 1);
+        }
 
-		void CmdBackspace()
-		{
-			if (cursor == 0)
-				return;
+        void RenderAfter(int p)
+        {
+            ForceCursor(p);
+            RenderFrom(p);
+            ForceCursor(cursor);
+        }
 
-			bool completing = current_completion != null;
-			HideCompletions();
+        void CmdBackspace()
+        {
+            if (cursor == 0)
+                return;
 
-			text.Remove(--cursor, 1);
-			ComputeRendered();
-			RenderAfter(cursor);
-			if (completing)
-				UpdateCompletionWindow();
-		}
+            bool completing = current_completion != null;
+            HideCompletions();
 
-		void CmdDeleteChar()
-		{
-			// If there is no input, this behaves like EOF
-			if (text.Length == 0)
-			{
-				done = true;
-				text = null;
-				Console.WriteLine();
-				return;
-			}
+            text.Remove(--cursor, 1);
+            ComputeRendered();
+            RenderAfter(cursor);
+            if (completing)
+                UpdateCompletionWindow();
+        }
 
-			if (cursor == text.Length)
-				return;
-			text.Remove(cursor, 1);
-			ComputeRendered();
-			RenderAfter(cursor);
-		}
+        void CmdDeleteChar()
+        {
+            // If there is no input, this behaves like EOF
+            if (text.Length == 0)
+            {
+                done = true;
+                text = null;
+                Console.WriteLine();
+                return;
+            }
 
-		int WordForward(int p)
-		{
-			if (p >= text.Length)
-				return -1;
+            if (cursor == text.Length)
+                return;
+            text.Remove(cursor, 1);
+            ComputeRendered();
+            RenderAfter(cursor);
+        }
 
-			int i = p;
-			if (Char.IsPunctuation(text[p]) || Char.IsSymbol(text[p]) || Char.IsWhiteSpace(text[p]))
-			{
-				for (; i < text.Length; i++)
-				{
-					if (Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-				for (; i < text.Length; i++)
-				{
-					if (!Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-			}
-			else
-			{
-				for (; i < text.Length; i++)
-				{
-					if (!Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-			}
-			if (i != p)
-				return i;
-			return -1;
-		}
+        int WordForward(int p)
+        {
+            if (p >= text.Length)
+                return -1;
 
-		int WordBackward(int p)
-		{
-			if (p == 0)
-				return -1;
+            int i = p;
+            if (Char.IsPunctuation(text[p]) || Char.IsSymbol(text[p]) || Char.IsWhiteSpace(text[p]))
+            {
+                for (; i < text.Length; i++)
+                {
+                    if (Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
 
-			int i = p - 1;
-			if (i == 0)
-				return 0;
+                for (; i < text.Length; i++)
+                {
+                    if (!Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
+            }
+            else
+            {
+                for (; i < text.Length; i++)
+                {
+                    if (!Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
+            }
 
-			if (Char.IsPunctuation(text[i]) || Char.IsSymbol(text[i]) || Char.IsWhiteSpace(text[i]))
-			{
-				for (; i >= 0; i--)
-				{
-					if (Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-				for (; i >= 0; i--)
-				{
-					if (!Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-			}
-			else
-			{
-				for (; i >= 0; i--)
-				{
-					if (!Char.IsLetterOrDigit(text[i]))
-						break;
-				}
-			}
-			i++;
+            if (i != p)
+                return i;
+            return -1;
+        }
 
-			if (i != p)
-				return i;
+        int WordBackward(int p)
+        {
+            if (p == 0)
+                return -1;
 
-			return -1;
-		}
+            int i = p - 1;
+            if (i == 0)
+                return 0;
 
-		void CmdDeleteWord()
-		{
-			int pos = WordForward(cursor);
+            if (Char.IsPunctuation(text[i]) || Char.IsSymbol(text[i]) || Char.IsWhiteSpace(text[i]))
+            {
+                for (; i >= 0; i--)
+                {
+                    if (Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
 
-			if (pos == -1)
-				return;
+                for (; i >= 0; i--)
+                {
+                    if (!Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
+            }
+            else
+            {
+                for (; i >= 0; i--)
+                {
+                    if (!Char.IsLetterOrDigit(text[i]))
+                        break;
+                }
+            }
 
-			string k = text.ToString(cursor, pos - cursor);
+            i++;
 
-			if (last_handler == CmdDeleteWord)
-				kill_buffer = kill_buffer + k;
-			else
-				kill_buffer = k;
+            if (i != p)
+                return i;
 
-			text.Remove(cursor, pos - cursor);
-			ComputeRendered();
-			RenderAfter(cursor);
-		}
+            return -1;
+        }
 
-		void CmdDeleteBackword()
-		{
-			int pos = WordBackward(cursor);
-			if (pos == -1)
-				return;
+        void CmdDeleteWord()
+        {
+            int pos = WordForward(cursor);
 
-			string k = text.ToString(pos, cursor - pos);
+            if (pos == -1)
+                return;
 
-			if (last_handler == CmdDeleteBackword)
-				kill_buffer = k + kill_buffer;
-			else
-				kill_buffer = k;
+            string k = text.ToString(cursor, pos - cursor);
 
-			text.Remove(pos, cursor - pos);
-			ComputeRendered();
-			RenderAfter(pos);
-		}
+            if (last_handler == CmdDeleteWord)
+                kill_buffer = kill_buffer + k;
+            else
+                kill_buffer = k;
 
-		//
-		// Adds the current line to the history if needed
-		//
-		void HistoryUpdateLine()
-		{
-			history.Update(text.ToString());
-		}
+            text.Remove(cursor, pos - cursor);
+            ComputeRendered();
+            RenderAfter(cursor);
+        }
 
-		void CmdHistoryPrev()
-		{
-			if (!history.PreviousAvailable())
-				return;
+        void CmdDeleteBackword()
+        {
+            int pos = WordBackward(cursor);
+            if (pos == -1)
+                return;
 
-			HistoryUpdateLine();
+            string k = text.ToString(pos, cursor - pos);
 
-			SetText(history.Previous());
-		}
+            if (last_handler == CmdDeleteBackword)
+                kill_buffer = k + kill_buffer;
+            else
+                kill_buffer = k;
 
-		void CmdHistoryNext()
-		{
-			if (!history.NextAvailable())
-				return;
+            text.Remove(pos, cursor - pos);
+            ComputeRendered();
+            RenderAfter(pos);
+        }
 
-			history.Update(text.ToString());
-			SetText(history.Next());
+        //
+        // Adds the current line to the history if needed
+        //
+        void HistoryUpdateLine()
+        {
+            history.Update(text.ToString());
+        }
 
-		}
+        void CmdHistoryPrev()
+        {
+            if (!history.PreviousAvailable())
+                return;
 
-		void CmdUp()
-		{
-			if (current_completion == null)
-				CmdHistoryPrev();
-			else
-				current_completion.SelectPrevious();
-		}
+            HistoryUpdateLine();
 
-		void CmdDown()
-		{
-			if (current_completion == null)
-				CmdHistoryNext();
-			else
-				current_completion.SelectNext();
-		}
+            SetText(history.Previous());
+        }
 
-		void CmdKillToEOF()
-		{
-			kill_buffer = text.ToString(cursor, text.Length - cursor);
-			text.Length = cursor;
-			ComputeRendered();
-			RenderAfter(cursor);
-		}
+        void CmdHistoryNext()
+        {
+            if (!history.NextAvailable())
+                return;
 
-		void CmdYank()
-		{
-			InsertTextAtCursor(kill_buffer);
-		}
+            history.Update(text.ToString());
+            SetText(history.Next());
+        }
 
-		void InsertTextAtCursor(string str)
-		{
-			int prev_lines = LineCount;
-			text.Insert(cursor, str);
-			ComputeRendered();
-			if (prev_lines != LineCount)
-			{
-				Console.SetCursorPosition(0, home_row);
-				Render();
-				cursor += str.Length;
-				ForceCursor(cursor);
-			}
-			else
-			{
-				RenderFrom(cursor);
-				cursor += str.Length;
-				ForceCursor(cursor);
-				UpdateHomeRow(TextToScreenPos(cursor));
-			}
-		}
+        void CmdUp()
+        {
+            if (current_completion == null)
+                CmdHistoryPrev();
+            else
+                current_completion.SelectPrevious();
+        }
 
-		void SetSearchPrompt(string s)
-		{
-			SetPrompt("(reverse-i-search)`" + s + "': ");
-		}
+        void CmdDown()
+        {
+            if (current_completion == null)
+                CmdHistoryNext();
+            else
+                current_completion.SelectNext();
+        }
 
-		void ReverseSearch()
-		{
-			int p;
+        void CmdKillToEOF()
+        {
+            kill_buffer = text.ToString(cursor, text.Length - cursor);
+            text.Length = cursor;
+            ComputeRendered();
+            RenderAfter(cursor);
+        }
 
-			if (cursor == text.Length)
-			{
-				// The cursor is at the end of the string
+        void CmdYank()
+        {
+            InsertTextAtCursor(kill_buffer);
+        }
 
-				p = text.ToString().LastIndexOf(search, StringComparison.Ordinal);
-				if (p != -1)
-				{
-					match_at = p;
-					cursor = p;
-					ForceCursor(cursor);
-					return;
-				}
-			}
-			else
-			{
-				// The cursor is somewhere in the middle of the string
-				int start = (cursor == match_at) ? cursor - 1 : cursor;
-				if (start != -1)
-				{
-					p = text.ToString().LastIndexOf(search, start, StringComparison.Ordinal);
-					if (p != -1)
-					{
-						match_at = p;
-						cursor = p;
-						ForceCursor(cursor);
-						return;
-					}
-				}
-			}
+        void InsertTextAtCursor(string str)
+        {
+            int prev_lines = LineCount;
+            text.Insert(cursor, str);
+            ComputeRendered();
+            if (prev_lines != LineCount)
+            {
+                Console.SetCursorPosition(0, home_row);
+                Render();
+                cursor += str.Length;
+                ForceCursor(cursor);
+            }
+            else
+            {
+                RenderFrom(cursor);
+                cursor += str.Length;
+                ForceCursor(cursor);
+                UpdateHomeRow(TextToScreenPos(cursor));
+            }
+        }
 
-			// Need to search backwards in history
-			HistoryUpdateLine();
-			string s = history.SearchBackward(search);
-			if (s != null)
-			{
-				match_at = -1;
-				SetText(s);
-				ReverseSearch();
-			}
-		}
+        void SetSearchPrompt(string s)
+        {
+            SetPrompt("(reverse-i-search)`" + s + "': ");
+        }
 
-		void CmdReverseSearch()
-		{
-			if (searching == 0)
-			{
-				match_at = -1;
-				last_search = search;
-				searching = -1;
-				search = "";
-				SetSearchPrompt("");
-			}
-			else
-			{
-				if (search == "")
-				{
-					if (!string.IsNullOrEmpty(last_search))
-					{
-						search = last_search;
-						SetSearchPrompt(search);
+        void ReverseSearch()
+        {
+            int p;
 
-						ReverseSearch();
-					}
-					return;
-				}
-				ReverseSearch();
-			}
-		}
+            if (cursor == text.Length)
+            {
+                // The cursor is at the end of the string
 
-		void SearchAppend(char c)
-		{
-			search = search + c;
-			SetSearchPrompt(search);
+                p = text.ToString().LastIndexOf(search, StringComparison.Ordinal);
+                if (p != -1)
+                {
+                    match_at = p;
+                    cursor = p;
+                    ForceCursor(cursor);
+                    return;
+                }
+            }
+            else
+            {
+                // The cursor is somewhere in the middle of the string
+                int start = (cursor == match_at) ? cursor - 1 : cursor;
+                if (start != -1)
+                {
+                    p = text.ToString().LastIndexOf(search, start, StringComparison.Ordinal);
+                    if (p != -1)
+                    {
+                        match_at = p;
+                        cursor = p;
+                        ForceCursor(cursor);
+                        return;
+                    }
+                }
+            }
 
-			//
-			// If the new typed data still matches the current text, stay here
-			//
-			if (cursor < text.Length)
-			{
-				string r = text.ToString(cursor, text.Length - cursor);
-				if (r.StartsWith(search))
-					return;
-			}
+            // Need to search backwards in history
+            HistoryUpdateLine();
+            string s = history.SearchBackward(search);
+            if (s != null)
+            {
+                match_at = -1;
+                SetText(s);
+                ReverseSearch();
+            }
+        }
 
-			ReverseSearch();
-		}
+        void CmdReverseSearch()
+        {
+            if (searching == 0)
+            {
+                match_at = -1;
+                last_search = search;
+                searching = -1;
+                search = "";
+                SetSearchPrompt("");
+            }
+            else
+            {
+                if (search == "")
+                {
+                    if (!string.IsNullOrEmpty(last_search))
+                    {
+                        search = last_search;
+                        SetSearchPrompt(search);
 
-		void CmdRefresh()
-		{
-			Console.Clear();
-			max_rendered = 0;
-			Render();
-			ForceCursor(cursor);
-		}
+                        ReverseSearch();
+                    }
 
-		void InterruptEdit(object sender, ConsoleCancelEventArgs a)
-		{
-			// Do not abort our program:
-			a.Cancel = true;
-		
-			// Interrupt the editor
-			edit_thread.Interrupt();
-		}
+                    return;
+                }
 
-		//
-		// Implements heuristics to show the completion window based on the mode
-		//
-		bool HeuristicAutoComplete(bool wasCompleting, char insertedChar)
-		{
-			if (HeuristicsMode == "csharp")
-			{
-				// csharp heuristics
-				if (wasCompleting)
+                ReverseSearch();
+            }
+        }
+
+        void SearchAppend(char c)
+        {
+            search = search + c;
+            SetSearchPrompt(search);
+
+            //
+            // If the new typed data still matches the current text, stay here
+            //
+            if (cursor < text.Length)
+            {
+                string r = text.ToString(cursor, text.Length - cursor);
+                if (r.StartsWith(search))
+                    return;
+            }
+
+            ReverseSearch();
+        }
+
+        void CmdRefresh()
+        {
+            Console.Clear();
+            max_rendered = 0;
+            Render();
+            ForceCursor(cursor);
+        }
+
+        void InterruptEdit(object sender, ConsoleCancelEventArgs a)
+        {
+            // Do not abort our program:
+            a.Cancel = true;
+
+            // Interrupt the editor
+            edit_thread.Interrupt();
+        }
+
+        //
+        // Implements heuristics to show the completion window based on the mode
+        //
+        bool HeuristicAutoComplete(bool wasCompleting, char insertedChar)
+        {
+            if (HeuristicsMode == "csharp")
+            {
+                // csharp heuristics
+                if (wasCompleting)
                 {
                     return insertedChar != ' ';
                 }
-				// If we were not completing, determine if we want to now
-				if (insertedChar == '.')
-				{
-					// Avoid completing for numbers "1.2" for example
-					if (cursor > 1 && char.IsDigit(text[cursor - 2]))
-					{
-						for (int p = cursor - 3; p >= 0; p--)
-						{
-							char c = text[p];
-							if (Char.IsDigit(c))
-								continue;
-							if (c == '_')
-								return true;
-							if (Char.IsLetter(c) || Char.IsPunctuation(c) || Char.IsSymbol(c) || Char.IsControl(c))
-								return true;
-						}
-						return false;
-					}
-					return true;
-				}
-			}
-			return false;
-		}
 
-		void HandleChar(char c)
-		{
-			if (searching != 0)
-				SearchAppend(c);
-			else
-			{
-				bool completing = current_completion != null;
-				HideCompletions();
+                // If we were not completing, determine if we want to now
+                if (insertedChar == '.')
+                {
+                    // Avoid completing for numbers "1.2" for example
+                    if (cursor > 1 && char.IsDigit(text[cursor - 2]))
+                    {
+                        for (int p = cursor - 3; p >= 0; p--)
+                        {
+                            char c = text[p];
+                            if (Char.IsDigit(c))
+                                continue;
+                            if (c == '_')
+                                return true;
+                            if (Char.IsLetter(c) || Char.IsPunctuation(c) || Char.IsSymbol(c) || Char.IsControl(c))
+                                return true;
+                        }
 
-				InsertChar(c);
-				if (HeuristicAutoComplete(completing, c))
-					UpdateCompletionWindow();
-			}
-		}
+                        return false;
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        void HandleChar(char c)
+        {
+            if (searching != 0)
+                SearchAppend(c);
+            else
+            {
+                bool completing = current_completion != null;
+                HideCompletions();
+
+                InsertChar(c);
+                if (HeuristicAutoComplete(completing, c))
+                    UpdateCompletionWindow();
+            }
+        }
 
         private void EditLoop(CancellationToken cancellationToken)
-		{
-			ConsoleKeyInfo cki;
+        {
+            ConsoleKeyInfo cki;
 
-			while (!done)
-			{
-				cancellationToken.ThrowIfCancellationRequested();
-				ConsoleModifiers mod;
+            while (!done)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                ConsoleModifiers mod;
 
-				cki = Console.ReadKey(true);
-				if (cki.Key == ConsoleKey.Escape)
-				{
-					if (current_completion != null)
-					{
-						HideCompletions();
-						continue;
-					}
+                cki = Console.ReadKey(true);
+                if (cki.Key == ConsoleKey.Escape)
+                {
+                    if (current_completion != null)
+                    {
+                        HideCompletions();
+                        continue;
+                    }
 
-					cki = Console.ReadKey(true);
-					mod = ConsoleModifiers.Alt;
-				}
-				else
-					mod = cki.Modifiers;
+                    cki = Console.ReadKey(true);
+                    mod = ConsoleModifiers.Alt;
+                }
+                else
+                    mod = cki.Modifiers;
 
-				bool handled = false;
+                bool handled = false;
 
-				foreach (Handler handler in handlers)
-				{
-					ConsoleKeyInfo t = handler.CKI;
+                foreach (Handler handler in handlers)
+                {
+                    ConsoleKeyInfo t = handler.CKI;
 
-					if (t.Key == cki.Key && t.Modifiers == mod)
-					{
-						handled = true;
-						if (handler.ResetCompletion)
-							HideCompletions();
-						handler.KeyHandler();
-						last_handler = handler.KeyHandler;
-						break;
-					}
-					else if (t.KeyChar == cki.KeyChar && t.Key == ConsoleKey.Zoom)
-					{
-						handled = true;
-						if (handler.ResetCompletion)
-							HideCompletions();
+                    if (t.Key == cki.Key && t.Modifiers == mod)
+                    {
+                        handled = true;
+                        if (handler.ResetCompletion)
+                            HideCompletions();
+                        handler.KeyHandler();
+                        last_handler = handler.KeyHandler;
+                        break;
+                    }
+                    else if (t.KeyChar == cki.KeyChar && t.Key == ConsoleKey.Zoom)
+                    {
+                        handled = true;
+                        if (handler.ResetCompletion)
+                            HideCompletions();
 
-						handler.KeyHandler();
-						last_handler = handler.KeyHandler;
-						break;
-					}
-				}
-				if (handled)
-				{
-					if (searching != 0)
-					{
-						if (last_handler != CmdReverseSearch)
-						{
-							searching = 0;
-							SetPrompt(prompt);
-						}
-					}
-					continue;
-				}
+                        handler.KeyHandler();
+                        last_handler = handler.KeyHandler;
+                        break;
+                    }
+                }
 
-				if (cki.KeyChar != (char)0)
-				{
-					HandleChar(cki.KeyChar);
-				}
-			}
-		}
+                if (handled)
+                {
+                    if (searching != 0)
+                    {
+                        if (last_handler != CmdReverseSearch)
+                        {
+                            searching = 0;
+                            SetPrompt(prompt);
+                        }
+                    }
 
-		void InitText(string initial)
-		{
-			text = new StringBuilder(initial);
-			ComputeRendered();
-			cursor = text.Length;
-			Render();
-			ForceCursor(cursor);
-		}
+                    continue;
+                }
 
-		void SetText(string newtext)
-		{
-			Console.SetCursorPosition(0, home_row);
-			InitText(newtext);
-		}
+                if (cki.KeyChar != (char)0)
+                {
+                    HandleChar(cki.KeyChar);
+                }
+            }
+        }
 
-		void SetPrompt(string newprompt)
-		{
-			shown_prompt = newprompt;
-			Console.SetCursorPosition(0, home_row);
-			Render();
-			ForceCursor(cursor);
-		}
+        void InitText(string initial)
+        {
+            text = new StringBuilder(initial);
+            ComputeRendered();
+            cursor = text.Length;
+            Render();
+            ForceCursor(cursor);
+        }
 
-		public string Edit(string prompt, string initial)
-		{
-			edit_thread = Thread.CurrentThread;
-			searching = 0;
-			Console.CancelKeyPress += InterruptEdit;
+        void SetText(string newtext)
+        {
+            Console.SetCursorPosition(0, home_row);
+            InitText(newtext);
+        }
 
-			done = false;
-			history.CursorToEnd();
-			max_rendered = 0;
+        void SetPrompt(string newprompt)
+        {
+            shown_prompt = newprompt;
+            Console.SetCursorPosition(0, home_row);
+            Render();
+            ForceCursor(cursor);
+        }
 
-			Prompt = prompt;
-			shown_prompt = prompt;
-			InitText(initial);
-			history.Append(initial);
+        public string Edit(string prompt, string initial)
+        {
+            edit_thread = Thread.CurrentThread;
+            searching = 0;
+            Console.CancelKeyPress += InterruptEdit;
 
-			CancellationTokenSource cts = new CancellationTokenSource();
-			
-			do
-			{
-				try
-				{
-					EditLoop(cts.Token);
-				}
-				catch (OperationCanceledException)
-				{
-					cts = new CancellationTokenSource(); // Reset cancellation token source
-					searching = 0;
-					//Thread.ResetAbort();
-					Console.WriteLine();
-					SetPrompt(prompt);
-					SetText("");
-				}
-			} while (!done);
-			Console.WriteLine();
+            done = false;
+            history.CursorToEnd();
+            max_rendered = 0;
 
-			Console.CancelKeyPress -= InterruptEdit;
+            Prompt = prompt;
+            shown_prompt = prompt;
+            InitText(initial);
+            history.Append(initial);
 
-			if (text == null)
-			{
-				history.Close();
-				return null;
-			}
+            CancellationTokenSource cts = new CancellationTokenSource();
 
-			string result = text.ToString();
-			if (result != "")
-				history.Accept(result);
-			else
-				history.RemoveLast();
+            do
+            {
+                try
+                {
+                    EditLoop(cts.Token);
+                }
+                catch (OperationCanceledException)
+                {
+                    cts = new CancellationTokenSource(); // Reset cancellation token source
+                    searching = 0;
+                    //Thread.ResetAbort();
+                    Console.WriteLine();
+                    SetPrompt(prompt);
+                    SetText("");
+                }
+            } while (!done);
 
-			return result;
-		}
+            Console.WriteLine();
 
-		public void SaveHistory()
-		{
-			if (history != null)
-			{
-				history.Close();
-			}
-		}
+            Console.CancelKeyPress -= InterruptEdit;
 
-		public bool TabAtStartCompletes { get; set; }
+            if (text == null)
+            {
+                history.Close();
+                return null;
+            }
 
-		//
-		// Emulates the bash-like behavior, where edits done to the
-		// history are recorded
-		//
-		class History
-		{
-			string[] history;
-			int head, tail;
-			int cursor, count;
-			string histfile;
+            string result = text.ToString();
+            if (result != "")
+                history.Accept(result);
+            else
+                history.RemoveLast();
 
-			public History(string app, int size)
-			{
-				if (size < 1)
-					throw new ArgumentException("size");
+            return result;
+        }
 
-				if (app != null)
-				{
-					string dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-					//Console.WriteLine (dir);
-					if (!Directory.Exists(dir))
-					{
-						try
-						{
-							Directory.CreateDirectory(dir);
-						}
-						catch
-						{
-							app = null;
-						}
-					}
-					if (app != null)
-						histfile = Path.Combine(dir, app) + ".history";
-				}
+        public void SaveHistory()
+        {
+            if (history != null)
+            {
+                history.Close();
+            }
+        }
 
-				history = new string[size];
-				head = tail = cursor = 0;
+        public bool TabAtStartCompletes { get; set; }
 
-				if (File.Exists(histfile))
+        //
+        // Emulates the bash-like behavior, where edits done to the
+        // history are recorded
+        //
+        class History
+        {
+            string[] history;
+            int head, tail;
+            int cursor, count;
+            string histfile;
+
+            public History(string app, int size)
+            {
+                if (size < 1)
+                    throw new ArgumentException("size");
+
+                if (app != null)
+                {
+                    string dir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+                    //Console.WriteLine (dir);
+                    if (!Directory.Exists(dir))
+                    {
+                        try
+                        {
+                            Directory.CreateDirectory(dir);
+                        }
+                        catch
+                        {
+                            app = null;
+                        }
+                    }
+
+                    if (app != null)
+                        histfile = Path.Combine(dir, app) + ".history";
+                }
+
+                history = new string[size];
+                head = tail = cursor = 0;
+
+                if (File.Exists(histfile))
                 {
                     using StreamReader sr = File.OpenText(histfile);
 
@@ -1379,14 +1390,14 @@ namespace Mono.Terminal
                             Append(line);
                     }
                 }
-			}
+            }
 
-			public void Close()
-			{
-				if (histfile == null)
-					return;
+            public void Close()
+            {
+                if (histfile == null)
+                    return;
 
-				try
+                try
                 {
                     using StreamWriter sw = File.CreateText(histfile);
                     int start = (count == history.Length) ? head : tail;
@@ -1396,135 +1407,134 @@ namespace Mono.Terminal
                         sw.WriteLine(history[p]);
                     }
                 }
-				catch
-				{
-					// ignore
-				}
-			}
-
-			//
-			// Appends a value to the history
-			//
-			public void Append(string s)
-			{
-				//Console.WriteLine ("APPENDING {0} head={1} tail={2}", s, head, tail);
-				history[head] = s;
-				head = (head + 1) % history.Length;
-				if (head == tail)
-					tail = (tail + 1 % history.Length);
-				if (count != history.Length)
-					count++;
-				//Console.WriteLine ("DONE: head={1} tail={2}", s, head, tail);
-			}
-
-			//
-			// Updates the current cursor location with the string,
-			// to support editing of history items.   For the current
-			// line to participate, an Append must be done before.
-			//
-			public void Update(string s)
-			{
-				history[cursor] = s;
-			}
-
-			public void RemoveLast()
-			{
-				head = head - 1;
-				if (head < 0)
-					head = history.Length - 1;
-			}
-
-			public void Accept(string s)
-			{
-				int t = head - 1;
-				if (t < 0)
-					t = history.Length - 1;
-
-				history[t] = s;
-			}
-
-			public bool PreviousAvailable()
-			{
-				if (count == 0)
-					return false;
-				var next = cursor - 1;
-				if (next < 0)
-					next = count - 1;
-
-				return next != head;
+                catch
+                {
+                    // ignore
+                }
             }
 
-			public bool NextAvailable()
-			{
-				if (count == 0)
-					return false;
-				int next = (cursor + 1) % history.Length;
-				return next != head;
+            /// <summary>
+            /// Appends a value to the history
+            /// </summary>
+            /// <param name="s"></param>
+            public void Append(string s)
+            {
+                //Console.WriteLine ("APPENDING {0} head={1} tail={2}", s, head, tail);
+                history[head] = s;
+                head = (head + 1) % history.Length;
+                if (head == tail)
+                    tail = (tail + 1 % history.Length);
+                if (count != history.Length)
+                    count++;
+                //Console.WriteLine ("DONE: head={1} tail={2}", s, head, tail);
+            }
+
+            /// <summary>
+            /// Updates the current cursor location with the string,
+            /// to support editing of history items.   For the current
+            /// line to participate, an Append must be done before.
+            /// </summary>
+            public void Update(string s)
+            {
+                history[cursor] = s;
+            }
+
+            public void RemoveLast()
+            {
+                head = head - 1;
+                if (head < 0)
+                    head = history.Length - 1;
+            }
+
+            public void Accept(string s)
+            {
+                int t = head - 1;
+                if (t < 0)
+                    t = history.Length - 1;
+
+                history[t] = s;
+            }
+
+            public bool PreviousAvailable()
+            {
+                if (count == 0)
+                    return false;
+                var next = cursor - 1;
+                if (next < 0)
+                    next = count - 1;
+
+                return next != head;
+            }
+
+            public bool NextAvailable()
+            {
+                if (count == 0)
+                    return false;
+                int next = (cursor + 1) % history.Length;
+                return next != head;
             }
 
 
-			// Returns: a string with the previous line contents, or
-			// nul if there is no data in the history to move to.
-			public string Previous()
-			{
-				if (!PreviousAvailable())
-					return null;
+            // Returns: a string with the previous line contents, or
+            // nul if there is no data in the history to move to.
+            public string Previous()
+            {
+                if (!PreviousAvailable())
+                    return null;
 
-				cursor--;
-				if (cursor < 0)
-					cursor = history.Length - 1;
+                cursor--;
+                if (cursor < 0)
+                    cursor = history.Length - 1;
 
-				return history[cursor];
-			}
+                return history[cursor];
+            }
 
-			public string Next()
-			{
-				if (!NextAvailable())
-					return null;
+            public string Next()
+            {
+                if (!NextAvailable())
+                    return null;
 
-				cursor = (cursor + 1) % history.Length;
-				return history[cursor];
-			}
+                cursor = (cursor + 1) % history.Length;
+                return history[cursor];
+            }
 
-			public void CursorToEnd()
-			{
-				if (head == tail)
-					return;
+            public void CursorToEnd()
+            {
+                if (head == tail)
+                    return;
 
-				cursor = head;
-			}
+                cursor = head;
+            }
 
-			public void Dump()
-			{
-				Console.WriteLine("Head={0} Tail={1} Cursor={2} count={3}", head, tail, cursor, count);
-				for (int i = 0; i < history.Length; i++)
-				{
-					Console.WriteLine(" {0} {1}: {2}", i == cursor ? "==>" : "   ", i, history[i]);
-				}
-				//log.Flush ();
-			}
+            public void Dump()
+            {
+                Console.WriteLine("Head={0} Tail={1} Cursor={2} count={3}", head, tail, cursor, count);
+                for (int i = 0; i < history.Length; i++)
+                {
+                    Console.WriteLine(" {0} {1}: {2}", i == cursor ? "==>" : "   ", i, history[i]);
+                }
+            }
 
-			public string SearchBackward(string term)
-			{
-				for (int i = 0; i < count; i++)
-				{
-					int slot = cursor - i - 1;
-					if (slot < 0)
-						slot = history.Length + slot;
-					if (slot >= history.Length)
-						slot = 0;
-					if (history[slot] != null && history[slot].IndexOf(term) != -1)
-					{
-						cursor = slot;
-						return history[slot];
-					}
-				}
+            public string SearchBackward(string term)
+            {
+                for (int i = 0; i < count; i++)
+                {
+                    int slot = cursor - i - 1;
+                    if (slot < 0)
+                        slot = history.Length + slot;
+                    if (slot >= history.Length)
+                        slot = 0;
+                    if (history[slot] != null && history[slot].IndexOf(term) != -1)
+                    {
+                        cursor = slot;
+                        return history[slot];
+                    }
+                }
 
-				return null;
-			}
-
-		}
-	}
+                return null;
+            }
+        }
+    }
 
 #if DEMO
 	class Demo {
@@ -1535,7 +1545,8 @@ namespace Mono.Terminal
 			};
 			le.AutoCompleteEvent += delegate (string a, int pos){
 				string prefix = "";
-				var completions = new string [] { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten" };
+				var completions =
+ new string [] { "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten" };
 				return new Mono.Terminal.LineEditor.Completion (prefix, completions);
 			};
 			

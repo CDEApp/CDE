@@ -80,29 +80,20 @@ public class AutoWaitCursor
     /// <summary>
     /// Returns the amount of time the application has been idle.
     /// </summary>
-    public TimeSpan ApplicationIdleTime
-    {
-        get { return _appStateMonitor.ApplicationIdleTime; }
-    }
+    public TimeSpan ApplicationIdleTime => _appStateMonitor.ApplicationIdleTime;
 
     /// <summary>
     /// Returns true if the auto wait cursor has been started.
     /// </summary>
-    public static bool IsStarted
-    {
-        get { return _appStateMonitor.IsStarted; }
-    }
+    public static bool IsStarted => _appStateMonitor.IsStarted;
 
     /// <summary>
     /// Gets or sets the Cursor to use during Application busy periods.
     /// </summary>
     public static Cursor Cursor
     {
-        get { return _appStateMonitor.Cursor; }
-        set
-        {
-            _appStateMonitor.Cursor = value;
-        }
+        get => _appStateMonitor.Cursor;
+        set => _appStateMonitor.Cursor = value;
     }
 
     /// <summary>
@@ -110,11 +101,8 @@ public class AutoWaitCursor
     /// </summary>
     public static bool Enabled
     {
-        get { return _appStateMonitor.Enabled; }
-        set
-        {
-            _appStateMonitor.Enabled = value;
-        }
+        get => _appStateMonitor.Enabled;
+        set => _appStateMonitor.Enabled = value;
     }
 
     /// <summary>
@@ -122,8 +110,8 @@ public class AutoWaitCursor
     /// </summary>
     public static TimeSpan Delay
     {
-        get { return _appStateMonitor.Delay; }
-        set { _appStateMonitor.Delay = value; }
+        get => _appStateMonitor.Delay;
+        set => _appStateMonitor.Delay = value;
     }
 
     /// <summary>
@@ -132,8 +120,8 @@ public class AutoWaitCursor
     /// </summary>
     public static IntPtr MainWindowHandle
     {
-        get { return _appStateMonitor.MainWindowHandle; }
-        set { _appStateMonitor.MainWindowHandle = value; }
+        get => _appStateMonitor.MainWindowHandle;
+        set => _appStateMonitor.MainWindowHandle = value;
     }
 
     #endregion
@@ -268,7 +256,6 @@ public class AutoWaitCursor
             _waitCursor = waitCursor;
             // Gracefully shuts down the state monitor
             Application.ThreadExit += _OnApplicationThreadExit;
-            //Application.ApplicationExit += _OnApplicationThreadExit;
         }
 
         #endregion
@@ -346,8 +333,8 @@ public class AutoWaitCursor
         /// </summary>
         public bool Enabled
         {
-            get { return _enabled; }
-            set { _enabled = value; }
+            get => _enabled;
+            set => _enabled = value;
         }
 
         /// <summary>
@@ -355,8 +342,8 @@ public class AutoWaitCursor
         /// </summary>
         public TimeSpan Delay
         {
-            get { return _delay; }
-            set { _delay = value; }
+            get => _delay;
+            set => _delay = value;
         }
 
         #endregion
@@ -366,10 +353,7 @@ public class AutoWaitCursor
         /// <summary>
         /// Returns true if the auto wait cursor has been started.
         /// </summary>
-        public bool IsStarted
-        {
-            get { return _isStarted; }
-        }
+        public bool IsStarted => _isStarted;
 
         /// <summary>
         /// Gets or sets the main window handle of the application (ie the handle of an MDI form).
@@ -377,8 +361,8 @@ public class AutoWaitCursor
         /// </summary>
         public IntPtr MainWindowHandle
         {
-            get { return _mainWindowHandle; }
-            set { _mainWindowHandle = value; }
+            get => _mainWindowHandle;
+            set => _mainWindowHandle = value;
         }
 
         /// <summary>
@@ -386,17 +370,14 @@ public class AutoWaitCursor
         /// </summary>
         public Cursor Cursor
         {
-            get { return _waitCursor; }
-            set { _waitCursor = value; }
+            get => _waitCursor;
+            set => _waitCursor = value;
         }
 
         /// <summary>
         /// Returns the amount of time the application has been idle.
         /// </summary>
-        public TimeSpan ApplicationIdleTime
-        {
-            get { return DateTime.Now.Subtract(_inactiveStart); }
-        }
+        public TimeSpan ApplicationIdleTime => DateTime.Now.Subtract(_inactiveStart);
 
         #endregion
 

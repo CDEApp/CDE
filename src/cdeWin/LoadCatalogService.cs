@@ -63,7 +63,7 @@ public class LoadCatalogService : ILoadCatalogService
         if (totalFiles == 0)
         {
             progressCallback?.Invoke(0, 0, "No catalogs found");
-            return new List<RootEntry>();
+            return [];
         }
 
         var volatileFileCounter = 0;

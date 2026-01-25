@@ -13,7 +13,7 @@ public interface ICatalogRepository
     Task Save(RootEntry rootEntry);
 
     /// <summary>
-    /// This gets .cde files in current dir or one directory down.
+    /// This gets .cde files in the current dir or one directory down.
     /// Use directory permissions to control who can load what .cde files one dir down if you like.
     /// </summary>
     IList<string> GetCacheFileList(IEnumerable<string> paths);

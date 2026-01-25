@@ -178,26 +178,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.SearchButtonText = "Search";
     }
 
-    private List<RootEntry> LoadRootEntries(IConfig config, TimeIt timeIt)
-    {
-        return _loadCatalogService?.LoadRootEntries(config);
-    }
-
     private void InitialiseLog()
     {
         _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
-    }
-
-    private void LogTimeIt(TimeIt timeIt)
-    {
-        if (timeIt == null) return;
-        foreach (var labelElapsed in timeIt.ElapsedList)
-        {
-            _clientForm.AddLine("Loaded {0} in {1} msec", labelElapsed.Label, labelElapsed.ElapsedMsec);
-        }
-
-        _clientForm.AddLine("Total Load time for {0} files in {1} msec", timeIt.ElapsedList.Count(),
-            timeIt.TotalMsec);
     }
 
     private void RegisterListViewSorters()
@@ -513,8 +496,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         return dropDownValueFunc(now, -fieldValue); // subtract as we are going back in time.
     }
 
-    // Assumes well formed regex pattern input.
-    // As search is substring match remove leading and trailing wildcards.
+    // Assumes well-formed regex pattern input.
+    // As search is substring match, remove leading and trailing wildcards.
     protected string OptimiseRegexPattern(string pattern)
     {
         if (!_clientForm.RegexMode || string.IsNullOrEmpty(pattern))
@@ -628,9 +611,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var state = (BgWorkerState)e.UserState;
         var p = e.ProgressPercentage;
         _clientForm.SetSearchTimeStatus("% " + p
-            //+ " lc " + state.ListCount
-            //+ " ctr " + state.Counter
-            //+ " end " + state.End
         );
 
         var count = SetSearchResultList(state.List);
@@ -834,12 +814,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             workingTreeNode.Expand();
             _clientForm.DirectoryTreeViewSelectedNode = workingTreeNode;
 
-            // This is required or item under cursor after double click is selected.
+            // This is a required or item under cursor after double click is selected.
             // not sure why ? some sort of left over click on new ListView content.
             var directoryHelper = _clientForm.DirectoryListViewHelper;
             directoryHelper.DeselectAllItems();
-            //_clientForm.DirectoryListViewDeselectItems();
-
             _clientForm.SelectDirectoryPane();
         }
     }
