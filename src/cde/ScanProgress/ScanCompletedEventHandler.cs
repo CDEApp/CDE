@@ -2,14 +2,14 @@
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 
 namespace cde.ScanProgress;
 
 [UsedImplicitly]
-public class ScanCompletedEventHandler : INotificationHandler<ScanCompletedEvent>
+public class ScanCompletedEventHandler : IConsumer<ScanCompletedEvent>
 {
-    public async Task Handle(ScanCompletedEvent notification, CancellationToken cancellationToken)
+    public async Task OnHandle(ScanCompletedEvent message, CancellationToken cancellationToken)
     {
         ScanProgressConsole.ScanIsComplete = true;
         await Task.Yield();

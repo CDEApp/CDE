@@ -1,13 +1,17 @@
+using System;
 using System.IO;
 using Autofac;
+using Autofac.Extensions.DependencyInjection;
 using AutofacSerilogIntegration;
 using cde.Config;
 using cdeLib.Module;
-using MediatR.Extensions.Autofac.DependencyInjection;
-using MediatR.Extensions.Autofac.DependencyInjection.Builder;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Events;
+using SlimMessageBus.Host;
+using SlimMessageBus.Host.Memory;
 
 namespace cde;
 
@@ -35,6 +39,21 @@ public static class AppContainerBuilder
             return null;
         }
 
+        // Configure SlimMessageBus with MSDI
+        var services = new ServiceCollection();
+
+        // Add logging (required by SlimMessageBus)
+        services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: false));
+
+        services.AddSlimMessageBus(mbb =>
+        {
+            mbb.WithProviderMemory()
+               // Filter out cdeLib CreateCacheCommandHandler since cde assembly overrides it
+               .AutoDeclareFrom(typeof(CdelibModule).Assembly,
+                   consumerTypeFilter: t => t != typeof(cdeLib.Catalog.CreateCacheCommandHandler))
+               .AutoDeclareFrom(typeof(AppContainerBuilder).Assembly);
+        });
+
         var builder = new ContainerBuilder();
         var config = new ConfigBuilder().Build(args);
         ConfigureLogger(config);
@@ -43,11 +62,18 @@ public static class AppContainerBuilder
         builder.RegisterLogger();
 
         builder.RegisterModule<CdelibModule>();
-        var configuration = MediatRConfigurationBuilder
-            .Create(typeof(AppContainerBuilder).Assembly)
-            .WithAllOpenGenericHandlerTypesRegistered()
-            .Build();
-        builder.RegisterMediatR(configuration);
+
+        // Populate Autofac from MSDI ServiceCollection (for SlimMessageBus)
+        builder.Populate(services);
+
+        // Register handlers explicitly in Autofac to ensure they can be resolved
+        builder.RegisterType<cde.ScanProgress.CreateCacheCommandHandler>().AsSelf();
+        builder.RegisterType<cde.ScanProgress.ScanProgressNotificationHandler>().AsSelf();
+        builder.RegisterType<cde.ScanProgress.ScanCompletedEventHandler>().AsSelf();
+        builder.RegisterType<cdeLib.Hashing.HashCatalogCommandHandler>().AsSelf();
+        builder.RegisterType<cdeLib.Duplicates.FindDuplicateCommandHandler>().AsSelf();
+        builder.RegisterType<cdeLib.Upgrade.UpdateCommandHandler>().AsSelf();
+
         return builder.Build();
     }
 

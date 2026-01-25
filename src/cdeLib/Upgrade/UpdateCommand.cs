@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 using Serilog;
 
 namespace cdeLib.Upgrade;
@@ -25,7 +25,7 @@ public class UpdateCommandHandler : IRequestHandler<UpdateCommand>
         _logger = logger;
     }
 
-    public async Task Handle(UpdateCommand request, CancellationToken cancellationToken)
+    public async Task OnHandle(UpdateCommand request, CancellationToken cancellationToken)
     {
         var rootEntry = _catalogRepository.LoadDirCache(request.FileName);
         var isDirty = false;

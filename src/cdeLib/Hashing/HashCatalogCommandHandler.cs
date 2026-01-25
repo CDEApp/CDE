@@ -5,7 +5,7 @@ using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Infrastructure;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 
 namespace cdeLib.Hashing;
 
@@ -26,7 +26,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         _catalogRepository = catalogRepository;
     }
 
-    public async Task Handle(HashCatalogCommand request, CancellationToken cancellationToken)
+    public async Task OnHandle(HashCatalogCommand request, CancellationToken cancellationToken)
     {
         _logger.Information("Memory pre-catalog load: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());

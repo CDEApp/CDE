@@ -8,7 +8,7 @@ using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using Humanizer;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 using Serilog;
 
 namespace cde.ScanProgress;
@@ -18,17 +18,17 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 {
     private readonly IConfiguration _configuration;
     private readonly ICatalogRepository _catalogRepository;
-    private readonly IMediator _mediator;
+    private readonly IMessageBus _messageBus;
 
     public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
-        IMediator mediator)
+        IMessageBus messageBus)
     {
         _configuration = configuration;
         _catalogRepository = catalogRepository;
-        _mediator = mediator;
+        _messageBus = messageBus;
     }
 
-    public async Task Handle(CreateCacheCommand request, CancellationToken cancellationToken)
+    public async Task OnHandle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
         var mainLoopTask = Task.Factory.StartNew(() => MainLoop(request, cancellationToken), cancellationToken);
         var console = new ScanProgressConsole();
@@ -42,8 +42,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         try
         {
             re.SimpleScanCountEvent = (count, currentFile) =>
-                _mediator.Publish(new ScanProgressEvent(count, currentFile), cancellationToken);
-            re.SimpleScanEndEvent = () => _mediator.Publish(new ScanCompletedEvent(), cancellationToken);
+                _messageBus.Publish(new ScanProgressEvent(count, currentFile), cancellationToken: cancellationToken);
+            re.SimpleScanEndEvent = () => _messageBus.Publish(new ScanCompletedEvent(), cancellationToken: cancellationToken);
             re.ExceptionEvent = PrintException;
 
             re.PopulateRoot(request.Path);

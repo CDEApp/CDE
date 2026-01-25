@@ -21,8 +21,10 @@
       <PackageReference Include="CommandLineParser" Version="2.9.1" />
       <PackageReference Include="Humanizer.Core" Version="3.0.1" />
       <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-      <PackageReference Include="MediatR" Version="12.4.1" />
-      <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.2.0" />
+      <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="10.0.0" />
+      <PackageReference Include="SlimMessageBus" Version="3.0.0" />
+      <PackageReference Include="SlimMessageBus.Host" Version="3.0.0" />
+      <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.0.0" />
       <PackageReference Include="Meziantou.Analyzer" Version="2.0.285">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -31,6 +33,7 @@
       <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="10.0.2" />
       <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" Version="10.0.2" />
       <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.2" />
+      <PackageReference Include="Serilog.Extensions.Logging" Version="9.0.1" />
       <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
       <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
       <PackageReference Include="SerilogTimings" Version="3.1.0" />

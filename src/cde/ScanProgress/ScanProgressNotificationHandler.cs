@@ -2,17 +2,17 @@
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 
 namespace cde.ScanProgress;
 
 [UsedImplicitly]
-public class ScanProgressNotificationHandler : INotificationHandler<ScanProgressEvent>
+public class ScanProgressNotificationHandler : IConsumer<ScanProgressEvent>
 {
-    public Task Handle(ScanProgressEvent notification, CancellationToken cancellationToken)
+    public Task OnHandle(ScanProgressEvent message, CancellationToken cancellationToken)
     {
-        ScanProgressConsole.ScanCount = notification.ScanCount;
-        ScanProgressConsole.CurrentFile = notification.CurrentFile;
+        ScanProgressConsole.ScanCount = message.ScanCount;
+        ScanProgressConsole.CurrentFile = message.CurrentFile;
         return Task.CompletedTask;
     }
 }

@@ -12,7 +12,7 @@ using cdeLib.Entities;
 using cdeLib.Hashing;
 using cdeLib.Upgrade;
 using CommandLine;
-using MediatR;
+using SlimMessageBus;
 using Mono.Terminal;
 using Serilog;
 using SerilogTimings;
@@ -25,7 +25,7 @@ public static class Program
 {
     private static IContainer _container;
 
-    private static IMediator Mediatr { get; set; }
+    private static IMessageBus MessageBus { get; set; }
 
     /// <summary>
     /// Initialize the program. Returns false if initialization failed (e.g., missing config).
@@ -37,7 +37,7 @@ public static class Program
         {
             return false;
         }
-        Mediatr = Resolve<IMediator>();
+        MessageBus = Resolve<IMessageBus>();
         return true;
     }
 
@@ -228,26 +228,26 @@ public static class Program
     private static void Update(UpdateOptions opts)
     {
         var task = Task.Run(() =>
-            Mediatr.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description }));
+            MessageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description }));
         task.Wait();
     }
 
     private static void FindDupes()
     {
-        var task = Task.Run(() => Mediatr.Send(new FindDuplicatesCommand()));
+        var task = Task.Run(() => MessageBus.Send(new FindDuplicatesCommand()));
         task.Wait();
     }
 
     public static void HashCatalog()
     {
-        var task = Task.Run(async () => await Mediatr.Send(new HashCatalogCommand()).ConfigureAwait(false));
+        var task = Task.Run(async () => await MessageBus.Send(new HashCatalogCommand()).ConfigureAwait(false));
         task.Wait();
     }
 
     public static void CreateCache(ScanOptions opts)
     {
         var task = Task.Run(async () =>
-            await Mediatr.Send(new CreateCacheCommand(opts.Path) { Description = opts.Description })
+            await MessageBus.Send(new CreateCacheCommand(opts.Path) { Description = opts.Description })
                 .ConfigureAwait(false));
         task.Wait();
     }

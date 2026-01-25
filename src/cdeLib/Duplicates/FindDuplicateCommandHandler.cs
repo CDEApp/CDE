@@ -2,7 +2,7 @@
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 
 namespace cdeLib.Duplicates;
 
@@ -18,7 +18,7 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
         _catalogRepository = catalogRepository;
     }
 
-    public Task Handle(FindDuplicatesCommand request, CancellationToken cancellationToken)
+    public Task OnHandle(FindDuplicatesCommand request, CancellationToken cancellationToken)
     {
         _duplication.FindDuplicates(_catalogRepository.LoadCurrentDirCache());
         return Task.CompletedTask;

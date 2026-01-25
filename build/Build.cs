@@ -85,7 +85,7 @@ class Build : NukeBuild
 
     [UsedImplicitly]
     Target Publish => _ => _
-        .DependsOn(Pack)
+        //.DependsOn(Pack)
         .Executes(() =>
         {
             DotNetPublish(s => s

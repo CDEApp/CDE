@@ -1,8 +1,6 @@
-﻿using MediatR;
+﻿namespace cdeLib.Catalog;
 
-namespace cdeLib.Catalog;
-
-public class ScanProgressEvent : INotification
+public class ScanProgressEvent
 {
     public ScanProgressEvent(int scanCount, string currentFile)
     {
@@ -15,7 +13,4 @@ public class ScanProgressEvent : INotification
     public int ScanCount { get; set; }
 }
 
-public class ScanCompletedEvent : INotification
-{
-
-}
+public class ScanCompletedEvent;

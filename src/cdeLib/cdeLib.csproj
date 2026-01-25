@@ -11,8 +11,9 @@
     <PackageReference Include="FlatSharp" Version="6.3.5" />
     <PackageReference Include="FlatSharp.Runtime" Version="7.9.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2025.2.4" />
-    <PackageReference Include="MediatR" Version="12.4.1" />
-    <PackageReference Include="MediatR.Extensions.Autofac.DependencyInjection" Version="12.2.0" />
+    <PackageReference Include="SlimMessageBus" Version="3.0.0" />
+    <PackageReference Include="SlimMessageBus.Host" Version="3.0.0" />
+    <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.0.0" />
     <PackageReference Include="MessagePack" Version="3.1.4" />
     <PackageReference Include="MessagePack.Annotations" Version="3.1.4" />
     <PackageReference Include="MessagePackAnalyzer" Version="3.1.4">

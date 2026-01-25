@@ -1,4 +1,4 @@
-﻿using MediatR;
+﻿using SlimMessageBus;
 
 namespace cdeLib.Hashing;
 

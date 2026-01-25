@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
@@ -21,18 +22,25 @@ public class ScanProgressConsole
 
     string NormalizeLength(string value, int maxLength)
     {
-        return value.Length <= maxLength ? value : value[..maxLength];
+        if (value.Length <= maxLength)
+            return value;
+
+        return maxLength < 3
+            ? value[..maxLength]
+            : value[..(maxLength - 3)] + "...";
     }
 
     private static void WriteLogMessage(string message)
     {
-        AnsiConsole.MarkupLine($"[grey]LOG:[/]{Markup.Escape(message)}[grey]...[/]");
+        var width = AnsiConsole.Profile.Out.Width;
+        // Pad raw message to console width to clear previous content
+        var paddedMessage = $"LOG:{message}".PadRight(width);
+        // Use \r to return to start of line (status update behavior)
+        AnsiConsole.Markup($"\r[grey]{Markup.Escape(paddedMessage)}[/]");
     }
 
     public void Start(Task mainLoopTask, CancellationToken cancellationToken)
     {
-        const int increment = 10000;
-        const int updateIntervalMs = 500;
         var sw = new Stopwatch();
         sw.Start();
         AnsiConsole.Status()
@@ -40,32 +48,46 @@ public class ScanProgressConsole
             .Spinner(Spinner.Known.Default)
             .Start("Thinking...", ctx =>
             {
-                var reportCounter = increment;
                 while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested && !ScanIsComplete)
                 {
-                    reportCounter = ShowProgress(reportCounter, sw, increment, ctx, updateIntervalMs);
+                    ShowProgress(sw, ctx);
                 }
             });
     }
 
-    private int ShowProgress(int reportCounter, Stopwatch sw, int increment, StatusContext ctx, int updateIntervalMs)
+    private long CalculateScansPerSecond(Stopwatch sw)
+    {
+        var elapsedSec = sw.ElapsedMilliseconds / 1000;
+        if (elapsedSec < 1) elapsedSec = 1;
+        return ScanCount / elapsedSec;
+    }
+
+    private void ShowProgress(Stopwatch sw, StatusContext ctx)
     {
         var defaultNumberFormat = new NumberFormatInfo();
-        var msg = NormalizeLength($"Scanned {ScanCount.ToString("N0", defaultNumberFormat)} files. At: {CurrentFile}",
-            AnsiConsole.Profile.Out.Width - 6);
-        if (ScanCount > reportCounter)
+        var scansPerSec = CalculateScansPerSecond(sw);
+
+        var currentPath = string.IsNullOrEmpty(CurrentFile)
+            ? string.Empty
+            : Path.GetDirectoryName(CurrentFile) ?? CurrentFile;
+
+        var scanCountText = ScanCount.ToString("N0", defaultNumberFormat);
+        var scansPerSecText = scansPerSec.ToString("N0", defaultNumberFormat);
+        var escapedPath = Markup.Escape(currentPath);
+
+        // Normalize the path separately to ensure it doesn't get cut off mid-word
+        var maxPathLength = AnsiConsole.Profile.Out.Width - 50; // Reserve space for the rest of the message
+        if (maxPathLength > 0)
         {
-            var elapsedSec = sw.ElapsedMilliseconds / 1000;
-            if (elapsedSec < 1) elapsedSec = 1;
-            var scansPerSec = ScanCount / elapsedSec;
-            Messages.Enqueue(
-                $"Scanned {ScanCount.ToString("N0", defaultNumberFormat)} files. Avg {scansPerSec.ToString("N0", defaultNumberFormat)}/sec");
-            reportCounter += increment;
+            escapedPath = NormalizeLength(escapedPath, maxPathLength);
         }
+
+        // Build message with markup - this won't be truncated so markup tags stay balanced
+        var msg = $"Scanned [yellow]{scanCountText}[/] files Avg [yellow]{scansPerSecText}[/]/sec Dir [yellow]{escapedPath}[/]";
 
         try
         {
-            ctx.Status(Markup.Escape(msg));
+            ctx.Status(msg);
         }
         catch (Exception ex)
         {
@@ -88,8 +110,5 @@ public class ScanProgressConsole
                 WriteLogMessage(msg);
             }
         }
-
-        Thread.Sleep(updateIntervalMs);
-        return reportCounter;
     }
 }

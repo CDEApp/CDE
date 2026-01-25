@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
 using JetBrains.Annotations;
-using MediatR;
+using SlimMessageBus;
 
 namespace cdeLib.Catalog;
 
@@ -13,21 +13,23 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 {
     private readonly IConfiguration _configuration;
     private readonly ICatalogRepository _catalogRepository;
-    private readonly IMediator _mediator;
+    private readonly IMessageBus _messageBus;
 
-    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository, IMediator mediator)
+    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
+        IMessageBus messageBus)
     {
         _configuration = configuration;
         _catalogRepository = catalogRepository;
-        _mediator = mediator;
+        _messageBus = messageBus;
     }
 
-    public async Task Handle(CreateCacheCommand request, CancellationToken cancellationToken)
+    public async Task OnHandle(CreateCacheCommand request, CancellationToken cancellationToken)
     {
         var re = new RootEntry(_configuration);
         try
         {
-            re.SimpleScanCountEvent = (count, currentFile) => _mediator.Publish(new ScanProgressEvent(count, currentFile), cancellationToken);
+            re.SimpleScanCountEvent = (count, currentFile) =>
+                _messageBus.Publish(new ScanProgressEvent(count, currentFile), cancellationToken: cancellationToken);
             re.SimpleScanEndEvent = ScanEndOfEntries;
             re.ExceptionEvent = PrintExceptions;
 
@@ -52,6 +54,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             {
                 re.Description = request.Description;
             }
+
             await _catalogRepository.Save(re);
             var scanTimeSpan = re.ScanEndUTC - re.ScanStartUTC;
             Console.WriteLine($"Scanned path {re.Path}");
