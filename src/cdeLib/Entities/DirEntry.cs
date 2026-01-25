@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using cdeLib.Infrastructure;
 using FlatSharp.Attributes;
 using MessagePack;
@@ -466,47 +465,50 @@ public class DirEntry : ICommonEntry
         {
             var (workPath, baseSourceEntry, baseDestinationEntry) = dirs.Pop();
 
-            if (baseSourceEntry.Children != null)
+            if (baseSourceEntry.Children != null && baseDestinationEntry.Children != null)
             {
+                // Build dictionary for O(1) lookups instead of O(n) linear search
+                var destinationLookup = new Dictionary<string, DirEntry>(
+                    baseDestinationEntry.Children.Count,
+                    StringComparer.OrdinalIgnoreCase);
+
+                foreach (var child in baseDestinationEntry.Children)
+                {
+                    // TryAdd handles potential duplicate paths gracefully (keeps first, ignores rest)
+                    destinationLookup.TryAdd(child.Path, child);
+                }
+
                 foreach (var sourceDirEntry in baseSourceEntry.Children)
                 {
-                    var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
-
-                    // find if there's a destination entry available.
-                    // size of dir is irrelevant. date of dir we don't care about.
-                    var sourceEntry = sourceDirEntry;
-                    var destinationDirEntry = baseDestinationEntry.Children
-                        .FirstOrDefault(x => x.Path == sourceEntry.Path);
-
-                    if (destinationDirEntry == null)
+                    // O(1) dictionary lookup instead of O(n) FirstOrDefault
+                    if (!destinationLookup.TryGetValue(sourceDirEntry.Path, out var destinationDirEntry))
                     {
                         continue;
                     }
 
+                    // File: Copy hash if metadata matches
                     if (!sourceDirEntry.IsDirectory
                         && sourceDirEntry.Modified == destinationDirEntry.Modified
                         && sourceDirEntry.Size == destinationDirEntry.Size)
                     {
-                        // copy hash if none in destination.
-                        // copy hash as upgrade to full if dest currently partial.
-                        if (sourceDirEntry.IsHashDone
-                            && !destinationDirEntry.IsHashDone
-                            ||
-                            sourceDirEntry.IsHashDone
-                            && destinationDirEntry.IsHashDone
-                            && !sourceDirEntry.IsPartialHash
-                            && destinationDirEntry.IsPartialHash)
+                        var sourceHasDone = sourceDirEntry.IsHashDone;
+                        var destHasDone = destinationDirEntry.IsHashDone;
+                        var sourceIsPartial = sourceDirEntry.IsPartialHash;
+                        var destIsPartial = destinationDirEntry.IsPartialHash;
+
+                        // Copy hash if: source has hash AND (dest has none OR upgrading partial to full)
+                        if (sourceHasDone && (!destHasDone || (!sourceIsPartial && destIsPartial)))
                         {
-                            destinationDirEntry.IsPartialHash = sourceDirEntry.IsPartialHash;
+                            destinationDirEntry.IsPartialHash = sourceIsPartial;
                             destinationDirEntry.Hash = sourceDirEntry.Hash;
                         }
                     }
-                    else
+                    // Directory: Push to stack for traversal
+                    else if (destinationDirEntry.IsDirectory && sourceDirEntry.IsDirectory)
                     {
-                        if (destinationDirEntry.IsDirectory)
-                        {
-                            dirs.Push((fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
-                        }
+                        // Only compute full path when needed for directories (avoids wasteful allocations for files)
+                        var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
+                        dirs.Push((fullPath, (ICommonEntry)sourceDirEntry, (ICommonEntry)destinationDirEntry));
                     }
                 }
             }
