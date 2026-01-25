@@ -107,6 +107,32 @@ class Build : NukeBuild
             );
         });
 
+    [UsedImplicitly]
+    Target PublishRelease => _ => _
+        .Description("Publish in Release configuration (always)")
+        .Executes(() =>
+        {
+            var releaseConfig = Configuration.Release;
+
+            DotNetPublish(s => s
+                .SetProject("src/cde/cde.csproj")
+                .SetConfiguration(releaseConfig)
+                .SetOutput($"{ArtifactsDirectory}/cde")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .DisableSelfContained()
+            );
+
+            DotNetPublish(s => s
+                .SetProject("src/cdewin/cdewin.csproj")
+                .SetConfiguration(releaseConfig)
+                .SetOutput($"{ArtifactsDirectory}/cdewin")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .DisableSelfContained()
+            );
+        });
+
     Target Compile => _ => _
         .DependsOn(Restore)
         .Executes(() =>
@@ -114,6 +140,18 @@ class Build : NukeBuild
             DotNetBuild(s => s
                 .SetProjectFile(Solution)
                 .SetConfiguration(Configuration)
+                .EnableNoRestore());
+        });
+
+    [UsedImplicitly]
+    Target CompileRelease => _ => _
+        .Description("Build in Release configuration (always)")
+        .DependsOn(Restore)
+        .Executes(() =>
+        {
+            DotNetBuild(s => s
+                .SetProjectFile(Solution)
+                .SetConfiguration(Configuration.Release)
                 .EnableNoRestore());
         });
 

@@ -26,8 +26,10 @@
       "enum": [
         "Clean",
         "Compile",
+        "CompileRelease",
         "Pack",
         "Publish",
+        "PublishRelease",
         "Restore",
         "Test"
       ]
