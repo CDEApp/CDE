@@ -494,7 +494,7 @@ public class CDEWinFormPresenterTest
 
             _stubConfig.DefaultDirectoryColumnCount.Returns(3); // enough spaces for directory list view items.
             InitRootWithFile();
-            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig, null);
+            _sutPresenter = new CDEWinFormPresenter(_mockForm, _stubConfig);
         }
 
         [Test]
@@ -532,17 +532,5 @@ public static class ListViewTestExtension
                 Console.WriteLine($"{i} {expect}");
             }
         }
-    }
-}
-
-public class TestPresenterSetSearch : CDEWinFormPresenter
-{
-    public TestPresenterSetSearch(ICDEWinForm form, IConfig config) : base(form, config, null)
-    {
-    }
-
-    public int TestSetSearchResultList(List<PairDirEntry> list)
-    {
-        return SetSearchResultList(list);
     }
 }

@@ -249,7 +249,7 @@ namespace Mono.Terminal
                 return;
 
             // Sole purpose of this call is to initialize the Terminfo driver
-            var x = Console.CursorLeft;
+            _ = Console.CursorLeft;
 
             try
             {
@@ -1278,7 +1278,7 @@ namespace Mono.Terminal
             ForceCursor(cursor);
         }
 
-        public string Edit(string prompt, string initial)
+        public string Edit(string userPrompt, string initial)
         {
             edit_thread = Thread.CurrentThread;
             searching = 0;
@@ -1288,8 +1288,8 @@ namespace Mono.Terminal
             history.CursorToEnd();
             max_rendered = 0;
 
-            Prompt = prompt;
-            shown_prompt = prompt;
+            Prompt = userPrompt;
+            shown_prompt = userPrompt;
             InitText(initial);
             history.Append(initial);
 
@@ -1307,7 +1307,7 @@ namespace Mono.Terminal
                     searching = 0;
                     //Thread.ResetAbort();
                     Console.WriteLine();
-                    SetPrompt(prompt);
+                    SetPrompt(userPrompt);
                     SetText("");
                 }
             } while (!done);
@@ -1524,7 +1524,7 @@ namespace Mono.Terminal
                         slot = history.Length + slot;
                     if (slot >= history.Length)
                         slot = 0;
-                    if (history[slot] != null && history[slot].IndexOf(term) != -1)
+                    if (history[slot] != null && history[slot].IndexOf(term, StringComparison.Ordinal) != -1)
                     {
                         cursor = slot;
                         return history[slot];

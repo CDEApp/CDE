@@ -143,20 +143,6 @@ internal class PerformanceTreeTraversal
         return sw.ElapsedMilliseconds;
     }
 
-    // public long DoPairDirEntryEnumeratorPooledCountTest(RootEntry root, int repeatCount)
-    // {
-    //     var sw = new Stopwatch();
-    //     sw.Start();
-    //     var rootEntries = new List<RootEntry> { root };
-    //     var pairDirEntries = EntryHelper.GetPairDirEntriesPooled(rootEntries);
-    //     for (var i = 0; i < repeatCount; i++)
-    //     {
-    //         pairDirEntries.Count();
-    //     }
-    //     sw.Stop();
-    //     return sw.ElapsedMilliseconds;
-    // }
-
     public long DoPairDirEntryEnumeratorTest(RootEntry root, int repeatCount)
     {
         var sw = new Stopwatch();
@@ -408,21 +394,6 @@ internal class PerformanceTreeTraversal
         totalTraverseTime = sw.ElapsedMilliseconds;
         traverseTimeAverage = 1.0d * totalTraverseTime / repeatCount;
         Console.WriteLine("SetCommonEntryFields");
-        Console.WriteLine("repeatCount " + repeatCount);
-        Console.WriteLine("totalTraverseTime " + totalTraverseTime + " msecs");
-        Console.WriteLine("traverseTimeAverage " + traverseTimeAverage + " msecs");
-
-        sw = new Stopwatch();
-        sw.Start();
-        for (var i = 0; i < repeatCount; i++)
-        {
-            //this code was temporary and showed no real gain.
-            //reC.SetCommonEntryFieldsT();
-        }
-        sw.Stop();
-        totalTraverseTime = sw.ElapsedMilliseconds;
-        traverseTimeAverage = 1.0d * totalTraverseTime / repeatCount;
-        Console.WriteLine("SetCommonEntryFieldsNoParent");
         Console.WriteLine("repeatCount " + repeatCount);
         Console.WriteLine("totalTraverseTime " + totalTraverseTime + " msecs");
         Console.WriteLine("traverseTimeAverage " + traverseTimeAverage + " msecs");

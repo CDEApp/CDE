@@ -62,7 +62,6 @@ public class FindOptions
     private int _threadSafeProgressCount;
     private volatile int _lastReportedProgress;
     private long _lastProgressTimestamp;
-    private const long MinProgressIntervalTicks = 100 * TimeSpan.TicksPerMillisecond; // 100ms
 
     private readonly int[] _dummyProgressCount = new int[1];
 

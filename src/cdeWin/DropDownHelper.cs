@@ -11,7 +11,7 @@ public class DropDownHelper<T>
     public DropDownHelper(ComboBox comboBox, IEnumerable<ComboBoxItem<T>> items, int selectedIndex)
     {
         _comboBox = comboBox;
-        _comboBox.Items.AddRange(items.ToArray());
+        _comboBox.Items.AddRange(items.ToArray<object>());
         _comboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         SelectedIndex = selectedIndex;
     }

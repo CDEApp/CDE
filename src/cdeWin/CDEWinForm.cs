@@ -370,7 +370,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     }
 
     // ReSharper disable once UnusedParameter.Local
-    private void DirectoryTreeContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e)
+    private void DirectoryTreeContextMenuOpening(object sender, CancelEventArgs e)
     {
         // ReSharper disable once ArrangeStaticMemberQualifier
         var treeNodeAtMousePosition =
@@ -469,12 +469,9 @@ public partial class CDEWinForm : Form, ICDEWinForm
     }
 
     /// <summary>
-    /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
+    /// Adds nodes to the tree wrapped by BeginUpdate EndUpdate.
     /// </summary>
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    /// <summary>
-    /// Adds nodes to tree wrapped by BeginUpdate EndUpdate.
-    /// </summary>
     public TreeNode DirectoryTreeViewNodes
     {
         // Directory Tab only holds one root node.

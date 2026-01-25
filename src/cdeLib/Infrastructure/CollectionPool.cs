@@ -21,7 +21,7 @@ public static class CollectionPool
         new(() => new Dictionary<string, object>(), dict => dict.Clear(), 25);
 
     private static readonly ObjectPool<List<DirEntry>> DirEntryListPool =
-        new(() => new List<DirEntry>(4), list => list.Clear(), 100);
+        new(() => new List<DirEntry>(4), list => list.Clear());
 
     // PairDirEntry List Pool
     public static List<PairDirEntry> GetPairDirEntryList() => PairDirEntryListPool.Get();

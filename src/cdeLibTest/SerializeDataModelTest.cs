@@ -101,12 +101,13 @@ internal class SerializeDataModelTest
         var newMS = new MemoryStream(b);
 
         var iter = Serializer.DeserializeItems<RootEntry>(newMS, PrefixStyle.Base128, 1);
-        var first = iter.FirstOrDefault();
+        var rootEntries = iter.ToList();
+        var first = rootEntries.FirstOrDefault();
         if (first != null) Console.WriteLine("first.RootPath " + first.Path);
 
-        var second = iter.FirstOrDefault();
+        var second = rootEntries.FirstOrDefault();
         if (second != null) Console.WriteLine("second.RootPath " + second.Path);
-        var third = iter.FirstOrDefault();
+        var third = rootEntries.FirstOrDefault();
         if (third != null)
         {
             Console.WriteLine("third.RootPath " + third.Path);

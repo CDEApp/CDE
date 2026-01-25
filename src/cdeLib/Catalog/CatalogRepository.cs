@@ -22,7 +22,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
 {
     private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
-    private static readonly BufferPool BufferPool = new(64 * 1024, 50);
+    private static readonly BufferPool BufferPool = new();
     private readonly FileStreamManager _fileStreamManager = FileStreams.Instance;
     private bool _disposed;
 

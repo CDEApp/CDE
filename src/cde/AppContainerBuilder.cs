@@ -61,13 +61,13 @@ public static class AppContainerBuilder
 
         builder.RegisterModule<CdelibModule>();
 
-        // Populate Autofac from MSDI ServiceCollection (for SlimMessageBus)
+        // Populate Autofac from ServiceCollection (for SlimMessageBus)
         builder.Populate(services);
 
         // Register handlers explicitly in Autofac to ensure they can be resolved
-        builder.RegisterType<cde.ScanProgress.CreateCacheCommandHandler>().AsSelf();
-        builder.RegisterType<cde.ScanProgress.ScanProgressNotificationHandler>().AsSelf();
-        builder.RegisterType<cde.ScanProgress.ScanCompletedEventHandler>().AsSelf();
+        builder.RegisterType<ScanProgress.CreateCacheCommandHandler>().AsSelf();
+        builder.RegisterType<ScanProgress.ScanProgressNotificationHandler>().AsSelf();
+        builder.RegisterType<ScanProgress.ScanCompletedEventHandler>().AsSelf();
         builder.RegisterType<cdeLib.Hashing.HashCatalogCommandHandler>().AsSelf();
         builder.RegisterType<cdeLib.Duplicates.FindDuplicateCommandHandler>().AsSelf();
         builder.RegisterType<cdeLib.Upgrade.UpdateCommandHandler>().AsSelf();
@@ -81,7 +81,6 @@ public static class AppContainerBuilder
             .MinimumLevel.Override("Microsoft", LogEventLevel.Information)
             .Enrich.FromLogContext()
             .WriteTo.Console().CreateLogger();
-
     }
 
     private static void ConfigureLogger(IConfiguration config)

@@ -126,14 +126,14 @@ public class Duplication
                 // Then the full hash phase will start and you can hit break again to stop it after a while.
                 // to be able to then run --dupes on the larger hashed files.
                 grp.AsParallel()
-                    .ForEachInApproximateOrder(parallelOptions, async (flatFile, _) =>
+                    .ForEachInApproximateOrder(parallelOptions, async void (flatFile, _) =>
                     {
                         _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
                         await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
                         if (Hack.BreakConsoleFlag)
                         {
                             Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
-                            cts.Cancel();
+                            await cts.CancelAsync();
                         }
                     });
             });

@@ -47,9 +47,8 @@ public class DirEntryEnumeratorTest : DirEntryTestBase
     [Test]
     public void Constructor_Minimal_NoErrors()
     {
-        RootEntries = new List<RootEntry>();
-
-        new DirEntryEnumerator(RootEntries);
+        RootEntries = [];
+        _ = new DirEntryEnumerator(RootEntries);
     }
 
     [Test]
@@ -153,7 +152,7 @@ public class TestPerformance_TraverseTree_DirEntryEnumerator
         for (var i = 0; i < 100; ++i)
         {
             var deEnumerator = EntryHelper.GetDirEntries(rootEntries);
-            foreach (var dirEntry in deEnumerator)
+            foreach (var _ in deEnumerator)
             {
                 //_num += (ulong)dirEntry.FullPath.Length;
                 ++_fileCount;
@@ -169,12 +168,10 @@ public class TestPerformance_TraverseTree_DirEntryEnumerator
         var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
         Console.WriteLine($"Enumerator took : {elapsedTime}");
         Console.WriteLine($"Total files enumerated : {_fileCount}");
-        //Console.WriteLine("Total path length : {0}", _num);
 
         var re = rootEntries.First();
         sw.Reset();
         sw.Start();
-        //_num = 0;
         _fileCount = 0;
         for (var i = 0; i < 100; ++i)
         {
@@ -185,7 +182,6 @@ public class TestPerformance_TraverseTree_DirEntryEnumerator
         elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
         Console.WriteLine($"TraverseTreePair took : {elapsedTime}");
         Console.WriteLine($"Total files enumerated : {_fileCount}");
-        //Console.WriteLine("Total path length : {0}", _num);
     }
 }
 // ReSharper restore InconsistentNaming

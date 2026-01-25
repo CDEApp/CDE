@@ -35,11 +35,12 @@ public class WorkStealingTreeTraversal
     public async Task TraverseAsync(IEnumerable<RootEntry> rootEntries, 
         Func<ICommonEntry, ICommonEntry, Task<bool>> asyncProcessor)
     {
-        var rootCount = rootEntries.Count();
+        var iEnumerable = rootEntries.ToList();
+        var rootCount = iEnumerable.Count;
         logger.Debug("Starting traversal with {RootCount} root entries", rootCount);
 
-        // Initialize work queue with root entries
-        var initialWork = rootEntries.Select(root => new TraversalWorkItem(null, root));
+        // Initialize the work queue with root entries
+        var initialWork = iEnumerable.Select(root => new TraversalWorkItem(null, root));
         _workQueue.AddWork(initialWork);
 
         logger.Debug("Added {InitialWorkCount} initial work items to queue", rootCount);

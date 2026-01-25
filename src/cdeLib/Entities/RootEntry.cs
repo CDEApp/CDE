@@ -451,7 +451,7 @@ public class RootEntry : object, ICommonEntry
 
     [ProtoMember(13, IsRequired = false)]
     [FlatBufferItem(13)]
-    [MessagePackFormatter(typeof(cdeLib.Infrastructure.Serialization.Hash16Formatter))]
+    [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(13)]
     public virtual Hash16 Hash { get; set; }
 
@@ -890,8 +890,7 @@ public class RootEntry : object, ICommonEntry
                     {
                         // Only compute full path when needed for directories (avoids wasteful allocations for files)
                         var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
-                        dirs.Push((fullPath, (ICommonEntry)sourceDirEntry,
-                            (ICommonEntry)destinationDirEntry));
+                        dirs.Push((fullPath, sourceDirEntry, destinationDirEntry));
                     }
                 }
             }

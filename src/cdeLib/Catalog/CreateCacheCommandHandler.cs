@@ -74,11 +74,6 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
     }
 
-    private void ScanCountPrintDot()
-    {
-        Console.Write(".");
-    }
-
     private void ScanEndOfEntries()
     {
         Console.WriteLine();
