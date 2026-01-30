@@ -62,6 +62,7 @@ public interface IListViewHelper<T> : IDisposable where T : class
     void ActionOnSelectedItems(Action<IEnumerable<T>> action);
     void ActionOnSelectedItem(Action<T> action);
     void ActionOnActivateItem(Action<T> action);
+    T GetItemAt(int index);
     void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e);
 }
 
@@ -305,7 +306,9 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     public void ForceDraw()
     {
-        _listView.Invalidate();
+        // Use Refresh() for synchronous repaint that ensures RetrieveVirtualItem is called
+        // Invalidate() is asynchronous and may not trigger a full re-render
+        _listView.Refresh();
     }
 
     public void SelectItem(int index)
@@ -381,13 +384,14 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
                 "ListViewHelper with ColumnClick requires value for ColumnSortCompare.");
         }
 
-        // Clear cache when data changes
-        _itemCache.Clear();
-        _cacheOrder.Clear();
-
         _list = list;
         _listSize = _list?.Count ?? 0;
         _listView.VirtualListSize = _listSize;
+
+        // Clear cache right before ForceDraw to ensure fresh render
+        _itemCache.Clear();
+        _cacheOrder.Clear();
+
         ForceDraw();
         return _listSize;
     }
@@ -412,16 +416,18 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     public void SortList()
     {
-        // Clear cache when sort changes item positions
-        _itemCache.Clear();
-        _cacheOrder.Clear();
-
         SetColumnSortArrow();
         if (_list == null) return;
         var selectedItems = GetSelectedItems().ToList(); // ToList() need results before deselect
         DeselectAllItems();
         _list.Sort(ColumnSortCompare);
         SelectItems(selectedItems);
+
+        // Clear cache AFTER all item manipulations but BEFORE ForceDraw
+        // This ensures no stale items from DeselectAllItems/SelectItems remain
+        _itemCache.Clear();
+        _cacheOrder.Clear();
+
         ForceDraw();
     }
 
@@ -480,7 +486,6 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     private T GetActivateItem()
     {
-        Console.Out.WriteLine("X02 GetActivateItem AfterActivateIndex" + AfterActivateIndex);
         if (AfterActivateIndex < 0 || _list == null)
         {
             return null;
@@ -489,6 +494,19 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         var item = _list[AfterActivateIndex];
         AfterActivateIndex = -1;
         return item;
+    }
+
+    /// <summary>
+    /// Gets the item at the specified index from the internal sorted list.
+    /// Use this for rendering to ensure consistency with activation.
+    /// </summary>
+    public T GetItemAt(int index)
+    {
+        if (_list == null || index < 0 || index >= _list.Count)
+        {
+            return null;
+        }
+        return _list[index];
     }
 
     public void Dispose()

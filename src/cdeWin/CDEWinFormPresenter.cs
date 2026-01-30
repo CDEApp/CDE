@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -304,12 +305,12 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public void CatalogRetrieveVirtualItem()
     {
         var catalogHelper = _clientForm.CatalogListViewHelper;
-        if (_rootEntries == null || _rootEntries.Count == 0)
+        var index = catalogHelper.RetrieveItemIndex;
+        var rootEntry = catalogHelper.GetItemAt(index);
+        if (rootEntry == null)
         {
             return;
         }
-
-        var rootEntry = _rootEntries[catalogHelper.RetrieveItemIndex];
         var itemColor = CreateRowValuesForRootEntry(_catalogVals, rootEntry, _listViewForeColor);
         var lvi = BuildListViewItem(_catalogVals, itemColor, rootEntry);
         catalogHelper.RenderItem = lvi;
@@ -496,7 +497,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     }
 
     // Assumes well-formed regex pattern input.
-    // As search is substring match, remove leading and trailing wildcards.
+    // As search is a substring match, remove leading and trailing wildcards.
     protected string OptimiseRegexPattern(string pattern)
     {
         if (!_clientForm.RegexMode || string.IsNullOrEmpty(pattern))
@@ -609,8 +610,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         var state = (BgWorkerState)e.UserState;
         var p = e.ProgressPercentage;
-        _clientForm.SetSearchTimeStatus("% " + p
-        );
+        _clientForm.SetSearchTimeStatus("% " + p);
 
         var count = SetSearchResultList(state.List);
         _clientForm.SetSearchResultStatus(count);
@@ -630,12 +630,11 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public void SearchResultRetrieveVirtualItem()
     {
         var searchHelper = _clientForm.SearchResultListViewHelper;
-        if (_searchResultList == null || _searchResultList.Count == 0)
+        var pairDirEntry = searchHelper.GetItemAt(searchHelper.RetrieveItemIndex);
+        if (pairDirEntry == null)
         {
             return;
         }
-
-        var pairDirEntry = _searchResultList[searchHelper.RetrieveItemIndex];
         var dirEntry = pairDirEntry.ChildDE;
         var itemColor = CreateRowValuesForDirectory(_searchVals, dirEntry, _listViewForeColor);
 
@@ -666,12 +665,11 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public void DirectoryRetrieveVirtualItem()
     {
         var directoryHelper = _clientForm.DirectoryListViewHelper;
-        if (_directoryList == null || _directoryList.Count == 0)
+        var dirEntry = directoryHelper.GetItemAt(directoryHelper.RetrieveItemIndex);
+        if (dirEntry == null)
         {
             return;
         }
-
-        var dirEntry = _directoryList[directoryHelper.RetrieveItemIndex];
         var itemColor = CreateRowValuesForDirectory(_directoryVals, dirEntry, _listViewForeColor);
         var lvi = BuildListViewItem(_directoryVals, itemColor, dirEntry);
         directoryHelper.RenderItem = lvi;
