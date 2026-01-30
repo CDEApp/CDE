@@ -69,3 +69,5 @@ src/.vs/config/applicationhost.config
 /artifacts/*
 /build/bin/*
 **/Properties/launchSettings.json
+/.claude/settings.local.json
+/src/.claude/settings.local.json
