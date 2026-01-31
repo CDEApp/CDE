@@ -512,17 +512,17 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public void SetSearchResultStatus(int i)
     {
-        searchResultsStatus.Text = @"Search Results " + i.ToString(CultureInfo.InvariantCulture);
+        searchResultsStatus.Text = @"Search Results " + i.ToString("N0", CultureInfo.InvariantCulture);
     }
 
     public void SetTotalFileEntriesLoadedStatus(int i)
     {
-        totalFileEntriesStatus.Text = @"Entries " + i.ToString(CultureInfo.InvariantCulture);
+        totalFileEntriesStatus.Text = @"Entries " + i.ToString("N0", CultureInfo.InvariantCulture);
     }
 
     public void SetCatalogsLoadedStatus(int i)
     {
-        catalogsLoadedStatus.Text = @"Catalogs " + i.ToString(CultureInfo.InvariantCulture);
+        catalogsLoadedStatus.Text = @"Catalogs " + i.ToString("N0",CultureInfo.InvariantCulture);
     }
 
     public void SetMemoryStatus(string msg)
@@ -534,7 +534,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     {
         if (searchTimeStatus.Text.Equals(s)) return;
         searchTimeStatus.Text = s;
-        mainStatusStrip.Update(); //Added since it is not updating this automagically.
+        mainStatusStrip.Update(); // Added since it is not updating this automatically.
     }
 
     public void ShowLoadingProgress(bool visible)

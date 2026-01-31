@@ -208,7 +208,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             memory = proc.PrivateMemorySize64 / (1024 * 1024);
         }
 
-        _clientForm.SetMemoryStatus($"Memory used: {memory} MB");
+        _clientForm.SetMemoryStatus($"Memory used: {memory:N0} MB");
     }
 
     private void SetSearchButton(bool search)
