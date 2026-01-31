@@ -12,7 +12,7 @@ It is inspired by old and faithful utility called Cathy I have used in the past 
 
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
 
-The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation. [cde.config](#cde.config)
+The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation.
 
 #### cdeWin
 
@@ -315,3 +315,4 @@ The web version uses. (not available currently)
 - [Bootstrap](http://getbootstrap.com/)
 - [autofac](http://autofac.org/)
 - [SignalR](http://signalr.net/)
+
