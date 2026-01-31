@@ -32,7 +32,6 @@ public class ContextMenuHelper : IDisposable
 
     private readonly ToolStripMenuItem _selectAll = new("Select All");
 
-    //private readonly ToolStripMenuItem _copyBaseName = new ToolStripMenuItem("Copy Base Names");
     private readonly ToolStripMenuItem _copyFullName = new("Copy Full Path to Clipboard");
 
     private readonly ToolStripMenuItem
@@ -115,18 +114,6 @@ public class ContextMenuHelper : IDisposable
 
     private EventHandler _selectAllHandler;
 
-    //public EventHandler CopyBaseNameHandler
-    //{
-    //    get { return _copyBaseNameHandler; }
-    //    set
-    //    {
-    //        _copyBaseNameHandler = value;
-    //        _copyBaseName.Click += _copyBaseNameHandler;
-    //        _menu.Items.Add(_copyBaseName);
-    //    }
-    //}
-    //private EventHandler _copyBaseNameHandler;
-
     public EventHandler CopyFullNameHandler
     {
         get => _copyFullNameHandler;
@@ -178,7 +165,6 @@ public class ContextMenuHelper : IDisposable
         _properties.ShortcutKeys = Keys.Alt | Keys.Enter;
         _selectAll.ShortcutKeys = Keys.Control | Keys.A;
         _parent.ShortcutKeys = Keys.Control | Keys.Back;
-        //_copyBaseName.ShortcutKeys = Keys.Control | Keys.N;
         _copyFullName.ShortcutKeys = Keys.Control | Keys.C;
     }
 
@@ -235,10 +221,6 @@ public class ContextMenuHelper : IDisposable
                 _selectAll.Click -= _selectAllHandler;
             }
 
-            //if (_copyBaseNameHandler != null)
-            //{
-            //    _copyBaseName.Click -= _copyBaseNameHandler;
-            //}
             if (_copyFullNameHandler != null)
             {
                 _copyFullName.Click -= _copyFullNameHandler;

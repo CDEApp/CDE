@@ -182,8 +182,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
             }
 
             // Return a new list to avoid pool corruption, since this list will be used externally
-            var result = new List<string>(cacheFilePaths);
-            return result;
+            return new List<string>(cacheFilePaths);
         }
         finally
         {
@@ -265,7 +264,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
         {
             if (disposing)
             {
-                // Dispose managed resources
+                // Dispose of managed resources
                 BufferPool?.Clear();
                 // Note: FileStreamManager is a singleton, don't dispose it here
             }

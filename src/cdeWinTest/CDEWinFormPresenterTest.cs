@@ -360,10 +360,11 @@ public class CDEWinFormPresenterTest
         {
             _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM}"); // make local time zone irrelevant for test.
             _mockCatalogListViewHelper.RetrieveItemIndex.Returns(0);
+            _mockCatalogListViewHelper.GetItemAt(0).Returns(_rootEntry);
             ListViewItem setRenderItem = null;
             _mockCatalogListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
 
-            // ACT                
+            // ACT
             _sutPresenter.CatalogRetrieveVirtualItem();
 
             var expectedValues = new[]
@@ -416,15 +417,21 @@ public class CDEWinFormPresenterTest
         /// <summary>
         /// This is not something that should happen as list view wont ask for
         /// an Item Index that is outside bounds of the setup ListView.
+        /// GetItemAt returns null for invalid index, presenter handles gracefully.
         /// </summary>
         [Test]
-        public void Invalid_ItemIndex_With_List_Wrong_Index_Throws_Exception()
+        public void Invalid_ItemIndex_With_List_Wrong_Index_Returns_Early()
         {
             var pairDirList = new List<PairDirEntry> { _pairDirEntry };
             _sutPresenter.TestSetSearchResultList(pairDirList);
             _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(1);
+            // GetItemAt(1) returns null by default for the mock, simulating out-of-bounds
 
-            Assert.Throws<ArgumentOutOfRangeException>(() => _sutPresenter.SearchResultRetrieveVirtualItem());
+            // ACT - should not throw, returns early
+            _sutPresenter.SearchResultRetrieveVirtualItem();
+
+            // RenderItem should not have been set
+            _mockSearchResultListViewHelper.DidNotReceive().RenderItem = Arg.Any<ListViewItem>();
         }
 
         [Test]
@@ -433,6 +440,7 @@ public class CDEWinFormPresenterTest
             var pairDirList = new List<PairDirEntry> { _pairDirEntry };
             _sutPresenter.TestSetSearchResultList(pairDirList);
             _mockSearchResultListViewHelper.RetrieveItemIndex.Returns(0);
+            _mockSearchResultListViewHelper.GetItemAt(0).Returns(_pairDirEntry);
 
             ListViewItem setRenderItem = null;
             _mockSearchResultListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);

@@ -6,9 +6,9 @@ using System.Windows.Forms;
 namespace cdeWin;
 
 /// <summary>
-/// Manage a set of control which are enabled/disabled relative to primaryCheckbox.
+/// Manage a set of control which is enabled/disabled relative to the primaryCheckbox.
 /// </summary>
-public class CheckBoxDependentControlHelper // <T>
+public class CheckBoxDependentControlHelper
 {
     private readonly CheckBox _primaryCheckBox;
     private readonly IEnumerable<Control> _dependentControls;

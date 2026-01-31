@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -18,6 +17,7 @@ using Serilog;
 
 namespace cdeWin;
 
+// ReSharper disable once InconsistentNaming
 public interface ICDEWinFormPresenter : IPresenter;
 
 public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
