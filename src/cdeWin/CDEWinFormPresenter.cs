@@ -199,13 +199,14 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
     }
 
+    private static double BytesToMb(long bytes) => bytes / (1024.0 * 1024.0);
+
     private void SetMemoryStatus()
     {
         double memory;
         using (var proc = Process.GetCurrentProcess())
         {
-            // ReSharper disable once PossibleLossOfFraction
-            memory = proc.PrivateMemorySize64 / (1024 * 1024);
+            memory = BytesToMb(proc.PrivateMemorySize64);
         }
 
         _clientForm.SetMemoryStatus($"Memory used: {memory:N0} MB");
@@ -228,18 +229,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         {
             _clientForm.Dispose();
         }
-    }
-
-    public void FormShown()
-    {
-        // setup our sort arrow icons, this requires windows message loop afaik.
-        _clientForm.CatalogListViewHelper.SortList();
-        _clientForm.SearchResultListViewHelper.SortList();
-        _clientForm.DirectoryListViewHelper.SortList();
-    }
-
-    public void FormActivated()
-    {
     }
 
     public void DirectoryTreeViewBeforeExpandNode()
@@ -1126,7 +1115,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
     {
-        // Use constructor that takes all subitems at once - avoids internal array resizes
+        // Use a constructor that takes all subitems at once - avoids internal array resizes
         var lvItem = new ListViewItem(vals)
         {
             ForeColor = firstColumnForeColor,
