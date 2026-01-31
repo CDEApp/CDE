@@ -13,6 +13,7 @@ using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeWin.Cfg;
+using JetBrains.Annotations;
 using Serilog;
 
 namespace cdeWin;
@@ -229,6 +230,20 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         {
             _clientForm.Dispose();
         }
+    }
+    
+    [UsedImplicitly]
+    public void FormShown()
+    {
+        // Setup our sort arrow icons, this requires windows message loop afaik.
+        _clientForm.CatalogListViewHelper.SortList();
+        _clientForm.SearchResultListViewHelper.SortList();
+        _clientForm.DirectoryListViewHelper.SortList();
+    }
+
+    [UsedImplicitly]
+    public void FormActivated()
+    {
     }
 
     public void DirectoryTreeViewBeforeExpandNode()
