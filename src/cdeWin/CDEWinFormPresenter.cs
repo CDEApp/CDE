@@ -1173,40 +1173,40 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public async void ReloadCatalogs()
     {
-        if (_isLoadingCatalogs) return;
-
-        // clear all current list views and tree views.
-        var catalogHelper = _clientForm.CatalogListViewHelper;
-        catalogHelper.SetList(null);
-        var searchResultHelper = _clientForm.SearchResultListViewHelper;
-        searchResultHelper.SetList(null);
-        var directoryListHelper = _clientForm.DirectoryListViewHelper;
-        directoryListHelper.SetList(null);
-
-        var previousRootEntries = _rootEntries;
-        foreach (var rootEntry in previousRootEntries)
-        {
-            rootEntry.ClearCommonEntryFields();
-        }
-
-        _clientForm.AddLine(string.Empty);
-        _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
-
-        _isLoadingCatalogs = true;
-        _loadingCts = new CancellationTokenSource();
-        var watch = Stopwatch.StartNew();
-
-        _clientForm.SearchButtonEnable = false;
-        StartLoadingAnimation();
-        _clientForm.SetCatalogsLoadedStatus(0);
-        _clientForm.SetTotalFileEntriesLoadedStatus(0);
-        _clientForm.SetSearchTimeStatus("Reloading catalogs...");
-        _clientForm.ShowLoadingProgress(true);
-        _clientForm.SetLoadingProgressValue(0);
-        SetMemoryStatus();
-
         try
         {
+            if (_isLoadingCatalogs) return;
+
+            // clear all current list views and tree views.
+            var catalogHelper = _clientForm.CatalogListViewHelper;
+            catalogHelper.SetList(null);
+            var searchResultHelper = _clientForm.SearchResultListViewHelper;
+            searchResultHelper.SetList(null);
+            var directoryListHelper = _clientForm.DirectoryListViewHelper;
+            directoryListHelper.SetList(null);
+
+            var previousRootEntries = _rootEntries;
+            foreach (var rootEntry in previousRootEntries)
+            {
+                rootEntry.ClearCommonEntryFields();
+            }
+
+            _clientForm.AddLine(string.Empty);
+            _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
+
+            _isLoadingCatalogs = true;
+            _loadingCts = new CancellationTokenSource();
+            var watch = Stopwatch.StartNew();
+
+            _clientForm.SearchButtonEnable = false;
+            StartLoadingAnimation();
+            _clientForm.SetCatalogsLoadedStatus(0);
+            _clientForm.SetTotalFileEntriesLoadedStatus(0);
+            _clientForm.SetSearchTimeStatus("Reloading catalogs...");
+            _clientForm.ShowLoadingProgress(true);
+            _clientForm.SetLoadingProgressValue(0);
+            SetMemoryStatus();
+
             _rootEntries = await _loadCatalogService.LoadRootEntriesAsync(
                 _config,
                 OnLoadProgress,
