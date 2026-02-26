@@ -2,7 +2,7 @@
 
 namespace cdeLib.Catalog;
 
-public class CreateCacheCommand : IRequest
+public record CreateCacheCommand : IRequest
 {
     public CreateCacheCommand(string path)
     {

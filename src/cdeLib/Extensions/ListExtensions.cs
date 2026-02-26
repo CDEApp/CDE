@@ -47,7 +47,7 @@ public static class ListExtensions
         // Sort using optimized array sort
         Array.Sort(tempArray, comparison);
 
-        // Copy back from array
+        // Copy back from the array
         for (int i = 0; i < count; i++)
         {
             list[i] = tempArray[i];

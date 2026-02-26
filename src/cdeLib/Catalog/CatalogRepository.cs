@@ -7,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
-using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Serialization;
 using FlatSharp;
@@ -19,7 +18,7 @@ using ILogger = Serilog.ILogger;
 
 namespace cdeLib.Catalog;
 
-public class CatalogRepository : ICatalogRepository, IDisposable
+public sealed class CatalogRepository : ICatalogRepository, IDisposable
 {
     private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
@@ -143,7 +142,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 if (rootEntry != null)
                 {
                     _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
-                        Thread.CurrentThread.ManagedThreadId);
+                        Environment.CurrentManagedThreadId);
                 }
                 return rootEntry;
             }).ToList();
@@ -155,11 +154,11 @@ public class CatalogRepository : ICatalogRepository, IDisposable
 
     public IList<RootEntry> LoadCurrentDirCache()
     {
-        return LoadAsync(GetCacheFileList(new[] {"./"})).GetAwaiter().GetResult();
+        return LoadAsync(GetCacheFileList(["./"])).GetAwaiter().GetResult();
     }
 
     /// <summary>
-    /// This gets .cde files in current dir or one directory down.
+    /// This gets .cde files in the current dir or one directory down.
     /// Use directory permissions to control who can load what .cde files one dir down if you like.
     /// </summary>
     public IList<string> GetCacheFileList(IEnumerable<string> paths)
@@ -263,7 +262,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
         }
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposed)
         {
