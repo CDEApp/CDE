@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32014.148
 MinimumVisualStudioVersion = 15.0.26124.0
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "util", "util\util.csproj", "{100D8B34-9EB4-4682-8ABD-48C48A508CDF}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cdeLib", "cdeLib\cdeLib.csproj", "{79FB051E-1A62-4CC5-84BB-84486E9647CC}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "cdeLibTest", "cdeLibTest\cdeLibTest.csproj", "{14B9D9D4-71C5-43A2-8950-DAE3EE243481}"
@@ -36,18 +34,6 @@ Global
 		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|x64.Build.0 = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Debug|x86.Build.0 = Debug|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|Any CPU.Build.0 = Release|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|x64.ActiveCfg = Release|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|x64.Build.0 = Release|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|x86.ActiveCfg = Release|Any CPU
-		{100D8B34-9EB4-4682-8ABD-48C48A508CDF}.Release|x86.Build.0 = Release|Any CPU
 		{79FB051E-1A62-4CC5-84BB-84486E9647CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{79FB051E-1A62-4CC5-84BB-84486E9647CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{79FB051E-1A62-4CC5-84BB-84486E9647CC}.Debug|x64.ActiveCfg = Debug|Any CPU

@@ -7,8 +7,8 @@ using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
 using cdeWin.Cfg;
-using Util;
 using System.ComponentModel;
+using cdeLib.Extensions;
 
 namespace cdeWin;
 /* Passive view hackery http://cre8ivethought.com/blog/2009/12/19/using-conventions-with-passive-view 

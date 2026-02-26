@@ -1,10 +1,19 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 
 namespace cdeLib.Extensions;
 
 public static class ListExtensions
 {
+    public static void TruncateList(this IList iList, int max)
+    {
+        for (var i = iList.Count - 1; i >= max; i--)
+        {
+            iList.RemoveAt(i);
+        }
+    }
+
     /// <summary>
     /// Sorts an IList using the specified comparison. Optimized for List&lt;T&gt; and T[] fast paths.
     /// </summary>

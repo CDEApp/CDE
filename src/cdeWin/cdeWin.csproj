@@ -21,7 +21,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj" />
-    <ProjectReference Include="..\util\util.csproj" />
   </ItemGroup>
 
   <ItemGroup>
