@@ -165,7 +165,8 @@ public class RootEntry : object, ICommonEntry
         var filenameSafePath = SafeFileName(scanPath);
         if (IsUnc(scanPath))
         {
-            fileName = $"{hint}-{filenameSafePath.Substring(2)}{ext}";
+            // Use Span slicing instead of Substring to avoid allocation
+            fileName = $"{hint}-{filenameSafePath.AsSpan(2)}{ext}";
         }
         else
         {
@@ -268,7 +269,8 @@ public class RootEntry : object, ICommonEntry
 
     public string GetDriverLetterHint(string path, string volumeRoot)
     {
-        return IsUnc(path) ? "UNC" : volumeRoot.Substring(0, 1);
+        // Use Span slicing instead of Substring to avoid allocation
+        return IsUnc(path) ? "UNC" : new string(volumeRoot.AsSpan(0, 1));
     }
 
     /// <summary>
