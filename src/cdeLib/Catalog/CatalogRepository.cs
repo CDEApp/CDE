@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -42,18 +43,20 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 case SerializerProtocol.Protobuf:
                     return Serializer.Deserialize<RootEntry>(input);
                 case SerializerProtocol.Flatbuffers:
-
                     byte[] bytes;
-                    using (Operation.Time("ToByteArray"))
+                    using (Operation.Time("ReadStream"))
                     {
-                        bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
+                        // Read stream efficiently - avoids ToByteArray() overhead
+                        // FlatSharp can parse from byte[], ReadOnlyMemory<byte>, or ReadOnlySpan<byte>
+                        bytes = new byte[input.Length];
+                        input.ReadExactly(bytes);
                     }
 
                     using (Operation.Time("Deserialize"))
                     {
-                        var serializer = new FlatBufferSerializer(
-                            new FlatBufferSerializerOptions());
-                        return serializer.Parse<RootEntry>(bytes);
+                        var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions());
+                        // Use ReadOnlyMemory<byte> overload to avoid defensive copy
+                        return serializer.Parse<RootEntry>(bytes.AsMemory());
                     }
                 case SerializerProtocol.MessagePack:
                     return MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
@@ -250,8 +253,10 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, buffer);
                 break;
             case SerializerProtocol.MessagePack:
-                var data = MessagePackSerializer.Serialize(rootEntry, MessagePackConfig.Options);
-                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, data);
+                // Use ArrayBufferWriter to avoid intermediate byte[] allocation
+                var bufferWriter = new ArrayBufferWriter<byte>();
+                MessagePackSerializer.Serialize(bufferWriter, rootEntry, MessagePackConfig.Options);
+                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, bufferWriter.WrittenMemory);
                 break;
             default:
                 throw new Exception("Invalid Serializer Protocol");
