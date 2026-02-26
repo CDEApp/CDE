@@ -26,33 +26,33 @@ namespace cdeLib.Entities;
 // a million at an array does not seem bad.
 [ProtoContract]
 [FlatBufferTable]
-public class Entry : object
+public sealed class Entry : object
 {
     [ProtoMember(1, IsRequired = true)]
     [FlatBufferItem(1)]
-    public virtual ulong Size { get; set; }
+    public ulong Size { get; set; }
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
-    public virtual DateTime Modified { get; set; }
+    public DateTime Modified { get; set; }
     [ProtoMember(3, IsRequired = true)]
     [FlatBufferItem(3)]
-    public virtual string Name { get; set; }
+    public string Name { get; set; }
     [ProtoMember(4, IsRequired = true)]
     [FlatBufferItem(4)]
-    public virtual string FullPath { get; set; }
+    public string FullPath { get; set; }
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
-    public virtual Hash16 Hash { get; set; } // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
+    public Hash16 Hash { get; set; } // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
     [ProtoMember(6, IsRequired = true)]
     [FlatBufferItem(6)]
-    public virtual int Child { get; set; }
+    public int Child { get; set; }
     [ProtoMember(7, IsRequired = true)]
     [FlatBufferItem(7)]
-    public virtual int Sibling { get; set; }
+    public int Sibling { get; set; }
     [ProtoMember(8, IsRequired = true)]
     [FlatBufferItem(8)]
-    public virtual int Parent { get; set; }
+    public int Parent { get; set; }
 
     [Flags]
     public enum Flags
@@ -75,7 +75,7 @@ public class Entry : object
 
     [ProtoMember(9, IsRequired = true)]
     [FlatBufferItem(9)]
-    public virtual Flags BitFields { get; set; }
+    public Flags BitFields { get; set; }
     #region BitFields based properties
     public bool IsDirectory
     {

@@ -11,17 +11,13 @@ using MessagePack;
 using ProtoBuf;
 using Serilog;
 
-// ReSharper disable MemberCanBeProtected.Global
-
 namespace cdeLib.Entities;
 
-// TODO - RootEntry needs All the Flags.
-// TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
 [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
-public class RootEntry : object, ICommonEntry
+public sealed class RootEntry : object, ICommonEntry
 {
     private const string MatchAll = "*";
     private readonly IDriveInfoService _driveInfoService;
@@ -29,7 +25,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
     [Key(2)]
-    public virtual string Description { get; set; } // user entered description ?
+    public string Description { get; set; } // user entered description ?
 
     /// <summary>
     /// There are a standard set on C: drive in win7 do we care about them ? Filter em out ? or hold internal filter to filter em out ojn display optionally.
@@ -37,30 +33,30 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(3, IsRequired = true)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public virtual IList<string> PathsWithUnauthorisedExceptions { get; set; }
+    public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
     [ProtoMember(4, IsRequired = true)]
     [FlatBufferItem(4)]
     [Key(4)]
-    public virtual string DefaultFileName { get; set; }
+    public string DefaultFileName { get; set; }
 
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string DriveLetterHint { get; set; }
+    public string DriveLetterHint { get; set; }
 
     [ProtoMember(6, IsRequired = true)]
     [FlatBufferItem(6)]
     [Key(6)]
-    public virtual long AvailSpace { get; set; }
+    public long AvailSpace { get; set; }
 
     [ProtoMember(7, IsRequired = true)]
     [FlatBufferItem(7)]
     [Key(7)]
-    public virtual long TotalSpace { get; set; }
+    public long TotalSpace { get; set; }
 
     [IgnoreMember]
-    public virtual DateTime ScanStartUTC
+    public DateTime ScanStartUTC
     {
         set => ScanStartUTCTicks = value.Ticks;
         get => DateTime.FromBinary(ScanStartUTCTicks);
@@ -69,10 +65,10 @@ public class RootEntry : object, ICommonEntry
     [FlatBufferItem(8)]
     [ProtoMember(8, IsRequired = true)]
     [Key(8)]
-    public virtual long ScanStartUTCTicks { get; set; }
+    public long ScanStartUTCTicks { get; set; }
 
     [IgnoreMember]
-    public virtual DateTime ScanEndUTC
+    public DateTime ScanEndUTC
     {
         set => ScanEndUTCTicks = value.Ticks;
         get => DateTime.FromBinary(ScanEndUTCTicks);
@@ -81,7 +77,7 @@ public class RootEntry : object, ICommonEntry
     [FlatBufferItem(9)]
     [ProtoMember(9, IsRequired = true)]
     [Key(9)]
-    public virtual long ScanEndUTCTicks { get; set; }
+    public long ScanEndUTCTicks { get; set; }
 
     // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
     // [FlatBufferItem(10)]
@@ -90,12 +86,12 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(11, IsRequired = true)] // hack to not load old files ?
     [FlatBufferItem(11)]
     [Key(11)]
-    public virtual int Version { get; set; } = 3;
+    public int Version { get; set; } = 3;
 
     [ProtoMember(18, IsRequired = false)]
     [FlatBufferItem(18)]
     [Key(18)]
-    public virtual string VolumeName { get; set; }
+    public string VolumeName { get; set; }
 
     [IgnoreMember]
     public string ActualFileName { get; set; }
@@ -187,17 +183,17 @@ public class RootEntry : object, ICommonEntry
     #region Methods virtual to assist testing.
 
     // TODO may not be needed with move to dotnetcore3.0 and System.IO
-    public virtual string GetFullPath(string path)
+    public string GetFullPath(string path)
     {
         return System.IO.Path.GetFullPath(path);
     }
 
-    public virtual bool IsUnc(string path)
+    public bool IsUnc(string path)
     {
         return System.IO.Path.IsPathFullyQualified(path) && PathIsUnc(path);
     }
 
-    public virtual string GetDirectoryRoot(string path)
+    public string GetDirectoryRoot(string path)
     {
         return Directory.GetDirectoryRoot(path);
     }
@@ -213,7 +209,7 @@ public class RootEntry : object, ICommonEntry
     /// </summary>
     /// <param name="rootPath"></param>
     /// <returns>Volume Name or string.empty when can't</returns>
-    public virtual string GetVolumeName(string rootPath)
+    public string GetVolumeName(string rootPath)
     {
         if (PathIsUnc(rootPath))
         {
@@ -442,7 +438,7 @@ public class RootEntry : object, ICommonEntry
 
     // direntry import
     [IgnoreMember]
-    public virtual DateTime Modified
+    public DateTime Modified
     {
         set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
@@ -451,18 +447,18 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(12, IsRequired = false)]
     [FlatBufferItem(12)]
     [Key(12)]
-    public virtual Flags BitFields { get; set; }
+    public Flags BitFields { get; set; }
 
     [ProtoMember(13, IsRequired = false)]
     [FlatBufferItem(13)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(13)]
-    public virtual Hash16 Hash { get; set; }
+    public Hash16 Hash { get; set; }
 
     [ProtoMember(14, IsRequired = true)]
     [FlatBufferItem(14)]
     [Key(14)]
-    public virtual long ModifiedTicks { get; set; }
+    public long ModifiedTicks { get; set; }
 
     #region BitFields based properties
 
@@ -738,7 +734,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(15, IsRequired = false)]
     [FlatBufferItem(15)]
     [Key(15)]
-    public virtual IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children { get; set; }
 
     public void AddChild(DirEntry child)
     {
@@ -750,7 +746,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(16, IsRequired = true)]
     [FlatBufferItem(16)]
     [Key(16)]
-    public virtual long Size { get; set; }
+    public long Size { get; set; }
 
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
@@ -758,7 +754,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(17, IsRequired = true)]
     [FlatBufferItem(17)]
     [Key(17)]
-    public virtual string Path { get; set; }
+    public string Path { get; set; }
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
