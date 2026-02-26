@@ -284,78 +284,147 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// This version calls itself so it can cache the folders and the node in its own stack.
-    /// This improves performance.
+    /// Iteratively scans directory tree using a stack-based approach for optimal performance.
     /// </summary>
     public void RecurseTree(string startPath)
     {
         var entryCount = 0;
-        // Pre-size stack to typical directory depth to avoid reallocations
-        var dirs = new Stack<(ICommonEntry, string)>(capacity: 64);
-        dirs.Push((this, startPath));
+        var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
+        stack.Push((this, startPath));
 
-        // Performance optimization: Hoist event null check outside loop
-        var hasEventHandler = SimpleScanCountEvent != null;
-        const int eventBatchSize = 1000;
-        var nextEventThreshold = eventBatchSize;
+        var progressTracker = new ScanProgressTracker(SimpleScanCountEvent);
 
-        while (dirs.Count > 0)
+        while (stack.Count > 0)
         {
-            var (commonEntry, directory) = dirs.Pop();
-            var dirInfo = new DirectoryInfo(directory);
-            try
-            {
-                var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
-                foreach (var fsInfo in fsInfos)
-                {
-                    var dirEntry = new DirEntry(fsInfo);
-                    commonEntry.AddChild(dirEntry);
-                    if (dirEntry.IsDirectory)
-                    {
-                        // Performance optimization: Cache FullName to avoid repeated property access
-                        var fullName = fsInfo.FullName;
-                        dirs.Push((dirEntry, fullName));
-                    }
+            var (parent, directory) = stack.Pop();
 
-                    ++entryCount;
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker))
+            {
+                continue;
+            }
 
-                    // Performance optimization: Batch event invocations to reduce overhead
-                    if (hasEventHandler && entryCount >= nextEventThreshold)
-                    {
-                        SimpleScanCountEvent(entryCount, directory);
-                        nextEventThreshold += eventBatchSize;
-                    }
-
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        break;
-                    }
-                }
-                // Performance optimization: Redundant break check removed
-            }
-            catch (UnauthorizedAccessException ex)
+            if (Hack.BreakConsoleFlag)
             {
-                Log.Logger.Warning("Access denied: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
-            }
-            catch (IOException ex)
-            {
-                Log.Logger.Warning("Cannot access: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
-            }
-            catch (Exception ex) when (ex is DirectoryNotFoundException || ex is PathTooLongException)
-            {
-                Log.Logger.Warning("Skipping: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
+                break;
             }
         }
 
-        // Fire final count event to ensure ScanCount is accurate for small folders
-        if (hasEventHandler)
-        {
-            SimpleScanCountEvent(entryCount, startPath);
-        }
+        progressTracker.ReportFinalCount(entryCount, startPath);
         SimpleScanEndEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// Attempts to enumerate a directory and add its children. Returns true on success, false if access denied.
+    /// </summary>
+    private bool TryEnumerateDirectory(
+        string directory,
+        ICommonEntry parent,
+        Stack<(ICommonEntry, string)> stack,
+        ref int entryCount,
+        ScanProgressTracker progressTracker)
+    {
+        try
+        {
+            var dirInfo = new DirectoryInfo(directory);
+            var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
+
+            foreach (var fsInfo in fsInfos)
+            {
+                ProcessFileSystemEntry(fsInfo, parent, stack, ref entryCount, directory, progressTracker);
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (IsFileSystemAccessException(ex))
+        {
+            HandleFileSystemAccessError(ex, directory);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Processes a single file system entry, creates a DirEntry, and pushes directories to the stack.
+    /// </summary>
+    private void ProcessFileSystemEntry(
+        FileSystemInfo fsInfo,
+        ICommonEntry parent,
+        Stack<(ICommonEntry, string)> stack,
+        ref int entryCount,
+        string currentDirectory,
+        ScanProgressTracker progressTracker)
+    {
+        var dirEntry = new DirEntry(fsInfo);
+        parent.AddChild(dirEntry);
+
+        if (dirEntry.IsDirectory)
+        {
+            stack.Push((dirEntry, fsInfo.FullName));
+        }
+
+        entryCount++;
+        progressTracker.ReportProgress(entryCount, currentDirectory);
+    }
+
+    /// <summary>
+    /// Determines if an exception is a file system access error that should be logged and skipped.
+    /// </summary>
+    private static bool IsFileSystemAccessException(Exception ex)
+    {
+        return ex is UnauthorizedAccessException
+            || ex is IOException
+            || ex is DirectoryNotFoundException
+            || ex is PathTooLongException;
+    }
+
+    /// <summary>
+    /// Handles file system access errors by logging and tracking unauthorized paths.
+    /// </summary>
+    private void HandleFileSystemAccessError(Exception ex, string directory)
+    {
+        var logMessage = ex switch
+        {
+            UnauthorizedAccessException => "Access denied: {Path} - {Message}",
+            IOException => "Cannot access: {Path} - {Message}",
+            _ => "Skipping: {Path} - {Message}"
+        };
+
+        Log.Logger.Warning(logMessage, directory, ex.Message);
+        AddPathsWithUnauthorisedExceptions(directory);
+    }
+
+    /// <summary>
+    /// Manages progress event reporting with batching to reduce overhead.
+    /// </summary>
+    private sealed class ScanProgressTracker
+    {
+        private const int EventBatchSize = 1000;
+        private readonly Action<int, string> _eventHandler;
+        private int _nextEventThreshold;
+
+        public ScanProgressTracker(Action<int, string> eventHandler)
+        {
+            _eventHandler = eventHandler;
+            _nextEventThreshold = EventBatchSize;
+        }
+
+        public void ReportProgress(int entryCount, string currentDirectory)
+        {
+            if (_eventHandler != null && entryCount >= _nextEventThreshold)
+            {
+                _eventHandler(entryCount, currentDirectory);
+                _nextEventThreshold += EventBatchSize;
+            }
+        }
+
+        public void ReportFinalCount(int entryCount, string startPath)
+        {
+            _eventHandler?.Invoke(entryCount, startPath);
+        }
     }
 
     private void AddPathsWithUnauthorisedExceptions(string directory)
