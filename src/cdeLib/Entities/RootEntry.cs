@@ -360,7 +360,8 @@ public class RootEntry : object, ICommonEntry
 
     private void AddPathsWithUnauthorisedExceptions(string directory)
     {
-        PathsWithUnauthorisedExceptions ??= new List<string>();
+        // Pre-size list to typical unauthorized path count to avoid reallocations
+        PathsWithUnauthorisedExceptions ??= new List<string>(capacity: 100);
         PathsWithUnauthorisedExceptions.Add(directory);
     }
 
