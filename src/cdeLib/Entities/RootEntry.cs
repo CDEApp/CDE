@@ -375,10 +375,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// </summary>
     private static bool IsFileSystemAccessException(Exception ex)
     {
-        return ex is UnauthorizedAccessException
-            || ex is IOException
-            || ex is DirectoryNotFoundException
-            || ex is PathTooLongException;
+        return ex is UnauthorizedAccessException or IOException or DirectoryNotFoundException or PathTooLongException;
     }
 
     /// <summary>
@@ -919,81 +916,126 @@ public sealed class RootEntry : object, ICommonEntry
         return true;
     }
 
+    /// <summary>
+    /// Copies hash values from source tree to destination tree where file metadata matches.
+    /// </summary>
     public void TraverseTreesCopyHash(ICommonEntry destination)
     {
-        // Pre-size stack to typical tree depth to avoid reallocations
-        var dirs = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
-        var source = this;
+        ValidateTreeCopyParameters(this, destination);
 
+        var stack = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
+        stack.Push((this.Path, this, destination));
+
+        while (stack.Count > 0)
+        {
+            var (currentPath, sourceEntry, destinationEntry) = stack.Pop();
+
+            if (sourceEntry.Children == null || destinationEntry.Children == null)
+            {
+                continue; // Skip entries without children
+            }
+
+            ProcessChildrenForHashCopy(sourceEntry, destinationEntry, currentPath, stack);
+        }
+    }
+
+    /// <summary>
+    /// Validates that source and destination are compatible for hash copying.
+    /// </summary>
+    private static void ValidateTreeCopyParameters(ICommonEntry source, ICommonEntry destination)
+    {
         if (source == null || destination == null)
         {
             throw new ArgumentException("source and destination must be not null.");
         }
 
-        var sourcePath = source.Path;
-        var destinationPath = destination.Path;
-
-        if (!string.Equals(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(source.Path, destination.Path, StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException("source and destination must have same root path.");
         }
+    }
 
-        // traverse every source entry copy across the meta data that matches on destination entry
-        // if it adds value to destination.
-        // if destination is not there source not processed.
-        dirs.Push((sourcePath, source, destination));
+    /// <summary>
+    /// Processes all children of source and destination, copying hashes and queueing directories.
+    /// </summary>
+    private static void ProcessChildrenForHashCopy(
+        ICommonEntry sourceEntry,
+        ICommonEntry destinationEntry,
+        string currentPath,
+        Stack<(string, ICommonEntry, ICommonEntry)> stack)
+    {
+        var destinationLookup = BuildDestinationLookup(destinationEntry.Children);
 
-        while (dirs.Count > 0)
+        foreach (var sourceChild in sourceEntry.Children)
         {
-            var (workPath, baseSourceEntry, baseDestinationEntry) = dirs.Pop();
-
-            if (baseSourceEntry.Children != null && baseDestinationEntry.Children != null)
+            if (!destinationLookup.TryGetValue(sourceChild.Path, out var destinationChild))
             {
-                // Build dictionary for O(1) lookups instead of O(n) linear search
-                var destinationLookup = new Dictionary<string, DirEntry>(
-                    baseDestinationEntry.Children.Count,
-                    StringComparer.OrdinalIgnoreCase);
-
-                foreach (var child in baseDestinationEntry.Children)
-                {
-                    // TryAdd handles potential duplicate paths gracefully (keeps first, ignores rest)
-                    destinationLookup.TryAdd(child.Path, child);
-                }
-
-                foreach (var sourceDirEntry in baseSourceEntry.Children)
-                {
-                    // O(1) dictionary lookup instead of O(n) FirstOrDefault
-                    if (!destinationLookup.TryGetValue(sourceDirEntry.Path, out var destinationDirEntry))
-                    {
-                        continue;
-                    }
-
-                    // File: Copy hash if metadata matches
-                    if (!sourceDirEntry.IsDirectory
-                        && sourceDirEntry.Modified == destinationDirEntry.Modified
-                        && sourceDirEntry.Size == destinationDirEntry.Size)
-                    {
-                        var sourceHasDone = sourceDirEntry.IsHashDone;
-                        var destHasDone = destinationDirEntry.IsHashDone;
-                        var sourceIsPartial = sourceDirEntry.IsPartialHash;
-                        var destIsPartial = destinationDirEntry.IsPartialHash;
-
-                        // Copy hash if: the source has hash AND (dest has none OR upgrading partial to full)
-                        if (sourceHasDone && (!destHasDone || (!sourceIsPartial && destIsPartial)))
-                        {
-                            destinationDirEntry.IsPartialHash = sourceIsPartial;
-                            destinationDirEntry.Hash = sourceDirEntry.Hash;
-                        }
-                    }
-                    // Directory: Push to stack for traversal
-                    else if (destinationDirEntry.IsDirectory && sourceDirEntry.IsDirectory)
-                    {
-                        // Only compute full path when needed for directories (avoids wasteful allocations for files)
-                        var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
-                        dirs.Push((fullPath, sourceDirEntry, destinationDirEntry));
-                    }
-                }
+                continue; // Source entry not found in destination
             }
+
+            if (AreBothDirectories(sourceChild, destinationChild))
+            {
+                var fullPath = System.IO.Path.Combine(currentPath, sourceChild.Path);
+                stack.Push((fullPath, sourceChild, destinationChild));
+            }
+            else if (AreBothFilesWithMatchingMetadata(sourceChild, destinationChild))
+            {
+                TryCopyHashIfBeneficial(sourceChild, destinationChild);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Builds a dictionary for O(1) lookups of destination children by path.
+    /// </summary>
+    private static Dictionary<string, DirEntry> BuildDestinationLookup(IList<DirEntry> children)
+    {
+        var lookup = new Dictionary<string, DirEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var child in children)
+        {
+            // TryAdd handles potential duplicate paths gracefully (keeps first, ignores rest)
+            lookup.TryAdd(child.Path, child);
+        }
+
+        return lookup;
+    }
+
+    /// <summary>
+    /// Checks if both entries are directories.
+    /// </summary>
+    private static bool AreBothDirectories(ICommonEntry source, ICommonEntry destination)
+    {
+        return source.IsDirectory && destination.IsDirectory;
+    }
+
+    /// <summary>
+    /// Checks if both entries are files with matching metadata (size and modified time).
+    /// </summary>
+    private static bool AreBothFilesWithMatchingMetadata(ICommonEntry source, ICommonEntry destination)
+    {
+        return !source.IsDirectory
+            && source.Modified == destination.Modified
+            && source.Size == destination.Size;
+    }
+
+    /// <summary>
+    /// Copies hash from source to destination if it provides value (new hash or upgrading partial to full).
+    /// </summary>
+    private static void TryCopyHashIfBeneficial(ICommonEntry source, ICommonEntry destination)
+    {
+        if (!source.IsHashDone)
+        {
+            return; // Source has no hash to copy
+        }
+
+        var shouldCopy = !destination.IsHashDone  // Destination has no hash
+            || (source.IsPartialHash == false && destination.IsPartialHash);  // Upgrading partial to full
+
+        if (shouldCopy)
+        {
+            destination.IsPartialHash = source.IsPartialHash;
+            destination.Hash = source.Hash;
         }
     }
 
