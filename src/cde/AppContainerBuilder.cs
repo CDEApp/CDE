@@ -37,7 +37,6 @@ public static class AppContainerBuilder
             return null;
         }
 
-        // Configure SlimMessageBus with MSDI
         var services = new ServiceCollection();
 
         // Add logging (required by SlimMessageBus)

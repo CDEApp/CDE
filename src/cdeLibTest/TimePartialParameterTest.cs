@@ -22,7 +22,7 @@ public class TimePartialParameterTest
     {
         const string args = "24";
 
-        var ex = Assert.Throws<ArgumentException>(() => _ = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => _ = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
     }
 
@@ -32,7 +32,7 @@ public class TimePartialParameterTest
         var args = "a";
         var value = 0;
 
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => value = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
     }
 
@@ -51,7 +51,7 @@ public class TimePartialParameterTest
     {
         var args = "3:34s";
         var value = 0;
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => value = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format '<HH>:<MM>:<SS>'"));
     }
 
@@ -60,7 +60,7 @@ public class TimePartialParameterTest
     {
         var args = "3:60";
         var value = 0;
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => value = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format '<HH>:<MM>:<SS>'"));
     }
 
@@ -79,7 +79,7 @@ public class TimePartialParameterTest
     {
         var args = "3:34:10s";
         var value = 0;
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => value = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
     }
 
@@ -88,7 +88,7 @@ public class TimePartialParameterTest
     {
         var args = "3:34:60";
         var value = 0;
-        var ex = Assert.Throws<ArgumentException>(() => value = (new TimePartialParameter(args)).Hour);
+        var ex = Assert.Throws<ArgumentException>(() => value = new TimePartialParameter(args).Hour);
         Assert.That(ex.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
     }
 }

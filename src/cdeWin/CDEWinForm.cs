@@ -236,15 +236,15 @@ public partial class CDEWinForm : Form, ICDEWinForm
         directoryPathTextBox.ReadOnly = true; // only for display and manual select copy for now ?
 
         // ReSharper disable PossibleNullReferenceException
-        exitToolStripMenuItem.Click += (s, e) => OnExitMenuItem();
-        aboutToolStripMenuItem.Click += (s, e) => OnAboutMenuItem();
+        exitToolStripMenuItem.Click += (_, _) => OnExitMenuItem();
+        aboutToolStripMenuItem.Click += (_, _) => OnAboutMenuItem();
 
-        searchButton.Click += (s, e) => OnSearch();
+        searchButton.Click += (_, _) => OnSearch();
         // ReSharper restore PossibleNullReferenceException
         SetToolTip(searchButton, "Cancel search is not immediate, wait for a progress update.");
 
         // ReSharper disable once PossibleNullReferenceException
-        reloadCatalogsButton.Click += (s, e) => OnReloadCatalogs();
+        reloadCatalogsButton.Click += (_, _) => OnReloadCatalogs();
 
         RegisterAdvancedSearchControls();
     }
@@ -317,7 +317,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
             "Recommend 10000 or smaller. Producing very large result lists uses a lot of memory and isn't usually useful.");
 
         // ReSharper disable once PossibleNullReferenceException
-        advancedSearchCheckBox.CheckedChanged += (s, e) => OnAdvancedSearchCheckboxChanged();
+        advancedSearchCheckBox.CheckedChanged += (_, _) => OnAdvancedSearchCheckboxChanged();
         SetToolTip(advancedSearchCheckBox,
             "Enable or Disable advanced search options to include Date and Size filtering.");
     }
@@ -354,14 +354,14 @@ public partial class CDEWinForm : Form, ICDEWinForm
         {
             //TreeViewHandler not useful in tree
             // ReSharper disable PossibleNullReferenceException
-            OpenHandler = (s, e) => OnDirectoryTreeContextMenuOpenClick(),
-            ExploreHandler = (s, e) => OnDirectoryTreeContextMenuExploreClick(),
-            ExploreAltHandler = (s, e) => OnDirectoryTreeContextMenuExploreAltClick(),
-            PropertiesHandler = (s, e) => OnDirectoryTreeContextMenuPropertiesClick(),
+            OpenHandler = (_, _) => OnDirectoryTreeContextMenuOpenClick(),
+            ExploreHandler = (_, _) => OnDirectoryTreeContextMenuExploreClick(),
+            ExploreAltHandler = (_, _) => OnDirectoryTreeContextMenuExploreAltClick(),
+            PropertiesHandler = (_, _) => OnDirectoryTreeContextMenuPropertiesClick(),
             //SelectAllHandler = not useful in tree
             //CopyBaseNameHandler = (s, e) => (),
             //CopyFullNameHandler = (s, e) => (),
-            ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+            ParentHandler = (_, _) => OnDirectoryContextMenuParentClick(),
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = DirectoryTreeContextMenuOpening
         };
@@ -401,14 +401,14 @@ public partial class CDEWinForm : Form, ICDEWinForm
         var menuHelper = new ContextMenuHelper
         {
             // ReSharper disable PossibleNullReferenceException
-            TreeViewHandler = (s, e) => OnDirectoryContextMenuViewTreeClick(),
-            OpenHandler = (s, e) => OnDirectoryContextMenuOpenClick(),
-            ExploreHandler = (s, e) => OnDirectoryContextMenuExploreClick(),
-            PropertiesHandler = (s, e) => OnDirectoryContextMenuPropertiesClick(),
-            SelectAllHandler = (s, e) => OnDirectoryContextMenuSelectAllClick(),
+            TreeViewHandler = (_, _) => OnDirectoryContextMenuViewTreeClick(),
+            OpenHandler = (_, _) => OnDirectoryContextMenuOpenClick(),
+            ExploreHandler = (_, _) => OnDirectoryContextMenuExploreClick(),
+            PropertiesHandler = (_, _) => OnDirectoryContextMenuPropertiesClick(),
+            SelectAllHandler = (_, _) => OnDirectoryContextMenuSelectAllClick(),
             //CopyBaseNameHandler = (s, e) => (),
-            CopyFullNameHandler = (s, e) => OnDirectoryContextMenuCopyFullPathClick(),
-            ParentHandler = (s, e) => OnDirectoryContextMenuParentClick(),
+            CopyFullNameHandler = (_, _) => OnDirectoryContextMenuCopyFullPathClick(),
+            ParentHandler = (_, _) => OnDirectoryContextMenuParentClick(),
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e)
         };
@@ -420,14 +420,14 @@ public partial class CDEWinForm : Form, ICDEWinForm
         var menuHelper = new ContextMenuHelper
         {
             // ReSharper disable PossibleNullReferenceException
-            TreeViewHandler = (s, e) => OnSearchResultContextMenuViewTreeClick(),
-            OpenHandler = (s, e) => OnSearchResultContextMenuOpenClick(),
-            ExploreHandler = (s, e) => OnSearchResultContextMenuExploreClick(),
-            ExploreAltHandler = (s, e) => OnSearchResultContextMenuExploreAltClick(),
-            PropertiesHandler = (s, e) => OnSearchResultContextMenuPropertiesClick(),
-            SelectAllHandler = (s, e) => OnSearchResultContextMenuSelectAllClick(),
+            TreeViewHandler = (_, _) => OnSearchResultContextMenuViewTreeClick(),
+            OpenHandler = (_, _) => OnSearchResultContextMenuOpenClick(),
+            ExploreHandler = (_, _) => OnSearchResultContextMenuExploreClick(),
+            ExploreAltHandler = (_, _) => OnSearchResultContextMenuExploreAltClick(),
+            PropertiesHandler = (_, _) => OnSearchResultContextMenuPropertiesClick(),
+            SelectAllHandler = (_, _) => OnSearchResultContextMenuSelectAllClick(),
             //CopyBaseNameHandler = (s, e) => (),
-            CopyFullNameHandler = (s, e) => OnSearchResultContextMenuCopyFullPathClick(),
+            CopyFullNameHandler = (_, _) => OnSearchResultContextMenuCopyFullPathClick(),
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e)
         };
