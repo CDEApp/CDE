@@ -25,18 +25,11 @@ public static class EntryHelper
         return new PairDirEntryEnumerator(rootEntries);
     }
 
-    public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
-    {
-        var a = parentEntry.FullPath ?? "pnull";
-        var b = dirEntry.Path ?? "dnull";
-        return System.IO.Path.Combine(a, b);
-    }
-
     /// <summary>
     /// Creates a full path using a ThreadLocal StringBuilder to reduce allocations.
     /// Still allocates the final string, but avoids intermediate allocations from Path.Combine.
     /// </summary>
-    public static string MakeFullPathPooled(ICommonEntry parentEntry, ICommonEntry dirEntry)
+    public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
     {
         var sb = PathBuilder.Value!;
         sb.Clear();
@@ -55,6 +48,15 @@ public static class EntryHelper
 
         sb.Append(dirEntry.Path ?? "dnull");
         return sb.ToString();
+    }
+
+    /// <summary>
+    /// Alias for MakeFullPath (now uses pooled StringBuilder by default).
+    /// Kept for backwards compatibility.
+    /// </summary>
+    public static string MakeFullPathPooled(ICommonEntry parentEntry, ICommonEntry dirEntry)
+    {
+        return MakeFullPath(parentEntry, dirEntry);
     }
 
     /// <summary>
