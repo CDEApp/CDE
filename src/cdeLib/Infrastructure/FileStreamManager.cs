@@ -79,12 +79,13 @@ public class FileStreamManager : IDisposable
 
         var fileLock = GetFileLock(filePath);
         await fileLock.WaitAsync();
-        
+
         try
         {
             await using var stream = CreateReadStream(filePath);
             var buffer = new byte[stream.Length];
-            await stream.ReadExactlyAsync(buffer);
+            // Use Memory<byte> overload for potentially better performance
+            await stream.ReadExactlyAsync(buffer.AsMemory());
             return buffer;
         }
         finally
