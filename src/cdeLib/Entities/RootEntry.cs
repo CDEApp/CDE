@@ -30,7 +30,7 @@ public sealed class RootEntry : object, ICommonEntry
     public string Description { get; set; } // user entered description ?
 
     /// <summary>
-    /// There are a standard set on C: drive in win7 do we care about them ? Filter em out ? or hold internal filter to filter em out ojn display optionally.
+    /// There are a standard set on C: drive in win7 do we care about them? Filter em out ? or hold internal filter to filter em out ojn display optionally.
     /// </summary>
     [ProtoMember(3, IsRequired = true)]
     [FlatBufferItem(3)]
@@ -782,50 +782,72 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// Recursive traversal
+    /// Iterative tree traversal using a stack. Visits each child entry with its parent.
     /// </summary>
     /// <param name="rootEntries">Entries to traverse</param>
-    /// <param name="traverseFunc">TraversalFunc</param>
-    /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
-    public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc,
-        RootEntry catalogRootEntry = null)
+    /// <param name="traverseFunc">Function called for each (parent, child) pair. Returns true to continue, false to stop.</param>
+    private static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc)
     {
         if (traverseFunc == null)
         {
             return;
-        } // nothing to do.
-
-        var funcContinue = true;
-        // Avoid Reverse() intermediate allocation - push in reverse order instead
-        var rootArray = rootEntries as ICommonEntry[] ?? rootEntries.ToArray();
-        var dirs = new Stack<ICommonEntry>(rootArray.Length);
-        for (int i = rootArray.Length - 1; i >= 0; i--)
-        {
-            dirs.Push(rootArray[i]);
         }
 
-        while (funcContinue && dirs.Count > 0)
+        var stack = InitializeTraversalStack(rootEntries);
+
+        while (stack.Count > 0)
         {
-            var commonEntry = dirs.Pop();
-            if (commonEntry.Children == null)
-            {
-                continue;
-            } // empty directories may not have Children initialized.
+            var parent = stack.Pop();
 
-            foreach (var dirEntry in commonEntry.Children)
+            if (parent.Children == null)
             {
-                funcContinue = traverseFunc(commonEntry, dirEntry);
-                if (!funcContinue)
-                {
-                    break;
-                }
+                continue; // Empty directories may not have Children initialized
+            }
 
-                if (dirEntry.IsDirectory)
-                {
-                    dirs.Push(dirEntry);
-                }
+            if (!ProcessChildrenWithTraversal(parent, stack, traverseFunc))
+            {
+                return; // Traversal canceled by func returning false
             }
         }
+    }
+
+    /// <summary>
+    /// Initializes traversal stack with root entries in reverse order to maintain original ordering.
+    /// </summary>
+    private static Stack<ICommonEntry> InitializeTraversalStack(IEnumerable<ICommonEntry> rootEntries)
+    {
+        // Avoid Reverse() intermediate allocation - push in reverse order instead
+        var rootArray = rootEntries as ICommonEntry[] ?? rootEntries.ToArray();
+        var stack = new Stack<ICommonEntry>(rootArray.Length);
+
+        for (int i = rootArray.Length - 1; i >= 0; i--)
+        {
+            stack.Push(rootArray[i]);
+        }
+
+        return stack;
+    }
+
+    /// <summary>
+    /// Processes all children of a parent entry, invoking the traversal function and pushing directories to the stack.
+    /// </summary>
+    /// <returns>True to continue traversal, false if traversal was cancelled</returns>
+    private static bool ProcessChildrenWithTraversal(ICommonEntry parent, Stack<ICommonEntry> stack, TraverseFunc traverseFunc)
+    {
+        foreach (var child in parent.Children)
+        {
+            if (!traverseFunc(parent, child))
+            {
+                return false; // Stop traversal
+            }
+
+            if (child.IsDirectory)
+            {
+                stack.Push(child);
+            }
+        }
+
+        return true;
     }
 
     public void TraverseTreesCopyHash(ICommonEntry destination)
@@ -887,7 +909,7 @@ public sealed class RootEntry : object, ICommonEntry
                         var sourceIsPartial = sourceDirEntry.IsPartialHash;
                         var destIsPartial = destinationDirEntry.IsPartialHash;
 
-                        // Copy hash if: source has hash AND (dest has none OR upgrading partial to full)
+                        // Copy hash if: the source has hash AND (dest has none OR upgrading partial to full)
                         if (sourceHasDone && (!destHasDone || (!sourceIsPartial && destIsPartial)))
                         {
                             destinationDirEntry.IsPartialHash = sourceIsPartial;
