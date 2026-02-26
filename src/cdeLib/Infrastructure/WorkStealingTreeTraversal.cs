@@ -32,15 +32,17 @@ public class WorkStealingTreeTraversal
     /// <summary>
     /// Traverse multiple root entries in parallel with work stealing
     /// </summary>
-    public async Task TraverseAsync(IEnumerable<RootEntry> rootEntries, 
+    public async Task TraverseAsync(IEnumerable<RootEntry> rootEntries,
         Func<ICommonEntry, ICommonEntry, Task<bool>> asyncProcessor)
     {
-        var iEnumerable = rootEntries.ToList();
-        var rootCount = iEnumerable.Count;
+        // Get count efficiently without materializing if possible
+        int rootCount = rootEntries.TryGetNonEnumeratedCount(out var count)
+            ? count
+            : rootEntries.Count();
         logger.Debug("Starting traversal with {RootCount} root entries", rootCount);
 
-        // Initialize the work queue with root entries
-        var initialWork = iEnumerable.Select(root => new TraversalWorkItem(null, root));
+        // Initialize the work queue with root entries - enumerate directly without ToList
+        var initialWork = rootEntries.Select(root => new TraversalWorkItem(null, root));
         _workQueue.AddWork(initialWork);
 
         logger.Debug("Added {InitialWorkCount} initial work items to queue", rootCount);

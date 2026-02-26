@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using cdeLib.Extensions;
+using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
@@ -11,77 +12,74 @@ using MessagePack;
 using ProtoBuf;
 using Serilog;
 
-// ReSharper disable MemberCanBeProtected.Global
-
 namespace cdeLib.Entities;
 
-// TODO - RootEntry needs All the Flags.
-// TODO - maybe RootEntry derives from DirEntry ? collapse CE and DE maybe ?
 [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
-public class RootEntry : object, ICommonEntry
+public sealed class RootEntry : object, ICommonEntry
 {
     private const string MatchAll = "*";
     private readonly IDriveInfoService _driveInfoService;
+    private readonly IFileSystemAdapter _fileSystemAdapter;
 
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
     [Key(2)]
-    public virtual string Description { get; set; } // user entered description ?
+    public string Description { get; set; } // user entered description ?
 
     /// <summary>
-    /// There are a standard set on C: drive in win7 do we care about them ? Filter em out ? or hold internal filter to filter em out ojn display optionally.
+    /// There are a standard set on C: drive in win7 do we care about them? Filter em out ? or hold internal filter to filter em out ojn display optionally.
     /// </summary>
     [ProtoMember(3, IsRequired = true)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public virtual IList<string> PathsWithUnauthorisedExceptions { get; set; }
+    public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
     [ProtoMember(4, IsRequired = true)]
     [FlatBufferItem(4)]
     [Key(4)]
-    public virtual string DefaultFileName { get; set; }
+    public string DefaultFileName { get; set; }
 
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string DriveLetterHint { get; set; }
+    public string DriveLetterHint { get; set; }
 
     [ProtoMember(6, IsRequired = true)]
     [FlatBufferItem(6)]
     [Key(6)]
-    public virtual long AvailSpace { get; set; }
+    public long AvailSpace { get; set; }
 
     [ProtoMember(7, IsRequired = true)]
     [FlatBufferItem(7)]
     [Key(7)]
-    public virtual long TotalSpace { get; set; }
+    public long TotalSpace { get; set; }
 
     [IgnoreMember]
-    public virtual DateTime ScanStartUTC
+    public DateTime ScanStartUtc
     {
-        set => ScanStartUTCTicks = value.Ticks;
-        get => DateTime.FromBinary(ScanStartUTCTicks);
+        set => ScanStartUtcTicks = value.Ticks;
+        get => DateTime.FromBinary(ScanStartUtcTicks);
     }
 
     [FlatBufferItem(8)]
     [ProtoMember(8, IsRequired = true)]
     [Key(8)]
-    public virtual long ScanStartUTCTicks { get; set; }
+    public long ScanStartUtcTicks { get; set; }
 
     [IgnoreMember]
-    public virtual DateTime ScanEndUTC
+    public DateTime ScanEndUtc
     {
-        set => ScanEndUTCTicks = value.Ticks;
-        get => DateTime.FromBinary(ScanEndUTCTicks);
+        set => ScanEndUtcTicks = value.Ticks;
+        get => DateTime.FromBinary(ScanEndUtcTicks);
     }
 
     [FlatBufferItem(9)]
     [ProtoMember(9, IsRequired = true)]
     [Key(9)]
-    public virtual long ScanEndUTCTicks { get; set; }
+    public long ScanEndUtcTicks { get; set; }
 
     // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
     // [FlatBufferItem(10)]
@@ -90,37 +88,44 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(11, IsRequired = true)] // hack to not load old files ?
     [FlatBufferItem(11)]
     [Key(11)]
-    public virtual int Version { get; set; } = 3;
+    public int Version { get; set; } = 3;
 
     [ProtoMember(18, IsRequired = false)]
     [FlatBufferItem(18)]
     [Key(18)]
-    public virtual string VolumeName { get; set; }
+    public string VolumeName { get; set; }
 
     [IgnoreMember]
     public string ActualFileName { get; set; }
 
     [IgnoreMember]
-    public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
+    public double ScanDurationMilliseconds => (ScanEndUtc - ScanStartUtc).TotalMilliseconds;
 
-    // ReSharper disable once MemberCanBePrivate.Global
-    public RootEntry()
+    public RootEntry() : this(null, null)
+    {
+    }
+
+    public RootEntry(IConfiguration configuration) : this(configuration, null)
+    {
+    }
+
+    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter)
     {
         TheRootEntry = this;
         _driveInfoService = new DriveInfoService();
-    }
-
-    public RootEntry(IConfiguration configuration) : this()
-    {
-        EntryCountThreshold = configuration.ProgressUpdateInterval;
+        _fileSystemAdapter = fileSystemAdapter ?? new FileSystemAdapter();
+        if (configuration != null)
+        {
+            EntryCountThreshold = configuration.ProgressUpdateInterval;
+        }
     }
 
     public void PopulateRoot(string startPath)
     {
         startPath = GetRootEntry(startPath);
-        ScanStartUTC = DateTime.UtcNow;
+        ScanStartUtc = DateTime.UtcNow;
         RecurseTree(startPath);
-        ScanEndUTC = DateTime.UtcNow;
+        ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
 
@@ -148,8 +153,8 @@ public class RootEntry : object, ICommonEntry
     public void SetInMemoryFields()
     {
         // Protobuf does not retain DateKind. So just handle it here
-        ScanStartUTC = new DateTime(ScanStartUTC.Ticks, DateTimeKind.Utc);
-        ScanEndUTC = new DateTime(ScanEndUTC.Ticks, DateTimeKind.Utc);
+        ScanStartUtc = new DateTime(ScanStartUtc.Ticks, DateTimeKind.Utc);
+        ScanEndUtc = new DateTime(ScanEndUtc.Ticks, DateTimeKind.Utc);
         FullPath = Path;
         SetCommonEntryFields();
         SetSummaryFields();
@@ -165,7 +170,8 @@ public class RootEntry : object, ICommonEntry
         var filenameSafePath = SafeFileName(scanPath);
         if (IsUnc(scanPath))
         {
-            fileName = $"{hint}-{filenameSafePath.Substring(2)}{ext}";
+            // Use Span slicing instead of Substring to avoid allocation
+            fileName = $"{hint}-{filenameSafePath.AsSpan(2)}{ext}";
         }
         else
         {
@@ -183,38 +189,32 @@ public class RootEntry : object, ICommonEntry
         return fileName;
     }
 
-    #region Methods virtual to assist testing.
+    #region File system operations (delegated to adapter for testability)
 
-    // TODO may not be needed with move to dotnetcore3.0 and System.IO
-    public virtual string GetFullPath(string path)
+    private string GetFullPath(string path)
     {
-        return System.IO.Path.GetFullPath(path);
+        return _fileSystemAdapter.GetFullPath(path);
     }
 
-    public virtual bool IsUnc(string path)
+    private bool IsUnc(string path)
     {
-        return System.IO.Path.IsPathFullyQualified(path) && PathIsUnc(path);
+        return _fileSystemAdapter.IsUnc(path);
     }
 
-    public virtual string GetDirectoryRoot(string path)
+    private string GetDirectoryRoot(string path)
     {
-        return Directory.GetDirectoryRoot(path);
-    }
-
-    private bool PathIsUnc(string path)
-    {
-        return path.StartsWith("\\\\");
+        return _fileSystemAdapter.GetDirectoryRoot(path);
     }
 
     /// <summary>
-    /// VolumeName is a windows specific thing.
+    /// VolumeName is a windows-specific thing.
     /// Ignored if path is unc.
     /// </summary>
     /// <param name="rootPath"></param>
     /// <returns>Volume Name or string.empty when can't</returns>
-    public virtual string GetVolumeName(string rootPath)
+    public string GetVolumeName(string rootPath)
     {
-        if (PathIsUnc(rootPath))
+        if (IsUnc(rootPath))
         {
             Log.Logger.Verbose("Cannot obtain Volume Name of path {Path}", rootPath);
             return string.Empty;
@@ -238,13 +238,13 @@ public class RootEntry : object, ICommonEntry
     #endregion
 
     /// <summary>
-    /// Return canonical version of path.
+    /// Return a canonical version of a path.
     /// Ensure device id are upper case.
-    /// if ends in a '\' and its not just a device eg G:\ then strip trailing \
+    /// If ends in a '\' and it's not just a device e.g., G:\ then strip trailing \
     /// </summary>
     public string CanonicalPath(string path)
     {
-        path = GetFullPath(path); // Fully qualified path used to generate filename
+        path = GetFullPath(path); // Fully qualified path used to generate a filename
         var volumeRoot = GetDirectoryRoot(path);
         if (IsUnc(path))
         {
@@ -268,7 +268,8 @@ public class RootEntry : object, ICommonEntry
 
     public string GetDriverLetterHint(string path, string volumeRoot)
     {
-        return IsUnc(path) ? "UNC" : volumeRoot.Substring(0, 1);
+        // Use Span slicing instead of Substring to avoid allocation
+        return IsUnc(path) ? "UNC" : new string(volumeRoot.AsSpan(0, 1));
     }
 
     /// <summary>
@@ -283,82 +284,150 @@ public class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// This version calls itself so it can cache the folders and the node in its own stack.
-    /// This improves performance.
+    /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// </summary>
     public void RecurseTree(string startPath)
     {
         var entryCount = 0;
-        var dirs = new Stack<(ICommonEntry, string)>();
-        dirs.Push((this, startPath));
+        var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
+        stack.Push((this, startPath));
 
-        // Performance optimization: Hoist event null check outside loop
-        var hasEventHandler = SimpleScanCountEvent != null;
-        const int eventBatchSize = 1000;
-        var nextEventThreshold = eventBatchSize;
+        var progressTracker = new ScanProgressTracker(SimpleScanCountEvent);
 
-        while (dirs.Count > 0)
+        while (stack.Count > 0)
         {
-            var (commonEntry, directory) = dirs.Pop();
-            var dirInfo = new DirectoryInfo(directory);
-            try
-            {
-                var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
-                foreach (var fsInfo in fsInfos)
-                {
-                    var dirEntry = new DirEntry(fsInfo);
-                    commonEntry.AddChild(dirEntry);
-                    if (dirEntry.IsDirectory)
-                    {
-                        // Performance optimization: Cache FullName to avoid repeated property access
-                        var fullName = fsInfo.FullName;
-                        dirs.Push((dirEntry, fullName));
-                    }
+            var (parent, directory) = stack.Pop();
 
-                    ++entryCount;
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker))
+            {
+                continue;
+            }
 
-                    // Performance optimization: Batch event invocations to reduce overhead
-                    if (hasEventHandler && entryCount >= nextEventThreshold)
-                    {
-                        SimpleScanCountEvent(entryCount, directory);
-                        nextEventThreshold += eventBatchSize;
-                    }
-
-                    if (Hack.BreakConsoleFlag)
-                    {
-                        break;
-                    }
-                }
-                // Performance optimization: Redundant break check removed
-            }
-            catch (UnauthorizedAccessException ex)
+            if (Hack.BreakConsoleFlag)
             {
-                Log.Logger.Warning("Access denied: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
-            }
-            catch (IOException ex)
-            {
-                Log.Logger.Warning("Cannot access: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
-            }
-            catch (Exception ex) when (ex is DirectoryNotFoundException || ex is PathTooLongException)
-            {
-                Log.Logger.Warning("Skipping: {Path} - {Message}", directory, ex.Message);
-                AddPathsWithUnauthorisedExceptions(directory);
+                break;
             }
         }
 
-        // Fire final count event to ensure ScanCount is accurate for small folders
-        if (hasEventHandler)
-        {
-            SimpleScanCountEvent(entryCount, startPath);
-        }
+        progressTracker.ReportFinalCount(entryCount, startPath);
         SimpleScanEndEvent?.Invoke();
+    }
+
+    /// <summary>
+    /// Attempts to enumerate a directory and add its children. Returns true on success, false if access denied.
+    /// </summary>
+    private bool TryEnumerateDirectory(
+        string directory,
+        ICommonEntry parent,
+        Stack<(ICommonEntry, string)> stack,
+        ref int entryCount,
+        ScanProgressTracker progressTracker)
+    {
+        try
+        {
+            var dirInfo = new DirectoryInfo(directory);
+            var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
+
+            foreach (var fsInfo in fsInfos)
+            {
+                ProcessFileSystemEntry(fsInfo, parent, stack, ref entryCount, directory, progressTracker);
+
+                if (Hack.BreakConsoleFlag)
+                {
+                    break;
+                }
+            }
+
+            return true;
+        }
+        catch (Exception ex) when (IsFileSystemAccessException(ex))
+        {
+            HandleFileSystemAccessError(ex, directory);
+            return false;
+        }
+    }
+
+    /// <summary>
+    /// Processes a single file system entry, creates a DirEntry, and pushes directories to the stack.
+    /// </summary>
+    private void ProcessFileSystemEntry(
+        FileSystemInfo fsInfo,
+        ICommonEntry parent,
+        Stack<(ICommonEntry, string)> stack,
+        ref int entryCount,
+        string currentDirectory,
+        ScanProgressTracker progressTracker)
+    {
+        var dirEntry = new DirEntry(fsInfo);
+        parent.AddChild(dirEntry);
+
+        if (dirEntry.IsDirectory)
+        {
+            stack.Push((dirEntry, fsInfo.FullName));
+        }
+
+        entryCount++;
+        progressTracker.ReportProgress(entryCount, currentDirectory);
+    }
+
+    /// <summary>
+    /// Determines if an exception is a file system access error that should be logged and skipped.
+    /// </summary>
+    private static bool IsFileSystemAccessException(Exception ex)
+    {
+        return ex is UnauthorizedAccessException or IOException or DirectoryNotFoundException or PathTooLongException;
+    }
+
+    /// <summary>
+    /// Handles file system access errors by logging and tracking unauthorized paths.
+    /// </summary>
+    private void HandleFileSystemAccessError(Exception ex, string directory)
+    {
+        var logMessage = ex switch
+        {
+            UnauthorizedAccessException => "Access denied: {Path} - {Message}",
+            IOException => "Cannot access: {Path} - {Message}",
+            _ => "Skipping: {Path} - {Message}"
+        };
+
+        Log.Logger.Warning(logMessage, directory, ex.Message);
+        AddPathsWithUnauthorisedExceptions(directory);
+    }
+
+    /// <summary>
+    /// Manages progress event reporting with batching to reduce overhead.
+    /// </summary>
+    private sealed class ScanProgressTracker
+    {
+        private const int EventBatchSize = 1000;
+        private readonly Action<int, string> _eventHandler;
+        private int _nextEventThreshold;
+
+        public ScanProgressTracker(Action<int, string> eventHandler)
+        {
+            _eventHandler = eventHandler;
+            _nextEventThreshold = EventBatchSize;
+        }
+
+        public void ReportProgress(int entryCount, string currentDirectory)
+        {
+            if (_eventHandler != null && entryCount >= _nextEventThreshold)
+            {
+                _eventHandler(entryCount, currentDirectory);
+                _nextEventThreshold += EventBatchSize;
+            }
+        }
+
+        public void ReportFinalCount(int entryCount, string startPath)
+        {
+            _eventHandler?.Invoke(entryCount, startPath);
+        }
     }
 
     private void AddPathsWithUnauthorisedExceptions(string directory)
     {
-        PathsWithUnauthorisedExceptions ??= new List<string>();
+        // Pre-size list to typical unauthorized path count to avoid reallocations
+        PathsWithUnauthorisedExceptions ??= new List<string>(capacity: 100);
         PathsWithUnauthorisedExceptions.Add(directory);
     }
 
@@ -392,7 +461,7 @@ public class RootEntry : object, ICommonEntry
     /// </summary>
     public void ClearCommonEntryFields()
     {
-        TraverseTreePair((p, d) =>
+        TraverseTreePair((_, d) =>
         {
             d.ParentCommonEntry = null;
             return true;
@@ -404,7 +473,7 @@ public class RootEntry : object, ICommonEntry
         Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2)); // Sort root entries first.
         IsDefaultSort = true;
 
-        TraverseTreePair((p, d) =>
+        TraverseTreePair((_, d) =>
         {
             if (d.IsDirectory && d.Children?.Count > 1)
             {
@@ -438,7 +507,7 @@ public class RootEntry : object, ICommonEntry
 
     // direntry import
     [IgnoreMember]
-    public virtual DateTime Modified
+    public DateTime Modified
     {
         set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
@@ -447,18 +516,18 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(12, IsRequired = false)]
     [FlatBufferItem(12)]
     [Key(12)]
-    public virtual Flags BitFields { get; set; }
+    public Flags BitFields { get; set; }
 
     [ProtoMember(13, IsRequired = false)]
     [FlatBufferItem(13)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(13)]
-    public virtual Hash16 Hash { get; set; }
+    public Hash16 Hash { get; set; }
 
     [ProtoMember(14, IsRequired = true)]
     [FlatBufferItem(14)]
     [Key(14)]
-    public virtual long ModifiedTicks { get; set; }
+    public long ModifiedTicks { get; set; }
 
     #region BitFields based properties
 
@@ -734,7 +803,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(15, IsRequired = false)]
     [FlatBufferItem(15)]
     [Key(15)]
-    public virtual IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children { get; set; }
 
     public void AddChild(DirEntry child)
     {
@@ -746,7 +815,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(16, IsRequired = true)]
     [FlatBufferItem(16)]
     [Key(16)]
-    public virtual long Size { get; set; }
+    public long Size { get; set; }
 
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
@@ -754,7 +823,7 @@ public class RootEntry : object, ICommonEntry
     [ProtoMember(17, IsRequired = true)]
     [FlatBufferItem(17)]
     [Key(17)]
-    public virtual string Path { get; set; }
+    public string Path { get; set; }
 
     [IgnoreMember]
     public ICommonEntry ParentCommonEntry { get; set; }
@@ -779,121 +848,194 @@ public class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// Recursive traversal
+    /// Iterative tree traversal using a stack. Visits each child entry with its parent.
     /// </summary>
     /// <param name="rootEntries">Entries to traverse</param>
-    /// <param name="traverseFunc">TraversalFunc</param>
-    /// <param name="catalogRootEntry">Catalog root entry, show we can bind the catalog name to each entry</param>
-    public static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc,
-        RootEntry catalogRootEntry = null)
+    /// <param name="traverseFunc">Function called for each (parent, child) pair. Returns true to continue, false to stop.</param>
+    private static void TraverseTreePair(IEnumerable<ICommonEntry> rootEntries, TraverseFunc traverseFunc)
     {
         if (traverseFunc == null)
         {
             return;
-        } // nothing to do.
+        }
 
-        var funcContinue = true;
-        var dirs = new Stack<ICommonEntry>(rootEntries
-            .Reverse()); // Reverse to keep same traversal order as prior code.
+        var stack = InitializeTraversalStack(rootEntries);
 
-        while (funcContinue && dirs.Count > 0)
+        while (stack.Count > 0)
         {
-            var commonEntry = dirs.Pop();
-            if (commonEntry.Children == null)
-            {
-                continue;
-            } // empty directories may not have Children initialized.
+            var parent = stack.Pop();
 
-            foreach (var dirEntry in commonEntry.Children)
+            if (parent.Children == null)
             {
-                funcContinue = traverseFunc(commonEntry, dirEntry);
-                if (!funcContinue)
-                {
-                    break;
-                }
+                continue; // Empty directories may not have Children initialized
+            }
 
-                if (dirEntry.IsDirectory)
-                {
-                    dirs.Push(dirEntry);
-                }
+            if (!ProcessChildrenWithTraversal(parent, stack, traverseFunc))
+            {
+                return; // Traversal canceled by func returning false
             }
         }
     }
 
+    /// <summary>
+    /// Initializes traversal stack with root entries in reverse order to maintain original ordering.
+    /// </summary>
+    private static Stack<ICommonEntry> InitializeTraversalStack(IEnumerable<ICommonEntry> rootEntries)
+    {
+        // Avoid Reverse() intermediate allocation - push in reverse order instead
+        var rootArray = rootEntries as ICommonEntry[] ?? rootEntries.ToArray();
+        var stack = new Stack<ICommonEntry>(rootArray.Length);
+
+        for (int i = rootArray.Length - 1; i >= 0; i--)
+        {
+            stack.Push(rootArray[i]);
+        }
+
+        return stack;
+    }
+
+    /// <summary>
+    /// Processes all children of a parent entry, invoking the traversal function and pushing directories to the stack.
+    /// </summary>
+    /// <returns>True to continue traversal, false if traversal was cancelled</returns>
+    private static bool ProcessChildrenWithTraversal(ICommonEntry parent, Stack<ICommonEntry> stack, TraverseFunc traverseFunc)
+    {
+        foreach (var child in parent.Children)
+        {
+            if (!traverseFunc(parent, child))
+            {
+                return false; // Stop traversal
+            }
+
+            if (child.IsDirectory)
+            {
+                stack.Push(child);
+            }
+        }
+
+        return true;
+    }
+
+    /// <summary>
+    /// Copies hash values from source tree to destination tree where file metadata matches.
+    /// </summary>
     public void TraverseTreesCopyHash(ICommonEntry destination)
     {
-        var dirs = new Stack<(string, ICommonEntry, ICommonEntry)>();
-        var source = this;
+        ValidateTreeCopyParameters(this, destination);
 
+        var stack = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
+        stack.Push((this.Path, this, destination));
+
+        while (stack.Count > 0)
+        {
+            var (currentPath, sourceEntry, destinationEntry) = stack.Pop();
+
+            if (sourceEntry.Children == null || destinationEntry.Children == null)
+            {
+                continue; // Skip entries without children
+            }
+
+            ProcessChildrenForHashCopy(sourceEntry, destinationEntry, currentPath, stack);
+        }
+    }
+
+    /// <summary>
+    /// Validates that source and destination are compatible for hash copying.
+    /// </summary>
+    private static void ValidateTreeCopyParameters(ICommonEntry source, ICommonEntry destination)
+    {
         if (source == null || destination == null)
         {
             throw new ArgumentException("source and destination must be not null.");
         }
 
-        var sourcePath = source.Path;
-        var destinationPath = destination.Path;
-
-        if (!string.Equals(sourcePath, destinationPath, StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(source.Path, destination.Path, StringComparison.OrdinalIgnoreCase))
         {
             throw new ArgumentException("source and destination must have same root path.");
         }
+    }
 
-        // traverse every source entry copy across the meta data that matches on destination entry
-        // if it adds value to destination.
-        // if destination is not there source not processed.
-        dirs.Push((sourcePath, source, destination));
+    /// <summary>
+    /// Processes all children of source and destination, copying hashes and queueing directories.
+    /// </summary>
+    private static void ProcessChildrenForHashCopy(
+        ICommonEntry sourceEntry,
+        ICommonEntry destinationEntry,
+        string currentPath,
+        Stack<(string, ICommonEntry, ICommonEntry)> stack)
+    {
+        var destinationLookup = BuildDestinationLookup(destinationEntry.Children);
 
-        while (dirs.Count > 0)
+        foreach (var sourceChild in sourceEntry.Children)
         {
-            var (workPath, baseSourceEntry, baseDestinationEntry) = dirs.Pop();
-
-            if (baseSourceEntry.Children != null && baseDestinationEntry.Children != null)
+            if (!destinationLookup.TryGetValue(sourceChild.Path, out var destinationChild))
             {
-                // Build dictionary for O(1) lookups instead of O(n) linear search
-                var destinationLookup = new Dictionary<string, DirEntry>(
-                    baseDestinationEntry.Children.Count,
-                    StringComparer.OrdinalIgnoreCase);
-
-                foreach (var child in baseDestinationEntry.Children)
-                {
-                    // TryAdd handles potential duplicate paths gracefully (keeps first, ignores rest)
-                    destinationLookup.TryAdd(child.Path, child);
-                }
-
-                foreach (var sourceDirEntry in baseSourceEntry.Children)
-                {
-                    // O(1) dictionary lookup instead of O(n) FirstOrDefault
-                    if (!destinationLookup.TryGetValue(sourceDirEntry.Path, out var destinationDirEntry))
-                    {
-                        continue;
-                    }
-
-                    // File: Copy hash if metadata matches
-                    if (!sourceDirEntry.IsDirectory
-                        && sourceDirEntry.Modified == destinationDirEntry.Modified
-                        && sourceDirEntry.Size == destinationDirEntry.Size)
-                    {
-                        var sourceHasDone = sourceDirEntry.IsHashDone;
-                        var destHasDone = destinationDirEntry.IsHashDone;
-                        var sourceIsPartial = sourceDirEntry.IsPartialHash;
-                        var destIsPartial = destinationDirEntry.IsPartialHash;
-
-                        // Copy hash if: source has hash AND (dest has none OR upgrading partial to full)
-                        if (sourceHasDone && (!destHasDone || (!sourceIsPartial && destIsPartial)))
-                        {
-                            destinationDirEntry.IsPartialHash = sourceIsPartial;
-                            destinationDirEntry.Hash = sourceDirEntry.Hash;
-                        }
-                    }
-                    // Directory: Push to stack for traversal
-                    else if (destinationDirEntry.IsDirectory && sourceDirEntry.IsDirectory)
-                    {
-                        // Only compute full path when needed for directories (avoids wasteful allocations for files)
-                        var fullPath = System.IO.Path.Combine(workPath, sourceDirEntry.Path);
-                        dirs.Push((fullPath, sourceDirEntry, destinationDirEntry));
-                    }
-                }
+                continue; // Source entry not found in destination
             }
+
+            if (AreBothDirectories(sourceChild, destinationChild))
+            {
+                var fullPath = System.IO.Path.Combine(currentPath, sourceChild.Path);
+                stack.Push((fullPath, sourceChild, destinationChild));
+            }
+            else if (AreBothFilesWithMatchingMetadata(sourceChild, destinationChild))
+            {
+                TryCopyHashIfBeneficial(sourceChild, destinationChild);
+            }
+        }
+    }
+
+    /// <summary>
+    /// Builds a dictionary for O(1) lookups of destination children by path.
+    /// </summary>
+    private static Dictionary<string, DirEntry> BuildDestinationLookup(IList<DirEntry> children)
+    {
+        var lookup = new Dictionary<string, DirEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
+
+        foreach (var child in children)
+        {
+            // TryAdd handles potential duplicate paths gracefully (keeps first, ignores rest)
+            lookup.TryAdd(child.Path, child);
+        }
+
+        return lookup;
+    }
+
+    /// <summary>
+    /// Checks if both entries are directories.
+    /// </summary>
+    private static bool AreBothDirectories(ICommonEntry source, ICommonEntry destination)
+    {
+        return source.IsDirectory && destination.IsDirectory;
+    }
+
+    /// <summary>
+    /// Checks if both entries are files with matching metadata (size and modified time).
+    /// </summary>
+    private static bool AreBothFilesWithMatchingMetadata(ICommonEntry source, ICommonEntry destination)
+    {
+        return !source.IsDirectory
+            && source.Modified == destination.Modified
+            && source.Size == destination.Size;
+    }
+
+    /// <summary>
+    /// Copies hash from source to destination if it provides value (new hash or upgrading partial to full).
+    /// </summary>
+    private static void TryCopyHashIfBeneficial(ICommonEntry source, ICommonEntry destination)
+    {
+        if (!source.IsHashDone)
+        {
+            return; // Source has no hash to copy
+        }
+
+        var shouldCopy = !destination.IsHashDone  // Destination has no hash
+            || (source.IsPartialHash == false && destination.IsPartialHash);  // Upgrading partial to full
+
+        if (shouldCopy)
+        {
+            destination.IsPartialHash = source.IsPartialHash;
+            destination.Hash = source.Hash;
         }
     }
 
@@ -920,7 +1062,7 @@ public class RootEntry : object, ICommonEntry
     public bool ExistsOnFileSystem() => Directory.Exists(FullPath);
 
     /// <summary>
-    /// Is bad path
+    /// Is a bad path
     /// </summary>
     /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
     public bool IsBadPath()

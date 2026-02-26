@@ -331,7 +331,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         vals[6] = rootEntry.Size.ToHRString();
         vals[7] = rootEntry.AvailSpace.ToHRString();
         vals[8] = rootEntry.TotalSpace.ToHRString();
-        vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUTC.ToLocalTime());
+        vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUtc.ToLocalTime());
         vals[10] = $"{TimeSpan.FromMilliseconds(rootEntry.ScanDurationMilliseconds).TotalSeconds:0.} sec";
         vals[11] = rootEntry.ActualFileName;
         vals[12] = rootEntry.Description;
@@ -1160,7 +1160,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             6 => re1.Size.CompareTo(re2.Size),
             7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
             8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
-            9 => re1.ScanStartUTC.CompareTo(re2.ScanStartUTC),
+            9 => re1.ScanStartUtc.CompareTo(re2.ScanStartUtc),
             10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
             11 => string.Compare(re1.ActualFileName, re2.ActualFileName, StringComparison.Ordinal),
             12 => re1.DescriptionCompareTo(re2, _config),

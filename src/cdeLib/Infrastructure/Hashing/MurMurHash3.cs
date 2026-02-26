@@ -16,6 +16,77 @@ public static class MurMurHash3
     //Change to suit your needs
     //const uint seed = 144;
 
+    /// <summary>
+    /// Compute MurmurHash3 for in-memory data using ReadOnlySpan (zero-allocation)
+    /// </summary>
+    public static uint Hash(ReadOnlySpan<byte> data, uint seed)
+    {
+        const uint c1 = 0xcc9e2d51;
+        const uint c2 = 0x1b873593;
+
+        uint h1 = seed;
+        int length = data.Length;
+        int position = 0;
+
+        // Process 4-byte chunks
+        while (position + 4 <= length)
+        {
+            uint k1 = (uint)(data[position]
+                           | data[position + 1] << 8
+                           | data[position + 2] << 16
+                           | data[position + 3] << 24);
+
+            k1 *= c1;
+            k1 = rotl32(k1, 15);
+            k1 *= c2;
+
+            h1 ^= k1;
+            h1 = rotl32(h1, 13);
+            h1 = (h1 * 5) + 0xe6546b64;
+
+            position += 4;
+        }
+
+        // Handle remaining bytes (0-3)
+        int remaining = length - position;
+        if (remaining > 0)
+        {
+            uint k1 = 0;
+            switch (remaining)
+            {
+                case 3:
+                    k1 = (uint)(data[position]
+                              | data[position + 1] << 8
+                              | data[position + 2] << 16);
+                    break;
+                case 2:
+                    k1 = (uint)(data[position]
+                              | data[position + 1] << 8);
+                    break;
+                case 1:
+                    k1 = data[position];
+                    break;
+            }
+
+            if (k1 != 0)
+            {
+                k1 *= c1;
+                k1 = rotl32(k1, 15);
+                k1 *= c2;
+                h1 ^= k1;
+            }
+        }
+
+        // Finalization
+        h1 ^= (uint)length;
+        h1 = fmix(h1);
+
+        unchecked
+        {
+            return h1;
+        }
+    }
+
     public static uint Hash(Stream stream, UInt32 seed)
     {
         const uint c1 = 0xcc9e2d51;

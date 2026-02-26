@@ -14,12 +14,12 @@ namespace cdeLib.Entities;
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
-public class DirEntry : ICommonEntry
+public sealed class DirEntry : ICommonEntry
 {
     private string _path;
 
     [IgnoreMember]
-    public virtual DateTime Modified
+    public DateTime Modified
     {
         set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
@@ -28,13 +28,13 @@ public class DirEntry : ICommonEntry
     [ProtoMember(1, IsRequired = true)]
     [FlatBufferItem(1)]
     [Key(1)]
-    public virtual long ModifiedTicks { get; set; }
+    public long ModifiedTicks { get; set; }
 
     [ProtoMember(2, IsRequired = false)]
     [FlatBufferItem(2)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(2)]
-    public virtual Hash16 Hash { get; set; }
+    public Hash16 Hash { get; set; }
 
     /// <summary>
     /// public bool ShouldSerializeHash() should be same as this, but isn't
@@ -48,7 +48,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
     [FlatBufferItem(6)]
     [Key(6)]
-    public virtual Flags BitFields { get; set; }
+    public Flags BitFields { get; set; }
 
     #region BitFields based properties
 
@@ -246,14 +246,14 @@ public class DirEntry : ICommonEntry
             default:
             {
                 //if (IsDirectory && de.IsDirectory)
-                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ?
                 //    // really cheap to calculate dir size.... i think i should fill it in ?
                 //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
                 //}
                 // the cast breaks this.
                 var sizeCompare = Size.CompareTo(de.Size);
                 return sizeCompare == 0
-                    ? string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+                    ? Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
                     : sizeCompare;
             }
         }
@@ -287,7 +287,7 @@ public class DirEntry : ICommonEntry
         {
             true when !de.IsDirectory => -1,
             false when de.IsDirectory => 1,
-            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+            _ => Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
         };
     }
 
@@ -298,7 +298,7 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
+        return Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase);
     }
 
     // can this be done with TraverseTree ?
@@ -337,7 +337,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(3, IsRequired = false)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public virtual IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children { get; set; }
     // ReSharper restore MemberCanBePrivate.Global
 
     public void AddChild(DirEntry child)
@@ -353,7 +353,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(4, IsRequired = true)]
     [FlatBufferItem(4)]
     [Key(4)]
-    public virtual long Size { get; set; }
+    public long Size { get; set; }
 
     private static readonly char[] PathSeparators = ['\\', '/'];
     
@@ -363,7 +363,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string Path
+    public string Path
     {
         //NOTE: Separating the extension from the path is more memory efficient (300MB saved on 6000MB load) but slower.
         get
@@ -375,7 +375,7 @@ public class DirEntry : ICommonEntry
         }
         set
         {
-            
+
             if (string.IsNullOrEmpty(value))
             {
                 _path = string.Intern(string.Empty);
@@ -383,22 +383,25 @@ public class DirEntry : ICommonEntry
                 return;
             }
 
-            var lastDot = value.LastIndexOf('.');
-            if (lastDot > 0 && lastDot > value.LastIndexOfAny(PathSeparators))
+            // Use ReadOnlySpan<char> for faster index operations
+            ReadOnlySpan<char> valueSpan = value.AsSpan();
+            int lastDot = valueSpan.LastIndexOf('.');
+            if (lastDot > 0 && lastDot > valueSpan.LastIndexOfAny(PathSeparators))
             {
-                field = string.Intern(value[lastDot..]);
-                _path = string.Intern(value[..lastDot]);
+                // Span slicing is zero-cost, allocate strings only for Intern
+                field = string.Intern(new string(valueSpan[lastDot..]));
+                _path = string.Intern(new string(valueSpan[..lastDot]));
             }
             else
             {
                 _path = string.Intern(value);
                 field = null;
             }
-            
+
             // Simpler code but slightly less performance:
-            
+
             // //_path = string.Intern(value);
-            
+
             // var ext = System.IO.Path.GetExtension(value);
             // if (!string.IsNullOrEmpty(ext))
             // {
@@ -407,7 +410,7 @@ public class DirEntry : ICommonEntry
             // }
             // else
             // {
-            //     _path = string.Intern(value);    
+            //     _path = string.Intern(value);
             // }
         }
     }

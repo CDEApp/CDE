@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Buffers;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
@@ -6,7 +7,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
-using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Serialization;
 using FlatSharp;
@@ -18,7 +18,7 @@ using ILogger = Serilog.ILogger;
 
 namespace cdeLib.Catalog;
 
-public class CatalogRepository : ICatalogRepository, IDisposable
+public sealed class CatalogRepository : ICatalogRepository, IDisposable
 {
     private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
@@ -42,18 +42,20 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 case SerializerProtocol.Protobuf:
                     return Serializer.Deserialize<RootEntry>(input);
                 case SerializerProtocol.Flatbuffers:
-
                     byte[] bytes;
-                    using (Operation.Time("ToByteArray"))
+                    using (Operation.Time("ReadStream"))
                     {
-                        bytes = input.ToByteArray(); //todo can we leverage Span<> Memory<> etc here.??
+                        // Read stream efficiently - avoids ToByteArray() overhead
+                        // FlatSharp can parse from byte[], ReadOnlyMemory<byte>, or ReadOnlySpan<byte>
+                        bytes = new byte[input.Length];
+                        input.ReadExactly(bytes);
                     }
 
                     using (Operation.Time("Deserialize"))
                     {
-                        var serializer = new FlatBufferSerializer(
-                            new FlatBufferSerializerOptions());
-                        return serializer.Parse<RootEntry>(bytes);
+                        var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions());
+                        // Use ReadOnlyMemory<byte> overload to avoid defensive copy
+                        return serializer.Parse<RootEntry>(bytes.AsMemory());
                     }
                 case SerializerProtocol.MessagePack:
                     return MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
@@ -140,7 +142,7 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 if (rootEntry != null)
                 {
                     _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
-                        Thread.CurrentThread.ManagedThreadId);
+                        Environment.CurrentManagedThreadId);
                 }
                 return rootEntry;
             }).ToList();
@@ -152,11 +154,11 @@ public class CatalogRepository : ICatalogRepository, IDisposable
 
     public IList<RootEntry> LoadCurrentDirCache()
     {
-        return LoadAsync(GetCacheFileList(new[] {"./"})).GetAwaiter().GetResult();
+        return LoadAsync(GetCacheFileList(["./"])).GetAwaiter().GetResult();
     }
 
     /// <summary>
-    /// This gets .cde files in current dir or one directory down.
+    /// This gets .cde files in the current dir or one directory down.
     /// Use directory permissions to control who can load what .cde files one dir down if you like.
     /// </summary>
     public IList<string> GetCacheFileList(IEnumerable<string> paths)
@@ -250,15 +252,17 @@ public class CatalogRepository : ICatalogRepository, IDisposable
                 await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, buffer);
                 break;
             case SerializerProtocol.MessagePack:
-                var data = MessagePackSerializer.Serialize(rootEntry, MessagePackConfig.Options);
-                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, data);
+                // Use ArrayBufferWriter to avoid intermediate byte[] allocation
+                var bufferWriter = new ArrayBufferWriter<byte>();
+                MessagePackSerializer.Serialize(bufferWriter, rootEntry, MessagePackConfig.Options);
+                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, bufferWriter.WrittenMemory);
                 break;
             default:
                 throw new Exception("Invalid Serializer Protocol");
         }
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (!_disposed)
         {

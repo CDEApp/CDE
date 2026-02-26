@@ -1,5 +1,6 @@
 ﻿using System;
 using cdeLib;
+using cdeLib.Extensions;
 using NUnit.Framework;
 
 namespace cdeLibTest;

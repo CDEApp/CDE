@@ -12,9 +12,10 @@ internal class CommonEntryTest_TraverseTree : RootEntryTestBase
     [Test]
     public void Constructor_Minimal_OK()
     {
-        var a = new CommonEntryTestStub();
+        var a = new DirEntry(true);
 
         Assert.That(a, Is.Not.Null);
+        Assert.That(a.Children, Is.Not.Null);
     }
 
     [Ignore("This crashes when run")]

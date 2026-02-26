@@ -118,16 +118,17 @@ public class FindOptions
             CancellationToken = CancellationToken.None
         };
 
-        // Pre-sort for better initial distribution
-        var sortedRootEntries = rootEntries.OrderByDescending(x => x.DirEntryCount).ToArray();
+        // Pre-sort for better initial distribution - use Array.Sort for efficiency
+        var sortedRootEntries = rootEntries as RootEntry[] ?? rootEntries.ToArray();
+        Array.Sort(sortedRootEntries, (a, b) => b.DirEntryCount.CompareTo(a.DirEntryCount));
 
         var findFunc = GetFindFunc(_dummyProgressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
 
         Parallel.ForEach(sortedRootEntries, parallelOptions, (rootEntry) =>
         {
-            var singleEntryArray = new ICommonEntry[] { rootEntry };
-            EntryHelper.TraverseTreePair(singleEntryArray, findFunc);
+            // Use single-entry overload to avoid array allocation
+            EntryHelper.TraverseTreePair(rootEntry, findFunc);
         });
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
     }
@@ -252,6 +253,7 @@ public class FindOptions
     }
 
     private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
+    private const int MaxRegexCacheSize = 100; // Prevent unbounded growth
 
     private Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
@@ -265,6 +267,17 @@ public class FindOptions
 
         if (RegexMode)
         {
+            // Evict oldest entries if cache is too large (simple size-based eviction)
+            if (RegexCache.Count > MaxRegexCacheSize)
+            {
+                // Remove ~20% of entries to avoid frequent evictions
+                var toRemove = RegexCache.Keys.Take(MaxRegexCacheSize / 5).ToArray();
+                foreach (var key in toRemove)
+                {
+                    RegexCache.TryRemove(key, out _);
+                }
+            }
+
             var regex = RegexCache.GetOrAdd(pattern, p =>
                 new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
 

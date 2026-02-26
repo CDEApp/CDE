@@ -25,18 +25,11 @@ public static class EntryHelper
         return new PairDirEntryEnumerator(rootEntries);
     }
 
-    public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
-    {
-        var a = parentEntry.FullPath ?? "pnull";
-        var b = dirEntry.Path ?? "dnull";
-        return System.IO.Path.Combine(a, b);
-    }
-
     /// <summary>
     /// Creates a full path using a ThreadLocal StringBuilder to reduce allocations.
     /// Still allocates the final string, but avoids intermediate allocations from Path.Combine.
     /// </summary>
-    public static string MakeFullPathPooled(ICommonEntry parentEntry, ICommonEntry dirEntry)
+    public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
     {
         var sb = PathBuilder.Value!;
         sb.Clear();
@@ -54,7 +47,25 @@ public static class EntryHelper
         }
 
         sb.Append(dirEntry.Path ?? "dnull");
-        return sb.ToString();
+        var result = sb.ToString();
+
+        // Prevent StringBuilder from growing unbounded in long-running processes
+        // Only shrink if the capacity is large AND current content fits in target size
+        if (sb.Capacity > 1024 && sb.Length <= 512)
+        {
+            sb.Capacity = 512;
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Alias for MakeFullPath (now uses pooled StringBuilder by default).
+    /// Kept for backwards compatibility.
+    /// </summary>
+    public static string MakeFullPathPooled(ICommonEntry parentEntry, ICommonEntry dirEntry)
+    {
+        return MakeFullPath(parentEntry, dirEntry);
     }
 
     /// <summary>
@@ -79,6 +90,42 @@ public static class EntryHelper
             if (rootArray[i]?.Children != null)
                 stack.Push(rootArray[i]);
         }
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            var children = current.Children;
+
+            if (children == null) continue;
+
+            // Process children in a batch to improve cache locality
+            foreach (var child in children)
+            {
+                if (!traverseFunc(current, child))
+                    return; // Early termination - exit immediately
+
+                // Only push directories with children to avoid unnecessary stack operations
+                if (child.IsDirectory && child.Children?.Count > 0)
+                {
+                    stack.Push(child);
+                }
+            }
+        }
+    }
+
+    /// <summary>
+    /// Recursive traversal for a single root entry (optimized to avoid array allocation)
+    /// </summary>
+    /// <param name="rootEntry">Entry to traverse</param>
+    /// <param name="traverseFunc">TraversalFunc</param>
+    public static void TraverseTreePair(ICommonEntry rootEntry, TraverseFunc traverseFunc)
+    {
+        if (traverseFunc == null || rootEntry?.Children == null) return;
+
+        // Estimate stack capacity based on typical tree depth (8 levels * avg branching)
+        var stack = new Stack<ICommonEntry>(64);
+
+        stack.Push(rootEntry);
 
         while (stack.Count > 0)
         {

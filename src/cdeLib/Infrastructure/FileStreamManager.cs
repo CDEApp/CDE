@@ -79,12 +79,13 @@ public class FileStreamManager : IDisposable
 
         var fileLock = GetFileLock(filePath);
         await fileLock.WaitAsync();
-        
+
         try
         {
             await using var stream = CreateReadStream(filePath);
             var buffer = new byte[stream.Length];
-            await stream.ReadExactlyAsync(buffer);
+            // Use Memory<byte> overload for potentially better performance
+            await stream.ReadExactlyAsync(buffer.AsMemory());
             return buffer;
         }
         finally
@@ -98,15 +99,23 @@ public class FileStreamManager : IDisposable
     /// </summary>
     public async Task WriteAllBytesOptimizedAsync(string filePath, byte[] data)
     {
+        await WriteAllBytesOptimizedAsync(filePath, new ReadOnlyMemory<byte>(data));
+    }
+
+    /// <summary>
+    /// Write file with optimized buffering and async I/O using Memory&lt;T&gt; for zero-copy scenarios
+    /// </summary>
+    public async Task WriteAllBytesOptimizedAsync(string filePath, ReadOnlyMemory<byte> data)
+    {
         if (_disposed) throw new ObjectDisposedException(nameof(FileStreamManager));
 
         var fileLock = GetFileLock(filePath);
         await fileLock.WaitAsync();
-        
+
         try
         {
             await using var stream = CreateWriteStream(filePath);
-            await stream.WriteAsync(data, 0, data.Length);
+            await stream.WriteAsync(data);
             await stream.FlushAsync();
         }
         finally
