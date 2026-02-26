@@ -246,14 +246,14 @@ public class DirEntry : ICommonEntry
             default:
             {
                 //if (IsDirectory && de.IsDirectory)
-                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ? 
+                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ?
                 //    // really cheap to calculate dir size.... i think i should fill it in ?
                 //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
                 //}
                 // the cast breaks this.
                 var sizeCompare = Size.CompareTo(de.Size);
                 return sizeCompare == 0
-                    ? string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+                    ? Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
                     : sizeCompare;
             }
         }
@@ -287,7 +287,7 @@ public class DirEntry : ICommonEntry
         {
             true when !de.IsDirectory => -1,
             false when de.IsDirectory => 1,
-            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+            _ => Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
         };
     }
 
@@ -298,7 +298,7 @@ public class DirEntry : ICommonEntry
             return -1; // this before de
         }
 
-        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
+        return Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase);
     }
 
     // can this be done with TraverseTree ?
