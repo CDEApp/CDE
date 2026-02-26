@@ -375,7 +375,7 @@ public class DirEntry : ICommonEntry
         }
         set
         {
-            
+
             if (string.IsNullOrEmpty(value))
             {
                 _path = string.Intern(string.Empty);
@@ -383,22 +383,25 @@ public class DirEntry : ICommonEntry
                 return;
             }
 
-            var lastDot = value.LastIndexOf('.');
-            if (lastDot > 0 && lastDot > value.LastIndexOfAny(PathSeparators))
+            // Use ReadOnlySpan<char> for faster index operations
+            ReadOnlySpan<char> valueSpan = value.AsSpan();
+            int lastDot = valueSpan.LastIndexOf('.');
+            if (lastDot > 0 && lastDot > valueSpan.LastIndexOfAny(PathSeparators))
             {
-                field = string.Intern(value[lastDot..]);
-                _path = string.Intern(value[..lastDot]);
+                // Span slicing is zero-cost, allocate strings only for Intern
+                field = string.Intern(new string(valueSpan[lastDot..]));
+                _path = string.Intern(new string(valueSpan[..lastDot]));
             }
             else
             {
                 _path = string.Intern(value);
                 field = null;
             }
-            
+
             // Simpler code but slightly less performance:
-            
+
             // //_path = string.Intern(value);
-            
+
             // var ext = System.IO.Path.GetExtension(value);
             // if (!string.IsNullOrEmpty(ext))
             // {
@@ -407,7 +410,7 @@ public class DirEntry : ICommonEntry
             // }
             // else
             // {
-            //     _path = string.Intern(value);    
+            //     _path = string.Intern(value);
             // }
         }
     }
