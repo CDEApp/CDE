@@ -253,6 +253,7 @@ public class FindOptions
     }
 
     private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
+    private const int MaxRegexCacheSize = 100; // Prevent unbounded growth
 
     private Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
@@ -266,6 +267,17 @@ public class FindOptions
 
         if (RegexMode)
         {
+            // Evict oldest entries if cache is too large (simple size-based eviction)
+            if (RegexCache.Count > MaxRegexCacheSize)
+            {
+                // Remove ~20% of entries to avoid frequent evictions
+                var toRemove = RegexCache.Keys.Take(MaxRegexCacheSize / 5).ToArray();
+                foreach (var key in toRemove)
+                {
+                    RegexCache.TryRemove(key, out _);
+                }
+            }
+
             var regex = RegexCache.GetOrAdd(pattern, p =>
                 new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
 
