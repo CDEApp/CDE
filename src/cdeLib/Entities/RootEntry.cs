@@ -291,7 +291,8 @@ public class RootEntry : object, ICommonEntry
     public void RecurseTree(string startPath)
     {
         var entryCount = 0;
-        var dirs = new Stack<(ICommonEntry, string)>();
+        // Pre-size stack to typical directory depth to avoid reallocations
+        var dirs = new Stack<(ICommonEntry, string)>(capacity: 64);
         dirs.Push((this, startPath));
 
         // Performance optimization: Hoist event null check outside loop
@@ -796,8 +797,13 @@ public class RootEntry : object, ICommonEntry
         } // nothing to do.
 
         var funcContinue = true;
-        var dirs = new Stack<ICommonEntry>(rootEntries
-            .Reverse()); // Reverse to keep same traversal order as prior code.
+        // Avoid Reverse() intermediate allocation - push in reverse order instead
+        var rootArray = rootEntries as ICommonEntry[] ?? rootEntries.ToArray();
+        var dirs = new Stack<ICommonEntry>(rootArray.Length);
+        for (int i = rootArray.Length - 1; i >= 0; i--)
+        {
+            dirs.Push(rootArray[i]);
+        }
 
         while (funcContinue && dirs.Count > 0)
         {
@@ -825,7 +831,8 @@ public class RootEntry : object, ICommonEntry
 
     public void TraverseTreesCopyHash(ICommonEntry destination)
     {
-        var dirs = new Stack<(string, ICommonEntry, ICommonEntry)>();
+        // Pre-size stack to typical tree depth to avoid reallocations
+        var dirs = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
         var source = this;
 
         if (source == null || destination == null)
