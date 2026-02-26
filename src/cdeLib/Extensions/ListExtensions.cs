@@ -5,26 +5,52 @@ namespace cdeLib.Extensions;
 
 public static class ListExtensions
 {
+    /// <summary>
+    /// Sorts an IList using the specified comparison. Optimized for List&lt;T&gt; and T[] fast paths.
+    /// </summary>
     public static void Sort<T>(this IList<T> list, Comparison<T> comparison)
     {
-        if (list is List<T> list1)
+        // Fast path: List<T> has optimized Sort implementation
+        if (list is List<T> concreteList)
         {
-            list1.Sort(comparison);
+            concreteList.Sort(comparison);
+            return;
         }
-        else
+
+        // Fast path: Array has optimized Sort implementation
+        if (list is T[] array)
         {
-            var copy = new List<T>(list);
-            copy.Sort(comparison);
-            Copy(copy, 0, list, 0, list.Count);
+            Array.Sort(array, comparison);
+            return;
         }
+
+        // Slow path: Generic IList<T> - must copy, sort, and copy back
+        SortGenericList(list, comparison);
     }
 
-    private static void Copy<T>(IList<T> sourceList, int sourceIndex,
-        IList<T> destinationList, int destinationIndex, int count)
+    /// <summary>
+    /// Sorts a generic IList by creating a temporary array, sorting it, and copying back.
+    /// </summary>
+    private static void SortGenericList<T>(IList<T> list, Comparison<T> comparison)
     {
+        var count = list.Count;
+
+        // Use array instead of List for slightly better performance
+        var tempArray = new T[count];
+
+        // Copy to array
         for (int i = 0; i < count; i++)
         {
-            destinationList[destinationIndex + i] = sourceList[sourceIndex + i];
+            tempArray[i] = list[i];
+        }
+
+        // Sort using optimized array sort
+        Array.Sort(tempArray, comparison);
+
+        // Copy back from array
+        for (int i = 0; i < count; i++)
+        {
+            list[i] = tempArray[i];
         }
     }
 }
