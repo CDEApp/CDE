@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -31,16 +32,34 @@ public class HashHelper
             }
             else
             {
-                var buf = new byte[bytesToHash.Value];
-                var bytesRead = await stream.ReadAsync(buf, 0, buf.Length);
-
-                totalBytesRead = bytesRead;
-                while (bytesRead > 0 && totalBytesRead <= bytesToHash)
+                // Rent buffer from pool to avoid allocation
+                byte[] rentedBuffer = null;
+                try
                 {
-                    bytesRead = stream.Read(buf, 0, buf.Length);
-                    totalBytesRead += bytesRead;
+                    var bufferSize = bytesToHash.Value;
+                    rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+                    var buf = rentedBuffer.AsMemory(0, bufferSize);
+
+                    var bytesRead = await stream.ReadAsync(buf);
+
+                    totalBytesRead = bytesRead;
+                    while (bytesRead > 0 && totalBytesRead <= bytesToHash)
+                    {
+                        bytesRead = stream.Read(rentedBuffer, 0, bufferSize);
+                        totalBytesRead += bytesRead;
+                    }
+
+                    // Hash only the actual bytes read, using Span-based overload
+                    var actualBytesToHash = (int)Math.Min(totalBytesRead, bufferSize);
+                    hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(rentedBuffer.AsSpan(0, actualBytesToHash)));
                 }
-                hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(buf));
+                finally
+                {
+                    if (rentedBuffer != null)
+                    {
+                        ArrayPool<byte>.Shared.Return(rentedBuffer);
+                    }
+                }
             }
 
             hashResponse.BytesHashed = totalBytesRead;
