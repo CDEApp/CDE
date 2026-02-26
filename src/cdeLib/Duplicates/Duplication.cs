@@ -16,10 +16,12 @@ public class Duplication
 {
     private readonly IConfiguration _configuration;
 
+    // Reduced pre-allocation to avoid LOH pressure (~262KB each on x64)
+    // Dictionary will grow organically to actual size needed
     private readonly Dictionary<ICommonEntry, List<PairDirEntry>> _duplicateFile =
-        new(capacity: 16384, new CommonEntryEqualityComparer());
+        new(new CommonEntryEqualityComparer());
 
-    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new(capacity: 8192);
+    private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new();
 
     private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new();
 
