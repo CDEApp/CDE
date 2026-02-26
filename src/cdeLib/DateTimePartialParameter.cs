@@ -9,7 +9,7 @@ public class DateTimePartialParameter
 {
     private readonly string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
 
-    // a Parsing Expression Grammar might be a better way to do this.... PEG
+    // a Parsing Expression Grammar might be a better way to do this. PEG
     // - http://en.wikipedia.org/wiki/Parsing_expression_grammar
 
     private readonly int _year;
@@ -25,7 +25,7 @@ public class DateTimePartialParameter
         var splitOnDash = str.Split('-');
 
         int.TryParse(splitOnDash[0], out var year);
-        if (year < 1000) // this is not 4 digits, its only value eg  4 digits 0982 is 4 digits.
+        if (year < 1000) // this is not 4 digits, its only value e.g., 4 digits 0982 is 4 digits.
         {
             _e = new ArgumentException(
                 $"Require Year parameter be a 4 Digit Year <YYYY> as part of format '{_format}'");
@@ -33,7 +33,7 @@ public class DateTimePartialParameter
         }
         _year = year;
 
-        if (splitOnDash.Length > 1) // may have month specified
+        if (splitOnDash.Length > 1) // may have a month specified
         {
             if (splitOnDash[1].Length == 0) // just a '-' is allowed with no value. just set year.
             {
@@ -77,14 +77,14 @@ public class DateTimePartialParameter
             int dayOfMonth = 0;
             if (int.TryParse(splitOnT[0], out var unValidatedDayOfMonth))
             {
-                // check for valid day of month
+                // check for a valid day of the month
                 if (DateTime.TryParse(_year + "-" + _month + "-" + unValidatedDayOfMonth, out var tmpDateTime))
                 {
                     dayOfMonth = tmpDateTime.Day;
                 }
             }
 
-            if (dayOfMonth == 0 || dayOfMonth > 31)
+            if (dayOfMonth is 0 or > 31)
             {
                 _e = new ArgumentException(
                     $"Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{_format}'");
@@ -107,7 +107,7 @@ public class DateTimePartialParameter
         var badSeparator = false;
         foreach (var c in str)
         {
-            if (c >= '0' && c <= '9')
+            if (c is >= '0' and <= '9')
             {
                 continue;
             }

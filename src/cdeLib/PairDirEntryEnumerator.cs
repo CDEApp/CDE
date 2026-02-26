@@ -17,12 +17,6 @@ public sealed class PairDirEntryEnumerator : IEnumerator<PairDirEntry>, IEnumera
 
     object IEnumerator.Current => Current;
 
-    public PairDirEntryEnumerator(RootEntry rootEntry)
-    {
-        _rootEntries = new List<RootEntry> { rootEntry };
-        Reset();
-    }
-
     public PairDirEntryEnumerator(IEnumerable<RootEntry> rootEntries)
     {
         _rootEntries = rootEntries;

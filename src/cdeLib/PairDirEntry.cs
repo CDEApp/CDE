@@ -13,13 +13,13 @@ public class PairDirEntry
     public readonly ICommonEntry ChildDE;
 
     /// <summary>
-    /// RootEntry for this pair dir, if not set looked up and cached in GetRootEntry().
+    /// RootEntry for this pair dir, if not set, looked up and cached in GetRootEntry().
     /// </summary>
     [CanBeNull]
     private RootEntry _rootEntry;
 
     /// <summary>
-    /// true if path or parent path ends with bad characters for NTFS, like Space or Period
+    /// true if the path or parent path ends with bad characters for NTFS, like Space or Period
     /// </summary>
     public readonly bool PathProblem;
 
@@ -46,9 +46,9 @@ public class PairDirEntry
 
     /// <summary>
     /// Get the RootEntry of a PairDirEntry.
-    /// This is lazy and cached so we don't store RootEntry on DirEntry only here.
-    /// This could be done eagerly in constructor, but for non displayed results
-    /// its probably not worth doing eagerly.
+    /// This is lazy and cached, so we don't store RootEntry on DirEntry only here.
+    /// This could be done eagerly in constructor, but for non-displayed results
+    /// it's probably not worth doing eagerly.
     /// </summary>
     /// <returns>The RootEntry for any pair dire entry.</returns>
     public RootEntry GetRootEntry()
