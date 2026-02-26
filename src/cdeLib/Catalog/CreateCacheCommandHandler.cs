@@ -56,7 +56,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             }
 
             await _catalogRepository.Save(re);
-            var scanTimeSpan = re.ScanEndUTC - re.ScanStartUTC;
+            var scanTimeSpan = re.ScanEndUtc - re.ScanStartUtc;
             Console.WriteLine($"Scanned path {re.Path}");
             Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");
             Console.WriteLine($"Saved scanned path {re.DefaultFileName}");

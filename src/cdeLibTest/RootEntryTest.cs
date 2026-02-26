@@ -76,7 +76,8 @@ public class RootEntryTest
     [Test]
     public void GetDriverLetterHint_SimpleRootPath_ReturnsDriveLetter()
     {
-        var re = new RootEntryTestStub(_config);
+        var mockFs = new MockFileSystemAdapter();
+        var re = new RootEntry(_config, mockFs);
 
         var hint = re.GetDriverLetterHint(@"C:\", @"C:\");
 
@@ -86,7 +87,8 @@ public class RootEntryTest
     [Test]
     public void GetDriverLetterHint_SimpleRootPathOddAsRootDifferent_ReturnsRootDriveLetter()
     {
-        var re = new RootEntryTestStub(_config);
+        var mockFs = new MockFileSystemAdapter();
+        var re = new RootEntry(_config, mockFs);
 
         var hint = re.GetDriverLetterHint(@"C:\", @"D:\");
 
@@ -96,7 +98,8 @@ public class RootEntryTest
     [Test]
     public void GetDriverLetterHint_SimplePath_ReturnsRootLetter()
     {
-        var re = new RootEntryTestStub(_config);
+        var mockFs = new MockFileSystemAdapter();
+        var re = new RootEntry(_config, mockFs);
 
         var hint = re.GetDriverLetterHint(@"C:\MyFolder", @"C:\");
 
@@ -106,7 +109,8 @@ public class RootEntryTest
     [Test]
     public void GetDriverLetterHint_UncPath_ReturnsUNC()
     {
-        var re = new RootEntryTestStub(_config, isUnc: true);
+        var mockFs = new MockFileSystemAdapter(isUnc: true);
+        var re = new RootEntry(_config, mockFs);
 
         var hint = re.GetDriverLetterHint(@"\\server\basepath\path", "doest matter");
 
@@ -116,7 +120,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_SimpleRootPath_ReturnsExpectedStuff()
     {
-        var re = new RootEntryTestStub(_config);
+        var mockFs = new MockFileSystemAdapter();
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"C:\", out var hint, out var volRoot);
 
@@ -128,9 +133,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_SimpleRootPath2_ReturnsExpectedStuff()
     {
-        // ReSharper disable RedundantArgumentName
-        var re = new RootEntryTestStub(_config, root: @"D:\", fullPath: @"D:\");
-        // ReSharper restore RedundantArgumentName
+        var mockFs = new MockFileSystemAdapter(root: @"D:\", fullPath: @"D:\");
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"D:\", out var hint, out var volRoot);
 
@@ -142,7 +146,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_SimplePath_ReturnsExpectedStuff()
     {
-        var re = new RootEntryTestStub(_config, fullPath: @"C:\MyTestFolder");
+        var mockFs = new MockFileSystemAdapter(fullPath: @"C:\MyTestFolder");
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"C:\MyTestFolder", out var hint, out var volRoot);
 
@@ -155,7 +160,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_SimplePath2_ReturnsExpectedStuff()
     {
-        var re = new RootEntryTestStub(_config, fullPath: @"C:\MyTestFolder\Mine");
+        var mockFs = new MockFileSystemAdapter(fullPath: @"C:\MyTestFolder\Mine");
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"C:\MyTestFolder\Mine", out var hint, out var volRoot);
 
@@ -168,7 +174,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_NonRootedPath_UsesFullPathToScanPath()
     {
-        var re = new RootEntryTestStub(_config, fullPath: @"C:\Stuff\MyTestFolder\Mine");
+        var mockFs = new MockFileSystemAdapter(fullPath: @"C:\Stuff\MyTestFolder\Mine");
+        var re = new RootEntry(_config, mockFs);
 
         var canonicalName = re.CanonicalPath(@"MyTestFolder\Mine");
         var fileName = re.GetDefaultFileName(canonicalName, out var hint, out var volRoot);
@@ -182,7 +189,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_RootedPathByLeadingSlash_UsingFullPath()
     {
-        var re = new RootEntryTestStub(_config, fullPath: @"C:\MyTestFolder\Mine");
+        var mockFs = new MockFileSystemAdapter(fullPath: @"C:\MyTestFolder\Mine");
+        var re = new RootEntry(_config, mockFs);
 
         var canonicalName = re.CanonicalPath(@"\MyTestFolder\Mine");
         var fileName = re.GetDefaultFileName(canonicalName, out var hint, out var volRoot);
@@ -196,7 +204,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_UNCPath_UsesFullPath()
     {
-        var re = new RootEntryTestStub(_config, isUnc: true, fullPath: @"\\myserver\myshare");
+        var mockFs = new MockFileSystemAdapter(isUnc: true, fullPath: @"\\myserver\myshare");
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"\\myserver\myshare", out var hint, out var volRoot);
 
@@ -208,7 +217,8 @@ public class RootEntryTest
     [Test]
     public void GetDefaultFileName_UNCPath2_UsesFullPath()
     {
-        var re = new RootEntryTestStub(_config, isUnc: true, fullPath: @"\\myserver\myshare\stuff");
+        var mockFs = new MockFileSystemAdapter(isUnc: true, fullPath: @"\\myserver\myshare\stuff");
+        var re = new RootEntry(_config, mockFs);
 
         var fileName = re.GetDefaultFileName(@"\\myserver\myshare\stuff", out var hint, out var volRoot);
 
@@ -220,7 +230,8 @@ public class RootEntryTest
     [Test]
     public void CanonicalPath_DeviceRelativePath_OK()
     {
-        var re = new RootEntryTestStub(_config, isUnc: false, root: @"g:\", fullPath: @"g:\");
+        var mockFs = new MockFileSystemAdapter(isUnc: false, root: @"g:\", fullPath: @"g:\");
+        var re = new RootEntry(_config, mockFs);
         const string testPath = "g:";
 
         var result = re.CanonicalPath(testPath);
@@ -231,7 +242,8 @@ public class RootEntryTest
     [Test]
     public void CanonicalPath_TrailingSlash_OK()
     {
-        var re = new RootEntryTestStub(_config, isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
+        var mockFs = new MockFileSystemAdapter(isUnc: false, root: @"c:\", fullPath: @"c:\Windows");
+        var re = new RootEntry(_config, mockFs);
         const string testPath = @"c:\Windows\";
 
         var result = re.CanonicalPath(testPath);
@@ -242,7 +254,8 @@ public class RootEntryTest
     [Test]
     public void CanonicalPath_UNCTrailingSlash_OK()
     {
-        var re = new RootEntryTestStub(_config, isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+        var mockFs = new MockFileSystemAdapter(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+        var re = new RootEntry(_config, mockFs);
         const string testPath = @"\\Friday\d$\";
 
         var result = re.CanonicalPath(testPath);
@@ -253,46 +266,13 @@ public class RootEntryTest
     [Test]
     public void CanonicalPath_UNCTrailingSlash2_OK()
     {
-        var re = new RootEntryTestStub(_config, isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+        var mockFs = new MockFileSystemAdapter(isUnc: true, root: @"\\Friday\d$", fullPath: @"\\Friday\d$");
+        var re = new RootEntry(_config, mockFs);
         const string testPath = @"\\Friday\d$";
 
         var result = re.CanonicalPath(testPath);
 
         Assert.That(result, Is.EqualTo(@"\\Friday\d$\"));
-    }
-
-    private class RootEntryTestStub : RootEntry
-    {
-        private readonly string _root;
-        private readonly bool _isUnc;
-        private readonly string _fullPath;
-
-        public RootEntryTestStub(
-            IConfiguration config,
-            string root = @"C:\",
-            bool isUnc = false,
-            string fullPath = @"C:\"
-        ) : base(config)
-        {
-            _root = root;
-            _isUnc = isUnc;
-            _fullPath = fullPath;
-        }
-
-        public override string GetDirectoryRoot(string path)
-        {
-            return _root;
-        }
-
-        public override bool IsUnc(string path)
-        {
-            return _isUnc;
-        }
-
-        public override string GetFullPath(string path)
-        {
-            return _fullPath;
-        }
     }
 
     [Test]

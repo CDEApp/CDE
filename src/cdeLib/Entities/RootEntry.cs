@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using cdeLib.Extensions;
+using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using FlatSharp.Attributes;
@@ -21,6 +22,7 @@ public sealed class RootEntry : object, ICommonEntry
 {
     private const string MatchAll = "*";
     private readonly IDriveInfoService _driveInfoService;
+    private readonly IFileSystemAdapter _fileSystemAdapter;
 
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
@@ -56,28 +58,28 @@ public sealed class RootEntry : object, ICommonEntry
     public long TotalSpace { get; set; }
 
     [IgnoreMember]
-    public DateTime ScanStartUTC
+    public DateTime ScanStartUtc
     {
-        set => ScanStartUTCTicks = value.Ticks;
-        get => DateTime.FromBinary(ScanStartUTCTicks);
+        set => ScanStartUtcTicks = value.Ticks;
+        get => DateTime.FromBinary(ScanStartUtcTicks);
     }
 
     [FlatBufferItem(8)]
     [ProtoMember(8, IsRequired = true)]
     [Key(8)]
-    public long ScanStartUTCTicks { get; set; }
+    public long ScanStartUtcTicks { get; set; }
 
     [IgnoreMember]
-    public DateTime ScanEndUTC
+    public DateTime ScanEndUtc
     {
-        set => ScanEndUTCTicks = value.Ticks;
-        get => DateTime.FromBinary(ScanEndUTCTicks);
+        set => ScanEndUtcTicks = value.Ticks;
+        get => DateTime.FromBinary(ScanEndUtcTicks);
     }
 
     [FlatBufferItem(9)]
     [ProtoMember(9, IsRequired = true)]
     [Key(9)]
-    public long ScanEndUTCTicks { get; set; }
+    public long ScanEndUtcTicks { get; set; }
 
     // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
     // [FlatBufferItem(10)]
@@ -97,26 +99,33 @@ public sealed class RootEntry : object, ICommonEntry
     public string ActualFileName { get; set; }
 
     [IgnoreMember]
-    public double ScanDurationMilliseconds => (ScanEndUTC - ScanStartUTC).TotalMilliseconds;
+    public double ScanDurationMilliseconds => (ScanEndUtc - ScanStartUtc).TotalMilliseconds;
 
-    // ReSharper disable once MemberCanBePrivate.Global
-    public RootEntry()
+    public RootEntry() : this(null, null)
+    {
+    }
+
+    public RootEntry(IConfiguration configuration) : this(configuration, null)
+    {
+    }
+
+    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter)
     {
         TheRootEntry = this;
         _driveInfoService = new DriveInfoService();
-    }
-
-    public RootEntry(IConfiguration configuration) : this()
-    {
-        EntryCountThreshold = configuration.ProgressUpdateInterval;
+        _fileSystemAdapter = fileSystemAdapter ?? new FileSystemAdapter();
+        if (configuration != null)
+        {
+            EntryCountThreshold = configuration.ProgressUpdateInterval;
+        }
     }
 
     public void PopulateRoot(string startPath)
     {
         startPath = GetRootEntry(startPath);
-        ScanStartUTC = DateTime.UtcNow;
+        ScanStartUtc = DateTime.UtcNow;
         RecurseTree(startPath);
-        ScanEndUTC = DateTime.UtcNow;
+        ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
 
@@ -144,8 +153,8 @@ public sealed class RootEntry : object, ICommonEntry
     public void SetInMemoryFields()
     {
         // Protobuf does not retain DateKind. So just handle it here
-        ScanStartUTC = new DateTime(ScanStartUTC.Ticks, DateTimeKind.Utc);
-        ScanEndUTC = new DateTime(ScanEndUTC.Ticks, DateTimeKind.Utc);
+        ScanStartUtc = new DateTime(ScanStartUtc.Ticks, DateTimeKind.Utc);
+        ScanEndUtc = new DateTime(ScanEndUtc.Ticks, DateTimeKind.Utc);
         FullPath = Path;
         SetCommonEntryFields();
         SetSummaryFields();
@@ -180,38 +189,32 @@ public sealed class RootEntry : object, ICommonEntry
         return fileName;
     }
 
-    #region Methods virtual to assist testing.
+    #region File system operations (delegated to adapter for testability)
 
-    // TODO may not be needed with move to dotnetcore3.0 and System.IO
-    public string GetFullPath(string path)
+    private string GetFullPath(string path)
     {
-        return System.IO.Path.GetFullPath(path);
+        return _fileSystemAdapter.GetFullPath(path);
     }
 
-    public bool IsUnc(string path)
+    private bool IsUnc(string path)
     {
-        return System.IO.Path.IsPathFullyQualified(path) && PathIsUnc(path);
+        return _fileSystemAdapter.IsUnc(path);
     }
 
-    public string GetDirectoryRoot(string path)
+    private string GetDirectoryRoot(string path)
     {
-        return Directory.GetDirectoryRoot(path);
-    }
-
-    private bool PathIsUnc(string path)
-    {
-        return path.StartsWith("\\\\");
+        return _fileSystemAdapter.GetDirectoryRoot(path);
     }
 
     /// <summary>
-    /// VolumeName is a windows specific thing.
+    /// VolumeName is a windows-specific thing.
     /// Ignored if path is unc.
     /// </summary>
     /// <param name="rootPath"></param>
     /// <returns>Volume Name or string.empty when can't</returns>
     public string GetVolumeName(string rootPath)
     {
-        if (PathIsUnc(rootPath))
+        if (IsUnc(rootPath))
         {
             Log.Logger.Verbose("Cannot obtain Volume Name of path {Path}", rootPath);
             return string.Empty;
@@ -235,13 +238,13 @@ public sealed class RootEntry : object, ICommonEntry
     #endregion
 
     /// <summary>
-    /// Return canonical version of path.
+    /// Return a canonical version of a path.
     /// Ensure device id are upper case.
-    /// if ends in a '\' and its not just a device eg G:\ then strip trailing \
+    /// if ends in a '\' and it's not just a device eg G:\ then strip trailing \
     /// </summary>
     public string CanonicalPath(string path)
     {
-        path = GetFullPath(path); // Fully qualified path used to generate filename
+        path = GetFullPath(path); // Fully qualified path used to generate a filename
         var volumeRoot = GetDirectoryRoot(path);
         if (IsUnc(path))
         {
@@ -392,7 +395,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// </summary>
     public void ClearCommonEntryFields()
     {
-        TraverseTreePair((p, d) =>
+        TraverseTreePair((_, d) =>
         {
             d.ParentCommonEntry = null;
             return true;
@@ -404,7 +407,7 @@ public sealed class RootEntry : object, ICommonEntry
         Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2)); // Sort root entries first.
         IsDefaultSort = true;
 
-        TraverseTreePair((p, d) =>
+        TraverseTreePair((_, d) =>
         {
             if (d.IsDirectory && d.Children?.Count > 1)
             {
@@ -926,7 +929,7 @@ public sealed class RootEntry : object, ICommonEntry
     public bool ExistsOnFileSystem() => Directory.Exists(FullPath);
 
     /// <summary>
-    /// Is bad path
+    /// Is a bad path
     /// </summary>
     /// <returns>False if Null or Empty, True if entry name ends with Space or Period which is a problem on windows file systems.</returns>
     public bool IsBadPath()
