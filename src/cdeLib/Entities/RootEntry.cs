@@ -240,7 +240,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Return a canonical version of a path.
     /// Ensure device id are upper case.
-    /// if ends in a '\' and it's not just a device eg G:\ then strip trailing \
+    /// If ends in a '\' and it's not just a device e.g., G:\ then strip trailing \
     /// </summary>
     public string CanonicalPath(string path)
     {
@@ -284,7 +284,7 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// Iteratively scans directory tree using a stack-based approach for optimal performance.
+    /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// </summary>
     public void RecurseTree(string startPath)
     {
