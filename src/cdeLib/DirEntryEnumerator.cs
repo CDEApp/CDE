@@ -59,33 +59,61 @@ public sealed class DirEntryEnumerator : IEnumerator<ICommonEntry>, IEnumerable<
 
     private bool ProcessNextEntry()
     {
-        if (_childEnumerator == null)
+        // Loop instead of recursion to avoid stack overflow on deep trees
+        while (true)
         {
-            if (_entries.Count > 0)
+            if (!EnsureChildEnumeratorInitialized())
             {
-                var de = _entries.Pop();
-                _childEnumerator = de.Children.GetEnumerator();
+                return false; // No more entries to process
             }
-        }
 
+            if (TryMoveToNextChild())
+            {
+                return true; // Successfully moved to next entry
+            }
+
+            // Current enumerator exhausted, reset and continue with next parent
+            _childEnumerator = null;
+        }
+    }
+
+    private bool EnsureChildEnumeratorInitialized()
+    {
         if (_childEnumerator != null)
         {
-            if (_childEnumerator.MoveNext())
-            {
-                _current = _childEnumerator.Current;
-                if (_current.IsDirectory && _current.Children is { Count: > 0 })
-                {
-                    _entries.Push(_current);
-                }
-            }
-            else
-            {
-                _childEnumerator = null;
-                MoveNext();
-            }
+            return true;
         }
 
-        return _current != null;
+        if (_entries.Count == 0)
+        {
+            return false;
+        }
+
+        var parent = _entries.Pop();
+        _childEnumerator = parent.Children.GetEnumerator();
+        return true;
+    }
+
+    private bool TryMoveToNextChild()
+    {
+        if (!_childEnumerator!.MoveNext())
+        {
+            return false;
+        }
+
+        _current = _childEnumerator.Current;
+
+        if (ShouldPushToStack(_current))
+        {
+            _entries.Push(_current);
+        }
+
+        return true;
+    }
+
+    private static bool ShouldPushToStack(ICommonEntry entry)
+    {
+        return entry.IsDirectory && entry.Children is { Count: > 0 };
     }
 
     public void Reset()
