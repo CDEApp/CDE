@@ -48,12 +48,26 @@ public class Duplication
         var newMatches = GetSizePairs(rootEntries);
         _logger.LogDebug("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
-        var totalFilesInRootEntries = rootEntries.Sum(x => x.FileEntryCount);
-        var totalEntriesInSizeDupes = newMatches.Sum(x => x.Value.Count);
-        var longestListLength = newMatches.Count > 0 ? newMatches.Max(x => x.Value.Count) : -1;
-        var longestListSize = newMatches.Count == 0
-            ? 0
-            : newMatches.First(x => x.Value.Count == longestListLength).Key;
+        // Calculate all aggregations in single pass to avoid multiple enumerations
+        long totalFilesInRootEntries = 0;
+        foreach (var entry in rootEntries)
+        {
+            totalFilesInRootEntries += entry.FileEntryCount;
+        }
+
+        int totalEntriesInSizeDupes = 0;
+        int longestListLength = -1;
+        long longestListSize = 0;
+        foreach (var kvp in newMatches)
+        {
+            int count = kvp.Value.Count;
+            totalEntriesInSizeDupes += count;
+            if (count > longestListLength)
+            {
+                longestListLength = count;
+                longestListSize = kvp.Key;
+            }
+        }
         _logger.LogInfo("Found {0} sets of files matched by file size", newMatches.Count);
         _logger.LogInfo("Total files processed for the file size matches is {0}", totalFilesInRootEntries);
         _logger.LogInfo("Total files found with at least 1 other file of same length {0}", totalEntriesInSizeDupes);
@@ -61,7 +75,7 @@ public class Duplication
 
         // flatten - optimized without LINQ
         _logger.LogDebug("Flatten List..");
-        var flatList = new List<PairDirEntry>(newMatches.Sum(kvp => kvp.Value.Count));
+        var flatList = new List<PairDirEntry>(totalEntriesInSizeDupes);
         foreach (var kvp in newMatches)
         {
             flatList.AddRange(kvp.Value);
