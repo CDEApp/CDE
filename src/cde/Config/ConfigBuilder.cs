@@ -13,7 +13,7 @@ public class ConfigBuilder
         return File.Exists(path);
     }
 
-    public IConfigurationRoot Build(string[] args)
+    public static IConfigurationRoot Build(string[] args)
     {
         return new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())   // required for single file application or it goes hunting in temp folder when it extracts.

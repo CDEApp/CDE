@@ -12,7 +12,7 @@ public class ConfigurationTests
     public void Can_Read_Configuration_Properties()
     {
         var configurationBuilder = new ConfigBuilder();
-        var config = configurationBuilder.Build(System.Array.Empty<string>());
+        var config = ConfigBuilder.Build(System.Array.Empty<string>());
         IConfiguration configuration = new Configuration(config);
         var sut = configuration.ProgressUpdateInterval;
         ClassicAssert.IsNotNull(sut);
