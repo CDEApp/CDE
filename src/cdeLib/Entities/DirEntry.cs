@@ -19,7 +19,7 @@ public class DirEntry : ICommonEntry
     private string _path;
 
     [IgnoreMember]
-    public virtual DateTime Modified
+    public DateTime Modified
     {
         set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
