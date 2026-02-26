@@ -14,7 +14,7 @@ namespace cdeLib.Entities;
 [ProtoContract]
 [FlatBufferTable]
 [MessagePackObject]
-public class DirEntry : ICommonEntry
+public sealed class DirEntry : ICommonEntry
 {
     private string _path;
 
@@ -28,13 +28,13 @@ public class DirEntry : ICommonEntry
     [ProtoMember(1, IsRequired = true)]
     [FlatBufferItem(1)]
     [Key(1)]
-    public virtual long ModifiedTicks { get; set; }
+    public long ModifiedTicks { get; set; }
 
     [ProtoMember(2, IsRequired = false)]
     [FlatBufferItem(2)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(2)]
-    public virtual Hash16 Hash { get; set; }
+    public Hash16 Hash { get; set; }
 
     /// <summary>
     /// public bool ShouldSerializeHash() should be same as this, but isn't
@@ -48,7 +48,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
     [FlatBufferItem(6)]
     [Key(6)]
-    public virtual Flags BitFields { get; set; }
+    public Flags BitFields { get; set; }
 
     #region BitFields based properties
 
@@ -337,7 +337,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(3, IsRequired = false)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public virtual IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children { get; set; }
     // ReSharper restore MemberCanBePrivate.Global
 
     public void AddChild(DirEntry child)
@@ -353,7 +353,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(4, IsRequired = true)]
     [FlatBufferItem(4)]
     [Key(4)]
-    public virtual long Size { get; set; }
+    public long Size { get; set; }
 
     private static readonly char[] PathSeparators = ['\\', '/'];
     
@@ -363,7 +363,7 @@ public class DirEntry : ICommonEntry
     [ProtoMember(5, IsRequired = true)]
     [FlatBufferItem(5)]
     [Key(5)]
-    public virtual string Path
+    public string Path
     {
         //NOTE: Separating the extension from the path is more memory efficient (300MB saved on 6000MB load) but slower.
         get
