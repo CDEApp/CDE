@@ -23,6 +23,9 @@ public static class CollectionPool
     private static readonly ObjectPool<List<DirEntry>> DirEntryListPool =
         new(() => new List<DirEntry>(4), list => list.Clear());
 
+    private static readonly ObjectPool<List<long>> LongListPool =
+        new(() => new List<long>(50), list => list.Clear(), 10);
+
     // PairDirEntry List Pool
     public static List<PairDirEntry> GetPairDirEntryList() => PairDirEntryListPool.Get();
     public static void ReturnPairDirEntryList(List<PairDirEntry> list) => PairDirEntryListPool.Return(list);
@@ -43,6 +46,10 @@ public static class CollectionPool
     public static List<DirEntry> GetDirEntryList() => DirEntryListPool.Get();
     public static void ReturnDirEntryList(List<DirEntry> list) => DirEntryListPool.Return(list);
 
+    // Long List Pool
+    public static List<long> GetLongList() => LongListPool.Get();
+    public static void ReturnLongList(List<long> list) => LongListPool.Return(list);
+
     /// <summary>
     /// Clear all pools - typically called during application shutdown
     /// </summary>
@@ -53,5 +60,6 @@ public static class CollectionPool
         CommonEntryStackPool.Clear();
         StringDictionaryPool.Clear();
         DirEntryListPool.Clear();
+        LongListPool.Clear();
     }
 }

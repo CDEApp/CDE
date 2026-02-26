@@ -181,29 +181,26 @@ public class Duplication
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
 
         // Remove the single values from the dictionary - optimized without LINQ
-        var keysToRemove = CollectionPool.GetStringList();
+        var keysToRemove = CollectionPool.GetLongList();
         try
         {
             foreach (var kvp in _duplicateFileSize)
             {
                 if (kvp.Value.Count == 1)
                 {
-                    keysToRemove.Add(kvp.Key.ToString());
+                    keysToRemove.Add(kvp.Key);
                 }
             }
 
             // Remove keys in separate loop to avoid modification during enumeration
-            foreach (var keyStr in keysToRemove)
+            foreach (var key in keysToRemove)
             {
-                if (long.TryParse(keyStr, out var key))
-                {
-                    _duplicateFileSize.Remove(key);
-                }
+                _duplicateFileSize.Remove(key);
             }
         }
         finally
         {
-            CollectionPool.ReturnStringList(keysToRemove);
+            CollectionPool.ReturnLongList(keysToRemove);
         }
 
         _logger.LogDebug("Deleted entries from dictionary: {0}, dupeDictCount {1}",
