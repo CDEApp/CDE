@@ -118,8 +118,9 @@ public class FindOptions
             CancellationToken = CancellationToken.None
         };
 
-        // Pre-sort for better initial distribution
-        var sortedRootEntries = rootEntries.OrderByDescending(x => x.DirEntryCount).ToArray();
+        // Pre-sort for better initial distribution - use Array.Sort for efficiency
+        var sortedRootEntries = rootEntries as RootEntry[] ?? rootEntries.ToArray();
+        Array.Sort(sortedRootEntries, (a, b) => b.DirEntryCount.CompareTo(a.DirEntryCount));
 
         var findFunc = GetFindFunc(_dummyProgressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
