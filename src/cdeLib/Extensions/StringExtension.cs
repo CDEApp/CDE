@@ -27,11 +27,31 @@ public static class StringExtension
             return string.Empty;
         }
 
+        // Use Span for zero-allocation path manipulation
+        ReadOnlySpan<char> fullPathSpan = fullPath.AsSpan();
+        ReadOnlySpan<char> rootPathSpan = rootPath.AsSpan();
+
+        // Check if we need to add directory separator
+        int rootLength = rootPath.Length;
         if (!System.IO.Path.EndsInDirectorySeparator(rootPath))
         {
-            rootPath += System.IO.Path.DirectorySeparatorChar;
+            // Check if fullPath starts with rootPath + separator
+            if (fullPathSpan.Length > rootLength &&
+                fullPathSpan.StartsWith(rootPathSpan, StringComparison.Ordinal) &&
+                (fullPathSpan[rootLength] == '\\' || fullPathSpan[rootLength] == '/'))
+            {
+                // Skip rootPath and the separator
+                return new string(fullPathSpan[(rootLength + 1)..]);
+            }
+            return null;
         }
 
-        return fullPath.Contains(rootPath) ? fullPath.Substring(rootPath.Length) : null;
+        // rootPath already ends with separator
+        if (fullPathSpan.StartsWith(rootPathSpan, StringComparison.Ordinal))
+        {
+            return new string(fullPathSpan[rootLength..]);
+        }
+
+        return null;
     }
 }
