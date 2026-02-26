@@ -101,4 +101,40 @@ public static class EntryHelper
             }
         }
     }
+
+    /// <summary>
+    /// Recursive traversal for a single root entry (optimized to avoid array allocation)
+    /// </summary>
+    /// <param name="rootEntry">Entry to traverse</param>
+    /// <param name="traverseFunc">TraversalFunc</param>
+    public static void TraverseTreePair(ICommonEntry rootEntry, TraverseFunc traverseFunc)
+    {
+        if (traverseFunc == null || rootEntry?.Children == null) return;
+
+        // Estimate stack capacity based on typical tree depth (8 levels * avg branching)
+        var stack = new Stack<ICommonEntry>(64);
+
+        stack.Push(rootEntry);
+
+        while (stack.Count > 0)
+        {
+            var current = stack.Pop();
+            var children = current.Children;
+
+            if (children == null) continue;
+
+            // Process children in a batch to improve cache locality
+            foreach (var child in children)
+            {
+                if (!traverseFunc(current, child))
+                    return; // Early termination - exit immediately
+
+                // Only push directories with children to avoid unnecessary stack operations
+                if (child.IsDirectory && child.Children?.Count > 0)
+                {
+                    stack.Push(child);
+                }
+            }
+        }
+    }
 }

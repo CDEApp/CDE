@@ -126,8 +126,8 @@ public class FindOptions
 
         Parallel.ForEach(sortedRootEntries, parallelOptions, (rootEntry) =>
         {
-            var singleEntryArray = new ICommonEntry[] { rootEntry };
-            EntryHelper.TraverseTreePair(singleEntryArray, findFunc);
+            // Use single-entry overload to avoid array allocation
+            EntryHelper.TraverseTreePair(rootEntry, findFunc);
         });
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
     }
