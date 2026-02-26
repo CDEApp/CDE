@@ -1,8 +1,6 @@
 ﻿using System.Runtime.InteropServices;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace cdeLib;
+namespace cdeLib.Extensions;
 
 /// <summary>
 /// A compilation of the properties of folders and files in a file system.
@@ -50,25 +48,5 @@ public struct FileSystemProperties
         }
 
         return new FileSystemProperties(null, null, null);
-    }
-
-    /// <summary>
-    /// Asynchronously gets the properties for this file system.
-    /// </summary>
-    /// <param name="volumeIdentifier">The path whose volume properties are to be queried.</param>
-    /// <param name="cancel">An optional <see cref="CancellationToken"/> that can be used to cancel the operation.</param>
-    /// <returns>A <see cref="Task"/> containing the <see cref="FileSystemProperties"/> for this entry.</returns>
-    public static async Task<FileSystemProperties> GetPropertiesAsync(string volumeIdentifier,
-        CancellationToken cancel = default)
-    {
-        return await Task.Run(() =>
-        {
-            if (GetDiskFreeSpaceEx(volumeIdentifier, out var available, out var total, out var free))
-            {
-                return new FileSystemProperties((long)total, (long)free, (long)available);
-            }
-
-            return new FileSystemProperties(null, null, null);
-        }, cancel);
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System.IO;
 using System.Runtime.InteropServices;
+using cdeLib.Extensions;
 using Serilog;
 
 namespace cdeLib.IO;
