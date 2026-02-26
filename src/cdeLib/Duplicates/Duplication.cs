@@ -287,7 +287,7 @@ public class Duplication
             totalEntriesInDupes);
         _logger.LogInfo("Longest list of duplicate files is {0}", longestListLength);
 
-        // Optimized HashSet population
+        // Populate HashSet with entries requiring full hash
         foreach (var kvp in foundDupes)
         {
             var entries = kvp.Value;
@@ -297,7 +297,77 @@ public class Duplication
             }
         }
 
-        EntryHelper.TraverseTreePair(commonEntries, CalculateFullHash);
+        // Process full hashing using async pattern (same as partial hash phase)
+        ProcessFullHashAsync(foundDupes).GetAwaiter().GetResult();
+    }
+
+    /// <summary>
+    /// Process full hash calculations asynchronously for duplicate entries.
+    /// Uses same pattern as partial hash phase to avoid blocking async calls.
+    /// </summary>
+    private async Task ProcessFullHashAsync(List<KeyValuePair<ICommonEntry, List<PairDirEntry>>> foundDupes)
+    {
+        if (foundDupes.Count == 0)
+        {
+            return;
+        }
+
+        var cts = new CancellationTokenSource();
+        var token = cts.Token;
+        var parallelOptions = new ParallelOptions
+        {
+            CancellationToken = token,
+            MaxDegreeOfParallelism = 2
+        };
+
+        try
+        {
+            // Flatten the list of entries requiring full hashing
+            var entriesToHash = new List<PairDirEntry>();
+            foreach (var kvp in foundDupes)
+            {
+                entriesToHash.AddRange(kvp.Value);
+            }
+
+            // Process in parallel with proper async handling
+            await Task.Run(() =>
+            {
+                entriesToHash.AsParallel()
+                    .WithDegreeOfParallelism(parallelOptions.MaxDegreeOfParallelism)
+                    .WithCancellation(token)
+                    .ForAll(async pde =>
+                    {
+                        var dirEntry = pde.ChildDE;
+
+                        // Skip if already has full hash
+                        if (dirEntry.IsHashDone && !dirEntry.IsPartialHash)
+                        {
+                            return;
+                        }
+
+                        // Only hash entries that are in the duplicate set
+                        if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
+                        {
+                            var fullPath = pde.FullPath;
+                            await CalculateHash(fullPath, dirEntry, false);
+
+                            if (Hack.BreakConsoleFlag)
+                            {
+                                _logger.LogInfo("Break key detected, exiting full hash phase.");
+                                await cts.CancelAsync();
+                            }
+                        }
+                    });
+            }, token);
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInfo("Full hash phase cancelled.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogException(ex, "Error in {0}", nameof(ProcessFullHashAsync));
+        }
     }
 
     private async Task CalculateHash(string fullPath, ICommonEntry de, bool doPartialHash)
@@ -374,38 +444,6 @@ public class Duplication
         }
     }
 
-    private bool CalculateFullHash(ICommonEntry parentEntry, ICommonEntry dirEntry)
-    {
-        var tsk = Task.Run(() => CalculateFullHashAsync(parentEntry, dirEntry));
-        tsk.Wait();
-        return tsk.Result;
-    }
-
-    private async Task<bool> CalculateFullHashAsync(ICommonEntry parentEntry, ICommonEntry dirEntry)
-    {
-        // ignore if we already have a hash.
-        if (dirEntry.IsHashDone)
-        {
-            if (!dirEntry.IsPartialHash)
-            {
-                return true;
-            }
-
-            if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
-            {
-                var fullPath = EntryHelper.MakeFullPath(parentEntry, dirEntry);
-                // TODO not sure we need this GetFullPath since dotnetcore3.0
-                await CalculateHash(System.IO.Path.GetFullPath(fullPath), dirEntry, false);
-                if (Hack.BreakConsoleFlag)
-                {
-                    Console.WriteLine("\n * Break key detected exiting full hashing phase outer.");
-                    return false;
-                }
-            }
-        }
-
-        return true;
-    }
 
     private bool BuildDuplicateListIncludePartialHash(ICommonEntry parentEntry, ICommonEntry dirEntry)
     {
