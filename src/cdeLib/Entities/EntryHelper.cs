@@ -50,7 +50,8 @@ public static class EntryHelper
         var result = sb.ToString();
 
         // Prevent StringBuilder from growing unbounded in long-running processes
-        if (sb.Capacity > 1024)
+        // Only shrink if the capacity is large AND current content fits in target size
+        if (sb.Capacity > 1024 && sb.Length <= 512)
         {
             sb.Capacity = 512;
         }
