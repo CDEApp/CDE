@@ -47,7 +47,15 @@ public static class EntryHelper
         }
 
         sb.Append(dirEntry.Path ?? "dnull");
-        return sb.ToString();
+        var result = sb.ToString();
+
+        // Prevent StringBuilder from growing unbounded in long-running processes
+        if (sb.Capacity > 1024)
+        {
+            sb.Capacity = 512;
+        }
+
+        return result;
     }
 
     /// <summary>
