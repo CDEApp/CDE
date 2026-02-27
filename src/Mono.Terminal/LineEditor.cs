@@ -21,12 +21,6 @@
 //
 // USE -define:DEMO to build this as a standalone file and test it
 //
-// TODO:
-//    Enter an error (a = 1);  Notice how the prompt is in the wrong line
-//		This is caused by Stderr not being tracked by System.Console.
-//    Completion support
-//    Why is Thread.Interrupt not working?   Currently I resort to Abort which is too much.
-//
 // Limitations in System.Console:
 //    Console needs SIGWINCH support of some sort
 //    Console needs a way of updating its position after things have been written
@@ -88,9 +82,6 @@ public class LineEditor
     // If we are done editing, this breaks the interactive loop
     private bool _done;
 
-    // The thread where the Editing started taking place
-    private Thread _editThread;
-
     // Cancellation token source for interrupting the edit loop
     private CancellationTokenSource _cancellationTokenSource;
 
@@ -128,7 +119,7 @@ public class LineEditor
     {
         public readonly ConsoleKeyInfo Cki;
         public readonly KeyHandler KeyHandler;
-        public bool ResetCompletion;
+        public readonly bool ResetCompletion;
 
         public Handler(ConsoleKey key, KeyHandler h, bool resetCompletion = true)
         {
@@ -169,8 +160,8 @@ public class LineEditor
     /// </summary>
     /// <remarks>
     ///    The result is null for no values found, an array with a single
-    ///    string, in that case the string should be the text to be inserted
-    ///    for example if the word at pos is "T", the result for a completion
+    ///    string; in that case the string should be the text to be inserted,
+    ///    for example, if the word at pos is "T", the result for a completion
     ///    of "ToString" should be "oString", not "ToString".
     ///
     ///    When there are multiple results, the result should be the full
@@ -248,7 +239,7 @@ public class LineEditor
         if (!isUnix)
             return;
 
-        // Sole purpose of this call is to initialize the Terminfo driver
+        // The sole purpose of this call is to initialize the Terminfo driver
         _ = Console.CursorLeft;
 
         try
@@ -378,10 +369,7 @@ public class LineEditor
         set => _prompt = value;
     }
 
-    private int LineCount
-    {
-        get { return (_shownPrompt.Length + _renderedText.Length) / Console.WindowWidth; }
-    }
+    private int LineCount => (_shownPrompt.Length + _renderedText.Length) / Console.WindowWidth;
 
     void ForceCursor(int newpos)
     {
@@ -394,9 +382,6 @@ public class LineEditor
         if (row >= Console.BufferHeight)
             row = Console.BufferHeight - 1;
         Console.SetCursorPosition(col, row);
-
-        //log.WriteLine ("Going to cursor={0} row={1} col={2} actual={3} prompt={4} ttr={5} old={6}", newpos, row, col, actual_pos, prompt.Length, TextToRenderPos (cursor), cursor);
-        //log.Flush ();
     }
 
     void UpdateCursor(int newpos)
@@ -599,11 +584,9 @@ public class LineEditor
         _currentCompletion = null;
     }
 
-    //
     // Triggers the completion engine, if insertBestMatch is true, then this will
     // insert the best match found, this behaves like the shell "tab" which will
     // complete as much as possible given the options.
-    //
     void Complete()
     {
         if (AutoCompleteEvent == null)
@@ -670,11 +653,8 @@ public class LineEditor
         }
     }
 
-    //
     // When the user has triggered a completion window, this will try to update
-    // the contents of it.   The completion window is assumed to be hidden at this
-    // point
-    // 
+    // the contents of it.   The completion window is assumed to be hidden at this point
     void UpdateCompletionWindow()
     {
         if (_currentCompletion != null)
@@ -696,10 +676,7 @@ public class LineEditor
         ForceCursor(_cursor);
     }
 
-
-    //
     // Commands
-    //
     void CmdDone()
     {
         if (_currentCompletion != null)
@@ -724,7 +701,7 @@ public class LineEditor
             {
                 for (var i = 0; i < _cursor; i++)
                 {
-                    if (!Char.IsWhiteSpace(_text[i]))
+                    if (!char.IsWhiteSpace(_text[i]))
                     {
                         complete = true;
                         break;
@@ -834,17 +811,17 @@ public class LineEditor
             return -1;
 
         var i = p;
-        if (Char.IsPunctuation(_text[p]) || Char.IsSymbol(_text[p]) || Char.IsWhiteSpace(_text[p]))
+        if (char.IsPunctuation(_text[p]) || char.IsSymbol(_text[p]) || char.IsWhiteSpace(_text[p]))
         {
             for (; i < _text.Length; i++)
             {
-                if (Char.IsLetterOrDigit(_text[i]))
+                if (char.IsLetterOrDigit(_text[i]))
                     break;
             }
 
             for (; i < _text.Length; i++)
             {
-                if (!Char.IsLetterOrDigit(_text[i]))
+                if (!char.IsLetterOrDigit(_text[i]))
                     break;
             }
         }
@@ -852,7 +829,7 @@ public class LineEditor
         {
             for (; i < _text.Length; i++)
             {
-                if (!Char.IsLetterOrDigit(_text[i]))
+                if (!char.IsLetterOrDigit(_text[i]))
                     break;
             }
         }
@@ -871,17 +848,17 @@ public class LineEditor
         if (i == 0)
             return 0;
 
-        if (Char.IsPunctuation(_text[i]) || Char.IsSymbol(_text[i]) || Char.IsWhiteSpace(_text[i]))
+        if (char.IsPunctuation(_text[i]) || char.IsSymbol(_text[i]) || char.IsWhiteSpace(_text[i]))
         {
             for (; i >= 0; i--)
             {
-                if (Char.IsLetterOrDigit(_text[i]))
+                if (char.IsLetterOrDigit(_text[i]))
                     break;
             }
 
             for (; i >= 0; i--)
             {
-                if (!Char.IsLetterOrDigit(_text[i]))
+                if (!char.IsLetterOrDigit(_text[i]))
                     break;
             }
         }
@@ -889,7 +866,7 @@ public class LineEditor
         {
             for (; i >= 0; i--)
             {
-                if (!Char.IsLetterOrDigit(_text[i]))
+                if (!char.IsLetterOrDigit(_text[i]))
                     break;
             }
         }
@@ -939,9 +916,7 @@ public class LineEditor
         RenderAfter(pos);
     }
 
-    //
     // Adds the current line to the history if needed
-    //
     void HistoryUpdateLine()
     {
         _history.Update(_text.ToString());
@@ -1150,11 +1125,11 @@ public class LineEditor
                     for (var p = _cursor - 3; p >= 0; p--)
                     {
                         var c = _text[p];
-                        if (Char.IsDigit(c))
+                        if (char.IsDigit(c))
                             continue;
                         if (c == '_')
                             return true;
-                        if (Char.IsLetter(c) || Char.IsPunctuation(c) || Char.IsSymbol(c) || Char.IsControl(c))
+                        if (char.IsLetter(c) || char.IsPunctuation(c) || char.IsSymbol(c) || char.IsControl(c))
                             return true;
                     }
 
@@ -1185,8 +1160,6 @@ public class LineEditor
 
     private void EditLoop(CancellationToken cancellationToken)
     {
-        ConsoleKeyInfo cki;
-
         while (!_done)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -1197,7 +1170,7 @@ public class LineEditor
                 cancellationToken.ThrowIfCancellationRequested();
                 Thread.Sleep(25);
             }
-            cki = Console.ReadKey(true);
+            var cki = Console.ReadKey(true);
             if (cki.Key == ConsoleKey.Escape)
             {
                 if (_currentCompletion != null)
@@ -1290,7 +1263,6 @@ public class LineEditor
 
     public string Edit(string userPrompt, string initial)
     {
-        _editThread = Thread.CurrentThread;
         _searching = 0;
         Console.CancelKeyPress += InterruptEdit;
 
@@ -1359,7 +1331,7 @@ public class LineEditor
     // history are recorded
     class History
     {
-        private readonly string[] history;
+        private readonly string[] _history;
         private int _head, _tail;
         private int _cursor, _count;
         private readonly string _histfile;
@@ -1389,7 +1361,7 @@ public class LineEditor
                     _histfile = Path.Combine(dir, app) + ".history";
             }
 
-            history = new string[size];
+            _history = new string[size];
             _head = _tail = _cursor = 0;
 
             if (File.Exists(_histfile))
@@ -1412,11 +1384,11 @@ public class LineEditor
             try
             {
                 using var sw = File.CreateText(_histfile);
-                var start = (_count == history.Length) ? _head : _tail;
+                var start = (_count == _history.Length) ? _head : _tail;
                 for (var i = start; i < start + _count; i++)
                 {
-                    var p = i % history.Length;
-                    sw.WriteLine(history[p]);
+                    var p = i % _history.Length;
+                    sw.WriteLine(_history[p]);
                 }
             }
             catch
@@ -1432,11 +1404,11 @@ public class LineEditor
         public void Append(string s)
         {
             //Console.WriteLine ("APPENDING {0} head={1} tail={2}", s, head, tail);
-            history[_head] = s;
-            _head = (_head + 1) % history.Length;
+            _history[_head] = s;
+            _head = (_head + 1) % _history.Length;
             if (_head == _tail)
-                _tail = (_tail + 1) % history.Length;
-            if (_count != history.Length)
+                _tail = (_tail + 1) % _history.Length;
+            if (_count != _history.Length)
                 _count++;
             //Console.WriteLine ("DONE: head={1} tail={2}", s, head, tail);
         }
@@ -1448,7 +1420,7 @@ public class LineEditor
         /// </summary>
         public void Update(string s)
         {
-            history[_cursor] = s;
+            _history[_cursor] = s;
         }
 
         public void RemoveLast()
@@ -1456,7 +1428,7 @@ public class LineEditor
             if (_count == 0)
                 return;
 
-            _head = (_head - 1 + history.Length) % history.Length;
+            _head = (_head - 1 + _history.Length) % _history.Length;
             _count--;
             if (_count == 0)
                 _tail = _head;
@@ -1466,9 +1438,9 @@ public class LineEditor
         {
             var t = _head - 1;
             if (t < 0)
-                t = history.Length - 1;
+                t = _history.Length - 1;
 
-            history[t] = s;
+            _history[t] = s;
         }
 
         public bool PreviousAvailable()
@@ -1482,7 +1454,7 @@ public class LineEditor
         {
             if (_count == 0)
                 return false;
-            var newest = (_head - 1 + history.Length) % history.Length;
+            var newest = (_head - 1 + _history.Length) % _history.Length;
             return _cursor != newest;
         }
 
@@ -1496,9 +1468,9 @@ public class LineEditor
 
             _cursor--;
             if (_cursor < 0)
-                _cursor = history.Length - 1;
+                _cursor = _history.Length - 1;
 
-            return history[_cursor];
+            return _history[_cursor];
         }
 
         public string Next()
@@ -1506,8 +1478,8 @@ public class LineEditor
             if (!NextAvailable())
                 return null;
 
-            _cursor = (_cursor + 1) % history.Length;
-            return history[_cursor];
+            _cursor = (_cursor + 1) % _history.Length;
+            return _history[_cursor];
         }
 
         public void CursorToEnd()
@@ -1521,9 +1493,9 @@ public class LineEditor
         public void Dump()
         {
             Console.WriteLine("Head={0} Tail={1} Cursor={2} count={3}", _head, _tail, _cursor, _count);
-            for (var i = 0; i < history.Length; i++)
+            for (var i = 0; i < _history.Length; i++)
             {
-                Console.WriteLine(" {0} {1}: {2}", i == _cursor ? "==>" : "   ", i, history[i]);
+                Console.WriteLine(" {0} {1}: {2}", i == _cursor ? "==>" : "   ", i, _history[i]);
             }
         }
 
@@ -1533,13 +1505,13 @@ public class LineEditor
             {
                 var slot = _cursor - i - 1;
                 if (slot < 0)
-                    slot = history.Length + slot;
-                if (slot >= history.Length)
+                    slot = _history.Length + slot;
+                if (slot >= _history.Length)
                     slot = 0;
-                if (history[slot] != null && history[slot].IndexOf(term, StringComparison.Ordinal) != -1)
+                if (_history[slot] != null && _history[slot].Contains(term))
                 {
                     _cursor = slot;
-                    return history[slot];
+                    return _history[slot];
                 }
             }
 
