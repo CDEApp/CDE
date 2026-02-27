@@ -183,8 +183,8 @@ public class LineEditor
 
     public LineEditor(string name, int histsize)
     {
-        _handlers = new[]
-        {
+        _handlers =
+        [
             new Handler(ConsoleKey.Home, CmdHome),
             new Handler(ConsoleKey.End, CmdEnd),
             new Handler(ConsoleKey.LeftArrow, CmdLeft),
@@ -220,7 +220,7 @@ public class LineEditor
 
             // quote
             Handler.Control('Q', delegate { HandleChar(Console.ReadKey(true).KeyChar); })
-        };
+        ];
 
         _renderedText = new StringBuilder();
         _text = new StringBuilder();
@@ -231,7 +231,7 @@ public class LineEditor
     }
 
     // On Unix, there is a "default" color which is not represented by any colors in
-    // ConsoleColor, and it is not possible to set is by setting the ForegroundColor or
+    // ConsoleColor. It is not possible to set is by setting the ForegroundColor or
     // BackgroundColor properties, so we have to use the terminfo driver in Mono to
     // fetch these values
 
@@ -241,7 +241,7 @@ public class LineEditor
         // On Unix, we want to be able to reset the color for the pop-up completion
         //
         var p = (int)Environment.OSVersion.Platform;
-        var isUnix = (p == 4) || (p == 128);
+        var isUnix = p is 4 or 128;
         if (!isUnix)
             return;
 
@@ -257,8 +257,8 @@ public class LineEditor
 
             if (terminfoDriver.GetType()
                     .GetField("origPair", BindingFlags.Instance | BindingFlags.NonPublic)
-                    ?.GetValue(terminfoDriver) is string unix_reset_colors_str)
-                _unixResetColors = Encoding.UTF8.GetBytes(unix_reset_colors_str);
+                    ?.GetValue(terminfoDriver) is string unixResetColorsStr)
+                _unixResetColors = Encoding.UTF8.GetBytes(unixResetColorsStr);
             _unixRawOutput = Console.OpenStandardOutput();
         }
         catch (Exception e)
@@ -491,10 +491,7 @@ public class LineEditor
             }
         }
 
-        public string Current
-        {
-            get { return Completions[_selectedItem]; }
-        }
+        public string Current => Completions[_selectedItem];
 
         public void Show()
         {
@@ -606,8 +603,10 @@ public class LineEditor
     //
     void Complete()
     {
+        if (AutoCompleteEvent == null)
+            return;
         var completion = AutoCompleteEvent(_text.ToString(), _cursor);
-        var completions = completion.Result;
+        var completions = completion?.Result;
         if (completions == null)
         {
             HideCompletions();
@@ -676,9 +675,11 @@ public class LineEditor
     {
         if (_currentCompletion != null)
             throw new Exception("This method should only be called if the window has been hidden");
+        if (AutoCompleteEvent == null)
+            return;
 
         var completion = AutoCompleteEvent(_text.ToString(), _cursor);
-        var completions = completion.Result;
+        var completions = completion?.Result;
         if (completions == null)
             return;
 
@@ -1125,9 +1126,7 @@ public class LineEditor
         _editThread.Interrupt();
     }
 
-    //
     // Implements heuristics to show the completion window based on the mode
-    //
     bool HeuristicAutoComplete(bool wasCompleting, char insertedChar)
     {
         if (HeuristicsMode == "csharp")
@@ -1175,7 +1174,7 @@ public class LineEditor
             HideCompletions();
 
             InsertChar(c);
-            if (HeuristicAutoComplete(completing, c))
+            if (AutoCompleteEvent != null && HeuristicAutoComplete(completing, c))
                 UpdateCompletionWindow();
         }
     }
@@ -1338,10 +1337,8 @@ public class LineEditor
 
     public bool TabAtStartCompletes { get; set; }
 
-    //
     // Emulates the bash-like behavior, where edits done to the
     // history are recorded
-    //
     class History
     {
         private readonly string[] history;
