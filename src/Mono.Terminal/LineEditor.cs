@@ -1475,19 +1475,15 @@ public class LineEditor
         {
             if (_count == 0)
                 return false;
-            var next = _cursor - 1;
-            if (next < 0)
-                next = _count - 1;
-
-            return next != _head;
+            return _cursor != _tail;
         }
 
         public bool NextAvailable()
         {
             if (_count == 0)
                 return false;
-            var next = (_cursor + 1) % history.Length;
-            return next != _head;
+            var newest = (_head - 1 + history.Length) % history.Length;
+            return _cursor != newest;
         }
 
 
