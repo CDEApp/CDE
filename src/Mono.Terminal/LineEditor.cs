@@ -91,6 +91,9 @@ public class LineEditor
     // The thread where the Editing started taking place
     private Thread _editThread;
 
+    // Cancellation token source for interrupting the edit loop
+    private CancellationTokenSource _cancellationTokenSource;
+
     // Our object that tracks history
     private readonly History _history;
 
@@ -1122,8 +1125,8 @@ public class LineEditor
         // Do not abort our program:
         a.Cancel = true;
 
-        // Interrupt the editor
-        _editThread.Interrupt();
+        // Cancel the edit loop via cancellation token
+        _cancellationTokenSource?.Cancel();
     }
 
     // Implements heuristics to show the completion window based on the mode
@@ -1289,17 +1292,17 @@ public class LineEditor
         InitText(initial);
         _history.Append(initial);
 
-        var cts = new CancellationTokenSource();
+        _cancellationTokenSource = new CancellationTokenSource();
 
         do
         {
             try
             {
-                EditLoop(cts.Token);
+                EditLoop(_cancellationTokenSource.Token);
             }
             catch (OperationCanceledException)
             {
-                cts = new CancellationTokenSource(); // Reset cancellation token source
+                _cancellationTokenSource = new CancellationTokenSource(); // Reset cancellation token source
                 _searching = 0;
                 //Thread.ResetAbort();
                 Console.WriteLine();
@@ -1417,7 +1420,7 @@ public class LineEditor
             history[_head] = s;
             _head = (_head + 1) % history.Length;
             if (_head == _tail)
-                _tail = (_tail + 1 % history.Length);
+                _tail = (_tail + 1) % history.Length;
             if (_count != history.Length)
                 _count++;
             //Console.WriteLine ("DONE: head={1} tail={2}", s, head, tail);
