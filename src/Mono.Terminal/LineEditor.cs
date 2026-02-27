@@ -1206,6 +1206,11 @@ public class LineEditor
                     continue;
                 }
 
+                while (!Console.KeyAvailable)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Thread.Sleep(25);
+                }
                 cki = Console.ReadKey(true);
                 mod = ConsoleModifiers.Alt;
             }
