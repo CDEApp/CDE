@@ -540,7 +540,7 @@ public class LineEditor
     void ShowCompletions(string prefix, string[] completions)
     {
         // Ensure we have space, determine window size
-        var windowHeight = Math.Min(completions.Length, Console.WindowHeight / 5);
+        var windowHeight = Math.Max(1, Math.Min(completions.Length, Console.WindowHeight / 5));
         var targetLine = Console.WindowHeight - windowHeight - 1;
         if (Console.CursorTop > targetLine)
         {
