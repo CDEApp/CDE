@@ -636,7 +636,7 @@ public class LineEditor
 
                 for (var i = 1; i < ncompletions; i++)
                 {
-                    if (completions[i].Length < p)
+                    if (completions[i].Length <= p)
                         goto mismatch;
 
                     if (completions[i][p] != c)
