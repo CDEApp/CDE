@@ -175,7 +175,7 @@ public class LineEditor
     /// </remarks>
     public AutoCompleteHandler AutoCompleteEvent;
 
-    static Handler[] handlers;
+    private readonly Handler[] _handlers;
 
     public LineEditor(string name) : this(name, 10)
     {
@@ -183,7 +183,7 @@ public class LineEditor
 
     public LineEditor(string name, int histsize)
     {
-        handlers = new[]
+        _handlers = new[]
         {
             new Handler(ConsoleKey.Home, CmdHome),
             new Handler(ConsoleKey.End, CmdEnd),
@@ -1206,7 +1206,7 @@ public class LineEditor
 
             var handled = false;
 
-            foreach (var handler in handlers)
+            foreach (var handler in _handlers)
             {
                 var t = handler.Cki;
 
