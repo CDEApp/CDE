@@ -652,18 +652,19 @@ public class LineEditor
             }
 
             mismatch:
-            var prefix = completion.Prefix;
+            var prefix = completion.Prefix ?? string.Empty;
+            var displayCompletions = (string[])completions.Clone();
             if (last != -1)
             {
-                InsertTextAtCursor(completions[0].Substring(0, last + 1));
+                InsertTextAtCursor(displayCompletions[0].Substring(0, last + 1));
 
                 // Adjust the completions to skip the common prefix
-                prefix += completions[0].Substring(0, last + 1);
-                for (var i = 0; i < completions.Length; i++)
-                    completions[i] = completions[i].Substring(last + 1);
+                prefix += displayCompletions[0].Substring(0, last + 1);
+                for (var i = 0; i < displayCompletions.Length; i++)
+                    displayCompletions[i] = displayCompletions[i].Substring(last + 1);
             }
 
-            ShowCompletions(prefix, completions);
+            ShowCompletions(prefix, displayCompletions);
             Render();
             ForceCursor(_cursor);
         }
@@ -690,7 +691,7 @@ public class LineEditor
         if (ncompletions == 0)
             return;
 
-        ShowCompletions(completion.Prefix, completion.Result);
+        ShowCompletions(completion.Prefix ?? string.Empty, completion.Result);
         Render();
         ForceCursor(_cursor);
     }
