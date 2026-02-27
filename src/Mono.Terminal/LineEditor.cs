@@ -734,7 +734,7 @@ public class LineEditor
                 HandleChar('\t');
         }
         else
-            HandleChar('t');
+            HandleChar('\t');
     }
 
     public void CmdHistoryDump()
