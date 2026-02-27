@@ -1192,6 +1192,11 @@ public class LineEditor
             cancellationToken.ThrowIfCancellationRequested();
             ConsoleModifiers mod;
 
+            while (!Console.KeyAvailable)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+                Thread.Sleep(25);
+            }
             cki = Console.ReadKey(true);
             if (cki.Key == ConsoleKey.Escape)
             {
@@ -1293,6 +1298,7 @@ public class LineEditor
         InitText(initial);
         _history.Append(initial);
 
+        _cancellationTokenSource?.Dispose();
         _cancellationTokenSource = new CancellationTokenSource();
 
         do
@@ -1303,6 +1309,7 @@ public class LineEditor
             }
             catch (OperationCanceledException)
             {
+                _cancellationTokenSource.Dispose();
                 _cancellationTokenSource = new CancellationTokenSource(); // Reset cancellation token source
                 _searching = 0;
                 //Thread.ResetAbort();
@@ -1315,6 +1322,8 @@ public class LineEditor
         Console.WriteLine();
 
         Console.CancelKeyPress -= InterruptEdit;
+        _cancellationTokenSource?.Dispose();
+        _cancellationTokenSource = null;
 
         if (_text == null)
         {
@@ -1439,9 +1448,13 @@ public class LineEditor
 
         public void RemoveLast()
         {
-            _head = _head - 1;
-            if (_head < 0)
-                _head = history.Length - 1;
+            if (_count == 0)
+                return;
+
+            _head = (_head - 1 + history.Length) % history.Length;
+            _count--;
+            if (_count == 0)
+                _tail = _head;
         }
 
         public void Accept(string s)
