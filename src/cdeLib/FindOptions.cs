@@ -65,9 +65,14 @@ public class FindOptions
 
     private readonly int[] _dummyProgressCount = new int[1];
 
-    // Check Worker.CancellationPending every 4096 entries (mask = 4096-1). Frequent enough to feel
-    // instant even on a slow regex, cheap enough to be negligible on a fast full scan.
+    // Run cancellation + progress housekeeping every 4096 entries (mask = 4096-1). Frequent enough to
+    // feel instant even on a slow regex, cheap enough to be negligible on a fast full scan.
     private const int CancelCheckMask = 4096 - 1;
+
+    // Stream progress/results at most every ~100ms (time-based, like the old async path), so a long
+    // search updates the UI smoothly rather than in large infrequent entry-count-based chunks.
+    // Stored as a tick threshold so the hot-path check is a plain subtraction (no multiply/overflow).
+    private static readonly long ProgressIntervalTicks = Stopwatch.Frequency / 10;
 
     public int SkipCount { get; set; }
 
@@ -319,19 +324,30 @@ public class FindOptions
                 return true;
             }
 
-            // Honour cancellation promptly. CancellationPending is a cheap volatile read, so check it
-            // often (every CancelCheckInterval entries) INDEPENDENTLY of progress reporting. Progress
-            // reporting is throttled to every ~50k entries to cut UI marshaling cost; tying the cancel
-            // check to it (as before) made a slow search ignore Cancel for tens of thousands of entries.
-            if ((currentCount & CancelCheckMask) == 0 && Worker?.CancellationPending == true)
+            // Periodic housekeeping behind a cheap entry-count gate (~every 4096 entries):
+            //   1. Honour cancellation promptly (was tied to the ~50k-entry progress throttle, which
+            //      made a slow search ignore Cancel for tens of thousands of entries).
+            //   2. Stream progress/results on a ~100ms timer so results appear smoothly during a long
+            //      search instead of in large infrequent chunks. This matches the responsiveness of
+            //      the old async path (which felt faster purely because it streamed every 100ms),
+            //      while keeping the synchronous path's much higher raw throughput.
+            if ((currentCount & CancelCheckMask) == 0)
             {
-                return false; // end the find.
-            }
+                if (Worker?.CancellationPending == true)
+                {
+                    return false; // end the find.
+                }
 
-            // Use lock-free progress reporting with reduced frequency
-            if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
-            {
-                ProgressFunc(currentCount, ProgressEnd);
+                if (ProgressFunc != null && ProgressModifier > 0)
+                {
+                    var now = Stopwatch.GetTimestamp();
+                    var last = Interlocked.Read(ref _lastProgressTimestamp);
+                    if (now - last >= ProgressIntervalTicks
+                        && Interlocked.CompareExchange(ref _lastProgressTimestamp, now, last) == last)
+                    {
+                        ProgressFunc(currentCount, ProgressEnd);
+                    }
+                }
             }
 
             if (findPredicate(p, dirEntry))
