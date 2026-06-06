@@ -46,6 +46,21 @@ public sealed class EntryStore
     /// </summary>
     public Hash16[] Hash { get; private set; }
 
+    // ----- catalog-level metadata (what the GUI catalog list and search-result rows display) -----
+    public string RootPath;          // root path, e.g. C:\ (also Name[0])
+    public string VolumeName;
+    public string DefaultFileName;   // generated .cde name
+    public string ActualFileName;    // path of the loaded .cde
+    public string DriveLetterHint;
+    public string Description;
+    public long AvailSpace;
+    public long TotalSpace;
+    public long ScanStartUtcTicks;
+    public long ScanEndUtcTicks;
+    public long RootSize;            // total size of the catalog
+    public uint RootFileEntryCount;  // total files in the catalog
+    public uint RootDirEntryCount;   // total directories in the catalog
+
     private EntryStore(int count)
     {
         Count = count;
@@ -122,7 +137,22 @@ public sealed class EntryStore
         ArgumentNullException.ThrowIfNull(root);
 
         var count = CountEntries(root); // robust: counts the actual tree, not (possibly stale) summary fields
-        var store = new EntryStore(count);
+        var store = new EntryStore(count)
+        {
+            RootPath = root.Path,
+            VolumeName = root.VolumeName,
+            DefaultFileName = root.DefaultFileName,
+            ActualFileName = root.ActualFileName,
+            DriveLetterHint = root.DriveLetterHint,
+            Description = root.Description,
+            AvailSpace = root.AvailSpace,
+            TotalSpace = root.TotalSpace,
+            ScanStartUtcTicks = root.ScanStartUtcTicks,
+            ScanEndUtcTicks = root.ScanEndUtcTicks,
+            RootSize = root.Size,
+            RootFileEntryCount = root.FileEntryCount,
+            RootDirEntryCount = root.DirEntryCount,
+        };
 
         var next = 0;
         var rootIdx = next++;

@@ -77,6 +77,41 @@ public class EntryStoreTests
     }
 
     [Test]
+    public void Build_CapturesCatalogMetadata()
+    {
+        var root = new RootEntry
+        {
+            Path = @"D:\",
+            VolumeName = "DATA",
+            DefaultFileName = "D-DATA.cde",
+            ActualFileName = @"C:\cat\D-DATA.cde",
+            DriveLetterHint = "D",
+            Description = "data drive",
+            AvailSpace = 111,
+            TotalSpace = 222,
+        };
+        root.AddChild(new DirEntry(false) { Path = "f.txt", Size = 7 });
+        root.SetInMemoryFields();
+
+        var store = EntryStore.Build(root);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(store.RootPath, Is.EqualTo(@"D:\"));
+            Assert.That(store.VolumeName, Is.EqualTo("DATA"));
+            Assert.That(store.DefaultFileName, Is.EqualTo("D-DATA.cde"));
+            Assert.That(store.ActualFileName, Is.EqualTo(@"C:\cat\D-DATA.cde"));
+            Assert.That(store.DriveLetterHint, Is.EqualTo("D"));
+            Assert.That(store.Description, Is.EqualTo("data drive"));
+            Assert.That(store.AvailSpace, Is.EqualTo(111));
+            Assert.That(store.TotalSpace, Is.EqualTo(222));
+            Assert.That(store.RootFileEntryCount, Is.EqualTo(root.FileEntryCount));
+            Assert.That(store.RootDirEntryCount, Is.EqualTo(root.DirEntryCount));
+            Assert.That(store.RootSize, Is.EqualTo(root.Size));
+        });
+    }
+
+    [Test]
     public void FullPath_MatchesTreeForEveryEntry()
     {
         var root = BuildTree();
