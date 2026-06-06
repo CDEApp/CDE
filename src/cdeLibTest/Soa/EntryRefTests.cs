@@ -111,7 +111,7 @@ public class EntryRefTests
     {
         for (var i = 1; i < store.Count; i++)
         {
-            if (store.Name[i] == name) return new EntryRef(store, i);
+            if (store.FullName(i) == name) return new EntryRef(store, i);
         }
         return null;
     }

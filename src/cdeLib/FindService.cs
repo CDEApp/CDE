@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Threading.Tasks;
 using cdeLib.Entities;
+using cdeLib.Entities.Soa;
 using Serilog;
 
 namespace cdeLib;
@@ -44,29 +46,30 @@ public class FindService : IFindService
 
     public void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
     {
-        // Use the synchronous traversal: it is dramatically faster than the work-stealing async
-        // path, which ran every entry through an async Task<bool> state machine plus per-entry
-        // Task.Yield/Task.Delay. Measured on a 1M-entry catalog: ~49x faster for name search and
-        // ~7x for path search (see src/cdeBenchmarks/baseline/search-baseline.md).
-        var totalFound = 0L;
-        var findOptions = new FindOptions
+        // Convert each loaded catalog to the struct-of-arrays EntryStore and release its pointer
+        // tree before searching. The store holds the same catalog in ~1/3 the structural memory
+        // (42 vs 129 bytes/entry; see src/cdeBenchmarks/baseline/soa-prototype.md), and the
+        // index-based scan is cache friendly. The CLI find applies only pattern + name/path +
+        // file/folder filtering, all of which EntryStoreSearch supports.
+        var stores = new List<EntryStore>(rootEntries.Count);
+        for (var i = 0; i < rootEntries.Count; i++)
         {
-            Pattern = pattern,
-            RegexMode = regexMode,
-            IncludePath = includePath,
-            IncludeFiles = IncludeFiles,
-            IncludeFolders = IncludeFolders,
-            LimitResultCount = int.MaxValue,
-            VisitorFunc = (p, d) =>
-            {
-                ++totalFound;
-                Console.WriteLine(" {0}", p.MakeFullPath(d));
-                return true;
-            },
-        };
+            if (rootEntries[i] != null) stores.Add(EntryStore.Build(rootEntries[i]));
+            rootEntries[i] = null; // drop the tree so it can be collected while we search the stores
+        }
 
-        var timer = System.Diagnostics.Stopwatch.StartNew();
-        findOptions.Find(rootEntries);
+        var totalFound = 0L;
+        var timer = Stopwatch.StartNew();
+        foreach (var store in stores)
+        {
+            EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
+                idx =>
+                {
+                    ++totalFound;
+                    Console.WriteLine(" {0}", store.FullPath(idx));
+                });
+        }
+
         timer.Stop();
         Log.Logger.Information(
             "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",

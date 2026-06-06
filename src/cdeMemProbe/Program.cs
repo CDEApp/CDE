@@ -56,7 +56,8 @@ public static class Program
             return await GenerateAsync(args, genValue, logger);
         }
 
-        return await MeasureAsync(args[0], !HasFlag(args, "--no-header", out _), logger);
+        return await MeasureAsync(args[0], !HasFlag(args, "--no-header", out _),
+            asStore: HasFlag(args, "--store", out _), logger);
     }
 
     private static async Task<int> GenerateAsync(string[] args, string? countArg, ILogger logger)
@@ -146,7 +147,7 @@ public static class Program
         return EntryStore.Build(tree);
     }
 
-    private static async Task<int> MeasureAsync(string file, bool printHeader, ILogger logger)
+    private static async Task<int> MeasureAsync(string file, bool printHeader, bool asStore, ILogger logger)
     {
         if (!File.Exists(file))
         {
@@ -155,20 +156,19 @@ public static class Program
         }
 
         var sw = Stopwatch.StartNew();
-        RootEntry root;
-        using (var repo = new CatalogRepository(logger))
-        {
-            root = await repo.LoadDirCacheAsync(file);
-        }
+        // Load (and for --store, convert to the SoA store) inside a synchronous helper so the source
+        // tree is a plain local that goes fully out of scope before we measure. (An async helper would
+        // capture the tree in its state machine and the store measurement would double-count it.)
+        var (measured, entries) = asStore
+            ? LoadAsStore(file, logger)
+            : LoadAsTree(file, logger);
         sw.Stop();
 
-        if (root == null)
+        if (measured == null)
         {
             Console.Error.WriteLine($"failed to load catalog: {file}");
             return 1;
         }
-
-        var entries = root.FileEntryCount + root.DirEntryCount;
 
         // Settle the GC so GetTotalMemory reflects retained (live) objects, not transient load garbage.
         GC.Collect();
@@ -180,8 +180,8 @@ public static class Program
         var peakWorkingSet = proc.PeakWorkingSet64;
         var privateBytes = proc.PrivateMemorySize64;
 
-        // Keep the tree alive across the measurement so it counts toward the live heap.
-        GC.KeepAlive(root);
+        // Keep the measured object (tree or store) alive across the measurement.
+        GC.KeepAlive(measured);
 
         var bytesPerEntry = entries > 0 ? (double)managedBytes / entries : 0;
 
@@ -199,6 +199,28 @@ public static class Program
             privateBytes.ToString(CultureInfo.InvariantCulture),
             bytesPerEntry.ToString("F2", CultureInfo.InvariantCulture)));
         return 0;
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (object Measured, long Entries) LoadAsTree(string file, ILogger logger)
+    {
+        using var repo = new CatalogRepository(logger);
+        var root = repo.LoadDirCache(file);
+        if (root == null) return (null, 0);
+        return (root, root.FileEntryCount + root.DirEntryCount);
+    }
+
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static (object Measured, long Entries) LoadAsStore(string file, ILogger logger)
+    {
+        using var repo = new CatalogRepository(logger);
+        var root = repo.LoadDirCache(file);
+        if (root == null) return (null, 0);
+        var entries = root.FileEntryCount + root.DirEntryCount;
+        var store = EntryStore.Build(root);
+        // root is a plain local; once this returns it is unreferenced and collectable, leaving only
+        // the store (which reuses the tree's interned name strings) for the caller to measure.
+        return (store, entries);
     }
 
     /// <summary>

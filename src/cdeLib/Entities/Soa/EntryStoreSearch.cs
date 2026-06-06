@@ -59,7 +59,7 @@ public static class EntryStoreSearch
             }
             else
             {
-                var name = store.Name[i] ?? string.Empty;
+                var name = store.FullName(i);
                 match = regexMode
                     ? regex.IsMatch(name)
                     : name.Contains(pattern, StringComparison.OrdinalIgnoreCase);

@@ -27,7 +27,13 @@ public sealed class EntryStore
     // One slot per entry (index 0 = root).
     public long[] ModifiedTicks { get; private set; }
     public long[] Size { get; private set; }
+
+    // Names are stored split (name-without-extension + extension) reusing the SAME interned string
+    // objects the source tree held — so conversion allocates no new name strings and the interned
+    // originals are shared, not duplicated. FullName(i) rejoins on demand.
     public string[] Name { get; private set; }
+    public string[] Ext { get; private set; }
+
     public byte[] BitFields { get; private set; }
     public int[] FirstChild { get; private set; }
     public int[] NextSibling { get; private set; }
@@ -46,11 +52,15 @@ public sealed class EntryStore
         ModifiedTicks = new long[count];
         Size = new long[count];
         Name = new string[count];
+        Ext = new string[count];
         BitFields = new byte[count];
         FirstChild = new int[count];
         NextSibling = new int[count];
         Parent = new int[count];
     }
+
+    /// <summary>Full entry name (name + extension), rejoined on demand like DirEntry.Path.</summary>
+    public string FullName(int i) => string.IsNullOrEmpty(Ext[i]) ? Name[i] : string.Concat(Name[i], Ext[i]);
 
     public Flags Flags(int i) => (Flags)BitFields[i];
     public bool IsDirectory(int i) => (Flags(i) & Entities.Flags.Directory) == Entities.Flags.Directory;
@@ -90,7 +100,9 @@ public sealed class EntryStore
                 var last = sb[^1];
                 if (last != '\\' && last != '/') sb.Append(System.IO.Path.DirectorySeparatorChar);
             }
+            // Append the split name parts directly — no full-name string allocation for path building.
             sb.Append(Name[idx] ?? string.Empty);
+            if (!string.IsNullOrEmpty(Ext[idx])) sb.Append(Ext[idx]);
         }
     }
 
@@ -114,7 +126,7 @@ public sealed class EntryStore
 
         var next = 0;
         var rootIdx = next++;
-        store.Name[rootIdx] = root.Path;
+        store.Name[rootIdx] = root.Path; // root path is not split
         store.ModifiedTicks[rootIdx] = root.ModifiedTicks;
         store.Size[rootIdx] = root.Size;
         store.BitFields[rootIdx] = (byte)root.BitFields;
@@ -135,7 +147,9 @@ public sealed class EntryStore
             foreach (var child in children)
             {
                 var idx = next++;
-                store.Name[idx] = child.Path;
+                // Reuse the child's already-interned name + extension objects (no fresh allocation).
+                store.Name[idx] = child.NamePart;
+                store.Ext[idx] = child.ExtPart;
                 store.ModifiedTicks[idx] = child.ModifiedTicks;
                 store.Size[idx] = child.Size;
                 store.BitFields[idx] = (byte)child.BitFields;

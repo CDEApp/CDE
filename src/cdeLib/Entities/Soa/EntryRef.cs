@@ -31,7 +31,7 @@ public sealed class EntryRef : ICommonEntry
     private static NotSupportedException ReadOnly([System.Runtime.CompilerServices.CallerMemberName] string m = null)
         => new($"EntryRef is a read-only view over EntryStore; '{m}' is not supported.");
 
-    public string Path { get => _store.Name[_index]; set => throw ReadOnly(); }
+    public string Path { get => _store.FullName(_index); set => throw ReadOnly(); }
     public long Size { get => _store.Size[_index]; set => throw ReadOnly(); }
     public DateTime Modified { get => _store.Modified(_index); set => throw ReadOnly(); }
 

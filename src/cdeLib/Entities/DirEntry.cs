@@ -18,6 +18,16 @@ public sealed class DirEntry : ICommonEntry
 {
     private string _path;
 
+    // Extension (including the dot), interned and split from the name for memory efficiency.
+    // Null when the name has no extension.
+    private string _ext;
+
+    /// <summary>Interned name without extension (the <c>_path</c> part). For SoA conversion reuse.</summary>
+    internal string NamePart => _path;
+
+    /// <summary>Interned extension including the dot, or null. For SoA conversion reuse.</summary>
+    internal string ExtPart => _ext;
+
     /// <summary>
     /// Side-object holding directory-only state — the child list and the rolled-up summary counts.
     /// Null on every file (the vast majority of entries), so a file no longer carries an always-null
@@ -418,9 +428,9 @@ public sealed class DirEntry : ICommonEntry
         get
         {
             //return _path;
-            
+
             // string.concat faster than string interpolation.
-            return string.IsNullOrEmpty(field) ? _path : string.Concat(_path, field);
+            return string.IsNullOrEmpty(_ext) ? _path : string.Concat(_path, _ext);
         }
         set
         {
@@ -428,7 +438,7 @@ public sealed class DirEntry : ICommonEntry
             if (string.IsNullOrEmpty(value))
             {
                 _path = string.Intern(string.Empty);
-                field = null;
+                _ext = null;
                 return;
             }
 
@@ -438,13 +448,13 @@ public sealed class DirEntry : ICommonEntry
             if (lastDot > 0 && lastDot > valueSpan.LastIndexOfAny(PathSeparators))
             {
                 // Span slicing is zero-cost, allocate strings only for Intern
-                field = string.Intern(new string(valueSpan[lastDot..]));
+                _ext = string.Intern(new string(valueSpan[lastDot..]));
                 _path = string.Intern(new string(valueSpan[..lastDot]));
             }
             else
             {
                 _path = string.Intern(value);
-                field = null;
+                _ext = null;
             }
 
             // Simpler code but slightly less performance:
