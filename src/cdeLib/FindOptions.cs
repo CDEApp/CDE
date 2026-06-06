@@ -286,9 +286,11 @@ public class FindOptions
                 : (p, d) => regex.IsMatch(d.Path);
         }
 
-        // String matching with StringComparison for better performance
+        // String matching with StringComparison for better performance.
+        // Path mode uses the allocation-free span matcher (avoids building a full-path string per
+        // candidate — the dominant allocator in path queries; see search baseline).
         return includePath
-            ? (p, d) => EntryHelper.MakeFullPathPooled(p, d).Contains(pattern, StringComparison.OrdinalIgnoreCase)
+            ? (p, d) => EntryHelper.FullPathContains(p, d, pattern, StringComparison.OrdinalIgnoreCase)
             : (p, d) => d.Path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
     }
 

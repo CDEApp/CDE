@@ -50,3 +50,40 @@ Exactly the predicted 8 bytes/entry (two `long`→`uint`). At 1M entries: 202.1 
 - Full solution (`cde.slnx`) builds clean.
 - Note: `cdeLibSpec` / `cdeLibSpec2` are legacy `net48` projects incompatible with the `net10`
   library and do not restore — pre-existing, unrelated to this work, not in the solution.
+
+---
+
+## Phase 2 — allocation-free path search (S1), no format change
+
+**Changes shipped**
+- Reimplemented `EntryHelper.MakeFullPath` as a single pass that walks the `ParentCommonEntry`
+  chain into the shared `StringBuilder`, instead of the old recursion that allocated a fresh
+  full-path string at every ancestor level. All path-building callers (find, dupes, GUI, dump)
+  benefit. (`src/cdeLib/Entities/EntryHelper.cs`)
+- Added `EntryHelper.FullPathContains` — builds the path into a pooled `char[]` and matches over a
+  `Span<char>` (`MemoryExtensions.Contains`), allocating no result string. Wired into the find
+  substring path matcher. (`src/cdeLib/Entities/EntryHelper.cs`, `src/cdeLib/FindOptions.cs`)
+
+**Re-sequencing note:** the original Phase 2 also dropped `ParentCommonEntry` (~8 B/entry). Code
+evidence shows `.FullPath` / `GetListFromRoot` are called only on **directories** or via
+`PairDirEntry` (which carries an explicit parent) — files never need a standalone parent pointer.
+The cdeWin GUI depends heavily on directory parent pointers, so removing the field from *all*
+entries is a large, risky GUI refactor for the same 8 B that R1a already delivered safely. The
+parent pointer can only be reclaimed from **files**, which requires the file/dir type split — so
+`ParentCommonEntry` removal folds into **Phase 3**, validated by the split.
+
+### Search (1,000,000-entry fixture) — cumulative
+
+| Query | Baseline | Phase 1 | Phase 2 | Alloc (base → P2) |
+|-------|---------:|--------:|--------:|------------------:|
+| substring, path, no match | 1755 ms | 236 ms | **101.6 ms** | 978.7 MB → **52.7 MB** |
+| substring, path, ~8% (.txt) | 1774 ms | 243 ms | **96.4 ms** | 978.7 MB → **52.7 MB** |
+| regex, path, ~8% (`\.txt$`) | 1828 ms | 253 ms | **136 ms** | 1349 MB → **265 MB** |
+
+Path-search allocation cut ~94.6% (residual 52.7 MB is the per-file `DirEntry.Path` extension
+rejoin, same as name search). Name-search numbers are unchanged from Phase 1.
+
+### Correctness
+- `cdeLibTest`: 126 passed (incl. all `EntryHelper` / `GetListFromRoot` / `RootEntry` path tests
+  that assert exact path strings — confirms the single-pass build is identical).
+- Full solution builds clean.
