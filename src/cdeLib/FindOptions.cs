@@ -65,6 +65,10 @@ public class FindOptions
 
     private readonly int[] _dummyProgressCount = new int[1];
 
+    // Check Worker.CancellationPending every 4096 entries (mask = 4096-1). Frequent enough to feel
+    // instant even on a slow regex, cheap enough to be negligible on a fast full scan.
+    private const int CancelCheckMask = 4096 - 1;
+
     public int SkipCount { get; set; }
 
     public int ProgressCount => _threadSafeProgressCount;
@@ -200,6 +204,12 @@ public class FindOptions
                 return true; // Skip enforced
             }
 
+            // Honour cancellation promptly, independently of throttled progress reporting (see GetFindFunc).
+            if ((currentCount & CancelCheckMask) == 0 && Worker?.CancellationPending == true)
+            {
+                return false;
+            }
+
             // Rate-limited progress reporting with non-blocking UI update
             if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
             {
@@ -309,15 +319,19 @@ public class FindOptions
                 return true;
             }
 
+            // Honour cancellation promptly. CancellationPending is a cheap volatile read, so check it
+            // often (every CancelCheckInterval entries) INDEPENDENTLY of progress reporting. Progress
+            // reporting is throttled to every ~50k entries to cut UI marshaling cost; tying the cancel
+            // check to it (as before) made a slow search ignore Cancel for tens of thousands of entries.
+            if ((currentCount & CancelCheckMask) == 0 && Worker?.CancellationPending == true)
+            {
+                return false; // end the find.
+            }
+
             // Use lock-free progress reporting with reduced frequency
             if (ProgressModifier > 0 && ShouldReportProgress(currentCount))
             {
                 ProgressFunc(currentCount, ProgressEnd);
-                // only check for cancel on progress reports.
-                if (Worker?.CancellationPending == true)
-                {
-                    return false; // end the find.
-                }
             }
 
             if (findPredicate(p, dirEntry))
