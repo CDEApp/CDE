@@ -110,6 +110,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     // ----- IEntrySource: index-addressed accessors straight over the mapping -----
     public long SizeOf(int i) => Size[i];
     public DateTime ModifiedOf(int i) => DateTime.FromBinary(ModifiedTicks[i]);
+    public long ModifiedTicksOf(int i) => ModifiedTicks[i];
     public Flags FlagsOf(int i) => Flags(i);
     public bool IsHashDone(int i) => (Flags(i) & Entities.Flags.HashDone) == Entities.Flags.HashDone;
     public bool IsPartialHash(int i) => (Flags(i) & Entities.Flags.PartialHash) == Entities.Flags.PartialHash;

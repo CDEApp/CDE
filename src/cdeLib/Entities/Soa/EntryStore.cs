@@ -82,6 +82,7 @@ public sealed class EntryStore : IEntrySource
     // ----- IEntrySource: thin index-addressed accessors over the parallel arrays -----
     public long SizeOf(int i) => Size[i];
     public DateTime ModifiedOf(int i) => Modified(i);
+    public long ModifiedTicksOf(int i) => ModifiedTicks[i];
     public Flags FlagsOf(int i) => Flags(i);
     public bool HasHash => Hash != null;
     public Hash16 HashOf(int i) => Hash != null ? Hash[i] : default;

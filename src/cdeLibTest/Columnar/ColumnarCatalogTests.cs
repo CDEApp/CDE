@@ -168,6 +168,40 @@ public class ColumnarCatalogTests
     }
 
     [Test]
+    public void CatalogTreeBuilder_RoundTrips_StructureSizesAndHashes()
+    {
+        // Set a hash on one file so the hash column round-trips too (the hash/dupes path).
+        var root = BuildTree();
+        var beta = root.Children.First(c => c.Path == "dir1").Children.First(c => c.Path == "beta.log");
+        beta.SetHash(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+        root.SetInMemoryFields();
+
+        var store0 = EntryStore.Build(root);
+        var path = WriteTemp(store0);
+        try
+        {
+            // .cdex -> mutable tree (as hash/dupes do) -> store again must match the original store.
+            var trees = CatalogTreeBuilder.FromColumnarFiles(new[] { path });
+            Assert.That(trees, Has.Count.EqualTo(1));
+            var store2 = EntryStore.Build(trees[0]);
+
+            Assert.That(store2.Count, Is.EqualTo(store0.Count));
+            Assert.That(store2.HasHash, Is.True);
+            for (var i = 0; i < store0.Count; i++)
+            {
+                Assert.That(store2.FullPath(i), Is.EqualTo(store0.FullPath(i)), $"path {i}");
+                Assert.That(store2.Size[i], Is.EqualTo(store0.Size[i]), $"size {i}");
+                Assert.That(store2.ModifiedTicks[i], Is.EqualTo(store0.ModifiedTicks[i]), $"modified {i}");
+                Assert.That(store2.IsDirectory(i), Is.EqualTo(store0.IsDirectory(i)), $"isDir {i}");
+                Assert.That(store2.IsHashDone(i), Is.EqualTo(store0.IsHashDone(i)), $"hashDone {i}");
+                if (store0.IsHashDone(i))
+                    Assert.That(store2.HashOf(i), Is.EqualTo(store0.HashOf(i)), $"hash {i}");
+            }
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
     public void EntryRef_OverReader_NavigatesLikeStore()
     {
         var store = EntryStore.Build(BuildTree());

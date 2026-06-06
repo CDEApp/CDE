@@ -20,6 +20,7 @@ public interface IEntrySource
     // ----- per-entry accessors -----
     long SizeOf(int i);
     DateTime ModifiedOf(int i);
+    long ModifiedTicksOf(int i); // raw stored ticks (for exact tree reconstruction)
     Flags FlagsOf(int i);
     bool IsDirectory(int i);
     bool IsHashDone(int i);
