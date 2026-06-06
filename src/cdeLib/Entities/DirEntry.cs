@@ -388,6 +388,10 @@ public sealed class DirEntry : ICommonEntry
     }
     // ReSharper restore MemberCanBePrivate.Global
 
+    // Covariant read-only view for ICommonEntry consumers. The backing List<DirEntry> satisfies
+    // IReadOnlyList<ICommonEntry> at runtime via interface covariance.
+    IReadOnlyList<ICommonEntry> ICommonEntry.Children => _extra?.Children as IReadOnlyList<ICommonEntry>;
+
     public void AddChild(DirEntry child)
     {
         var extra = EnsureExtra();
@@ -514,7 +518,7 @@ public sealed class DirEntry : ICommonEntry
             if (baseSourceEntry.Children != null && baseDestinationEntry.Children != null)
             {
                 // Build dictionary for O(1) lookups instead of O(n) linear search
-                var destinationLookup = new Dictionary<string, DirEntry>(
+                var destinationLookup = new Dictionary<string, ICommonEntry>(
                     baseDestinationEntry.Children.Count,
                     StringComparer.OrdinalIgnoreCase);
 

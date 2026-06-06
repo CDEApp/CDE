@@ -475,10 +475,12 @@ public sealed class RootEntry : object, ICommonEntry
 
         TraverseTreePair((_, d) =>
         {
-            if (d.IsDirectory && d.Children?.Count > 1)
+            // Sorting mutates the concrete child list, so work through the concrete DirEntry
+            // (the abstract ICommonEntry.Children is a read-only view).
+            if (d is DirEntry { IsDirectory: true } de && de.Children?.Count > 1)
             {
-                d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
-                d.IsDefaultSort = true;
+                de.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
+                de.IsDefaultSort = true;
             }
 
             return true;
@@ -805,6 +807,9 @@ public sealed class RootEntry : object, ICommonEntry
     [Key(15)]
     public IList<DirEntry> Children { get; set; }
 
+    // Covariant read-only view for ICommonEntry consumers (see DirEntry for rationale).
+    IReadOnlyList<ICommonEntry> ICommonEntry.Children => Children as IReadOnlyList<ICommonEntry>;
+
     public void AddChild(DirEntry child)
     {
         if (this.Children == null)
@@ -988,9 +993,9 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Builds a dictionary for O(1) lookups of destination children by path.
     /// </summary>
-    private static Dictionary<string, DirEntry> BuildDestinationLookup(IList<DirEntry> children)
+    private static Dictionary<string, ICommonEntry> BuildDestinationLookup(IReadOnlyList<ICommonEntry> children)
     {
-        var lookup = new Dictionary<string, DirEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
+        var lookup = new Dictionary<string, ICommonEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
 
         foreach (var child in children)
         {
