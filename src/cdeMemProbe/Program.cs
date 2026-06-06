@@ -61,6 +61,7 @@ public static class Program
         }
 
         var withHashes = HasFlag(args, "--hashes", out _);
+        var sharedNames = HasFlag(args, "--shared-names", out _);
         var seed = HasFlag(args, "--seed", out var seedArg) && int.TryParse(seedArg, out var s) ? s : 42;
         var outPath = HasFlag(args, "--out", out var outArg) && !string.IsNullOrWhiteSpace(outArg)
             ? outArg!
@@ -68,7 +69,7 @@ public static class Program
 
         Console.Error.WriteLine($"Generating ~{count:N0} entries (hashes={withHashes}, seed={seed}) ...");
         var sw = Stopwatch.StartNew();
-        var root = SyntheticCatalog.Generate(count, withHashes, seed);
+        var root = SyntheticCatalog.Generate(count, withHashes, seed, sharedNames: sharedNames);
         root.ActualFileName = outPath;
         using (var repo = new CatalogRepository(logger))
         {

@@ -39,7 +39,8 @@ public static class SyntheticCatalog
         bool withHashes = false,
         int seed = 42,
         int filesPerDir = 50,
-        int subDirsPerDir = 5)
+        int subDirsPerDir = 5,
+        bool sharedNames = false)
     {
         var random = new Random(seed);
         var root = new RootEntry
@@ -71,9 +72,18 @@ public static class SyntheticCatalog
             for (var i = 0; i < filesPerDir && created < targetEntryCount; i++)
             {
                 var file = new DirEntry(false);
-                var ext = Extensions[random.Next(Extensions.Length)];
-                var prefix = Prefixes[random.Next(Prefixes.Length)];
-                file.SetPath($"{prefix}_{created:D7}{ext}");
+                // sharedNames: every file shares one interned name, so the measured footprint
+                // excludes per-file name strings — the delta vs normal isolates the name cost.
+                if (sharedNames)
+                {
+                    file.SetPath("x");
+                }
+                else
+                {
+                    var ext = Extensions[random.Next(Extensions.Length)];
+                    var prefix = Prefixes[random.Next(Prefixes.Length)];
+                    file.SetPath($"{prefix}_{created:D7}{ext}");
+                }
                 file.Size = random.Next(1, 50_000_000);
                 file.Modified = BaseDate.AddMinutes(random.Next(0, 5_000_000));
                 if (withHashes)
