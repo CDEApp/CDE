@@ -78,7 +78,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+    public IListViewHelper<ICommonEntry> CatalogListViewHelper { get; set; }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper FromDate { get; set; }
@@ -223,7 +223,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         patternComboBox.GotFocus += (_, _) => AcceptButton = searchButton;
         patternComboBox.LostFocus += (_, _) => AcceptButton = null;
 
-        CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
+        CatalogListViewHelper = new ListViewHelper<ICommonEntry>(catalogResultListView)
         {
             MultiSelect = false,
             // ReSharper disable PossibleNullReferenceException

@@ -50,7 +50,7 @@ public class CDEWinFormPresenterTest
             presenter.InitializeAsync().GetAwaiter().GetResult();
 
             // SetList is called with empty list after InitializeAsync
-            _mockCatalogListViewHelper.Received().SetList(Arg.Any<List<RootEntry>>());
+            _mockCatalogListViewHelper.Received().SetList(Arg.Any<List<ICommonEntry>>());
         }
 
         [Test]
@@ -59,14 +59,14 @@ public class CDEWinFormPresenterTest
             var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
             _mockSearchResultListViewHelper.ColumnSortCompare = Arg.Any<Comparison<PairDirEntry>>();
-            _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<RootEntry>>();
+            _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
             _mockDirectoryListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
         }
 
         [Test]
         public void With_Null_RootEntry_List_SetsCatalogsLoaded()
         {
-            _mockCatalogListViewHelper.SetList(Arg.Any<List<RootEntry>>()).Returns(3);
+            _mockCatalogListViewHelper.SetList(Arg.Any<List<ICommonEntry>>()).Returns(3);
 
             var loadCatalogService = Substitute.For<ILoadCatalogService>();
             loadCatalogService.LoadRootEntriesAsync(
@@ -263,9 +263,9 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Catalog_Activate_On_Same_RootEntry_Does_Not_Set_Root()
         {
-            var testRootTreeNode = new TreeNode("Moo") { Tag = _rootEntry };
+            var testRootTreeNode = new TreeNode("Moo") { Tag = _catalogRoot };
             _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
-            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _catalogRoot);
 
             // ACT
             _sutPresenter.CatalogListViewItemActivate();
@@ -277,25 +277,25 @@ public class CDEWinFormPresenterTest
         public void Catalog_Activate_On_Different_RootEntry_Sets_New_Root()
         {
             var alternateRootEntry = new RootEntry(_config) { Path = "alternate" };
-            var testRootTreeNode = new TreeNode("Moo") { Tag = alternateRootEntry };
+            var testRootTreeNode = new TreeNode("Moo") { Tag = CatalogRootOf(alternateRootEntry) };
             _mockForm.DirectoryTreeViewNodes.Returns(testRootTreeNode);
             TreeNode treeNodeSet = null;
             _mockForm.DirectoryTreeViewNodes =
                 Arg.Do<TreeNode>(node => treeNodeSet = node);
-            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _catalogRoot);
 
             // ACT
             _sutPresenter.CatalogListViewItemActivate();
 
             // _mockForm.Received(1).DirectoryTreeViewNodes = Arg.Any<TreeNode>();
-            Assert.That(treeNodeSet.Tag, Is.EqualTo(_rootEntry));
+            Assert.That(treeNodeSet.Tag, Is.EqualTo(_catalogRoot));
         }
 
         [Test]
         public void Catalog_Activate_GoToDirectoryRoot_On_Null_RootNode_Sets_New_Root()
         {
             _mockForm.DirectoryTreeViewNodes.Returns((TreeNode)null);
-            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _catalogRoot);
 
             // ACT                
             _sutPresenter.CatalogListViewItemActivate();
@@ -306,7 +306,7 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Callback_GoToDirectoryRoot_Sets_Directory_Pane()
         {
-            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _catalogRoot);
 
             _sutPresenter.CatalogListViewItemActivate();
 
@@ -316,7 +316,7 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Callback_GoToDirectoryRoot_Setting_RootNode_Calls_InitSort()
         {
-            FakeItemActivateWithValue(_mockCatalogListViewHelper, _rootEntry);
+            FakeItemActivateWithValue(_mockCatalogListViewHelper, _catalogRoot);
 
             _sutPresenter.CatalogListViewItemActivate();
 
@@ -360,7 +360,7 @@ public class CDEWinFormPresenterTest
         {
             _stubConfig.DateFormatYMDHMS.Returns("{0:yyyy/MM}"); // make local time zone irrelevant for test.
             _mockCatalogListViewHelper.RetrieveItemIndex.Returns(0);
-            _mockCatalogListViewHelper.GetItemAt(0).Returns(_rootEntry);
+            _mockCatalogListViewHelper.GetItemAt(0).Returns(_catalogRoot);
             ListViewItem setRenderItem = null;
             _mockCatalogListViewHelper.RenderItem = Arg.Do<ListViewItem>(lvi => setRenderItem = lvi);
 

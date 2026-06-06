@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
+using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure;
 using cdeWin.Cfg;
 using JetBrains.Annotations;
@@ -27,8 +28,28 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private readonly Color _listViewDirForeColor = Color.DarkBlue;
 
     private readonly ICDEWinForm _clientForm;
-    private List<RootEntry> _rootEntries;
+
+    // Catalogs are held as struct-of-arrays EntryStores (≈1/3 the memory of the pointer tree); each
+    // catalog root is exposed as an EntryRef so the existing ICommonEntry-based GUI works unchanged.
+    private List<ICommonEntry> _catalogRoots;
     private readonly IConfig _config;
+
+    private static List<ICommonEntry> ToCatalogRoots(List<RootEntry> trees)
+    {
+        var roots = new List<ICommonEntry>(trees?.Count ?? 0);
+        if (trees == null) return roots;
+        for (var i = 0; i < trees.Count; i++)
+        {
+            roots.Add(new EntryRef(EntryStore.Build(trees[i]), 0));
+            trees[i] = null; // release the tree so it can be collected
+        }
+        return roots;
+    }
+
+    private static EntryStore StoreOf(ICommonEntry root) => ((EntryRef)root).Store;
+
+    // Catalog of a search-result pair (its entries are EntryRefs into a store).
+    private static EntryStore StoreOfPair(PairDirEntry pde) => (pde.ChildDE as EntryRef)?.Store;
 
     private readonly string[] _directoryVals;
     private readonly string[] _searchVals;
@@ -71,7 +92,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm = form;
         _config = config;
         _loadCatalogService = loadCatalogService;
-        _rootEntries = new List<RootEntry>();
+        _catalogRoots = new List<ICommonEntry>();
 
         _searchVals = new string[_config.DefaultSearchResultColumnCount];
         _directoryVals = new string[_config.DefaultDirectoryColumnCount];
@@ -102,10 +123,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         try
         {
-            _rootEntries = await _loadCatalogService.LoadRootEntriesAsync(
+            _catalogRoots = ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
                 _config,
                 OnLoadProgress,
-                _loadingCts.Token);
+                _loadingCts.Token));
 
             SetCatalogListView();
             SetMemoryStatus();
@@ -194,10 +215,11 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private void SetCatalogListView()
     {
         var catalogHelper = _clientForm.CatalogListViewHelper;
-        var count = catalogHelper.SetList(_rootEntries);
+        var count = catalogHelper.SetList(_catalogRoots);
         catalogHelper.SortList();
         _clientForm.SetCatalogsLoadedStatus(count);
-        _clientForm.SetTotalFileEntriesLoadedStatus(_rootEntries.TotalFileEntries());
+        _clientForm.SetTotalFileEntriesLoadedStatus(
+            (int)_catalogRoots.Sum(r => (long)StoreOf(r).RootFileEntryCount + StoreOf(r).RootDirEntryCount));
     }
 
     private static double BytesToMb(long bytes) => bytes / (1024.0 * 1024.0);
@@ -320,21 +342,24 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         catalogHelper.RenderItem = lvi;
     }
 
-    private Color CreateRowValuesForRootEntry(IList<string> vals, RootEntry rootEntry, Color listViewForeColor)
+    private Color CreateRowValuesForRootEntry(IList<string> vals, ICommonEntry catalogRoot, Color listViewForeColor)
     {
-        vals[0] = rootEntry.Path;
-        vals[1] = rootEntry.VolumeName;
-        vals[2] = rootEntry.DirEntryCount.ToString();
-        vals[3] = rootEntry.FileEntryCount.ToString();
-        vals[4] = (rootEntry.DirEntryCount + rootEntry.FileEntryCount).ToString();
-        vals[5] = rootEntry.DriveLetterHint;
-        vals[6] = rootEntry.Size.ToHRString();
-        vals[7] = rootEntry.AvailSpace.ToHRString();
-        vals[8] = rootEntry.TotalSpace.ToHRString();
-        vals[9] = string.Format(_config.DateFormatYMDHMS, rootEntry.ScanStartUtc.ToLocalTime());
-        vals[10] = $"{TimeSpan.FromMilliseconds(rootEntry.ScanDurationMilliseconds).TotalSeconds:0.} sec";
-        vals[11] = rootEntry.ActualFileName;
-        vals[12] = rootEntry.Description;
+        var s = StoreOf(catalogRoot);
+        var scanStart = new DateTime(s.ScanStartUtcTicks, DateTimeKind.Utc);
+        var scanDurationMs = (s.ScanEndUtcTicks - s.ScanStartUtcTicks) / TimeSpan.TicksPerMillisecond;
+        vals[0] = s.RootPath;
+        vals[1] = s.VolumeName;
+        vals[2] = s.RootDirEntryCount.ToString();
+        vals[3] = s.RootFileEntryCount.ToString();
+        vals[4] = (s.RootDirEntryCount + s.RootFileEntryCount).ToString();
+        vals[5] = s.DriveLetterHint;
+        vals[6] = s.RootSize.ToHRString();
+        vals[7] = s.AvailSpace.ToHRString();
+        vals[8] = s.TotalSpace.ToHRString();
+        vals[9] = string.Format(_config.DateFormatYMDHMS, scanStart.ToLocalTime());
+        vals[10] = $"{TimeSpan.FromMilliseconds(scanDurationMs).TotalSeconds:0.} sec";
+        vals[11] = s.ActualFileName;
+        vals[12] = s.Description;
 
         return listViewForeColor;
     }
@@ -342,7 +367,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public class BgWorkerParam
     {
         public FindOptions Options;
-        public IList<RootEntry> RootEntries;
+        public IList<ICommonEntry> RootEntries;
         public BgWorkerState State;
     }
 
@@ -417,7 +442,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var param = new BgWorkerParam
         {
             Options = findOptions,
-            RootEntries = _rootEntries,
+            RootEntries = _catalogRoots,
             State = new BgWorkerState()
         };
         _bgWorker.RunWorkerAsync(param);
@@ -537,56 +562,73 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var worker = (BackgroundWorker)sender;
         var argument = (BgWorkerParam)e.Argument;
         var findOptions = argument.Options;
-        var rootEntries = argument.RootEntries;
+        var catalogRoots = argument.RootEntries;
         var state = argument.State;
 
+        // Translate the GUI FindOptions into the SoA search options and run over the EntryStores.
+        var opts = new EntryStoreFindOptions
+        {
+            Pattern = findOptions.Pattern,
+            RegexMode = findOptions.RegexMode,
+            IncludePath = findOptions.IncludePath,
+            IncludeFiles = findOptions.IncludeFiles,
+            IncludeFolders = findOptions.IncludeFolders,
+            FromSizeEnable = findOptions.FromSizeEnable, FromSize = findOptions.FromSize,
+            ToSizeEnable = findOptions.ToSizeEnable, ToSize = findOptions.ToSize,
+            FromDateEnable = findOptions.FromDateEnable, FromDate = findOptions.FromDate,
+            ToDateEnable = findOptions.ToDateEnable, ToDate = findOptions.ToDate,
+            FromHourEnable = findOptions.FromHourEnable, FromHour = findOptions.FromHour,
+            ToHourEnable = findOptions.ToHourEnable, ToHour = findOptions.ToHour,
+            NotOlderThanEnable = findOptions.NotOlderThanEnable, NotOlderThan = findOptions.NotOlderThan,
+        };
+        var limit = findOptions.LimitResultCount;
+
+        var stores = catalogRoots.Select(StoreOf).ToList();
+        var grandTotal = stores.Sum(s => s.Count);
+        var scannedBase = 0;
+
         var list = new List<PairDirEntry>(500);
-        var listLock = new object();
         state.ListCount = 0;
         state.List = list;
+        state.End = grandTotal;
         worker.ReportProgress(0, state);
-        // Find parallelizes across catalogs, so VisitorFunc runs on multiple threads. List<T>.Add is
-        // not thread-safe — without this lock, searching many catalogs at once could drop results or
-        // throw as concurrent adds race on the backing array.
-        findOptions.VisitorFunc = (p, d) =>
+
+        var lastReport = Stopwatch.GetTimestamp();
+        var reportTicks = Stopwatch.Frequency / 10; // ~100ms streaming
+
+        void Report(int scanned)
         {
-            lock (listLock)
-            {
-                list.Add(new PairDirEntry(p, d));
-            }
-            return true;
-        };
-        // Hand the UI an immutable snapshot taken under the lock — never the live list, which worker
-        // threads are still mutating while the (virtual) ListView indexes into it on the UI thread.
-        findOptions.ProgressFunc = (counter, end) =>
-        {
-            List<PairDirEntry> snapshot;
-            lock (listLock)
-            {
-                snapshot = new List<PairDirEntry>(list);
-            }
-            state.ListCount = snapshot.Count;
-            state.List = snapshot;
-            state.Counter = counter;
-            state.End = end;
-            worker.ReportProgress((int)(100.0 * counter / end), state);
-        };
+            var now = Stopwatch.GetTimestamp();
+            if (now - lastReport < reportTicks) return;
+            lastReport = now;
+            state.ListCount = list.Count;
+            state.List = new List<PairDirEntry>(list); // immutable snapshot for the UI thread
+            state.Counter = scanned;
+            worker.ReportProgress(grandTotal > 0 ? (int)(100.0 * scanned / grandTotal) : 0, state);
+        }
+
         var timer = Stopwatch.StartNew();
-        findOptions.Find(rootEntries);
-        //findOptions.FindAsync(rootEntries).GetAwaiter().GetResult();
+        foreach (var store in stores)
+        {
+            if (worker.CancellationPending || list.Count >= limit) break;
+            var baseScanned = scannedBase;
+            EntryStoreSearch.Find(store, opts,
+                onMatch: idx =>
+                {
+                    list.Add(new PairDirEntry(new EntryRef(store, store.Parent[idx]), new EntryRef(store, idx)));
+                },
+                isCancelled: () => worker.CancellationPending || list.Count >= limit,
+                onScan: scanned => Report(baseScanned + scanned));
+            scannedBase += store.Count;
+        }
         timer.Stop();
         Log.Logger.Information(
             "Search execution time: {ExecutionTime} ms, Total found {TotalFound}",
             timer.ElapsedMilliseconds, list.Count);
         state.ListCount = list.Count;
         state.List = list;
-        var completePercent = (int)(100.0 * state.Counter / state.End);
-        if (state.End - state.Counter < findOptions.ProgressModifier)
-        {
-            completePercent = 100;
-        }
-
-        worker.ReportProgress(completePercent, state);
+        state.Counter = grandTotal;
+        worker.ReportProgress(100, state);
         e.Result = list;
     }
 
@@ -659,7 +701,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _searchVals[(int)SearchResultColumn.FullPath] = pairDirEntry.ParentDE.FullPath;
 
         //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
-        _searchVals[(int)SearchResultColumn.Catalog] = pairDirEntry.GetRootEntry().DefaultFileName;
+        _searchVals[(int)SearchResultColumn.Catalog] =
+            StoreOfPair(pairDirEntry)?.DefaultFileName ?? pairDirEntry.GetRootEntry()?.DefaultFileName ?? "";
 
         searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
     }
@@ -745,10 +788,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.CatalogListViewHelper.ActionOnActivateItem(GoToDirectoryRoot);
     }
 
-    private void GoToDirectoryRoot(RootEntry newRoot)
+    private void GoToDirectoryRoot(ICommonEntry newRoot)
     {
-        var currentRoot = (RootEntry)_clientForm.DirectoryTreeViewNodes?.Tag;
-        if (currentRoot == null || currentRoot != newRoot)
+        var currentRoot = (ICommonEntry)_clientForm.DirectoryTreeViewNodes?.Tag;
+        if (!SameRoot(currentRoot, newRoot))
         {
             SetNewDirectoryRoot(newRoot);
         }
@@ -756,7 +799,11 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.SelectDirectoryPane();
     }
 
-    private TreeNode SetNewDirectoryRoot(RootEntry newRoot)
+    // Catalog roots are EntryRef instances; two refs to the same catalog share a store.
+    private static bool SameRoot(ICommonEntry a, ICommonEntry b)
+        => a is EntryRef ea && b is EntryRef eb && ReferenceEquals(ea.Store, eb.Store);
+
+    private TreeNode SetNewDirectoryRoot(ICommonEntry newRoot)
     {
         var newRootNode = BuildRootNode(newRoot);
         _clientForm.DirectoryTreeViewNodes = newRootNode;
@@ -764,7 +811,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         return newRootNode;
     }
 
-    private static TreeNode BuildRootNode(RootEntry rootEntry)
+    private static TreeNode BuildRootNode(ICommonEntry rootEntry)
     {
         var rootTreeNode = NewTreeNode(rootEntry);
         SetDummyChildNode(rootTreeNode, rootEntry);
@@ -792,16 +839,16 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private void SetDirectoryWithExpand(IEnumerable<ICommonEntry> activatedDirEntryList)
     {
         var currentRootNode = _clientForm.DirectoryTreeViewNodes;
-        var currentRoot = (RootEntry)currentRootNode?.Tag;
+        var currentRoot = (ICommonEntry)currentRootNode?.Tag;
 
         TreeNode workingTreeNode = null;
-        RootEntry newRoot = null;
+        ICommonEntry newRoot = null;
         foreach (var entry in activatedDirEntryList)
         {
             if (newRoot == null)
             {
-                newRoot = (RootEntry)entry;
-                if (currentRoot != newRoot)
+                newRoot = entry;
+                if (!SameRoot(currentRoot, newRoot))
                 {
                     currentRootNode = SetNewDirectoryRoot(newRoot);
                     currentRoot = newRoot;
@@ -885,8 +932,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
             case 3:
                 compareResult = string.Compare(
-                    pde1.GetRootEntry().ActualFileName,
-                    pde2.GetRootEntry().ActualFileName,
+                    StoreOfPair(pde1)?.ActualFileName ?? pde1.GetRootEntry()?.ActualFileName,
+                    StoreOfPair(pde2)?.ActualFileName ?? pde2.GetRootEntry()?.ActualFileName,
                     StringComparison.OrdinalIgnoreCase);
                 break;
 
@@ -1158,26 +1205,28 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.CatalogListViewHelper.ListViewColumnClick();
     }
 
-    private int RootCompare(RootEntry re1, RootEntry re2)
+    private int RootCompare(ICommonEntry root1, ICommonEntry root2)
     {
+        var re1 = StoreOf(root1);
+        var re2 = StoreOf(root2);
         var catalogHelper = _clientForm.CatalogListViewHelper;
         var column = catalogHelper.SortColumn;
         var compareResult = column switch
         {
-            0 => string.Compare(re1.Path, re2.Path, StringComparison.Ordinal),
+            0 => string.Compare(re1.RootPath, re2.RootPath, StringComparison.Ordinal),
             1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName,
                 string.IsNullOrEmpty(re2.VolumeName) ? "" : re2.VolumeName, StringComparison.Ordinal),
-            2 => re1.DirEntryCount.CompareTo(re2.DirEntryCount),
-            3 => re1.FileEntryCount.CompareTo(re2.FileEntryCount),
-            4 => (re1.DirEntryCount + re1.FileEntryCount).CompareTo(re2.DirEntryCount + re2.FileEntryCount),
+            2 => re1.RootDirEntryCount.CompareTo(re2.RootDirEntryCount),
+            3 => re1.RootFileEntryCount.CompareTo(re2.RootFileEntryCount),
+            4 => (re1.RootDirEntryCount + re1.RootFileEntryCount).CompareTo(re2.RootDirEntryCount + re2.RootFileEntryCount),
             5 => string.Compare(re1.DriveLetterHint, re2.DriveLetterHint, StringComparison.Ordinal),
-            6 => re1.Size.CompareTo(re2.Size),
+            6 => re1.RootSize.CompareTo(re2.RootSize),
             7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
             8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
-            9 => re1.ScanStartUtc.CompareTo(re2.ScanStartUtc),
-            10 => re1.ScanDurationMilliseconds.CompareTo(re2.ScanDurationMilliseconds),
+            9 => re1.ScanStartUtcTicks.CompareTo(re2.ScanStartUtcTicks),
+            10 => (re1.ScanEndUtcTicks - re1.ScanStartUtcTicks).CompareTo(re2.ScanEndUtcTicks - re2.ScanStartUtcTicks),
             11 => string.Compare(re1.ActualFileName, re2.ActualFileName, StringComparison.Ordinal),
-            12 => re1.DescriptionCompareTo(re2, _config),
+            12 => string.Compare(re1.Description, re2.Description, StringComparison.Ordinal),
             _ => throw new Exception($"Problem column {column} not handled for sort.")
         };
 
@@ -1214,11 +1263,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             var directoryListHelper = _clientForm.DirectoryListViewHelper;
             directoryListHelper.SetList(null);
 
-            var previousRootEntries = _rootEntries;
-            foreach (var rootEntry in previousRootEntries)
-            {
-                rootEntry.ClearCommonEntryFields();
-            }
+            // Drop the previous stores; releasing the references lets the GC reclaim them.
+            _catalogRoots = new List<ICommonEntry>();
 
             _clientForm.AddLine(string.Empty);
             _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
@@ -1236,14 +1282,14 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             _clientForm.SetLoadingProgressValue(0);
             SetMemoryStatus();
 
-            _rootEntries = await _loadCatalogService.LoadRootEntriesAsync(
+            _catalogRoots = ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
                 _config,
                 OnLoadProgress,
-                _loadingCts.Token);
+                _loadingCts.Token));
 
-            if (_rootEntries.Count > 0)
+            if (_catalogRoots.Count > 0)
             {
-                SetNewDirectoryRoot(_rootEntries.First());
+                SetNewDirectoryRoot(_catalogRoots.First());
             }
 
             SetCatalogListView();

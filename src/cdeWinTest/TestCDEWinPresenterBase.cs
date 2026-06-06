@@ -18,7 +18,12 @@ public class TestCDEWinPresenterBase
     protected IConfig _stubConfig;
     protected IListViewHelper<PairDirEntry> _mockSearchResultListViewHelper;
     protected IListViewHelper<ICommonEntry> _mockDirectoryListViewHelper;
-    protected IListViewHelper<RootEntry> _mockCatalogListViewHelper;
+    protected IListViewHelper<ICommonEntry> _mockCatalogListViewHelper;
+
+    // Catalog roots are presented to the GUI as EntryRef over an EntryStore (SoA model).
+    protected cdeLib.Entities.Soa.EntryRef _catalogRoot;
+    protected cdeLib.Entities.Soa.EntryRef CatalogRootOf(RootEntry re)
+        => new(cdeLib.Entities.Soa.EntryStore.Build(re), 0);
 
     protected RootEntry _rootEntry;
     protected DirEntry _dirEntry;
@@ -42,7 +47,7 @@ public class TestCDEWinPresenterBase
         _mockForm.SearchResultListViewHelper.Returns(_mockSearchResultListViewHelper);
         _mockDirectoryListViewHelper = Substitute.For<IListViewHelper<ICommonEntry>>();
         _mockForm.DirectoryListViewHelper.Returns(_mockDirectoryListViewHelper);
-        _mockCatalogListViewHelper = Substitute.For<IListViewHelper<RootEntry>>();
+        _mockCatalogListViewHelper = Substitute.For<IListViewHelper<ICommonEntry>>();
         _mockForm.CatalogListViewHelper.Returns(_mockCatalogListViewHelper);
     }
 
@@ -74,6 +79,7 @@ public class TestCDEWinPresenterBase
         _rootEntry.AddChild(_dirEntry);
         _rootEntry.SetInMemoryFields();
         _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+        _catalogRoot = CatalogRootOf(_rootEntry);
 
         _rootList.Add(_rootEntry);
     }
@@ -87,6 +93,7 @@ public class TestCDEWinPresenterBase
         _rootEntry.AddChild(_dirEntry);
         _rootEntry.SetInMemoryFields();
         _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+        _catalogRoot = CatalogRootOf(_rootEntry);
 
         _rootList.Add(_rootEntry);
     }

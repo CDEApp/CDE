@@ -16,7 +16,10 @@ public static class EntryStoreSearch
     /// Full-filter search (pattern + name/path + file/folder + size/date/hour ranges), mirroring the
     /// cdeWin GUI search, evaluated directly against the store arrays.
     /// </summary>
-    public static void Find(EntryStore store, EntryStoreFindOptions o, Action<int> onMatch)
+    /// <param name="isCancelled">Polled every 4096 entries; return true to stop early (GUI cancel).</param>
+    /// <param name="onScan">Called every 4096 entries with the running scanned count (GUI progress).</param>
+    public static void Find(EntryStore store, EntryStoreFindOptions o, Action<int> onMatch,
+        Func<bool> isCancelled = null, Action<int> onScan = null)
     {
         ArgumentNullException.ThrowIfNull(store);
         ArgumentNullException.ThrowIfNull(o);
@@ -31,6 +34,12 @@ public static class EntryStoreSearch
 
         for (var i = 1; i < store.Count; i++)
         {
+            if ((i & 4095) == 0)
+            {
+                if (isCancelled != null && isCancelled()) return;
+                onScan?.Invoke(i);
+            }
+
             var isDir = store.IsDirectory(i);
             if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
 

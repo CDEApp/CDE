@@ -92,7 +92,7 @@ public interface ICDEWinForm : IView
 
     IListViewHelper<PairDirEntry> SearchResultListViewHelper { get; set; }
     IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
-    IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+    IListViewHelper<ICommonEntry> CatalogListViewHelper { get; set; }
 
     CheckBoxDependentControlHelper FromDate { get; set; }
     CheckBoxDependentControlHelper ToDate { get; set; }
