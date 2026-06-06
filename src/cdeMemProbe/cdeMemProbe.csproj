@@ -6,6 +6,8 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
     <LangVersion>latest</LangVersion>
+    <!-- SPIKE: zero-copy mmap reader acquires a raw pointer over the mapping. -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <!-- Server GC gives the most representative steady-state heap for the billions-of-entries
          workload this tool models; keep it explicit so measurements are reproducible. -->
     <ServerGarbageCollection>true</ServerGarbageCollection>

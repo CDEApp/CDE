@@ -51,6 +51,16 @@ public static class Program
             return MeasureSoa(args);
         }
 
+        if (HasFlag(args, "--migrate", out var migrateIn))
+        {
+            return Migrate(args, migrateIn, logger);
+        }
+
+        if (HasFlag(args, "--flat", out var flatFile))
+        {
+            return MeasureFlat(args, flatFile);
+        }
+
         if (HasFlag(args, "--generate", out var genValue))
         {
             return await GenerateAsync(args, genValue, logger);
@@ -221,6 +231,108 @@ public static class Program
         // root is a plain local; once this returns it is unreferenced and collectable, leaving only
         // the store (which reuses the tree's interned name strings) for the caller to measure.
         return (store, entries);
+    }
+
+    /// <summary>
+    /// One-way migration: load an existing MessagePack .cde, convert to the SoA EntryStore, and write
+    /// the columnar/mmap format. Usage: cdeMemProbe --migrate &lt;in.cde&gt; [--out &lt;out.cdex&gt;]
+    /// </summary>
+    private static int Migrate(string[] args, string? inFile, ILogger logger)
+    {
+        if (string.IsNullOrWhiteSpace(inFile) || !File.Exists(inFile))
+        {
+            Console.Error.WriteLine("--migrate requires an existing <in.cde>, e.g. --migrate cat.cde --out cat.cdex");
+            return 1;
+        }
+
+        var outFile = HasFlag(args, "--out", out var outArg) && !string.IsNullOrWhiteSpace(outArg)
+            ? outArg!
+            : Path.ChangeExtension(inFile, ".cdex");
+
+        var sw = Stopwatch.StartNew();
+        EntryStore store;
+        using (var repo = new CatalogRepository(logger))
+        {
+            var root = repo.LoadDirCache(inFile);
+            if (root == null)
+            {
+                Console.Error.WriteLine($"failed to load catalog: {inFile}");
+                return 1;
+            }
+            store = EntryStore.Build(root);
+        }
+        Columnar.ColumnarFormat.Write(store, outFile);
+        sw.Stop();
+
+        var srcLen = new FileInfo(inFile).Length;
+        var dstLen = new FileInfo(outFile).Length;
+        Console.Error.WriteLine(
+            $"migrated {store.Count:N0} entries: {Path.GetFileName(inFile)} ({srcLen:N0} B) -> " +
+            $"{Path.GetFileName(outFile)} ({dstLen:N0} B) in {sw.ElapsedMilliseconds:N0} ms");
+        Console.WriteLine(outFile);
+        return 0;
+    }
+
+    /// <summary>
+    /// Measure the zero-copy mmap path: open the columnar file (no managed load), run a search, and
+    /// report retained heap, allocations DURING the search, working set, and timing.
+    /// Usage: cdeMemProbe --flat &lt;file.cdex&gt; [--pattern X] [--path]
+    /// </summary>
+    private static int MeasureFlat(string[] args, string? flatFile)
+    {
+        if (string.IsNullOrWhiteSpace(flatFile) || !File.Exists(flatFile))
+        {
+            Console.Error.WriteLine("--flat requires an existing <file.cdex>");
+            return 1;
+        }
+
+        var pattern = HasFlag(args, "--pattern", out var p) && !string.IsNullOrEmpty(p) ? p! : ".txt";
+        var pathMode = HasFlag(args, "--path", out _);
+        var patternUtf8 = System.Text.Encoding.UTF8.GetBytes(pattern);
+
+        // Settle, then snapshot allocation + heap baselines so we can isolate the search's own cost.
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+        var heapBefore = GC.GetTotalMemory(true);
+
+        var openSw = Stopwatch.StartNew();
+        using var reader = new Columnar.ColumnarReader(flatFile);
+        openSw.Stop();
+
+        var allocBefore = GC.GetTotalAllocatedBytes(precise: true);
+        var searchSw = Stopwatch.StartNew();
+        var matches = pathMode
+            ? reader.FindPath(patternUtf8)
+            : reader.FindName(patternUtf8);
+        searchSw.Stop();
+        var allocDuringSearch = GC.GetTotalAllocatedBytes(precise: true) - allocBefore;
+
+        var heapAfter = GC.GetTotalMemory(false); // no forced collect: show what the search left live
+        using var proc = Process.GetCurrentProcess();
+        var workingSet = proc.WorkingSet64;
+        var fileBytes = new FileInfo(flatFile).Length;
+        GC.KeepAlive(reader);
+
+        var heapPerEntry = reader.Count > 0 ? (double)heapAfter / reader.Count : 0;
+
+        Console.WriteLine(
+            "file,entries,mode,openMs,searchMs,matches,allocDuringSearch,heapBytes,heapPerEntry,workingSet,fileBytes");
+        Console.WriteLine(string.Join(',',
+            Path.GetFileName(flatFile),
+            reader.Count.ToString(CultureInfo.InvariantCulture),
+            pathMode ? "path" : "name",
+            openSw.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture),
+            searchSw.Elapsed.TotalMilliseconds.ToString("F2", CultureInfo.InvariantCulture),
+            matches.ToString(CultureInfo.InvariantCulture),
+            allocDuringSearch.ToString(CultureInfo.InvariantCulture),
+            heapAfter.ToString(CultureInfo.InvariantCulture),
+            heapPerEntry.ToString("F2", CultureInfo.InvariantCulture),
+            workingSet.ToString(CultureInfo.InvariantCulture),
+            fileBytes.ToString(CultureInfo.InvariantCulture)));
+        Console.Error.WriteLine(
+            $"baseline heap before open: {heapBefore:N0} B; sample path[1] = {reader.FullPath(1)}");
+        return 0;
     }
 
     /// <summary>
