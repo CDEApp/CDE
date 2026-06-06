@@ -33,8 +33,8 @@ public interface ICommonEntry
 
     bool IsDirectory { get; set; }
     bool PathProblem { get; }
-    long FileEntryCount { get; set; }
-    long DirEntryCount { get; set; }
+    uint FileEntryCount { get; set; }
+    uint DirEntryCount { get; set; }
     DateTime Modified { get; set; }
     bool IsHashDone { get; set; }
     bool IsPartialHash { get; set; }

@@ -639,13 +639,13 @@ public sealed class RootEntry : object, ICommonEntry
     /// if this is a directory number of files contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long FileEntryCount { get; set; }
+    public uint FileEntryCount { get; set; }
 
     /// <summary>
     /// if this is a directory number of dirs contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long DirEntryCount { get; set; }
+    public uint DirEntryCount { get; set; }
 
     public void SetHash(byte[] hash)
     {

@@ -44,19 +44,10 @@ public class FindService : IFindService
 
     public void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
     {
-        // Use async version for better performance
-        FindAsync(pattern, regexMode, includePath, rootEntries).GetAwaiter().GetResult();
-    }
-
-    public async Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries)
-    {
-        var regexMode = param is ParamGrep or ParamGrepPath;
-        var includePath = param is ParamGrepPath or ParamFindPath;
-        await FindAsync(pattern, regexMode, includePath, rootEntries);
-    }
-
-    public async Task FindAsync(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
-    {
+        // Use the synchronous traversal: it is dramatically faster than the work-stealing async
+        // path, which ran every entry through an async Task<bool> state machine plus per-entry
+        // Task.Yield/Task.Delay. Measured on a 1M-entry catalog: ~49x faster for name search and
+        // ~7x for path search (see src/cdeBenchmarks/baseline/search-baseline.md).
         var totalFound = 0L;
         var findOptions = new FindOptions
         {
@@ -75,10 +66,26 @@ public class FindService : IFindService
         };
 
         var timer = System.Diagnostics.Stopwatch.StartNew();
-        await findOptions.FindAsync(rootEntries);
+        findOptions.Find(rootEntries);
         timer.Stop();
         Log.Logger.Information(
             "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
             timer.ElapsedMilliseconds, pattern, totalFound);
+    }
+
+    public Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries)
+    {
+        var regexMode = param is ParamGrep or ParamGrepPath;
+        var includePath = param is ParamGrepPath or ParamFindPath;
+        return FindAsync(pattern, regexMode, includePath, rootEntries);
+    }
+
+    public Task FindAsync(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries)
+    {
+        // Search is CPU-bound; the synchronous path is the fast one. Keep the async signature for
+        // API compatibility but run the fast core. Callers wanting off-thread execution should
+        // wrap this in Task.Run themselves.
+        Find(pattern, regexMode, includePath, rootEntries);
+        return Task.CompletedTask;
     }
 }
