@@ -12,6 +12,67 @@ namespace cdeLib.Entities.Soa;
 /// </summary>
 public static class EntryStoreSearch
 {
+    /// <summary>
+    /// Full-filter search (pattern + name/path + file/folder + size/date/hour ranges), mirroring the
+    /// cdeWin GUI search, evaluated directly against the store arrays.
+    /// </summary>
+    public static void Find(EntryStore store, EntryStoreFindOptions o, Action<int> onMatch)
+    {
+        ArgumentNullException.ThrowIfNull(store);
+        ArgumentNullException.ThrowIfNull(o);
+        if (!o.IncludeFiles && !o.IncludeFolders) return;
+
+        Regex regex = null;
+        if (o.RegexMode && !string.IsNullOrEmpty(o.Pattern))
+            regex = new Regex(o.Pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+
+        var sb = o.IncludePath ? new StringBuilder(260) : null;
+        var hasPattern = !string.IsNullOrEmpty(o.Pattern);
+
+        for (var i = 1; i < store.Count; i++)
+        {
+            var isDir = store.IsDirectory(i);
+            if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
+
+            var size = store.Size[i];
+            if (o.FromSizeEnable && size < o.FromSize) continue;
+            if (o.ToSizeEnable && size > o.ToSize) continue;
+
+            if (o.FromDateEnable || o.ToDateEnable || o.FromHourEnable || o.ToHourEnable || o.NotOlderThanEnable)
+            {
+                var modified = store.Modified(i);
+                if (o.FromDateEnable && modified < o.FromDate) continue;
+                if (o.ToDateEnable && modified > o.ToDate) continue;
+                if (o.NotOlderThanEnable && modified < o.NotOlderThan) continue;
+                var tod = modified.TimeOfDay;
+                if (o.FromHourEnable && tod < o.FromHour) continue;
+                if (o.ToHourEnable && tod > o.ToHour) continue;
+            }
+
+            if (!hasPattern) { onMatch(i); continue; }
+
+            bool match;
+            if (o.IncludePath)
+            {
+                sb.Clear();
+                store.AppendFullPath(sb, i);
+                var path = sb.ToString();
+                match = o.RegexMode
+                    ? regex.IsMatch(path)
+                    : path.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
+            }
+            else
+            {
+                var name = store.FullName(i);
+                match = o.RegexMode
+                    ? regex.IsMatch(name)
+                    : name.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
+            }
+
+            if (match) onMatch(i);
+        }
+    }
+
     /// <summary>Invoke <paramref name="onMatch"/> with the index of every entry matching the query.</summary>
     public static void Find(
         EntryStore store,

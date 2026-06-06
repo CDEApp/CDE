@@ -146,6 +146,25 @@ public class EntryStoreTests
     }
 
     [Test]
+    public void Search_WithSizeFilter_FiltersBySize()
+    {
+        var root = new RootEntry { Path = @"C:\s" };
+        root.AddChild(new DirEntry(false) { Path = "small.txt", Size = 10 });
+        root.AddChild(new DirEntry(false) { Path = "mid.txt", Size = 30 });
+        root.AddChild(new DirEntry(false) { Path = "big.txt", Size = 40 });
+        root.SetInMemoryFields();
+        var store = EntryStore.Build(root);
+
+        var found = new List<string>();
+        EntryStoreSearch.Find(store,
+            new EntryStoreFindOptions { IncludeFiles = true, IncludeFolders = false, FromSizeEnable = true, FromSize = 25 },
+            i => found.Add(store.FullName(i)));
+        found.Sort();
+
+        Assert.That(found, Is.EqualTo(new[] { "big.txt", "mid.txt" })); // size >= 25
+    }
+
+    [Test]
     public void Search_FilesOnly_MatchesTreeFind()
     {
         var root = BuildTree();
