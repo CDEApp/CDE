@@ -541,18 +541,32 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var state = argument.State;
 
         var list = new List<PairDirEntry>(500);
-        state.ListCount = list.Count; // 0
+        var listLock = new object();
+        state.ListCount = 0;
         state.List = list;
         worker.ReportProgress(0, state);
+        // Find parallelizes across catalogs, so VisitorFunc runs on multiple threads. List<T>.Add is
+        // not thread-safe — without this lock, searching many catalogs at once could drop results or
+        // throw as concurrent adds race on the backing array.
         findOptions.VisitorFunc = (p, d) =>
         {
-            list.Add(new PairDirEntry(p, d));
+            lock (listLock)
+            {
+                list.Add(new PairDirEntry(p, d));
+            }
             return true;
         };
+        // Hand the UI an immutable snapshot taken under the lock — never the live list, which worker
+        // threads are still mutating while the (virtual) ListView indexes into it on the UI thread.
         findOptions.ProgressFunc = (counter, end) =>
         {
-            state.ListCount = list.Count; // concurrency !
-            state.List = list; // concurrency !!!!
+            List<PairDirEntry> snapshot;
+            lock (listLock)
+            {
+                snapshot = new List<PairDirEntry>(list);
+            }
+            state.ListCount = snapshot.Count;
+            state.List = snapshot;
             state.Counter = counter;
             state.End = end;
             worker.ReportProgress((int)(100.0 * counter / end), state);
