@@ -87,3 +87,45 @@ rejoin, same as name search). Name-search numbers are unchanged from Phase 1.
 - `cdeLibTest`: 126 passed (incl. all `EntryHelper` / `GetListFromRoot` / `RootEntry` path tests
   that assert exact path strings — confirms the single-pass build is identical).
 - Full solution builds clean.
+
+---
+
+## Phase 3 — lean files via `ExtraData` side-object (no format change)
+
+**Change shipped**
+- `DirEntry` moves its directory-only fields (`Children` + the two summary counts) into a
+  lazily-allocated private `ExtraData` object, allocated only for directories. A file — the vast
+  majority of entries — now carries a single 8-byte `_extra` reference (null) instead of an
+  always-null `Children` ref plus two count fields. `Hash` deliberately stays **inline** (moving it
+  off-entry forces every hashed file to allocate an `ExtraData` whose header costs more than the
+  16-byte `Hash16`, a net regression for hashed catalogs — measured at +16 B/entry). No catalog
+  format change: `Children` keeps Key 3 via the property; counts are `[IgnoreMember]`.
+  (`src/cdeLib/Entities/DirEntry.cs`)
+
+### Footprint (retained managed heap, 1M fixture, ~10:1 file:dir)
+
+| Catalog | Phase 1 (post-R1a) | Phase 3 | Saved |
+|---------|-------------------:|--------:|------:|
+| no hashes | 203.94 | **198.85** | 5.09 B/entry |
+| hashed | (≈209 post-R1a) | **203.98** | no regression |
+
+Round-trip verified: the serialized `.cde` is **byte-identical** to the baseline (36,668,199 bytes),
+confirming the format is unchanged. Find shows no CPU regression (name 36.7 ms, path 95.0 ms).
+
+### Honest accounting of the win vs the planned split
+The original Phase 3 was a polymorphic file/dir type split + hash side-table (format bump). The
+`ExtraData` approach delivers the same *memory outcome direction* (lean files) **safely and with no
+format change**, but a side-object has two costs a true type split avoids: every file still keeps an
+8-byte `_extra` reference, and every directory pays a 16-byte object header. At this fixture's 10:1
+ratio that nets ~5 B/entry; at a real drive's ~6:1 (per the project's own notes) it is smaller still.
+
+The full polymorphic split (files as a lean type with no dir fields and no per-file ref; directories
+with the fields inline and no extra object) would save ~3× more, but requires making `DirEntry` an
+abstract MessagePack-union root, changing `IList<DirEntry>` throughout lib + GUI + web + tests,
+rewriting ~40 construction sites, a `.cde` format bump with migration, and FlatSharp/protobuf union
+handling — a large change whose WinForms GUI behavior cannot be runtime-validated in this
+environment (only via presenter unit tests). Left as an explicit, opt-in follow-up.
+
+### Correctness
+- `cdeLibTest`: 126 passed; `cdeWinTest` (GUI presenter): 32 passed.
+- Round-trip byte-identical; no find CPU regression.

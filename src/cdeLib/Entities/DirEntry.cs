@@ -18,6 +18,28 @@ public sealed class DirEntry : ICommonEntry
 {
     private string _path;
 
+    /// <summary>
+    /// Side-object holding directory-only state — the child list and the rolled-up summary counts.
+    /// Null on every file (the vast majority of entries), so a file no longer carries an always-null
+    /// Children reference plus two count fields. Only directories (~2% of entries) allocate it.
+    /// Serialization is unaffected: Children stays Key 3 via the property below, just backed here.
+    ///
+    /// Note: the content Hash deliberately stays INLINE on the entry. Moving it here too would force
+    /// every *hashed file* to allocate an ExtraData whose object header costs more than the 16-byte
+    /// Hash16 it replaced — a net regression for hashed catalogs. Keeping Hash inline means a hashed
+    /// file needs no side-object at all, so this change never increases footprint for any catalog.
+    /// </summary>
+    private sealed class ExtraData
+    {
+        public IList<DirEntry> Children;
+        public uint FileEntryCount;
+        public uint DirEntryCount;
+    }
+
+    private ExtraData _extra;
+
+    private ExtraData EnsureExtra() => _extra ??= new ExtraData();
+
     [IgnoreMember]
     public DateTime Modified
     {
@@ -160,13 +182,29 @@ public sealed class DirEntry : ICommonEntry
     /// if this is a directory number of files contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public uint FileEntryCount { get; set; }
+    public uint FileEntryCount
+    {
+        get => _extra?.FileEntryCount ?? 0;
+        set
+        {
+            if (value != 0) EnsureExtra().FileEntryCount = value;
+            else if (_extra != null) _extra.FileEntryCount = value;
+        }
+    }
 
     /// <summary>
     /// if this is a directory number of dirs contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public uint DirEntryCount { get; set; }
+    public uint DirEntryCount
+    {
+        get => _extra?.DirEntryCount ?? 0;
+        set
+        {
+            if (value != 0) EnsureExtra().DirEntryCount = value;
+            else if (_extra != null) _extra.DirEntryCount = value;
+        }
+    }
 
     public void SetHash(byte[] hash)
     {
@@ -337,17 +375,24 @@ public sealed class DirEntry : ICommonEntry
     [ProtoMember(3, IsRequired = false)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children
+    {
+        get => _extra?.Children;
+        set
+        {
+            // A non-null child list (only directories have one) materialises ExtraData; files
+            // deserialize a nil Children and stay lean.
+            if (value != null) EnsureExtra().Children = value;
+            else if (_extra != null) _extra.Children = null;
+        }
+    }
     // ReSharper restore MemberCanBePrivate.Global
 
     public void AddChild(DirEntry child)
     {
-        if (Children == null)
-        {
-            Children = CollectionPool.GetDirEntryList();
-        }
-
-        Children.Add(child);
+        var extra = EnsureExtra();
+        extra.Children ??= CollectionPool.GetDirEntryList();
+        extra.Children.Add(child);
     }
 
     [ProtoMember(4, IsRequired = true)]
