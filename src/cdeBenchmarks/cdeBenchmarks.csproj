@@ -11,6 +11,11 @@
   <ItemGroup>
     <PackageReference Include="BenchmarkDotNet" Version="0.15.8" />
     <PackageReference Update="MinVer" Version="7.0.0" />
+    <!-- BenchmarkDotNet pulls Microsoft.CodeAnalysis.Common/CSharp 4.14.0 but the
+         Workspaces packages transitively at 3.8.0, which demand Common/CSharp = 3.8.0
+         (NU1608). Pin the Workspaces packages to the same 4.14.0 to align the set. -->
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="4.14.0" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="4.14.0" />
   </ItemGroup>
 
   <ItemGroup>

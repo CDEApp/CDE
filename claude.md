@@ -126,9 +126,10 @@ Entry (base class)
 
 ### Build System
 
-- **Nuke Build** - Build automation
-  - `build.cmd` / `build.ps1` / `build.sh` - Build scripts
-  - `build/Build.cs` - Build definition
+- **Fallout Build** - Build automation (replaced Nuke)
+  - `build.cmd` / `build.ps1` / `build.sh` - Build scripts (bootstrap `build/_build.csproj`)
+  - `build/Build.cs` - Build definition (uses `Fallout.Common`)
+  - `.fallout/` - Fallout config, parameters, and temp/log output
   - Command: `build.cmd publish` - Creates artifacts in `./artifacts`
 
 ### Key Command Handlers
