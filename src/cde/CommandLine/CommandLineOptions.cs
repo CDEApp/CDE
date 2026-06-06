@@ -66,6 +66,16 @@ public class ReplFindOptions
     public string Value { get; [UsedImplicitly] set; }
 }
 
+[Verb("migrate",
+    HelpText = "Convert MessagePack .cde catalogs to the zero-copy columnar .cdex format (one-way).")]
+public class MigrateOptions
+{
+    [Value(0, Required = false,
+        HelpText = "Specific .cde file to convert. If omitted, converts every catalog in the current " +
+                   "directory and one level down, writing a .cdex beside each.")]
+    public string Path { get; [UsedImplicitly] set; }
+}
+
 [Verb("hash", HelpText = "Hash all catalogs in current directory")]
 public class HashOptions;
 

@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
 using Serilog;
 
@@ -261,7 +262,7 @@ public static class Program
             }
             store = EntryStore.Build(root);
         }
-        Columnar.ColumnarFormat.Write(store, outFile);
+        ColumnarFormat.Write(store, outFile);
         sw.Stop();
 
         var srcLen = new FileInfo(inFile).Length;
@@ -288,7 +289,6 @@ public static class Program
 
         var pattern = HasFlag(args, "--pattern", out var p) && !string.IsNullOrEmpty(p) ? p! : ".txt";
         var pathMode = HasFlag(args, "--path", out _);
-        var patternUtf8 = System.Text.Encoding.UTF8.GetBytes(pattern);
 
         // Settle, then snapshot allocation + heap baselines so we can isolate the search's own cost.
         GC.Collect();
@@ -297,14 +297,14 @@ public static class Program
         var heapBefore = GC.GetTotalMemory(true);
 
         var openSw = Stopwatch.StartNew();
-        using var reader = new Columnar.ColumnarReader(flatFile);
+        using var reader = new ColumnarCatalogReader(flatFile);
         openSw.Stop();
 
         var allocBefore = GC.GetTotalAllocatedBytes(precise: true);
         var searchSw = Stopwatch.StartNew();
         var matches = pathMode
-            ? reader.FindPath(patternUtf8)
-            : reader.FindName(patternUtf8);
+            ? reader.FindPath(pattern, includeFiles: true, includeFolders: true)
+            : reader.FindName(pattern, includeFiles: true, includeFolders: true);
         searchSw.Stop();
         var allocDuringSearch = GC.GetTotalAllocatedBytes(precise: true) - allocBefore;
 

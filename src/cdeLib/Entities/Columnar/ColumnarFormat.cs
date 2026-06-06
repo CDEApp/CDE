@@ -1,18 +1,19 @@
 using System;
+using System.Buffers.Binary;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
 using cdeLib.Entities.Soa;
 
-namespace cdeMemProbe.Columnar;
+namespace cdeLib.Entities.Columnar;
 
 /// <summary>
-/// SPIKE — hand-rolled columnar (struct-of-arrays) on-disk catalog format, designed for
-/// <b>zero-copy reads over a memory-mapped file</b>. The whole point is that "loading" a catalog
-/// becomes mmap-ing the file: no managed object graph is built, so the working set is just the
-/// file pages a query actually touches (in the reclaimable OS page cache), not GC heap.
+/// On-disk columnar (struct-of-arrays) catalog format, designed for <b>zero-copy reads over a
+/// memory-mapped file</b>. "Loading" a catalog becomes mmap-ing the file — no managed object graph
+/// is materialised, so the working set is only the file pages a query actually touches (in the
+/// reclaimable OS page cache), not GC heap. See <see cref="ColumnarCatalogReader"/> for the read side.
 ///
-/// Layout (all little-endian; x64 assumed for the spike):
+/// Layout (all little-endian):
 ///   preamble:
 ///     [0]  magic   "CDEX" (4 bytes)
 ///     [4]  int32   version
@@ -21,22 +22,17 @@ namespace cdeMemProbe.Columnar;
 ///     [16] (int64 offset, int64 length) x <see cref="ColumnCount"/>   -- absolute, 8-aligned
 ///   column bodies (each padded to an 8-byte boundary), in <see cref="Col"/> order.
 ///
-/// Columns are dense and homogeneous — a name-only search sequentially scans just the NameBlob +
-/// NameOffsets columns and never pages in Size/Modified/Hash. That column-skipping is the memory
-/// lever the in-memory store cannot offer.
-///
-/// Why hand-rolled rather than FlatBuffers/FlatSharp: for dense fixed-width columns this gives a
-/// genuinely alloc-free <see cref="MemoryMarshal.Cast{T,T}"/> view straight over the mapping, with
-/// no vtable indirection or per-access string materialization (FlatSharp lazy mode's main pitfall).
-/// FlatBuffers earns its keep for sparse/optional schemas; a catalog is the opposite of that.
+/// Columns are dense and homogeneous, so a name-only search sequentially scans just the NameBlob +
+/// NameOffsets columns and never pages in Size / Modified / Hash. NameOffsets are 64-bit so the name
+/// blob is not capped at 2 GB. Entry count is 32-bit, matching <see cref="EntryStore"/>'s int indexing.
 /// </summary>
 public static class ColumnarFormat
 {
-    public static readonly byte[] Magic = "CDEX"u8.ToArray();
+    public static ReadOnlySpan<byte> Magic => "CDEX"u8;
     public const int Version = 1;
     public const int FlagHasHashes = 1;
 
-    /// <summary>Fixed column ordering. Hash/Meta lengths are 0 when absent.</summary>
+    /// <summary>Fixed column ordering. Hash length is 0 when the catalog is un-hashed.</summary>
     public enum Col
     {
         ModifiedTicks = 0, // long[count]
@@ -45,10 +41,10 @@ public static class ColumnarFormat
         Parent,            // int[count]
         FirstChild,        // int[count]
         NextSibling,       // int[count]
-        NameOffsets,       // int[count+1]  prefix offsets into NameBlob
-        NameBlob,          // byte[]        UTF-8 full names (name+ext) concatenated
+        NameOffsets,       // long[count+1]  prefix offsets into NameBlob
+        NameBlob,          // byte[]         UTF-8 full names (name+ext) concatenated
         Hash,              // byte[16*count] (only when hasHashes)
-        Meta,              // byte[]        catalog metadata blob
+        Meta,              // byte[]         catalog metadata blob
     }
 
     public const int ColumnCount = 10;
@@ -60,24 +56,24 @@ public static class ColumnarFormat
     /// <summary>Convert an in-memory <see cref="EntryStore"/> to the columnar file. One-time cost.</summary>
     public static void Write(EntryStore store, string outPath)
     {
+        ArgumentNullException.ThrowIfNull(store);
         var count = store.Count;
         var hasHashes = store.Hash != null;
 
-        // Build the variable-length name columns up front (UTF-8 full names + prefix offsets).
-        var nameOffsets = new int[count + 1];
+        // Build the variable-length name columns up front (UTF-8 full names + 64-bit prefix offsets).
+        var nameOffsets = new long[count + 1];
         using var nameBlob = new MemoryStream(count * 12);
         for (var i = 0; i < count; i++)
         {
-            nameOffsets[i] = (int)nameBlob.Length;
+            nameOffsets[i] = nameBlob.Length;
             WriteUtf8(nameBlob, store.Name[i]);
-            WriteUtf8(nameBlob, store.Ext[i]); // ext appended directly -> full name bytes, no separator
+            WriteUtf8(nameBlob, store.Ext[i]); // ext appended directly -> full-name bytes, no separator
         }
-        nameOffsets[count] = (int)nameBlob.Length;
+        nameOffsets[count] = nameBlob.Length;
         var nameBlobBytes = nameBlob.GetBuffer().AsSpan(0, (int)nameBlob.Length);
 
         var meta = BuildMeta(store);
 
-        // Lengths per column.
         var len = new long[ColumnCount];
         len[(int)Col.ModifiedTicks] = (long)count * sizeof(long);
         len[(int)Col.Size] = (long)count * sizeof(long);
@@ -85,12 +81,11 @@ public static class ColumnarFormat
         len[(int)Col.Parent] = (long)count * sizeof(int);
         len[(int)Col.FirstChild] = (long)count * sizeof(int);
         len[(int)Col.NextSibling] = (long)count * sizeof(int);
-        len[(int)Col.NameOffsets] = (long)(count + 1) * sizeof(int);
+        len[(int)Col.NameOffsets] = (long)(count + 1) * sizeof(long);
         len[(int)Col.NameBlob] = nameBlobBytes.Length;
         len[(int)Col.Hash] = hasHashes ? (long)count * 16 : 0;
         len[(int)Col.Meta] = meta.Length;
 
-        // Offsets: header first, then each column 8-aligned.
         var off = new long[ColumnCount];
         var pos = (long)HeaderSize;
         for (var c = 0; c < ColumnCount; c++)
@@ -103,7 +98,6 @@ public static class ColumnarFormat
         using var fs = new FileStream(outPath, FileMode.Create, FileAccess.Write, FileShare.None,
             1 << 20, FileOptions.SequentialScan);
 
-        // Preamble.
         fs.Write(Magic);
         WriteI32(fs, Version);
         WriteI32(fs, count);
@@ -114,7 +108,6 @@ public static class ColumnarFormat
             WriteI64(fs, len[c]);
         }
 
-        // Column bodies (re-pad to each column's recorded offset).
         WriteCol(fs, off[(int)Col.ModifiedTicks], MemoryMarshal.AsBytes(store.ModifiedTicks.AsSpan(0, count)));
         WriteCol(fs, off[(int)Col.Size], MemoryMarshal.AsBytes(store.Size.AsSpan(0, count)));
         WriteCol(fs, off[(int)Col.BitFields], store.BitFields.AsSpan(0, count));
@@ -149,7 +142,6 @@ public static class ColumnarFormat
 
     private static void WriteCol(FileStream fs, long offset, ReadOnlySpan<byte> body)
     {
-        // Pad from current position up to the column's 8-aligned offset, then write the body.
         var pad = offset - fs.Position;
         for (var i = 0; i < pad; i++) fs.WriteByte(0);
         fs.Write(body);
@@ -172,14 +164,14 @@ public static class ColumnarFormat
     private static void WriteI32(Stream s, int v)
     {
         Span<byte> b = stackalloc byte[4];
-        System.Buffers.Binary.BinaryPrimitives.WriteInt32LittleEndian(b, v);
+        BinaryPrimitives.WriteInt32LittleEndian(b, v);
         s.Write(b);
     }
 
     private static void WriteI64(Stream s, long v)
     {
         Span<byte> b = stackalloc byte[8];
-        System.Buffers.Binary.BinaryPrimitives.WriteInt64LittleEndian(b, v);
+        BinaryPrimitives.WriteInt64LittleEndian(b, v);
         s.Write(b);
     }
 }

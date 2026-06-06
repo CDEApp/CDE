@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using Autofac;
@@ -9,6 +10,8 @@ using cdeLib;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
+using cdeLib.Entities.Soa;
 using cdeLib.Hashing;
 using cdeLib.Upgrade;
 using CommandLine;
@@ -52,6 +55,7 @@ public static class Program
             ReplGrepPathOptions,
             ReplGrepOptions,
             ReplFindOptions,
+            MigrateOptions,
             HashOptions,
             DupesOptions,
             TreeDumpOptions,
@@ -99,6 +103,7 @@ public static class Program
                     .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGrepPath, opts.Value))
                     .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
                     .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
+                    .WithParsed<MigrateOptions>(Migrate)
                     .WithParsed<HashOptions>(_ => HashCatalog())
                     .WithParsed<DupesOptions>(_ => FindDupes())
                     .WithParsed<TreeDumpOptions>(_ => PrintPathsHaveHashEnumerator())
@@ -123,6 +128,68 @@ public static class Program
     private static T Resolve<T>()
     {
         return _container.Resolve<T>();
+    }
+
+    /// <summary>
+    /// One-way migration of MessagePack .cde catalogs to the zero-copy columnar .cdex format. With a
+    /// path argument, converts that file; otherwise converts every catalog discovered in the current
+    /// directory and one level down, writing a .cdex beside each source.
+    /// </summary>
+    private static void Migrate(MigrateOptions opts)
+    {
+        var repo = Resolve<ICatalogRepository>();
+
+        List<string> files;
+        if (!string.IsNullOrWhiteSpace(opts.Path))
+        {
+            if (!File.Exists(opts.Path))
+            {
+                Console.WriteLine($"File not found: {opts.Path}");
+                return;
+            }
+            files = [opts.Path];
+        }
+        else
+        {
+            files = repo.GetCacheFileList(["./"]).ToList();
+        }
+
+        if (files.Count == 0)
+        {
+            Console.WriteLine("No .cde catalogs found to migrate.");
+            return;
+        }
+
+        var converted = 0;
+        foreach (var file in files)
+        {
+            try
+            {
+                var root = repo.LoadDirCache(file);
+                if (root == null)
+                {
+                    Console.WriteLine($"  skip (could not load): {file}");
+                    continue;
+                }
+
+                var store = EntryStore.Build(root);
+                var outFile = Path.ChangeExtension(file, ".cdex");
+                ColumnarFormat.Write(store, outFile);
+
+                var srcLen = new FileInfo(file).Length;
+                var dstLen = new FileInfo(outFile).Length;
+                Console.WriteLine(
+                    $"  {Path.GetFileName(file)} ({srcLen:N0} B) -> {Path.GetFileName(outFile)} " +
+                    $"({dstLen:N0} B, {store.Count:N0} entries)");
+                converted++;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"  error migrating {file}: {ex.Message}");
+            }
+        }
+
+        Console.WriteLine($"Migrated {converted} of {files.Count} catalog(s) to .cdex.");
     }
 
     private static void InvokeRepl()
