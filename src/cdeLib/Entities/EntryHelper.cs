@@ -31,10 +31,13 @@ public static class EntryHelper
     /// </summary>
     public static string MakeFullPath(ICommonEntry parentEntry, ICommonEntry dirEntry)
     {
+        // Resolve parent path FIRST — this may recursively re-enter MakeFullPath and
+        // mutate the shared ThreadLocal StringBuilder, so do it before we clear/use sb.
+        var parentPath = parentEntry.FullPath;
+
         var sb = PathBuilder.Value!;
         sb.Clear();
 
-        var parentPath = parentEntry.FullPath;
         if (parentPath != null)
         {
             sb.Append(parentPath);
