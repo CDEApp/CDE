@@ -6,6 +6,7 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using cdeLib.Entities;
+using cdeLib.Entities.Soa;
 using Serilog;
 
 namespace cdeMemProbe;
@@ -123,7 +124,9 @@ public static class Program
         var bytesPerEntry = store.Count > 0 ? (double)managed / store.Count : 0;
 
         // Sanity-check the SoA actually works as a searchable structure.
-        var matches = store.CountNameMatches(sharedNames ? "x" : ".txt");
+        var matches = 0;
+        EntryStoreSearch.Find(store, sharedNames ? "x" : ".txt",
+            regexMode: false, includePath: false, includeFiles: true, includeFolders: true, _ => matches++);
 
         Console.WriteLine("model,entries,managedBytes,bytesPerEntry");
         Console.WriteLine(string.Join(',', "soa",
