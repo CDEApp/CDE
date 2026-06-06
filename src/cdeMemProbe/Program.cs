@@ -2,6 +2,7 @@ using System;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using cdeLib.Entities;
@@ -44,6 +45,11 @@ public static class Program
         // Silent Serilog logger (no sinks) so CatalogRepository stays quiet and out of the CSV.
         var logger = new LoggerConfiguration().CreateLogger();
 
+        if (HasFlag(args, "--soa", out _))
+        {
+            return MeasureSoa(args);
+        }
+
         if (HasFlag(args, "--generate", out var genValue))
         {
             return await GenerateAsync(args, genValue, logger);
@@ -83,6 +89,58 @@ public static class Program
             $"Wrote {actual:N0} entries to {outPath} ({fileInfo.Length:N0} bytes on disk) in {sw.ElapsedMilliseconds:N0} ms");
         Console.WriteLine(outPath);
         return 0;
+    }
+
+    /// <summary>
+    /// Measure the retained footprint of the PROTOTYPE struct-of-arrays EntryStore, for comparison
+    /// with the pointer-tree model. Usage: cdeMemProbe --soa --generate N [--shared-names] [--hashes]
+    /// </summary>
+    private static int MeasureSoa(string[] args)
+    {
+        if (!HasFlag(args, "--generate", out var countArg)
+            || !int.TryParse(countArg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count)
+            || count <= 0)
+        {
+            Console.Error.WriteLine("--soa requires --generate <N>, e.g. --soa --generate 1000000");
+            return 1;
+        }
+
+        var withHashes = HasFlag(args, "--hashes", out _);
+        var sharedNames = HasFlag(args, "--shared-names", out _);
+
+        Console.Error.WriteLine(
+            $"Building SoA EntryStore for ~{count:N0} entries (hashes={withHashes}, sharedNames={sharedNames}) ...");
+
+        var store = BuildStoreReleasingTree(count, withHashes, sharedNames);
+
+        // Settle so only the live EntryStore (not the now-dead source tree) is counted.
+        GC.Collect();
+        GC.WaitForPendingFinalizers();
+        GC.Collect();
+
+        var managed = GC.GetTotalMemory(true);
+        GC.KeepAlive(store);
+        var bytesPerEntry = store.Count > 0 ? (double)managed / store.Count : 0;
+
+        // Sanity-check the SoA actually works as a searchable structure.
+        var matches = store.CountNameMatches(sharedNames ? "x" : ".txt");
+
+        Console.WriteLine("model,entries,managedBytes,bytesPerEntry");
+        Console.WriteLine(string.Join(',', "soa",
+            store.Count.ToString(CultureInfo.InvariantCulture),
+            managed.ToString(CultureInfo.InvariantCulture),
+            bytesPerEntry.ToString("F2", CultureInfo.InvariantCulture)));
+        Console.Error.WriteLine($"sanity: {matches:N0} name matches; full path[1] = {store.FullPath(1)}");
+        return 0;
+    }
+
+    // Separate non-inlined method so the source tree local is out of scope (collectable) before we
+    // measure the store in the caller.
+    [MethodImpl(MethodImplOptions.NoInlining)]
+    private static EntryStore BuildStoreReleasingTree(int count, bool withHashes, bool sharedNames)
+    {
+        var tree = SyntheticCatalog.Generate(count, withHashes, seed: 42, sharedNames: sharedNames);
+        return EntryStore.Build(tree);
     }
 
     private static async Task<int> MeasureAsync(string file, bool printHeader, ILogger logger)
