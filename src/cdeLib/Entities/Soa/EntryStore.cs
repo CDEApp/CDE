@@ -18,7 +18,7 @@ namespace cdeLib.Entities.Soa;
 /// Index 0 is always the catalog root. <see cref="None"/> (-1) terminates child/sibling chains and
 /// marks the root's (absent) parent.
 /// </summary>
-public sealed class EntryStore
+public sealed class EntryStore : IEntrySource
 {
     public const int None = -1;
 
@@ -47,19 +47,19 @@ public sealed class EntryStore
     public Hash16[] Hash { get; private set; }
 
     // ----- catalog-level metadata (what the GUI catalog list and search-result rows display) -----
-    public string RootPath;          // root path, e.g. C:\ (also Name[0])
-    public string VolumeName;
-    public string DefaultFileName;   // generated .cde name
-    public string ActualFileName;    // path of the loaded .cde
-    public string DriveLetterHint;
-    public string Description;
-    public long AvailSpace;
-    public long TotalSpace;
-    public long ScanStartUtcTicks;
-    public long ScanEndUtcTicks;
-    public long RootSize;            // total size of the catalog
-    public uint RootFileEntryCount;  // total files in the catalog
-    public uint RootDirEntryCount;   // total directories in the catalog
+    public string RootPath { get; set; }          // root path, e.g. C:\ (also Name[0])
+    public string VolumeName { get; set; }
+    public string DefaultFileName { get; set; }   // generated .cde name
+    public string ActualFileName { get; set; }    // path of the loaded .cde
+    public string DriveLetterHint { get; set; }
+    public string Description { get; set; }
+    public long AvailSpace { get; set; }
+    public long TotalSpace { get; set; }
+    public long ScanStartUtcTicks { get; set; }
+    public long ScanEndUtcTicks { get; set; }
+    public long RootSize { get; set; }            // total size of the catalog
+    public uint RootFileEntryCount { get; set; }  // total files in the catalog
+    public uint RootDirEntryCount { get; set; }   // total directories in the catalog
 
     private EntryStore(int count)
     {
@@ -78,6 +78,23 @@ public sealed class EntryStore
     public string FullName(int i) => string.IsNullOrEmpty(Ext[i]) ? Name[i] : string.Concat(Name[i], Ext[i]);
 
     public Flags Flags(int i) => (Flags)BitFields[i];
+
+    // ----- IEntrySource: thin index-addressed accessors over the parallel arrays -----
+    public long SizeOf(int i) => Size[i];
+    public DateTime ModifiedOf(int i) => Modified(i);
+    public Flags FlagsOf(int i) => Flags(i);
+    public bool HasHash => Hash != null;
+    public Hash16 HashOf(int i) => Hash != null ? Hash[i] : default;
+    public string NameOf(int i) => Name[i];
+    public int ParentOf(int i) => Parent[i];
+    public int FirstChildOf(int i) => FirstChild[i];
+    public IEnumerable<int> ChildrenOf(int i) => Children(i);
+
+    /// <summary>Full-filter search over this store (delegates to <see cref="EntryStoreSearch"/>).</summary>
+    public void Find(EntryStoreFindOptions options, Action<int> onMatch,
+        Func<bool> isCancelled = null, Action<int> onScan = null)
+        => EntryStoreSearch.Find(this, options, onMatch, isCancelled, onScan);
+
     public bool IsDirectory(int i) => (Flags(i) & Entities.Flags.Directory) == Entities.Flags.Directory;
     public bool IsHashDone(int i) => (Flags(i) & Entities.Flags.HashDone) == Entities.Flags.HashDone;
     public bool IsPartialHash(int i) => (Flags(i) & Entities.Flags.PartialHash) == Entities.Flags.PartialHash;

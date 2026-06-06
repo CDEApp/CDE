@@ -37,15 +37,15 @@ public class ColumnarCatalogTests
         };
 
         var dir1 = new DirEntry(true) { Path = "dir1" };
-        dir1.AddChild(new DirEntry(false) { Path = "alpha.txt" });
-        dir1.AddChild(new DirEntry(false) { Path = "beta.log" });
+        dir1.AddChild(new DirEntry(false) { Path = "alpha.txt", Size = 100 });
+        dir1.AddChild(new DirEntry(false) { Path = "beta.log", Size = 5000 });
 
         var docs = new DirEntry(true) { Path = "docs" };
-        docs.AddChild(new DirEntry(false) { Path = "alpha.md" });
+        docs.AddChild(new DirEntry(false) { Path = "alpha.md", Size = 200 });
 
         root.AddChild(dir1);
         root.AddChild(docs);
-        root.AddChild(new DirEntry(false) { Path = "root_file.txt" });
+        root.AddChild(new DirEntry(false) { Path = "root_file.txt", Size = 50 });
 
         root.SetInMemoryFields();
         return root;
@@ -133,6 +133,59 @@ public class ColumnarCatalogTests
                 includeFiles: true, includeFolders: true, i => actual.Add(reader.FullPath(i)));
 
             Assert.That(actual.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
+    public void Find_FullFilter_SizeRange_MatchesStore()
+    {
+        var store = EntryStore.Build(BuildTree());
+        var path = WriteTemp(store);
+        try
+        {
+            var opts = new EntryStoreFindOptions
+            {
+                IncludeFiles = true,
+                IncludeFolders = true,
+                FromSizeEnable = true,
+                FromSize = 1000, // only beta.log (5000) qualifies
+            };
+
+            var expected = new List<string>();
+            EntryStoreSearch.Find(store, opts, i => expected.Add(store.FullPath(i)));
+
+            using var reader = new ColumnarCatalogReader(path);
+            var actual = new List<string>();
+            reader.Find(opts, i => actual.Add(reader.FullPath(i)));
+
+            // Reader and store must agree exactly (both include dir1, whose aggregated size >= 1000).
+            Assert.That(actual.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));
+            Assert.That(actual, Does.Contain(@"C:\test\dir1\beta.log"));
+            Assert.That(actual, Does.Not.Contain(@"C:\test\root_file.txt")); // size 50, filtered out
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
+    public void EntryRef_OverReader_NavigatesLikeStore()
+    {
+        var store = EntryStore.Build(BuildTree());
+        var path = WriteTemp(store);
+        try
+        {
+            using var reader = new ColumnarCatalogReader(path);
+            // Same ICommonEntry adapter, backed by the mmap reader instead of the heap store.
+            ICommonEntry rootRef = new EntryRef(reader, 0);
+            ICommonEntry storeRootRef = new EntryRef(store, 0);
+
+            Assert.That(rootRef.Children, Is.Not.Null);
+            Assert.That(rootRef.Children.Count, Is.EqualTo(storeRootRef.Children.Count));
+            Assert.That(rootRef.FullPath, Is.EqualTo(storeRootRef.FullPath));
+
+            // Subtree counts (files/dirs) must match the heap-backed adapter.
+            Assert.That(rootRef.FileEntryCount, Is.EqualTo(storeRootRef.FileEntryCount));
+            Assert.That(rootRef.DirEntryCount, Is.EqualTo(storeRootRef.DirEntryCount));
         }
         finally { File.Delete(path); }
     }
