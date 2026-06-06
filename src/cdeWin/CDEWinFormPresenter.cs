@@ -10,6 +10,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure;
 using cdeWin.Cfg;
@@ -29,8 +30,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private readonly ICDEWinForm _clientForm;
 
-    // Catalogs are held as struct-of-arrays EntryStores (≈1/3 the memory of the pointer tree); each
-    // catalog root is exposed as an EntryRef so the existing ICommonEntry-based GUI works unchanged.
+    // Catalogs are held as IEntrySource — either a zero-copy ColumnarCatalogReader over a memory-mapped
+    // .cdex file (preferred: the catalog data stays in the OS page cache, not the managed heap) or, when
+    // no .cdex exists, an in-memory EntryStore built from the loaded .cde tree. Each catalog root is
+    // exposed as an EntryRef so the existing ICommonEntry-based GUI works unchanged either way.
     private List<ICommonEntry> _catalogRoots;
     private readonly IConfig _config;
 
@@ -46,10 +49,53 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         return roots;
     }
 
-    private static EntryStore StoreOf(ICommonEntry root) => ((EntryRef)root).Store;
+    // Open each .cdex as a zero-copy mmap reader. Unreadable files are skipped (logged by the caller).
+    private static List<ICommonEntry> ReadersToCatalogRoots(IList<string> cdexFiles)
+    {
+        var roots = new List<ICommonEntry>(cdexFiles.Count);
+        foreach (var file in cdexFiles)
+        {
+            try
+            {
+                roots.Add(new EntryRef(new ColumnarCatalogReader(file), 0));
+            }
+            catch (Exception ex)
+            {
+                Log.Logger.Warning(ex, "Skipping unreadable .cdex {File}", file);
+            }
+        }
+        return roots;
+    }
 
-    // Catalog of a search-result pair (its entries are EntryRefs into a store).
-    private static EntryStore StoreOfPair(PairDirEntry pde) => (pde.ChildDE as EntryRef)?.Store;
+    private static IEntrySource SourceOf(ICommonEntry root) => ((EntryRef)root).Source;
+
+    // Catalog of a search-result pair (its entries are EntryRefs into a source).
+    private static IEntrySource SourceOfPair(PairDirEntry pde) => (pde.ChildDE as EntryRef)?.Source;
+
+    // Prefer the zero-copy .cdex catalogs (mmap, near-zero managed heap); fall back to loading the
+    // .cde trees and building in-memory stores when no .cdex exists. Disposes any previously held
+    // mmap sources first so reloads don't leak mappings.
+    private async Task<List<ICommonEntry>> LoadCatalogRootsAsync()
+    {
+        DisposeCatalogSources();
+        var cdex = _loadCatalogService.GetColumnarFiles(_config);
+        if (cdex is { Count: > 0 })
+        {
+            return ReadersToCatalogRoots(cdex);
+        }
+        return ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
+            _config, OnLoadProgress, _loadingCts.Token));
+    }
+
+    // Memory-mapped catalog sources must be released on reload/exit so the mappings are closed.
+    private void DisposeCatalogSources()
+    {
+        if (_catalogRoots == null) return;
+        foreach (var root in _catalogRoots)
+        {
+            if (root is EntryRef { Source: IDisposable disposable }) disposable.Dispose();
+        }
+    }
 
     private readonly string[] _directoryVals;
     private readonly string[] _searchVals;
@@ -123,10 +169,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         try
         {
-            _catalogRoots = ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
-                _config,
-                OnLoadProgress,
-                _loadingCts.Token));
+            _catalogRoots = await LoadCatalogRootsAsync();
 
             SetCatalogListView();
             SetMemoryStatus();
@@ -219,7 +262,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         catalogHelper.SortList();
         _clientForm.SetCatalogsLoadedStatus(count);
         _clientForm.SetTotalFileEntriesLoadedStatus(
-            (int)_catalogRoots.Sum(r => (long)StoreOf(r).RootFileEntryCount + StoreOf(r).RootDirEntryCount));
+            (int)_catalogRoots.Sum(r => (long)SourceOf(r).RootFileEntryCount + SourceOf(r).RootDirEntryCount));
     }
 
     private static double BytesToMb(long bytes) => bytes / (1024.0 * 1024.0);
@@ -344,7 +387,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private Color CreateRowValuesForRootEntry(IList<string> vals, ICommonEntry catalogRoot, Color listViewForeColor)
     {
-        var s = StoreOf(catalogRoot);
+        var s = SourceOf(catalogRoot);
         var scanStart = new DateTime(s.ScanStartUtcTicks, DateTimeKind.Utc);
         var scanDurationMs = (s.ScanEndUtcTicks - s.ScanStartUtcTicks) / TimeSpan.TicksPerMillisecond;
         vals[0] = s.RootPath;
@@ -583,8 +626,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         };
         var limit = findOptions.LimitResultCount;
 
-        var stores = catalogRoots.Select(StoreOf).ToList();
-        var grandTotal = stores.Sum(s => s.Count);
+        var sources = catalogRoots.Select(SourceOf).ToList();
+        var grandTotal = sources.Sum(s => s.Count);
         var scannedBase = 0;
 
         var list = new List<PairDirEntry>(500);
@@ -608,18 +651,18 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         }
 
         var timer = Stopwatch.StartNew();
-        foreach (var store in stores)
+        foreach (var source in sources)
         {
             if (worker.CancellationPending || list.Count >= limit) break;
             var baseScanned = scannedBase;
-            EntryStoreSearch.Find(store, opts,
+            source.Find(opts,
                 onMatch: idx =>
                 {
-                    list.Add(new PairDirEntry(new EntryRef(store, store.Parent[idx]), new EntryRef(store, idx)));
+                    list.Add(new PairDirEntry(new EntryRef(source, source.ParentOf(idx)), new EntryRef(source, idx)));
                 },
                 isCancelled: () => worker.CancellationPending || list.Count >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
-            scannedBase += store.Count;
+            scannedBase += source.Count;
         }
         timer.Stop();
         Log.Logger.Information(
@@ -702,7 +745,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         //TODO: Possibly wasting cycles traversing to the root for this, make smarter.
         _searchVals[(int)SearchResultColumn.Catalog] =
-            StoreOfPair(pairDirEntry)?.DefaultFileName ?? pairDirEntry.GetRootEntry()?.DefaultFileName ?? "";
+            SourceOfPair(pairDirEntry)?.DefaultFileName ?? pairDirEntry.GetRootEntry()?.DefaultFileName ?? "";
 
         searchHelper.RenderItem = BuildListViewItem(_searchVals, itemColor, pairDirEntry);
     }
@@ -780,6 +823,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         CancelLoading();
         _config.RecordConfig(_clientForm);
+        DisposeCatalogSources(); // close any memory-mapped .cdex catalogs
         _clientForm.CleanUp();
     }
 
@@ -801,7 +845,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     // Catalog roots are EntryRef instances; two refs to the same catalog share a store.
     private static bool SameRoot(ICommonEntry a, ICommonEntry b)
-        => a is EntryRef ea && b is EntryRef eb && ReferenceEquals(ea.Store, eb.Store);
+        => a is EntryRef ea && b is EntryRef eb && ReferenceEquals(ea.Source, eb.Source);
 
     private TreeNode SetNewDirectoryRoot(ICommonEntry newRoot)
     {
@@ -932,8 +976,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
             case 3:
                 compareResult = string.Compare(
-                    StoreOfPair(pde1)?.ActualFileName ?? pde1.GetRootEntry()?.ActualFileName,
-                    StoreOfPair(pde2)?.ActualFileName ?? pde2.GetRootEntry()?.ActualFileName,
+                    SourceOfPair(pde1)?.ActualFileName ?? pde1.GetRootEntry()?.ActualFileName,
+                    SourceOfPair(pde2)?.ActualFileName ?? pde2.GetRootEntry()?.ActualFileName,
                     StringComparison.OrdinalIgnoreCase);
                 break;
 
@@ -1207,8 +1251,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private int RootCompare(ICommonEntry root1, ICommonEntry root2)
     {
-        var re1 = StoreOf(root1);
-        var re2 = StoreOf(root2);
+        var re1 = SourceOf(root1);
+        var re2 = SourceOf(root2);
         var catalogHelper = _clientForm.CatalogListViewHelper;
         var column = catalogHelper.SortColumn;
         var compareResult = column switch
@@ -1282,10 +1326,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             _clientForm.SetLoadingProgressValue(0);
             SetMemoryStatus();
 
-            _catalogRoots = ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
-                _config,
-                OnLoadProgress,
-                _loadingCts.Token));
+            _catalogRoots = await LoadCatalogRootsAsync();
 
             if (_catalogRoots.Count > 0)
             {

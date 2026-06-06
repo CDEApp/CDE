@@ -113,6 +113,33 @@ public class CDEWinFormPresenterTest
             _mockForm.Received().SetTotalFileEntriesLoadedStatus(1);
         }
 
+        [Test]
+        public void With_Columnar_Cdex_Present_LoadsViaMmap_AndSkipsCdeLoad()
+        {
+            // Migrate the test root to a real .cdex, then prove the presenter memory-maps it (and does
+            // NOT fall back to loading .cde trees) when GetColumnarFiles reports one.
+            var store = cdeLib.Entities.Soa.EntryStore.Build(_rootEntry);
+            var cdex = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"cdewintest-{Guid.NewGuid():N}.cdex");
+            cdeLib.Entities.Columnar.ColumnarFormat.Write(store, cdex);
+            try
+            {
+                var loadCatalogsService = Substitute.For<ILoadCatalogService>();
+                loadCatalogsService.GetColumnarFiles(Arg.Any<IConfig>()).Returns(new List<string> { cdex });
+
+                var presenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogsService);
+                presenter.InitializeAsync().GetAwaiter().GetResult();
+
+                _mockForm.Received().SetTotalFileEntriesLoadedStatus(1);
+                loadCatalogsService.DidNotReceive().LoadRootEntriesAsync(
+                    Arg.Any<IConfig>(), Arg.Any<Action<int, int, string>>(), Arg.Any<CancellationToken>());
+
+                // The catalog is held memory-mapped: the file is locked until the presenter closes,
+                // which disposes the mmap source. This both proves mmap and exercises the cleanup path.
+                presenter.MyFormClosing();
+            }
+            finally { System.IO.File.Delete(cdex); }
+        }
+
         [Ignore("This cant really happen in a real TreeView, as the event to be triggered means there is a node")]
         [Test]
         public void With_TreeViewRoot_Null_Throws_Exception()
