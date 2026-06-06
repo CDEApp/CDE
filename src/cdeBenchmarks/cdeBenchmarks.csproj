@@ -20,6 +20,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\cdeLib\cdeLib.csproj" />
+    <!-- Reuse the single shared synthetic-catalog generator so the benchmark fixture and the
+         standalone cdeMemProbe measure the exact same tree across phases. -->
+    <ProjectReference Include="..\cdeMemProbe\cdeMemProbe.csproj" />
   </ItemGroup>
 
 </Project>
