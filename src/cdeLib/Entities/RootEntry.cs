@@ -1041,6 +1041,9 @@ public sealed class RootEntry : object, ICommonEntry
         {
             destination.IsPartialHash = source.IsPartialHash;
             destination.Hash = source.Hash;
+            // IsHashDone is a separate BitFields flag; without it the copied hash is ignored by
+            // hashing/serialization (the reused hash would be silently lost on the next save).
+            destination.IsHashDone = true;
         }
     }
 

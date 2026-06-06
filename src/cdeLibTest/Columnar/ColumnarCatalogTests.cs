@@ -201,6 +201,42 @@ public class ColumnarCatalogTests
         finally { File.Delete(path); }
     }
 
+    private static RootEntry BuildForCopy(bool withHash)
+    {
+        var root = new RootEntry { Path = @"C:\test" };
+        var f = new DirEntry(false)
+        {
+            Path = "a.txt",
+            Size = 100,
+            Modified = new System.DateTime(2020, 1, 1, 0, 0, 0, System.DateTimeKind.Utc),
+        };
+        if (withHash) f.SetHash(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+        root.AddChild(f);
+        root.SetInMemoryFields();
+        return root;
+    }
+
+    [Test]
+    public void TraverseTreesCopyHash_FromReconstructedCdex_CopiesHashToFreshScan()
+    {
+        // Mirrors the re-scan hash-reuse path: old hashed catalog comes from a .cdex (reconstructed),
+        // fresh scan tree has no hash; the hash must copy across.
+        var store = EntryStore.Build(BuildForCopy(withHash: true));
+        var path = WriteTemp(store);
+        try
+        {
+            var oldRoot = CatalogTreeBuilder.FromColumnarFiles(new[] { path })[0];
+            var fresh = BuildForCopy(withHash: false);
+
+            oldRoot.TraverseTreesCopyHash(fresh);
+
+            var file = fresh.Children.First(c => c.Path == "a.txt");
+            Assert.That(file.IsHashDone, Is.True, "hash should have been copied from the reconstructed .cdex");
+            Assert.That(file.Hash, Is.EqualTo(oldRoot.Children.First(c => c.Path == "a.txt").Hash));
+        }
+        finally { File.Delete(path); }
+    }
+
     [Test]
     public void EntryRef_OverReader_NavigatesLikeStore()
     {

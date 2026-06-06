@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Globalization;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib;
 using cdeLib.Catalog;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
+using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure.Config;
 using Humanizer;
 using JetBrains.Annotations;
@@ -54,10 +57,17 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 return;
             }
 
-            var oldRoot = _catalogRepository.LoadDirCache(re.DefaultFileName);
-            if (oldRoot != null)
+            // Catalogs are stored in the zero-copy columnar .cdex format. Reuse hashes from an existing
+            // .cdex (reconstructed into a tree) for this scan path when one is found.
+            var cdexName = Path.ChangeExtension(re.DefaultFileName, ".cdex");
+            if (File.Exists(cdexName))
             {
-                Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", re.DefaultFileName);
+                Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", cdexName);
+                RootEntry oldRoot;
+                using (var reader = new ColumnarCatalogReader(cdexName))
+                {
+                    oldRoot = CatalogTreeBuilder.FromSource(reader);
+                }
                 oldRoot.TraverseTreesCopyHash(re);
             }
 
@@ -69,8 +79,10 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             }
 
             ScanProgressConsole.EnqueueMessage("Saving catalog...");
-            await _catalogRepository.Save(re).ConfigureAwait(false);
-            ScanProgressConsole.EnqueueMessage($"Saved to {re.DefaultFileName}");
+            re.ActualFileName = cdexName;
+            await Task.Run(() => ColumnarFormat.Write(EntryStore.Build(re), cdexName), cancellationToken)
+                .ConfigureAwait(false);
+            ScanProgressConsole.EnqueueMessage($"Saved to {cdexName}");
 
             // Calculate and display final scan summary
             sw.Stop();
@@ -83,7 +95,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             var scansPerSecText = scansPerSec.ToString("N0", defaultNumberFormat);
             ScanProgressConsole.EnqueueMessage($"Total files scanned: {scanCountText}, Average: {scansPerSecText}/sec");
 
-            Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path,re.DefaultFileName);
+            Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path, cdexName);
             Log.Information(
                 "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
                 re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));

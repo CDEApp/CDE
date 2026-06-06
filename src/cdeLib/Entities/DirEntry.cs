@@ -561,6 +561,10 @@ public sealed class DirEntry : ICommonEntry
                         {
                             destinationDirEntry.IsPartialHash = sourceIsPartial;
                             destinationDirEntry.Hash = sourceDirEntry.Hash;
+                            // IsHashDone is a separate BitFields flag; without it the copied hash is
+                            // ignored by hashing/serialization (the reused hash would be silently lost
+                            // on the next save). Mark the destination hashed.
+                            destinationDirEntry.IsHashDone = true;
                         }
                     }
                     // Directory: Push to stack for traversal

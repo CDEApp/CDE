@@ -177,20 +177,12 @@ internal class DuplicationTest
         }
 
         Program.InitProgram(Array.Empty<string>());
-        Program.CreateCache(new ScanOptions {Path = testPath});
-
-        // hash + dupes now operate on the columnar .cdex format, so migrate the freshly scanned
-        // .cde catalogs to .cdex first, then hash them.
-        var catalogRepository = new CatalogRepository(Log.Logger);
-        foreach (var cde in catalogRepository.GetCacheFileList(["./"]))
-        {
-            var store = cdeLib.Entities.Soa.EntryStore.Build(catalogRepository.LoadDirCache(cde));
-            cdeLib.Entities.Columnar.ColumnarFormat.Write(store, System.IO.Path.ChangeExtension(cde, ".cdex"));
-        }
-        Program.HashCatalog();
+        Program.CreateCache(new ScanOptions {Path = testPath}); // scan writes a columnar .cdex
+        Program.HashCatalog();                                  // hash operates on the .cdex
 
         // run tests. Load the hashed catalogs back from .cdex (where the hashes now live).
         Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
+        var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = CatalogTreeBuilder.FromColumnarFiles(catalogRepository.GetColumnarFileList(["./"]));
 
         if (rootEntries.Count == 0)
