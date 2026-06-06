@@ -197,6 +197,29 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         return FileSystemHelper.GetFilesWithExtension(path, "cde");
     }
 
+    public IList<string> GetColumnarFileList(IEnumerable<string> paths)
+    {
+        var result = new List<string>();
+        foreach (var path in paths)
+        {
+            result.AddRange(FileSystemHelper.GetFilesWithExtension(path, "cdex"));
+
+            foreach (var childPath in Directory.GetDirectories(path))
+            {
+                try
+                {
+                    result.AddRange(FileSystemHelper.GetFilesWithExtension(childPath, "cdex"));
+                }
+                // ReSharper disable once EmptyGeneralCatchClause
+                catch
+                {
+                } // if cant list folders don't care.
+            }
+        }
+
+        return result;
+    }
+
     public RootEntry LoadDirCache(string file)
     {
         if (!File.Exists(file)) return null;

@@ -114,6 +114,29 @@ public class ColumnarCatalogTests
         finally { File.Delete(path); }
     }
 
+    [TestCase(@"alpha\.txt", false)] // regex name
+    [TestCase("beta", false)]
+    [TestCase("alpha", true)]         // regex on full path
+    public void Find_Regex_MatchesStoreSearch(string pattern, bool includePath)
+    {
+        var store = EntryStore.Build(BuildTree());
+        var path = WriteTemp(store);
+        try
+        {
+            var expected = new List<string>();
+            EntryStoreSearch.Find(store, pattern, regexMode: true, includePath: includePath,
+                includeFiles: true, includeFolders: true, i => expected.Add(store.FullPath(i)));
+
+            using var reader = new ColumnarCatalogReader(path);
+            var actual = new List<string>();
+            reader.Find(pattern, regexMode: true, includePath: includePath,
+                includeFiles: true, includeFolders: true, i => actual.Add(reader.FullPath(i)));
+
+            Assert.That(actual.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));
+        }
+        finally { File.Delete(path); }
+    }
+
     [Test]
     public void FindPath_MatchesStorePathSearch()
     {

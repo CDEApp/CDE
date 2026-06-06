@@ -18,5 +18,11 @@ public interface ICatalogRepository
     /// </summary>
     IList<string> GetCacheFileList(IEnumerable<string> paths);
 
+    /// <summary>
+    /// Gets columnar <c>.cdex</c> catalogs in the current dir or one directory down — the zero-copy
+    /// mmap format produced by <c>cde migrate</c>. Mirrors <see cref="GetCacheFileList"/> for .cde.
+    /// </summary>
+    IList<string> GetColumnarFileList(IEnumerable<string> paths);
+
     RootEntry LoadDirCache(string file);
 }

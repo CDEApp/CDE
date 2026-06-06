@@ -80,26 +80,10 @@ public static class Program
                 var findService = Resolve<IFindService>();
                 var parsedResult = GetParserResult(args)
                     .WithParsed<ScanOptions>(CreateCache)
-                    .WithParsed<FindOptions>(opts =>
-                    {
-                        findService.Find(opts.Value, "--find",
-                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                    })
-                    .WithParsed<FindPathOptions>(opts =>
-                    {
-                        findService.Find(opts.Value, "--findpath",
-                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                    })
-                    .WithParsed<GrepOptions>(opts =>
-                    {
-                        findService.Find(opts.Value, "--grep",
-                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                    })
-                    .WithParsed<GrepPathOptions>(opts =>
-                    {
-                        findService.Find(opts.Value, "--greppath",
-                            Resolve<ICatalogRepository>().LoadCurrentDirCache());
-                    })
+                    .WithParsed<FindOptions>(opts => RunFind(findService, opts.Value, "--find"))
+                    .WithParsed<FindPathOptions>(opts => RunFind(findService, opts.Value, "--findpath"))
+                    .WithParsed<GrepOptions>(opts => RunFind(findService, opts.Value, "--grep"))
+                    .WithParsed<GrepPathOptions>(opts => RunFind(findService, opts.Value, "--greppath"))
                     .WithParsed<ReplGrepPathOptions>(opts => FindRepl(FindService.ParamGrepPath, opts.Value))
                     .WithParsed<ReplGrepOptions>(opts => FindRepl(FindService.ParamGrep, opts.Value))
                     .WithParsed<ReplFindOptions>(opts => FindRepl(FindService.ParamFind, opts.Value))
@@ -128,6 +112,44 @@ public static class Program
     private static T Resolve<T>()
     {
         return _container.Resolve<T>();
+    }
+
+    /// <summary>
+    /// Run a find, preferring the zero-copy columnar format: if any <c>.cdex</c> catalogs exist in the
+    /// current dir (or one level down) they are searched over their memory maps with no managed catalog
+    /// load; otherwise we fall back to loading the MessagePack <c>.cde</c> trees.
+    /// </summary>
+    private static void RunFind(IFindService findService, string value, string param)
+    {
+        var repo = Resolve<ICatalogRepository>();
+        var cdex = repo.GetColumnarFileList(["./"]);
+        if (cdex.Count == 0)
+        {
+            findService.Find(value, param, repo.LoadCurrentDirCache());
+            return;
+        }
+
+        var readers = new List<ColumnarCatalogReader>(cdex.Count);
+        try
+        {
+            foreach (var file in cdex)
+            {
+                try
+                {
+                    readers.Add(new ColumnarCatalogReader(file));
+                }
+                catch (Exception ex)
+                {
+                    Log.Logger.Warning(ex, "Skipping unreadable .cdex {File}", file);
+                }
+            }
+
+            findService.FindColumnar(value, param, readers);
+        }
+        finally
+        {
+            foreach (var reader in readers) reader.Dispose();
+        }
     }
 
     /// <summary>

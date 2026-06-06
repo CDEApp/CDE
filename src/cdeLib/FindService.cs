@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
 using Serilog;
 
@@ -12,6 +13,12 @@ public interface IFindService
 {
     void Find(string pattern, string param, IList<RootEntry> rootEntries);
     void Find(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
+
+    /// <summary>
+    /// Search columnar <c>.cdex</c> catalogs zero-copy over their memory maps (no managed catalog
+    /// load). Mirrors <see cref="Find(string,string,IList{RootEntry})"/> result semantics.
+    /// </summary>
+    void FindColumnar(string pattern, string param, IList<ColumnarCatalogReader> readers);
     Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries);
     Task FindAsync(string pattern, bool regexMode, bool includePath, IList<RootEntry> rootEntries);
 
@@ -67,6 +74,30 @@ public class FindService : IFindService
                 {
                     ++totalFound;
                     Console.WriteLine(" {0}", store.FullPath(idx));
+                });
+        }
+
+        timer.Stop();
+        Log.Logger.Information(
+            "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
+            timer.ElapsedMilliseconds, pattern, totalFound);
+    }
+
+    public void FindColumnar(string pattern, string param, IList<ColumnarCatalogReader> readers)
+    {
+        var regexMode = param is ParamGrep or ParamGrepPath;
+        var includePath = param is ParamGrepPath or ParamFindPath;
+
+        var totalFound = 0L;
+        var timer = Stopwatch.StartNew();
+        foreach (var reader in readers)
+        {
+            if (reader == null) continue;
+            reader.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
+                idx =>
+                {
+                    ++totalFound;
+                    Console.WriteLine(" {0}", reader.FullPath(idx));
                 });
         }
 

@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 using cdeLib.Entities.Soa;
 
 namespace cdeLib.Entities.Columnar;
@@ -112,6 +113,41 @@ public sealed unsafe class ColumnarCatalogReader : IDisposable
     public string Name(int i) => Encoding.UTF8.GetString(NameUtf8(i));
 
     /// <summary>
+    /// Find matching the production <see cref="EntryStoreSearch"/> semantics exactly: pattern +
+    /// name/path + file/folder filter, index 0 (root) never a result. Substring matching byte-scans
+    /// the mapping (zero-alloc ASCII path); regex decodes per entry like the store search does.
+    /// </summary>
+    public int Find(string pattern, bool regexMode, bool includePath, bool includeFiles,
+        bool includeFolders, Action<int> onMatch = null)
+    {
+        if (!includeFiles && !includeFolders) return 0;
+        if (regexMode && !string.IsNullOrEmpty(pattern))
+            return FindRegex(pattern, includePath, includeFiles, includeFolders, onMatch);
+        return includePath
+            ? FindPath(pattern, includeFiles, includeFolders, onMatch)
+            : FindName(pattern, includeFiles, includeFolders, onMatch);
+    }
+
+    private int FindRegex(string pattern, bool includePath, bool includeFiles, bool includeFolders,
+        Action<int> onMatch)
+    {
+        var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        var bits = BitFields;
+        var matches = 0;
+        for (var i = 1; i < Count; i++)
+        {
+            if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
+            var text = includePath ? FullPath(i) : Name(i);
+            if (regex.IsMatch(text))
+            {
+                matches++;
+                onMatch?.Invoke(i);
+            }
+        }
+        return matches;
+    }
+
+    /// <summary>
     /// Name search: byte-scan each entry's UTF-8 name for <paramref name="pattern"/> (ordinal,
     /// case-insensitive). Sequentially touches only the NameBlob + NameOffsets columns. Zero managed
     /// allocation per entry for ASCII names; non-ASCII names fall back to a decoded comparison.
@@ -123,7 +159,7 @@ public sealed unsafe class ColumnarCatalogReader : IDisposable
         var blob = NameBlob;
         var bits = BitFields;
         var matches = 0;
-        for (var i = 0; i < Count; i++)
+        for (var i = 1; i < Count; i++) // index 0 is the root, never a result
         {
             if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
             var name = blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i]));
@@ -151,7 +187,7 @@ public sealed unsafe class ColumnarCatalogReader : IDisposable
         var buf = new byte[1024];
         var matches = 0;
 
-        for (var i = 0; i < Count; i++)
+        for (var i = 1; i < Count; i++) // index 0 is the root, never a result
         {
             if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
 
