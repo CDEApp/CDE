@@ -47,7 +47,8 @@ public static class AppContainerBuilder
             mbb.WithProviderMemory()
                // Filter out cdeLib CreateCacheCommandHandler since cde assembly overrides it
                .AutoDeclareFrom(typeof(CdelibModule).Assembly,
-                   consumerTypeFilter: t => t != typeof(cdeLib.Catalog.CreateCacheCommandHandler))
+                   consumerTypeFilter: t => t != typeof(cdeLib.Catalog.CreateCacheCommandHandler)
+                                            && t != typeof(cdeLib.Hashing.HashCatalogCommandHandler))
                .AutoDeclareFrom(typeof(AppContainerBuilder).Assembly);
         });
 
@@ -67,7 +68,10 @@ public static class AppContainerBuilder
         builder.RegisterType<ScanProgress.CreateCacheCommandHandler>().AsSelf();
         builder.RegisterType<ScanProgress.ScanProgressNotificationHandler>().AsSelf();
         builder.RegisterType<ScanProgress.ScanCompletedEventHandler>().AsSelf();
-        builder.RegisterType<cdeLib.Hashing.HashCatalogCommandHandler>().AsSelf();
+        builder.RegisterType<HashProgress.HashCatalogCommandHandler>().AsSelf();
+        builder.RegisterType<HashProgress.HashProgressNotificationHandler>().AsSelf();
+        builder.RegisterType<HashProgress.HashStatusMessageHandler>().AsSelf();
+        builder.RegisterType<HashProgress.HashCompletedEventHandler>().AsSelf();
         builder.RegisterType<cdeLib.Duplicates.FindDuplicateCommandHandler>().AsSelf();
         builder.RegisterType<cdeLib.Upgrade.UpdateCommandHandler>().AsSelf();
 
