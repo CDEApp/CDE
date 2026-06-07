@@ -37,7 +37,7 @@ internal static class Program
         LoadAppSettingsConfig();
 
         // Start async loading after form is shown for immediate UI responsiveness
-        mainForm.Shown += async (s, e) => await mainPresenter.InitializeAsync();
+        mainForm.Shown += async (_, _) => await mainPresenter.InitializeAsync();
 
         Application.Run(mainForm);
         SaveAppState(config, mainForm);

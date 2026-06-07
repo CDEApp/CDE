@@ -137,7 +137,7 @@ internal class PerformanceTreeTraversal
         var pairDirEntries = EntryHelper.GetPairDirEntries(rootEntries);
         for (var i = 0; i < repeatCount; i++)
         {
-            pairDirEntries.Count();
+            _ = pairDirEntries.Count();
         }
         sw.Stop();
         return sw.ElapsedMilliseconds;
@@ -151,7 +151,7 @@ internal class PerformanceTreeTraversal
         var pairDirEntries = EntryHelper.GetPairDirEntries(rootEntries);
         for (var i = 0; i < repeatCount; i++)
         {
-            pairDirEntries.ToList();
+            _ = pairDirEntries.ToList();
         }
         sw.Stop();
         return sw.ElapsedMilliseconds;
@@ -165,7 +165,7 @@ internal class PerformanceTreeTraversal
         var dirEntries = EntryHelper.GetDirEntries(rootEntries);
         for (var i = 0; i < repeatCount; i++)
         {
-            dirEntries.ToList();
+            _ = dirEntries.ToList();
         }
         sw.Stop();
         return sw.ElapsedMilliseconds;
@@ -179,7 +179,7 @@ internal class PerformanceTreeTraversal
         var dirEntries = EntryHelper.GetDirEntries(rootEntries);
         for (var i = 0; i < repeatCount; i++)
         {
-            dirEntries.Count();
+            _ = dirEntries.Count();
         }
         sw.Stop();
         return sw.ElapsedMilliseconds;

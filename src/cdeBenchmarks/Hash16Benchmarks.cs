@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Order;
 using cdeLib.Entities;
 
@@ -147,6 +146,7 @@ public class Hash16Benchmarks
         bool result = false;
         for (int i = 0; i < IterationCount; i++)
         {
+            // ReSharper disable once RedundantAssignment
             result = _structHash1.IsSet;
             result = Hash16.Empty.IsSet;
         }

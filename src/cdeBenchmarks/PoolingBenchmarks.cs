@@ -1,5 +1,4 @@
 using BenchmarkDotNet.Attributes;
-using BenchmarkDotNet.Jobs;
 using BenchmarkDotNet.Order;
 using cdeLib;
 using cdeLib.Entities;
@@ -31,7 +30,7 @@ public class PoolingBenchmarks
     [GlobalSetup]
     public void Setup()
     {
-        _bufferPool = new BufferPool(BufferSize, maxBuffers: 50);
+        _bufferPool = new BufferPool();
     }
 
     [GlobalCleanup]
@@ -52,7 +51,7 @@ public class PoolingBenchmarks
     public byte[] BufferPoolRentReturn()
     {
         byte[]? lastBuffer = null;
-        for (int i = 0; i < OperationCount; i++)
+        for (var i = 0; i < OperationCount; i++)
         {
             var buffer = _bufferPool.Rent();
             // Simulate some work
@@ -73,7 +72,7 @@ public class PoolingBenchmarks
     public byte[] DirectAllocation()
     {
         byte[]? lastBuffer = null;
-        for (int i = 0; i < OperationCount; i++)
+        for (var i = 0; i < OperationCount; i++)
         {
             var buffer = new byte[BufferSize];
             buffer[0] = (byte)i;
@@ -91,13 +90,13 @@ public class PoolingBenchmarks
     [Benchmark(Description = "CollectionPool DirEntry lists")]
     public int DirEntryListPooling()
     {
-        int totalCount = 0;
-        for (int i = 0; i < OperationCount; i++)
+        var totalCount = 0;
+        for (var i = 0; i < OperationCount; i++)
         {
             var list = CollectionPool.GetDirEntryList();
 
             // Simulate adding children
-            for (int j = 0; j < 5; j++)
+            for (var j = 0; j < 5; j++)
             {
                 var entry = new DirEntry(false);
                 entry.SetPath($"file_{j}.txt");
@@ -119,12 +118,12 @@ public class PoolingBenchmarks
     [Benchmark(Description = "Direct List allocation")]
     public int DirectListAllocation()
     {
-        int totalCount = 0;
-        for (int i = 0; i < OperationCount; i++)
+        var totalCount = 0;
+        for (var i = 0; i < OperationCount; i++)
         {
             var list = new List<DirEntry>(4); // Same capacity as pool
 
-            for (int j = 0; j < 5; j++)
+            for (var j = 0; j < 5; j++)
             {
                 var entry = new DirEntry(false);
                 entry.SetPath($"file_{j}.txt");
@@ -145,8 +144,8 @@ public class PoolingBenchmarks
     [Benchmark(Description = "CollectionPool PairDirEntry lists")]
     public int PairDirEntryListPooling()
     {
-        int totalCount = 0;
-        for (int i = 0; i < OperationCount; i++)
+        var totalCount = 0;
+        for (var i = 0; i < OperationCount; i++)
         {
             var list = CollectionPool.GetPairDirEntryList();
 
@@ -154,7 +153,7 @@ public class PoolingBenchmarks
             var parentEntry = new DirEntry(true);
             parentEntry.SetPath("parent");
 
-            for (int j = 0; j < 20; j++)
+            for (var j = 0; j < 20; j++)
             {
                 var entry = new DirEntry(false);
                 entry.SetPath($"result_{j}.txt");
@@ -177,8 +176,8 @@ public class PoolingBenchmarks
     [Benchmark(Description = "CollectionPool Stack operations")]
     public int StackPooling()
     {
-        int totalCount = 0;
-        for (int i = 0; i < OperationCount; i++)
+        var totalCount = 0;
+        for (var i = 0; i < OperationCount; i++)
         {
             var stack = CollectionPool.GetCommonEntryStack();
 
@@ -187,11 +186,11 @@ public class PoolingBenchmarks
             root.SetPath("root");
             stack.Push(root);
 
-            for (int j = 0; j < 10; j++)
+            for (var j = 0; j < 10; j++)
             {
                 if (stack.Count > 0)
                 {
-                    var entry = stack.Pop();
+                    stack.Pop();
                     totalCount++;
 
                     // Push more items
@@ -218,16 +217,16 @@ public class PoolingBenchmarks
         long totalBytes = 0;
 
         // Simulate hashing multiple files
-        for (int fileIndex = 0; fileIndex < OperationCount / 10; fileIndex++)
+        for (var fileIndex = 0; fileIndex < OperationCount / 10; fileIndex++)
         {
             // Rent buffer for this file
             var buffer = _bufferPool.Rent();
 
             // Simulate reading file in chunks
-            for (int chunk = 0; chunk < 10; chunk++)
+            for (var chunk = 0; chunk < 10; chunk++)
             {
                 // Simulate processing data
-                for (int i = 0; i < Math.Min(1000, buffer.Length); i++)
+                for (var i = 0; i < Math.Min(1000, buffer.Length); i++)
                 {
                     buffer[i] = (byte)(fileIndex + chunk + i);
                 }
@@ -250,12 +249,12 @@ public class PoolingBenchmarks
     [Benchmark(Description = "CollectionPool String lists")]
     public int StringListPooling()
     {
-        int totalCount = 0;
-        for (int i = 0; i < OperationCount; i++)
+        var totalCount = 0;
+        for (var i = 0; i < OperationCount; i++)
         {
             var list = CollectionPool.GetStringList();
 
-            for (int j = 0; j < 10; j++)
+            for (var j = 0; j < 10; j++)
             {
                 list.Add($"path\\to\\file_{j}.txt");
             }

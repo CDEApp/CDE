@@ -37,7 +37,6 @@ public static class AppContainerBuilder
             return null;
         }
 
-        // Configure SlimMessageBus with MSDI
         var services = new ServiceCollection();
 
         // Add logging (required by SlimMessageBus)
@@ -53,7 +52,7 @@ public static class AppContainerBuilder
         });
 
         var builder = new ContainerBuilder();
-        var config = new ConfigBuilder().Build(args);
+        var config = ConfigBuilder.Build(args);
         ConfigureLogger(config);
         builder.RegisterInstance(config);
         builder.RegisterType<cdeLib.Infrastructure.Logger>().As<cdeLib.Infrastructure.ILogger>();

@@ -13,10 +13,11 @@ public class ConfigBuilder
         return File.Exists(path);
     }
 
-    public IConfigurationRoot Build(string[] args)
+    public static IConfigurationRoot Build(string[] args)
     {
         return new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())   // required for single file application or it goes hunting in temp folder when it extracts.
+            .SetBasePath(Directory
+                .GetCurrentDirectory()) // required for a single file application, or it goes hunting in the temp folder when it extracts.
             .AddJsonFile(AppSettingsFileName, optional: true, reloadOnChange: true)
             .AddCommandLine(args)
             .Build();
