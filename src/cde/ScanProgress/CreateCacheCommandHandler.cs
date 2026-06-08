@@ -20,14 +20,11 @@ namespace cde.ScanProgress;
 public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 {
     private readonly IConfiguration _configuration;
-    private readonly ICatalogRepository _catalogRepository;
     private readonly IMessageBus _messageBus;
 
-    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
-        IMessageBus messageBus)
+    public CreateCacheCommandHandler(IConfiguration configuration, IMessageBus messageBus)
     {
         _configuration = configuration;
-        _catalogRepository = catalogRepository;
         _messageBus = messageBus;
     }
 
