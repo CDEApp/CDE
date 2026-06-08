@@ -64,8 +64,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime ScanStartUtc
     {
-        set => ScanStartUtcTicks = value.Ticks;
         get => DateTime.FromBinary(ScanStartUtcTicks);
+        set => ScanStartUtcTicks = value.Ticks;
     }
 
     [FlatBufferItem(8)]
@@ -76,8 +76,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime ScanEndUtc
     {
-        set => ScanEndUtcTicks = value.Ticks;
         get => DateTime.FromBinary(ScanEndUtcTicks);
+        set => ScanEndUtcTicks = value.Ticks;
     }
 
     [FlatBufferItem(9)]
@@ -109,11 +109,7 @@ public sealed class RootEntry : object, ICommonEntry
     {
     }
 
-    public RootEntry(IConfiguration configuration) : this(configuration, null)
-    {
-    }
-
-    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter)
+    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter = null)
     {
         TheRootEntry = this;
         _driveInfoService = new DriveInfoService();
@@ -150,7 +146,7 @@ public sealed class RootEntry : object, ICommonEntry
         var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
         if (driveInfo.AvailableBytes != null) AvailSpace = driveInfo.AvailableBytes.Value;
         if (driveInfo.TotalBytes != null) TotalSpace = driveInfo.TotalBytes.Value;
-        VolumeName = this.GetVolumeName(GetDirectoryRoot(pathRoot));
+        VolumeName = GetVolumeName(GetDirectoryRoot(pathRoot));
         return startPath;
     }
 
@@ -486,7 +482,7 @@ public sealed class RootEntry : object, ICommonEntry
         {
             // Sorting mutates the concrete child list, so work through the concrete DirEntry
             // (the abstract ICommonEntry.Children is a read-only view).
-            if (d is DirEntry { IsDirectory: true } de && de.Children?.Count > 1)
+            if (d is DirEntry { IsDirectory: true, Children.Count: > 1 } de)
             {
                 de.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
                 de.IsDefaultSort = true;
@@ -520,8 +516,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime Modified
     {
-        set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
+        set => ModifiedTicks = value.Ticks;
     }
 
     [ProtoMember(12, IsRequired = false)]
@@ -732,22 +728,13 @@ public sealed class RootEntry : object, ICommonEntry
             return -1; // this before de
         }
 
-        if (IsModifiedBad && !de.IsModifiedBad)
+        return IsModifiedBad switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsModifiedBad && de.IsModifiedBad)
-        {
-            return 1; // this after de
-        }
-
-        if (IsModifiedBad && de.IsModifiedBad)
-        {
-            return 0;
-        }
-
-        return DateTime.Compare(Modified, de.Modified);
+            true when !de.IsModifiedBad => -1,
+            false when de.IsModifiedBad => 1,
+            true when de.IsModifiedBad => 0,
+            _ => DateTime.Compare(Modified, de.Modified)
+        };
     }
 
     // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
@@ -758,20 +745,15 @@ public sealed class RootEntry : object, ICommonEntry
             return -1; // this before de
         }
 
-        if (IsDirectory && !de.IsDirectory)
+        return IsDirectory switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsDirectory && de.IsDirectory)
-        {
-            return 1; // this after de
-        }
-
-        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
+            true when !de.IsDirectory => -1,
+            false when de.IsDirectory => 1,
+            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+        };
     }
 
-    // can this be done with TraverseTree ?
+    // can this be done with TraverseTree?
     public void SetSummaryFields()
     {
         var size = 0L;
@@ -821,8 +803,7 @@ public sealed class RootEntry : object, ICommonEntry
 
     public void AddChild(DirEntry child)
     {
-        if (this.Children == null)
-            Children = new List<DirEntry>();
+        Children ??= new List<DirEntry>();
         Children.Add(child);
     }
 
@@ -938,7 +919,7 @@ public sealed class RootEntry : object, ICommonEntry
         ValidateTreeCopyParameters(this, destination);
 
         var stack = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
-        stack.Push((this.Path, this, destination));
+        stack.Push((Path, this, destination));
 
         while (stack.Count > 0)
         {
@@ -1044,7 +1025,7 @@ public sealed class RootEntry : object, ICommonEntry
         }
 
         var shouldCopy = !destination.IsHashDone  // Destination has no hash
-            || (source.IsPartialHash == false && destination.IsPartialHash);  // Upgrading partial to full
+            || (!source.IsPartialHash && destination.IsPartialHash);  // Upgrading partial to full
 
         if (shouldCopy)
         {

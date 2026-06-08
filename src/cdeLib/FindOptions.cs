@@ -134,7 +134,7 @@ public class FindOptions
         var findFunc = GetFindFunc(_dummyProgressCount, limitCount);
         // ReSharper disable PossibleMultipleEnumeration
 
-        Parallel.ForEach(sortedRootEntries, parallelOptions, (rootEntry) =>
+        Parallel.ForEach(sortedRootEntries, parallelOptions, rootEntry =>
         {
             // Use single-entry overload to avoid array allocation
             EntryHelper.TraverseTreePair(rootEntry, findFunc);
@@ -312,6 +312,7 @@ public class FindOptions
     private TraverseFunc GetFindFunc(int[] progressCount, int[] limitCount)
     {
         var findPredicate = GetFindPredicate();
+        return FindFunc;
 
         bool FindFunc(ICommonEntry p, ICommonEntry dirEntry)
         {
@@ -360,8 +361,6 @@ public class FindOptions
 
             return true;
         }
-
-        return FindFunc;
     }
 
     public void ResetProgress()

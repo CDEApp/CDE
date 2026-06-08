@@ -10,7 +10,7 @@ public class KeyEqualityComparer<T, TKey> : IEqualityComparer<T>
 {
     protected readonly Func<T, TKey> KeyExtractor;
 
-    public KeyEqualityComparer(Func<T, TKey> keyExtractor)
+    protected KeyEqualityComparer(Func<T, TKey> keyExtractor)
     {
         KeyExtractor = keyExtractor;
     }

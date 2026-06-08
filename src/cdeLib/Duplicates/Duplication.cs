@@ -23,7 +23,7 @@ public class Duplication
 
     private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new();
 
-    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new();
+    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = [];
 
     protected readonly DuplicationStatistics _duplicationStatistics;
 
@@ -79,11 +79,7 @@ public class Duplication
         _logger.LogDebug("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // Calculate all aggregations in single pass to avoid multiple enumerations
-        long totalFilesInRootEntries = 0;
-        foreach (var entry in rootEntries)
-        {
-            totalFilesInRootEntries += entry.FileEntryCount;
-        }
+        long totalFilesInRootEntries = rootEntries.Aggregate<RootEntry, long>(0, (current, entry) => current + entry.FileEntryCount);
 
         int totalEntriesInSizeDupes = 0;
         int longestListLength = -1;
@@ -139,7 +135,7 @@ public class Duplication
             var root = System.IO.Directory.GetDirectoryRoot(pde.FullPath);
             if (!groupedByDirectoryRoot.TryGetValue(root, out var group))
             {
-                group = new List<PairDirEntry>();
+                group = [];
                 groupedByDirectoryRoot[root] = group;
             }
 

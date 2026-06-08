@@ -15,15 +15,12 @@ namespace cdeLib.Catalog;
 public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 {
     private readonly IConfiguration _configuration;
-    private readonly ICatalogRepository _catalogRepository;
     private readonly IMessageBus _messageBus;
     private readonly OperationCancellation _cancellation;
 
-    public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
-        IMessageBus messageBus, OperationCancellation cancellation)
+    public CreateCacheCommandHandler(IConfiguration configuration, IMessageBus messageBus, OperationCancellation cancellation)
     {
         _configuration = configuration;
-        _catalogRepository = catalogRepository;
         _messageBus = messageBus;
         _cancellation = cancellation;
     }

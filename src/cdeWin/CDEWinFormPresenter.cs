@@ -200,7 +200,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private void OnLoadProgress(int current, int total, string message)
     {
-        if (_clientForm is Control control && control.InvokeRequired)
+        if (_clientForm is Control { InvokeRequired: true } control)
         {
             control.BeginInvoke(() => OnLoadProgress(current, total, message));
             return;
@@ -210,7 +210,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.SetSearchTimeStatus(message);
         if (total > 0)
         {
-            _clientForm.SetLoadingProgressValue((current * 100) / total);
+            _clientForm.SetLoadingProgressValue(current * 100 / total);
         }
         SetMemoryStatus();
     }
@@ -326,7 +326,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private static bool HasDummyChildNode(TreeNode parentNode)
     {
-        return parentNode.Nodes.Count == 1 && parentNode.Nodes[0].Text == DummyNodeName;
+        return parentNode.Nodes is [{ Text: DummyNodeName }];
     }
 
     private static void AddAllDirectoriesChildren(TreeNode treeNode, ICommonEntry dirEntry)
@@ -339,12 +339,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private static void AddDirectoryChildren(TreeNode treeNode, ICommonEntry dirEntry)
     {
-        if (dirEntry.IsDirectory)
-        {
-            var newTreeNode = NewTreeNode(dirEntry);
-            treeNode.Nodes.Add(newTreeNode);
-            SetDummyChildNode(newTreeNode, dirEntry);
-        }
+        if (!dirEntry.IsDirectory) return;
+        var newTreeNode = NewTreeNode(dirEntry);
+        treeNode.Nodes.Add(newTreeNode);
+        SetDummyChildNode(newTreeNode, dirEntry);
     }
 
     /// <summary>
@@ -493,16 +491,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private bool FromToDateInvalid()
     {
-        if (_clientForm.FromDate.Checked
-            && _clientForm.ToDate.Checked
-            && _clientForm.FromDateValue.Date >= _clientForm.ToDateValue.Date)
-        {
-            _clientForm.MessageBox(
-                "The From Date Field is greater than the To Date field no search results possible.");
-            return true;
-        }
+        if (!_clientForm.FromDate.Checked
+            || !_clientForm.ToDate.Checked
+            || _clientForm.FromDateValue.Date < _clientForm.ToDateValue.Date) return false;
+        _clientForm.MessageBox(
+            "The From Date Field is greater than the To Date field no search results possible.");
+        return true;
 
-        return false;
     }
 
     private bool FromToHourInvalid()
@@ -521,31 +516,23 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private bool RegexIsBad()
     {
-        if (_clientForm.RegexMode)
-        {
-            var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
-            if (!string.IsNullOrEmpty(regexError))
-            {
-                _clientForm.MessageBox(regexError);
-                return true;
-            }
-        }
+        if (!_clientForm.RegexMode) return false;
+        var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
+        if (string.IsNullOrEmpty(regexError)) return false;
+        _clientForm.MessageBox(regexError);
+        return true;
 
-        return false;
     }
 
     private bool FromToSizeInvalid()
     {
-        if (_clientForm.FromSize.Checked
-            && _clientForm.ToSize.Checked
-            && FromSizeValue() > ToSizeValue())
-        {
-            _clientForm.MessageBox(
-                "The From Size Field is greater than the To Size field no search results possible.");
-            return true;
-        }
+        if (!_clientForm.FromSize.Checked
+            || !_clientForm.ToSize.Checked
+            || FromSizeValue() <= ToSizeValue()) return false;
+        _clientForm.MessageBox(
+            "The From Size Field is greater than the To Size field no search results possible.");
+        return true;
 
-        return false;
     }
 
     private long FromSizeValue()
@@ -639,17 +626,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var lastReport = Stopwatch.GetTimestamp();
         var reportTicks = Stopwatch.Frequency / 10; // ~100ms streaming
 
-        void Report(int scanned)
-        {
-            var now = Stopwatch.GetTimestamp();
-            if (now - lastReport < reportTicks) return;
-            lastReport = now;
-            state.ListCount = list.Count;
-            state.List = new List<PairDirEntry>(list); // immutable snapshot for the UI thread
-            state.Counter = scanned;
-            worker.ReportProgress(grandTotal > 0 ? (int)(100.0 * scanned / grandTotal) : 0, state);
-        }
-
         var timer = Stopwatch.StartNew();
         foreach (var source in sources)
         {
@@ -673,6 +649,18 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         state.Counter = grandTotal;
         worker.ReportProgress(100, state);
         e.Result = list;
+        return;
+
+        void Report(int scanned)
+        {
+            var now = Stopwatch.GetTimestamp();
+            if (now - lastReport < reportTicks) return;
+            lastReport = now;
+            state.ListCount = list.Count;
+            state.List = new List<PairDirEntry>(list); // immutable snapshot for the UI thread
+            state.Counter = scanned;
+            worker.ReportProgress(grandTotal > 0 ? (int)(100.0 * scanned / grandTotal) : 0, state);
+        }
     }
 
     private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
@@ -1113,12 +1101,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private void SelectFileInDirectoryTab(ICommonEntry dirEntry)
     {
-        if (!dirEntry.IsDirectory)
-        {
-            var index = _directoryList.IndexOf(dirEntry);
-            var directoryHelper = _clientForm.DirectoryListViewHelper;
-            directoryHelper.SelectItem(index);
-        }
+        if (dirEntry.IsDirectory) return;
+        var index = _directoryList.IndexOf(dirEntry);
+        var directoryHelper = _clientForm.DirectoryListViewHelper;
+        directoryHelper.SelectItem(index);
     }
 
     public void DirectoryContextMenuOpenClick()
@@ -1157,7 +1143,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         DirectoryGetContextMenuPairDirEntries(enumerableDirEntry =>
         {
-            // we dont have parent dir entry here ... 
+            // we don't have parent dir entry here 
             var s = new StringBuilder();
             foreach (var dirEntry in enumerableDirEntry)
             {

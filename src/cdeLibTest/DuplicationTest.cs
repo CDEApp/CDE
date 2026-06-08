@@ -167,7 +167,7 @@ internal class DuplicationTest
     public void GetSizePairs_CheckSanityOfDupeSizeCountAndDupeFileCount_Exercise()
     {
         const int dupeCount = 10;
-        var testPath = this.AssemblyPathLocation();
+        var testPath = AssemblyPathLocation();
         // Create some dummy duplicate data.
         // create a catalog
         var random = FileHelper.RandomString(4096 * 16);
@@ -176,7 +176,7 @@ internal class DuplicationTest
             FileHelper.WriteAllText(random, testPath, $"CDE_testFile{i}.txt");
         }
 
-        Program.InitProgram(Array.Empty<string>());
+        Program.InitProgram([]);
         Program.CreateCache(new ScanOptions {Path = testPath}); // scan writes a columnar .cdex
         Program.HashCatalog();                                  // hash operates on the .cdex
 
@@ -221,15 +221,10 @@ internal class DuplicationTest
             var seenHash = new Dictionary<Hash16, int>();
             foreach (var flatDe in fdeListOfSize)
             {
-                // var hash = flatDe.ChildDE.Hash;
                 if (flatDe.ChildDE.IsHashDone // because this is run on SizeDupe list it can have null hashes.
                     && !flatDe.ChildDE.IsPartialHash)
                 {
-                    if (!seenHash.ContainsKey(flatDe.ChildDE.Hash))
-                    {
-                        seenHash[flatDe.ChildDE.Hash] = 0;
-                    }
-                    else
+                    if (!seenHash.TryAdd(flatDe.ChildDE.Hash, 0))
                     {
                         ++seenHash[flatDe.ChildDE.Hash];
                     }

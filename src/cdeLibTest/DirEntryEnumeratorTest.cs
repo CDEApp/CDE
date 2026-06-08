@@ -54,7 +54,7 @@ public class DirEntryEnumeratorTest : DirEntryTestBase
     [Test]
     public void MoveNext_NoRootEntries_FirstMoveNextFalse()
     {
-        RootEntries = new List<RootEntry>();
+        RootEntries = [];
 
         var e = new DirEntryEnumerator(RootEntries);
 

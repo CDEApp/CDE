@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using System.Linq;
 using cdeLib.Infrastructure.Hashing;
 
 namespace cdeLibTest.Infrastructure.Hashing;
@@ -35,9 +36,7 @@ public class Crc32 : IHashAlgorithm
 
     public UInt64 Hash(byte[] data)
     {
-        uint hash = 0xFFFFFFFF;
-        foreach (byte b in data)
-            hash = (hash << 8) ^ _tab[b ^ (hash >> 24)];
+        var hash = data.Aggregate(0xFFFFFFFF, (current, b) => (current << 8) ^ _tab[b ^ (current >> 24)]);
         return ~hash;
     }
 

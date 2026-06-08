@@ -53,8 +53,8 @@ public sealed class DirEntry : ICommonEntry
     [IgnoreMember]
     public DateTime Modified
     {
-        set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
+        set => ModifiedTicks = value.Ticks;
     }
 
     [ProtoMember(1, IsRequired = true)]
@@ -198,7 +198,10 @@ public sealed class DirEntry : ICommonEntry
         set
         {
             if (value != 0) EnsureExtra().FileEntryCount = value;
-            else if (_extra != null) _extra.FileEntryCount = value;
+            else
+            {
+                _extra?.FileEntryCount = value;
+            }
         }
     }
 
@@ -212,7 +215,10 @@ public sealed class DirEntry : ICommonEntry
         set
         {
             if (value != 0) EnsureExtra().DirEntryCount = value;
-            else if (_extra != null) _extra.DirEntryCount = value;
+            else
+            {
+                _extra?.DirEntryCount = value;
+            }
         }
     }
 
@@ -391,9 +397,12 @@ public sealed class DirEntry : ICommonEntry
         set
         {
             // A non-null child list (only directories have one) materialises ExtraData; files
-            // deserialize a nil Children and stay lean.
+            // deserialize nil Children and stay lean.
             if (value != null) EnsureExtra().Children = value;
-            else if (_extra != null) _extra.Children = null;
+            else
+            {
+                _extra?.Children = null;
+            }
         }
     }
     // ReSharper restore MemberCanBePrivate.Global
@@ -425,13 +434,9 @@ public sealed class DirEntry : ICommonEntry
     public string Path
     {
         //NOTE: Separating the extension from the path is more memory efficient (300MB saved on 6000MB load) but slower.
-        get
-        {
-            //return _path;
-
+        get =>
             // string.concat faster than string interpolation.
-            return string.IsNullOrEmpty(_ext) ? _path : string.Concat(_path, _ext);
-        }
+            string.IsNullOrEmpty(_ext) ? _path : string.Concat(_path, _ext);
         set
         {
 
@@ -605,7 +610,7 @@ public sealed class DirEntry : ICommonEntry
     public IList<ICommonEntry> GetListFromRoot()
     {
         var activatedDirEntryList = new List<ICommonEntry>(8);
-        for (var entry = (ICommonEntry)this; entry != null; entry = entry.ParentCommonEntry)
+        for (ICommonEntry entry = this; entry != null; entry = entry.ParentCommonEntry)
         {
             activatedDirEntryList.Add(entry);
         }

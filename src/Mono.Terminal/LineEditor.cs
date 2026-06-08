@@ -113,9 +113,9 @@ public class LineEditor
     // This contains a raw stream pointing to stdout, used to bypass the TermInfoDriver
     private static Stream _unixRawOutput;
 
-    delegate void KeyHandler();
+    private delegate void KeyHandler();
 
-    struct Handler
+    private struct Handler
     {
         public readonly ConsoleKeyInfo Cki;
         public readonly KeyHandler KeyHandler;
@@ -229,7 +229,7 @@ public class LineEditor
     // BackgroundColor properties, so we have to use the terminfo driver in Mono to
     // fetch these values
 
-    void GetUnixConsoleReset()
+    private void GetUnixConsoleReset()
     {
         //
         // On Unix, we want to be able to reset the color for the pop-up completion
@@ -268,7 +268,7 @@ public class LineEditor
         Render();
     }
 
-    void Render()
+    private void Render()
     {
         Console.Write(_shownPrompt);
         Console.Write(_renderedText);
@@ -288,7 +288,7 @@ public class LineEditor
 
     private void UpdateHomeRow(int screenpos)
     {
-        var lines = 1 + (screenpos / Console.WindowWidth);
+        var lines = 1 + screenpos / Console.WindowWidth;
 
         _homeRow = Console.CursorTop - (lines - 1);
         if (_homeRow < 0)
@@ -296,7 +296,7 @@ public class LineEditor
     }
 
 
-    void RenderFrom(int pos)
+    private void RenderFrom(int pos)
     {
         var rpos = TextToRenderPos(pos);
         int i;
@@ -304,7 +304,7 @@ public class LineEditor
         for (i = rpos; i < _renderedText.Length; i++)
             Console.Write(_renderedText[i]);
 
-        if ((_shownPrompt.Length + _renderedText.Length) > _maxRendered)
+        if (_shownPrompt.Length + _renderedText.Length > _maxRendered)
             _maxRendered = _shownPrompt.Length + _renderedText.Length;
         else
         {
@@ -314,7 +314,7 @@ public class LineEditor
         }
     }
 
-    void ComputeRendered()
+    private void ComputeRendered()
     {
         _renderedText.Length = 0;
 
@@ -336,7 +336,7 @@ public class LineEditor
         }
     }
 
-    int TextToRenderPos(int pos)
+    private int TextToRenderPos(int pos)
     {
         var p = 0;
 
@@ -363,7 +363,7 @@ public class LineEditor
         return _shownPrompt.Length + TextToRenderPos(pos);
     }
 
-    string Prompt
+    private string Prompt
     {
         get => _prompt;
         set => _prompt = value;
@@ -371,12 +371,12 @@ public class LineEditor
 
     private int LineCount => (_shownPrompt.Length + _renderedText.Length) / Console.WindowWidth;
 
-    void ForceCursor(int newpos)
+    private void ForceCursor(int newpos)
     {
         _cursor = newpos;
 
         var actualPos = _shownPrompt.Length + TextToRenderPos(_cursor);
-        var row = _homeRow + (actualPos / Console.WindowWidth);
+        var row = _homeRow + actualPos / Console.WindowWidth;
         var col = actualPos % Console.WindowWidth;
 
         if (row >= Console.BufferHeight)
@@ -384,7 +384,7 @@ public class LineEditor
         Console.SetCursorPosition(col, row);
     }
 
-    void UpdateCursor(int newpos)
+    private void UpdateCursor(int newpos)
     {
         if (_cursor == newpos)
             return;
@@ -392,7 +392,7 @@ public class LineEditor
         ForceCursor(newpos);
     }
 
-    void InsertChar(char c)
+    private void InsertChar(char c)
     {
         var prevLines = LineCount;
         _text = _text.Insert(_cursor, c);
@@ -411,7 +411,7 @@ public class LineEditor
         }
     }
 
-    static void SaveExcursion(Action code)
+    private static void SaveExcursion(Action code)
     {
         var savedCol = Console.CursorLeft;
         var savedRow = Console.CursorTop;
@@ -433,7 +433,7 @@ public class LineEditor
         }
     }
 
-    class CompletionState
+    private class CompletionState
     {
         public string Prefix;
         public string[] Completions;
@@ -457,19 +457,19 @@ public class LineEditor
                 throw new ArgumentException("Cannot be less than one", "Height");
         }
 
-        void DrawSelection()
+        private void DrawSelection()
         {
             for (var r = 0; r < Height; r++)
             {
                 var itemIdx = _topItem + r;
-                var selected = (itemIdx == _selectedItem);
+                var selected = itemIdx == _selectedItem;
 
                 Console.ForegroundColor = selected ? ConsoleColor.Black : ConsoleColor.Gray;
                 Console.BackgroundColor = selected ? ConsoleColor.Cyan : ConsoleColor.Blue;
 
                 var item = Prefix + Completions[itemIdx];
                 if (item.Length > Width)
-                    item = item.Substring(0, Width);
+                    item = item[..Width];
 
                 Console.CursorLeft = Col;
                 Console.CursorTop = Row + r;
@@ -508,7 +508,7 @@ public class LineEditor
             }
         }
 
-        void Clear()
+        private void Clear()
         {
             for (var r = 0; r < Height; r++)
             {
@@ -525,7 +525,7 @@ public class LineEditor
         }
     }
 
-    void ShowCompletions(string prefix, string[] completions)
+    private void ShowCompletions(string prefix, string[] completions)
     {
         // Ensure we have space, determine window size
         var windowHeight = Math.Max(1, Math.Min(completions.Length, Console.WindowHeight / 5));
@@ -587,7 +587,7 @@ public class LineEditor
     // Triggers the completion engine, if insertBestMatch is true, then this will
     // insert the best match found, this behaves like the shell "tab" which will
     // complete as much as possible given the options.
-    void Complete()
+    private void Complete()
     {
         if (AutoCompleteEvent == null)
             return;
@@ -639,12 +639,12 @@ public class LineEditor
             var displayCompletions = (string[])completions.Clone();
             if (last != -1)
             {
-                InsertTextAtCursor(displayCompletions[0].Substring(0, last + 1));
+                InsertTextAtCursor(displayCompletions[0][..(last + 1)]);
 
                 // Adjust the completions to skip the common prefix
-                prefix += displayCompletions[0].Substring(0, last + 1);
+                prefix += displayCompletions[0][..(last + 1)];
                 for (var i = 0; i < displayCompletions.Length; i++)
-                    displayCompletions[i] = displayCompletions[i].Substring(last + 1);
+                    displayCompletions[i] = displayCompletions[i][(last + 1)..];
             }
 
             ShowCompletions(prefix, displayCompletions);
@@ -655,7 +655,7 @@ public class LineEditor
 
     // When the user has triggered a completion window, this will try to update
     // the contents of it.   The completion window is assumed to be hidden at this point
-    void UpdateCompletionWindow()
+    private void UpdateCompletionWindow()
     {
         if (_currentCompletion != null)
             throw new Exception("This method should only be called if the window has been hidden");
@@ -677,7 +677,7 @@ public class LineEditor
     }
 
     // Commands
-    void CmdDone()
+    private void CmdDone()
     {
         if (_currentCompletion != null)
         {
@@ -689,7 +689,7 @@ public class LineEditor
         _done = true;
     }
 
-    void CmdTabOrComplete()
+    private void CmdTabOrComplete()
     {
         var complete = false;
 
@@ -723,17 +723,17 @@ public class LineEditor
         _history.Dump();
     }
 
-    void CmdHome()
+    private void CmdHome()
     {
         UpdateCursor(0);
     }
 
-    void CmdEnd()
+    private void CmdEnd()
     {
         UpdateCursor(_text.Length);
     }
 
-    void CmdLeft()
+    private void CmdLeft()
     {
         if (_cursor == 0)
             return;
@@ -741,7 +741,7 @@ public class LineEditor
         UpdateCursor(_cursor - 1);
     }
 
-    void CmdBackwardWord()
+    private void CmdBackwardWord()
     {
         var p = WordBackward(_cursor);
         if (p == -1)
@@ -749,7 +749,7 @@ public class LineEditor
         UpdateCursor(p);
     }
 
-    void CmdForwardWord()
+    private void CmdForwardWord()
     {
         var p = WordForward(_cursor);
         if (p == -1)
@@ -757,7 +757,7 @@ public class LineEditor
         UpdateCursor(p);
     }
 
-    void CmdRight()
+    private void CmdRight()
     {
         if (_cursor == _text.Length)
             return;
@@ -765,14 +765,14 @@ public class LineEditor
         UpdateCursor(_cursor + 1);
     }
 
-    void RenderAfter(int p)
+    private void RenderAfter(int p)
     {
         ForceCursor(p);
         RenderFrom(p);
         ForceCursor(_cursor);
     }
 
-    void CmdBackspace()
+    private void CmdBackspace()
     {
         if (_cursor == 0)
             return;
@@ -787,7 +787,7 @@ public class LineEditor
             UpdateCompletionWindow();
     }
 
-    void CmdDeleteChar()
+    private void CmdDeleteChar()
     {
         // If there is no input, this behaves like EOF
         if (_text.Length == 0)
@@ -805,7 +805,7 @@ public class LineEditor
         RenderAfter(_cursor);
     }
 
-    int WordForward(int p)
+    private int WordForward(int p)
     {
         if (p >= _text.Length)
             return -1;
@@ -839,7 +839,7 @@ public class LineEditor
         return -1;
     }
 
-    int WordBackward(int p)
+    private int WordBackward(int p)
     {
         if (p == 0)
             return -1;
@@ -879,7 +879,7 @@ public class LineEditor
         return -1;
     }
 
-    void CmdDeleteWord()
+    private void CmdDeleteWord()
     {
         var pos = WordForward(_cursor);
 
@@ -898,7 +898,7 @@ public class LineEditor
         RenderAfter(_cursor);
     }
 
-    void CmdDeleteBackword()
+    private void CmdDeleteBackword()
     {
         var pos = WordBackward(_cursor);
         if (pos == -1)
@@ -917,12 +917,12 @@ public class LineEditor
     }
 
     // Adds the current line to the history if needed
-    void HistoryUpdateLine()
+    private void HistoryUpdateLine()
     {
         _history.Update(_text.ToString());
     }
 
-    void CmdHistoryPrev()
+    private void CmdHistoryPrev()
     {
         if (!_history.PreviousAvailable())
             return;
@@ -932,7 +932,7 @@ public class LineEditor
         SetText(_history.Previous());
     }
 
-    void CmdHistoryNext()
+    private void CmdHistoryNext()
     {
         if (!_history.NextAvailable())
             return;
@@ -941,7 +941,7 @@ public class LineEditor
         SetText(_history.Next());
     }
 
-    void CmdUp()
+    private void CmdUp()
     {
         if (_currentCompletion == null)
             CmdHistoryPrev();
@@ -949,7 +949,7 @@ public class LineEditor
             _currentCompletion.SelectPrevious();
     }
 
-    void CmdDown()
+    private void CmdDown()
     {
         if (_currentCompletion == null)
             CmdHistoryNext();
@@ -957,7 +957,7 @@ public class LineEditor
             _currentCompletion.SelectNext();
     }
 
-    void CmdKillToEOF()
+    private void CmdKillToEOF()
     {
         _killBuffer = _text.ToString(_cursor, _text.Length - _cursor);
         _text.Length = _cursor;
@@ -965,12 +965,12 @@ public class LineEditor
         RenderAfter(_cursor);
     }
 
-    void CmdYank()
+    private void CmdYank()
     {
         InsertTextAtCursor(_killBuffer);
     }
 
-    void InsertTextAtCursor(string str)
+    private void InsertTextAtCursor(string str)
     {
         var prevLines = LineCount;
         _text.Insert(_cursor, str);
@@ -991,12 +991,12 @@ public class LineEditor
         }
     }
 
-    void SetSearchPrompt(string s)
+    private void SetSearchPrompt(string s)
     {
         SetPrompt("(reverse-i-search)`" + s + "': ");
     }
 
-    void ReverseSearch()
+    private void ReverseSearch()
     {
         int p;
 
@@ -1016,7 +1016,7 @@ public class LineEditor
         else
         {
             // The cursor is somewhere in the middle of the string
-            var start = (_cursor == _matchAt) ? _cursor - 1 : _cursor;
+            var start = _cursor == _matchAt ? _cursor - 1 : _cursor;
             if (start != -1)
             {
                 p = _text.ToString().LastIndexOf(_search, start, StringComparison.Ordinal);
@@ -1041,7 +1041,7 @@ public class LineEditor
         }
     }
 
-    void CmdReverseSearch()
+    private void CmdReverseSearch()
     {
         if (_searching == 0)
         {
@@ -1070,9 +1070,9 @@ public class LineEditor
         }
     }
 
-    void SearchAppend(char c)
+    private void SearchAppend(char c)
     {
-        _search = _search + c;
+        _search += c;
         SetSearchPrompt(_search);
 
         //
@@ -1088,7 +1088,7 @@ public class LineEditor
         ReverseSearch();
     }
 
-    void CmdRefresh()
+    private void CmdRefresh()
     {
         Console.Clear();
         _maxRendered = 0;
@@ -1096,7 +1096,7 @@ public class LineEditor
         ForceCursor(_cursor);
     }
 
-    void InterruptEdit(object sender, ConsoleCancelEventArgs a)
+    private void InterruptEdit(object sender, ConsoleCancelEventArgs a)
     {
         // Do not abort our program:
         a.Cancel = true;
@@ -1106,7 +1106,7 @@ public class LineEditor
     }
 
     // Implements heuristics to show the completion window based on the mode
-    bool HeuristicAutoComplete(bool wasCompleting, char insertedChar)
+    private bool HeuristicAutoComplete(bool wasCompleting, char insertedChar)
     {
         if (HeuristicsMode == "csharp")
         {
@@ -1143,7 +1143,7 @@ public class LineEditor
         return false;
     }
 
-    void HandleChar(char c)
+    private void HandleChar(char c)
     {
         if (_searching != 0)
             SearchAppend(c);
@@ -1205,7 +1205,8 @@ public class LineEditor
                     _lastHandler = handler.KeyHandler;
                     break;
                 }
-                else if (t.KeyChar == cki.KeyChar && t.Key == ConsoleKey.Zoom)
+
+                if (t.KeyChar == cki.KeyChar && t.Key == ConsoleKey.Zoom)
                 {
                     handled = true;
                     if (handler.ResetCompletion)
@@ -1238,7 +1239,7 @@ public class LineEditor
         }
     }
 
-    void InitText(string initial)
+    private void InitText(string initial)
     {
         _text = new StringBuilder(initial);
         ComputeRendered();
@@ -1247,13 +1248,13 @@ public class LineEditor
         ForceCursor(_cursor);
     }
 
-    void SetText(string newtext)
+    private void SetText(string newtext)
     {
         Console.SetCursorPosition(0, _homeRow);
         InitText(newtext);
     }
 
-    void SetPrompt(string newprompt)
+    private void SetPrompt(string newprompt)
     {
         _shownPrompt = newprompt;
         Console.SetCursorPosition(0, _homeRow);
@@ -1329,7 +1330,7 @@ public class LineEditor
 
     // Emulates the bash-like behavior, where edits done to the
     // history are recorded
-    class History
+    private class History
     {
         private readonly string[] _history;
         private int _head, _tail;
@@ -1384,7 +1385,7 @@ public class LineEditor
             try
             {
                 using var sw = File.CreateText(_histfile);
-                var start = (_count == _history.Length) ? _head : _tail;
+                var start = _count == _history.Length ? _head : _tail;
                 for (var i = start; i < start + _count; i++)
                 {
                     var p = i % _history.Length;

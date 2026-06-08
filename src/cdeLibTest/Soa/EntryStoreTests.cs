@@ -55,7 +55,7 @@ public class EntryStoreTests
             LimitResultCount = int.MaxValue,
             VisitorFunc = (p, d) => { found.Add(p.MakeFullPath(d)); return true; },
         };
-        options.Find(new[] { root });
+        options.Find([root]);
         return found;
     }
 
@@ -161,7 +161,7 @@ public class EntryStoreTests
             i => found.Add(store.FullName(i)));
         found.Sort();
 
-        Assert.That(found, Is.EqualTo(new[] { "big.txt", "mid.txt" })); // size >= 25
+        Assert.That(found, Is.EqualTo(["big.txt", "mid.txt"])); // size >= 25
     }
 
     [Test]

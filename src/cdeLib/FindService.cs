@@ -92,8 +92,7 @@ public class FindService : IFindService
         var timer = Stopwatch.StartNew();
         foreach (var reader in readers)
         {
-            if (reader == null) continue;
-            reader.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
+            reader?.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
                 idx =>
                 {
                     ++totalFound;

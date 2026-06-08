@@ -31,8 +31,7 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Always_Set_Search_Button()
         {
-            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
-
+            _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
             _mockForm.Received().SearchButtonText = "Search";
         }
 
@@ -56,7 +55,7 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Always_Register_Result_Sorters()
         {
-            var _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
+            _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
             _mockSearchResultListViewHelper.ColumnSortCompare = Arg.Any<Comparison<PairDirEntry>>();
             _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();

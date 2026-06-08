@@ -84,7 +84,7 @@ public static class Program
         }
         finally
         {
-            Log.CloseAndFlush();
+            await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
     }
 
@@ -103,11 +103,11 @@ public static class Program
         ReplGrepOptions o        => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
         ReplFindOptions o        => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
         MigrateOptions o         => RunSync(() => _app.Migrate(o)),
-        HashOptions _            => _app.HashCatalogAsync(),
-        DupesOptions _           => _app.FindDupesAsync(),
-        TreeDumpOptions _        => RunSync(_app.PrintPathsHaveHash),
-        LoadWaitOptions _        => RunSync(_app.LoadWait),
-        ReplOptions _            => RunSync(_app.InvokeRepl),
+        HashOptions => _app.HashCatalogAsync(),
+        DupesOptions => _app.FindDupesAsync(),
+        TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
+        LoadWaitOptions => RunSync(_app.LoadWait),
+        ReplOptions => RunSync(_app.InvokeRepl),
         PopulousFoldersOptions o => RunSync(() => _app.FindPopulous(o.Count)),
         UpdateOptions o          => _app.UpdateAsync(o),
         _                        => Task.CompletedTask,

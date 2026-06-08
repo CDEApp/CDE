@@ -145,15 +145,13 @@ public class ContextMenuHelper : IDisposable
     /// </summary>
     public CancelEventHandler CancelOpeningEventHandler
     {
-        get => _cancelOpeningEventHandler;
+        get;
         set
         {
-            _cancelOpeningEventHandler = value;
+            field = value;
             _menu.Opening += value;
         }
     }
-
-    private CancelEventHandler _cancelOpeningEventHandler;
 
     public ContextMenuHelper()
     {

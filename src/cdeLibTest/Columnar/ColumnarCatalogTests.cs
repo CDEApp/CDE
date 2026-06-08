@@ -173,7 +173,7 @@ public class ColumnarCatalogTests
         // Set a hash on one file so the hash column round-trips too (the hash/dupes path).
         var root = BuildTree();
         var beta = root.Children.First(c => c.Path == "dir1").Children.First(c => c.Path == "beta.log");
-        beta.SetHash(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+        beta.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
         root.SetInMemoryFields();
 
         var store0 = EntryStore.Build(root);
@@ -181,7 +181,7 @@ public class ColumnarCatalogTests
         try
         {
             // .cdex -> mutable tree (as hash/dupes do) -> store again must match the original store.
-            var trees = CatalogTreeBuilder.FromColumnarFiles(new[] { path });
+            var trees = CatalogTreeBuilder.FromColumnarFiles([path]);
             Assert.That(trees, Has.Count.EqualTo(1));
             var store2 = EntryStore.Build(trees[0]);
 
@@ -210,7 +210,7 @@ public class ColumnarCatalogTests
             Size = 100,
             Modified = new System.DateTime(2020, 1, 1, 0, 0, 0, System.DateTimeKind.Utc),
         };
-        if (withHash) f.SetHash(new byte[] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 });
+        if (withHash) f.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
         root.AddChild(f);
         root.SetInMemoryFields();
         return root;
@@ -225,7 +225,7 @@ public class ColumnarCatalogTests
         var path = WriteTemp(store);
         try
         {
-            var oldRoot = CatalogTreeBuilder.FromColumnarFiles(new[] { path })[0];
+            var oldRoot = CatalogTreeBuilder.FromColumnarFiles([path])[0];
             var fresh = BuildForCopy(withHash: false);
 
             oldRoot.TraverseTreesCopyHash(fresh);

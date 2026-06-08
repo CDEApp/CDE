@@ -26,19 +26,17 @@ public class TestCDEWinPresenterBase
         => new(cdeLib.Entities.Soa.EntryStore.Build(re), 0);
 
     protected RootEntry _rootEntry;
-    protected DirEntry _dirEntry;
+    private DirEntry _dirEntry;
     protected PairDirEntry _pairDirEntry;
 
-    protected List<RootEntry> _emptyRootList = new();
-    protected List<RootEntry> _rootList = new();
+    protected List<RootEntry> _rootList = [];
     // protected TreeNode _treeViewAfterSelectNode;
     private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
     [SetUp]
     public virtual void RunBeforeEveryTest()
     {
-        _emptyRootList = new List<RootEntry>();
-        _rootList = new List<RootEntry>();
+        _rootList = [];
         _config.ProgressUpdateInterval.Returns(5000);
 
         _mockForm = Substitute.For<ICDEWinForm>();
@@ -86,7 +84,7 @@ public class TestCDEWinPresenterBase
 
     protected void InitRootWithDir()
     {
-        // massive assumption on path, this T:\ is windows only......
+        // massive assumption on the path, this T:\ is windows only......
         // is it a valid test on other platforms or behavior on other platforms?
         _rootEntry = new RootEntry(_config) { Path = @"T:\" };
         _dirEntry = new DirEntry(true) { Path = "Test1" };

@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using cdeLib.Catalog;
 using cdeLib.Entities;
 using cdeMemProbe;

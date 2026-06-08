@@ -12,9 +12,9 @@ internal static class Program
 {
     public static IConfigurationRoot Configuration;
 
-    public static string Version => Application.ProductVersion;
+    private static string Version => Application.ProductVersion;
 
-    public static string ProductName => Application.ProductName;
+    private static string ProductName => Application.ProductName;
 
     [STAThread]
     private static void Main()

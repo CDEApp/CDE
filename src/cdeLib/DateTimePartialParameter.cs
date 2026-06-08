@@ -7,7 +7,7 @@ namespace cdeLib;
 /// </summary>
 public class DateTimePartialParameter
 {
-    private readonly string _format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
+    private const string Format = "<YYYY>-<Month>-<DD>T<HH>:<MM>:<SS>";
 
     // a Parsing Expression Grammar might be a better way to do this. PEG
     // - http://en.wikipedia.org/wiki/Parsing_expression_grammar
@@ -28,9 +28,10 @@ public class DateTimePartialParameter
         if (year < 1000) // this is not 4 digits, its only value e.g., 4 digits 0982 is 4 digits.
         {
             _e = new ArgumentException(
-                $"Require Year parameter be a 4 Digit Year <YYYY> as part of format '{_format}'");
+                $"Require Year parameter be a 4 Digit Year <YYYY> as part of format '{Format}'");
             return;
         }
+
         _year = year;
 
         if (splitOnDash.Length > 1) // may have a month specified
@@ -48,12 +49,14 @@ public class DateTimePartialParameter
                     month = tmp.Month;
                 }
             }
-            if (month == 0 || month > 12)
+
+            if (month is 0 or > 12)
             {
                 _e = new ArgumentException(
-                    $"Require valid integer 1-12 or Month name for Month as part of format '{_format}'");
+                    $"Require valid integer 1-12 or Month name for Month as part of format '{Format}'");
                 return;
             }
+
             _month = month;
         }
 
@@ -68,7 +71,7 @@ public class DateTimePartialParameter
             if (SeparatorIsNotValid(splitOnDash[2], 'T'))
             {
                 _e = new ArgumentException(
-                    $"The separator between Date and Time must be 'T' as part of format '{_format}'");
+                    $"The separator between Date and Time must be 'T' as part of format '{Format}'");
                 return;
             }
 
@@ -87,14 +90,15 @@ public class DateTimePartialParameter
             if (dayOfMonth is 0 or > 31)
             {
                 _e = new ArgumentException(
-                    $"Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{_format}'");
+                    $"Require valid Day of Month integer range 1-31 for Day <DD> as part of format '{Format}'");
                 return;
             }
+
             _dayOfMonth = dayOfMonth;
 
             if (splitOnT.Length > 1 && splitOnT[1].Length > 0)
             {
-                var t = new TimePartialParameter(splitOnT[1], _format);
+                var t = new TimePartialParameter(splitOnT[1], Format);
                 _hour = t.Hour;
                 _minute = t.Minute;
                 _second = t.Second;
@@ -111,21 +115,22 @@ public class DateTimePartialParameter
             {
                 continue;
             }
+
             if (c != validSeparator)
             {
                 badSeparator = true;
             }
+
             break;
         }
+
         return badSeparator;
     }
 
     public DateTime GetDate()
     {
-        if (_e != null)
-        {
-            throw _e;
-        }
-        return new DateTime(_year, _month, _dayOfMonth, _hour, _minute, _second, DateTimeKind.Unspecified);
+        return _e != null
+            ? throw _e
+            : new DateTime(_year, _month, _dayOfMonth, _hour, _minute, _second, DateTimeKind.Unspecified);
     }
 }

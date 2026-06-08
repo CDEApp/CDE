@@ -83,7 +83,7 @@ public sealed class EntryRef : ICommonEntry
             List<ICommonEntry> list = null;
             foreach (var c in _source.ChildrenOf(_index))
             {
-                (list ??= new List<ICommonEntry>()).Add(new EntryRef(_source, c));
+                (list ??= []).Add(new EntryRef(_source, c));
             }
             return list;
         }
@@ -122,9 +122,12 @@ public sealed class EntryRef : ICommonEntry
     public int PathCompareWithDirTo(ICommonEntry de)
     {
         if (de == null) return -1;
-        if (IsDirectory && !de.IsDirectory) return -1;
-        if (!IsDirectory && de.IsDirectory) return 1;
-        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
+        return IsDirectory switch
+        {
+            true when !de.IsDirectory => -1,
+            false when de.IsDirectory => 1,
+            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+        };
     }
 
     public int SizeCompareWithDirTo(ICommonEntry de)

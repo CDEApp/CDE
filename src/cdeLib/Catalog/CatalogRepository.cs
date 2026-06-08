@@ -20,7 +20,7 @@ namespace cdeLib.Catalog;
 
 public sealed class CatalogRepository : ICatalogRepository, IDisposable
 {
-    private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
+    private SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
     private static readonly BufferPool BufferPool = new();
     private readonly FileStreamManager _fileStreamManager = FileStreams.Instance;
@@ -293,7 +293,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
             {
                 // Dispose of managed resources
                 BufferPool?.Clear();
-                // Note: FileStreamManager is a singleton, don't dispose it here
+                // Note: FileStreamManager is a singleton, don't dispose of it here
             }
             _disposed = true;
         }

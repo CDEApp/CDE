@@ -96,7 +96,5 @@ internal struct Node
     public Hash16 Hash; // (16) -- ..(52)
 }
 
-internal class IdeaStructNode
-{
-}
+internal class IdeaStructNode;
 #pragma warning restore 0649

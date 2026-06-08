@@ -22,7 +22,7 @@ public readonly ref struct Utf8Matcher
         _pattern = pattern ?? string.Empty;
         _empty = _pattern.Length == 0;
         var bytes = _empty ? [] : Encoding.UTF8.GetBytes(_pattern);
-        _asciiPattern = System.Text.Ascii.IsValid(bytes);
+        _asciiPattern = Ascii.IsValid(bytes);
         if (_asciiPattern && !_empty)
         {
             for (var i = 0; i < bytes.Length; i++) bytes[i] = ToLower(bytes[i]);
@@ -33,7 +33,7 @@ public readonly ref struct Utf8Matcher
     public bool Contains(ReadOnlySpan<byte> nameUtf8)
     {
         if (_empty) return true;
-        if (_asciiPattern && System.Text.Ascii.IsValid(nameUtf8))
+        if (_asciiPattern && Ascii.IsValid(nameUtf8))
             return AsciiContainsFolded(nameUtf8, _patternLowerAscii);
 
         // Rare path: non-ASCII somewhere. Decode and compare with real ordinal-ignore-case.

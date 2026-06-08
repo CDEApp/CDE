@@ -104,7 +104,7 @@ public class LoadCatalogService : ILoadCatalogService
 
                     var now = DateTime.UtcNow;
                     if (currentCount % progressReportThreshold == 0 ||
-                        (now - lastProgressReport) > progressReportInterval)
+                        now - lastProgressReport > progressReportInterval)
                     {
                         progressCallback?.Invoke(currentCount, totalFiles,
                             $"Loading catalog {currentCount} of {totalFiles}...");

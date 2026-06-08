@@ -41,11 +41,5 @@ public class DuplicationStatistics
         SmallestFileSize = value < SmallestFileSize ? value : SmallestFileSize;
     }
 
-    public long FilesProcessed
-    {
-        get
-        {
-            return PartialHashes + FullHashes + AllreadyDonePartials + AllreadyDoneFulls + FailedToHash;
-        }
-    }
+    public long FilesProcessed => PartialHashes + FullHashes + AllreadyDonePartials + AllreadyDoneFulls + FailedToHash;
 }

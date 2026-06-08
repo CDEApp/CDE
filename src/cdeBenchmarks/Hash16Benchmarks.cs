@@ -34,9 +34,9 @@ public class Hash16Benchmarks
     public void Setup()
     {
         // Simulate real MD5 hashes (16 bytes each)
-        _hash1 = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
-        _hash2 = new byte[] { 0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88 };
-        _hash3 = new byte[] { 0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00 };
+        _hash1 = [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
+        _hash2 = [0x12, 0x34, 0x56, 0x78, 0x9A, 0xBC, 0xDE, 0xF0, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88];
+        _hash3 = [0xFF, 0xEE, 0xDD, 0xCC, 0xBB, 0xAA, 0x99, 0x88, 0x77, 0x66, 0x55, 0x44, 0x33, 0x22, 0x11, 0x00];
 
         _structHash1 = new Hash16(_hash1);
         _structHash2 = new Hash16(_hash2);
@@ -44,10 +44,10 @@ public class Hash16Benchmarks
 
         // Pre-populate dictionary for lookup benchmarks
         _hashDictionary = new Dictionary<Hash16, List<string>>(IterationCount);
-        for (int i = 0; i < IterationCount; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             var hash = new Hash16(CreateVariedHash(i));
-            _hashDictionary[hash] = new List<string> { $"file_{i}.txt" };
+            _hashDictionary[hash] = [$"file_{i}.txt"];
         }
     }
 
@@ -95,10 +95,10 @@ public class Hash16Benchmarks
     [Benchmark(Description = "Dictionary lookups with Hash16 keys")]
     public int DictionaryLookup()
     {
-        int count = 0;
+        var count = 0;
         var lookupHash = new Hash16(CreateVariedHash(IterationCount / 2));
 
-        for (int i = 0; i < 100; i++)
+        for (var i = 0; i < 100; i++)
         {
             if (_hashDictionary.TryGetValue(lookupHash, out var files))
             {
@@ -120,12 +120,12 @@ public class Hash16Benchmarks
     {
         var dict = new Dictionary<Hash16, List<string>>(IterationCount);
 
-        for (int i = 0; i < IterationCount; i++)
+        for (var i = 0; i < IterationCount; i++)
         {
             var hash = new Hash16(CreateVariedHash(i));
             if (!dict.TryGetValue(hash, out var list))
             {
-                list = new List<string>();
+                list = [];
                 dict[hash] = list;
             }
             list.Add($"file_{i}.txt");

@@ -86,12 +86,11 @@ public class EntryRefTests
     {
         var root = BuildTree();
         var store = EntryStore.Build(root);
-        var storeRoot = new EntryRef(store, 0);
 
         // Find alpha.txt under dir1 and walk back to root.
         var alpha = TraverseFind(store, "alpha.txt");
         var chain = alpha.GetListFromRoot().Select(e => e.Path).ToList();
-        Assert.That(chain, Is.EqualTo(new[] { @"C:\test", "dir1", "alpha.txt" }));
+        Assert.That(chain, Is.EqualTo([@"C:\test", "dir1", "alpha.txt"]));
         Assert.That(alpha.FullPath, Is.EqualTo(@"C:\test\dir1\alpha.txt"));
     }
 

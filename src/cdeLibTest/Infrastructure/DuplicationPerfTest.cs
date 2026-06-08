@@ -51,7 +51,7 @@ public class DuplicationPerfTest
 
             timer.Stop();
             Console.WriteLine(
-                $"{hashKey}:\t\t{(data.Length * (1000.0 / (timer.ElapsedMilliseconds / 9999.0))) / (1024.0 * 1024.0):F2} MB/s ({timer.ElapsedMilliseconds})");
+                $"{hashKey}:\t\t{data.Length * (1000.0 / (timer.ElapsedMilliseconds / 9999.0)) / (1024.0 * 1024.0):F2} MB/s ({timer.ElapsedMilliseconds})");
         }
     }
 }

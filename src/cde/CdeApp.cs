@@ -34,16 +34,16 @@ public sealed class CdeApp(
 
     public Task CreateCacheAsync(ScanOptions opts) =>
         messageBus.Send(new CreateCacheCommand(opts.Path)
-            { Description = opts.Description, FollowJunctions = opts.FollowJunctions });
+            { Description = opts.Description, FollowJunctions = opts.FollowJunctions }, cancellationToken: cancellation.Token);
 
     public Task HashCatalogAsync() =>
-        messageBus.Send(new HashCatalogCommand());
+        messageBus.Send(new HashCatalogCommand(), cancellationToken: cancellation.Token);
 
     public Task FindDupesAsync() =>
-        messageBus.Send(new FindDuplicatesCommand());
+        messageBus.Send(new FindDuplicatesCommand(), cancellationToken: cancellation.Token);
 
     public Task UpdateAsync(UpdateOptions opts) =>
-        messageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description });
+        messageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description }, cancellationToken: cancellation.Token);
 
     // ---- find ----
 

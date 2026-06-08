@@ -188,16 +188,14 @@ public class PoolingBenchmarks
 
             for (var j = 0; j < 10; j++)
             {
-                if (stack.Count > 0)
-                {
-                    stack.Pop();
-                    totalCount++;
+                if (stack.Count <= 0) continue;
+                stack.Pop();
+                totalCount++;
 
-                    // Push more items
-                    var child = new DirEntry(false);
-                    child.SetPath($"child_{j}");
-                    stack.Push(child);
-                }
+                // Push more items
+                var child = new DirEntry(false);
+                child.SetPath($"child_{j}");
+                stack.Push(child);
             }
 
             CollectionPool.ReturnCommonEntryStack(stack);
@@ -256,7 +254,7 @@ public class PoolingBenchmarks
 
             for (var j = 0; j < 10; j++)
             {
-                list.Add($"path\\to\\file_{j}.txt");
+                list.Add($@"path\to\file_{j}.txt");
             }
 
             totalCount += list.Count;
