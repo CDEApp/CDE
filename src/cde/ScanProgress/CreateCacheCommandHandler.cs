@@ -57,19 +57,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 return;
             }
 
-            // Catalogs are stored in the zero-copy columnar .cdex format. Reuse hashes from an existing
-            // .cdex (reconstructed into a tree) for this scan path when one is found.
             var cdexName = Path.ChangeExtension(re.DefaultFileName, ".cdex");
-            if (File.Exists(cdexName))
-            {
-                Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", cdexName);
-                RootEntry oldRoot;
-                using (var reader = new ColumnarCatalogReader(cdexName))
-                {
-                    oldRoot = CatalogTreeBuilder.FromSource(reader);
-                }
-                oldRoot.TraverseTreesCopyHash(re);
-            }
+            ReuseHashesFromExistingCatalog(re, cdexName);
 
             re.SortAllChildrenByPath();
             re.SetSummaryFields();
@@ -84,26 +73,50 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 .ConfigureAwait(false);
             ScanProgressConsole.EnqueueMessage($"Saved to {cdexName}");
 
-            // Calculate and display final scan summary
-            sw.Stop();
-            var elapsedSec = sw.ElapsedMilliseconds / 1000.0;
-            if (elapsedSec < 1) elapsedSec = 1;
-            var totalCount = re.FileEntryCount + re.DirEntryCount;
-            var scansPerSec = (long)(totalCount / elapsedSec);
-            var defaultNumberFormat = new NumberFormatInfo();
-            var scanCountText = totalCount.ToString("N0", defaultNumberFormat);
-            var scansPerSecText = scansPerSec.ToString("N0", defaultNumberFormat);
-            ScanProgressConsole.EnqueueMessage($"Total files scanned: {scanCountText}, Average: {scansPerSecText}/sec");
-
-            Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path, cdexName);
-            Log.Information(
-                "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
-                re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));
+            ReportScanSummary(re, cdexName, sw);
         }
         catch (ArgumentException ex)
         {
             Log.Error(ex, "Error: {ErrorMessage}", ex.Message);
         }
+    }
+
+    /// <summary>
+    /// Catalogs are stored in the zero-copy columnar .cdex format. Reuse hashes from an existing
+    /// .cdex (reconstructed into a tree) for this scan path when one is found.
+    /// </summary>
+    private static void ReuseHashesFromExistingCatalog(RootEntry re, string cdexName)
+    {
+        if (!File.Exists(cdexName))
+        {
+            return;
+        }
+
+        Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", cdexName);
+        RootEntry oldRoot;
+        using (var reader = new ColumnarCatalogReader(cdexName))
+        {
+            oldRoot = CatalogTreeBuilder.FromSource(reader);
+        }
+        oldRoot.TraverseTreesCopyHash(re);
+    }
+
+    private static void ReportScanSummary(RootEntry re, string cdexName, System.Diagnostics.Stopwatch sw)
+    {
+        sw.Stop();
+        var elapsedSec = sw.ElapsedMilliseconds / 1000.0;
+        if (elapsedSec < 1) elapsedSec = 1;
+        var totalCount = re.FileEntryCount + re.DirEntryCount;
+        var scansPerSec = (long)(totalCount / elapsedSec);
+        var defaultNumberFormat = new NumberFormatInfo();
+        var scanCountText = totalCount.ToString("N0", defaultNumberFormat);
+        var scansPerSecText = scansPerSec.ToString("N0", defaultNumberFormat);
+        ScanProgressConsole.EnqueueMessage($"Total files scanned: {scanCountText}, Average: {scansPerSecText}/sec");
+
+        Log.Information("Scanned path {Path}, Saved to {SavePath}", re.Path, cdexName);
+        Log.Information(
+            "Scanned Files {FileCount:0,0}, Dirs {DirCount:0,0}, Total size {Size:0,0}", re.FileEntryCount,
+            re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));
     }
 
     private void PrintException(string path, Exception ex)
