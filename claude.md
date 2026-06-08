@@ -246,6 +246,15 @@ This branch focuses on performance improvements and refactoring. Recent commits 
    - Unit tests in cdeLibTest
    - Specification tests in cdeLibSpec/cdeLibSpec2
 
+### Shell & Tooling
+
+This is a Windows environment with both PowerShell and Bash available. The two shells have **incompatible** here-string / quoting syntax — never mix them.
+
+- **PowerShell here-string** is `@'` ... `'@` (closing `'@` must be at column 0). Only valid in the PowerShell tool.
+- **Bash here-doc** is `<<'EOF'` ... `EOF`. Only valid in the Bash tool.
+- Passing `@'...'@` to the Bash tool does **not** create a here-string — Bash treats the `@` characters as literal text, which (for example) prepends a stray `@` to git commit messages.
+- For multi-line text (commit messages, file content) prefer the matching syntax for the tool you're calling, or write the text to a file and pass it with `-F <file>`.
+
 ### Code Patterns
 
 - **SlimMessageBus Commands**: Business operations are commands/queries (`IRequestHandler<T>.OnHandle`)
