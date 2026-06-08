@@ -94,6 +94,7 @@ public static class AppContainerBuilder
         builder.RegisterInstance(config);
         builder.RegisterLogger();
         builder.RegisterModule<CdelibModule>();
+        builder.RegisterType<CdeApp>();
         // Handlers are registered by SlimMessageBus AutoDeclareFrom (addServicesFromAssembly: true)
         // and surfaced into Autofac via builder.Populate(services) — no explicit handler registration needed.
     }
