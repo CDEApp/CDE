@@ -35,8 +35,7 @@ public static class Program
     /// </summary>
     public static bool InitProgram(string[] args)
     {
-        _container = AppContainerBuilder.BuildContainer(args);
-        if (_container == null)
+        if (!AppContainerBuilder.TryBuildContainer(args, out _container))
         {
             return false;
         }

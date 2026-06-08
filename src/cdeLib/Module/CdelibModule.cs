@@ -13,6 +13,7 @@ public class CdelibModule : Autofac.Module
     {
         // singletons.
         builder.RegisterType<Configuration>().As<IConfiguration>().SingleInstance();
+        builder.RegisterType<Logger>().As<ILogger>();
         builder.RegisterType<FindService>().As<IFindService>();
         builder.RegisterType<CatalogRepository>().As<ICatalogRepository>();
         builder.RegisterType<ApplicationDiagnostics>().As<IApplicationDiagnostics>().SingleInstance();
