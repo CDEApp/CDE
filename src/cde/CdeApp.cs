@@ -27,7 +27,8 @@ namespace cde;
 public sealed class CdeApp(
     IFindService findService,
     ICatalogRepository repository,
-    IMessageBus messageBus)
+    IMessageBus messageBus,
+    OperationCancellation cancellation)
 {
     // ---- catalog commands (routed through the message bus) ----
 
@@ -95,8 +96,7 @@ public sealed class CdeApp(
 
         while (true)
         {
-            if (Hack.BreakConsoleFlag)
-                Hack.BreakConsoleFlag = false; //reset otherwise we'll get some weird behaviour in loop.
+            cancellation.Reset(); // fresh token each prompt so a break during the previous search doesn't carry over.
             Console.Write("Enter string to search <nothing exits>: ");
             var pattern = Console.ReadLine();
             if (string.IsNullOrEmpty(pattern))
@@ -268,7 +268,7 @@ public sealed class CdeApp(
             var hash = pairDirEntry.ChildDE.IsHashDone ? "#" : " ";
             var bang = pairDirEntry.PathProblem ? "!" : " ";
             Console.WriteLine($"{hash}{bang}{pairDirEntry.FullPath}");
-            if (Hack.BreakConsoleFlag)
+            if (cancellation.IsCancellationRequested)
             {
                 break;
             }
@@ -285,7 +285,7 @@ public sealed class CdeApp(
         foreach (var e in largeEntries)
         {
             Console.WriteLine($"{e.FullPath} {e.Children.Count}");
-            if (Hack.BreakConsoleFlag)
+            if (cancellation.IsCancellationRequested)
             {
                 break;
             }

@@ -71,7 +71,7 @@ internal class DuplicationTest
         var roots = new List<RootEntry> {re1};
         re1.SetInMemoryFields();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var sizePairDictionary = d.GetSizePairs(roots);
 
         Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
@@ -117,7 +117,7 @@ internal class DuplicationTest
         re1.AddChild(de10);
         var roots = new List<RootEntry> {re1};
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var dp = d.GetDupePairs(roots);
         var dp1 = dp.First();
 
@@ -195,7 +195,7 @@ internal class DuplicationTest
             Console.WriteLine($"loaded {r.DefaultFileName}");
         }
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var sizePairDictionary = d.GetSizePairs(rootEntries);
 
         Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
@@ -248,7 +248,7 @@ internal class DuplicationTest
         var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = catalogRepository.LoadCurrentDirCache();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var dupePairEnum = d.GetDupePairs(rootEntries);
 
         foreach (var dupe in dupePairEnum)
@@ -273,7 +273,7 @@ internal class DuplicationTest
         var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = catalogRepository.LoadCurrentDirCache();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         await d.ApplyHash(rootEntries).ConfigureAwait(false);
     }
     // ReSharper restore InconsistentNaming

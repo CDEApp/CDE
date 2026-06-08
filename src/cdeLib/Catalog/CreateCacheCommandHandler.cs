@@ -17,13 +17,15 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
     private readonly IConfiguration _configuration;
     private readonly ICatalogRepository _catalogRepository;
     private readonly IMessageBus _messageBus;
+    private readonly OperationCancellation _cancellation;
 
     public CreateCacheCommandHandler(IConfiguration configuration, ICatalogRepository catalogRepository,
-        IMessageBus messageBus)
+        IMessageBus messageBus, OperationCancellation cancellation)
     {
         _configuration = configuration;
         _catalogRepository = catalogRepository;
         _messageBus = messageBus;
+        _cancellation = cancellation;
     }
 
     public async Task OnHandle(CreateCacheCommand request, CancellationToken cancellationToken)
@@ -36,8 +38,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             re.SimpleScanEndEvent = ScanEndOfEntries;
             re.ExceptionEvent = PrintExceptions;
 
-            re.PopulateRoot(request.Path, request.FollowJunctions);
-            if (Hack.BreakConsoleFlag)
+            re.PopulateRoot(request.Path, request.FollowJunctions, _cancellation.Token);
+            if (_cancellation.IsCancellationRequested)
             {
                 Console.WriteLine(" * Break key detected incomplete scan will not be saved.");
                 return;

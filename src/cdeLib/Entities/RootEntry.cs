@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
@@ -123,11 +124,11 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
-    public void PopulateRoot(string startPath, bool followJunctions = false)
+    public void PopulateRoot(string startPath, bool followJunctions = false, CancellationToken token = default)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath, followJunctions);
+        RecurseTree(startPath, followJunctions, token);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -289,7 +290,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// </summary>
-    public void RecurseTree(string startPath, bool followJunctions = false)
+    public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default)
     {
         _followJunctions = followJunctions;
         var entryCount = 0;
@@ -302,12 +303,12 @@ public sealed class RootEntry : object, ICommonEntry
         {
             var (parent, directory) = stack.Pop();
 
-            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker))
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, token))
             {
                 continue;
             }
 
-            if (Hack.BreakConsoleFlag)
+            if (token.IsCancellationRequested)
             {
                 break;
             }
@@ -325,7 +326,8 @@ public sealed class RootEntry : object, ICommonEntry
         ICommonEntry parent,
         Stack<(ICommonEntry, string)> stack,
         ref int entryCount,
-        ScanProgressTracker progressTracker)
+        ScanProgressTracker progressTracker,
+        CancellationToken token)
     {
         try
         {
@@ -336,7 +338,7 @@ public sealed class RootEntry : object, ICommonEntry
             {
                 ProcessFileSystemEntry(fsInfo, parent, stack, ref entryCount, directory, progressTracker);
 
-                if (Hack.BreakConsoleFlag)
+                if (token.IsCancellationRequested)
                 {
                     break;
                 }

@@ -34,13 +34,16 @@ public class Duplication
     private readonly ILogger _logger;
     private readonly IApplicationDiagnostics _applicationDiagnostics;
     private readonly HashHelper _hashHelper;
+    private readonly OperationCancellation _cancellation;
 
-    public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics)
+    public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics,
+        OperationCancellation cancellation)
     {
         _logger = logger;
         _hashHelper = new HashHelper(logger);
         _configuration = configuration;
         _applicationDiagnostics = applicationDiagnostics;
+        _cancellation = cancellation;
         _duplicationStatistics = new DuplicationStatistics();
         _logger.LogDebug("Dupe Constructor Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
     }
@@ -176,7 +179,7 @@ public class Duplication
                     {
                         _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
                         await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
-                        if (Hack.BreakConsoleFlag)
+                        if (_cancellation.IsCancellationRequested)
                         {
                             Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
                             await cts.CancelAsync();
@@ -201,7 +204,7 @@ public class Duplication
             $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB  NotProcessed: {_duplicationStatistics.BytesNotProcessed / (1024 * 1024):F2} MB  Perf: {perf}\nTotal Data Encountered: {_duplicationStatistics.TotalFileBytes / (1024 * 1024):F2} MB\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
         ReportStatus(statsMessage);
 
-        Hack.BreakConsoleFlag = false; // require you to press break again to stop the full hash phase.
+        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
         CheckDupesAndCompleteFullHash(rootEntries);
 
         ReportStatus("After hashing completed.");
@@ -381,7 +384,7 @@ public class Duplication
                             var fullPath = pde.FullPath;
                             await CalculateHash(fullPath, dirEntry, false);
 
-                            if (Hack.BreakConsoleFlag)
+                            if (_cancellation.IsCancellationRequested)
                             {
                                 _logger.LogInfo("Break key detected, exiting full hash phase.");
                                 await cts.CancelAsync();

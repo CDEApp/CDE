@@ -16,6 +16,7 @@ public static class Program
 {
     private static IContainer _container;
     private static CdeApp _app;
+    private static OperationCancellation _cancellation;
 
     /// <summary>
     /// Initialize the program. Returns false if initialization failed (e.g., missing config).
@@ -27,6 +28,7 @@ public static class Program
             return false;
         }
         _app = _container.Resolve<CdeApp>();
+        _cancellation = _container.Resolve<OperationCancellation>();
         return true;
     }
 
@@ -120,7 +122,7 @@ public static class Program
     private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
     {
         Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
-        Hack.BreakConsoleFlag = true;
+        _cancellation.Cancel();
         e.Cancel = true;
     }
 }
