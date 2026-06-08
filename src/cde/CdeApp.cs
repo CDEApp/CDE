@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using cde.CommandLine;
 using cdeLib;
 using cdeLib.Catalog;
@@ -30,20 +31,18 @@ public sealed class CdeApp(
 {
     // ---- catalog commands (routed through the message bus) ----
 
-    public void CreateCache(ScanOptions opts) =>
+    public Task CreateCacheAsync(ScanOptions opts) =>
         messageBus.Send(new CreateCacheCommand(opts.Path)
-            { Description = opts.Description, FollowJunctions = opts.FollowJunctions })
-            .GetAwaiter().GetResult();
+            { Description = opts.Description, FollowJunctions = opts.FollowJunctions });
 
-    public void HashCatalog() =>
-        messageBus.Send(new HashCatalogCommand()).GetAwaiter().GetResult();
+    public Task HashCatalogAsync() =>
+        messageBus.Send(new HashCatalogCommand());
 
-    public void FindDupes() =>
-        messageBus.Send(new FindDuplicatesCommand()).GetAwaiter().GetResult();
+    public Task FindDupesAsync() =>
+        messageBus.Send(new FindDuplicatesCommand());
 
-    public void Update(UpdateOptions opts) =>
-        messageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description })
-            .GetAwaiter().GetResult();
+    public Task UpdateAsync(UpdateOptions opts) =>
+        messageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description });
 
     // ---- find ----
 

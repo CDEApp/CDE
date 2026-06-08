@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
 using cdeLib;
@@ -30,8 +31,9 @@ public static class Program
     }
 
     // Static entry points retained for cdeLibTest/DuplicationTest, which drives a scan+hash via Program.
-    public static void CreateCache(ScanOptions opts) => _app.CreateCache(opts);
-    public static void HashCatalog() => _app.HashCatalog();
+    // These block on the async commands; the blocking is confined to this test-support path, not Main.
+    public static void CreateCache(ScanOptions opts) => _app.CreateCacheAsync(opts).GetAwaiter().GetResult();
+    public static void HashCatalog() => _app.HashCatalogAsync().GetAwaiter().GetResult();
 
     private static ParserResult<object> GetParserResult(IEnumerable<string> args)
     {
@@ -55,7 +57,7 @@ public static class Program
             UpdateOptions>(args);
     }
 
-    private static int Main(string[] args)
+    private static async Task<int> Main(string[] args)
     {
         if (!InitProgram(args))
         {
@@ -66,24 +68,15 @@ public static class Program
         {
             using (Operation.Time("App"))
             {
-                var parsedResult = GetParserResult(args)
-                    .WithParsed<ScanOptions>(_app.CreateCache)
-                    .WithParsed<FindOptions>(opts => _app.RunFind(opts.Value, "--find"))
-                    .WithParsed<FindPathOptions>(opts => _app.RunFind(opts.Value, "--findpath"))
-                    .WithParsed<GrepOptions>(opts => _app.RunFind(opts.Value, "--grep"))
-                    .WithParsed<GrepPathOptions>(opts => _app.RunFind(opts.Value, "--greppath"))
-                    .WithParsed<ReplGrepPathOptions>(opts => _app.FindRepl(FindService.ParamGrepPath, opts.Value))
-                    .WithParsed<ReplGrepOptions>(opts => _app.FindRepl(FindService.ParamGrep, opts.Value))
-                    .WithParsed<ReplFindOptions>(opts => _app.FindRepl(FindService.ParamFind, opts.Value))
-                    .WithParsed<MigrateOptions>(_app.Migrate)
-                    .WithParsed<HashOptions>(_ => _app.HashCatalog())
-                    .WithParsed<DupesOptions>(_ => _app.FindDupes())
-                    .WithParsed<TreeDumpOptions>(_ => _app.PrintPathsHaveHash())
-                    .WithParsed<LoadWaitOptions>(_ => _app.LoadWait())
-                    .WithParsed<ReplOptions>(_ => _app.InvokeRepl())
-                    .WithParsed<PopulousFoldersOptions>(opts => _app.FindPopulous(opts.Count))
-                    .WithParsed<UpdateOptions>(_app.Update);
-                parsedResult.WithNotParsed(errs => CustomHelpText.DisplayHelp(parsedResult));
+                var parsed = GetParserResult(args);
+                if (parsed is Parsed<object> ok)
+                {
+                    await DispatchAsync(ok.Value).ConfigureAwait(false);
+                }
+                else
+                {
+                    CustomHelpText.DisplayHelp(parsed);
+                }
                 return 0;
             }
         }
@@ -91,6 +84,37 @@ public static class Program
         {
             Log.CloseAndFlush();
         }
+    }
+
+    /// <summary>
+    /// Routes a parsed verb to its command. Bus-backed commands are awaited directly; the synchronous
+    /// (interactive / inspection) commands are adapted to a completed task via <see cref="RunSync"/>.
+    /// </summary>
+    private static Task DispatchAsync(object options) => options switch
+    {
+        ScanOptions o            => _app.CreateCacheAsync(o),
+        FindOptions o            => RunSync(() => _app.RunFind(o.Value, "--find")),
+        FindPathOptions o        => RunSync(() => _app.RunFind(o.Value, "--findpath")),
+        GrepOptions o            => RunSync(() => _app.RunFind(o.Value, "--grep")),
+        GrepPathOptions o        => RunSync(() => _app.RunFind(o.Value, "--greppath")),
+        ReplGrepPathOptions o    => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
+        ReplGrepOptions o        => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
+        ReplFindOptions o        => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
+        MigrateOptions o         => RunSync(() => _app.Migrate(o)),
+        HashOptions _            => _app.HashCatalogAsync(),
+        DupesOptions _           => _app.FindDupesAsync(),
+        TreeDumpOptions _        => RunSync(_app.PrintPathsHaveHash),
+        LoadWaitOptions _        => RunSync(_app.LoadWait),
+        ReplOptions _            => RunSync(_app.InvokeRepl),
+        PopulousFoldersOptions o => RunSync(() => _app.FindPopulous(o.Count)),
+        UpdateOptions o          => _app.UpdateAsync(o),
+        _                        => Task.CompletedTask,
+    };
+
+    private static Task RunSync(Action action)
+    {
+        action();
+        return Task.CompletedTask;
     }
 
     private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
