@@ -36,7 +36,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             re.SimpleScanEndEvent = ScanEndOfEntries;
             re.ExceptionEvent = PrintExceptions;
 
-            re.PopulateRoot(request.Path);
+            re.PopulateRoot(request.Path, request.FollowJunctions);
             if (Hack.BreakConsoleFlag)
             {
                 Console.WriteLine(" * Break key detected incomplete scan will not be saved.");

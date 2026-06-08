@@ -109,12 +109,20 @@ cde path -find afilename
 [`-maxDateTime`](#parameter-options)
 [`-minTime`](#parameter-options)
 [`-maxTime`](#parameter-options)
+[`--desc`](#parameter-options)
+[`--follow-junctions`](#parameter-options)
 
 This is the mode of operation that creates and updates catalog files.
 
 When it creates new catalog files it will detect an old catalog file for the given scan target and copy any Hash values from the old file to the new file for matching file paths, file dates and sizes.
 
 Only Last Modified Time of file system entries is captured into .cde files.
+
+By default cde records directory junctions and symbolic links (reparse points) in the catalog but does **not** descend into them, which avoids scan cycles (for example a junction pointing back at an ancestor directory) and duplicated content. Pass `--follow-junctions` to descend into them.
+
+```
+  cde scan C:\ --follow-junctions
+```
 
 ### cde find String
 
@@ -228,6 +236,8 @@ For each file converted cde prints the source and destination file names, their 
 |     | `-maxResults {Int}`                                                                                             | Maximum number of results returned by cde.                                                                                                                                                                                                                                                                    |
 |     | `-exclude {Regex}`                                                                                              | A filter to exclude only entries that match these regexes for processing.                                                                                                                                                                                                                                     |
 |     | `-include {Regex}`                                                                                              | A filter to include only entries that match these Regexes for processing.                                                                                                                                                                                                                                     |
+|     | `--desc {Text}`                                                                                                 | (scan) Description text to store in the catalog file.                                                                                                                                                                                                                                                          |
+|     | `--follow-junctions`                                                                                            | (scan) Descend into directory junctions and symbolic links (reparse points). Off by default; reparse points are recorded but not followed, avoiding scan cycles and duplicated content.                                                                                                                        |
 
 ##### Date Time Format for parameters
 

@@ -13,6 +13,11 @@ public class ScanOptions
 
     [Option("desc", HelpText = "Description to set")]
     public string Description { get; [UsedImplicitly] set; }
+
+    [Option("follow-junctions",
+        Default = false,
+        HelpText = "Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
+    public bool FollowJunctions { get; [UsedImplicitly] set; }
 }
 
 [Verb("find", HelpText = "Uses all cache files available searches for <string>")]

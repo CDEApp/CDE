@@ -336,7 +336,8 @@ public static class Program
     public static void CreateCache(ScanOptions opts)
     {
         var task = Task.Run(async () =>
-            await MessageBus.Send(new CreateCacheCommand(opts.Path) { Description = opts.Description })
+            await MessageBus.Send(new CreateCacheCommand(opts.Path)
+                    { Description = opts.Description, FollowJunctions = opts.FollowJunctions })
                 .ConfigureAwait(false));
         task.Wait();
     }

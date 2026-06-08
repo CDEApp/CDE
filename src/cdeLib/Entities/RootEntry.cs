@@ -24,6 +24,9 @@ public sealed class RootEntry : object, ICommonEntry
     private readonly IDriveInfoService _driveInfoService;
     private readonly IFileSystemAdapter _fileSystemAdapter;
 
+    // Set per-scan by RecurseTree; when false, directory reparse points are not descended into.
+    private bool _followJunctions;
+
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
     [Key(2)]
@@ -120,11 +123,11 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
-    public void PopulateRoot(string startPath)
+    public void PopulateRoot(string startPath, bool followJunctions = false)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath);
+        RecurseTree(startPath, followJunctions);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -286,8 +289,9 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// </summary>
-    public void RecurseTree(string startPath)
+    public void RecurseTree(string startPath, bool followJunctions = false)
     {
+        _followJunctions = followJunctions;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -361,7 +365,10 @@ public sealed class RootEntry : object, ICommonEntry
         var dirEntry = new DirEntry(fsInfo);
         parent.AddChild(dirEntry);
 
-        if (dirEntry.IsDirectory)
+        // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
+        // would otherwise be descended into. By default we record them but do not follow them,
+        // avoiding cycles (e.g. a junction pointing at an ancestor) and duplicate content.
+        if (dirEntry.IsDirectory && (_followJunctions || !dirEntry.IsReparsePoint))
         {
             stack.Push((dirEntry, fsInfo.FullName));
         }
