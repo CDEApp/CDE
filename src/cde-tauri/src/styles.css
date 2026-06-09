@@ -42,7 +42,7 @@ body {
 /* search bar */
 .searchbar { padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .searchbar-row { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
-.searchbar .pattern { flex: 1; padding: 4px 6px; background: #333; color: var(--fg); border: 1px solid var(--border); }
+.searchbar .pattern { flex: 0 0 auto; width: 50ch; padding: 4px 6px; background: #333; color: var(--fg); border: 1px solid var(--border); }
 .searchbar .toggles label { margin-right: 10px; }
 .searchbar-advanced { display: flex; gap: 12px; flex-wrap: wrap; }
 .searchbar-advanced fieldset { border: 1px solid var(--border); }
