@@ -1,7 +1,7 @@
 // Publishes cdeApi as a self-contained single-file binary and stages it under
 // src-tauri/binaries/cdeApi-<target-triple>(.exe) where Tauri's externalBin sidecar expects it.
 import { execSync } from "node:child_process";
-import { copyFileSync, mkdirSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -32,6 +32,20 @@ mkdirSync(binDir, { recursive: true });
 const dest = join(binDir, `cdeApi-${triple}${ext}`);
 copyFileSync(pubExe, dest);
 console.log(`Sidecar staged: ${dest}`);
+
+// `tauri dev` resolves the sidecar to <target>/<profile>/cdeApi(.exe) and only re-copies it on a
+// Rust rebuild, so refresh those copies directly when present (run while `tauri dev` is stopped).
+for (const profile of ["debug", "release"]) {
+  const targetExe = join(root, "src-tauri", "target", profile, `cdeApi${ext}`);
+  if (existsSync(targetExe)) {
+    try {
+      copyFileSync(pubExe, targetExe);
+      console.log(`Refreshed: ${targetExe}`);
+    } catch (e) {
+      console.warn(`Could not refresh ${targetExe} (is 'tauri dev' running?): ${e.message}`);
+    }
+  }
+}
 
 function tripleToRid(t) {
   if (t.includes("windows")) return "win-x64";

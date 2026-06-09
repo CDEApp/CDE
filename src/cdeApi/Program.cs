@@ -64,11 +64,27 @@ builder.Services.AddSingleton<UiStateStore>();
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.TypeInfoResolverChain.Insert(0, AppCoreJsonContext.Default));
 
+// CORS: the webview runs on a different origin (http://localhost:1420 in dev, tauri://localhost in
+// production) than this loopback sidecar. The handshake token — not the origin — is the security
+// boundary, so any origin is allowed; the token middleware below still gates every real request.
+builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+
 var app = builder.Build();
+
+// Must run before the token gate so CORS preflight (OPTIONS, sent without the token) is answered.
+app.UseCors();
 
 // --- handshake-token gate: every request must present the token ---
 app.Use(async (ctx, next) =>
 {
+    // CORS preflight is answered by UseCors above and carries no token; let it through.
+    if (HttpMethods.IsOptions(ctx.Request.Method))
+    {
+        await next();
+        return;
+    }
+
     var provided = ctx.Request.Headers["X-CDE-Token"].FirstOrDefault();
     if (provided is null)
     {
