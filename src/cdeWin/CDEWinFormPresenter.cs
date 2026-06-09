@@ -9,6 +9,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using cdeAppCore;
+using cdeAppCore.Formatting;
+using cdeAppCore.Sorting;
+using cdeAppCore.Validation;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
@@ -102,8 +105,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private readonly string[] _searchVals;
     private readonly string[] _catalogVals;
 
-    // Cache for formatted date strings
-    private readonly Dictionary<DateTime, string> _dateCache = new(1024);
+    // Pure size/date cell formatting (relocated to cdeAppCore), holding the configured date format
+    // plus its bounded date cache.
+    private readonly EntryFormatter _formatter;
 
     private List<PairDirEntry> _searchResultList;
     private List<ICommonEntry> _directoryList;
@@ -139,6 +143,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm = form;
         _config = config;
         _loadCatalogService = loadCatalogService;
+        _formatter = new EntryFormatter(_config.DateFormatYMDHMS);
         _catalogRoots = new List<ICommonEntry>();
 
         _searchVals = new string[_config.DefaultSearchResultColumnCount];
@@ -398,6 +403,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         vals[6] = s.RootSize.ToHRString();
         vals[7] = s.AvailSpace.ToHRString();
         vals[8] = s.TotalSpace.ToHRString();
+        // Scan times are unique per catalog, so format live (no cache) exactly as before.
         vals[9] = string.Format(_config.DateFormatYMDHMS, scanStart.ToLocalTime());
         vals[10] = $"{TimeSpan.FromMilliseconds(scanDurationMs).TotalSeconds:0.} sec";
         vals[11] = s.ActualFileName;
@@ -434,10 +440,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         SetSearchButton(false);
         Application.DoEvents(); // Force UI refresh
 
-        if (RegexIsBad()
-            || FromToSizeInvalid()
-            || FromToDateInvalid()
-            || FromToHourInvalid())
+        if (!ValidateSearchFilters())
         {
             // Reset button if validation fails
             SetSearchButton(true);
@@ -489,50 +492,22 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _bgWorker.RunWorkerAsync(param);
     }
 
-    private bool FromToDateInvalid()
+    // Validate the search filters via the frontend-agnostic core validator; show the first failure
+    // (regex, then size, date, hour) in a message box. Returns true when the query is valid.
+    private bool ValidateSearchFilters()
     {
-        if (!_clientForm.FromDate.Checked
-            || !_clientForm.ToDate.Checked
-            || _clientForm.FromDateValue.Date < _clientForm.ToDateValue.Date) return false;
-        _clientForm.MessageBox(
-            "The From Date Field is greater than the To Date field no search results possible.");
-        return true;
+        var result = SearchFilterValidator.Validate(
+            _clientForm.RegexMode, _clientForm.Pattern,
+            _clientForm.FromSize.Checked, FromSizeValue(),
+            _clientForm.ToSize.Checked, ToSizeValue(),
+            _clientForm.FromDate.Checked, _clientForm.FromDateValue.Date,
+            _clientForm.ToDate.Checked, _clientForm.ToDateValue.Date,
+            _clientForm.FromHour.Checked, _clientForm.FromHourValue.TimeOfDay,
+            _clientForm.ToHour.Checked, _clientForm.ToHourValue.TimeOfDay);
 
-    }
-
-    private bool FromToHourInvalid()
-    {
-        if (_clientForm.FromHour.Checked
-            && _clientForm.ToHour.Checked
-            && _clientForm.FromHourValue.TimeOfDay.TotalSeconds >= _clientForm.ToHourValue.TimeOfDay.TotalSeconds)
-        {
-            _clientForm.MessageBox(
-                "The From Hour Field is greater than the To Hour field no search results possible.");
-            return true;
-        }
-
+        if (result.IsValid) return true;
+        _clientForm.MessageBox(result.Message);
         return false;
-    }
-
-    private bool RegexIsBad()
-    {
-        if (!_clientForm.RegexMode) return false;
-        var regexError = RegexHelper.GetRegexErrorMessage(_clientForm.Pattern);
-        if (string.IsNullOrEmpty(regexError)) return false;
-        _clientForm.MessageBox(regexError);
-        return true;
-
-    }
-
-    private bool FromToSizeInvalid()
-    {
-        if (!_clientForm.FromSize.Checked
-            || !_clientForm.ToSize.Checked
-            || FromSizeValue() <= ToSizeValue()) return false;
-        _clientForm.MessageBox(
-            "The From Size Field is greater than the To Size field no search results possible.");
-        return true;
-
     }
 
     private long FromSizeValue()
@@ -767,42 +742,16 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         directoryHelper.RenderItem = lvi;
     }
 
-    private string FormatDate(DateTime date)
-    {
-        if (_dateCache.TryGetValue(date, out var cached))
-            return cached;
-
-        var result = string.Format(_config.DateFormatYMDHMS, date);
-
-        if (_dateCache.Count < 10000)
-            _dateCache[date] = result;
-
-        return result;
-    }
-
     private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
     {
         vals[0] = dirEntry.Path;
-        vals[1] = dirEntry.Size.ToString();
+        vals[1] = EntryFormatter.FormatDirectorySizeCell(dirEntry);
         if (dirEntry.IsDirectory)
         {
             itemColor = _listViewDirForeColor;
-            if (dirEntry.IsDirectory)
-            {
-                var val = dirEntry.Size.ToHRString()
-                          + " <Dir";
-                if (dirEntry.IsReparsePoint)
-                {
-                    val += " R";
-                }
-
-                vals[1] = val + ">";
-            }
         }
 
-        vals[2] = dirEntry.IsModifiedBad
-            ? "<Bad Date>"
-            : FormatDate(dirEntry.Modified);
+        vals[2] = _formatter.FormatModifiedCell(dirEntry);
         return itemColor;
     }
 
@@ -943,52 +892,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private int SearchResultCompare(PairDirEntry pde1, PairDirEntry pde2)
     {
-        int compareResult;
-        var de1 = pde1.ChildDE;
-        var de2 = pde2.ChildDE;
         var searchResultHelper = _clientForm.SearchResultListViewHelper;
-        var sortColumn = searchResultHelper.SortColumn;
-        switch (sortColumn)
-        {
-            case 0: // SearchResult ListView Name column
-                compareResult = de1.PathCompareWithDirTo(de2);
-                break;
-
-            case 1: // SearchResult ListView Size column
-                compareResult = de1.SizeCompareWithDirTo(de2);
-                break;
-
-            case 2: // SearchResult ListView Modified column
-                compareResult = de1.ModifiedCompareTo(de2);
-                break;
-
-            case 3:
-                compareResult = string.Compare(
-                    SourceOfPair(pde1)?.ActualFileName ?? pde1.GetRootEntry()?.ActualFileName,
-                    SourceOfPair(pde2)?.ActualFileName ?? pde2.GetRootEntry()?.ActualFileName,
-                    StringComparison.OrdinalIgnoreCase);
-                break;
-
-            case 4: // SearchResult ListView Path column
-                compareResult = string.Compare(pde1.ParentDE.FullPath, pde2.ParentDE.FullPath,
-                    StringComparison.OrdinalIgnoreCase);
-                if (compareResult == 0)
-                {
-                    compareResult = string.Compare(de1.Path, de2.Path, StringComparison.OrdinalIgnoreCase);
-                }
-
-                break;
-
-            default:
-                throw new Exception($"Problem column {sortColumn} not handled for sort.");
-        }
-
-        if (searchResultHelper.ColumnSortOrder == SortOrder.Descending)
-        {
-            compareResult *= -1;
-        }
-
-        return compareResult;
+        return EntrySortComparer.CompareSearchResult(pde1, pde2,
+            searchResultHelper.SortColumn,
+            searchResultHelper.ColumnSortOrder == SortOrder.Descending);
     }
 
     public void DirectoryListViewColumnClick()
@@ -999,24 +906,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private int DirectoryCompare(ICommonEntry de1, ICommonEntry de2)
     {
         var directoryHelper = _clientForm.DirectoryListViewHelper;
-        var column = directoryHelper.SortColumn;
-        var compareResult = column switch
-        {
-            0 => // SearchResult ListView Name column
-                de1.PathCompareWithDirTo(de2),
-            1 => // SearchResult ListView Size column
-                de1.SizeCompareWithDirTo(de2),
-            2 => // SearchResult ListView Modified column
-                de1.ModifiedCompareTo(de2),
-            _ => throw new Exception($"Problem column {column} not handled for sort.")
-        };
-
-        if (directoryHelper.ColumnSortOrder == SortOrder.Descending)
-        {
-            compareResult *= -1;
-        }
-
-        return compareResult;
+        return EntrySortComparer.CompareDirectory(de1, de2,
+            directoryHelper.SortColumn,
+            directoryHelper.ColumnSortOrder == SortOrder.Descending);
     }
 
     public void ExitMenuItem()
@@ -1249,35 +1141,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private int RootCompare(ICommonEntry root1, ICommonEntry root2)
     {
-        var re1 = SourceOf(root1);
-        var re2 = SourceOf(root2);
         var catalogHelper = _clientForm.CatalogListViewHelper;
-        var column = catalogHelper.SortColumn;
-        var compareResult = column switch
-        {
-            0 => string.Compare(re1.RootPath, re2.RootPath, StringComparison.Ordinal),
-            1 => string.Compare(string.IsNullOrEmpty(re1.VolumeName) ? "" : re1.VolumeName,
-                string.IsNullOrEmpty(re2.VolumeName) ? "" : re2.VolumeName, StringComparison.Ordinal),
-            2 => re1.RootDirEntryCount.CompareTo(re2.RootDirEntryCount),
-            3 => re1.RootFileEntryCount.CompareTo(re2.RootFileEntryCount),
-            4 => (re1.RootDirEntryCount + re1.RootFileEntryCount).CompareTo(re2.RootDirEntryCount + re2.RootFileEntryCount),
-            5 => string.Compare(re1.DriveLetterHint, re2.DriveLetterHint, StringComparison.Ordinal),
-            6 => re1.RootSize.CompareTo(re2.RootSize),
-            7 => re1.AvailSpace.CompareTo(re2.AvailSpace),
-            8 => re1.TotalSpace.CompareTo(re2.TotalSpace),
-            9 => re1.ScanStartUtcTicks.CompareTo(re2.ScanStartUtcTicks),
-            10 => (re1.ScanEndUtcTicks - re1.ScanStartUtcTicks).CompareTo(re2.ScanEndUtcTicks - re2.ScanStartUtcTicks),
-            11 => string.Compare(re1.ActualFileName, re2.ActualFileName, StringComparison.Ordinal),
-            12 => string.Compare(re1.Description, re2.Description, StringComparison.Ordinal),
-            _ => throw new Exception($"Problem column {column} not handled for sort.")
-        };
-
-        if (catalogHelper.ColumnSortOrder == SortOrder.Descending)
-        {
-            compareResult *= -1;
-        }
-
-        return compareResult;
+        return EntrySortComparer.CompareCatalog(root1, root2,
+            catalogHelper.SortColumn,
+            catalogHelper.ColumnSortOrder == SortOrder.Descending);
     }
 
     public void AdvancedSearchCheckboxChanged()

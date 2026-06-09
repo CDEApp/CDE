@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using cdeAppCore;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Config;
@@ -40,7 +41,7 @@ public class CDEWinFormPresenterTest
         {
             var loadCatalogService = Substitute.For<ILoadCatalogService>();
             loadCatalogService.LoadRootEntriesAsync(
-                    Arg.Any<IConfig>(),
+                    Arg.Any<string>(),
                     Arg.Any<Action<int, int, string>>(),
                     Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(new List<RootEntry>()));
@@ -69,7 +70,7 @@ public class CDEWinFormPresenterTest
 
             var loadCatalogService = Substitute.For<ILoadCatalogService>();
             loadCatalogService.LoadRootEntriesAsync(
-                    Arg.Any<IConfig>(),
+                    Arg.Any<string>(),
                     Arg.Any<Action<int, int, string>>(),
                     Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(new List<RootEntry>()));
@@ -101,7 +102,7 @@ public class CDEWinFormPresenterTest
             var loadCatalogsService = Substitute.For<ILoadCatalogService>();
             loadCatalogsService
                 .LoadRootEntriesAsync(
-                    Arg.Any<IConfig>(),
+                    Arg.Any<string>(),
                     Arg.Any<Action<int, int, string>>(),
                     Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(_rootList));
@@ -123,14 +124,14 @@ public class CDEWinFormPresenterTest
             try
             {
                 var loadCatalogsService = Substitute.For<ILoadCatalogService>();
-                loadCatalogsService.GetColumnarFiles(Arg.Any<IConfig>()).Returns(new List<string> { cdex });
+                loadCatalogsService.GetColumnarFiles(Arg.Any<string>()).Returns(new List<string> { cdex });
 
                 var presenter = new CDEWinFormPresenter(_mockForm, _stubConfig, loadCatalogsService);
                 presenter.InitializeAsync().GetAwaiter().GetResult();
 
                 _mockForm.Received().SetTotalFileEntriesLoadedStatus(1);
                 loadCatalogsService.DidNotReceive().LoadRootEntriesAsync(
-                    Arg.Any<IConfig>(), Arg.Any<Action<int, int, string>>(), Arg.Any<CancellationToken>());
+                    Arg.Any<string>(), Arg.Any<Action<int, int, string>>(), Arg.Any<CancellationToken>());
 
                 // The catalog is held memory-mapped: the file is locked until the presenter closes,
                 // which disposes the mmap source. This both proves mmap and exercises the cleanup path.
@@ -373,7 +374,7 @@ public class CDEWinFormPresenterTest
             InitRootWithFile();
             var loadCatalogsService = Substitute.For<ILoadCatalogService>();
             loadCatalogsService.LoadRootEntriesAsync(
-                    Arg.Any<IConfig>(),
+                    Arg.Any<string>(),
                     Arg.Any<Action<int, int, string>>(),
                     Arg.Any<CancellationToken>())
                 .Returns(Task.FromResult(_rootList));
