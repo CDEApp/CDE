@@ -81,6 +81,27 @@ tr.dir td:first-child { color: var(--dir); }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: #2a2d2e; }
 
+/* virtualized list (search results) */
+.vlist { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.vlist.results-cols {
+  --cols: minmax(160px, 2fr) 90px 150px minmax(120px, 1.4fr) minmax(200px, 3fr);
+}
+.vlist-header {
+  display: grid; grid-template-columns: var(--cols);
+  background: var(--panel); border-bottom: 1px solid var(--border); font-weight: 600;
+}
+.vlist-header > div { padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vlist-scroll { flex: 1; overflow: auto; min-height: 0; position: relative; }
+.vlist-inner { position: relative; }
+.vlist-row {
+  display: grid; grid-template-columns: var(--cols); align-items: center;
+  border-bottom: 1px solid #2a2a2a; cursor: default;
+}
+.vlist-row:hover { background: #2a2d2e; }
+.vlist-row.dir .cell:first-child { color: var(--dir); }
+.vlist-row .cell { padding: 0 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vlist-header .num, .vlist-row .cell.num { text-align: right; font-variant-numeric: tabular-nums; }
+
 /* status bar */
 .statusbar { display: flex; gap: 18px; padding: 3px 10px; border-top: 1px solid var(--border); background: var(--panel); }
 
