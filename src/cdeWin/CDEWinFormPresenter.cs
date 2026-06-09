@@ -1049,10 +1049,12 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
     }
 
-    public void DirectoryTreeContextMenuExploreAltClick()
+    public void DirectoryTreeContextMenuCustomCommand()
     {
+        var cmd = _clientForm.ActiveCustomCommand;
+        if (cmd == null) return;
         DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-            WindowsExplorerUtilities.ExplorerAltExplore(ce.FullPath));
+            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, ce.FullPath));
     }
 
     public void DirectoryTreeContextMenuPropertiesClick()
@@ -1124,6 +1126,14 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
     }
 
+    public void DirectoryContextMenuCustomCommand()
+    {
+        var cmd = _clientForm.ActiveCustomCommand;
+        if (cmd == null) return;
+        DirectoryGetContextMenuPairDirEntryThatExists(pde =>
+            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, pde.FullPath));
+    }
+
     public void DirectoryContextMenuSelectAllClick()
     {
         _clientForm.DirectoryListViewHelper.SelectAllItems();
@@ -1188,10 +1198,12 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
     }
 
-    public void SearchResultContextMenuExploreAltClick()
+    public void SearchResultContextMenuCustomCommand()
     {
+        var cmd = _clientForm.ActiveCustomCommand;
+        if (cmd == null) return;
         SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ExplorerAltExplore(pde.FullPath));
+            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, pde.FullPath));
     }
 
     public void SearchResultContextMenuPropertiesClick()

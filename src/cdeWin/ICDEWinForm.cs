@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Windows.Forms;
 using cdeLib;
 using cdeLib.Entities;
+using cdeWin.Cfg;
 
 namespace cdeWin;
 
@@ -21,10 +22,10 @@ public interface ICDEWinForm : IView
     event EventAction OnSearchResultContextMenuViewTreeClick;
     event EventAction OnSearchResultContextMenuOpenClick;
     event EventAction OnSearchResultContextMenuExploreClick;
-    event EventAction OnSearchResultContextMenuExploreAltClick;
     event EventAction OnSearchResultContextMenuPropertiesClick;
     event EventAction OnSearchResultContextMenuSelectAllClick;
     event EventAction OnSearchResultContextMenuCopyFullPathClick;
+    event EventAction OnSearchResultContextMenuCustomCommand;
 
     event EventAction OnDirectoryContextMenuViewTreeClick;
     event EventAction OnDirectoryContextMenuOpenClick;
@@ -33,6 +34,7 @@ public interface ICDEWinForm : IView
     event EventAction OnDirectoryContextMenuSelectAllClick;
     event EventAction OnDirectoryContextMenuCopyFullPathClick;
     event EventAction OnDirectoryContextMenuParentClick;
+    event EventAction OnDirectoryContextMenuCustomCommand;
 
     event EventAction OnDirectoryRetrieveVirtualItem;
     event EventAction OnDirectoryListViewItemActivate;
@@ -51,8 +53,14 @@ public interface ICDEWinForm : IView
 
     event EventAction OnDirectoryTreeContextMenuOpenClick;
     event EventAction OnDirectoryTreeContextMenuExploreClick;
-    event EventAction OnDirectoryTreeContextMenuExploreAltClick;
     event EventAction OnDirectoryTreeContextMenuPropertiesClick;
+    event EventAction OnDirectoryTreeContextMenuCustomCommand;
+
+    /// <summary>
+    /// The custom command whose dynamic menu item was last clicked; read by the presenter when an
+    /// <c>On*ContextMenuCustomCommand</c> event fires.
+    /// </summary>
+    CustomCommandOptions ActiveCustomCommand { get; set; }
 
     TreeNode DirectoryTreeViewNodes { get; set; }
 

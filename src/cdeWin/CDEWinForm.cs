@@ -36,10 +36,10 @@ public partial class CDEWinForm : Form, ICDEWinForm
     public event EventAction OnSearchResultContextMenuViewTreeClick;
     public event EventAction OnSearchResultContextMenuOpenClick;
     public event EventAction OnSearchResultContextMenuExploreClick;
-    public event EventAction OnSearchResultContextMenuExploreAltClick;
     public event EventAction OnSearchResultContextMenuPropertiesClick;
     public event EventAction OnSearchResultContextMenuSelectAllClick;
     public event EventAction OnSearchResultContextMenuCopyFullPathClick;
+    public event EventAction OnSearchResultContextMenuCustomCommand;
 
     public event EventAction OnDirectoryContextMenuViewTreeClick;
     public event EventAction OnDirectoryContextMenuOpenClick;
@@ -48,6 +48,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     public event EventAction OnDirectoryContextMenuSelectAllClick;
     public event EventAction OnDirectoryContextMenuCopyFullPathClick;
     public event EventAction OnDirectoryContextMenuParentClick;
+    public event EventAction OnDirectoryContextMenuCustomCommand;
 
     public event EventAction OnDirectoryRetrieveVirtualItem;
     public event EventAction OnDirectoryListViewItemActivate;
@@ -65,8 +66,11 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public event EventAction OnDirectoryTreeContextMenuOpenClick;
     public event EventAction OnDirectoryTreeContextMenuExploreClick;
-    public event EventAction OnDirectoryTreeContextMenuExploreAltClick;
     public event EventAction OnDirectoryTreeContextMenuPropertiesClick;
+    public event EventAction OnDirectoryTreeContextMenuCustomCommand;
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public CustomCommandOptions ActiveCustomCommand { get; set; }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public TreeNode DirectoryTreeViewActiveBeforeExpandNode { get; set; }
@@ -139,10 +143,12 @@ public partial class CDEWinForm : Form, ICDEWinForm
     };
 
     private readonly IConfig _config;
+    private readonly IReadOnlyList<CustomCommandOptions> _customCommands;
 
-    public CDEWinForm(IConfig config)
+    public CDEWinForm(IConfig config, IReadOnlyList<CustomCommandOptions> customCommands = null)
     {
         _config = config;
+        _customCommands = customCommands ?? new List<CustomCommandOptions>();
         InitializeComponent();
         AutoWaitCursor.Cursor = Cursors.WaitCursor;
         AutoWaitCursor.Delay = new TimeSpan(0, 0, 0, 0, 25);
@@ -356,7 +362,6 @@ public partial class CDEWinForm : Form, ICDEWinForm
             // ReSharper disable PossibleNullReferenceException
             OpenHandler = (_, _) => OnDirectoryTreeContextMenuOpenClick(),
             ExploreHandler = (_, _) => OnDirectoryTreeContextMenuExploreClick(),
-            ExploreAltHandler = (_, _) => OnDirectoryTreeContextMenuExploreAltClick(),
             PropertiesHandler = (_, _) => OnDirectoryTreeContextMenuPropertiesClick(),
             //SelectAllHandler = not useful in tree
             //CopyBaseNameHandler = (s, e) => (),
@@ -365,6 +370,9 @@ public partial class CDEWinForm : Form, ICDEWinForm
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = DirectoryTreeContextMenuOpening
         };
+
+        menuHelper.AddCustomCommands(_customCommands,
+            cmd => { ActiveCustomCommand = cmd; OnDirectoryTreeContextMenuCustomCommand(); });
 
         return menuHelper.GetContextMenuStrip();
     }
@@ -412,6 +420,10 @@ public partial class CDEWinForm : Form, ICDEWinForm
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = (s, e) => DirectoryListViewHelper.SearchListContextMenuOpening(s, e)
         };
+
+        menuHelper.AddCustomCommands(_customCommands,
+            cmd => { ActiveCustomCommand = cmd; OnDirectoryContextMenuCustomCommand(); });
+
         return menuHelper.GetContextMenuStrip();
     }
 
@@ -423,7 +435,6 @@ public partial class CDEWinForm : Form, ICDEWinForm
             TreeViewHandler = (_, _) => OnSearchResultContextMenuViewTreeClick(),
             OpenHandler = (_, _) => OnSearchResultContextMenuOpenClick(),
             ExploreHandler = (_, _) => OnSearchResultContextMenuExploreClick(),
-            ExploreAltHandler = (_, _) => OnSearchResultContextMenuExploreAltClick(),
             PropertiesHandler = (_, _) => OnSearchResultContextMenuPropertiesClick(),
             SelectAllHandler = (_, _) => OnSearchResultContextMenuSelectAllClick(),
             //CopyBaseNameHandler = (s, e) => (),
@@ -431,6 +442,10 @@ public partial class CDEWinForm : Form, ICDEWinForm
             // ReSharper restore PossibleNullReferenceException
             CancelOpeningEventHandler = (s, e) => SearchResultListViewHelper.SearchListContextMenuOpening(s, e)
         };
+
+        menuHelper.AddCustomCommands(_customCommands,
+            cmd => { ActiveCustomCommand = cmd; OnSearchResultContextMenuCustomCommand(); });
+
         return menuHelper.GetContextMenuStrip();
     }
 

@@ -3,8 +3,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
-using cdeWin.Cfg;
-using Microsoft.Extensions.Configuration;
 using Serilog;
 
 namespace cdeWin;
@@ -75,19 +73,21 @@ public static class WindowsExplorerUtilities
         Process.Start("explorer.exe", "/select,\"" + path + "\"");
     }
 
-    public static void ExplorerAltExplore(string path)
+    /// <summary>
+    /// Launch a user-configured custom command, substituting the <c>{path}</c>/<c>{dir}</c>/
+    /// <c>{filename}</c> tokens in <paramref name="argumentsTemplate"/> from <paramref name="fullPath"/>.
+    /// </summary>
+    public static void RunCustomCommand(string command, string argumentsTemplate, string fullPath)
     {
-        var explorerAltConfig = new ExplorerAltOptions();
-        Program.Configuration.GetSection("ExplorerAlt").Bind(explorerAltConfig);
-        if (string.IsNullOrEmpty(explorerAltConfig.Path)) return;
-        var args = explorerAltConfig.Arguments.Replace("{path}", path);
+        if (string.IsNullOrEmpty(command)) return;
+        var args = CommandTokens.Substitute(argumentsTemplate ?? "", fullPath);
         try
         {
-            Process.Start(explorerAltConfig.Path, args);
+            Process.Start(command, args);
         }
         catch (Win32Exception ex)
         {
-            Log.Logger.Warning("ExplorerAltExplore: {Exception}", ex.Message);
+            Log.Logger.Warning("RunCustomCommand: {Exception}", ex.Message);
             NotifyOnError(ex);
         }
     }
@@ -95,7 +95,7 @@ public static class WindowsExplorerUtilities
     private static void NotifyOnError(Win32Exception ex)
     {
         MessageBox.Show(
-            "Error occurred launching ExplorerAlt, ensure you have configured it correctly in appsettings.json " +
+            "Error occurred launching custom command, ensure you have configured it correctly in appsettings.json " +
             ex.Message, "Error");
     }
 }

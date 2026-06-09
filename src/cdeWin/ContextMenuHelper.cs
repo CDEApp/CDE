@@ -1,6 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Windows.Forms;
+using cdeWin.Cfg;
 
 namespace cdeWin;
 
@@ -26,7 +28,6 @@ public class ContextMenuHelper : IDisposable
     private readonly ToolStripMenuItem _viewTree = new("View Tree");
     private readonly ToolStripMenuItem _open = new("Open");
     private readonly ToolStripMenuItem _explore = new("Explore");
-    private readonly ToolStripMenuItem _exploreAlt = new("Explore Alt");
 
     private readonly ToolStripMenuItem _properties = new("Properties"); // like explorer
 
@@ -74,19 +75,7 @@ public class ContextMenuHelper : IDisposable
         }
     }
 
-    public EventHandler ExploreAltHandler
-    {
-        get => _exploreHandler;
-        set
-        {
-            _exploreAltHandler = value;
-            _exploreAlt.Click += _exploreAltHandler;
-            _menu.Items.Add(_exploreAlt);
-        }
-    }
-
     private EventHandler _exploreHandler;
-    private EventHandler _exploreAltHandler;
 
     public EventHandler PropertiesHandler
     {
@@ -140,6 +129,33 @@ public class ContextMenuHelper : IDisposable
 
     private EventHandler _parentHandler;
 
+    private readonly List<ToolStripMenuItem> _customItems = new();
+
+    /// <summary>
+    /// Append one menu item per configured custom command (its definition carried in
+    /// <see cref="ToolStripItem.Tag"/>), all routed through a single click handler. Items are
+    /// dynamic, so unlike the fixed handlers they are not part of the passive-view event convention.
+    /// </summary>
+    public void AddCustomCommands(IEnumerable<CustomCommandOptions> commands, Action<CustomCommandOptions> onClick)
+    {
+        if (commands == null) return;
+
+        var addedSeparator = false;
+        foreach (var command in commands)
+        {
+            if (!addedSeparator && _menu.Items.Count > 0)
+            {
+                _menu.Items.Add(new ToolStripSeparator());
+                addedSeparator = true;
+            }
+
+            var item = new ToolStripMenuItem(command.Label) { Tag = command };
+            item.Click += (s, _) => onClick((CustomCommandOptions)((ToolStripMenuItem)s).Tag);
+            _customItems.Add(item);
+            _menu.Items.Add(item);
+        }
+    }
+
     /// <summary>
     /// Set Opening event handler for context menu.
     /// </summary>
@@ -159,7 +175,6 @@ public class ContextMenuHelper : IDisposable
         _viewTree.ShortcutKeyDisplayString = "Enter"; // for documentation of ItemActivate which is Enter.
         _open.ShortcutKeys = Keys.Control | Keys.Enter;
         _explore.ShortcutKeys = Keys.Control | Keys.E;
-        _exploreAlt.ShortcutKeys = Keys.Control | Keys.T;
         _properties.ShortcutKeys = Keys.Alt | Keys.Enter;
         _selectAll.ShortcutKeys = Keys.Control | Keys.A;
         _parent.ShortcutKeys = Keys.Control | Keys.Back;
@@ -168,8 +183,10 @@ public class ContextMenuHelper : IDisposable
 
     public ContextMenuStrip GetContextMenuStrip()
     {
-        foreach (ToolStripMenuItem menuItem in _menu.Items)
+        foreach (var item in _menu.Items)
         {
+            // Skip separators (added by custom commands) - only menu items carry these properties.
+            if (item is not ToolStripMenuItem menuItem) continue;
             menuItem.ShowShortcutKeys = true;
             menuItem.DisplayStyle = ToolStripItemDisplayStyle.Text;
         }
@@ -204,11 +221,6 @@ public class ContextMenuHelper : IDisposable
                 _explore.Click -= _exploreHandler;
             }
 
-            if (_exploreAltHandler != null)
-            {
-                _exploreAlt.Click -= _exploreAltHandler;
-            }
-
             if (_propertiesHandler != null)
             {
                 _properties.Click -= _propertiesHandler;
@@ -229,9 +241,13 @@ public class ContextMenuHelper : IDisposable
                 _parent.Click += _parentHandler;
             }
 
+            foreach (var customItem in _customItems)
+            {
+                customItem.Dispose();
+            }
+
             _copyFullName.Dispose();
             _explore.Dispose();
-            _exploreAlt.Dispose();
             _menu.Dispose();
             _open.Dispose();
             _parent.Dispose();
