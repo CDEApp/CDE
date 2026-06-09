@@ -35,12 +35,25 @@ export async function startSidecar(): Promise<Sidecar> {
       /* not the handshake line — ignore */
     }
   });
+  const stderr: string[] = [];
   command.stderr.on("data", (line: string) => {
-    if (line.trim()) console.debug("[cdeApi]", line);
+    if (line.trim()) {
+      stderr.push(line.trim());
+      console.debug("[cdeApi]", line);
+    }
   });
+  command.on("error", (err) => console.error("[cdeApi] command error", err));
+  command.on("close", (data) =>
+    console.warn("[cdeApi] exited", JSON.stringify(data)),
+  );
+
+  const tail = () => (stderr.length ? ` | sidecar stderr: ${stderr.slice(-6).join(" / ")}` : "");
 
   let child: Child | null = null;
-  const timeout = setTimeout(() => rejectConn(new Error("sidecar handshake timed out")), 15000);
+  const timeout = setTimeout(
+    () => rejectConn(new Error(`sidecar handshake timed out${tail()}`)),
+    15000,
+  );
 
   try {
     child = await command.spawn();
@@ -51,6 +64,7 @@ export async function startSidecar(): Promise<Sidecar> {
   } catch (e) {
     clearTimeout(timeout);
     await child?.kill();
-    throw e;
+    const detail = e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e);
+    throw new Error(`sidecar spawn failed: ${detail}${tail()}`);
   }
 }

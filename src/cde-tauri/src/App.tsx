@@ -67,7 +67,9 @@ export default function App() {
         setReady(true);
         setStatus("");
       } catch (e) {
-        setStatus(`Failed to start: ${(e as Error).message}`);
+        console.error("bootstrap failed", e);
+        const msg = e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e);
+        setStatus(`Failed to start: ${msg}`);
       }
     })();
     return () => {

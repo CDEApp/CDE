@@ -1,13 +1,12 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Capabilities for the main window: spawn the cdeApi sidecar.",
+  "description": "Capabilities for the main window: spawn + kill the cdeApi sidecar.",
   "windows": ["main"],
   "permissions": [
     "core:default",
-    "shell:allow-spawn",
     {
-      "identifier": "shell:allow-execute",
+      "identifier": "shell:allow-spawn",
       "allow": [
         {
           "name": "binaries/cdeApi",
@@ -15,6 +14,7 @@
           "args": true
         }
       ]
-    }
+    },
+    "shell:allow-kill"
   ]
 }
