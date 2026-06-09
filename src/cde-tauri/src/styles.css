@@ -89,9 +89,19 @@ tbody tr:hover { background: #2a2d2e; }
 }
 .vlist-header {
   display: grid; grid-template-columns: var(--cols);
+  position: sticky; top: 0; z-index: 1;
   background: var(--panel); border-bottom: 1px solid var(--border); font-weight: 600;
 }
-.vlist-header > div { padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vlist-header > div { position: relative; padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.vlist-header > div.sortable { cursor: pointer; user-select: none; }
+.vlist-header > div.sortable:hover { background: #2a2d2e; }
+.vlist-header > div.sorted { color: var(--accent, #4daafc); }
+/* Drag handle on the right edge of each header cell to resize the column. */
+.vlist-header .resizer {
+  position: absolute; top: 0; right: 0; height: 100%; width: 5px;
+  cursor: col-resize; user-select: none; touch-action: none;
+}
+.vlist-header .resizer:hover, .vlist-header .resizer.resizing { background: var(--accent, #4daafc); }
 .vlist-scroll { flex: 1; overflow: auto; min-height: 0; position: relative; }
 .vlist-inner { position: relative; }
 .vlist-row {

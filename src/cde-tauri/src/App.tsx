@@ -324,6 +324,9 @@ export default function App() {
                   setRevealKey(null); // manual click: don't centre, just keep it visible
                   void selectNode(ref, fp);
                 }}
+                onContextMenu={(ref, fp, x, y) =>
+                  setMenu({ x, y, items: buildMenu(ref, fp) })
+                }
               />
             }
             right={

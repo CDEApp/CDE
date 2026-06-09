@@ -12,6 +12,7 @@
     "bundle-sidecar": "node scripts/bundle-sidecar.mjs"
   },
   "dependencies": {
+    "@tanstack/react-table": "^8.21.3",
     "@tauri-apps/api": "^2.1.1",
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-shell": "^2.0.1",

@@ -18,9 +18,10 @@ interface TreeItemProps {
   revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
   expandTo?: EntryRef[]; // path to auto-expand/select
   onSelect: (ref: EntryRef, fullPath: string) => void;
+  onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, revealKey, expandTo, onSelect }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
@@ -74,6 +75,11 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
         ref={rowRef}
         className={`tree-row${isSelected ? " selected" : ""}`}
         onClick={() => onSelect(nodeRef, fullPath)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          onContextMenu(nodeRef, fullPath, e.clientX, e.clientY);
+        }}
       >
         <span
           className={`twisty${hasChildren ? "" : " leaf"}`}
@@ -100,6 +106,7 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
               revealKey={revealKey}
               expandTo={childExpandTo}
               onSelect={onSelect}
+              onContextMenu={onContextMenu}
             />
           ))}
         </ul>
@@ -115,9 +122,10 @@ interface Props {
   revealKey?: string | null;
   expandTo?: EntryRef[];
   onSelect: (ref: EntryRef, fullPath: string) => void;
+  onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
 }
 
-export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, onSelect }: Props) {
+export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: Props) {
   return (
     <ul className="tree">
       {roots.map((r) => (
@@ -132,6 +140,7 @@ export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, o
           revealKey={revealKey}
           expandTo={expandTo && expandTo[0]?.catalogId === r.ref.catalogId ? expandTo : undefined}
           onSelect={onSelect}
+          onContextMenu={onContextMenu}
         />
       ))}
     </ul>

@@ -8,6 +8,9 @@ interface Props<T> {
   renderRow: (item: T, index: number, style: CSSProperties) => ReactNode;
   className?: string;
   overscan?: number;
+  /** Extra style for the inner spacer — e.g. `minWidth` to drive horizontal scroll when
+   *  fixed-width columns exceed the viewport. Both header and rows then share that scroll. */
+  innerStyle?: CSSProperties;
 }
 
 /**
@@ -15,7 +18,7 @@ interface Props<T> {
  * are mounted; a spacer of `items.length * rowHeight` drives the scrollbar. Keeps the DOM tiny and
  * constant regardless of result count (10 rows or 1,000,000).
  */
-export function VirtualList<T>({ items, rowHeight, header, renderRow, className, overscan = 8 }: Props<T>) {
+export function VirtualList<T>({ items, rowHeight, header, renderRow, className, overscan = 8, innerStyle }: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(0);
@@ -49,13 +52,15 @@ export function VirtualList<T>({ items, rowHeight, header, renderRow, className,
 
   return (
     <div className={`vlist ${className ?? ""}`}>
-      {header}
       <div
         className="vlist-scroll"
         ref={scrollRef}
         onScroll={(e) => setScrollTop(e.currentTarget.scrollTop)}
       >
-        <div className="vlist-inner" style={{ height: total * rowHeight }}>
+        {/* Header lives inside the scroll area (sticky) so it scrolls horizontally with the rows
+            when columns are wider than the viewport, while staying pinned vertically. */}
+        {header}
+        <div className="vlist-inner" style={{ height: total * rowHeight, ...innerStyle }}>
           {rows}
         </div>
       </div>
