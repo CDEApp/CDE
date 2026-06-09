@@ -15,22 +15,26 @@ interface TreeItemProps {
   fullPath: string;
   hasChildren: boolean;
   selectedKey: string | null;
+  revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
   expandTo?: EntryRef[]; // path to auto-expand/select
   onSelect: (ref: EntryRef, fullPath: string) => void;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, expandTo, onSelect }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, revealKey, expandTo, onSelect }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
 
-  // Scroll the selected node into view when it becomes selected (e.g. via view-in-tree), so the
-  // highlighted entry is always visible. `nearest` is a no-op when it is already on screen.
+  // Scroll the selected node into view when it becomes selected. A deliberate reveal
+  // (view-in-tree, key === revealKey) centres it in the pane; a plain selection uses `nearest`,
+  // which is a no-op when the node is already on screen so clicks don't jump.
   const isSelected = selectedKey === key;
   const rowRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
-    if (isSelected) rowRef.current?.scrollIntoView({ block: "nearest" });
-  }, [isSelected]);
+    if (isSelected) {
+      rowRef.current?.scrollIntoView({ block: revealKey === key ? "center" : "nearest" });
+    }
+  }, [isSelected, revealKey]);
 
   async function ensureChildren() {
     if (children == null) {
@@ -93,6 +97,7 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
               fullPath={c.fullPath}
               hasChildren={c.hasChildren}
               selectedKey={selectedKey}
+              revealKey={revealKey}
               expandTo={childExpandTo}
               onSelect={onSelect}
             />
@@ -107,11 +112,12 @@ interface Props {
   client: CdeApiClient;
   roots: TreeRoot[];
   selectedKey: string | null;
+  revealKey?: string | null;
   expandTo?: EntryRef[];
   onSelect: (ref: EntryRef, fullPath: string) => void;
 }
 
-export function CatalogTree({ client, roots, selectedKey, expandTo, onSelect }: Props) {
+export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, onSelect }: Props) {
   return (
     <ul className="tree">
       {roots.map((r) => (
@@ -123,6 +129,7 @@ export function CatalogTree({ client, roots, selectedKey, expandTo, onSelect }: 
           fullPath={r.fullPath}
           hasChildren
           selectedKey={selectedKey}
+          revealKey={revealKey}
           expandTo={expandTo && expandTo[0]?.catalogId === r.ref.catalogId ? expandTo : undefined}
           onSelect={onSelect}
         />

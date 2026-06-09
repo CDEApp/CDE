@@ -40,6 +40,7 @@ export default function App() {
   const [commands, setCommands] = useState<{ id: number; label: string }[]>([]);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [revealKey, setRevealKey] = useState<string | null>(null);
   const [expandTo, setExpandTo] = useState<EntryRef[] | undefined>(undefined);
   const [dirPath, setDirPath] = useState("");
   const [dirNodes, setDirNodes] = useState<DirectoryNode[]>([]);
@@ -183,6 +184,7 @@ export default function App() {
       setExpandTo(refs.slice(0, -1));
       const parentNode = chain[chain.length - 2] ?? chain[chain.length - 1];
       await selectNode(parent, parentNode.fullPath);
+      setRevealKey(refToString(parent)); // centre this node in the tree (it's the reveal target)
     },
     [selectNode],
   );
@@ -316,8 +318,12 @@ export default function App() {
                 client={clientRef.current!}
                 roots={roots}
                 selectedKey={selectedKey}
+                revealKey={revealKey}
                 expandTo={expandTo}
-                onSelect={selectNode}
+                onSelect={(ref, fp) => {
+                  setRevealKey(null); // manual click: don't centre, just keep it visible
+                  void selectNode(ref, fp);
+                }}
               />
             }
             right={
