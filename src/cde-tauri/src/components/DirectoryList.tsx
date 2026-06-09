@@ -29,6 +29,7 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu }: Props)
               onDoubleClick={() => onActivate(n)}
               onContextMenu={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onContextMenu(n, e.clientX, e.clientY);
               }}
             >

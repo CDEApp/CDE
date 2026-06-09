@@ -29,6 +29,7 @@ export function ResultsList({ rows, onActivate, onContextMenu }: Props) {
               onDoubleClick={() => onActivate(row)}
               onContextMenu={(e) => {
                 e.preventDefault();
+                e.stopPropagation();
                 onContextMenu(row, e.clientX, e.clientY);
               }}
             >
