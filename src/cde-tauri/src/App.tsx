@@ -110,10 +110,12 @@ export default function App() {
   // --- tree selection -> directory listing ---
   const selectNode = useCallback(async (ref: EntryRef, fullPath: string) => {
     const client = clientRef.current!;
+    // Switch view synchronously so a later tab click isn't clobbered when the async
+    // children fetch below resolves; the listing fills in once it arrives.
     setSelectedKey(refToString(ref));
     setDirPath(fullPath);
-    setDirNodes(await client.children(ref, { sort: "name" }));
     setView("directory");
+    setDirNodes(await client.children(ref, { sort: "name" }));
   }, []);
 
   // drill into a directory row
