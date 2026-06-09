@@ -60,9 +60,10 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 
 /* main */
 .main { overflow: hidden; }
-.split { display: grid; grid-template-columns: 320px 1fr; height: 100%; }
+.split { display: grid; grid-template-columns: 320px 6px 1fr; height: 100%; }
 .pane { overflow: auto; height: 100%; }
-.tree-pane { border-right: 1px solid var(--border); }
+.splitter { cursor: col-resize; background: var(--border); }
+.splitter:hover, .splitter:active { background: var(--accent); }
 
 /* tree */
 ul.tree, ul.tree ul { list-style: none; margin: 0; padding-left: 14px; }

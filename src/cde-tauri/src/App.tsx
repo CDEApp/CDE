@@ -21,6 +21,7 @@ import { CatalogList } from "./components/CatalogList";
 import { SearchBar } from "./components/SearchBar";
 import { StatusBar } from "./components/StatusBar";
 import { MenuBar } from "./components/MenuBar";
+import { SplitPane } from "./components/SplitPane";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 
 type View = "directory" | "results" | "catalogs";
@@ -135,6 +136,10 @@ export default function App() {
     },
     [refreshCatalogs],
   );
+
+  const onTreePaneResize = useCallback((width: number) => {
+    uiRef.current?.update({ treePaneWidth: Math.round(width) });
+  }, []);
 
   // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
   const openFolder = useCallback(async () => {
@@ -303,8 +308,10 @@ export default function App() {
 
       <div className="main">
         {view === "directory" && (
-          <div className="split">
-            <div className="pane tree-pane">
+          <SplitPane
+            initialLeftWidth={(uiRef.current?.get().treePaneWidth as number) ?? 320}
+            onResizeEnd={onTreePaneResize}
+            left={
               <CatalogTree
                 client={clientRef.current!}
                 roots={roots}
@@ -312,8 +319,8 @@ export default function App() {
                 expandTo={expandTo}
                 onSelect={selectNode}
               />
-            </div>
-            <div className="pane list-pane">
+            }
+            right={
               <DirectoryList
                 path={dirPath}
                 nodes={dirNodes}
@@ -322,8 +329,8 @@ export default function App() {
                   setMenu({ x, y, items: buildMenu(n.ref, n.fullPath) })
                 }
               />
-            </div>
-          </div>
+            }
+          />
         )}
 
         {view === "results" && (

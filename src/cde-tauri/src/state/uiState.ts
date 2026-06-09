@@ -9,6 +9,7 @@ export interface UiState {
   limitResultCount?: number;
   lastView?: string;
   catalogDir?: string;
+  treePaneWidth?: number;
   [key: string]: unknown;
 }
 
