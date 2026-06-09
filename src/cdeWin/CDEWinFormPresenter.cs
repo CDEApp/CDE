@@ -8,6 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using cdeAppCore;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
@@ -78,13 +79,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private async Task<List<ICommonEntry>> LoadCatalogRootsAsync()
     {
         DisposeCatalogSources();
-        var cdex = _loadCatalogService.GetColumnarFiles(_config);
+        var cdex = _loadCatalogService.GetColumnarFiles(_config.ConfigPath);
         if (cdex is { Count: > 0 })
         {
             return ReadersToCatalogRoots(cdex);
         }
         return ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
-            _config, OnLoadProgress, _loadingCts.Token));
+            _config.ConfigPath, OnLoadProgress, _loadingCts.Token));
     }
 
     // Memory-mapped catalog sources must be released on reload/exit so the mappings are closed.

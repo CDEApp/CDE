@@ -13,8 +13,8 @@
 
 ## 3. Create cdeAppCore and move pure logic in
 
-- [ ] 3.1 Add `src/cdeAppCore` (net10, no WinForms, no ASP.NET); reference `cdeLib`; add to `cde.slnx`.
-- [ ] 3.2 Move `LoadCatalogService`/`ILoadCatalogService` into `cdeAppCore` (decouple from `LoaderForm`).
+- [x] 3.1 Add `src/cdeAppCore` (net10, no WinForms, no ASP.NET); reference `cdeLib`; add to `cde.slnx`.
+- [x] 3.2 Move `LoadCatalogService`/`ILoadCatalogService` into `cdeAppCore` (decouple from `LoaderForm`).
 - [ ] 3.3 Move size/date formatting and column sort comparators out of the presenter into pure core helpers.
 - [ ] 3.4 Move filter validation (From/To size·date·hour, not-older-than) and regex validity check into core validators returning structured results.
 - [ ] 3.5 Point `cdeWin` at the relocated helpers/services; delete the now-duplicated presenter code. Build and smoke-test `cdeWin` — behaviour unchanged.
