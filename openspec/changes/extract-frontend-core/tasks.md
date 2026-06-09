@@ -1,15 +1,15 @@
 ## 1. Clear the ground
 
 - [x] 1.1 Delete dead `src/cdeWinForms` and `src/cdeWinFormsPresenter` (.NET 4.0 / x86 stubs); remove from `cde.slnx` and any references.
-- [ ] 1.2 Capture a search performance baseline on a representative large catalog (entries/sec, allocations) to compare against after the `FindOptions` refactor.
+- [x] 1.2 Capture a search performance baseline on a representative large catalog (entries/sec, allocations) to compare against after the `FindOptions` refactor.
 
 ## 2. Decouple the search engine from the UI (cdeLib)
 
-- [ ] 2.1 Add `SearchProgress` (count/total/elapsed) and an `IProgress<SearchProgress>`-based progress path to `FindOptions`/`Find`.
-- [ ] 2.2 Replace `Worker.CancellationPending` checks with `CancellationToken`; unify the sync and async cancellation paths; remove the `BackgroundWorker Worker` field.
-- [ ] 2.3 Update `cdeWin` (and any other callers) to pass a `CancellationToken` + progress instead of a `BackgroundWorker`.
-- [ ] 2.4 Benchmark vs. the 1.2 baseline; confirm no hot-path regression. Keep entry-count-gated cancel checks and ~100ms throttled progress.
-- [ ] 2.5 Verify `cdeLib` references no UI types; run cdeLib tests.
+- [x] 2.1 Add `SearchProgress` (count/total/elapsed) and an `IProgress<SearchProgress>`-based progress path to `FindOptions`/`Find`.
+- [x] 2.2 Replace `Worker.CancellationPending` checks with `CancellationToken`; unify the sync and async cancellation paths; remove the `BackgroundWorker Worker` field.
+- [x] 2.3 Update `cdeWin` (and any other callers) to pass a `CancellationToken` + progress instead of a `BackgroundWorker`.
+- [x] 2.4 Benchmark vs. the 1.2 baseline; confirm no hot-path regression. Keep entry-count-gated cancel checks and ~100ms throttled progress.
+- [x] 2.5 Verify `cdeLib` references no UI types; run cdeLib tests.
 
 ## 3. Create cdeAppCore and move pure logic in
 

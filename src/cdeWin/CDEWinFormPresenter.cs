@@ -463,7 +463,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             // This many file system entries before progress
             // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
             ProgressModifier = 50000,
-            Worker = _bgWorker,
             FromSizeEnable = _clientForm.FromSize.Checked,
             FromSize = FromSizeValue(),
             ToSizeEnable = _clientForm.ToSize.Checked,
