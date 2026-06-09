@@ -82,12 +82,17 @@ export default function App() {
     const win = getCurrentWindow();
     const unlistenPromise = win.onCloseRequested(async (event) => {
       event.preventDefault();
+      // Best-effort cleanup; neither step may block the actual close.
       try {
         await uiRef.current?.flush();
       } catch {
         /* ignore */
       }
-      await sidecarRef.current?.kill();
+      try {
+        await sidecarRef.current?.kill();
+      } catch {
+        /* ignore */
+      }
       await win.destroy();
     });
     return () => {
