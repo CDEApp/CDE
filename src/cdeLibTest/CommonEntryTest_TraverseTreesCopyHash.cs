@@ -165,12 +165,10 @@ public class CommonEntryTest_TraverseTreesCopyHash
     public void TraverseTreesCopyHash_DontCopyHashIfDestHasFullHash()
     {
         RecreateTestTree();
-        _dde1.SetHash(99); // _dde1.Hash = new byte[] { 99 };
+        _dde1.SetHash(99); 
         _dde1.IsPartialHash = false;
 
         _reSource.TraverseTreesCopyHash(_reDest);
-
-        // Assert.That(_dde1.Hash, Is.Not.Null); Assert.That(_dde1.Hash[0], Is.EqualTo(99));
     }
 
     private void RecreateTestTree()

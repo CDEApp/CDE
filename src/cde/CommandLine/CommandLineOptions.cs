@@ -16,7 +16,7 @@ public class ScanOptions
 
     [Option("follow-junctions",
         Default = false,
-        HelpText = "Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
+        HelpText = "[DANGER NOT EXTENSIVELY TESTED] Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
     public bool FollowJunctions { get; [UsedImplicitly] set; }
 }
 

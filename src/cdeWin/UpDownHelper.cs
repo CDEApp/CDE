@@ -7,7 +7,7 @@ public class UpDownHelper
     private readonly NumericUpDown _upDown;
 
     // have a field - text box / up-down 
-    // have a drop down which modifies the the field... like a multiplier or offset.
+    // have a drop-down which modifies the field... like a multiplier or offset.
     public UpDownHelper(NumericUpDown upDown, int decimalPlaces = 2)
     {
         _upDown = upDown;
