@@ -25,10 +25,35 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Serialization: columnar `.cdex` (zero-copy, memory-mapped), plus MessagePack/FlatSharp/protobuf-net for the legacy `.cde` tree format
   - Key dependencies: Autofac, SlimMessageBus, Serilog
 
+- **cdeAppCore** - Frontend-agnostic application core
+  - Target: .NET 10 (no WinForms, no ASP.NET; references only `cdeLib`)
+  - Transport-agnostic services + serializable DTOs shared by every frontend: `ICatalogSession`
+    (owned, disposable catalog lifetime over mmap `.cdex`), streamed `ISearchService`
+    (`IAsyncEnumerable<SearchResultRow>` + `IProgress<SearchProgress>`), `IShellActions`
+    (open/explore/properties + custom commands), and the pure formatting/sorting/validation helpers
+    lifted out of the WinForms presenter
+  - Both `cdeWin` (in-process) and `cdeApi` (over HTTP) call these same services with the same DTOs
+
 - **cdeWin** - Windows Forms GUI application
   - Target: .NET 10 (Windows)
   - Browse, search, and navigate catalogs visually
+  - Consumes `cdeAppCore` in-process (zero-copy mmap path preserved; not routed through HTTP)
   - Configuration stored in Local AppData or current directory
+
+- **cdeApi** - Localhost HTTP/JSON + SSE API over `cdeAppCore` (Tauri sidecar)
+  - Target: .NET 10 (ASP.NET / Kestrel minimal API)
+  - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
+  - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
+    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE),
+    `/shell`, `/shell/commands`, `/ui-state`
+  - Publishes as a self-contained single-file binary for sidecar bundling
+
+- **cde-tauri** - Tauri (React/TypeScript) desktop frontend (`src/cde-tauri`)
+  - Tauri v2 shell hosting a React/Vite webview; bundles `cdeApi` as a supervised sidecar
+  - Talks to the sidecar over loopback HTTP/SSE with the handshake token; mmap catalogs live in the
+    sidecar, the webview only ever sees DTO pages
+  - Window geometry via the Tauri window-state plugin; app UI state via `/ui-state`
+  - Not a .NET project: built with `npm`/`vite` + `cargo` (see `src/cde-tauri/README.md`)
 
 - **cdeWeb** - Web interface (unreleased/unfinished)
   - ASP.NET MVC with SignalR, Bootstrap, Angular.js
@@ -37,9 +62,26 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 ### Test Projects
 
 - **cdeLibTest** - Unit tests for cdeLib
+- **cdeAppCoreTest** - Unit tests for cdeAppCore (session, streamed search, validation, formatting)
 - **cdeLibSpec** - Specification/BDD tests
 - **cdeLibSpec2** - Additional specification tests
 - **cdeWinTest** - Tests for Windows Forms application
+
+### Two-frontend architecture
+
+The GUI logic lives in `cdeAppCore` (transport-agnostic services + serializable DTOs), not in any
+frontend. Dependency direction:
+
+```
+cdeLib  <-  cdeAppCore  <-  cdeWin   (in-process; zero-copy mmap, no HTTP)
+                        <-  cdeApi   (HTTP/SSE)  <-  cde-tauri / React (loopback sidecar)
+```
+
+`cdeWin` consumes the core services in-process (preserving the zero-copy mmap path); `cdeApi` is a
+thin localhost shim exposing the *same* services over HTTP/JSON + Server-Sent Events, bundled as a
+sidecar by the Tauri frontend. The same `SearchQuery`/`SearchResultRow`/`DirectoryNodeDto` DTO
+boundary is used in-proc and over the wire, so the API is a shim, not a second implementation. The
+on-disk `.cdex`/`.cde` formats and the `cde` CLI are unchanged.
 
 ### Supporting Projects
 

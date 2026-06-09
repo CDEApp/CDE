@@ -105,6 +105,17 @@ class Build : FalloutBuild
                 .EnablePublishSingleFile()
                 .DisableSelfContained()
             );
+
+            // cdeApi ships as a self-contained single-file binary so the Tauri frontend can bundle it
+            // as a sidecar on machines without the .NET runtime installed.
+            DotNetPublish(s => s
+                .SetProject("src/cdeApi/cdeApi.csproj")
+                .SetConfiguration(Configuration)
+                .SetOutput($"{ArtifactsDirectory}/cdeApi")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .EnableSelfContained()
+            );
         });
 
     [UsedImplicitly]
@@ -130,6 +141,15 @@ class Build : FalloutBuild
                 .SetRuntime(RunTime)
                 .EnablePublishSingleFile()
                 .DisableSelfContained()
+            );
+
+            DotNetPublish(s => s
+                .SetProject("src/cdeApi/cdeApi.csproj")
+                .SetConfiguration(releaseConfig)
+                .SetOutput($"{ArtifactsDirectory}/cdeApi")
+                .SetRuntime(RunTime)
+                .EnablePublishSingleFile()
+                .EnableSelfContained()
             );
         });
 

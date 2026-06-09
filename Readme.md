@@ -72,6 +72,20 @@ Notes:
 - Each configured command appears as its own item in the context menus.
 - Earlier versions of cdeWin had a single fixed "Explore Alt" command configured under an `ExplorerAlt` section. If that setting is still present and no `CustomCommands` are configured, it is migrated automatically into a single custom command labelled "Explore Alt", so an existing tool is not lost.
 
+#### cde-tauri (new, in progress)
+
+A second desktop frontend built with Tauri (a Rust shell) hosting a React/TypeScript webview. It
+talks to a small localhost API (`cdeApi`, ASP.NET / Kestrel) that it bundles and supervises as a
+sidecar process, reaching it over loopback HTTP + Server-Sent Events with a startup handshake token.
+
+Both `cdeWin` and `cde-tauri` are thin frontends over a shared, frontend-agnostic core
+(`cdeAppCore`): catalog session, streamed search, shell actions and serializable DTOs. `cdeWin`
+calls the core in-process (keeping the zero-copy memory-mapped read path); `cde-tauri` calls the
+same services across the `cdeApi` boundary, so the catalog data stays in the sidecar and the webview
+only ever sees small pages of results. The `.cde`/`.cdex` formats and the `cde` CLI are unchanged.
+
+See `src/cde-tauri/README.md` for how to build and run it.
+
 ### Contact Author
 
 My name is Robin and you can contact me about cde on the github repository site.
