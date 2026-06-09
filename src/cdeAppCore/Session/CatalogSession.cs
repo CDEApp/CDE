@@ -46,7 +46,12 @@ public sealed class CatalogSession : ICatalogSession
     {
         DisposeSources();
 
-        var cdex = _loadCatalogService.GetColumnarFiles(configPath);
+        // Dedup by full path: the loader scans both "." and configPath, which collapse to the same
+        // directory (and thus duplicate catalogs) when the host runs in its catalog directory.
+        var cdex = _loadCatalogService.GetColumnarFiles(configPath)
+            ?.Select(Path.GetFullPath)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
         if (cdex is { Count: > 0 })
         {
             _sources = ReadColumnar(cdex);

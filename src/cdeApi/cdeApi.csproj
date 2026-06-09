@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!--
+    Localhost-only HTTP/JSON + SSE shim over cdeAppCore, designed to run as a Tauri sidecar that
+    owns the catalog session. Binds to 127.0.0.1 on an ephemeral port and is gated by a startup
+    handshake token. References cdeAppCore only (no WinForms).
+  -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>disable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <RootNamespace>cdeApi</RootNamespace>
+    <!-- 6.6: publish as a self-contained single file (see README): dotnet publish -c Release
+         -r win-x64 with self-contained and PublishSingleFile enabled. -->
+    <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\cdeAppCore\cdeAppCore.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Serilog" Version="4.3.1" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Update="MinVer" Version="7.0.0" />
+  </ItemGroup>
+
+</Project>

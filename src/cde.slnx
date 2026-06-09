@@ -11,6 +11,7 @@
     <Build Project="false" />
   </Project>
   <Project Path="cde/cde.csproj" />
+  <Project Path="cdeApi/cdeApi.csproj" />
   <Project Path="cdeAppCore/cdeAppCore.csproj" />
   <Project Path="cdeAppCoreTest/cdeAppCoreTest.csproj" />
   <Project Path="cdeBenchmarks/cdeBenchmarks.csproj" />

@@ -37,14 +37,14 @@
 
 ## 6. Stand up the localhost API (cdeApi)
 
-- [ ] 6.1 Add `src/cdeApi` (ASP.NET / Kestrel minimal API); reference `cdeAppCore`; bind to `127.0.0.1` on an ephemeral port; add to `cde.slnx`.
-- [ ] 6.2 Implement startup-handshake token generation + middleware; reject requests without the token.
-- [ ] 6.3 Endpoints (D13): `GET /health`, `POST /session/reload` (streamed progress), `GET /catalogs`, `GET /entries/{ref}/children` (foldersOnly | skip/take/sort), `GET /entries/{ref}/path`. API process owns the session; single `ref` = catalog id + entry index.
-- [ ] 6.3a Shell action endpoint (`POST /shell`): accept an entry reference (not a path), resolve `FullPath` from the session, re-check `ExistsOnFileSystem`, then invoke `IShellActions` in the sidecar process.
-- [ ] 6.3b UI-state endpoints (`GET`/`PUT /ui-state`): persist to `%APPDATA%\cde\ui-state.json`; `GET` merges user overrides over core defaults; exclude window geometry.
-- [ ] 6.4 Implement `POST /search` (streamed) mapping `IAsyncEnumerable<SearchResultRow>` → `result`/`progress`/`done`; validate first (`400` + message); cancel on client disconnect.
-- [ ] 6.5 Verify with `curl` (token rejection, reload, children/path, streamed search + validation 400, cancel-on-disconnect, ui-state round-trip).
-- [ ] 6.6 Publish `cdeApi` as a self-contained single-file binary suitable for sidecar bundling.
+- [x] 6.1 Add `src/cdeApi` (ASP.NET / Kestrel minimal API); reference `cdeAppCore`; bind to `127.0.0.1` on an ephemeral port; add to `cde.slnx`.
+- [x] 6.2 Implement startup-handshake token generation + middleware; reject requests without the token.
+- [x] 6.3 Endpoints (D13): `GET /health`, `POST /session/reload` (streamed progress), `GET /catalogs`, `GET /entries/{ref}/children` (foldersOnly | skip/take/sort), `GET /entries/{ref}/path`. API process owns the session; single `ref` = catalog id + entry index.
+- [x] 6.3a Shell action endpoint (`POST /shell`): accept an entry reference (not a path), resolve `FullPath` from the session, re-check `ExistsOnFileSystem`, then invoke `IShellActions` in the sidecar process.
+- [x] 6.3b UI-state endpoints (`GET`/`PUT /ui-state`): persist to `%APPDATA%\cde\ui-state.json`; `GET` merges user overrides over core defaults; exclude window geometry.
+- [x] 6.4 Implement `POST /search` (streamed) mapping `IAsyncEnumerable<SearchResultRow>` → `result`/`progress`/`done`; validate first (`400` + message); cancel on client disconnect.
+- [x] 6.5 Verify with `curl` (token rejection, reload, children/path, streamed search + validation 400, cancel-on-disconnect, ui-state round-trip).
+- [x] 6.6 Publish `cdeApi` as a self-contained single-file binary suitable for sidecar bundling.
 
 ## 7. Tauri / React frontend
 
