@@ -9,7 +9,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using cdeAppCore;
+using cdeAppCore.Dtos;
 using cdeAppCore.Formatting;
+using cdeAppCore.Search;
+using cdeAppCore.Session;
+using cdeAppCore.Shell;
 using cdeAppCore.Sorting;
 using cdeAppCore.Validation;
 using cdeLib;
@@ -34,72 +38,23 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private readonly ICDEWinForm _clientForm;
 
-    // Catalogs are held as IEntrySource — either a zero-copy ColumnarCatalogReader over a memory-mapped
-    // .cdex file (preferred: the catalog data stays in the OS page cache, not the managed heap) or, when
-    // no .cdex exists, an in-memory EntryStore built from the loaded .cde tree. Each catalog root is
-    // exposed as an EntryRef so the existing ICommonEntry-based GUI works unchanged either way.
-    private List<ICommonEntry> _catalogRoots;
+    // The catalog session owns the loaded catalogs (zero-copy mmap .cdex readers or in-memory stores),
+    // their lifetime, and load/dispose. Roots are still exposed as ICommonEntry (EntryRef) so the
+    // existing WinForms virtual views and tree work unchanged in-process.
+    private readonly ICatalogSession _session;
+    private readonly ISearchService _searchService;
+    private readonly IShellActions _shellActions;
     private readonly IConfig _config;
-
-    private static List<ICommonEntry> ToCatalogRoots(List<RootEntry> trees)
-    {
-        var roots = new List<ICommonEntry>(trees?.Count ?? 0);
-        if (trees == null) return roots;
-        for (var i = 0; i < trees.Count; i++)
-        {
-            roots.Add(new EntryRef(EntryStore.Build(trees[i]), 0));
-            trees[i] = null; // release the tree so it can be collected
-        }
-        return roots;
-    }
-
-    // Open each .cdex as a zero-copy mmap reader. Unreadable files are skipped (logged by the caller).
-    private static List<ICommonEntry> ReadersToCatalogRoots(IList<string> cdexFiles)
-    {
-        var roots = new List<ICommonEntry>(cdexFiles.Count);
-        foreach (var file in cdexFiles)
-        {
-            try
-            {
-                roots.Add(new EntryRef(new ColumnarCatalogReader(file), 0));
-            }
-            catch (Exception ex)
-            {
-                Log.Logger.Warning(ex, "Skipping unreadable .cdex {File}", file);
-            }
-        }
-        return roots;
-    }
 
     private static IEntrySource SourceOf(ICommonEntry root) => ((EntryRef)root).Source;
 
     // Catalog of a search-result pair (its entries are EntryRefs into a source).
     private static IEntrySource SourceOfPair(PairDirEntry pde) => (pde.ChildDE as EntryRef)?.Source;
 
-    // Prefer the zero-copy .cdex catalogs (mmap, near-zero managed heap); fall back to loading the
-    // .cde trees and building in-memory stores when no .cdex exists. Disposes any previously held
-    // mmap sources first so reloads don't leak mappings.
-    private async Task<List<ICommonEntry>> LoadCatalogRootsAsync()
-    {
-        DisposeCatalogSources();
-        var cdex = _loadCatalogService.GetColumnarFiles(_config.ConfigPath);
-        if (cdex is { Count: > 0 })
-        {
-            return ReadersToCatalogRoots(cdex);
-        }
-        return ToCatalogRoots(await _loadCatalogService.LoadRootEntriesAsync(
-            _config.ConfigPath, OnLoadProgress, _loadingCts.Token));
-    }
-
-    // Memory-mapped catalog sources must be released on reload/exit so the mappings are closed.
-    private void DisposeCatalogSources()
-    {
-        if (_catalogRoots == null) return;
-        foreach (var root in _catalogRoots)
-        {
-            if (root is EntryRef { Source: IDisposable disposable }) disposable.Dispose();
-        }
-    }
+    private static IShellActions CreateDefaultShellActions()
+        => OperatingSystem.IsWindows()
+            ? new WindowsShellActions([], Log.Logger)
+            : new NoopShellActions([], Log.Logger);
 
     private readonly string[] _directoryVals;
     private readonly string[] _searchVals;
@@ -117,9 +72,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     /// </summary>
     private ICommonEntry _directoryListCommonEntry;
 
-    private BackgroundWorker _bgWorker;
+    private CancellationTokenSource _searchCts;
     private bool _isSearchButton;
-    private readonly ILoadCatalogService _loadCatalogService;
     private CancellationTokenSource _loadingCts;
     private bool _isLoadingCatalogs;
 
@@ -137,14 +91,16 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public CDEWinFormPresenter(
         ICDEWinForm form,
         IConfig config,
-        ILoadCatalogService loadCatalogService = null)
+        ILoadCatalogService loadCatalogService = null,
+        IShellActions shellActions = null)
         : base(form)
     {
         _clientForm = form;
         _config = config;
-        _loadCatalogService = loadCatalogService;
+        _session = new CatalogSession(loadCatalogService, Log.Logger);
+        _searchService = new SearchService(_session);
+        _shellActions = shellActions ?? CreateDefaultShellActions();
         _formatter = new EntryFormatter(_config.DateFormatYMDHMS);
-        _catalogRoots = new List<ICommonEntry>();
 
         _searchVals = new string[_config.DefaultSearchResultColumnCount];
         _directoryVals = new string[_config.DefaultDirectoryColumnCount];
@@ -175,7 +131,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         try
         {
-            _catalogRoots = await LoadCatalogRootsAsync();
+            await _session.LoadAsync(_config.ConfigPath,
+                new CallbackProgress<CatalogLoadProgress>(p => OnLoadProgress(p.Current, p.Total, p.Message)),
+                _loadingCts.Token);
 
             SetCatalogListView();
             SetMemoryStatus();
@@ -264,11 +222,10 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     private void SetCatalogListView()
     {
         var catalogHelper = _clientForm.CatalogListViewHelper;
-        var count = catalogHelper.SetList(_catalogRoots);
+        var count = catalogHelper.SetList(_session.Roots.ToList());
         catalogHelper.SortList();
         _clientForm.SetCatalogsLoadedStatus(count);
-        _clientForm.SetTotalFileEntriesLoadedStatus(
-            (int)_catalogRoots.Sum(r => (long)SourceOf(r).RootFileEntryCount + SourceOf(r).RootDirEntryCount));
+        _clientForm.SetTotalFileEntriesLoadedStatus((int)_session.TotalEntryCount);
     }
 
     private static double BytesToMb(long bytes) => bytes / (1024.0 * 1024.0);
@@ -412,21 +369,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         return listViewForeColor;
     }
 
-    public class BgWorkerParam
-    {
-        public FindOptions Options;
-        public IList<ICommonEntry> RootEntries;
-        public BgWorkerState State;
-    }
-
-    public class BgWorkerState
-    {
-        public int ListCount;
-        public List<PairDirEntry> List;
-        public int Counter;
-        public int End;
-    }
-
     public void Search()
     {
         if (!_isSearchButton)
@@ -449,47 +391,87 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
         _clientForm.AddSearchTextBoxAutoComplete(_clientForm.Pattern);
 
-        var optimisedPattern = OptimiseRegexPattern(_clientForm.Pattern);
+        _ = RunSearchAsync(BuildSearchQuery());
+    }
 
-        _bgWorker = new BackgroundWorker { WorkerReportsProgress = true, WorkerSupportsCancellation = true };
-        _bgWorker.DoWork +=BgWorkerDoWork;
-        _bgWorker.RunWorkerCompleted += BgWorkerRunWorkerCompleted;
-        _bgWorker.ProgressChanged += BgWorkerProgressChanged;
+    private SearchQuery BuildSearchQuery() => new()
+    {
+        LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
+        Pattern = OptimiseRegexPattern(_clientForm.Pattern),
+        RegexMode = _clientForm.RegexMode,
+        IncludePath = _clientForm.IncludePathInSearch,
+        IncludeFiles = _clientForm.IncludeFiles,
+        IncludeFolders = _clientForm.IncludeFolders,
+        FromSizeEnable = _clientForm.FromSize.Checked, FromSize = FromSizeValue(),
+        ToSizeEnable = _clientForm.ToSize.Checked, ToSize = ToSizeValue(),
+        FromDateEnable = _clientForm.FromDate.Checked, FromDate = _clientForm.FromDateValue.Date,
+        ToDateEnable = _clientForm.ToDate.Checked, ToDate = _clientForm.ToDateValue.Date,
+        FromHourEnable = _clientForm.FromHour.Checked, FromHour = _clientForm.FromHourValue.TimeOfDay,
+        ToHourEnable = _clientForm.ToHour.Checked, ToHour = _clientForm.ToHourValue.TimeOfDay,
+        NotOlderThanEnable = _clientForm.NotOlderThan.Checked, NotOlderThan = NotOlderThanValue()
+    };
 
-        var findOptions = new FindOptions
+    // Stream results from the shared search service, mapping each SearchResultRow back to a
+    // PairDirEntry so the existing virtual result view / sort / context menus work unchanged. Live
+    // updates and progress are throttled to ~100ms; cancellation is cooperative via the token.
+    private async Task RunSearchAsync(SearchQuery query)
+    {
+        _searchCts = new CancellationTokenSource();
+        var token = _searchCts.Token;
+
+        var results = new List<PairDirEntry>(500);
+        var timer = Stopwatch.StartNew();
+        var lastRefresh = Stopwatch.GetTimestamp();
+        var refreshTicks = Stopwatch.Frequency / 10; // ~100ms live updates
+
+        // Progress<T> marshals the callback back to the UI thread (context captured at construction).
+        var progress = new Progress<SearchProgress>(p =>
+            _clientForm.SetSearchTimeStatus("% " + (p.Total > 0 ? (int)(100.0 * p.Count / p.Total) : 0)));
+
+        try
         {
-            LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
-            Pattern = optimisedPattern,
-            RegexMode = _clientForm.RegexMode,
-            IncludePath = _clientForm.IncludePathInSearch,
-            IncludeFiles = _clientForm.IncludeFiles,
-            IncludeFolders = _clientForm.IncludeFolders,
-            // This many file system entries before progress
-            // for slow regex like example .*moooxxxx.* - 5000 is fairly long on i7.
-            ProgressModifier = 50000,
-            FromSizeEnable = _clientForm.FromSize.Checked,
-            FromSize = FromSizeValue(),
-            ToSizeEnable = _clientForm.ToSize.Checked,
-            ToSize = ToSizeValue(),
-            FromDateEnable = _clientForm.FromDate.Checked,
-            FromDate = _clientForm.FromDateValue.Date,
-            ToDateEnable = _clientForm.ToDate.Checked,
-            ToDate = _clientForm.ToDateValue.Date,
-            FromHourEnable = _clientForm.FromHour.Checked,
-            FromHour = _clientForm.FromHourValue.TimeOfDay,
-            ToHourEnable = _clientForm.ToHour.Checked,
-            ToHour = _clientForm.ToHourValue.TimeOfDay,
-            NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
-            NotOlderThan = NotOlderThanValue()
-        };
+            await foreach (var row in _searchService.SearchAsync(query, progress, token))
+            {
+                results.Add(ToPairDirEntry(row));
 
-        var param = new BgWorkerParam
+                var now = Stopwatch.GetTimestamp();
+                if (now - lastRefresh >= refreshTicks)
+                {
+                    lastRefresh = now;
+                    _clientForm.SetSearchResultStatus(SetSearchResultList(results));
+                }
+            }
+        }
+        catch (OperationCanceledException)
         {
-            Options = findOptions,
-            RootEntries = _catalogRoots,
-            State = new BgWorkerState()
-        };
-        _bgWorker.RunWorkerAsync(param);
+            // Cancelled by the user — keep whatever was found so far.
+        }
+        catch (Exception ex)
+        {
+            _clientForm.MessageBox(ex.Message);
+        }
+        finally
+        {
+            timer.Stop();
+            Log.Logger.Information(
+                "Search execution time: {ExecutionTime} ms, Total found {TotalFound}",
+                timer.ElapsedMilliseconds, results.Count);
+
+            _clientForm.SetSearchResultStatus(SetSearchResultList(results));
+            _clientForm.SearchResultListViewHelper.SortList();
+            SetSearchButton(true);
+            _searchCts?.Dispose();
+            _searchCts = null;
+        }
+    }
+
+    private PairDirEntry ToPairDirEntry(SearchResultRow row)
+    {
+        var source = _session.GetSource(row.Ref.CatalogId);
+        var childIndex = row.Ref.EntryIndex;
+        return new PairDirEntry(
+            new EntryRef(source, source.ParentOf(childIndex)),
+            new EntryRef(source, childIndex));
     }
 
     // Validate the search filters via the frontend-agnostic core validator; show the first failure
@@ -562,126 +544,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             : span[start..end].ToString();
     }
 
-    private void BgWorkerDoWork(object sender, DoWorkEventArgs e)
-    {
-        var worker = (BackgroundWorker)sender;
-        var argument = (BgWorkerParam)e.Argument;
-        var findOptions = argument.Options;
-        var catalogRoots = argument.RootEntries;
-        var state = argument.State;
-
-        // Translate the GUI FindOptions into the SoA search options and run over the EntryStores.
-        var opts = new EntryStoreFindOptions
-        {
-            Pattern = findOptions.Pattern,
-            RegexMode = findOptions.RegexMode,
-            IncludePath = findOptions.IncludePath,
-            IncludeFiles = findOptions.IncludeFiles,
-            IncludeFolders = findOptions.IncludeFolders,
-            FromSizeEnable = findOptions.FromSizeEnable, FromSize = findOptions.FromSize,
-            ToSizeEnable = findOptions.ToSizeEnable, ToSize = findOptions.ToSize,
-            FromDateEnable = findOptions.FromDateEnable, FromDate = findOptions.FromDate,
-            ToDateEnable = findOptions.ToDateEnable, ToDate = findOptions.ToDate,
-            FromHourEnable = findOptions.FromHourEnable, FromHour = findOptions.FromHour,
-            ToHourEnable = findOptions.ToHourEnable, ToHour = findOptions.ToHour,
-            NotOlderThanEnable = findOptions.NotOlderThanEnable, NotOlderThan = findOptions.NotOlderThan,
-        };
-        var limit = findOptions.LimitResultCount;
-
-        var sources = catalogRoots.Select(SourceOf).ToList();
-        var grandTotal = sources.Sum(s => s.Count);
-        var scannedBase = 0;
-
-        var list = new List<PairDirEntry>(500);
-        state.ListCount = 0;
-        state.List = list;
-        state.End = grandTotal;
-        worker.ReportProgress(0, state);
-
-        var lastReport = Stopwatch.GetTimestamp();
-        var reportTicks = Stopwatch.Frequency / 10; // ~100ms streaming
-
-        var timer = Stopwatch.StartNew();
-        foreach (var source in sources)
-        {
-            if (worker.CancellationPending || list.Count >= limit) break;
-            var baseScanned = scannedBase;
-            source.Find(opts,
-                onMatch: idx =>
-                {
-                    list.Add(new PairDirEntry(new EntryRef(source, source.ParentOf(idx)), new EntryRef(source, idx)));
-                },
-                isCancelled: () => worker.CancellationPending || list.Count >= limit,
-                onScan: scanned => Report(baseScanned + scanned));
-            scannedBase += source.Count;
-        }
-        timer.Stop();
-        Log.Logger.Information(
-            "Search execution time: {ExecutionTime} ms, Total found {TotalFound}",
-            timer.ElapsedMilliseconds, list.Count);
-        state.ListCount = list.Count;
-        state.List = list;
-        state.Counter = grandTotal;
-        worker.ReportProgress(100, state);
-        e.Result = list;
-        return;
-
-        void Report(int scanned)
-        {
-            var now = Stopwatch.GetTimestamp();
-            if (now - lastReport < reportTicks) return;
-            lastReport = now;
-            state.ListCount = list.Count;
-            state.List = new List<PairDirEntry>(list); // immutable snapshot for the UI thread
-            state.Counter = scanned;
-            worker.ReportProgress(grandTotal > 0 ? (int)(100.0 * scanned / grandTotal) : 0, state);
-        }
-    }
-
-    private void BgWorkerRunWorkerCompleted(object sender, RunWorkerCompletedEventArgs e)
-    {
-        var searchHelper = _clientForm.SearchResultListViewHelper;
-        int count;
-
-        if (e == null)
-        {
-            count = 0;
-        }
-        else
-        {
-            if (e.Error != null)
-            {
-                _clientForm.MessageBox(e.Error.Message);
-                count = 0;
-            }
-            else if (e.Cancelled)
-            {
-                count = searchHelper.SetList(_searchResultList);
-            }
-            else
-            {
-                var resultList = (List<PairDirEntry>)e.Result;
-                count = SetSearchResultList(resultList);
-            }
-        }
-
-        _clientForm.SetSearchResultStatus(count);
-        searchHelper.SortList();
-        SetSearchButton(true);
-        _bgWorker.Dispose();
-        _bgWorker = null;
-    }
-
-    private void BgWorkerProgressChanged(object sender, ProgressChangedEventArgs e)
-    {
-        var state = (BgWorkerState)e.UserState;
-        var p = e.ProgressPercentage;
-        _clientForm.SetSearchTimeStatus("% " + p);
-
-        var count = SetSearchResultList(state.List);
-        _clientForm.SetSearchResultStatus(count);
-    }
-
     protected int SetSearchResultList(List<PairDirEntry> list)
     {
         _searchResultList = list;
@@ -690,7 +552,14 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private void CancelSearch()
     {
-        _bgWorker?.CancelAsync();
+        _searchCts?.Cancel();
+    }
+
+    // Minimal IProgress<T> that invokes the callback synchronously on the reporting thread. The load
+    // path's OnLoadProgress already marshals to the UI thread itself, preserving prior behaviour.
+    private sealed class CallbackProgress<T>(Action<T> onReport) : IProgress<T>
+    {
+        public void Report(T value) => onReport(value);
     }
 
     public void SearchResultRetrieveVirtualItem()
@@ -760,7 +629,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         CancelLoading();
         _config.RecordConfig(_clientForm);
-        DisposeCatalogSources(); // close any memory-mapped .cdex catalogs
+        _session.Dispose(); // close any memory-mapped .cdex catalogs
         _clientForm.CleanUp();
     }
 
@@ -932,13 +801,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public void DirectoryTreeContextMenuOpenClick()
     {
-        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => WindowsExplorerUtilities.ExplorerOpen(ce.FullPath));
+        DirectoryTreeGetContextMenuPairDirEntryThatExists(ce => _shellActions.Open(ce.FullPath));
     }
 
     public void DirectoryTreeContextMenuExploreClick()
     {
         DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-            WindowsExplorerUtilities.ExplorerExplore(ce.FullPath));
+            _shellActions.Explore(ce.FullPath));
     }
 
     public void DirectoryTreeContextMenuCustomCommand()
@@ -946,13 +815,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var cmd = _clientForm.ActiveCustomCommand;
         if (cmd == null) return;
         DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, ce.FullPath));
+            _shellActions.RunCustomCommand(cmd, ce.FullPath));
     }
 
     public void DirectoryTreeContextMenuPropertiesClick()
     {
         DirectoryTreeGetContextMenuPairDirEntryThatExists(ce =>
-            WindowsExplorerUtilities.ShowFileProperties(ce.FullPath));
+            _shellActions.ShowProperties(ce.FullPath));
     }
 
     private void DirectoryGetContextMenuPairDirEntryThatExists(Action<PairDirEntry> gotContextAction)
@@ -1003,19 +872,19 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     public void DirectoryContextMenuOpenClick()
     {
-        DirectoryGetContextMenuPairDirEntryThatExists(pde => WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+        DirectoryGetContextMenuPairDirEntryThatExists(pde => _shellActions.Open(pde.FullPath));
     }
 
     public void DirectoryContextMenuExploreClick()
     {
         DirectoryGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+            _shellActions.Explore(pde.FullPath));
     }
 
     public void DirectoryContextMenuPropertiesClick()
     {
         DirectoryGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+            _shellActions.ShowProperties(pde.FullPath));
     }
 
     public void DirectoryContextMenuCustomCommand()
@@ -1023,7 +892,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var cmd = _clientForm.ActiveCustomCommand;
         if (cmd == null) return;
         DirectoryGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, pde.FullPath));
+            _shellActions.RunCustomCommand(cmd, pde.FullPath));
     }
 
     public void DirectoryContextMenuSelectAllClick()
@@ -1081,13 +950,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     public void SearchResultContextMenuOpenClick()
     {
         SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ExplorerOpen(pde.FullPath));
+            _shellActions.Open(pde.FullPath));
     }
 
     public void SearchResultContextMenuExploreClick()
     {
         SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ExplorerExplore(pde.FullPath));
+            _shellActions.Explore(pde.FullPath));
     }
 
     public void SearchResultContextMenuCustomCommand()
@@ -1095,13 +964,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         var cmd = _clientForm.ActiveCustomCommand;
         if (cmd == null) return;
         SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.RunCustomCommand(cmd.Command, cmd.Arguments, pde.FullPath));
+            _shellActions.RunCustomCommand(cmd, pde.FullPath));
     }
 
     public void SearchResultContextMenuPropertiesClick()
     {
         SearchResultGetContextMenuPairDirEntryThatExists(pde =>
-            WindowsExplorerUtilities.ShowFileProperties(pde.FullPath));
+            _shellActions.ShowProperties(pde.FullPath));
     }
 
     public void SearchResultContextMenuSelectAllClick()
@@ -1172,9 +1041,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             var directoryListHelper = _clientForm.DirectoryListViewHelper;
             directoryListHelper.SetList(null);
 
-            // Drop the previous stores; releasing the references lets the GC reclaim them.
-            _catalogRoots = new List<ICommonEntry>();
-
             _clientForm.AddLine(string.Empty);
             _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
 
@@ -1191,11 +1057,13 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             _clientForm.SetLoadingProgressValue(0);
             SetMemoryStatus();
 
-            _catalogRoots = await LoadCatalogRootsAsync();
+            await _session.LoadAsync(_config.ConfigPath,
+                new CallbackProgress<CatalogLoadProgress>(p => OnLoadProgress(p.Current, p.Total, p.Message)),
+                _loadingCts.Token);
 
-            if (_catalogRoots.Count > 0)
+            if (_session.Roots.Count > 0)
             {
-                SetNewDirectoryRoot(_catalogRoots.First());
+                SetNewDirectoryRoot(_session.Roots[0]);
             }
 
             SetCatalogListView();

@@ -30,10 +30,10 @@
 
 ## 5. Rewire cdeWin onto the service boundary
 
-- [ ] 5.1 Replace the presenter's implicit catalog field with `ICatalogSession`; map `DirectoryNodeDto` → `TreeNode`.
-- [ ] 5.2 Replace the `BackgroundWorker` search with `await foreach` over `ISearchService`; map `SearchResultRow` → `ListViewItem`; wire cancel + progress.
-- [ ] 5.3 Route the four OS shell context actions through `IShellActions`; keep copy-path (`Clipboard`), select-all, view-in-tree, and parent as native WinForms handlers.
-- [ ] 5.4 Full regression pass of `cdeWin` (tree, dir list, advanced search, context menus, catalog list, status bar); run `cdeWinTest`.
+- [x] 5.1 Replace the presenter's implicit catalog field with `ICatalogSession`; map `DirectoryNodeDto` → `TreeNode`.
+- [x] 5.2 Replace the `BackgroundWorker` search with `await foreach` over `ISearchService`; map `SearchResultRow` → `ListViewItem`; wire cancel + progress.
+- [x] 5.3 Route the four OS shell context actions through `IShellActions`; keep copy-path (`Clipboard`), select-all, view-in-tree, and parent as native WinForms handlers.
+- [x] 5.4 Full regression pass of `cdeWin` (tree, dir list, advanced search, context menus, catalog list, status bar); run `cdeWinTest`.
 
 ## 6. Stand up the localhost API (cdeApi)
 
