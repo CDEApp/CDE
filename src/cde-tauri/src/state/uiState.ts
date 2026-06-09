@@ -8,6 +8,7 @@ export interface UiState {
   regexMode?: boolean;
   limitResultCount?: number;
   lastView?: string;
+  catalogDir?: string;
   [key: string]: unknown;
 }
 

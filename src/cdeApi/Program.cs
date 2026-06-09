@@ -178,8 +178,13 @@ app.MapPut("/ui-state", async (HttpContext ctx, UiStateStore store) =>
 });
 
 // POST /session/reload — reload catalogs, streaming load progress over SSE then a final `done`.
+// Optional ?path=<dir> loads .cdex catalogs from that folder (and one level down); otherwise the
+// configured default path is used.
 app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) =>
 {
+    var requested = ctx.Request.Query["path"].FirstOrDefault();
+    var loadPath = string.IsNullOrWhiteSpace(requested) ? configPath : requested;
+
     var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
 
@@ -189,7 +194,7 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
 
     var work = Task.Run(async () =>
     {
-        try { await session.LoadAsync(configPath, progress, ct); }
+        try { await session.LoadAsync(loadPath, progress, ct); }
         finally
         {
             channel.Writer.TryWrite(("done",

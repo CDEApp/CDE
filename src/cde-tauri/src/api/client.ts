@@ -100,10 +100,16 @@ export class CdeApiClient {
     });
   }
 
-  /** Reload catalogs, streaming load progress then a final done event. */
-  async reload(handlers: ReloadHandlers): Promise<void> {
+  /**
+   * Reload catalogs, streaming load progress then a final done event. When `path` is given, the
+   * sidecar loads .cdex catalogs from that folder (and one level down) instead of its default.
+   */
+  async reload(handlers: ReloadHandlers, path?: string): Promise<void> {
+    const url = path
+      ? `${this.baseUrl}/session/reload?path=${encodeURIComponent(path)}`
+      : `${this.baseUrl}/session/reload`;
     await this.streamSse(
-      `${this.baseUrl}/session/reload`,
+      url,
       { method: "POST", headers: this.headers(), signal: handlers.signal },
       (event, data) => {
         if (event === "progress") handlers.onProgress?.(JSON.parse(data));

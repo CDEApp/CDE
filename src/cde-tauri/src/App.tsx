@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { open } from "@tauri-apps/plugin-dialog";
 import { CdeApiClient } from "./api/client";
 import {
   CatalogInfo,
@@ -19,6 +20,7 @@ import { ResultsList } from "./components/ResultsList";
 import { CatalogList } from "./components/CatalogList";
 import { SearchBar } from "./components/SearchBar";
 import { StatusBar } from "./components/StatusBar";
+import { MenuBar } from "./components/MenuBar";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 
 type View = "directory" | "results" | "catalogs";
@@ -45,6 +47,7 @@ export default function App() {
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");
   const [menu, setMenu] = useState<MenuState | null>(null);
+  const [catalogDir, setCatalogDir] = useState<string | null>(null);
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -61,8 +64,14 @@ export default function App() {
         clientRef.current = client;
         uiRef.current = new UiStateManager(client);
 
-        await uiRef.current.load();
+        const ui = await uiRef.current.load();
         setCommands(await client.shellCommands());
+        // Re-open the last-used catalog folder, if any.
+        const savedDir = typeof ui.catalogDir === "string" ? ui.catalogDir : undefined;
+        if (savedDir) {
+          setCatalogDir(savedDir);
+          await client.reload({}, savedDir);
+        }
         await refreshCatalogs(client);
         setReady(true);
         setStatus("");
@@ -111,6 +120,31 @@ export default function App() {
       })),
     );
   }, []);
+
+  const reloadCatalogs = useCallback(
+    async (dir?: string | null) => {
+      const client = clientRef.current!;
+      setStatus("Loading catalogs…");
+      try {
+        await client.reload({}, dir ?? undefined);
+        await refreshCatalogs(client);
+        setStatus("");
+      } catch (e) {
+        setStatus(`Reload failed: ${(e as Error).message}`);
+      }
+    },
+    [refreshCatalogs],
+  );
+
+  // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
+  const openFolder = useCallback(async () => {
+    const picked = await open({ directory: true, multiple: false, title: "Select catalog folder" });
+    if (typeof picked !== "string") return; // cancelled
+    setCatalogDir(picked);
+    uiRef.current?.update({ catalogDir: picked });
+    await reloadCatalogs(picked);
+    setView("catalogs");
+  }, [reloadCatalogs]);
 
   // Update the directory selection + listing. Deliberately does NOT change `view`: the view is
   // switched synchronously by whichever handler initiated the navigation, so a late-resolving
@@ -242,6 +276,8 @@ export default function App() {
 
   return (
     <div className="app">
+      <MenuBar onOpenFolder={openFolder} onReload={() => void reloadCatalogs(catalogDir)} />
+
       <SearchBar
         busy={busy}
         history={(uiRef.current?.get().searchHistory as string[]) ?? []}
@@ -260,15 +296,7 @@ export default function App() {
         <button className={view === "catalogs" ? "active" : ""} onClick={() => setView("catalogs")}>
           Catalogs
         </button>
-        <button
-          className="reload"
-          onClick={async () => {
-            setStatus("Reloading…");
-            await clientRef.current!.reload({});
-            await refreshCatalogs(clientRef.current!);
-            setStatus("");
-          }}
-        >
+        <button className="reload" onClick={() => void reloadCatalogs(catalogDir)}>
           Reload
         </button>
       </div>
