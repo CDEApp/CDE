@@ -112,18 +112,17 @@ export default function App() {
     );
   }, []);
 
-  // --- tree selection -> directory listing ---
+  // Update the directory selection + listing. Deliberately does NOT change `view`: the view is
+  // switched synchronously by whichever handler initiated the navigation, so a late-resolving
+  // listing fetch here can never clobber a newer tab click.
   const selectNode = useCallback(async (ref: EntryRef, fullPath: string) => {
     const client = clientRef.current!;
-    // Switch view synchronously so a later tab click isn't clobbered when the async
-    // children fetch below resolves; the listing fills in once it arrives.
     setSelectedKey(refToString(ref));
     setDirPath(fullPath);
-    setView("directory");
     setDirNodes(await client.children(ref, { sort: "name" }));
   }, []);
 
-  // drill into a directory row
+  // drill into a directory row (already in the directory view)
   const activateDir = useCallback(
     async (node: DirectoryNode) => {
       if (!node.isDirectory) return;
@@ -136,6 +135,7 @@ export default function App() {
   // view a search result in the directory tree (expand to its parent)
   const viewInTree = useCallback(
     async (ref: EntryRef) => {
+      setView("directory"); // synchronous: this is the user's navigation intent
       const client = clientRef.current!;
       const chain = await client.path(ref);
       const refs = chain.map((n) => n.ref);
@@ -315,9 +315,10 @@ export default function App() {
         {view === "catalogs" && (
           <CatalogList
             catalogs={catalogs?.catalogs ?? []}
-            onActivate={(c: CatalogInfo) =>
-              void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath)
-            }
+            onActivate={(c: CatalogInfo) => {
+              setView("directory"); // synchronous navigation intent before the async listing load
+              void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
+            }}
           />
         )}
       </div>
