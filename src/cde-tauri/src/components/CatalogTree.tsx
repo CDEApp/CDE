@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 
@@ -23,6 +23,14 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
+
+  // Scroll the selected node into view when it becomes selected (e.g. via view-in-tree), so the
+  // highlighted entry is always visible. `nearest` is a no-op when it is already on screen.
+  const isSelected = selectedKey === key;
+  const rowRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (isSelected) rowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [isSelected]);
 
   async function ensureChildren() {
     if (children == null) {
@@ -59,7 +67,8 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
   return (
     <li>
       <div
-        className={`tree-row${selectedKey === key ? " selected" : ""}`}
+        ref={rowRef}
+        className={`tree-row${isSelected ? " selected" : ""}`}
         onClick={() => onSelect(nodeRef, fullPath)}
       >
         <span
