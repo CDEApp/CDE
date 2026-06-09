@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 
@@ -35,21 +35,26 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
     setExpanded((e) => !e);
   }
 
-  // Auto-expand along a requested path (view-in-tree / go-to-parent).
+  // Auto-expand along a requested path (view-in-tree / go-to-parent). Expansion ONLY — the
+  // selection is set by the initiating handler (selectNode) and shown via selectedKey. Calling
+  // onSelect here previously fought the user's clicks and reset the selection.
   useEffect(() => {
     if (!expandTo || expandTo.length === 0) return;
-    const [head, ...rest] = expandTo;
-    if (head.catalogId === nodeRef.catalogId && head.entryIndex === nodeRef.entryIndex) {
+    if (expandTo[0].catalogId === nodeRef.catalogId && expandTo[0].entryIndex === nodeRef.entryIndex) {
       void ensureChildren().then(() => setExpanded(true));
-      if (rest.length === 0) onSelect(nodeRef, fullPath);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [expandTo]);
 
-  const childExpandTo =
-    expandTo && expandTo.length > 1 && expandTo[0].entryIndex === nodeRef.entryIndex
-      ? expandTo.slice(1)
-      : undefined;
+  // Memoised so children don't receive a brand-new array every render (which would otherwise
+  // re-fire their [expandTo] effect on each parent re-render).
+  const childExpandTo = useMemo(
+    () =>
+      expandTo && expandTo.length > 1 && expandTo[0].entryIndex === nodeRef.entryIndex
+        ? expandTo.slice(1)
+        : undefined,
+    [expandTo, nodeRef.entryIndex],
+  );
 
   return (
     <li>
