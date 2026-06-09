@@ -31,10 +31,12 @@ builder.Configuration.AddJsonFile(shellJson, optional: true, reloadOnChange: fal
 // Loopback only, ephemeral port. The real port is reported on stdout after start (handshake).
 builder.WebHost.UseUrls("http://127.0.0.1:0");
 
-// --- logging ---
+// --- logging --- all logs go to stderr so stdout carries only the handshake line for the sidecar
+// host. Clear ASP.NET's default stdout console provider for the same reason.
+builder.Logging.ClearProviders();
 ILogger logger = new LoggerConfiguration()
     .MinimumLevel.Information()
-    .WriteTo.Console()
+    .WriteTo.Console(standardErrorFromLevel: Serilog.Events.LogEventLevel.Verbose)
     .CreateLogger();
 Log.Logger = logger;
 
@@ -137,6 +139,10 @@ app.MapPost("/shell", (ShellRequest req, ICatalogSession session, IShellActions 
 
     return Results.Ok();
 });
+
+// The configured custom commands a frontend renders as menu items; /shell runs one by its id (D10).
+app.MapGet("/shell/commands", (IShellActions shell) =>
+    Results.Json(shell.CustomCommands.Select((c, i) => new { id = i, label = c.Label }).ToList()));
 
 app.MapGet("/ui-state", (UiStateStore store) => Results.Content(store.GetMergedJson(), "application/json"));
 

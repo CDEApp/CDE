@@ -48,14 +48,14 @@
 
 ## 7. Tauri / React frontend
 
-- [ ] 7.1 Scaffold `src/cde-tauri` (Tauri + React/TypeScript); configure `cdeApi` as a bundled sidecar.
-- [ ] 7.2 Spawn the sidecar on launch (capture port + token), terminate on exit; pass token to the webview.
-- [ ] 7.3 Build an API client (HTTP + SSE) with the handshake token; load UI state from `GET /ui-state` on startup and persist via `PUT /ui-state` (debounced + flush on close). Use the Tauri window-state plugin for window geometry.
-- [ ] 7.4 UI: catalog tree pane + directory listing.
-- [ ] 7.5 UI: search box + advanced filters; live streaming results with progress and cancel.
-- [ ] 7.6 UI: catalog list + status bar (results, entries loaded, catalogs loaded, memory, timing).
-- [ ] 7.7 UI: context-menu actions — open/explore/properties and any configured custom commands (by id) via the sidecar shell endpoint (hidden/disabled for non-local entries); copy-path/select-all/view-in-tree/parent implemented frontend-natively.
-- [ ] 7.8 Parity pass: same queries produce the same results as `cdeWin`; resolve the open questions in design.md (shell-action location, frontend state persistence, endpoint set).
+- [x] 7.1 Scaffold `src/cde-tauri` (Tauri + React/TypeScript); configure `cdeApi` as a bundled sidecar.
+- [x] 7.2 Spawn the sidecar on launch (capture port + token), terminate on exit; pass token to the webview.
+- [x] 7.3 Build an API client (HTTP + SSE) with the handshake token; load UI state from `GET /ui-state` on startup and persist via `PUT /ui-state` (debounced + flush on close). Use the Tauri window-state plugin for window geometry.
+- [x] 7.4 UI: catalog tree pane + directory listing.
+- [x] 7.5 UI: search box + advanced filters; live streaming results with progress and cancel.
+- [x] 7.6 UI: catalog list + status bar (results, entries loaded, catalogs loaded, memory, timing).
+- [x] 7.7 UI: context-menu actions — open/explore/properties and any configured custom commands (by id) via the sidecar shell endpoint (hidden/disabled for non-local entries); copy-path/select-all/view-in-tree/parent implemented frontend-natively.
+- [ ] 7.8 Parity pass: same queries produce the same results as `cdeWin`; resolve the open questions in design.md (shell-action location, frontend state persistence, endpoint set). _(Data parity is structurally guaranteed — both frontends call the same `ICatalogSession`/`ISearchService`, and the API responses are curl-verified against a fixture catalog. The remaining visual GUI parity run requires a desktop session with `npm run tauri dev`.)_
 
 ## 8. Wrap-up
 

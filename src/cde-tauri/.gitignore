@@ -1,0 +1,10 @@
+node_modules/
+dist/
+icon-src.png
+
+# Rust / Tauri build output
+src-tauri/target/
+src-tauri/gen/
+
+# Staged sidecar binary (large, self-contained; produced by `npm run bundle-sidecar`)
+src-tauri/binaries/
