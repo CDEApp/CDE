@@ -55,10 +55,10 @@
 - [x] 7.5 UI: search box + advanced filters; live streaming results with progress and cancel.
 - [x] 7.6 UI: catalog list + status bar (results, entries loaded, catalogs loaded, memory, timing).
 - [x] 7.7 UI: context-menu actions — open/explore/properties and any configured custom commands (by id) via the sidecar shell endpoint (hidden/disabled for non-local entries); copy-path/select-all/view-in-tree/parent implemented frontend-natively.
-- [ ] 7.8 Parity pass: same queries produce the same results as `cdeWin`; resolve the open questions in design.md (shell-action location, frontend state persistence, endpoint set). _(Data parity is structurally guaranteed — both frontends call the same `ICatalogSession`/`ISearchService`, and the API responses are curl-verified against a fixture catalog. The remaining visual GUI parity run requires a desktop session with `npm run tauri dev`.)_
+- [x] 7.8 Parity pass: same queries produce the same results as `cdeWin`; resolve the open questions in design.md (shell-action location, frontend state persistence, endpoint set). _(GUI run validated on the desktop; parity-pass fixes: sidecar spawn scope, CORS, view-revert races, window close, context menu, tree-selection reset, scroll-into-view. Plus UX additions: File ▸ Open Folder, results virtualization, resizable panes, human-readable size filters.)_
 
 ## 8. Wrap-up
 
 - [x] 8.1 Update `CLAUDE.md` and `README` with the new project layout (`cdeAppCore`, `cdeApi`, `cde-tauri`) and the two-frontend architecture.
 - [x] 8.2 Build automation (Fallout) updated to build/publish the new projects; CI covers `cdeAppCore`/`cdeApi` tests. _(Solution `Compile`/`Test` already build+test `cdeAppCore`/`cdeAppCoreTest`; added a self-contained single-file `cdeApi` publish to the `Publish`/`PublishRelease` targets and a `Test` step to the CI workflow. The `cde-tauri` frontend builds via npm/cargo — see its README — not the .NET build.)_
-- [ ] 8.3 `openspec validate extract-frontend-core` passes; archive the change once implemented. _(`openspec validate` passes. Archive deferred until 7.8 — the visual GUI parity run on a desktop — is confirmed.)_
+- [x] 8.3 `openspec validate extract-frontend-core` passes; archive the change once implemented.
