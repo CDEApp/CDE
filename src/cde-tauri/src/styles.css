@@ -39,6 +39,7 @@ button { background: var(--accent); color: #fff; border: none; padding: 4px 10px
 button.cancel { background: #a1260d; }
 button.link { background: none; color: var(--dir); }
 input, select { background: #333; color: var(--fg); border: 1px solid var(--border); }
+input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 
 /* tabs */
 .tabs { display: flex; gap: 2px; padding: 4px 8px; border-bottom: 1px solid var(--border); }

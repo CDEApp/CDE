@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SearchQuery } from "../api/types";
+import { parseSize } from "../format";
 
 interface Props {
   busy: boolean;
@@ -21,15 +22,19 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
   const [limit, setLimit] = useState(defaults.limitResultCount ?? 10000);
   const [advanced, setAdvanced] = useState(false);
 
-  // Advanced filters
+  // Advanced filters — sizes are entered as human-readable text ("25 KB", "2.5 MB", "4GB"; a bare
+  // number is bytes) and parsed to bytes on submit.
   const [fromSizeEnable, setFromSizeEnable] = useState(false);
-  const [fromSize, setFromSize] = useState(0);
+  const [fromSizeText, setFromSizeText] = useState("");
   const [toSizeEnable, setToSizeEnable] = useState(false);
-  const [toSize, setToSize] = useState(0);
+  const [toSizeText, setToSizeText] = useState("");
   const [fromDateEnable, setFromDateEnable] = useState(false);
   const [fromDate, setFromDate] = useState("");
   const [toDateEnable, setToDateEnable] = useState(false);
   const [toDate, setToDate] = useState("");
+
+  const fromSizeInvalid = fromSizeEnable && fromSizeText.trim() !== "" && parseSize(fromSizeText) === null;
+  const toSizeInvalid = toSizeEnable && toSizeText.trim() !== "" && parseSize(toSizeText) === null;
 
   function submit() {
     onSearch({
@@ -40,9 +45,9 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
       includeFolders,
       limitResultCount: limit,
       fromSizeEnable,
-      fromSize,
+      fromSize: parseSize(fromSizeText) ?? 0,
       toSizeEnable,
-      toSize,
+      toSize: parseSize(toSizeText) ?? 0,
       fromDateEnable,
       fromDate: fromDate ? new Date(fromDate).toISOString() : undefined,
       toDateEnable,
@@ -98,11 +103,25 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
       {advanced && (
         <div className="searchbar-advanced">
           <fieldset>
-            <legend>Size (bytes)</legend>
+            <legend>Size (e.g. 25 KB, 2.5 MB, 4GB; bare number = bytes)</legend>
             <label><input type="checkbox" checked={fromSizeEnable} onChange={(e) => setFromSizeEnable(e.target.checked)} /> From</label>
-            <input type="number" value={fromSize} onChange={(e) => setFromSize(Number(e.target.value))} />
+            <input
+              type="text"
+              placeholder="e.g. 2.5 MB"
+              className={fromSizeInvalid ? "invalid" : ""}
+              title={fromSizeInvalid ? "Could not parse size" : ""}
+              value={fromSizeText}
+              onChange={(e) => setFromSizeText(e.target.value)}
+            />
             <label><input type="checkbox" checked={toSizeEnable} onChange={(e) => setToSizeEnable(e.target.checked)} /> To</label>
-            <input type="number" value={toSize} onChange={(e) => setToSize(Number(e.target.value))} />
+            <input
+              type="text"
+              placeholder="e.g. 4 GB"
+              className={toSizeInvalid ? "invalid" : ""}
+              title={toSizeInvalid ? "Could not parse size" : ""}
+              value={toSizeText}
+              onChange={(e) => setToSizeText(e.target.value)}
+            />
           </fieldset>
           <fieldset>
             <legend>Date modified</legend>
