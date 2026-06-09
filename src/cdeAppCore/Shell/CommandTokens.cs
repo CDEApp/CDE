@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.IO;
 
-namespace cdeWin;
+namespace cdeAppCore.Shell;
 
 /// <summary>
 /// Substitutes path tokens in a custom command's arguments template. Replacement is literal and the

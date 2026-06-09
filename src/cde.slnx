@@ -12,6 +12,7 @@
   </Project>
   <Project Path="cde/cde.csproj" />
   <Project Path="cdeAppCore/cdeAppCore.csproj" />
+  <Project Path="cdeAppCoreTest/cdeAppCoreTest.csproj" />
   <Project Path="cdeBenchmarks/cdeBenchmarks.csproj" />
   <Project Path="cdeLib/cdeLib.csproj" />
   <Project Path="cdeMemProbe/cdeMemProbe.csproj" />

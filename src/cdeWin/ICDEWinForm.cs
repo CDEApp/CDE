@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
+using cdeAppCore.Shell;
 using cdeLib;
 using cdeLib.Entities;
 using cdeWin.Cfg;

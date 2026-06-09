@@ -4,6 +4,7 @@ using System.Drawing;
 using System.Globalization;
 using System.Linq;
 using System.Windows.Forms;
+using cdeAppCore.Shell;
 using cdeLib;
 using cdeLib.Entities;
 using cdeWin.Cfg;

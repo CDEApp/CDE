@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using cdeAppCore.Shell;
 using Microsoft.Extensions.Configuration;
 
 namespace cdeWin.Cfg;

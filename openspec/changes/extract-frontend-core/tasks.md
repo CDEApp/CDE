@@ -21,12 +21,12 @@
 
 ## 4. Define the shared service + DTO boundary
 
-- [ ] 4.1 Define DTOs: `SearchQuery`, `SearchResultRow`, `SearchProgress`, `DirectoryNodeDto`, `CatalogInfoDto`, `ColumnDef`; add `System.Text.Json` source-gen context.
-- [ ] 4.2 Define and implement `ICatalogSession` (load → tree → directory listing → dispose) over mmap `.cdex` sources; own catalog lifetime explicitly.
-- [ ] 4.3 Define and implement `ISearchService.SearchAsync(...) : IAsyncEnumerable<SearchResultRow>` with `IProgress<SearchProgress>` + `CancellationToken`.
-- [ ] 4.4 Define `IShellActions` with `Open`/`Explore`/`ShowProperties` (fixed OS verbs) + run-custom-command + expose the configured command list; lift the Windows logic from `WindowsExplorerUtilities` and `CommandTokens`, inject the custom-command config + logger (drop the `Program.Configuration` static); add a non-Windows no-op impl. (Copy-path/select-all/view-in-tree/parent stay frontend-native.)
-- [ ] 4.4a Move `CustomCommandOptions` + `CommandTokens` from `cdeWin` into `cdeAppCore`; keep core config-source-agnostic (no `Microsoft.Extensions.Configuration` reference — list injected). Both `cdeWin` and `cdeApi` load the shared user-scoped file (`%APPDATA%\cde\shell.json`) layered over shipped `appsettings.json` defaults, and bind+inject the `CustomCommands` list. (The `ExplorerAlt`→`CustomCommands` migration already shipped in `custom-shell-commands`.)
-- [ ] 4.5 Unit-test the services against a small fixture catalog (load, tree, list, search stream, cancel, validation).
+- [x] 4.1 Define DTOs: `SearchQuery`, `SearchResultRow`, `SearchProgress`, `DirectoryNodeDto`, `CatalogInfoDto`, `ColumnDef`; add `System.Text.Json` source-gen context.
+- [x] 4.2 Define and implement `ICatalogSession` (load → tree → directory listing → dispose) over mmap `.cdex` sources; own catalog lifetime explicitly.
+- [x] 4.3 Define and implement `ISearchService.SearchAsync(...) : IAsyncEnumerable<SearchResultRow>` with `IProgress<SearchProgress>` + `CancellationToken`.
+- [x] 4.4 Define `IShellActions` with `Open`/`Explore`/`ShowProperties` (fixed OS verbs) + run-custom-command + expose the configured command list; lift the Windows logic from `WindowsExplorerUtilities` and `CommandTokens`, inject the custom-command config + logger (drop the `Program.Configuration` static); add a non-Windows no-op impl. (Copy-path/select-all/view-in-tree/parent stay frontend-native.)
+- [x] 4.4a Move `CustomCommandOptions` + `CommandTokens` from `cdeWin` into `cdeAppCore`; keep core config-source-agnostic (no `Microsoft.Extensions.Configuration` reference — list injected). Both `cdeWin` and `cdeApi` load the shared user-scoped file (`%APPDATA%\cde\shell.json`) layered over shipped `appsettings.json` defaults, and bind+inject the `CustomCommands` list. (The `ExplorerAlt`→`CustomCommands` migration already shipped in `custom-shell-commands`.)
+- [x] 4.5 Unit-test the services against a small fixture catalog (load, tree, list, search stream, cancel, validation).
 
 ## 5. Rewire cdeWin onto the service boundary
 

@@ -3,6 +3,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
+using cdeAppCore.Shell;
 using Serilog;
 
 namespace cdeWin;
