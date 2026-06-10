@@ -139,6 +139,56 @@ public sealed class EntryStore : IEntrySource
         }
     }
 
+    /// <summary>
+    /// Write the full path of entry <paramref name="i"/> into <paramref name="dest"/> (root-first),
+    /// mirroring <see cref="AppendFullPath"/> but without allocating a string. Returns the number of
+    /// chars written, or -1 if <paramref name="dest"/> is too small (the caller should grow and retry).
+    /// Lets hot-path callers run <see cref="Span{T}"/> comparisons with no per-entry path allocation.
+    /// </summary>
+    public int TryWriteFullPath(Span<char> dest, int i)
+    {
+        var depth = 0;
+        for (var cur = i; cur != None; cur = Parent[cur]) depth++;
+        if (depth == 0) return 0;
+
+        Span<int> chain = depth <= 64 ? stackalloc int[depth] : new int[depth];
+        var n = 0;
+        for (var cur = i; cur != None; cur = Parent[cur]) chain[n++] = cur;
+
+        var pos = 0;
+        for (var k = depth - 1; k >= 0; k--)
+        {
+            var idx = chain[k];
+            if (pos > 0)
+            {
+                var last = dest[pos - 1];
+                if (last != '\\' && last != '/')
+                {
+                    if (pos >= dest.Length) return -1;
+                    dest[pos++] = System.IO.Path.DirectorySeparatorChar;
+                }
+            }
+
+            var name = Name[idx];
+            if (!string.IsNullOrEmpty(name))
+            {
+                if (pos + name.Length > dest.Length) return -1;
+                name.AsSpan().CopyTo(dest[pos..]);
+                pos += name.Length;
+            }
+
+            var ext = Ext[idx];
+            if (!string.IsNullOrEmpty(ext))
+            {
+                if (pos + ext.Length > dest.Length) return -1;
+                ext.AsSpan().CopyTo(dest[pos..]);
+                pos += ext.Length;
+            }
+        }
+
+        return pos;
+    }
+
     public string FullPath(int i)
     {
         var sb = new StringBuilder(128);

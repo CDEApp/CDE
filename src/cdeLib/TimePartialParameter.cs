@@ -17,6 +17,7 @@ public class TimePartialParameter
             ThrowExceptionIfSet();
             return field;
         }
+        private set;
     }
 
     public int Minute
@@ -26,6 +27,7 @@ public class TimePartialParameter
             ThrowExceptionIfSet();
             return field;
         }
+        private set;
     }
 
     public int Second
@@ -35,6 +37,7 @@ public class TimePartialParameter
             ThrowExceptionIfSet();
             return field;
         }
+        private set;
     }
 
     private readonly Exception _e;

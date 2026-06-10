@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
@@ -19,7 +19,7 @@ public class HashProgressConsole
 
     public static bool HashIsComplete { get; set; }
 
-    private static readonly Queue<string> Messages = new();
+    private static readonly ConcurrentQueue<string> Messages = new();
 
     private static void WriteLogMessage(string message)
     {
@@ -50,6 +50,8 @@ public class HashProgressConsole
                 while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested)
                 {
                     ShowProgress(sw, ctx);
+                    // Throttle the refresh loop so it doesn't busy-spin a core while hashing.
+                    Thread.Sleep(50);
                 }
 
                 // Flush any remaining messages after the task completes

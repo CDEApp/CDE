@@ -1,5 +1,5 @@
 using System;
-using System.Text;
+using System.Buffers;
 using System.Text.RegularExpressions;
 
 namespace cdeLib.Entities.Soa;
@@ -29,57 +29,82 @@ public static class EntryStoreSearch
         if (o.RegexMode && !string.IsNullOrEmpty(o.Pattern))
             regex = new Regex(o.Pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
 
-        var sb = o.IncludePath ? new StringBuilder(260) : null;
         var hasPattern = !string.IsNullOrEmpty(o.Pattern);
 
-        for (var i = 1; i < store.Count; i++)
+        // Substring path matching runs Span<char>.Contains over a rented buffer; only regex mode
+        // (rarer) materialises a string. Avoids a full-path string allocation per scanned entry.
+        var pathBuffer = o.IncludePath ? ArrayPool<char>.Shared.Rent(512) : null;
+        try
         {
-            if ((i & 4095) == 0)
+            for (var i = 1; i < store.Count; i++)
             {
-                if (isCancelled != null && isCancelled()) return;
-                onScan?.Invoke(i);
+                if ((i & 4095) == 0)
+                {
+                    if (isCancelled != null && isCancelled()) return;
+                    onScan?.Invoke(i);
+                }
+
+                var isDir = store.IsDirectory(i);
+                if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
+
+                var size = store.Size[i];
+                if (o.FromSizeEnable && size < o.FromSize) continue;
+                if (o.ToSizeEnable && size > o.ToSize) continue;
+
+                if (o.FromDateEnable || o.ToDateEnable || o.FromHourEnable || o.ToHourEnable || o.NotOlderThanEnable)
+                {
+                    var modified = store.Modified(i);
+                    if (o.FromDateEnable && modified < o.FromDate) continue;
+                    if (o.ToDateEnable && modified > o.ToDate) continue;
+                    if (o.NotOlderThanEnable && modified < o.NotOlderThan) continue;
+                    var tod = modified.TimeOfDay;
+                    if (o.FromHourEnable && tod < o.FromHour) continue;
+                    if (o.ToHourEnable && tod > o.ToHour) continue;
+                }
+
+                if (!hasPattern) { onMatch(i); continue; }
+
+                bool match;
+                if (o.IncludePath)
+                {
+                    var path = WritePath(store, i, ref pathBuffer);
+                    match = o.RegexMode
+                        ? regex.IsMatch(path.ToString())
+                        : path.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    var name = store.FullName(i);
+                    match = o.RegexMode
+                        ? regex.IsMatch(name)
+                        : name.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (match) onMatch(i);
             }
-
-            var isDir = store.IsDirectory(i);
-            if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
-
-            var size = store.Size[i];
-            if (o.FromSizeEnable && size < o.FromSize) continue;
-            if (o.ToSizeEnable && size > o.ToSize) continue;
-
-            if (o.FromDateEnable || o.ToDateEnable || o.FromHourEnable || o.ToHourEnable || o.NotOlderThanEnable)
-            {
-                var modified = store.Modified(i);
-                if (o.FromDateEnable && modified < o.FromDate) continue;
-                if (o.ToDateEnable && modified > o.ToDate) continue;
-                if (o.NotOlderThanEnable && modified < o.NotOlderThan) continue;
-                var tod = modified.TimeOfDay;
-                if (o.FromHourEnable && tod < o.FromHour) continue;
-                if (o.ToHourEnable && tod > o.ToHour) continue;
-            }
-
-            if (!hasPattern) { onMatch(i); continue; }
-
-            bool match;
-            if (o.IncludePath)
-            {
-                sb.Clear();
-                store.AppendFullPath(sb, i);
-                var path = sb.ToString();
-                match = o.RegexMode
-                    ? regex.IsMatch(path)
-                    : path.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                var name = store.FullName(i);
-                match = o.RegexMode
-                    ? regex.IsMatch(name)
-                    : name.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
-            }
-
-            if (match) onMatch(i);
         }
+        finally
+        {
+            if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
+        }
+    }
+
+    /// <summary>
+    /// Write entry <paramref name="i"/>'s full path into <paramref name="buffer"/> (rented), growing
+    /// and re-renting if it doesn't fit, and return the written span. The grown buffer is passed back
+    /// via <paramref name="buffer"/> so the caller reuses it for subsequent entries.
+    /// </summary>
+    private static ReadOnlySpan<char> WritePath(EntryStore store, int i, ref char[] buffer)
+    {
+        int len;
+        while ((len = store.TryWriteFullPath(buffer, i)) < 0)
+        {
+            var bigger = ArrayPool<char>.Shared.Rent(buffer.Length * 2);
+            ArrayPool<char>.Shared.Return(buffer);
+            buffer = bigger;
+        }
+
+        return buffer.AsSpan(0, len);
     }
 
     /// <summary>Invoke <paramref name="onMatch"/> with the index of every entry matching the query.</summary>
@@ -103,39 +128,44 @@ public static class EntryStoreSearch
             regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
         }
 
-        var sb = includePath ? new StringBuilder(260) : null;
         var hasPattern = !string.IsNullOrEmpty(pattern);
 
-        for (var i = 1; i < store.Count; i++) // index 0 is the root, never a result
+        var pathBuffer = includePath ? ArrayPool<char>.Shared.Rent(512) : null;
+        try
         {
-            var isDir = store.IsDirectory(i);
-            if (isDir ? !includeFolders : !includeFiles) continue;
-
-            if (!hasPattern)
+            for (var i = 1; i < store.Count; i++) // index 0 is the root, never a result
             {
-                onMatch(i);
-                continue;
-            }
+                var isDir = store.IsDirectory(i);
+                if (isDir ? !includeFolders : !includeFiles) continue;
 
-            bool match;
-            if (includePath)
-            {
-                sb.Clear();
-                store.AppendFullPath(sb, i);
-                var path = sb.ToString();
-                match = regexMode
-                    ? regex.IsMatch(path)
-                    : path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
-            }
-            else
-            {
-                var name = store.FullName(i);
-                match = regexMode
-                    ? regex.IsMatch(name)
-                    : name.Contains(pattern, StringComparison.OrdinalIgnoreCase);
-            }
+                if (!hasPattern)
+                {
+                    onMatch(i);
+                    continue;
+                }
 
-            if (match) onMatch(i);
+                bool match;
+                if (includePath)
+                {
+                    var path = WritePath(store, i, ref pathBuffer);
+                    match = regexMode
+                        ? regex.IsMatch(path.ToString())
+                        : path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    var name = store.FullName(i);
+                    match = regexMode
+                        ? regex.IsMatch(name)
+                        : name.Contains(pattern, StringComparison.OrdinalIgnoreCase);
+                }
+
+                if (match) onMatch(i);
+            }
+        }
+        finally
+        {
+            if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
         }
     }
 }
