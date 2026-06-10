@@ -275,7 +275,7 @@ public class Duplication
     {
         if (de.IsDirectory || de.IsHashDone)
         {
-            _duplicationStatistics.AllreadyDonePartials++;
+            _duplicationStatistics.AddAllreadyDonePartial();
             return;
         }
 
@@ -418,14 +418,14 @@ public class Duplication
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;
-                _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
-                _duplicationStatistics.TotalFileBytes += de.Size;
-                _duplicationStatistics.BytesNotProcessed +=
-                    de.Size <= hashResponse.BytesHashed ? 0 : de.Size - hashResponse.BytesHashed;
+                _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
+                _duplicationStatistics.AddTotalFileBytes(de.Size);
+                _duplicationStatistics.AddBytesNotProcessed(
+                    de.Size <= hashResponse.BytesHashed ? 0 : de.Size - hashResponse.BytesHashed);
                 if (de.IsPartialHash)
-                    _duplicationStatistics.PartialHashes++;
+                    _duplicationStatistics.AddPartialHash();
                 else
-                    _duplicationStatistics.FullHashes++;
+                    _duplicationStatistics.AddFullHash();
                 if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                 {
                     if (ProgressEvent is not null)
@@ -447,14 +447,14 @@ public class Duplication
             }
             else
             {
-                _duplicationStatistics.FailedToHash += 1;
+                _duplicationStatistics.AddFailedToHash();
             }
         }
         else
         {
             if (de.IsHashDone && !de.IsPartialHash)
             {
-                _duplicationStatistics.AllreadyDoneFulls++;
+                _duplicationStatistics.AddAllreadyDoneFull();
                 return;
             }
 
@@ -463,8 +463,8 @@ public class Duplication
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;
-                _duplicationStatistics.FullHashes += 1;
-                _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
+                _duplicationStatistics.AddFullHash();
+                _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
                 if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                 {
                     // Report progress relative to the start of the full-hash phase so it reads 0..100%.
@@ -485,7 +485,7 @@ public class Duplication
             }
             else
             {
-                _duplicationStatistics.FailedToHash += 1;
+                _duplicationStatistics.AddFailedToHash();
             }
         }
     }
