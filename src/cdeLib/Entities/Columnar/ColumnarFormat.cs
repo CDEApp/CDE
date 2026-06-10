@@ -62,7 +62,9 @@ public static class ColumnarFormat
 
         // Build the variable-length name columns up front (UTF-8 full names + 64-bit prefix offsets).
         var nameOffsets = new long[count + 1];
-        using var nameBlob = new MemoryStream(count * 12);
+
+        var initialCapacity = (int)Math.Min((long)count * 12, int.MaxValue);
+        using var nameBlob = new MemoryStream(initialCapacity);
         for (var i = 0; i < count; i++)
         {
             nameOffsets[i] = nameBlob.Length;
@@ -70,8 +72,9 @@ public static class ColumnarFormat
             WriteUtf8(nameBlob, store.Ext[i]); // ext appended directly -> full-name bytes, no separator
         }
         nameOffsets[count] = nameBlob.Length;
+        if (nameBlob.Length > int.MaxValue)
+            throw new InvalidOperationException("Name blob exceeded 2 GB; ColumnarFormat.Write currently buffers names in-memory.");
         var nameBlobBytes = nameBlob.GetBuffer().AsSpan(0, (int)nameBlob.Length);
-
         var meta = BuildMeta(store);
 
         var len = new long[ColumnCount];
