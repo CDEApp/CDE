@@ -32,12 +32,6 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
 
 The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .NET 10 is available with the behavior of the cdeWinView.cfg file as described just above.
 
-#### cdeWeb (unreleased)
-
-This a web interface version of cde for searching but it is not released or finished.
-
-It is built with ASP.Net, MVC, SignalR, Bootstrap and Angular.js.
-
 ### Contact Author
 
 My name is Robin and you can contact me about cde on the github repository site.
