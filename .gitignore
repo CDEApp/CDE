@@ -71,3 +71,6 @@ src/.vs/config/applicationhost.config
 **/Properties/launchSettings.json
 /.claude/settings.local.json
 /src/.claude/settings.local.json
+
+# BenchmarkDotNet writes results here when running cdeBenchmarks
+**/BenchmarkDotNet.Artifacts/

@@ -4,7 +4,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
@@ -20,7 +19,7 @@ namespace cdeLib.Catalog;
 
 public sealed class CatalogRepository : ICatalogRepository, IDisposable
 {
-    private readonly SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
+    private SerializerProtocol _serializerProtocol = SerializerProtocol.MessagePack; // hard coded for now.
     private readonly ILogger _logger;
     private static readonly BufferPool BufferPool = new();
     private readonly FileStreamManager _fileStreamManager = FileStreams.Instance;
@@ -54,7 +53,6 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     using (Operation.Time("Deserialize"))
                     {
                         var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions());
-                        // Use ReadOnlyMemory<byte> overload to avoid defensive copy
                         return serializer.Parse<RootEntry>(bytes.AsMemory());
                     }
                 case SerializerProtocol.MessagePack:
@@ -71,7 +69,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         }
     }
 
-    public async Task<RootEntry> ReadAsync(string file)
+    private async Task<RootEntry> ReadAsync(string file)
     {
         try
         {
@@ -125,7 +123,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                 }
 
                 _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
-                    Thread.CurrentThread.ManagedThreadId);
+                    Environment.CurrentManagedThreadId);
             });
 
             return results.ToList();
@@ -144,6 +142,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     _logger.Information("Catalog [{file}] read on ThreadId: {ThreadId}", file,
                         Environment.CurrentManagedThreadId);
                 }
+
                 return rootEntry;
             }).ToList();
 
@@ -195,6 +194,29 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
     private static IEnumerable<string> GetCdeFiles(string path)
     {
         return FileSystemHelper.GetFilesWithExtension(path, "cde");
+    }
+
+    public IList<string> GetColumnarFileList(IEnumerable<string> paths)
+    {
+        var result = new List<string>();
+        foreach (var path in paths)
+        {
+            result.AddRange(FileSystemHelper.GetFilesWithExtension(path, "cdex"));
+
+            foreach (var childPath in Directory.GetDirectories(path))
+            {
+                try
+                {
+                    result.AddRange(FileSystemHelper.GetFilesWithExtension(childPath, "cdex"));
+                }
+                // ReSharper disable once EmptyGeneralCatchClause
+                catch
+                {
+                } // if cant list folders don't care.
+            }
+        }
+
+        return result;
     }
 
     public RootEntry LoadDirCache(string file)
@@ -262,16 +284,18 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         }
     }
 
+    /// <summary>
+    /// Dispose of managed resources
+    /// </summary>
     private void Dispose(bool disposing)
     {
         if (!_disposed)
         {
             if (disposing)
             {
-                // Dispose of managed resources
                 BufferPool?.Clear();
-                // Note: FileStreamManager is a singleton, don't dispose it here
             }
+
             _disposed = true;
         }
     }
@@ -279,6 +303,5 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 }

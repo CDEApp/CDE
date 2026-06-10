@@ -14,7 +14,7 @@ public class FileSystemAdapter : IFileSystemAdapter
 
     public bool IsUnc(string path)
     {
-        return Path.IsPathFullyQualified(path) && path.StartsWith("\\\\");
+        return Path.IsPathFullyQualified(path) && path.StartsWith(@"\\");
     }
 
     public string GetDirectoryRoot(string path)

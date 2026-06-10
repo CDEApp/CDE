@@ -37,7 +37,7 @@ public class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
 
     public T Get()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(ObjectPool<T>));
+        if (_disposed) throw new ObjectDisposedException(nameof(ObjectPool<>));
         
         if (_objects.TryDequeue(out var item))
         {
@@ -90,7 +90,7 @@ public static class PoolManager
         new(() => new StringBuilder(256), sb => sb.Clear(), 50);
     
     private static readonly ObjectPool<List<string>> StringListPool = 
-        new(() => new List<string>(), list => list.Clear(), 30);
+        new(() => [], list => list.Clear(), 30);
 
     public static StringBuilder GetStringBuilder() => StringBuilderPool.Get();
     public static void ReturnStringBuilder(StringBuilder sb) => StringBuilderPool.Return(sb);

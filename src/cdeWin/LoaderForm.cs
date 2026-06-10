@@ -138,7 +138,7 @@ public partial class LoaderForm : Form
                         // Time-based or count-based progress reporting (whichever comes first)
                         var now = DateTime.UtcNow;
                         if (currentCount % progressReportThreshold == 0 ||
-                            (now - lastProgressReport) > progressReportInterval)
+                            now - lastProgressReport > progressReportInterval)
                         {
                             worker.ReportProgress((int)(currentCount / (float)totalFiles * 100),
                                 new LoadingState(currentCount, totalFiles));

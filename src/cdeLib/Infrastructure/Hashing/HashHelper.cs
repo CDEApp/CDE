@@ -45,7 +45,7 @@ public class HashHelper
                     totalBytesRead = bytesRead;
                     while (bytesRead > 0 && totalBytesRead <= bytesToHash)
                     {
-                        bytesRead = stream.Read(rentedBuffer, 0, bufferSize);
+                        bytesRead = await stream.ReadAsync(rentedBuffer.AsMemory(0, bufferSize));
                         totalBytesRead += bytesRead;
                     }
 

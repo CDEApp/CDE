@@ -5,73 +5,16 @@ using System.Windows.Forms;
 using cdeWin.Cfg;
 
 namespace cdeWin;
-// think about making Presenter<> look for all members that implement IPresenterHelper
-// and hookup events to them as well with matching names ?
+// Think about making Presenter<> look for all members that implement IPresenterHelper
+// and hook up events to them as well with matching names ?
 // encapsulate ListView in VirtualMode handling
-
-public interface IListViewHelper<T> : IDisposable where T : class
-{
-    /// <summary>
-    /// Used by virtual mode ListView
-    /// </summary>
-    int RetrieveItemIndex { get; set; }
-
-    ListViewItem RenderItem { get; set; }
-    int AfterActivateIndex { get; set; }
-    int ColumnClickIndex { get; set; }
-    IEnumerable<int> SelectedIndices { get; set; }
-    int SelectedIndicesCount { get; set; }
-    SortOrder ColumnSortOrder { get; set; }
-    int SortColumn { get; set; }
-    Comparison<T> ColumnSortCompare { get; set; }
-
-    /// <summary>
-    /// Adds CacheVirtualItems, RetrieveVirtualItem handler which sets RetrieveItemIndex before EventAction.
-    /// </summary>
-    EventAction RetrieveVirtualItem { get; set; }
-
-    /// <summary>
-    /// Adds ColumnClick handler which sets ColumnClickIndex before EventAction..
-    /// </summary>
-    EventAction ColumnClick { get; set; }
-
-    /// <summary>
-    /// Adds ItemActivate handler which sets AfterActivateIndex before EventAction..
-    /// </summary>
-    EventAction ItemActivate { get; set; }
-
-    ContextMenuStrip ContextMenu { get; set; }
-
-    /// <summary>
-    /// Adds SelectedIndexChanged, VirtualItemsSelectionRangeChanged handlers.
-    /// </summary>
-    EventAction ItemSelectionChanged { get; set; }
-
-    bool MultiSelect { get; set; }
-
-    void InitSort();
-    IEnumerable<ColumnConfig> ColumnConfigs();
-    void SetColumnConfigs(IEnumerable<ColumnConfig> columns);
-    void ForceDraw();
-    void SelectItem(int index);
-    void DeselectAllItems();
-    void SelectAllItems();
-    int SetList(List<T> list);
-    void ListViewColumnClick();
-    void SortList();
-    void ActionOnSelectedItems(Action<IEnumerable<T>> action);
-    void ActionOnSelectedItem(Action<T> action);
-    void ActionOnActivateItem(Action<T> action);
-    T GetItemAt(int index);
-    void SearchListContextMenuOpening(object sender, System.ComponentModel.CancelEventArgs e);
-}
 
 /// <summary>
 /// Consolidated code for ListView operation in VirtualMode.
 /// Only ListView events required are enabled.
-/// Several property setters add Event handlers as required so don't call them more than once.
+/// Several property setters add Event handlers as required, so don't call them more than once.
 /// </summary>
-public class ListViewHelper<T> : IListViewHelper<T> where T : class
+public sealed class ListViewHelper<T> : IListViewHelper<T> where T : class
 {
     private bool _isDisposed;
     private int _listSize;
@@ -95,11 +38,17 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     public ListViewItem RenderItem { get; set; }
 
     public int AfterActivateIndex { get; set; }
+
     public int ColumnClickIndex { get; set; }
+
     public IEnumerable<int> SelectedIndices { get; set; }
+
     public int SelectedIndicesCount { get; set; }
+
     public SortOrder ColumnSortOrder { get; set; }
+
     public int SortColumn { get; set; }
+
     public Comparison<T> ColumnSortCompare { get; set; }
 
     public ListViewHelper(DoubleBufferListView listView)
@@ -129,7 +78,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         {
             // not adding retrieve virtual item events here as _list may not be set
             // was getting some odd errors earlier, this may address the null 
-            // ListViewItem we got outside of visual studio in release builds.
+            // ListViewItem we got outside Visual Studio in release builds.
             _retrieveVirtualItem = value;
             if (_retrieveVirtualItem == null) return;
             // TODO AUDIT - this should probably add if not null, and remove if null?
@@ -141,7 +90,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     private EventAction _retrieveVirtualItem;
 
     /// <summary>
-    /// Adds ColumnClick handler which sets ColumnClickIndex before EventAction..
+    /// Adds ColumnClick handler which sets ColumnClickIndex before EventAction.
     /// </summary>
     public EventAction ColumnClick
     {
@@ -160,7 +109,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     private EventAction _columnClick;
 
     /// <summary>
-    /// Adds ItemActivate handler which sets AfterActivateIndex before EventAction..
+    /// Adds ItemActivate handler which sets AfterActivateIndex before EventAction.
     /// </summary>
     public EventAction ItemActivate
     {
@@ -253,6 +202,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
             var evictIndex = _cacheOrder.Dequeue();
             _itemCache.Remove(evictIndex);
         }
+
         _itemCache[itemIndex] = newItem;
         _cacheOrder.Enqueue(itemIndex);
 
@@ -286,7 +236,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
 
     private void ListViewItemSelectionChanged()
     {
-        SelectedIndicesCount = _listView.SelectedIndices.Count; // todo can i lose this ?
+        SelectedIndicesCount = _listView.SelectedIndices.Count; // todo can I lose this ?
         SelectedIndices = _listView.SelectedIndices.OfType<int>();
         if (SelectedIndicesCount > 0)
         {
@@ -338,7 +288,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
     }
 
     // Cannot use SelectItem() in a loop as it does Focus on each item.
-    public void SelectItems(IEnumerable<int> itemIndices)
+    private void SelectItems(IEnumerable<int> itemIndices)
     {
         var minIndex = int.MaxValue;
         foreach (var i in itemIndices)
@@ -358,7 +308,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         _listView.Select();
     }
 
-    public void SelectItems(IEnumerable<T> itemList)
+    private void SelectItems(IEnumerable<T> itemList)
     {
         var newIndices = itemList.Select(item => _list.FindIndex(sortedItem => item == sortedItem));
         SelectItems(newIndices);
@@ -423,7 +373,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         _list.Sort(ColumnSortCompare);
         SelectItems(selectedItems);
 
-        // Clear cache AFTER all item manipulations but BEFORE ForceDraw
+        // Clear cache AFTER all item manipulations, but BEFORE ForceDraw
         // This ensures no stale items from DeselectAllItems/SelectItems remain
         _itemCache.Clear();
         _cacheOrder.Clear();
@@ -436,7 +386,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         _listView.SetSortIcon(SortColumn,
             ColumnSortOrder == SortOrder.Ascending
                 ? SortOrder.Descending
-                : SortOrder.Ascending); // column state is inverted some how ?
+                : SortOrder.Ascending); // column state is inverted somehow?
     }
 
     public void ActionOnSelectedItems(Action<IEnumerable<T>> action)
@@ -506,16 +456,16 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         {
             return null;
         }
+
         return _list[index];
     }
 
     public void Dispose()
     {
         Dispose(true);
-        GC.SuppressFinalize(this);
     }
 
-    protected virtual void Dispose(bool disposing)
+    private void Dispose(bool disposing)
     {
         if (_isDisposed) return;
 
@@ -525,7 +475,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
             {
                 _listView.CacheVirtualItems -= MyCacheVirtualItems;
                 //
-                // If we don't do this we don't get the weird crash on exist of cdeWin
+                // If we don't do this we don't get the weird crash on exit of cdeWin
                 // NullReferenceException
                 // System.Windows.Forms.ListView.ListViewNativeItemCollection.get_Item(Int32 displayIndex)
                 // at
@@ -533,7 +483,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
                 //
                 // On dispose it must be trying to be called after we remove it and it kaboom
                 // This is local method to this Class it will never be anything else but this method
-                // Removing it at dispose when we exit seems like it's not actually important anyway
+                // Removing it at disposal when we exit seems like it's not actually important anyway
                 // by not removing this we don't get the odd crash.
                 //
                 // _listView.RetrieveVirtualItem -= MyRetrieveVirtualItem;
@@ -571,7 +521,7 @@ public class ListViewHelper<T> : IListViewHelper<T> where T : class
         var listViewItem = GetListViewItemAtMouse();
         if (listViewItem == null)
         {
-            // cancel context menu if no list view item at right click.
+            // cancel context menu if no list view item at right-click.
             e.Cancel = true;
         }
     }

@@ -3,6 +3,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
+using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
+using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure;
 using JetBrains.Annotations;
 using SlimMessageBus;
@@ -28,9 +31,18 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
     public async Task OnHandle(HashCatalogCommand request, CancellationToken cancellationToken)
     {
+        // Hash operates on the columnar .cdex catalogs. The hashing engine is tree-based, so each
+        // catalog is reconstructed into a mutable tree, hashed, then written back as a fresh .cdex.
+        var cdexFiles = _catalogRepository.GetColumnarFileList(["./"]);
+        if (cdexFiles.Count == 0)
+        {
+            _logger.Warning("No .cdex catalogs found. Run 'cde migrate' to create them first.");
+            return;
+        }
+
         _logger.Information("Memory pre-catalog load: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-        var rootEntries = _catalogRepository.LoadCurrentDirCache();
+        var rootEntries = CatalogTreeBuilder.FromColumnarFiles(cdexFiles);
         _logger.Information("Memory post-catalog load: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         var stopwatch = Stopwatch.StartNew();
@@ -38,8 +50,8 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
         foreach (var rootEntry in rootEntries)
         {
-            _logger.Information("Saving catalog {Filename}", rootEntry.DefaultFileName);
-            await _catalogRepository.Save(rootEntry).ConfigureAwait(false);
+            _logger.Information("Saving catalog {Filename}", rootEntry.ActualFileName);
+            ColumnarFormat.Write(EntryStore.Build(rootEntry), rootEntry.ActualFileName);
         }
 
         var ts = stopwatch.Elapsed;

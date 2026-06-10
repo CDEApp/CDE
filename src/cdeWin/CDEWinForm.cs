@@ -78,7 +78,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public IListViewHelper<ICommonEntry> DirectoryListViewHelper { get; set; }
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
-    public IListViewHelper<RootEntry> CatalogListViewHelper { get; set; }
+    public IListViewHelper<ICommonEntry> CatalogListViewHelper { get; set; }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public CheckBoxDependentControlHelper FromDate { get; set; }
@@ -176,19 +176,19 @@ public partial class CDEWinForm : Form, ICDEWinForm
             "Using reload catalogs will use more memory than quitting and starting again.");
 
         SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
-        whatToSearchComboBox.Items.AddRange(new object[] { "Include Path in Search", "Exclude Path from Search" });
+        whatToSearchComboBox.Items.AddRange("Include Path in Search", "Exclude Path from Search");
         whatToSearchComboBox.SelectedIndex = 0; // default Include
         whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
         SetToolTip(whatToSearchComboBox,
             "Excluding Path so that only entry Names are searched makes search faster.");
 
-        findComboBox.Items.AddRange(new object[] { "Files and Folders", "Files Only", "Folders Only" });
+        findComboBox.Items.AddRange("Files and Folders", "Files Only", "Folders Only");
         findComboBox.SelectedIndex = 0; // default Files and Folders
         findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
 
-        // TODO having ListViewHelper setup in VIEW breaks passive view. i think.
+        // TODO having ListViewHelper set up in VIEW breaks passive view. i think.
         // * it does register a bunch of events which it fires.... ? so not real bad.
-        // - whats happening is im making view smarter... with specific behaviour.
+        // - whats happening is I'm making view smarter... with specific behaviour.
         // - but its not passive, passive would require ListViewHelper to raise events
         // - from gui actions....  and decisions from presenter...
         // - - at moment, ListViewHelper is small presenter ?
@@ -223,7 +223,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         patternComboBox.GotFocus += (_, _) => AcceptButton = searchButton;
         patternComboBox.LostFocus += (_, _) => AcceptButton = null;
 
-        CatalogListViewHelper = new ListViewHelper<RootEntry>(catalogResultListView)
+        CatalogListViewHelper = new ListViewHelper<ICommonEntry>(catalogResultListView)
         {
             MultiSelect = false,
             // ReSharper disable PossibleNullReferenceException
@@ -492,9 +492,9 @@ public partial class CDEWinForm : Form, ICDEWinForm
         }
     }
 
-    public bool IncludeFiles => findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 1;
+    public bool IncludeFiles => findComboBox.SelectedIndex is 0 or 1;
 
-    public bool IncludeFolders => findComboBox.SelectedIndex == 0 || findComboBox.SelectedIndex == 2;
+    public bool IncludeFolders => findComboBox.SelectedIndex is 0 or 2;
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int FindEntryFilter

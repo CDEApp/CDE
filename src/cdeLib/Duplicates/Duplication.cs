@@ -23,21 +23,49 @@ public class Duplication
 
     private readonly Dictionary<long, List<PairDirEntry>> _duplicateFileSize = new();
 
-    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = new();
+    private readonly HashSet<ICommonEntry> _dirEntriesRequiringFullHashing = [];
 
     protected readonly DuplicationStatistics _duplicationStatistics;
+
+    // Cumulative FilesProcessed at the moment the full-hash phase begins, so that phase can report
+    // its own 0-based progress rather than continuing the partial phase's running total.
+    private long _processedAtFullHashStart;
+
     private readonly ILogger _logger;
     private readonly IApplicationDiagnostics _applicationDiagnostics;
     private readonly HashHelper _hashHelper;
+    private readonly OperationCancellation _cancellation;
 
-    public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics)
+    public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics,
+        OperationCancellation cancellation)
     {
         _logger = logger;
         _hashHelper = new HashHelper(logger);
         _configuration = configuration;
         _applicationDiagnostics = applicationDiagnostics;
+        _cancellation = cancellation;
         _duplicationStatistics = new DuplicationStatistics();
         _logger.LogDebug("Dupe Constructor Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
+    }
+
+    /// <summary>
+    /// Optional callback raised periodically during <see cref="ApplyHash"/> so a UI can render live progress.
+    /// Arguments are (filesProcessed, filesToHash, phase). When null the progress is written to the log instead.
+    /// </summary>
+    public Action<long, long, string> ProgressEvent { get; set; }
+
+    /// <summary>
+    /// Optional callback raised with human readable status/summary lines during <see cref="ApplyHash"/>.
+    /// When null the message is written to the log instead.
+    /// </summary>
+    public Action<string> StatusMessageEvent { get; set; }
+
+    private void ReportStatus(string message)
+    {
+        if (StatusMessageEvent is not null)
+            StatusMessageEvent(message);
+        else
+            _logger.LogInfo(message);
     }
 
     /// <summary>
@@ -51,11 +79,7 @@ public class Duplication
         _logger.LogDebug("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // Calculate all aggregations in single pass to avoid multiple enumerations
-        long totalFilesInRootEntries = 0;
-        foreach (var entry in rootEntries)
-        {
-            totalFilesInRootEntries += entry.FileEntryCount;
-        }
+        long totalFilesInRootEntries = rootEntries.Aggregate<RootEntry, long>(0, (current, entry) => current + entry.FileEntryCount);
 
         int totalEntriesInSizeDupes = 0;
         int longestListLength = -1;
@@ -70,10 +94,10 @@ public class Duplication
                 longestListSize = kvp.Key;
             }
         }
-        _logger.LogInfo("Found {0} sets of files matched by file size", newMatches.Count);
-        _logger.LogInfo("Total files processed for the file size matches is {0}", totalFilesInRootEntries);
-        _logger.LogInfo("Total files found with at least 1 other file of same length {0}", totalEntriesInSizeDupes);
-        _logger.LogInfo("Longest list of same sized files is {0} for size {1} ", longestListLength, longestListSize);
+        ReportStatus($"Found {newMatches.Count} sets of files matched by file size");
+        ReportStatus($"Total files processed for the file size matches is {totalFilesInRootEntries}");
+        ReportStatus($"Total files found with at least 1 other file of same length {totalEntriesInSizeDupes}");
+        ReportStatus($"Longest list of same sized files is {longestListLength} for size {longestListSize} ");
 
         // flatten - optimized without LINQ
         _logger.LogDebug("Flatten List..");
@@ -111,7 +135,7 @@ public class Duplication
             var root = System.IO.Directory.GetDirectoryRoot(pde.FullPath);
             if (!groupedByDirectoryRoot.TryGetValue(root, out var group))
             {
-                group = new List<PairDirEntry>();
+                group = [];
                 groupedByDirectoryRoot[root] = group;
             }
 
@@ -151,7 +175,7 @@ public class Duplication
                     {
                         _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
                         await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
-                        if (Hack.BreakConsoleFlag)
+                        if (_cancellation.IsCancellationRequested)
                         {
                             Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
                             await cts.CancelAsync();
@@ -169,24 +193,23 @@ public class Duplication
             return;
         }
 
-        _logger.LogInfo("After initial partial hashing phase.");
+        ReportStatus("After initial partial hashing phase.");
         var perf =
             $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
         var statsMessage =
             $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB  NotProcessed: {_duplicationStatistics.BytesNotProcessed / (1024 * 1024):F2} MB  Perf: {perf}\nTotal Data Encountered: {_duplicationStatistics.TotalFileBytes / (1024 * 1024):F2} MB\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
-        _logger.LogInfo(statsMessage);
+        ReportStatus(statsMessage);
 
-        Hack.BreakConsoleFlag = false; // require you to press break again to stop the full hash phase.
+        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
         CheckDupesAndCompleteFullHash(rootEntries);
 
-        _logger.LogInfo(string.Empty);
-        _logger.LogInfo("After hashing completed.");
+        ReportStatus("After hashing completed.");
         timer.Stop();
         perf =
             $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
         statsMessage =
             $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB Perf: {perf}\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
-        _logger.LogInfo(statsMessage);
+        ReportStatus(statsMessage);
         await Task.CompletedTask;
     }
 
@@ -282,10 +305,16 @@ public class Duplication
             }
         }
 
-        _logger.LogInfo("Found {0} duplication collections.", foundDupes.Count);
-        _logger.LogInfo("Total files found with at least 1 other file duplicate {0}",
-            totalEntriesInDupes);
-        _logger.LogInfo("Longest list of duplicate files is {0}", longestListLength);
+        ReportStatus($"Found {foundDupes.Count} duplication collections.");
+        ReportStatus($"Total files found with at least 1 other file duplicate {totalEntriesInDupes}");
+        ReportStatus($"Longest list of duplicate files is {longestListLength}");
+
+        // Switch progress reporting to the full-hash phase: FilesProcessed is cumulative across both
+        // passes, so capture a baseline here and re-target the denominator to this phase's own work.
+        // Each phase then reports its own 0..100% progress (the phase label distinguishes them) and the
+        // percentage can never exceed 100% as it did when the partial-pass denominator was reused.
+        _processedAtFullHashStart = _duplicationStatistics.FilesProcessed;
+        _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInDupes;
 
         // Populate HashSet with entries requiring full hash
         foreach (var kvp in foundDupes)
@@ -351,7 +380,7 @@ public class Duplication
                             var fullPath = pde.FullPath;
                             await CalculateHash(fullPath, dirEntry, false);
 
-                            if (Hack.BreakConsoleFlag)
+                            if (_cancellation.IsCancellationRequested)
                             {
                                 _logger.LogInfo("Break key detected, exiting full hash phase.");
                                 await cts.CancelAsync();
@@ -400,13 +429,21 @@ public class Duplication
                     _duplicationStatistics.FullHashes++;
                 if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                 {
-                    _logger.LogInfo(
-                        "Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",
-                        _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
-                        100 * (1.0 * _duplicationStatistics.FilesProcessed /
-                               _duplicationStatistics.FilesToCheckForDuplicatesCount),
-                        1.0 * _duplicationStatistics.LargestFileSize / (1024 * 1024),
-                        1.0 * _duplicationStatistics.SmallestFileSize / (1024 * 1024));
+                    if (ProgressEvent is not null)
+                    {
+                        ProgressEvent(_duplicationStatistics.FilesProcessed,
+                            _duplicationStatistics.FilesToCheckForDuplicatesCount, "Partial hash");
+                    }
+                    else
+                    {
+                        _logger.LogInfo(
+                            "Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",
+                            _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                            100 * (1.0 * _duplicationStatistics.FilesProcessed /
+                                   _duplicationStatistics.FilesToCheckForDuplicatesCount),
+                            1.0 * _duplicationStatistics.LargestFileSize / (1024 * 1024),
+                            1.0 * _duplicationStatistics.SmallestFileSize / (1024 * 1024));
+                    }
                 }
             }
             else
@@ -431,10 +468,20 @@ public class Duplication
                 _duplicationStatistics.BytesProcessed += hashResponse.BytesHashed;
                 if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
                 {
-                    _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:.0}%",
-                        _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
-                        100 * (1.0 * _duplicationStatistics.FilesProcessed /
-                               _duplicationStatistics.FilesToCheckForDuplicatesCount));
+                    // Report progress relative to the start of the full-hash phase so it reads 0..100%.
+                    var processedThisPhase = _duplicationStatistics.FilesProcessed - _processedAtFullHashStart;
+                    if (ProgressEvent is not null)
+                    {
+                        ProgressEvent(processedThisPhase,
+                            _duplicationStatistics.FilesToCheckForDuplicatesCount, "Full hash");
+                    }
+                    else
+                    {
+                        _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:.0}%",
+                            processedThisPhase, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                            100 * (1.0 * processedThisPhase /
+                                   _duplicationStatistics.FilesToCheckForDuplicatesCount));
+                    }
                 }
             }
             else

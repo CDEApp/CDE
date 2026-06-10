@@ -13,7 +13,13 @@ public interface ICommonEntry
     bool IsDefaultSort { get; set; }
     int PathCompareWithDirTo(ICommonEntry de);
 
-    IList<DirEntry> Children { get; }
+    /// <summary>
+    /// Read-only, covariant view of child entries. Abstract so a struct-of-arrays backing
+    /// (EntryStore via EntryRef) can satisfy it without materialising DirEntry objects. The
+    /// concrete tree classes still expose a mutable <c>IList&lt;DirEntry&gt;</c> for build/sort/
+    /// serialization; this is what consumers see when they hold an <see cref="ICommonEntry"/>.
+    /// </summary>
+    IReadOnlyList<ICommonEntry> Children { get; }
 
     public void AddChild(DirEntry child);
 
@@ -33,8 +39,8 @@ public interface ICommonEntry
 
     bool IsDirectory { get; set; }
     bool PathProblem { get; }
-    long FileEntryCount { get; set; }
-    long DirEntryCount { get; set; }
+    uint FileEntryCount { get; set; }
+    uint DirEntryCount { get; set; }
     DateTime Modified { get; set; }
     bool IsHashDone { get; set; }
     bool IsPartialHash { get; set; }

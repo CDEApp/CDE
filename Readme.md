@@ -30,7 +30,7 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
   - size of all the columns in list views
   - values of fields in the search parameters
 
-The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .Net7 is available with the behavior of the cdeWinView.cfg file as described just above.
+The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .NET 10 is available with the behavior of the cdeWinView.cfg file as described just above.
 
 #### cdeWeb (unreleased)
 
@@ -109,12 +109,20 @@ cde path -find afilename
 [`-maxDateTime`](#parameter-options)
 [`-minTime`](#parameter-options)
 [`-maxTime`](#parameter-options)
+[`--desc`](#parameter-options)
+[`--follow-junctions`](#parameter-options)
 
 This is the mode of operation that creates and updates catalog files.
 
 When it creates new catalog files it will detect an old catalog file for the given scan target and copy any Hash values from the old file to the new file for matching file paths, file dates and sizes.
 
 Only Last Modified Time of file system entries is captured into .cde files.
+
+By default cde records directory junctions and symbolic links (reparse points) in the catalog but does **not** descend into them, which avoids scan cycles (for example a junction pointing back at an ancestor directory) and duplicated content. Pass `--follow-junctions` to descend into them.
+
+```
+  cde scan C:\ --follow-junctions
+```
 
 ### cde find String
 
@@ -186,6 +194,30 @@ Consider using -minHourAge to limit Hash and Dupes work if your are cleanign up 
 
 Output the full tree of file entries in the catologs in text format.
 
+### cde migrate \[Path\]
+
+#### Valid Options for this mode
+
+`No filter options supported.`
+
+This mode performs a one-way conversion of the original MessagePack `.cde` catalogs into the newer zero-copy columnar `.cdex` format. The `.cdex` format is laid out so it can be memory-mapped and searched without first deserialising the whole catalog into objects, which lowers memory use and speeds up load on large catalogs.
+
+- With a path argument, only that single `.cde` file is converted:
+
+  ```batch
+  cde migrate C-V3Win7-C__users.cde
+  ```
+
+- With no argument, every catalog discovered in the current directory and one directory below is converted (the same discovery rule used when loading catalogs):
+
+  ```batch
+  cde migrate
+  ```
+
+For each catalog a `.cdex` file is written beside the source `.cde`, keeping the same base name. The original `.cde` file is left in place and is not deleted, so the conversion is non-destructive. Re-running migrate simply overwrites the `.cdex` output.
+
+For each file converted cde prints the source and destination file names, their byte sizes and the entry count, then a summary of how many catalogs were migrated. Files that cannot be loaded are skipped and reported.
+
 ### Parameter Options
 
 |     | Parameter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; | Description                                                                                                                                                                                                                                                                                                   |
@@ -204,6 +236,8 @@ Output the full tree of file entries in the catologs in text format.
 |     | `-maxResults {Int}`                                                                                             | Maximum number of results returned by cde.                                                                                                                                                                                                                                                                    |
 |     | `-exclude {Regex}`                                                                                              | A filter to exclude only entries that match these regexes for processing.                                                                                                                                                                                                                                     |
 |     | `-include {Regex}`                                                                                              | A filter to include only entries that match these Regexes for processing.                                                                                                                                                                                                                                     |
+|     | `--desc {Text}`                                                                                                 | (scan) Description text to store in the catalog file.                                                                                                                                                                                                                                                          |
+|     | `--follow-junctions`                                                                                            | (scan) Descend into directory junctions and symbolic links (reparse points). Off by default; reparse points are recorded but not followed, avoiding scan cycles and duplicated content.                                                                                                                        |
 
 ##### Date Time Format for parameters
 

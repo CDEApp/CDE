@@ -46,32 +46,9 @@ public class RootEntryTest
         re.RecurseTree(FileHelper.TestDir);
 
         Assert.That(re, Is.Not.Null);
-        var found = re.Children.Any(x => x.Children != null && x.Children.Count > 0);
+        var found = re.Children.Any(x => x.Children is { Count: > 0 });
         Assert.That(found, Is.True, "One of entries does not have children.");
     }
-
-    //[Test]
-    //public void FindDir_LookForDir_InRoot()
-    //{
-    //    const string rootPath = @"C:\";
-    //    var re = new RootEntry { Path = rootPath };
-
-    //    var foundEntry = re.FindDir(rootPath, @"C:\Moo");
-
-    //    Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
-    //}
-
-    //[Test]
-    //public void FindDir_NotExistinRoot_ReturnRE()
-    //{
-    //    const string rootPath = @"C:\";
-    //    const string testPath = @"C:\Groo";
-    //    var re = new RootEntry { Path = rootPath };
-
-    //    var foundEntry = re.FindDir(rootPath, testPath);
-
-    //    Assert.That(foundEntry, Is.InstanceOf(typeof(RootEntry)));
-    //}
 
     [Test]
     public void GetDriverLetterHint_SimpleRootPath_ReturnsDriveLetter()
@@ -288,9 +265,7 @@ public class RootEntryTest
         re.SetInMemoryFields();
 
         Assert.That(re.FullPath, Is.EqualTo(@"C:\"));
-        //Assert.That(fe1.FullPath, Is.Null);// Is.EqualTo(@"C:\fe1")); FullPath only set on directories to save memory.
         Assert.That(de2.FullPath, Is.EqualTo(@"C:\de2"));
-        //Assert.That(fe3.FullPath, Is.Null);//Is.EqualTo(@"C:\de2\fe3"));
     }
 }
 // ReSharper restore InconsistentNaming

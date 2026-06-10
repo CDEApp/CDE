@@ -19,6 +19,12 @@ public interface ILoadCatalogService
         IConfig config,
         Action<int, int, string> progressCallback,
         CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Discover columnar <c>.cdex</c> catalogs (current dir + config path, one level down). When any
+    /// exist the GUI memory-maps them instead of loading <c>.cde</c> trees. Empty/none ⇒ fall back.
+    /// </summary>
+    IList<string> GetColumnarFiles(IConfig config);
 }
 
 public class LoadCatalogService : ILoadCatalogService
@@ -28,6 +34,13 @@ public class LoadCatalogService : ILoadCatalogService
     public LoadCatalogService(ILogger logger)
     {
         _logger = logger;
+    }
+
+    public IList<string> GetColumnarFiles(IConfig config)
+    {
+        var cachePathList = new[] { ".", config.ConfigPath };
+        using var repo = new CatalogRepository(_logger);
+        return repo.GetColumnarFileList(cachePathList);
     }
 
     public List<RootEntry> LoadRootEntries(IConfig config)
@@ -91,7 +104,7 @@ public class LoadCatalogService : ILoadCatalogService
 
                     var now = DateTime.UtcNow;
                     if (currentCount % progressReportThreshold == 0 ||
-                        (now - lastProgressReport) > progressReportInterval)
+                        now - lastProgressReport > progressReportInterval)
                     {
                         progressCallback?.Invoke(currentCount, totalFiles,
                             $"Loading catalog {currentCount} of {totalFiles}...");

@@ -18,22 +18,25 @@ public class TestCDEWinPresenterBase
     protected IConfig _stubConfig;
     protected IListViewHelper<PairDirEntry> _mockSearchResultListViewHelper;
     protected IListViewHelper<ICommonEntry> _mockDirectoryListViewHelper;
-    protected IListViewHelper<RootEntry> _mockCatalogListViewHelper;
+    protected IListViewHelper<ICommonEntry> _mockCatalogListViewHelper;
+
+    // Catalog roots are presented to the GUI as EntryRef over an EntryStore (SoA model).
+    protected cdeLib.Entities.Soa.EntryRef _catalogRoot;
+    protected cdeLib.Entities.Soa.EntryRef CatalogRootOf(RootEntry re)
+        => new(cdeLib.Entities.Soa.EntryStore.Build(re), 0);
 
     protected RootEntry _rootEntry;
-    protected DirEntry _dirEntry;
+    private DirEntry _dirEntry;
     protected PairDirEntry _pairDirEntry;
 
-    protected List<RootEntry> _emptyRootList = new();
-    protected List<RootEntry> _rootList = new();
+    protected List<RootEntry> _rootList = [];
     // protected TreeNode _treeViewAfterSelectNode;
     private readonly IConfiguration _config = Substitute.For<IConfiguration>();
 
     [SetUp]
     public virtual void RunBeforeEveryTest()
     {
-        _emptyRootList = new List<RootEntry>();
-        _rootList = new List<RootEntry>();
+        _rootList = [];
         _config.ProgressUpdateInterval.Returns(5000);
 
         _mockForm = Substitute.For<ICDEWinForm>();
@@ -42,7 +45,7 @@ public class TestCDEWinPresenterBase
         _mockForm.SearchResultListViewHelper.Returns(_mockSearchResultListViewHelper);
         _mockDirectoryListViewHelper = Substitute.For<IListViewHelper<ICommonEntry>>();
         _mockForm.DirectoryListViewHelper.Returns(_mockDirectoryListViewHelper);
-        _mockCatalogListViewHelper = Substitute.For<IListViewHelper<RootEntry>>();
+        _mockCatalogListViewHelper = Substitute.For<IListViewHelper<ICommonEntry>>();
         _mockForm.CatalogListViewHelper.Returns(_mockCatalogListViewHelper);
     }
 
@@ -74,19 +77,21 @@ public class TestCDEWinPresenterBase
         _rootEntry.AddChild(_dirEntry);
         _rootEntry.SetInMemoryFields();
         _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+        _catalogRoot = CatalogRootOf(_rootEntry);
 
         _rootList.Add(_rootEntry);
     }
 
     protected void InitRootWithDir()
     {
-        // massive assumption on path, this T:\ is windows only......
+        // massive assumption on the path, this T:\ is windows only......
         // is it a valid test on other platforms or behavior on other platforms?
         _rootEntry = new RootEntry(_config) { Path = @"T:\" };
         _dirEntry = new DirEntry(true) { Path = "Test1" };
         _rootEntry.AddChild(_dirEntry);
         _rootEntry.SetInMemoryFields();
         _pairDirEntry = new PairDirEntry(_rootEntry, _dirEntry);
+        _catalogRoot = CatalogRootOf(_rootEntry);
 
         _rootList.Add(_rootEntry);
     }

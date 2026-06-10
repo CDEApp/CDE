@@ -114,6 +114,26 @@ public class EntryHelperTest
     }
 
     [Test]
+    public void FullPath_NestedDirEntries_DoesNotDuplicateParentPath()
+    {
+        // Regression: DirEntry.FullPath recurses into MakeFullPath using a shared
+        // ThreadLocal StringBuilder. Previously the buffer was cleared before the
+        // recursive parent lookup, so the parent path was left in the buffer and
+        // appended twice (e.g. "D:\ArchiveD:\Archive\Apps2021").
+        var re = new RootEntry(_config) { Path = @"D:\" };
+        var archive = new DirEntry(true) { Path = "Archive" };
+        var apps = new DirEntry(true) { Path = "Apps2021" };
+        re.AddChild(archive);
+        archive.AddChild(apps);
+        re.SetInMemoryFields();
+
+        // Depths 1-3 should all produce a single, correct full path.
+        re.FullPath.ShouldBe(@"D:\");
+        archive.FullPath.ShouldBe(@"D:\Archive");
+        apps.FullPath.ShouldBe(@"D:\Archive\Apps2021");
+    }
+
+    [Test]
     public void MakeFullPathPooled_IsAliasForMakeFullPath()
     {
         var re = new RootEntry(_config) { Path = @"C:\" };

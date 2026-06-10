@@ -16,14 +16,14 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10
   - Cross-platform: win-x64, linux-x64, osx-x64
   - Entry point for scan, find, hash, dupes, dump commands
-  - Dependencies: Autofac, MediatR, CommandLineParser, Spectre.Console
+  - Dependencies: Autofac, SlimMessageBus, CommandLineParser, Spectre.Console
 
 - **cdeLib** - Core library containing business logic
   - Target: .NET 10
   - Contains all catalog operations, hashing, duplicate detection
-  - Uses CQRS pattern with MediatR
-  - Serialization: MessagePack, FlatSharp
-  - Key dependencies: Autofac, MediatR, Serilog
+  - Uses CQRS pattern with SlimMessageBus
+  - Serialization: columnar `.cdex` (zero-copy, memory-mapped), plus MessagePack/FlatSharp/protobuf-net for the legacy `.cde` tree format
+  - Key dependencies: Autofac, SlimMessageBus, Serilog
 
 - **cdeWin** - Windows Forms GUI application
   - Target: .NET 10 (Windows)
@@ -52,7 +52,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 
 ### Architecture Patterns
 
-- **CQRS (Command Query Responsibility Segregation)**: Commands and queries handled via MediatR
+- **CQRS (Command Query Responsibility Segregation)**: Commands and queries handled via SlimMessageBus (`IRequestHandler`, `IMessageBus`)
   - Commands: `CreateCacheCommand`, `HashCatalogCommand`, `FindDuplicatesCommand`, `UpdateCommand`
   - Handlers: Separate handlers for each command
   - Events: `ScanProgressEvent` for progress tracking
@@ -69,9 +69,12 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 
 ### Serialization
 
-Multiple serialization formats supported:
-- **MessagePack** - Primary catalog file format (.cde files)
-- **FlatSharp** - FlatBuffers support (alternative)
+Two on-disk catalog formats:
+
+- **Columnar `.cdex`** (`Entities/Columnar/ColumnarFormat.cs`) - **Current/primary format.** A struct-of-arrays layout designed for *zero-copy reads over a memory-mapped file*: "loading" a catalog is mmap-ing it, so no managed object graph is materialised and the working set is only the file pages a query touches (reclaimable OS page cache, not GC heap). Custom binary layout with a `"CDEX"` magic header and dense, homogeneous columns (names, sizes, timestamps, hashes, tree links) — a name-only search scans just the name columns and never pages in the rest. Written directly by `scan`; read via `ColumnarCatalogReader`.
+- **Legacy `.cde` tree format** - The original materialised directory-tree format, serialized via a pluggable `SerializerProtocol` in `Catalog/CatalogRepository.cs`:
+  - **MessagePack** - default protocol for `.cde` (`MessagePackConfig.Options`, custom `Hash16Formatter`/resolver)
+  - **FlatSharp** (FlatBuffers) and **protobuf-net** - alternative protocols selectable via `SerializerProtocol`
 
 ### Hashing
 
@@ -126,15 +129,16 @@ Entry (base class)
 
 ### Build System
 
-- **Nuke Build** - Build automation
-  - `build.cmd` / `build.ps1` / `build.sh` - Build scripts
-  - `build/Build.cs` - Build definition
+- **Fallout Build** - Build automation (replaced Nuke)
+  - `build.cmd` / `build.ps1` / `build.sh` - Build scripts (bootstrap `build/_build.csproj`)
+  - `build/Build.cs` - Build definition (uses `Fallout.Common`)
+  - `.fallout/` - Fallout config, parameters, and temp/log output
   - Command: `build.cmd publish` - Creates artifacts in `./artifacts`
 
 ### Key Command Handlers
 
 Located in `cdeLib/`:
-- `Catalog/CreateCacheCommandHandler.cs` - Scans file systems, creates .cde files
+- `Catalog/CreateCacheCommandHandler.cs` - Scans file systems, writes columnar `.cdex` catalogs (reusing hashes from an existing `.cdex` when present)
 - `Hashing/HashCatalogCommandHandler.cs` - Adds MD5 hashes to catalogs
 - `Duplicates/FindDuplicateCommandHandler.cs` - Identifies duplicate files
 - `FindService.cs` - File search functionality
@@ -148,16 +152,18 @@ Located in `cdeLib/Infrastructure/`:
 - `WorkStealingTreeTraversal.cs` - Parallel directory traversal
 - `Config/` - Configuration classes
 
-## Catalog File Format (.cde)
+## Catalog File Formats (.cdex / .cde)
 
-- **Extension**: `.cde`
+- **Extensions**: `.cdex` (current columnar format) and `.cde` (legacy tree format)
 - **Naming**: Derived from drive letter, volume name, and path
-  - Example: `C-V3Win7-C__users.cde` for `C:\users\`
-  - Example: `UNC-toothless_c__users_.cde` for `\\unc\toothless\c$\users`
-- **Loading**: All .cde files in current directory or one level down are loaded
-- **Content**: Directory tree with optional MD5 hashes
+  - Example: `C-V3Win7-C__users.cdex` for `C:\users\`
+  - Example: `UNC-toothless_c__users_.cdex` for `\\unc\toothless\c$\users`
+- **Loading**: All catalog files in the current directory or one level down are loaded (`GetColumnarFileList` for `.cdex`, `GetCacheFileList` for `.cde`)
+- **Content**: Directory tree (or columns) with optional MD5 hashes
 - **Size**: Highly efficient - 500MB for 11 billion entries
-- **Format**: MessagePack binary serialization (not compressed)
+- **Format**:
+  - `.cdex` - custom columnar binary, memory-mapped for zero-copy loads (not compressed)
+  - `.cde` - MessagePack binary serialization by default (not compressed); protobuf/FlatBuffers selectable in code
 
 ## Common Operations
 
@@ -228,7 +234,7 @@ This branch focuses on performance improvements and refactoring. Recent commits 
    - Use object pooling for frequently allocated objects
    - Benchmark changes that affect hot paths
 
-2. **Catalog Compatibility**: Changes to serialization affect .cde file format
+2. **Catalog Compatibility**: Changes to serialization affect the `.cdex`/`.cde` file formats
    - Hash size changes require catalog recreation
    - Document breaking changes
 
@@ -240,9 +246,18 @@ This branch focuses on performance improvements and refactoring. Recent commits 
    - Unit tests in cdeLibTest
    - Specification tests in cdeLibSpec/cdeLibSpec2
 
+### Shell & Tooling
+
+This is a Windows environment with both PowerShell and Bash available. The two shells have **incompatible** here-string / quoting syntax — never mix them.
+
+- **PowerShell here-string** is `@'` ... `'@` (closing `'@` must be at column 0). Only valid in the PowerShell tool.
+- **Bash here-doc** is `<<'EOF'` ... `EOF`. Only valid in the Bash tool.
+- Passing `@'...'@` to the Bash tool does **not** create a here-string — Bash treats the `@` characters as literal text, which (for example) prepends a stray `@` to git commit messages.
+- For multi-line text (commit messages, file content) prefer the matching syntax for the tool you're calling, or write the text to a file and pass it with `-F <file>`.
+
 ### Code Patterns
 
-- **MediatR Commands**: Business operations are commands/queries
+- **SlimMessageBus Commands**: Business operations are commands/queries (`IRequestHandler<T>.OnHandle`)
 - **Dependency Injection**: Constructor injection via Autofac
 - **Logging**: Serilog with structured logging
 - **Configuration**: Microsoft.Extensions.Configuration with appsettings.json
@@ -268,8 +283,10 @@ Standard .NET test runners (tests use NUnit, xUnit)
 ## Dependencies to Note
 
 - **Autofac** - Dependency injection
-- **MediatR** - Command/query pattern
-- **MessagePack** - Primary serialization
+- **SlimMessageBus** - Command/query and pub/sub messaging (in-memory)
+- **MessagePack** - Serialization for the legacy `.cde` tree format (current `.cdex` format uses a custom columnar layout)
+- **FlatSharp** - FlatBuffers serialization (alternative `.cde` protocol)
+- **protobuf-net** - Protobuf serialization (alternative `.cde` protocol)
 - **Serilog** - Structured logging
 - **CommandLineParser** - CLI argument parsing
 - **Spectre.Console** - Rich console output

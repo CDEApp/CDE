@@ -80,7 +80,8 @@ public class DuplicationTests
     private class TestDuplication : Duplication
     {
         public TestDuplication(ILogger logger, IConfiguration configuration,
-            IApplicationDiagnostics applicationDiagnostics) : base(logger, configuration, applicationDiagnostics)
+            IApplicationDiagnostics applicationDiagnostics)
+            : base(logger, configuration, applicationDiagnostics, new cdeLib.OperationCancellation())
         {
         }
 

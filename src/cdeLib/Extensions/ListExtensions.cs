@@ -19,22 +19,21 @@ public static class ListExtensions
     /// </summary>
     public static void Sort<T>(this IList<T> list, Comparison<T> comparison)
     {
-        // Fast path: List<T> has optimized Sort implementation
-        if (list is List<T> concreteList)
+        switch (list)
         {
-            concreteList.Sort(comparison);
-            return;
+            // Fast path: List<T> has optimized Sort implementation
+            case List<T> concreteList:
+                concreteList.Sort(comparison);
+                return;
+            // Fast path: Array has optimized Sort implementation
+            case T[] array:
+                Array.Sort(array, comparison);
+                return;
+            default:
+                // Slow path: Generic IList<T> - must copy, sort, and copy back
+                SortGenericList(list, comparison);
+                break;
         }
-
-        // Fast path: Array has optimized Sort implementation
-        if (list is T[] array)
-        {
-            Array.Sort(array, comparison);
-            return;
-        }
-
-        // Slow path: Generic IList<T> - must copy, sort, and copy back
-        SortGenericList(list, comparison);
     }
 
     /// <summary>

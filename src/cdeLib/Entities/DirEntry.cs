@@ -18,11 +18,43 @@ public sealed class DirEntry : ICommonEntry
 {
     private string _path;
 
+    // Extension (including the dot), interned and split from the name for memory efficiency.
+    // Null when the name has no extension.
+    private string _ext;
+
+    /// <summary>Interned name without extension (the <c>_path</c> part). For SoA conversion reuse.</summary>
+    internal string NamePart => _path;
+
+    /// <summary>Interned extension including the dot, or null. For SoA conversion reuse.</summary>
+    internal string ExtPart => _ext;
+
+    /// <summary>
+    /// Side-object holding directory-only state — the child list and the rolled-up summary counts.
+    /// Null on every file (the vast majority of entries), so a file no longer carries an always-null
+    /// Children reference plus two count fields. Only directories (~2% of entries) allocate it.
+    /// Serialization is unaffected: Children stays Key 3 via the property below, just backed here.
+    ///
+    /// Note: the content Hash deliberately stays INLINE on the entry. Moving it here too would force
+    /// every *hashed file* to allocate an ExtraData whose object header costs more than the 16-byte
+    /// Hash16 it replaced — a net regression for hashed catalogs. Keeping Hash inline means a hashed
+    /// file needs no side-object at all, so this change never increases footprint for any catalog.
+    /// </summary>
+    private sealed class ExtraData
+    {
+        public IList<DirEntry> Children;
+        public uint FileEntryCount;
+        public uint DirEntryCount;
+    }
+
+    private ExtraData _extra;
+
+    private ExtraData EnsureExtra() => _extra ??= new ExtraData();
+
     [IgnoreMember]
     public DateTime Modified
     {
-        set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
+        set => ModifiedTicks = value.Ticks;
     }
 
     [ProtoMember(1, IsRequired = true)]
@@ -160,13 +192,35 @@ public sealed class DirEntry : ICommonEntry
     /// if this is a directory number of files contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long FileEntryCount { get; set; }
+    public uint FileEntryCount
+    {
+        get => _extra?.FileEntryCount ?? 0;
+        set
+        {
+            if (value != 0) EnsureExtra().FileEntryCount = value;
+            else
+            {
+                _extra?.FileEntryCount = value;
+            }
+        }
+    }
 
     /// <summary>
     /// if this is a directory number of dirs contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long DirEntryCount { get; set; }
+    public uint DirEntryCount
+    {
+        get => _extra?.DirEntryCount ?? 0;
+        set
+        {
+            if (value != 0) EnsureExtra().DirEntryCount = value;
+            else
+            {
+                _extra?.DirEntryCount = value;
+            }
+        }
+    }
 
     public void SetHash(byte[] hash)
     {
@@ -337,17 +391,31 @@ public sealed class DirEntry : ICommonEntry
     [ProtoMember(3, IsRequired = false)]
     [FlatBufferItem(3)]
     [Key(3)]
-    public IList<DirEntry> Children { get; set; }
+    public IList<DirEntry> Children
+    {
+        get => _extra?.Children;
+        set
+        {
+            // A non-null child list (only directories have one) materialises ExtraData; files
+            // deserialize nil Children and stay lean.
+            if (value != null) EnsureExtra().Children = value;
+            else
+            {
+                _extra?.Children = null;
+            }
+        }
+    }
     // ReSharper restore MemberCanBePrivate.Global
+
+    // Covariant read-only view for ICommonEntry consumers. The backing List<DirEntry> satisfies
+    // IReadOnlyList<ICommonEntry> at runtime via interface covariance.
+    IReadOnlyList<ICommonEntry> ICommonEntry.Children => _extra?.Children as IReadOnlyList<ICommonEntry>;
 
     public void AddChild(DirEntry child)
     {
-        if (Children == null)
-        {
-            Children = CollectionPool.GetDirEntryList();
-        }
-
-        Children.Add(child);
+        var extra = EnsureExtra();
+        extra.Children ??= CollectionPool.GetDirEntryList();
+        extra.Children.Add(child);
     }
 
     [ProtoMember(4, IsRequired = true)]
@@ -366,20 +434,16 @@ public sealed class DirEntry : ICommonEntry
     public string Path
     {
         //NOTE: Separating the extension from the path is more memory efficient (300MB saved on 6000MB load) but slower.
-        get
-        {
-            //return _path;
-            
+        get =>
             // string.concat faster than string interpolation.
-            return string.IsNullOrEmpty(field) ? _path : string.Concat(_path, field);
-        }
+            string.IsNullOrEmpty(_ext) ? _path : string.Concat(_path, _ext);
         set
         {
 
             if (string.IsNullOrEmpty(value))
             {
                 _path = string.Intern(string.Empty);
-                field = null;
+                _ext = null;
                 return;
             }
 
@@ -389,13 +453,13 @@ public sealed class DirEntry : ICommonEntry
             if (lastDot > 0 && lastDot > valueSpan.LastIndexOfAny(PathSeparators))
             {
                 // Span slicing is zero-cost, allocate strings only for Intern
-                field = string.Intern(new string(valueSpan[lastDot..]));
+                _ext = string.Intern(new string(valueSpan[lastDot..]));
                 _path = string.Intern(new string(valueSpan[..lastDot]));
             }
             else
             {
                 _path = string.Intern(value);
-                field = null;
+                _ext = null;
             }
 
             // Simpler code but slightly less performance:
@@ -469,7 +533,7 @@ public sealed class DirEntry : ICommonEntry
             if (baseSourceEntry.Children != null && baseDestinationEntry.Children != null)
             {
                 // Build dictionary for O(1) lookups instead of O(n) linear search
-                var destinationLookup = new Dictionary<string, DirEntry>(
+                var destinationLookup = new Dictionary<string, ICommonEntry>(
                     baseDestinationEntry.Children.Count,
                     StringComparer.OrdinalIgnoreCase);
 
@@ -502,6 +566,10 @@ public sealed class DirEntry : ICommonEntry
                         {
                             destinationDirEntry.IsPartialHash = sourceIsPartial;
                             destinationDirEntry.Hash = sourceDirEntry.Hash;
+                            // IsHashDone is a separate BitFields flag; without it the copied hash is
+                            // ignored by hashing/serialization (the reused hash would be silently lost
+                            // on the next save). Mark the destination hashed.
+                            destinationDirEntry.IsHashDone = true;
                         }
                     }
                     // Directory: Push to stack for traversal
@@ -542,7 +610,7 @@ public sealed class DirEntry : ICommonEntry
     public IList<ICommonEntry> GetListFromRoot()
     {
         var activatedDirEntryList = new List<ICommonEntry>(8);
-        for (var entry = (ICommonEntry)this; entry != null; entry = entry.ParentCommonEntry)
+        for (ICommonEntry entry = this; entry != null; entry = entry.ParentCommonEntry)
         {
             activatedDirEntryList.Add(entry);
         }

@@ -13,6 +13,11 @@ public class ScanOptions
 
     [Option("desc", HelpText = "Description to set")]
     public string Description { get; [UsedImplicitly] set; }
+
+    [Option("follow-junctions",
+        Default = false,
+        HelpText = "[DANGER NOT EXTENSIVELY TESTED] Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
+    public bool FollowJunctions { get; [UsedImplicitly] set; }
 }
 
 [Verb("find", HelpText = "Uses all cache files available searches for <string>")]
@@ -64,6 +69,16 @@ public class ReplFindOptions
 {
     [Value(0, HelpText = "Value to search for")]
     public string Value { get; [UsedImplicitly] set; }
+}
+
+[Verb("migrate",
+    HelpText = "Convert MessagePack .cde catalogs to the zero-copy columnar .cdex format (one-way).")]
+public class MigrateOptions
+{
+    [Value(0, Required = false,
+        HelpText = "Specific .cde file to convert. If omitted, converts every catalog in the current " +
+                   "directory and one level down, writing a .cdex beside each.")]
+    public string Path { get; [UsedImplicitly] set; }
 }
 
 [Verb("hash", HelpText = "Hash all catalogs in current directory")]

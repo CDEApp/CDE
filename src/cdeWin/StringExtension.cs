@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace cdeWin;
 
@@ -9,7 +10,7 @@ public static class StringExtension
 
     // Cache for formatted size strings (key: size, value: formatted string)
     private static readonly Dictionary<long, string> SizeCache = new(1024);
-    private static readonly object SizeCacheLock = new();
+    private static readonly Lock SizeCacheLock = new();
 
     public static string ToHRString(this long val)
     {

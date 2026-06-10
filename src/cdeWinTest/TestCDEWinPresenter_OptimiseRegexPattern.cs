@@ -8,7 +8,7 @@ namespace cdeWinTest;
 [TestFixture]
 public class TestCDEWinPresenter_OptimiseRegexPattern_NotRegex : TestCDEWinPresenterBase
 {
-    protected TestOptimise _presenter;
+    private TestOptimise _presenter;
 
     [SetUp]
     public override void RunBeforeEveryTest()
@@ -55,10 +55,10 @@ public class TestCDEWinPresenter_OptimiseRegexPattern_NotRegex : TestCDEWinPrese
 [TestFixture]
 public class TestCDEWinPresenter_OptimiseRegexPattern_Regex : TestCDEWinPresenterBase
 {
-    protected TestOptimise _presenter;
+    private TestOptimise _presenter;
 
     [SetUp]
-    override public void RunBeforeEveryTest()
+    public override void RunBeforeEveryTest()
     {
         base.RunBeforeEveryTest();
         _mockForm.RegexMode = true;

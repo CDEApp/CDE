@@ -20,7 +20,7 @@ public static class SplitContainerExtensions
         }
     }
 
-    public static int GetSplitterSize(this SplitContainer splitter)
+    private static int GetSplitterSize(this SplitContainer splitter)
     {
         return splitter.Orientation == Orientation.Vertical
             ? splitter.Width

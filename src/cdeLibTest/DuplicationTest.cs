@@ -71,7 +71,7 @@ internal class DuplicationTest
         var roots = new List<RootEntry> {re1};
         re1.SetInMemoryFields();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var sizePairDictionary = d.GetSizePairs(roots);
 
         Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
@@ -117,7 +117,7 @@ internal class DuplicationTest
         re1.AddChild(de10);
         var roots = new List<RootEntry> {re1};
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var dp = d.GetDupePairs(roots);
         var dp1 = dp.First();
 
@@ -167,7 +167,7 @@ internal class DuplicationTest
     public void GetSizePairs_CheckSanityOfDupeSizeCountAndDupeFileCount_Exercise()
     {
         const int dupeCount = 10;
-        var testPath = this.AssemblyPathLocation();
+        var testPath = AssemblyPathLocation();
         // Create some dummy duplicate data.
         // create a catalog
         var random = FileHelper.RandomString(4096 * 16);
@@ -176,14 +176,14 @@ internal class DuplicationTest
             FileHelper.WriteAllText(random, testPath, $"CDE_testFile{i}.txt");
         }
 
-        Program.InitProgram(Array.Empty<string>());
-        Program.CreateCache(new ScanOptions {Path = testPath});
-        Program.HashCatalog();
+        Program.InitProgram([]);
+        Program.CreateCache(new ScanOptions {Path = testPath}); // scan writes a columnar .cdex
+        Program.HashCatalog();                                  // hash operates on the .cdex
 
-        // run tests.
+        // run tests. Load the hashed catalogs back from .cdex (where the hashes now live).
         Console.WriteLine($"0 Directory.GetCurrentDirectory() {System.IO.Directory.GetCurrentDirectory()}");
         var catalogRepository = new CatalogRepository(Log.Logger);
-        var rootEntries = catalogRepository.LoadCurrentDirCache();
+        var rootEntries = CatalogTreeBuilder.FromColumnarFiles(catalogRepository.GetColumnarFileList(["./"]));
 
         if (rootEntries.Count == 0)
         {
@@ -195,7 +195,7 @@ internal class DuplicationTest
             Console.WriteLine($"loaded {r.DefaultFileName}");
         }
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var sizePairDictionary = d.GetSizePairs(rootEntries);
 
         Console.WriteLine($"Number of Size Pairs {sizePairDictionary.Count}");
@@ -221,15 +221,10 @@ internal class DuplicationTest
             var seenHash = new Dictionary<Hash16, int>();
             foreach (var flatDe in fdeListOfSize)
             {
-                // var hash = flatDe.ChildDE.Hash;
                 if (flatDe.ChildDE.IsHashDone // because this is run on SizeDupe list it can have null hashes.
                     && !flatDe.ChildDE.IsPartialHash)
                 {
-                    if (!seenHash.ContainsKey(flatDe.ChildDE.Hash))
-                    {
-                        seenHash[flatDe.ChildDE.Hash] = 0;
-                    }
-                    else
+                    if (!seenHash.TryAdd(flatDe.ChildDE.Hash, 0))
                     {
                         ++seenHash[flatDe.ChildDE.Hash];
                     }
@@ -248,7 +243,7 @@ internal class DuplicationTest
         var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = catalogRepository.LoadCurrentDirCache();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var dupePairEnum = d.GetDupePairs(rootEntries);
 
         foreach (var dupe in dupePairEnum)
@@ -273,7 +268,7 @@ internal class DuplicationTest
         var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = catalogRepository.LoadCurrentDirCache();
 
-        var d = new Duplication(_logger, _configuration, _applicationDiagnostics);
+        var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         await d.ApplyHash(rootEntries).ConfigureAwait(false);
     }
     // ReSharper restore InconsistentNaming

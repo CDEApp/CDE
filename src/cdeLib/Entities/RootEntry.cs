@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using cdeLib.Extensions;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
@@ -23,6 +24,9 @@ public sealed class RootEntry : object, ICommonEntry
     private const string MatchAll = "*";
     private readonly IDriveInfoService _driveInfoService;
     private readonly IFileSystemAdapter _fileSystemAdapter;
+
+    // Set per-scan by RecurseTree; when false, directory reparse points are not descended into.
+    private bool _followJunctions;
 
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
@@ -60,8 +64,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime ScanStartUtc
     {
-        set => ScanStartUtcTicks = value.Ticks;
         get => DateTime.FromBinary(ScanStartUtcTicks);
+        set => ScanStartUtcTicks = value.Ticks;
     }
 
     [FlatBufferItem(8)]
@@ -72,8 +76,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime ScanEndUtc
     {
-        set => ScanEndUtcTicks = value.Ticks;
         get => DateTime.FromBinary(ScanEndUtcTicks);
+        set => ScanEndUtcTicks = value.Ticks;
     }
 
     [FlatBufferItem(9)]
@@ -105,11 +109,7 @@ public sealed class RootEntry : object, ICommonEntry
     {
     }
 
-    public RootEntry(IConfiguration configuration) : this(configuration, null)
-    {
-    }
-
-    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter)
+    public RootEntry(IConfiguration configuration, IFileSystemAdapter fileSystemAdapter = null)
     {
         TheRootEntry = this;
         _driveInfoService = new DriveInfoService();
@@ -120,11 +120,11 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
-    public void PopulateRoot(string startPath)
+    public void PopulateRoot(string startPath, bool followJunctions = false, CancellationToken token = default)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath);
+        RecurseTree(startPath, followJunctions, token);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -146,7 +146,7 @@ public sealed class RootEntry : object, ICommonEntry
         var driveInfo = _driveInfoService.GetDriveSpace(pathRoot);
         if (driveInfo.AvailableBytes != null) AvailSpace = driveInfo.AvailableBytes.Value;
         if (driveInfo.TotalBytes != null) TotalSpace = driveInfo.TotalBytes.Value;
-        VolumeName = this.GetVolumeName(GetDirectoryRoot(pathRoot));
+        VolumeName = GetVolumeName(GetDirectoryRoot(pathRoot));
         return startPath;
     }
 
@@ -286,8 +286,9 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// </summary>
-    public void RecurseTree(string startPath)
+    public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default)
     {
+        _followJunctions = followJunctions;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -298,12 +299,12 @@ public sealed class RootEntry : object, ICommonEntry
         {
             var (parent, directory) = stack.Pop();
 
-            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker))
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, token))
             {
                 continue;
             }
 
-            if (Hack.BreakConsoleFlag)
+            if (token.IsCancellationRequested)
             {
                 break;
             }
@@ -321,7 +322,8 @@ public sealed class RootEntry : object, ICommonEntry
         ICommonEntry parent,
         Stack<(ICommonEntry, string)> stack,
         ref int entryCount,
-        ScanProgressTracker progressTracker)
+        ScanProgressTracker progressTracker,
+        CancellationToken token)
     {
         try
         {
@@ -332,7 +334,7 @@ public sealed class RootEntry : object, ICommonEntry
             {
                 ProcessFileSystemEntry(fsInfo, parent, stack, ref entryCount, directory, progressTracker);
 
-                if (Hack.BreakConsoleFlag)
+                if (token.IsCancellationRequested)
                 {
                     break;
                 }
@@ -361,7 +363,10 @@ public sealed class RootEntry : object, ICommonEntry
         var dirEntry = new DirEntry(fsInfo);
         parent.AddChild(dirEntry);
 
-        if (dirEntry.IsDirectory)
+        // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
+        // would otherwise be descended into. By default we record them but do not follow them,
+        // avoiding cycles (e.g. a junction pointing at an ancestor) and duplicate content.
+        if (dirEntry.IsDirectory && (_followJunctions || !dirEntry.IsReparsePoint))
         {
             stack.Push((dirEntry, fsInfo.FullName));
         }
@@ -475,10 +480,12 @@ public sealed class RootEntry : object, ICommonEntry
 
         TraverseTreePair((_, d) =>
         {
-            if (d.IsDirectory && d.Children?.Count > 1)
+            // Sorting mutates the concrete child list, so work through the concrete DirEntry
+            // (the abstract ICommonEntry.Children is a read-only view).
+            if (d is DirEntry { IsDirectory: true, Children.Count: > 1 } de)
             {
-                d.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
-                d.IsDefaultSort = true;
+                de.Children.Sort((de1, de2) => de1.PathCompareWithDirTo(de2));
+                de.IsDefaultSort = true;
             }
 
             return true;
@@ -509,8 +516,8 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public DateTime Modified
     {
-        set => ModifiedTicks = value.Ticks;
         get => DateTime.FromBinary(ModifiedTicks);
+        set => ModifiedTicks = value.Ticks;
     }
 
     [ProtoMember(12, IsRequired = false)]
@@ -639,13 +646,13 @@ public sealed class RootEntry : object, ICommonEntry
     /// if this is a directory number of files contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long FileEntryCount { get; set; }
+    public uint FileEntryCount { get; set; }
 
     /// <summary>
     /// if this is a directory number of dirs contained in its hierarchy
     /// </summary>
     [IgnoreMember]
-    public long DirEntryCount { get; set; }
+    public uint DirEntryCount { get; set; }
 
     public void SetHash(byte[] hash)
     {
@@ -721,22 +728,13 @@ public sealed class RootEntry : object, ICommonEntry
             return -1; // this before de
         }
 
-        if (IsModifiedBad && !de.IsModifiedBad)
+        return IsModifiedBad switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsModifiedBad && de.IsModifiedBad)
-        {
-            return 1; // this after de
-        }
-
-        if (IsModifiedBad && de.IsModifiedBad)
-        {
-            return 0;
-        }
-
-        return DateTime.Compare(Modified, de.Modified);
+            true when !de.IsModifiedBad => -1,
+            false when de.IsModifiedBad => 1,
+            true when de.IsModifiedBad => 0,
+            _ => DateTime.Compare(Modified, de.Modified)
+        };
     }
 
     // is this right ? for the simple compareResult invert we do in caller ? - maybe not ? keep dirs at top anyway ?
@@ -747,20 +745,15 @@ public sealed class RootEntry : object, ICommonEntry
             return -1; // this before de
         }
 
-        if (IsDirectory && !de.IsDirectory)
+        return IsDirectory switch
         {
-            return -1; // this before de
-        }
-
-        if (!IsDirectory && de.IsDirectory)
-        {
-            return 1; // this after de
-        }
-
-        return string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase);
+            true when !de.IsDirectory => -1,
+            false when de.IsDirectory => 1,
+            _ => string.Compare(Path, de.Path, StringComparison.OrdinalIgnoreCase)
+        };
     }
 
-    // can this be done with TraverseTree ?
+    // can this be done with TraverseTree?
     public void SetSummaryFields()
     {
         var size = 0L;
@@ -805,10 +798,12 @@ public sealed class RootEntry : object, ICommonEntry
     [Key(15)]
     public IList<DirEntry> Children { get; set; }
 
+    // Covariant read-only view for ICommonEntry consumers (see DirEntry for rationale).
+    IReadOnlyList<ICommonEntry> ICommonEntry.Children => Children as IReadOnlyList<ICommonEntry>;
+
     public void AddChild(DirEntry child)
     {
-        if (this.Children == null)
-            Children = new List<DirEntry>();
+        Children ??= new List<DirEntry>();
         Children.Add(child);
     }
 
@@ -924,7 +919,7 @@ public sealed class RootEntry : object, ICommonEntry
         ValidateTreeCopyParameters(this, destination);
 
         var stack = new Stack<(string, ICommonEntry, ICommonEntry)>(capacity: 64);
-        stack.Push((this.Path, this, destination));
+        stack.Push((Path, this, destination));
 
         while (stack.Count > 0)
         {
@@ -988,9 +983,9 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Builds a dictionary for O(1) lookups of destination children by path.
     /// </summary>
-    private static Dictionary<string, DirEntry> BuildDestinationLookup(IList<DirEntry> children)
+    private static Dictionary<string, ICommonEntry> BuildDestinationLookup(IReadOnlyList<ICommonEntry> children)
     {
-        var lookup = new Dictionary<string, DirEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
+        var lookup = new Dictionary<string, ICommonEntry>(children.Count, StringComparer.OrdinalIgnoreCase);
 
         foreach (var child in children)
         {
@@ -1030,12 +1025,15 @@ public sealed class RootEntry : object, ICommonEntry
         }
 
         var shouldCopy = !destination.IsHashDone  // Destination has no hash
-            || (source.IsPartialHash == false && destination.IsPartialHash);  // Upgrading partial to full
+            || (!source.IsPartialHash && destination.IsPartialHash);  // Upgrading partial to full
 
         if (shouldCopy)
         {
             destination.IsPartialHash = source.IsPartialHash;
             destination.Hash = source.Hash;
+            // IsHashDone is a separate BitFields flag; without it the copied hash is ignored by
+            // hashing/serialization (the reused hash would be silently lost on the next save).
+            destination.IsHashDone = true;
         }
     }
 

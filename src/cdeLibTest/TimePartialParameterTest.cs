@@ -37,7 +37,7 @@ public class TimePartialParameterTest
     [Test]
     public void Hour_With_Minute_Parameter()
     {
-        var args = "3:34";
+        const string args = "3:34";
         var d = new TimePartialParameter(args);
         Assert.That(d.Hour, Is.EqualTo(3));
         Assert.That(d.Minute, Is.EqualTo(34));
@@ -63,7 +63,7 @@ public class TimePartialParameterTest
     [Test]
     public void Hour_With_Minute_With_Second_Parameter()
     {
-        var args = "3:34:10";
+        const string args = "3:34:10";
         var d = new TimePartialParameter(args);
         Assert.That(d.Hour, Is.EqualTo(3));
         Assert.That(d.Minute, Is.EqualTo(34));

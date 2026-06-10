@@ -5,7 +5,7 @@ using System.Windows.Forms;
 
 namespace cdeWin;
 
-// FROM http://stackoverflow.com/a/254139
+// From http://stackoverflow.com/a/254139
 // ReSharper disable InconsistentNaming
 [EditorBrowsable(EditorBrowsableState.Never)]
 public static class ListViewExtensions
