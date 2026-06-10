@@ -2,9 +2,9 @@ name: .NET
 
 on:
   push:
-#    branches: [ "master","" ]
+#    branches: [ "main","" ]
   pull_request:
-#    branches: [ "master" ]
+#    branches: [ "main" ]
 
 jobs:
   build:
@@ -12,7 +12,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
             #fetch depth 0 or gitversion breaks since it can't obtain the required tags etc. 
             fetch-depth: 0
@@ -24,7 +24,7 @@ jobs:
         run: |
           ./build.ps1 publish
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: app
           path: artifacts/
