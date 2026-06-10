@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from "react";
 interface Props {
   onOpenFolder: () => void;
   onReload: () => void;
+  onExit: () => void;
 }
 
 /** A lightweight native-style menu bar. "File ▸ Open Folder…" picks a catalog directory. */
-export function MenuBar({ onOpenFolder, onReload }: Props) {
+export function MenuBar({ onOpenFolder, onReload, onExit }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -51,6 +52,15 @@ export function MenuBar({ onOpenFolder, onReload }: Props) {
             }}
           >
             Reload Catalogs
+          </li>
+          <li className="menu-separator" role="separator" />
+          <li
+            onClick={() => {
+              setOpen(false);
+              onExit();
+            }}
+          >
+            Exit
           </li>
         </ul>
       )}

@@ -36,6 +36,8 @@ body {
 }
 .menu-dropdown li { padding: 4px 14px; cursor: default; }
 .menu-dropdown li:hover { background: var(--accent); color: #fff; }
+.menu-dropdown li.menu-separator { padding: 0; margin: 4px 0; height: 0; border-top: 1px solid var(--border); cursor: default; }
+.menu-dropdown li.menu-separator:hover { background: none; }
 
 .boot { padding: 2rem; }
 

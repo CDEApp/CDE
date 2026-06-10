@@ -283,7 +283,11 @@ export default function App() {
 
   return (
     <div className="app">
-      <MenuBar onOpenFolder={openFolder} onReload={() => void reloadCatalogs(catalogDir)} />
+      <MenuBar
+        onOpenFolder={openFolder}
+        onReload={() => void reloadCatalogs(catalogDir)}
+        onExit={() => void getCurrentWindow().close()}
+      />
 
       <SearchBar
         busy={busy}
