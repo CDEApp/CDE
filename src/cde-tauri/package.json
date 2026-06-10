@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Tauri (React/TypeScript) desktop frontend for CDE, talking to the cdeApi sidecar over loopback.",
+  "packageManager": "pnpm@10.18.2",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
@@ -27,5 +28,10 @@
     "@vitejs/plugin-react": "^4.3.4",
     "typescript": "^5.6.3",
     "vite": "^6.0.3"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
   }
 }

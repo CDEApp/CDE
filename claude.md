@@ -53,7 +53,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Talks to the sidecar over loopback HTTP/SSE with the handshake token; mmap catalogs live in the
     sidecar, the webview only ever sees DTO pages
   - Window geometry via the Tauri window-state plugin; app UI state via `/ui-state`
-  - Not a .NET project: built with `npm`/`vite` + `cargo` (see `src/cde-tauri/README.md`)
+  - Not a .NET project: built with `pnpm`/`vite` + `cargo` (see `src/cde-tauri/README.md`)
 
 - **cdeWeb** - Web interface (unreleased/unfinished)
   - ASP.NET MVC with SignalR, Bootstrap, Angular.js

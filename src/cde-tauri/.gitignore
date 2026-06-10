@@ -6,5 +6,5 @@ icon-src.png
 src-tauri/target/
 src-tauri/gen/
 
-# Staged sidecar binary (large, self-contained; produced by `npm run bundle-sidecar`)
+# Staged sidecar binary (large, self-contained; produced by `pnpm bundle-sidecar`)
 src-tauri/binaries/

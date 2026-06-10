@@ -21,7 +21,7 @@ cde-tauri (Rust shell)
 
 ## Prerequisites
 
-- Node 18+ and npm
+- Node 18+ and pnpm
 - Rust toolchain (stable) + the platform's Tauri prerequisites
   (WebView2 on Windows, `webkit2gtk` on Linux, Xcode CLT on macOS)
 - The .NET SDK (to publish the `cdeApi` sidecar)
@@ -29,20 +29,20 @@ cde-tauri (Rust shell)
 ## Develop / run
 
 ```bash
-npm install
-npm run bundle-sidecar   # publishes cdeApi and stages it under src-tauri/binaries/
-npm run tauri dev        # runs vite + the Rust shell
+pnpm install
+pnpm bundle-sidecar   # publishes cdeApi and stages it under src-tauri/binaries/
+pnpm tauri dev        # runs vite + the Rust shell
 ```
 
 ## Build a distributable
 
 ```bash
-npm run bundle-sidecar
-npm run tauri build
+pnpm bundle-sidecar
+pnpm tauri build
 ```
 
 ## Notes
 
-- Icons under `src-tauri/icons/` are generated with `npx tauri icon <source.png>`.
-- `src-tauri/binaries/` (the staged sidecar) is git-ignored; run `npm run bundle-sidecar`
+- Icons under `src-tauri/icons/` are generated with `pnpm dlx tauri icon <source.png>`.
+- `src-tauri/binaries/` (the staged sidecar) is git-ignored; run `pnpm bundle-sidecar`
   to regenerate it for your host target triple.
