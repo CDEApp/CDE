@@ -22,10 +22,10 @@ namespace cdeLib.Entities.Columnar;
 ///     [16] (int64 offset, int64 length) x <see cref="ColumnCount"/>   -- absolute, 8-aligned
 ///   column bodies (each padded to an 8-byte boundary), in <see cref="Col"/> order.
 ///
-/// Columns are dense and homogeneous, so a name-only search sequentially scans just the NameBlob +
-/// NameOffsets columns and never pages in Size / Modified / Hash. NameOffsets are 64-bit so the name
-/// blob is not capped at 2 GB. Entry count is 32-bit, matching <see cref="EntryStore"/>'s int indexing.
-/// </summary>
+    /// Columns are dense and homogeneous, so a name-only search sequentially scans just the NameBlob +
+    /// NameOffsets columns and never pages in Size / Modified / Hash. NameOffsets are 64-bit, so the on-disk
+    /// name blob can exceed 2 GB (though Write currently buffers it in-memory, which is limited to ~2 GB).
+    /// Entry count is 32-bit, matching <see cref="EntryStore"/>'s int indexing.
 public static class ColumnarFormat
 {
     public static ReadOnlySpan<byte> Magic => "CDEX"u8;
