@@ -158,7 +158,7 @@ public class Duplication
 
         try
         {
-            Parallel.ForEach(groupedByDirectoryRoot.Values, outerOptions, (grp, _) =>
+            await Parallel.ForEachAsync(groupedByDirectoryRoot.Values, outerOptions, async (grp, _) =>
             {
                 var parallelOptions = new ParallelOptions
                 {
@@ -166,21 +166,23 @@ public class Duplication
                     MaxDegreeOfParallelism = 2
                 };
 
-                // This now tries to hash files in approx order of largest to smallest files.
+                // grp is already in descending size order (flatList was sorted before grouping), so
+                // processing approximately in list order hashes the largest files first.
                 // Hitting break when smallest log displays get down to a size you don't care about is viable.
                 // Then the full hash phase will start, and you can hit break again to stop it after a while.
                 // to be able to then run --dupes on the larger hashed files.
-                grp.AsParallel()
-                    .ForEachInApproximateOrder(parallelOptions, async void (flatFile, _) =>
+                // ForEachAsync (unlike the prior async-void ForEach) actually awaits each hash, so this
+                // method does not return until every partial hash has been written.
+                await Parallel.ForEachAsync(grp, parallelOptions, async (flatFile, _) =>
+                {
+                    _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
+                    await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
+                    if (_cancellation.IsCancellationRequested)
                     {
-                        _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
-                        await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
-                        if (_cancellation.IsCancellationRequested)
-                        {
-                            Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
-                            await cts.CancelAsync();
-                        }
-                    });
+                        Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
+                        await cts.CancelAsync();
+                    }
+                });
             });
         }
         catch (OperationCanceledException)
@@ -358,36 +360,33 @@ public class Duplication
                 entriesToHash.AddRange(kvp.Value);
             }
 
-            // Process in parallel with proper async handling
-            await Task.Run(() =>
+            // Process in parallel, awaiting each hash. The previous AsParallel().ForAll(async ...)
+            // launched async-void lambdas that ForAll did not await, so this method could return (and
+            // the catalog could be saved) while full hashes were still being computed - leaving entries
+            // flagged as partial-only and breaking duplicate detection. ForEachAsync awaits completion.
+            await Parallel.ForEachAsync(entriesToHash, parallelOptions, async (pde, _) =>
             {
-                entriesToHash.AsParallel()
-                    .WithDegreeOfParallelism(parallelOptions.MaxDegreeOfParallelism)
-                    .WithCancellation(token)
-                    .ForAll(async pde =>
+                var dirEntry = pde.ChildDE;
+
+                // Skip if already has full hash
+                if (dirEntry.IsHashDone && !dirEntry.IsPartialHash)
+                {
+                    return;
+                }
+
+                // Only hash entries that are in the duplicate set
+                if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
+                {
+                    var fullPath = pde.FullPath;
+                    await CalculateHash(fullPath, dirEntry, false);
+
+                    if (_cancellation.IsCancellationRequested)
                     {
-                        var dirEntry = pde.ChildDE;
-
-                        // Skip if already has full hash
-                        if (dirEntry.IsHashDone && !dirEntry.IsPartialHash)
-                        {
-                            return;
-                        }
-
-                        // Only hash entries that are in the duplicate set
-                        if (_dirEntriesRequiringFullHashing.Contains(dirEntry))
-                        {
-                            var fullPath = pde.FullPath;
-                            await CalculateHash(fullPath, dirEntry, false);
-
-                            if (_cancellation.IsCancellationRequested)
-                            {
-                                _logger.LogInfo("Break key detected, exiting full hash phase.");
-                                await cts.CancelAsync();
-                            }
-                        }
-                    });
-            }, token);
+                        _logger.LogInfo("Break key detected, exiting full hash phase.");
+                        await cts.CancelAsync();
+                    }
+                }
+            });
         }
         catch (OperationCanceledException)
         {

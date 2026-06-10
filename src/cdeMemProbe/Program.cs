@@ -217,7 +217,7 @@ public static class Program
     {
         using var repo = new CatalogRepository(logger);
         var root = repo.LoadDirCache(file);
-        if (root == null) return (null, 0);
+        if (root == null) return (null!, 0);
         return (root, root.FileEntryCount + root.DirEntryCount);
     }
 
@@ -226,7 +226,7 @@ public static class Program
     {
         using var repo = new CatalogRepository(logger);
         var root = repo.LoadDirCache(file);
-        if (root == null) return (null, 0);
+        if (root == null) return (null!, 0);
         var entries = root.FileEntryCount + root.DirEntryCount;
         var store = EntryStore.Build(root);
         // root is a plain local; once this returns it is unreferenced and collectable, leaving only
