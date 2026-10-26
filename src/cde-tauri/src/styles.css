@@ -66,6 +66,9 @@ body {
 .searchbar .toggles select { margin-left: 6px; }
 .searchbar-advanced { display: flex; gap: 12px; flex-wrap: wrap; }
 .searchbar-advanced fieldset { border: 1px solid var(--border); }
+/* gap between a filter's "From" / "To" / "Within last" label and the input it introduces */
+.searchbar-advanced fieldset label { margin-right: 6px; }
+.searchbar-advanced fieldset label ~ label { margin-left: 8px; }
 .searchbar-advanced input.age { width: 6ch; margin: 0 4px; }
 button { background: var(--accent); color: #fff; border: none; padding: 4px 10px; cursor: pointer; }
 button.cancel { background: #a1260d; }
