@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.Text;
 
@@ -189,11 +190,24 @@ public sealed class EntryStore : IEntrySource
         return pos;
     }
 
+    /// <summary>Full path of entry <paramref name="i"/>; the only managed allocation is the result string.</summary>
     public string FullPath(int i)
     {
-        var sb = new StringBuilder(128);
-        AppendFullPath(sb, i);
-        return sb.ToString();
+        Span<char> stack = stackalloc char[256];
+        var len = TryWriteFullPath(stack, i);
+        if (len >= 0) return new string(stack[..len]);
+
+        var rented = ArrayPool<char>.Shared.Rent(1024);
+        try
+        {
+            while ((len = TryWriteFullPath(rented, i)) < 0)
+            {
+                ArrayPool<char>.Shared.Return(rented);
+                rented = ArrayPool<char>.Shared.Rent(rented.Length * 2);
+            }
+            return new string(rented, 0, len);
+        }
+        finally { ArrayPool<char>.Shared.Return(rented); }
     }
 
     /// <summary>

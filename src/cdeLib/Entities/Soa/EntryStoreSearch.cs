@@ -34,6 +34,7 @@ public static class EntryStoreSearch
         // Substring path matching runs Span<char>.Contains over a rented buffer; only regex mode
         // (rarer) materialises a string. Avoids a full-path string allocation per scanned entry.
         var pathBuffer = o.IncludePath ? ArrayPool<char>.Shared.Rent(512) : null;
+        var nameBuffer = o.IncludePath ? null : ArrayPool<char>.Shared.Rent(256);
         try
         {
             for (var i = 1; i < store.Count; i++)
@@ -69,12 +70,12 @@ public static class EntryStoreSearch
                 {
                     var path = WritePath(store, i, ref pathBuffer);
                     match = o.RegexMode
-                        ? regex.IsMatch(path.ToString())
+                        ? regex.IsMatch(path)
                         : path.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
-                    var name = store.FullName(i);
+                    var name = FullNameSpan(store, i, ref nameBuffer);
                     match = o.RegexMode
                         ? regex.IsMatch(name)
                         : name.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
@@ -86,7 +87,29 @@ public static class EntryStoreSearch
         finally
         {
             if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
+            if (nameBuffer != null) ArrayPool<char>.Shared.Return(nameBuffer);
         }
+    }
+
+    /// <summary>
+    /// Entry <paramref name="i"/>'s full name (name + extension) as a span: the stored name itself when
+    /// there is no extension, otherwise the two parts joined in the rented <paramref name="buffer"/>
+    /// (grown if needed). Avoids the string a rejoin would allocate.
+    /// </summary>
+    private static ReadOnlySpan<char> FullNameSpan(EntryStore store, int i, ref char[] buffer)
+    {
+        var name = store.Name[i];
+        var ext = store.Ext[i];
+        if (string.IsNullOrEmpty(ext)) return name;
+        var len = (name?.Length ?? 0) + ext.Length;
+        if (len > buffer.Length)
+        {
+            ArrayPool<char>.Shared.Return(buffer);
+            buffer = ArrayPool<char>.Shared.Rent(len);
+        }
+        name.AsSpan().CopyTo(buffer);
+        ext.AsSpan().CopyTo(buffer.AsSpan(name?.Length ?? 0));
+        return buffer.AsSpan(0, len);
     }
 
     /// <summary>
@@ -131,6 +154,7 @@ public static class EntryStoreSearch
         var hasPattern = !string.IsNullOrEmpty(pattern);
 
         var pathBuffer = includePath ? ArrayPool<char>.Shared.Rent(512) : null;
+        var nameBuffer = includePath ? null : ArrayPool<char>.Shared.Rent(256);
         try
         {
             for (var i = 1; i < store.Count; i++) // index 0 is the root, never a result
@@ -149,12 +173,12 @@ public static class EntryStoreSearch
                 {
                     var path = WritePath(store, i, ref pathBuffer);
                     match = regexMode
-                        ? regex.IsMatch(path.ToString())
+                        ? regex.IsMatch(path)
                         : path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
-                    var name = store.FullName(i);
+                    var name = FullNameSpan(store, i, ref nameBuffer);
                     match = regexMode
                         ? regex.IsMatch(name)
                         : name.Contains(pattern, StringComparison.OrdinalIgnoreCase);
@@ -166,6 +190,7 @@ public static class EntryStoreSearch
         finally
         {
             if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
+            if (nameBuffer != null) ArrayPool<char>.Shared.Return(nameBuffer);
         }
     }
 }
