@@ -83,6 +83,28 @@ internal class SerializeDataModelTest
         Assert.That(same, Is.False, TreeDuplicate.LastMessage);
     }
 
+    // The legacy .cde format is MessagePack with the custom resolver (Hash16 formatter); guards
+    // package upgrades against silently changing the round trip.
+    [Test]
+    public void MessagePack_RoundTrip_PreservesTreeAndHashes()
+    {
+        re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+        de2a.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        de2a.IsPartialHash = true;
+
+        var bytes = MessagePack.MessagePackSerializer.Serialize(re1,
+            cdeLib.Infrastructure.Serialization.MessagePackConfig.Options);
+        var re2 = MessagePack.MessagePackSerializer.Deserialize<RootEntry>(bytes,
+            cdeLib.Infrastructure.Serialization.MessagePackConfig.Options);
+
+        Assert.That(re1.SameTree(re2), Is.True, TreeDuplicate.LastMessage);
+        var hashed = re2.Children.SelectMany(c => (c.Children ?? []).Prepend(c))
+            .Single(c => c.Path == de2a.Path);
+        Assert.That(hashed.IsHashDone, Is.True);
+        Assert.That(hashed.IsPartialHash, Is.True);
+        Assert.That(hashed.Hash, Is.EqualTo(de2a.Hash));
+    }
+
     [Ignore("Cant do this as dir tree is part of root entry bending test to toy with protobuf-net a bit")]
     [Test]
     public void DeSerialize_JustRootEntryThatHasTree()
