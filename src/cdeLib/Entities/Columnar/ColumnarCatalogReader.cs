@@ -285,13 +285,11 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     {
         var parent = Parent;
         var depth = 0;
-        for (var cur = i; cur != EntryStore.None; cur = parent[cur])
-        {
-            if (++depth > Count) throw new InvalidDataException("Cycle in catalog parent chain.");
-        }
+        for (var cur = i; cur != EntryStore.None && depth < Count; cur = parent[cur]) depth++; // bounded: a corrupt cycle truncates
+
         if (chain == null || depth > chain.Length) chain = new int[Math.Max(depth, Math.Max(64, (chain?.Length ?? 0) * 2))];
         var k = 0;
-        for (var cur = i; cur != EntryStore.None; cur = parent[cur]) chain[k++] = cur;
+        for (var cur = i; cur != EntryStore.None && k < depth; cur = parent[cur]) chain[k++] = cur;
         return depth;
     }
 
@@ -426,10 +424,8 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             Span<int> chain = stackalloc int[64];
             var parent = Parent;
             var depth = 0;
-            for (var cur = i; cur != EntryStore.None; cur = parent[cur])
-            {
-                if (++depth > Count) throw new InvalidDataException("Cycle in catalog parent chain.");
-            }
+            for (var cur = i; cur != EntryStore.None && depth < Count; cur = parent[cur]) depth++; // bounded: a corrupt cycle truncates
+
             if (depth > chain.Length)
             {
                 chainArr = ArrayPool<int>.Shared.Rent(depth);
@@ -437,7 +433,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             }
             chain = chain[..depth];
             var k = 0;
-            for (var cur = i; cur != EntryStore.None; cur = parent[cur]) chain[k++] = cur;
+            for (var cur = i; cur != EntryStore.None && k < depth; cur = parent[cur]) chain[k++] = cur;
 
             var len = WritePath(chain, default, write: false);
             Span<byte> bytes = stackalloc byte[512];
