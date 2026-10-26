@@ -293,6 +293,8 @@ export default function App() {
         busy={busy}
         history={(uiRef.current?.get().searchHistory as string[]) ?? []}
         defaults={uiRef.current?.get() ?? {}}
+        filtersExpanded={uiRef.current?.get().filtersExpanded ?? true}
+        onFiltersExpandedChange={(filtersExpanded) => uiRef.current?.update({ filtersExpanded })}
         onSearch={runSearch}
         onCancel={cancelSearch}
       />
@@ -349,6 +351,8 @@ export default function App() {
         {view === "results" && (
           <ResultsList
             rows={results}
+            columnOrder={uiRef.current?.get().searchResultColumnOrder}
+            onColumnOrderChange={(searchResultColumnOrder) => uiRef.current?.update({ searchResultColumnOrder })}
             onActivate={(row) => void viewInTree(row.ref)}
             onContextMenu={(row, x, y) =>
               setMenu({

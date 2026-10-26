@@ -5,6 +5,11 @@
   --fg: #d4d4d4;
   --dir: #6aa9ff;
   --accent: #0e639c;
+  /* Content panes (tree, directory list, results) sit a shade lighter than the menu/toolbar chrome. */
+  --content: #2a2a2a;
+  --content-header: #333334;
+  --row-line: #363636;
+  --row-hover: #37373d;
 }
 
 * { box-sizing: border-box; }
@@ -44,10 +49,24 @@ body {
 /* search bar */
 .searchbar { padding: 6px 8px; border-bottom: 1px solid var(--border); }
 .searchbar-row { display: flex; gap: 6px; align-items: center; margin-bottom: 4px; }
-.searchbar .pattern { flex: 0 0 auto; width: 50ch; padding: 4px 6px; background: #333; color: var(--fg); border: 1px solid var(--border); }
+/* search pattern combo: typeable input + ▾ history drop-down */
+.pattern-combo { position: relative; display: flex; flex: 0 0 auto; width: 50ch; }
+.searchbar .pattern { flex: 1; min-width: 0; padding: 4px 6px; background: #333; color: var(--fg); border: 1px solid var(--border); border-right: none; }
+.pattern-combo .combo-toggle { padding: 0 7px; background: #333; color: var(--fg); border: 1px solid var(--border); }
+.pattern-combo .combo-toggle:hover:not(:disabled) { background: var(--accent); color: #fff; }
+.pattern-combo .combo-toggle:disabled { color: #666; cursor: default; }
+.combo-list {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 1050; max-height: 320px; overflow-y: auto;
+  margin: 0; padding: 2px 0; list-style: none;
+  background: #2b2b2b; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.5);
+}
+.combo-list li { padding: 3px 8px; cursor: default; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.combo-list li.active { background: var(--accent); color: #fff; }
 .searchbar .toggles label { margin-right: 10px; }
+.searchbar .toggles select { margin-left: 6px; }
 .searchbar-advanced { display: flex; gap: 12px; flex-wrap: wrap; }
 .searchbar-advanced fieldset { border: 1px solid var(--border); }
+.searchbar-advanced input.age { width: 6ch; margin: 0 4px; }
 button { background: var(--accent); color: #fff; border: none; padding: 4px 10px; cursor: pointer; }
 button.cancel { background: #a1260d; }
 button.link { background: none; color: var(--dir); }
@@ -61,7 +80,7 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .tabs .reload { margin-left: auto; }
 
 /* main */
-.main { overflow: hidden; }
+.main { overflow: hidden; background: var(--content); }
 .split { display: grid; grid-template-columns: 320px 6px 1fr; height: 100%; }
 .pane { overflow: auto; height: 100%; }
 .splitter { cursor: col-resize; background: var(--border); }
@@ -76,13 +95,13 @@ ul.tree, ul.tree ul { list-style: none; margin: 0; padding-left: 14px; }
 
 /* grids */
 .grid { height: 100%; overflow: auto; }
-.path-bar { padding: 3px 6px; background: var(--panel); border-bottom: 1px solid var(--border); white-space: nowrap; }
+.path-bar { padding: 3px 6px; background: var(--content-header); border-bottom: 1px solid var(--border); white-space: nowrap; }
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 2px 8px; border-bottom: 1px solid #2a2a2a; white-space: nowrap; }
-th { position: sticky; top: 0; background: var(--panel); }
-tr.dir td:first-child { color: var(--dir); }
+th, td { text-align: left; padding: 2px 8px; border-bottom: 1px solid var(--row-line); white-space: nowrap; }
+th { position: sticky; top: 0; background: var(--content-header); }
+tr.dir td { color: var(--dir); }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
-tbody tr:hover { background: #2a2d2e; }
+tbody tr:hover { background: var(--row-hover); }
 
 /* virtualized list (search results) */
 .vlist { display: flex; flex-direction: column; height: 100%; min-height: 0; }
@@ -92,11 +111,11 @@ tbody tr:hover { background: #2a2d2e; }
 .vlist-header {
   display: grid; grid-template-columns: var(--cols);
   position: sticky; top: 0; z-index: 1;
-  background: var(--panel); border-bottom: 1px solid var(--border); font-weight: 600;
+  background: var(--content-header); border-bottom: 1px solid var(--border); font-weight: 600;
 }
 .vlist-header > div { position: relative; padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .vlist-header > div.sortable { cursor: pointer; user-select: none; }
-.vlist-header > div.sortable:hover { background: #2a2d2e; }
+.vlist-header > div.sortable:hover { background: var(--row-hover); }
 .vlist-header > div.sorted { color: var(--accent, #4daafc); }
 /* Drag handle on the right edge of each header cell to resize the column. */
 .vlist-header .resizer {
@@ -108,10 +127,15 @@ tbody tr:hover { background: #2a2d2e; }
 .vlist-inner { position: relative; }
 .vlist-row {
   display: grid; grid-template-columns: var(--cols); align-items: center;
-  border-bottom: 1px solid #2a2a2a; cursor: default;
+  border-bottom: 1px solid var(--row-line); cursor: default;
 }
-.vlist-row:hover { background: #2a2d2e; }
-.vlist-row.dir .cell:first-child { color: var(--dir); }
+.vlist-row:hover { background: var(--row-hover); }
+.vlist-row.dir { color: var(--dir); }
+/* header drag-to-reorder */
+.vlist-header.reordering, .vlist-header.reordering > div.sortable { cursor: grabbing; }
+.vlist-header > div.dragging { opacity: .5; }
+.vlist-header > div.drop-before { box-shadow: inset 2px 0 0 var(--accent); }
+.vlist-header > div.drop-after { box-shadow: inset -2px 0 0 var(--accent); }
 .vlist-row .cell { padding: 0 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .vlist-header .num, .vlist-row .cell.num { text-align: right; font-variant-numeric: tabular-nums; }
 

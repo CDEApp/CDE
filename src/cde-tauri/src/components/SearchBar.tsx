@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { SearchQuery } from "../api/types";
-import { parseSize } from "../format";
+import { AGE_UNITS, notOlderThanCutoff, parseAge, parseSize, toLocalIsoString, type AgeUnit } from "../format";
+import { PatternCombo } from "./PatternCombo";
 
 interface Props {
   busy: boolean;
@@ -8,19 +9,28 @@ interface Props {
   onCancel: () => void;
   history: string[];
   defaults: Partial<SearchQuery>;
+  /** Initial state of the ▼ Filters panel (persisted UI state). */
+  filtersExpanded: boolean;
+  onFiltersExpandedChange: (expanded: boolean) => void;
 }
 
 const LIMITS = [100, 1000, 10000, 100000];
 
 /** Search box + advanced filters (size/date/hour ranges, not-older-than). */
-export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props) {
+export function SearchBar({
+  busy, onSearch, onCancel, history, defaults, filtersExpanded, onFiltersExpandedChange,
+}: Props) {
   const [pattern, setPattern] = useState("");
   const [regexMode, setRegexMode] = useState(defaults.regexMode ?? false);
   const [includePath, setIncludePath] = useState(defaults.includePath ?? false);
   const [includeFiles, setIncludeFiles] = useState(defaults.includeFiles ?? true);
   const [includeFolders, setIncludeFolders] = useState(defaults.includeFolders ?? true);
   const [limit, setLimit] = useState(defaults.limitResultCount ?? 10000);
-  const [advanced, setAdvanced] = useState(false);
+  const [advanced, setAdvancedState] = useState(filtersExpanded);
+  const setAdvanced = (expanded: boolean) => {
+    setAdvancedState(expanded);
+    onFiltersExpandedChange(expanded);
+  };
 
   // Advanced filters — sizes are entered as human-readable text ("25 KB", "2.5 MB", "4GB"; a bare
   // number is bytes) and parsed to bytes on submit.
@@ -32,11 +42,22 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
   const [fromDate, setFromDate] = useState("");
   const [toDateEnable, setToDateEnable] = useState(false);
   const [toDate, setToDate] = useState("");
+  // "Not older than N <unit>": converted to an absolute modified-date cutoff at submit time.
+  const [notOlderThanEnable, setNotOlderThanEnable] = useState(false);
+  const [notOlderThanText, setNotOlderThanText] = useState("1");
+  const [notOlderThanUnit, setNotOlderThanUnit] = useState<AgeUnit>("hours");
 
   const fromSizeInvalid = fromSizeEnable && fromSizeText.trim() !== "" && parseSize(fromSizeText) === null;
   const toSizeInvalid = toSizeEnable && toSizeText.trim() !== "" && parseSize(toSizeText) === null;
+  const notOlderThanAmount = parseAge(notOlderThanText);
+  const notOlderThanInvalid = notOlderThanEnable && notOlderThanAmount === null;
 
   function submit() {
+    // Don't run a search with a filter the user asked for but we can't apply.
+    if (notOlderThanInvalid) {
+      setAdvanced(true);
+      return;
+    }
     onSearch({
       pattern,
       regexMode,
@@ -52,27 +73,26 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
       fromDate: fromDate ? new Date(fromDate).toISOString() : undefined,
       toDateEnable,
       toDate: toDate ? new Date(toDate).toISOString() : undefined,
+      notOlderThanEnable,
+      notOlderThan:
+        notOlderThanEnable && notOlderThanAmount !== null
+          ? toLocalIsoString(notOlderThanCutoff(notOlderThanAmount, notOlderThanUnit))
+          : undefined,
     });
   }
 
   return (
     <div className="searchbar">
       <div className="searchbar-row">
-        <input
-          className="pattern"
-          list="search-history"
+        <PatternCombo
           placeholder="Search pattern…"
           value={pattern}
-          onChange={(e) => setPattern(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && !busy) submit();
+          onChange={setPattern}
+          onEnter={() => {
+            if (!busy) submit();
           }}
+          history={history}
         />
-        <datalist id="search-history">
-          {history.map((h) => (
-            <option key={h} value={h} />
-          ))}
-        </datalist>
         {busy ? (
           <button className="cancel" onClick={onCancel}>
             Cancel Search
@@ -80,7 +100,7 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
         ) : (
           <button onClick={submit}>Search</button>
         )}
-        <button className="link" onClick={() => setAdvanced((a) => !a)}>
+        <button className="link" onClick={() => setAdvanced(!advanced)}>
           {advanced ? "▲ Filters" : "▼ Filters"}
         </button>
       </div>
@@ -129,6 +149,31 @@ export function SearchBar({ busy, onSearch, onCancel, history, defaults }: Props
             <input type="date" value={fromDate} onChange={(e) => setFromDate(e.target.value)} />
             <label><input type="checkbox" checked={toDateEnable} onChange={(e) => setToDateEnable(e.target.checked)} /> To</label>
             <input type="date" value={toDate} onChange={(e) => setToDate(e.target.value)} />
+          </fieldset>
+          <fieldset>
+            <legend>Not older than</legend>
+            <label>
+              <input
+                type="checkbox"
+                checked={notOlderThanEnable}
+                onChange={(e) => setNotOlderThanEnable(e.target.checked)}
+              />{" "}
+              Within last
+            </label>
+            <input
+              type="number"
+              className={`age${notOlderThanInvalid ? " invalid" : ""}`}
+              min={0}
+              step={1}
+              title={notOlderThanInvalid ? "Enter a whole number of 0 or more" : ""}
+              value={notOlderThanText}
+              onChange={(e) => setNotOlderThanText(e.target.value)}
+            />
+            <select value={notOlderThanUnit} onChange={(e) => setNotOlderThanUnit(e.target.value as AgeUnit)}>
+              {AGE_UNITS.map((u) => (
+                <option key={u.value} value={u.value}>{u.label}</option>
+              ))}
+            </select>
           </fieldset>
         </div>
       )}

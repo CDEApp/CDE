@@ -10,8 +10,14 @@ export interface UiState {
   lastView?: string;
   catalogDir?: string;
   treePaneWidth?: number;
+  filtersExpanded?: boolean;
+  /** Search-results column ids in display order. */
+  searchResultColumnOrder?: string[];
   [key: string]: unknown;
 }
+
+/** Number of previous search patterns kept for the pattern drop-down (matches cdeWin's PatternHistoryMaximum). */
+export const SEARCH_HISTORY_MAX = 50;
 
 /**
  * Loads UI state from the sidecar on startup and persists changes via PUT — debounced, with a flush
@@ -25,6 +31,10 @@ export class UiStateManager {
 
   async load(): Promise<UiState> {
     this.state = (await this.client.getUiState()) as UiState;
+    // Hand-edited or older state may hold a longer history; trim to the cap on load.
+    if ((this.state.searchHistory?.length ?? 0) > SEARCH_HISTORY_MAX) {
+      this.state.searchHistory = this.state.searchHistory!.slice(0, SEARCH_HISTORY_MAX);
+    }
     return this.state;
   }
 
@@ -38,7 +48,7 @@ export class UiStateManager {
   }
 
   /** Append a search to history (most-recent first, de-duplicated, capped). */
-  pushSearchHistory(pattern: string, cap = 50): void {
+  pushSearchHistory(pattern: string, cap = SEARCH_HISTORY_MAX): void {
     if (!pattern) return;
     const history = (this.state.searchHistory ?? []).filter((h) => h !== pattern);
     history.unshift(pattern);
