@@ -6,21 +6,79 @@ on:
   pull_request:
 #    branches: [ "main" ]
 
+# Nothing here writes to the repository: SonarCloud is handed a token of its own. Naming a
+# permission drops every other one to none, so a step that later needs to write fails loudly.
+permissions:
+  contents: read
+
 jobs:
   build:
 
     runs-on: windows-latest
+    # A pull request from a fork is not given the repository's secrets, so SONAR_TOKEN is empty
+    # there and every SonarCloud step below skips itself. The build and tests still run.
+    env:
+      SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
     steps:
       - uses: actions/checkout@v6
         with:
-            #fetch depth 0 or gitversion breaks since it can't obtain the required tags etc. 
+            #fetch depth 0 or gitversion breaks since it can't obtain the required tags etc.
+            #SonarCloud also needs the history to attribute new code and blame.
             fetch-depth: 0
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
+      # The SonarScanner for .NET runs on Java, 17 or later.
+      - name: Set up JDK 17
+        if: env.SONAR_TOKEN != ''
+        uses: actions/setup-java@v5.7.0
+        with:
+          java-version: 17
+          distribution: 'zulu'
+      - name: Cache SonarCloud packages
+        if: env.SONAR_TOKEN != ''
+        uses: actions/cache@v6
+        with:
+          path: ~\.sonar\cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Install SonarCloud scanner
+        if: env.SONAR_TOKEN != ''
+        run: dotnet tool install --global dotnet-sonarscanner
+      # SonarCloud analyses what is compiled between "begin" and "end", so exactly one build sits
+      # between them: the Debug build the tests run against. The Release publish below stays
+      # outside, or every project would be analysed twice.
+      #
+      # SonarCloud's Automatic Analysis must be off for this project, or it refuses a CI analysis.
+      #
+      # Coverage is not measured for code that ships no tests by design: the Fallout build script,
+      # the benchmark and memory-probe tools, and the Tauri frontend.
+      - name: Begin SonarCloud analysis
+        if: env.SONAR_TOKEN != ''
+        run: >
+          dotnet sonarscanner begin
+          /k:"CDEApp_CDE"
+          /o:"cdeapp"
+          /d:sonar.token="$env:SONAR_TOKEN"
+          /d:sonar.host.url="https://sonarcloud.io"
+          /d:sonar.cs.vscoveragexml.reportsPaths="TestResults/**/*.xml"
+          /d:sonar.coverage.exclusions="build/**,src/cdeBenchmarks/**,src/cdeMemProbe/**,src/cde-tauri/**"
       - name: Build
+        run: dotnet build src/cde.slnx --configuration Debug
+      # Coverage comes from the Microsoft code coverage collector that Microsoft.NET.Test.Sdk already
+      # brings in, so no test project needs a coverage package of its own. It writes one report,
+      # merged across the test projects, under TestResults - what reportsPaths above is reaching for.
+      - name: Test
+        run: >
+          dotnet test src/cde.slnx --configuration Debug --no-build
+          --collect "Code Coverage;Format=Xml"
+          --results-directory TestResults
+      - name: End SonarCloud analysis
+        if: env.SONAR_TOKEN != ''
+        run: dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
+      - name: Publish
         run: |
           ./build.ps1 publish
       - name: Upload artifacts
