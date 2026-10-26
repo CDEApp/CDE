@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "description": "Tauri (React/TypeScript) desktop frontend for CDE, talking to the cdeApi sidecar over loopback.",
-  "packageManager": "pnpm@10.18.2",
+  "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61",
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
