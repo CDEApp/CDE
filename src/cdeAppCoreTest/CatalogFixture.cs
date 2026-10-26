@@ -30,9 +30,10 @@ internal sealed class CatalogFixture : IDisposable
     public string CdexPath { get; }
     public CatalogSession Session { get; }
 
-    public CatalogFixture()
+    /// <param name="tree">A custom catalog tree; defaults to the documented fixture tree.</param>
+    public CatalogFixture(RootEntry tree = null)
     {
-        var store = EntryStore.Build(BuildTree());
+        var store = EntryStore.Build(tree ?? BuildTree());
         CdexPath = Path.Combine(Path.GetTempPath(), $"cdeappcoretest-{Guid.NewGuid():N}.cdex");
         ColumnarFormat.Write(store, CdexPath);
 

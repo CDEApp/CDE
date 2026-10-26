@@ -8,6 +8,7 @@ import {
   SearchResultRow,
   ShellRequest,
   CatalogLoadProgress,
+  TreemapResponse,
 } from "./types";
 
 export interface SearchHandlers {
@@ -68,6 +69,20 @@ export class CdeApiClient {
       headers: this.headers(),
     });
     if (!r.ok) throw new Error(`path: ${r.status}`);
+    return r.json();
+  }
+
+  /** Depth-limited treemap rows for a directory (small entries merged server-side). */
+  async treemap(
+    ref: EntryRef,
+    opts: { depth: number; minFraction: number; signal?: AbortSignal },
+  ): Promise<TreemapResponse> {
+    const q = new URLSearchParams({ depth: String(opts.depth), minFraction: String(opts.minFraction) });
+    const r = await fetch(`${this.baseUrl}/entries/${refToString(ref)}/treemap?${q}`, {
+      headers: this.headers(),
+      signal: opts.signal,
+    });
+    if (!r.ok) throw new Error(`treemap: ${r.status} ${await r.text()}`);
     return r.json();
   }
 

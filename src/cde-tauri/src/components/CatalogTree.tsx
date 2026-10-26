@@ -161,10 +161,22 @@ interface Props {
   expandTo?: EntryRef[];
   onSelect: (ref: EntryRef, fullPath: string) => void;
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
+  /** Right-click on blank tree space (rows stop their own right-clicks from reaching here). */
+  onBackgroundContextMenu?: (x: number, y: number) => void;
 }
 
-export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: Props) {
+export function CatalogTree({
+  client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu, onBackgroundContextMenu,
+}: Props) {
   return (
+    <div
+      className="tree-host"
+      onContextMenu={(e) => {
+        if (!onBackgroundContextMenu) return;
+        e.preventDefault();
+        onBackgroundContextMenu(e.clientX, e.clientY);
+      }}
+    >
     <ul className="tree">
       {roots.map((r) => (
         <TreeItem
@@ -183,5 +195,6 @@ export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, o
         />
       ))}
     </ul>
+    </div>
   );
 }

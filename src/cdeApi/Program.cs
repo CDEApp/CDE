@@ -14,6 +14,7 @@ using cdeAppCore.Search;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using cdeAppCore.Shell;
+using cdeAppCore.Treemap;
 using cdeAppCore.Validation;
 using cdeLib;
 using Microsoft.AspNetCore.Hosting.Server;
@@ -56,6 +57,8 @@ builder.Services.AddSingleton<ICatalogSession>(sp =>
     new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger));
 builder.Services.AddSingleton<ISearchService>(sp =>
     new SearchService(sp.GetRequiredService<ICatalogSession>()));
+builder.Services.AddSingleton<ITreemapService>(sp =>
+    new TreemapService(sp.GetRequiredService<ICatalogSession>()));
 builder.Services.AddSingleton<IShellActions>(_ => OperatingSystem.IsWindows()
     ? new WindowsShellActions(customCommands, logger)
     : new NoopShellActions(customCommands, logger));
@@ -132,6 +135,17 @@ app.MapGet("/entries/{ref}/path", (string @ref, ICatalogSession session) =>
 {
     if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
     return Results.Json(session.GetPath(entryRef));
+});
+
+// GET /entries/{ref}/treemap?depth=3&minFraction=0.0001 — depth-limited flat treemap rows.
+app.MapGet("/entries/{ref}/treemap", (string @ref, int? depth, double? minFraction,
+    ICatalogSession session, ITreemapService treemap) =>
+{
+    if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
+    if (entryRef.CatalogId >= session.CatalogCount ||
+        entryRef.EntryIndex >= session.GetSource(entryRef.CatalogId).Count)
+        return Results.NotFound("no such entry");
+    return Results.Json(treemap.Build(entryRef, depth ?? 3, minFraction ?? 0));
 });
 
 // POST /shell — entry-ref guarded (D11): resolve the path from the session, re-check existence,

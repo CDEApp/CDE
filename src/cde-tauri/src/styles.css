@@ -107,6 +107,43 @@ ul.tree { padding-left: 2px; }
 .node-icon.drive { color: #9cc4e6; }
 .tree-label { overflow: hidden; text-overflow: ellipsis; }
 
+/* fill the pane so right-clicks below the last node still reach the tree */
+.tree-host { min-height: 100%; }
+
+/* treemap tab */
+.treemap-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.treemap-toolbar {
+  display: flex; align-items: center; gap: 8px; padding: 4px 8px;
+  background: var(--content-header); border-bottom: 1px solid var(--border); white-space: nowrap;
+}
+.treemap-toolbar button:disabled { opacity: .45; cursor: default; }
+.treemap-crumbs { display: flex; align-items: center; flex: 1; min-width: 0; overflow: hidden; }
+.treemap-crumbs .crumb { padding: 0 2px; }
+.treemap-crumbs .crumb.link { padding: 0 2px; }
+.treemap-crumbs .crumb.current { font-weight: 600; }
+.treemap-crumbs .crumb-sep { color: #888; margin: 0 2px; }
+.treemap-note { color: #e3a857; }
+.treemap-depth select { margin-left: 6px; }
+.treemap-content { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 260px; }
+.treemap-body { position: relative; min-width: 0; min-height: 0; overflow: hidden; cursor: pointer; }
+.treemap-empty { padding: 1rem; color: #999; }
+.treemap-tooltip {
+  position: absolute; z-index: 5; pointer-events: none; max-width: 480px;
+  padding: 5px 8px; background: #252526; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.5);
+  font-size: 12px; line-height: 1.45;
+}
+.treemap-tooltip .tt-path { font-weight: 600; word-break: break-all; }
+.treemap-legend { margin: 0; padding: 4px 0; list-style: none; overflow-y: auto; border-left: 1px solid var(--border); background: var(--content); }
+.treemap-legend li {
+  display: grid; grid-template-columns: 12px 1fr auto 46px; gap: 6px; align-items: center;
+  padding: 3px 8px; cursor: default;
+}
+.treemap-legend li.drill { cursor: pointer; }
+.treemap-legend li.active, .treemap-legend li:hover { background: var(--row-hover); }
+.treemap-legend .swatch { width: 12px; height: 12px; border-radius: 2px; }
+.treemap-legend .legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.treemap-legend .legend-size, .treemap-legend .legend-pct { text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
+
 /* grids */
 .grid { height: 100%; overflow: auto; }
 .path-bar { padding: 3px 6px; background: var(--content-header); border-bottom: 1px solid var(--border); white-space: nowrap; }

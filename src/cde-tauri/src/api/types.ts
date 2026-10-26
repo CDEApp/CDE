@@ -58,6 +58,31 @@ export interface DirectoryNode {
   isReparsePoint: boolean;
 }
 
+/** One flat treemap row, linked to its parent by `parentId` (null only for the mapped root). */
+export interface TreemapRow {
+  nodeId: string;
+  parentId: string | null;
+  name: string;
+  /** Real size in bytes (a directory's aggregated subtree size). */
+  size: number;
+  /** Tile area contribution: 0 for an expanded directory (its children carry the area). */
+  value: number;
+  isDirectory: boolean;
+  /** Entries folded into a "(N smaller …)" row, else 0. */
+  mergedCount: number;
+  /** Null for a merged row. */
+  ref: EntryRef | null;
+}
+
+export interface TreemapResponse {
+  root: EntryRef;
+  rootFullPath: string;
+  rootSize: number;
+  depth: number;
+  truncated: boolean;
+  rows: TreemapRow[];
+}
+
 export interface CatalogInfo {
   catalogId: number;
   rootPath: string;

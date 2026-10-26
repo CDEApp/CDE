@@ -11,6 +11,7 @@ import {
   SearchQuery,
   SearchResultRow,
   ShellAction,
+  TreemapRow,
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
@@ -23,8 +24,11 @@ import { StatusBar } from "./components/StatusBar";
 import { MenuBar } from "./components/MenuBar";
 import { SplitPane } from "./components/SplitPane";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
+import { TreemapView } from "./components/TreemapView";
 
-type View = "directory" | "results" | "catalogs";
+type View = "directory" | "results" | "catalogs" | "treemap";
+
+const DEFAULT_TREEMAP_DEPTH = 3;
 
 export default function App() {
   const clientRef = useRef<CdeApiClient | null>(null);
@@ -50,6 +54,10 @@ export default function App() {
   const [timing, setTiming] = useState("");
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [catalogDir, setCatalogDir] = useState<string | null>(null);
+  // TreeMap tab: absent until the first "Show TreeMap"; each request bumps the nonce so mapping
+  // the same folder again still re-fetches.
+  const [treemapRequest, setTreemapRequest] = useState<{ ref: EntryRef; nonce: number } | null>(null);
+  const [treemapDepth, setTreemapDepth] = useState<number | null>(null);
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -256,8 +264,13 @@ export default function App() {
     }
   }, []);
 
+  const showTreemap = useCallback((ref: EntryRef) => {
+    setTreemapRequest((prev) => ({ ref, nonce: (prev?.nonce ?? 0) + 1 }));
+    setView("treemap");
+  }, []);
+
   const buildMenu = useCallback(
-    (ref: EntryRef, fullPath: string, onViewInTree?: () => void): MenuItem[] => {
+    (ref: EntryRef, fullPath: string, onViewInTree?: () => void, isDirectory = false): MenuItem[] => {
       const items: MenuItem[] = [
         { label: "Open", onClick: () => void runShell(ref, "open") },
         { label: "Explore", onClick: () => void runShell(ref, "explore") },
@@ -267,6 +280,7 @@ export default function App() {
         items.push({ label: c.label, onClick: () => void runShell(ref, "custom", c.id) });
       }
       items.push({ label: "", onClick: () => {}, separator: true });
+      if (isDirectory) items.push({ label: "Show TreeMap", onClick: () => showTreemap(ref) });
       items.push({
         label: "Copy Full Path",
         onClick: () => void navigator.clipboard.writeText(fullPath),
@@ -274,7 +288,28 @@ export default function App() {
       if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
       return items;
     },
-    [commands, runShell],
+    [commands, runShell, showTreemap],
+  );
+
+  // Right-click on blank tree space: map the current selection (greyed out when there is none).
+  const treeBackgroundMenu = useCallback(
+    (x: number, y: number) => {
+      const selected = selectedKey ? parseRef(selectedKey) : null;
+      setMenu({
+        x,
+        y,
+        items: [{ label: "Show TreeMap", disabled: !selected, onClick: () => selected && showTreemap(selected) }],
+      });
+    },
+    [selectedKey, showTreemap],
+  );
+
+  const onTreemapTileMenu = useCallback(
+    (row: TreemapRow, fullPath: string, x: number, y: number) => {
+      const ref = row.ref!;
+      setMenu({ x, y, items: buildMenu(ref, fullPath, () => void viewInTree(ref), row.isDirectory) });
+    },
+    [buildMenu, viewInTree],
   );
 
   if (!ready) {
@@ -309,6 +344,11 @@ export default function App() {
         <button className={view === "catalogs" ? "active" : ""} onClick={() => setView("catalogs")}>
           Catalogs
         </button>
+        {treemapRequest && (
+          <button className={view === "treemap" ? "active" : ""} onClick={() => setView("treemap")}>
+            TreeMap
+          </button>
+        )}
         <button className="reload" onClick={() => void reloadCatalogs(catalogDir)}>
           Reload
         </button>
@@ -331,8 +371,9 @@ export default function App() {
                   void selectNode(ref, fp);
                 }}
                 onContextMenu={(ref, fp, x, y) =>
-                  setMenu({ x, y, items: buildMenu(ref, fp) })
+                  setMenu({ x, y, items: buildMenu(ref, fp, undefined, true) })
                 }
+                onBackgroundContextMenu={treeBackgroundMenu}
               />
             }
             right={
@@ -341,7 +382,7 @@ export default function App() {
                 nodes={dirNodes}
                 onActivate={activateDir}
                 onContextMenu={(n, x, y) =>
-                  setMenu({ x, y, items: buildMenu(n.ref, n.fullPath) })
+                  setMenu({ x, y, items: buildMenu(n.ref, n.fullPath, undefined, n.isDirectory) })
                 }
               />
             }
@@ -358,7 +399,7 @@ export default function App() {
               setMenu({
                 x,
                 y,
-                items: buildMenu(row.ref, row.fullPath, () => void viewInTree(row.ref)),
+                items: buildMenu(row.ref, row.fullPath, () => void viewInTree(row.ref), row.isDirectory),
               })
             }
           />
@@ -373,12 +414,32 @@ export default function App() {
             }}
           />
         )}
+
+        {view === "treemap" && treemapRequest && (
+          <TreemapView
+            client={clientRef.current!}
+            request={treemapRequest}
+            depth={treemapDepth ?? (uiRef.current?.get().treemapDepth as number | undefined) ?? DEFAULT_TREEMAP_DEPTH}
+            onDepthChange={(d) => {
+              setTreemapDepth(d);
+              uiRef.current?.update({ treemapDepth: d });
+            }}
+            onStatus={setStatus}
+            onTileMenu={onTreemapTileMenu}
+          />
+        )}
       </div>
 
       <StatusBar catalogs={catalogs} resultCount={results.length} searchTiming={status || timing} />
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
     </div>
   );
+}
+
+// Inverse of refToString ("catalog-index").
+function parseRef(key: string): EntryRef | null {
+  const [catalogId, entryIndex] = key.split("-").map(Number);
+  return Number.isInteger(catalogId) && Number.isInteger(entryIndex) ? { catalogId, entryIndex } : null;
 }
 
 // Root -> entry ref chain (for tree auto-expand).

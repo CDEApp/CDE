@@ -23,4 +23,5 @@ namespace cdeAppCore.Serialization;
 [JsonSerializable(typeof(ColumnDef))]
 [JsonSerializable(typeof(List<ColumnDef>))]
 [JsonSerializable(typeof(EntryRefDto))]
+[JsonSerializable(typeof(TreemapResponse))]
 public partial class AppCoreJsonContext : JsonSerializerContext;
