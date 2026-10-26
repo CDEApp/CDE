@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     port: 1420,
     strictPort: true,
+    watch: {
+      // The Tauri CLI watches the Rust side; Vite watching src-tauri/target hits files cargo
+      // has locked mid-build (EBUSY on cde_tauri.exe) and crashes the dev server.
+      ignored: ["**/src-tauri/**"],
+    },
   },
   build: {
     target: "es2021",
