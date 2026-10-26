@@ -91,9 +91,7 @@ public class DuplicationTests
         }
     }
 
-    // Test sometimes fails, for what reason?
     [Test]
-    [Ignore("Flakey")]
     public async Task CanFindDuplicates()
     {
         var duplication = new TestDuplication(_logger, _configuration, _applicationDiagnostics);

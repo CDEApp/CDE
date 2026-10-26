@@ -2,6 +2,7 @@
 using System.IO;
 using System.Threading;
 using System.Windows.Forms;
+using cdeAppCore;
 using cdeWin.Cfg;
 using Microsoft.Extensions.Configuration;
 using Serilog;
@@ -30,11 +31,12 @@ internal static class Program
 
         // TODO consider using (var config = new Config()) { } - with Save built in.
         var config = new Config("cdeWinView.cfg", ProductName, Version);
-        var mainForm = new CDEWinForm(config);
+        LoadAppSettingsConfig(); // before the form: its context menus are built with the custom commands.
+        var customCommands = CustomCommandLoader.Load(Configuration);
+        var mainForm = new CDEWinForm(config, customCommands);
         var mainPresenter = new CDEWinFormPresenter(mainForm, config, new LoadCatalogService(Log.Logger));
         config.RestoreConfigFormBase(mainForm);
         config.RestoreConfig(mainForm); // after presenter is configured and wired up events.
-        LoadAppSettingsConfig();
 
         // Start async loading after form is shown for immediate UI responsiveness
         mainForm.Shown += async (_, _) => await mainPresenter.InitializeAsync();

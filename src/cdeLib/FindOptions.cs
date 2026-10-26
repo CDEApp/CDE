@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -62,6 +61,7 @@ public class FindOptions
     private int _threadSafeProgressCount;
     private volatile int _lastReportedProgress;
     private long _lastProgressTimestamp;
+    private long _searchStartTimestamp;
 
     private readonly int[] _dummyProgressCount = new int[1];
 
@@ -84,11 +84,20 @@ public class FindOptions
     public TraverseFunc VisitorFunc { get; set; }
 
     /// <summary>
-    /// Called for reporting progress to caller.
+    /// Called for reporting progress to caller (low-level non-UI callback: visited count, total).
     /// </summary>
     public Action<int, int> ProgressFunc { get; set; }
 
-    public BackgroundWorker Worker { get; set; }
+    /// <summary>
+    /// Structured progress channel. Reported alongside <see cref="ProgressFunc"/> on the same throttle.
+    /// </summary>
+    public IProgress<SearchProgress> Progress { get; set; }
+
+    /// <summary>
+    /// Cooperative cancellation for both the synchronous <see cref="Find"/> and asynchronous
+    /// <see cref="FindAsync"/> paths. Replaces the previous WinForms <c>BackgroundWorker</c> coupling.
+    /// </summary>
+    public CancellationToken CancellationToken { get; set; } = CancellationToken.None;
 
     public Func<ICommonEntry, ICommonEntry, bool> PatternMatcher { get; set; }
 
@@ -107,6 +116,7 @@ public class FindOptions
             return;
         }
 
+        _searchStartTimestamp = Stopwatch.GetTimestamp();
         int[] limitCount = [LimitResultCount];
         if (ProgressFunc == null || ProgressModifier == 0)
         {
@@ -152,6 +162,13 @@ public class FindOptions
             return;
         }
 
+        // Honour both the explicit token and any token already set on the options.
+        if (cancellationToken.CanBeCanceled)
+        {
+            CancellationToken = cancellationToken;
+        }
+        _searchStartTimestamp = Stopwatch.GetTimestamp();
+
         // Setup progress tracking
         int[] limitCount = [LimitResultCount];
         if (ProgressFunc == null || ProgressModifier == 0)
@@ -169,7 +186,7 @@ public class FindOptions
         // Create work-stealing traversal with optimal concurrency
         var maxConcurrency = Math.Min(Environment.ProcessorCount, 8); // Cap at 8 for I/O bound operations
 
-        var traversal = new Infrastructure.WorkStealingTreeTraversal(maxConcurrency, cancellationToken);
+        var traversal = new Infrastructure.WorkStealingTreeTraversal(maxConcurrency, CancellationToken);
 
         // Create an async processor function
         var asyncProcessor = CreateAsyncProcessor(limitCount);
@@ -179,7 +196,7 @@ public class FindOptions
             // Execute parallel traversal with work stealing
             await traversal.TraverseAsync(rootEntries, asyncProcessor);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException) when (CancellationToken.IsCancellationRequested)
         {
             // Handle cancellation gracefully
         }
@@ -210,7 +227,7 @@ public class FindOptions
             }
 
             // Honour cancellation promptly, independently of throttled progress reporting (see GetFindFunc).
-            if ((currentCount & CancelCheckMask) == 0 && Worker?.CancellationPending == true)
+            if ((currentCount & CancelCheckMask) == 0 && CancellationToken.IsCancellationRequested)
             {
                 return false;
             }
@@ -229,12 +246,17 @@ public class FindOptions
                         // Use ThreadPool to avoid blocking worker thread on UI marshaling
                         var count = currentCount;
                         var end = ProgressEnd;
-                        ThreadPool.QueueUserWorkItem(_ => ProgressFunc(count, end));
+                        var elapsed = Stopwatch.GetElapsedTime(_searchStartTimestamp);
+                        ThreadPool.QueueUserWorkItem(_ =>
+                        {
+                            ProgressFunc(count, end);
+                            Progress?.Report(new SearchProgress(count, end, elapsed));
+                        });
                     }
                 }
 
                 // Check for cancellation with minimal overhead
-                if (Worker?.CancellationPending == true)
+                if (CancellationToken.IsCancellationRequested)
                 {
                     return false;
                 }
@@ -334,7 +356,7 @@ public class FindOptions
             //      while keeping the synchronous path's much higher raw throughput.
             if ((currentCount & CancelCheckMask) == 0)
             {
-                if (Worker?.CancellationPending == true)
+                if (CancellationToken.IsCancellationRequested)
                 {
                     return false; // end the find.
                 }
@@ -347,6 +369,8 @@ public class FindOptions
                         && Interlocked.CompareExchange(ref _lastProgressTimestamp, now, last) == last)
                     {
                         ProgressFunc(currentCount, ProgressEnd);
+                        Progress?.Report(new SearchProgress(currentCount, ProgressEnd,
+                            Stopwatch.GetElapsedTime(_searchStartTimestamp)));
                     }
                 }
             }

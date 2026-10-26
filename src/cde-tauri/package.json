@@ -1,0 +1,38 @@
+{
+  "name": "cde-tauri",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Tauri (React/TypeScript) desktop frontend for CDE, talking to the cdeApi sidecar over loopback.",
+  "packageManager": "pnpm@12.15.0+sha512.b3951d6d6ff4a9f13dc7cf56cd28d2b8eb37dbcc9c68e52e1e1191873ea9f82a017287ab50baadc5ccc494f036c67c0e47eb13608c2fa36f47711b61ea128e61",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "tauri": "tauri",
+    "bundle-sidecar": "node scripts/bundle-sidecar.mjs"
+  },
+  "dependencies": {
+    "@tanstack/charts": "^1.1.0",
+    "@tauri-apps/api": "^2.12.4",
+    "@tauri-apps/plugin-dialog": "^2.8.3",
+    "@tauri-apps/plugin-shell": "^2.5.0",
+    "@tauri-apps/plugin-window-state": "^2.5.0"
+  },
+  "devDependencies": {
+    "@tanstack/react-table": "^9.3.1",
+    "@tauri-apps/cli": "^2.12.4",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "typescript": "^6.0.3",
+    "vite": "8.3.5"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild"
+    ]
+  }
+}
