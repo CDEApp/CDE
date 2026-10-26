@@ -135,19 +135,22 @@ public sealed class SearchService : ISearchService
 
     private static SearchResultRow BuildRow(IEntrySource source, int catalogId, int idx)
     {
-        var entry = new EntryRef(source, idx);
-        var parent = new EntryRef(source, source.ParentOf(idx));
+        // One parent-chain walk: build the parent path once, then derive the entry's full path from it
+        // plus the name (same separator rule as EntryRef.MakeFullPath and the catalog path builders).
+        var name = source.FullName(idx);
+        var parentPath = source.FullPath(source.ParentOf(idx));
+        var flags = source.FlagsOf(idx);
         return new SearchResultRow
         {
             Ref = new EntryRefDto(catalogId, idx),
-            Name = entry.Path,
-            Size = entry.Size,
-            Modified = entry.Modified,
-            IsModifiedBad = entry.IsModifiedBad,
-            IsDirectory = entry.IsDirectory,
-            IsReparsePoint = entry.IsReparsePoint,
-            FullPath = entry.FullPath,
-            ParentPath = parent.FullPath,
+            Name = name,
+            Size = source.SizeOf(idx),
+            Modified = source.ModifiedOf(idx),
+            IsModifiedBad = (flags & Flags.ModifiedBad) == Flags.ModifiedBad,
+            IsDirectory = source.IsDirectory(idx),
+            IsReparsePoint = (flags & Flags.ReparsePoint) == Flags.ReparsePoint,
+            FullPath = PathJoin.Child(parentPath, name),
+            ParentPath = parentPath,
             CatalogName = source.DefaultFileName
         };
     }
