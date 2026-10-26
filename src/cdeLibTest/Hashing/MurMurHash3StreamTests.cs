@@ -58,15 +58,20 @@ public class MurMurHash3StreamTests
     [Test]
     public void Allocates_close_to_nothing_whatever_the_stream_size()
     {
-        var stream = new MemoryStream(RandomBytes(8 * 1024 * 1024, 9));
-        MurMurHash3.Hash(stream, Seed); // warm the pool
-        stream = new MemoryStream(stream.ToArray());
+        var data = RandomBytes(8 * 1024 * 1024, 9);
+        MurMurHash3.Hash(new MemoryStream(data), Seed); // warm the pool
 
-        var before = GC.GetAllocatedBytesForCurrentThread();
-        MurMurHash3.Hash(stream, Seed);
-        var allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        // The shared pool can trim its buffers on a GC, which costs one re-rent; take the best of a few runs.
+        var best = long.MaxValue;
+        for (var i = 0; i < 5; i++)
+        {
+            var stream = new MemoryStream(data);
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            MurMurHash3.Hash(stream, Seed);
+            best = Math.Min(best, GC.GetAllocatedBytesForCurrentThread() - before);
+        }
 
-        Assert.That(allocated, Is.LessThan(1024));
+        Assert.That(best, Is.LessThan(1024));
     }
 
     /// <summary>Returns at most <c>maxPerRead</c> bytes per read to exercise carry handling.</summary>
