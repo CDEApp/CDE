@@ -8,12 +8,44 @@ export interface TreeRoot {
   fullPath: string;
 }
 
+// Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
+function Chevron({ expanded }: { expanded: boolean }) {
+  return (
+    <svg className={`chevron${expanded ? " expanded" : ""}`} viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M6 3.5 10.5 8 6 12.5" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function NodeIcon({ kind }: { kind: "drive" | "folder" | "folder-open" }) {
+  if (kind === "drive") {
+    return (
+      <svg className="node-icon drive" viewBox="0 0 16 16" aria-hidden="true">
+        <rect x="1.5" y="4.5" width="13" height="7" rx="1.5" fill="currentColor" opacity=".25" stroke="currentColor" />
+        <circle cx="11.5" cy="8" r="1" fill="currentColor" />
+      </svg>
+    );
+  }
+  return kind === "folder-open" ? (
+    <svg className="node-icon folder" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M1.5 3.5h4l1.5 1.5h6v1.5H4.2L1.5 12.5z" fill="currentColor" opacity=".7" />
+      <path d="M4.2 6.5h11l-2.6 6.5H1.5z" fill="currentColor" />
+    </svg>
+  ) : (
+    <svg className="node-icon folder" viewBox="0 0 16 16" aria-hidden="true">
+      <path d="M1.5 3.5h4l1.5 1.5h7.5v8h-13z" fill="currentColor" />
+    </svg>
+  );
+}
+
 interface TreeItemProps {
   client: CdeApiClient;
   nodeRef: EntryRef;
   label: string;
   fullPath: string;
   hasChildren: boolean;
+  /** Catalog root (drawn with a drive icon rather than a folder). */
+  isRoot?: boolean;
   selectedKey: string | null;
   revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
   expandTo?: EntryRef[]; // path to auto-expand/select
@@ -21,7 +53,7 @@ interface TreeItemProps {
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
@@ -75,21 +107,27 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, selectedKey, 
         ref={rowRef}
         className={`tree-row${isSelected ? " selected" : ""}`}
         onClick={() => onSelect(nodeRef, fullPath)}
+        onDoubleClick={() => {
+          if (hasChildren) void toggle();
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           e.stopPropagation();
           onContextMenu(nodeRef, fullPath, e.clientX, e.clientY);
         }}
       >
+        {/* Expander for folders with sub-folders; an equal-width blank keeps leaf labels aligned. */}
         <span
           className={`twisty${hasChildren ? "" : " leaf"}`}
           onClick={(e) => {
             e.stopPropagation();
             if (hasChildren) void toggle();
           }}
+          onDoubleClick={(e) => e.stopPropagation()}
         >
-          {hasChildren ? (expanded ? "▾" : "▸") : "·"}
+          {hasChildren && <Chevron expanded={expanded} />}
         </span>
+        <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
         <span className="tree-label">{label}</span>
       </div>
       {expanded && children && (
@@ -136,6 +174,7 @@ export function CatalogTree({ client, roots, selectedKey, revealKey, expandTo, o
           label={r.label}
           fullPath={r.fullPath}
           hasChildren
+          isRoot
           selectedKey={selectedKey}
           revealKey={revealKey}
           expandTo={expandTo && expandTo[0]?.catalogId === r.ref.catalogId ? expandTo : undefined}
