@@ -1,10 +1,13 @@
 name: .NET
 
 on:
+  # A branch with a pull request open is covered by the pull_request trigger below. Building it
+  # here as well would run everything twice for the same commit.
   push:
-#    branches: [ "main","" ]
+    branches: [ "develop", "main" ]
   pull_request:
-#    branches: [ "main" ]
+  # So that a branch with no pull request open can still be built, on request.
+  workflow_dispatch:
 
 # Nothing here writes to the repository: SonarCloud and Codecov are each handed a token of their
 # own. Naming a permission drops every other one to none, so a step that later needs to write
