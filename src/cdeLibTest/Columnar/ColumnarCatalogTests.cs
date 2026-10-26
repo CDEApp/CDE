@@ -23,11 +23,11 @@ public class ColumnarCatalogTests
     //   ├─ docs\        (dir)
     //   │   └─ alpha.md
     //   └─ root_file.txt
-    private static RootEntry BuildTree()
+    private static RootEntry BuildTree(string rootPath = @"C:\test")
     {
         var root = new RootEntry
         {
-            Path = @"C:\test",
+            Path = rootPath,
             VolumeName = "VOL",
             DefaultFileName = "test.cde",
             DriveLetterHint = "C",
@@ -87,6 +87,53 @@ public class ColumnarCatalogTests
             using var reader = new ColumnarCatalogReader(path);
             for (var i = 0; i < store.Count; i++)
                 Assert.That(reader.FullPath(i), Is.EqualTo(store.FullPath(i)), $"path mismatch at {i}");
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
+    public void FullPath_DriveRoot_HasSingleSeparator()
+    {
+        // A drive-root catalog's root name already ends in a separator ("C:\"); it must not be doubled.
+        var store = EntryStore.Build(BuildTree(@"C:\"));
+        var path = WriteTemp(store);
+        try
+        {
+            using var reader = new ColumnarCatalogReader(path);
+            var actual = Enumerable.Range(0, reader.Count).Select(reader.FullPath).ToList();
+
+            Assert.That(actual, Does.Contain(@"C:\dir1"));
+            Assert.That(actual, Does.Contain(@"C:\dir1\alpha.txt"));
+            for (var i = 0; i < store.Count; i++)
+                Assert.That(actual[i], Is.EqualTo(store.FullPath(i)), $"path mismatch at {i}");
+        }
+        finally { File.Delete(path); }
+    }
+
+    [Test]
+    public void FindPath_DriveRoot_MatchesAcrossRootSeparator()
+    {
+        var store = EntryStore.Build(BuildTree(@"C:\"));
+        var path = WriteTemp(store);
+        try
+        {
+            const string pattern = @"C:\dir1\";
+            var expected = new List<string>();
+            EntryStoreSearch.Find(store, pattern, regexMode: false, includePath: true,
+                includeFiles: true, includeFolders: true, i => expected.Add(store.FullPath(i)));
+            Assert.That(expected, Has.Count.EqualTo(2), "store sanity: alpha.txt and beta.log");
+
+            using var reader = new ColumnarCatalogReader(path);
+            var viaFindPath = new List<string>();
+            reader.FindPath(pattern, includeFiles: true, includeFolders: true, i => viaFindPath.Add(reader.FullPath(i)));
+            var viaOptions = new List<string>();
+            reader.Find(new EntryStoreFindOptions
+            {
+                Pattern = pattern, IncludePath = true, IncludeFiles = true, IncludeFolders = true
+            }, i => viaOptions.Add(reader.FullPath(i)));
+
+            Assert.That(viaFindPath.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));
+            Assert.That(viaOptions.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));
         }
         finally { File.Delete(path); }
     }

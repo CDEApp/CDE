@@ -262,12 +262,15 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var n = 0;
         for (var k = depth - 1; k >= 0; k--)
         {
-            if (n > 0) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
+            if (NeedsSeparator(buf, n)) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
             var idx = chain[k];
             buf = Append(buf, ref n, blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx])));
         }
         return n;
     }
+
+    // Separator only between segments, and not after one that already ends in one (a "C:\" root).
+    private static bool NeedsSeparator(byte[] buf, int n) => n > 0 && buf[n - 1] != '\\' && buf[n - 1] != '/';
 
     private int FindRegex(string pattern, bool includePath, bool includeFiles, bool includeFolders,
         Action<int> onMatch)
@@ -339,7 +342,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             var n = 0;
             for (var k = depth - 1; k >= 0; k--)
             {
-                if (n > 0) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
+                if (NeedsSeparator(buf, n)) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
                 var idx = chain[k];
                 buf = Append(buf, ref n, blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx])));
             }
@@ -372,7 +375,11 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var sb = new StringBuilder(128);
         for (var k = depth - 1; k >= 0; k--)
         {
-            if (sb.Length > 0) sb.Append(Path.DirectorySeparatorChar);
+            if (sb.Length > 0)
+            {
+                var last = sb[^1];
+                if (last != '\\' && last != '/') sb.Append(Path.DirectorySeparatorChar);
+            }
             var idx = chain[k];
             sb.Append(Encoding.UTF8.GetString(blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx]))));
         }
