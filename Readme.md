@@ -1,3 +1,5 @@
+![CDE - Catalog Directory Entries](assets/logo.png)
+
 # cde - Catalog Directory Entries
 
 ## Introduction
