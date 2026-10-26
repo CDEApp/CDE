@@ -129,7 +129,7 @@ public class DuplicationTests
     {
         var fullFileName = Path.Combine(_testDir, "testset2");
         var hash = await _hashHelper.GetHashResponseFromFile(fullFileName, null);
-        ClassicAssert.IsNotNull(hash.Hash);
+        ClassicAssert.IsTrue(hash.IsSuccess);
     }
     // ReSharper restore InconsistentNaming
 }

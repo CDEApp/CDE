@@ -14,7 +14,7 @@ public class HashingBenchmarks
     private const uint Seed = 123456U;
     private string _path = null!;
 
-    [GlobalSetup]
+    [GlobalSetup(Targets = [nameof(Legacy_ReadBytes4), nameof(Chunked_PooledBuffer)])]
     public void Setup()
     {
         _path = Path.Combine(Path.GetTempPath(), $"cde-hash-bench-{Guid.NewGuid():N}.bin");
@@ -23,7 +23,7 @@ public class HashingBenchmarks
         File.WriteAllBytes(_path, data);
     }
 
-    [GlobalCleanup]
+    [GlobalCleanup(Targets = [nameof(Legacy_ReadBytes4), nameof(Chunked_PooledBuffer)])]
     public void Cleanup()
     {
         if (File.Exists(_path)) File.Delete(_path);
@@ -34,6 +34,52 @@ public class HashingBenchmarks
 
     [Benchmark]
     public uint Chunked_PooledBuffer() => MurMurHash3.Hash(File.OpenRead(_path), Seed);
+
+    // Issue #36: per-file overhead. Hashes many small files; Allocated/op should be near zero
+    // apart from the file handle.
+    private string _smallDir = null!;
+    private string[] _smallFiles = null!;
+    private HashHelper _helper = null!;
+
+    [GlobalSetup(Targets = [nameof(PerFile_Partial_SmallFiles), nameof(PerFile_Full_SmallFiles)])]
+    public void SetupSmallFiles()
+    {
+        _smallDir = Path.Combine(Path.GetTempPath(), $"cde-hash-small-{Guid.NewGuid():N}");
+        Directory.CreateDirectory(_smallDir);
+        _smallFiles = new string[1000];
+        var rnd = new Random(1);
+        for (var i = 0; i < _smallFiles.Length; i++)
+        {
+            _smallFiles[i] = Path.Combine(_smallDir, $"f{i}.bin");
+            var data = new byte[rnd.Next(1, 4096)];
+            rnd.NextBytes(data);
+            File.WriteAllBytes(_smallFiles[i], data);
+        }
+
+        _helper = new HashHelper(null!);
+    }
+
+    [GlobalCleanup(Targets = [nameof(PerFile_Partial_SmallFiles), nameof(PerFile_Full_SmallFiles)])]
+    public void CleanupSmallFiles()
+    {
+        if (Directory.Exists(_smallDir)) Directory.Delete(_smallDir, true);
+    }
+
+    [Benchmark]
+    public async Task<ulong> PerFile_Partial_SmallFiles()
+    {
+        ulong acc = 0;
+        foreach (var f in _smallFiles) acc ^= (await _helper.GetHashResponseFromFile(f, 65536)).Hash;
+        return acc;
+    }
+
+    [Benchmark]
+    public async Task<ulong> PerFile_Full_SmallFiles()
+    {
+        ulong acc = 0;
+        foreach (var f in _smallFiles) acc ^= (await _helper.GetHashResponseFromFile(f, null)).Hash;
+        return acc;
+    }
 
     // Verbatim copy of the original implementation, kept as the baseline.
     private static uint LegacyHash(Stream stream, uint seed)
