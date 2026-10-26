@@ -183,10 +183,10 @@ public static class MurMurHash3
     public static uint Hash(Stream stream, UInt32 seed)
     {
         var state = new Incremental(seed);
-        var buffer = ArrayPool<byte>.Shared.Rent(StreamChunkSize);
-        try
+        using (stream)
         {
-            using (stream)
+            var buffer = ArrayPool<byte>.Shared.Rent(StreamChunkSize);
+            try
             {
                 int read;
                 while ((read = stream.Read(buffer, 0, StreamChunkSize)) > 0)
@@ -194,10 +194,10 @@ public static class MurMurHash3
                     state.Append(buffer.AsSpan(0, read));
                 }
             }
-        }
-        finally
-        {
-            ArrayPool<byte>.Shared.Return(buffer);
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
 
         return state.Finish();
