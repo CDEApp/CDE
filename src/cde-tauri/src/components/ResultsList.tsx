@@ -1,12 +1,15 @@
-import { useState } from "react";
 import {
+  columnResizingFeature,
+  columnSizingFeature,
   createColumnHelper,
-  getCoreRowModel,
-  getSortedRowModel,
-  useReactTable,
+  createSortedRowModel,
+  rowSortingFeature,
+  sortFn_basic,
+  sortFn_text,
+  tableFeatures,
+  useTable,
   type Row,
-  type SortingFn,
-  type SortingState,
+  type SortFn,
 } from "@tanstack/react-table";
 import { SearchResultRow } from "../api/types";
 import { formatDate, sizeCell } from "../format";
@@ -20,11 +23,22 @@ interface Props {
 
 const ROW_HEIGHT = 22;
 
-const col = createColumnHelper<SearchResultRow>();
+// v9 tables opt into each feature; built-in sort fns are registered by name so the bundle only
+// carries the ones the columns use.
+const features = tableFeatures({
+  rowSortingFeature,
+  columnSizingFeature,
+  columnResizingFeature,
+  sortedRowModel: createSortedRowModel(),
+  sortFns: { text: sortFn_text, basic: sortFn_basic },
+});
+type Features = typeof features;
+
+const col = createColumnHelper<Features, SearchResultRow>();
 
 // Modified is sorted on the parsed timestamp; bad dates (NaN) are pushed to the end of the
 // ascending order so they stay grouped rather than scattered through the list.
-const modifiedSort: SortingFn<SearchResultRow> = (a, b, columnId) => {
+const modifiedSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
   const av = a.getValue<number>(columnId);
   const bv = b.getValue<number>(columnId);
   const an = Number.isNaN(av);
@@ -35,34 +49,31 @@ const modifiedSort: SortingFn<SearchResultRow> = (a, b, columnId) => {
   return av === bv ? 0 : av < bv ? -1 : 1;
 };
 
-const columns = [
-  col.accessor((r) => r.name, { id: "name", header: "Name", sortingFn: "text", size: 260 }),
-  col.accessor((r) => r.size, { id: "size", header: "Size", sortingFn: "basic", size: 90 }),
-  col.accessor((r) => Date.parse(r.modified), { id: "modified", header: "Modified", sortingFn: modifiedSort, size: 150 }),
-  col.accessor((r) => r.catalogName, { id: "catalog", header: "Catalog", sortingFn: "text", size: 160 }),
-  col.accessor((r) => r.parentPath, { id: "path", header: "Path", sortingFn: "text", size: 380 }),
-];
+const columns = col.columns([
+  col.accessor((r) => r.name, { id: "name", header: "Name", sortFn: "text", size: 260 }),
+  col.accessor((r) => r.size, { id: "size", header: "Size", sortFn: "basic", size: 90 }),
+  col.accessor((r) => Date.parse(r.modified), { id: "modified", header: "Modified", sortFn: modifiedSort, size: 150 }),
+  col.accessor((r) => r.catalogName, { id: "catalog", header: "Catalog", sortFn: "text", size: 160 }),
+  col.accessor((r) => r.parentPath, { id: "path", header: "Path", sortFn: "text", size: 380 }),
+]);
 
 const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
 
 /** Virtualized streaming search results (Name / Size / Modified / Catalog / Path), sortable by column. */
 export function ResultsList({ rows, onActivate, onContextMenu }: Props) {
-  const [sorting, setSorting] = useState<SortingState>([]);
-  const table = useReactTable({
+  // Sorting and column sizes live in the table's own store; useTable re-renders on their change.
+  const table = useTable({
+    features,
     data: rows,
     columns,
-    state: { sorting },
-    onSortingChange: setSorting,
     columnResizeMode: "onChange",
-    getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
   });
 
-  const gridTemplateColumns = table.getVisibleLeafColumns().map((c) => `${c.getSize()}px`).join(" ");
+  const gridTemplateColumns = table.getAllLeafColumns().map((c) => `${c.getSize()}px`).join(" ");
   const totalWidth = table.getTotalSize();
 
   return (
-    <VirtualList<Row<SearchResultRow>>
+    <VirtualList<Row<Features, SearchResultRow>>
       className="results-cols"
       items={table.getRowModel().rows}
       rowHeight={ROW_HEIGHT}
