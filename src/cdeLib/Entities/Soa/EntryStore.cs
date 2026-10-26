@@ -90,6 +90,7 @@ public sealed class EntryStore : IEntrySource
     public string NameOf(int i) => Name[i];
     public int ParentOf(int i) => Parent[i];
     public int FirstChildOf(int i) => FirstChild[i];
+    public int NextSiblingOf(int i) => NextSibling[i];
     public IEnumerable<int> ChildrenOf(int i) => Children(i);
 
     /// <summary>Full-filter search over this store (delegates to <see cref="EntryStoreSearch"/>).</summary>

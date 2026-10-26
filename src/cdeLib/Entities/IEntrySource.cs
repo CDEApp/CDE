@@ -35,6 +35,7 @@ public interface IEntrySource
 
     int ParentOf(int i);
     int FirstChildOf(int i);
+    int NextSiblingOf(int i); // EntryStore.None terminates the chain
     IEnumerable<int> ChildrenOf(int i);
 
     // ----- full-filter search (pattern + name/path + file/folder + size/date/hour) -----
