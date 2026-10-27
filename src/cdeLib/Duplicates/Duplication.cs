@@ -12,7 +12,7 @@ using Dawn;
 
 namespace cdeLib.Duplicates;
 
-public class Duplication
+public partial class Duplication
 {
     private readonly IConfiguration _configuration;
 
@@ -94,10 +94,8 @@ public class Duplication
                 longestListSize = kvp.Key;
             }
         }
-        ReportStatus($"Found {newMatches.Count} sets of files matched by file size");
-        ReportStatus($"Total files processed for the file size matches is {totalFilesInRootEntries}");
-        ReportStatus($"Total files found with at least 1 other file of same length {totalEntriesInSizeDupes}");
-        ReportStatus($"Longest list of same sized files is {longestListLength} for size {longestListSize} ");
+        ReportSizeMatches(newMatches.Count, totalFilesInRootEntries, totalEntriesInSizeDupes, longestListLength,
+            longestListSize);
 
         // flatten - optimized without LINQ
         _logger.LogDebug("Flatten List..");
@@ -120,12 +118,7 @@ public class Duplication
             }
         }
 
-        if (legacyPartials > 0)
-        {
-            _logger.LogInfo(
-                "Found {0} partial hashes made by an older version (they hashed the wrong block). They will be recomputed.",
-                legacyPartials);
-        }
+        ReportLegacyPartials(legacyPartials);
 
         // group by volume/network share
         _logger.LogDebug("GroupBy Volume/Share..");
@@ -201,24 +194,67 @@ public class Duplication
             return;
         }
 
+        ReportPartialPhaseDone(timer);
+
+        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
+        CheckDupesAndCompleteFullHash(rootEntries);
+
+        timer.Stop();
+        ReportHashingDone(timer);
+        await Task.CompletedTask;
+    }
+
+    private void ReportSizeMatches(int sizeSets, long totalFiles, long filesInSizeSets, int longestListLength,
+        long longestListSize)
+    {
+        ReportStatus($"Found {sizeSets} sets of files matched by file size");
+        ReportStatus($"Total files processed for the file size matches is {totalFiles}");
+        ReportStatus($"Total files found with at least 1 other file of same length {filesInSizeSets}");
+        ReportStatus($"Longest list of same sized files is {longestListLength} for size {longestListSize} ");
+    }
+
+    private void ReportLegacyPartials(int legacyPartials)
+    {
+        if (legacyPartials > 0)
+        {
+            _logger.LogInfo(
+                "Found {0} partial hashes made by an older version (they hashed the wrong block). They will be recomputed.",
+                legacyPartials);
+        }
+    }
+
+    private void ReportPartialPhaseDone(Stopwatch timer)
+    {
         ReportStatus("After initial partial hashing phase.");
         var perf =
             $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
         var statsMessage =
             $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB  NotProcessed: {_duplicationStatistics.BytesNotProcessed / (1024 * 1024):F2} MB  Perf: {perf}\nTotal Data Encountered: {_duplicationStatistics.TotalFileBytes / (1024 * 1024):F2} MB\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
         ReportStatus(statsMessage);
+    }
 
-        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
-        CheckDupesAndCompleteFullHash(rootEntries);
-
+    private void ReportHashingDone(Stopwatch timer)
+    {
         ReportStatus("After hashing completed.");
-        timer.Stop();
-        perf =
+        var perf =
             $"{_duplicationStatistics.BytesProcessed * (1000.0 / timer.ElapsedMilliseconds) / (1024.0 * 1024.0):F2} MB/s";
-        statsMessage =
+        var statsMessage =
             $"FullHash: {_duplicationStatistics.FullHashes}  PartialHash: {_duplicationStatistics.PartialHashes}  Processed: {_duplicationStatistics.BytesProcessed / (1024 * 1024):F2} MB Perf: {perf}\nFailedHash: {_duplicationStatistics.FailedToHash} (almost always because cannot open to read file)";
         ReportStatus(statsMessage);
-        await Task.CompletedTask;
+    }
+
+    private void ReportDuplicateSets(int sets, int filesInSets, int longestListLength)
+    {
+        ReportStatus($"Found {sets} duplication collections.");
+        ReportStatus($"Total files found with at least 1 other file duplicate {filesInSets}");
+        ReportStatus($"Longest list of duplicate files is {longestListLength}");
+
+        // Switch progress reporting to the full-hash phase: FilesProcessed is cumulative across both
+        // passes, so capture a baseline here and re-target the denominator to this phase's own work.
+        // Each phase then reports its own 0..100% progress (the phase label distinguishes them) and the
+        // percentage can never exceed 100% as it did when the partial-pass denominator was reused.
+        _processedAtFullHashStart = _duplicationStatistics.FilesProcessed;
+        _duplicationStatistics.FilesToCheckForDuplicatesCount = filesInSets;
     }
 
     public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
@@ -368,16 +404,7 @@ public class Duplication
             }
         }
 
-        ReportStatus($"Found {foundDupes.Count} duplication collections.");
-        ReportStatus($"Total files found with at least 1 other file duplicate {totalEntriesInDupes}");
-        ReportStatus($"Longest list of duplicate files is {longestListLength}");
-
-        // Switch progress reporting to the full-hash phase: FilesProcessed is cumulative across both
-        // passes, so capture a baseline here and re-target the denominator to this phase's own work.
-        // Each phase then reports its own 0..100% progress (the phase label distinguishes them) and the
-        // percentage can never exceed 100% as it did when the partial-pass denominator was reused.
-        _processedAtFullHashStart = _duplicationStatistics.FilesProcessed;
-        _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInDupes;
+        ReportDuplicateSets(foundDupes.Count, totalEntriesInDupes, longestListLength);
 
         // Populate HashSet with entries requiring full hash
         foreach (var kvp in foundDupes)
@@ -461,10 +488,6 @@ public class Duplication
 
     private async Task CalculateHash(string fullPath, ICommonEntry de, bool doPartialHash)
     {
-        var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
-            ? _configuration.ProgressUpdateInterval / 10
-            : _configuration.ProgressUpdateInterval;
-        Guard.Argument(displayCounterInterval, nameof(displayCounterInterval)).GreaterThan(0);
         if (doPartialHash)
         {
             // don't recalculate.
@@ -479,32 +502,7 @@ public class Duplication
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;
-                _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
-                _duplicationStatistics.AddTotalFileBytes(de.Size);
-                _duplicationStatistics.AddBytesNotProcessed(
-                    de.Size <= hashResponse.BytesHashed ? 0 : de.Size - hashResponse.BytesHashed);
-                if (de.IsPartialHash)
-                    _duplicationStatistics.AddPartialHash();
-                else
-                    _duplicationStatistics.AddFullHash();
-                if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
-                {
-                    if (ProgressEvent is not null)
-                    {
-                        ProgressEvent(_duplicationStatistics.FilesProcessed,
-                            _duplicationStatistics.FilesToCheckForDuplicatesCount, "Partial hash");
-                    }
-                    else
-                    {
-                        _logger.LogInfo(
-                            "Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",
-                            _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
-                            100 * (1.0 * _duplicationStatistics.FilesProcessed /
-                                   _duplicationStatistics.FilesToCheckForDuplicatesCount),
-                            1.0 * _duplicationStatistics.LargestFileSize / (1024 * 1024),
-                            1.0 * _duplicationStatistics.SmallestFileSize / (1024 * 1024));
-                    }
-                }
+                RecordFirstPassHash(hashResponse, de.Size);
             }
             else
             {
@@ -524,29 +522,77 @@ public class Duplication
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;
-                _duplicationStatistics.AddFullHash();
-                _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
-                if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
-                {
-                    // Report progress relative to the start of the full-hash phase so it reads 0..100%.
-                    var processedThisPhase = _duplicationStatistics.FilesProcessed - _processedAtFullHashStart;
-                    if (ProgressEvent is not null)
-                    {
-                        ProgressEvent(processedThisPhase,
-                            _duplicationStatistics.FilesToCheckForDuplicatesCount, "Full hash");
-                    }
-                    else
-                    {
-                        _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:.0}%",
-                            processedThisPhase, _duplicationStatistics.FilesToCheckForDuplicatesCount,
-                            100 * (1.0 * processedThisPhase /
-                                   _duplicationStatistics.FilesToCheckForDuplicatesCount));
-                    }
-                }
+                RecordFullHash(hashResponse);
             }
             else
             {
                 _duplicationStatistics.AddFailedToHash();
+            }
+        }
+    }
+
+    private int DisplayCounterInterval()
+    {
+        var displayCounterInterval = _configuration.ProgressUpdateInterval > 1000
+            ? _configuration.ProgressUpdateInterval / 10
+            : _configuration.ProgressUpdateInterval;
+        Guard.Argument(displayCounterInterval, nameof(displayCounterInterval)).GreaterThan(0);
+        return displayCounterInterval;
+    }
+
+    /// <summary>Statistics and progress for a successful first-pass hash of a file of <paramref name="size"/> bytes.</summary>
+    private void RecordFirstPassHash(HashResponse hashResponse, long size)
+    {
+        var displayCounterInterval = DisplayCounterInterval();
+        _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
+        _duplicationStatistics.AddTotalFileBytes(size);
+        _duplicationStatistics.AddBytesNotProcessed(
+            size <= hashResponse.BytesHashed ? 0 : size - hashResponse.BytesHashed);
+        if (hashResponse.IsPartialHash)
+            _duplicationStatistics.AddPartialHash();
+        else
+            _duplicationStatistics.AddFullHash();
+        if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
+        {
+            if (ProgressEvent is not null)
+            {
+                ProgressEvent(_duplicationStatistics.FilesProcessed,
+                    _duplicationStatistics.FilesToCheckForDuplicatesCount, "Partial hash");
+            }
+            else
+            {
+                _logger.LogInfo(
+                    "Progress through duplicate files at {0} of {1} which is {2:F2}% Largest {3:F2} MB, Smallest {4:F2} MB",
+                    _duplicationStatistics.FilesProcessed, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                    100 * (1.0 * _duplicationStatistics.FilesProcessed /
+                           _duplicationStatistics.FilesToCheckForDuplicatesCount),
+                    1.0 * _duplicationStatistics.LargestFileSize / (1024 * 1024),
+                    1.0 * _duplicationStatistics.SmallestFileSize / (1024 * 1024));
+            }
+        }
+    }
+
+    /// <summary>Statistics and progress for a successful full-phase hash.</summary>
+    private void RecordFullHash(HashResponse hashResponse)
+    {
+        var displayCounterInterval = DisplayCounterInterval();
+        _duplicationStatistics.AddFullHash();
+        _duplicationStatistics.AddBytesProcessed(hashResponse.BytesHashed);
+        if (_duplicationStatistics.FilesProcessed % displayCounterInterval == 0)
+        {
+            // Report progress relative to the start of the full-hash phase so it reads 0..100%.
+            var processedThisPhase = _duplicationStatistics.FilesProcessed - _processedAtFullHashStart;
+            if (ProgressEvent is not null)
+            {
+                ProgressEvent(processedThisPhase,
+                    _duplicationStatistics.FilesToCheckForDuplicatesCount, "Full hash");
+            }
+            else
+            {
+                _logger.LogInfo("Progress through duplicate files at {0} of {1} which is {2:.0}%",
+                    processedThisPhase, _duplicationStatistics.FilesToCheckForDuplicatesCount,
+                    100 * (1.0 * processedThisPhase /
+                           _duplicationStatistics.FilesToCheckForDuplicatesCount));
             }
         }
     }
