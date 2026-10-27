@@ -41,6 +41,7 @@ public class DuplicationPerfTest
                 new IntPtr(1 << (Environment.ProcessorCount - 1));
         }
 
+        var throughputs = new Dictionary<string, double>();
         foreach (var (hashKey, hashMethod) in tests)
         {
             var timer = Stopwatch.StartNew();
@@ -50,8 +51,12 @@ public class DuplicationPerfTest
             }
 
             timer.Stop();
+            throughputs[hashKey] = data.Length * 9999.0 / Math.Max(1, timer.ElapsedMilliseconds);
             Console.WriteLine(
                 $"{hashKey}:\t\t{data.Length * (1000.0 / (timer.ElapsedMilliseconds / 9999.0)) / (1024.0 * 1024.0):F2} MB/s ({timer.ElapsedMilliseconds})");
         }
+
+        Assert.That(throughputs, Has.Count.EqualTo(tests.Count));
+        Assert.That(throughputs.Values, Has.All.GreaterThan(0));
     }
 }
