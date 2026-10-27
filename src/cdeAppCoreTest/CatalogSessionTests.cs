@@ -30,6 +30,19 @@ public class CatalogSessionTests
     }
 
     [Test]
+    public void GetCatalogs_FollowJunctions_DefaultsToFalse()
+        => Assert.That(_fixture.Session.GetCatalogs()[0].FollowJunctions, Is.False);
+
+    [Test]
+    public void GetCatalogs_ExposesFollowJunctions_WhenScannedWithIt()
+    {
+        var tree = new cdeLib.Entities.RootEntry { Path = @"C:\test", FollowJunctions = true };
+        tree.SetInMemoryFields();
+        using var fixture = new CatalogFixture(tree);
+        Assert.That(fixture.Session.GetCatalogs()[0].FollowJunctions, Is.True);
+    }
+
+    [Test]
     public void GetCatalogs_ExposesMetadata()
     {
         var catalogs = _fixture.Session.GetCatalogs();

@@ -103,7 +103,7 @@ public static partial class ColumnarFormat
         Magic.CopyTo(header);
         BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(4), Version);
         BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(8), count);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(12), hasHashes ? FlagHasHashes : 0);
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(12), ComposeFlags(hasHashes, root.FollowJunctions));
         for (var c = 0; c < ColumnCount; c++)
         {
             BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(PreambleFixed + c * 16), off[c]);

@@ -121,7 +121,8 @@ public sealed class CatalogSession : ICatalogSession
                 ScanEndUtcTicks = s.ScanEndUtcTicks,
                 ActualFileName = s.ActualFileName,
                 DefaultFileName = s.DefaultFileName,
-                Description = s.Description
+                Description = s.Description,
+                FollowJunctions = s.FollowJunctions
             });
         }
 

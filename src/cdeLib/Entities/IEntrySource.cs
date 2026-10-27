@@ -51,6 +51,8 @@ public interface IEntrySource
     string ActualFileName { get; }
     string DriveLetterHint { get; }
     string Description { get; }
+    /// <summary>Scan option recorded in the catalog (#66); false for catalogs that predate it.</summary>
+    bool FollowJunctions { get; }
     long AvailSpace { get; }
     long TotalSpace { get; }
     long ScanStartUtcTicks { get; }
