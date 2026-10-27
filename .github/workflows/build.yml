@@ -4,8 +4,9 @@ on:
   # A branch with a pull request open is covered by the pull_request trigger below. Building it
   # here as well would run everything twice for the same commit.
   #
-  # A change that touches only Markdown files (README, docs, CLAUDE.md, ...) can't affect the build,
-  # so it doesn't run. A change with any other file runs everything as usual. No branch requires
+  # A change that touches only Markdown files (README, docs, CLAUDE.md, ...) doesn't run: nothing in
+  # the build or tests reads a .md file today (if one ever does, narrow this pattern). A change with
+  # any other file runs everything as usual. No branch requires
   # these checks; if one ever does, a skipped run reports nothing and the check waits forever, so
   # switch to skipping inside the jobs instead.
   push:
