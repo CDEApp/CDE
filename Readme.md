@@ -147,7 +147,7 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 
 - To reset the view or the colour rules, close the app and delete `ui-state.json` or `colour-rules.txt`.
 - `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
-- Catalog files are not kept in the configuration folder. cde-tauri loads the `.cdex` files in its current directory and one level below. When you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe. To use a different catalog folder, start the app from that folder.
+- Catalog files are not kept in the configuration folder. cde-tauri loads the catalogs in its catalog folder and one level below. To choose the catalog folder, use **File ▸ Open Folder…**; cde-tauri remembers it (`catalogDir` in `ui-state.json`) and opens it again next time. Until you choose one, the catalog folder is the current directory: when you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe.
 
 ## Using cde
 
