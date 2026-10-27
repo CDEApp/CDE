@@ -75,6 +75,14 @@ public class ScanPipelineScanTests
         MakeFile(Path.Combine(_root, "sub", "a.txt"), 20, t.AddDays(5));
         MakeFile(Path.Combine(_root, "sub", "deep.dir", "b.TXT"), 30, t.AddDays(6));
         MakeFile(Path.Combine(_root, "café 日本", "naïve ü.md"), 40, t.AddDays(7));
+
+        // Creating children bumps a directory's write time, and NTFS updates the copy held in the parent's
+        // directory listing lazily, so a directory's own time and its listed time can differ for a moment.
+        // Pin every directory's time once its children exist so nothing changes under the scan.
+        Directory.SetLastWriteTime(Path.Combine(_root, "sub", "deep.dir"), t.AddDays(10));
+        Directory.SetLastWriteTime(Path.Combine(_root, "sub"), t.AddDays(11));
+        Directory.SetLastWriteTime(Path.Combine(_root, "empty"), t.AddDays(12));
+        Directory.SetLastWriteTime(Path.Combine(_root, "café 日本"), t.AddDays(13));
     }
 
     private static List<(string Rel, DirEntry E)> Flatten(RootEntry re)
@@ -108,17 +116,19 @@ public class ScanPipelineScanTests
         var re = Scan(_root);
         var flat = Flatten(re);
 
-        // Independent oracle: the FileSystemInfo-based constructor that scan used historically.
-        var expected = new List<string>();
-        foreach (var p in Directory.EnumerateFileSystemEntries(_root, "*", SearchOption.AllDirectories))
-            expected.Add(Path.GetRelativePath(_root, p).Replace('\\', '/'));
+        // Independent oracle: the FileSystemInfo-based constructor that scan used historically, fed the
+        // way the old scan fed it — from enumeration, i.e. the directory-listing data (not a fresh
+        // per-item query, which reads the item's own record and can differ for directories).
+        var infos = new DirectoryInfo(_root).EnumerateFileSystemInfos("*", SearchOption.AllDirectories)
+            .ToDictionary(i => Path.GetRelativePath(_root, i.FullName).Replace('\\', '/'), StringComparer.Ordinal);
+        var expected = infos.Keys.ToList();
         expected.Sort(StringComparer.Ordinal);
         Assert.That(flat.Select(f => f.Rel), Is.EqualTo(expected));
 
         foreach (var (rel, e) in flat)
         {
             var full = Path.Combine(_root, rel.Replace('/', '\\'));
-            FileSystemInfo fsi = Directory.Exists(full) ? new DirectoryInfo(full) : new FileInfo(full);
+            var fsi = infos[rel];
             var oracle = new DirEntry(fsi);
             Assert.That(e.Path, Is.EqualTo(oracle.Path), rel);
             // Directory sizes are rolled up from their files by SetSummaryFields.
