@@ -1,0 +1,125 @@
+import { describe, expect, it } from "vitest";
+import {
+  formatDate,
+  mb,
+  notOlderThanCutoff,
+  parseAge,
+  parseSize,
+  sizeCell,
+  toHRString,
+  toLocalIsoString,
+} from "./format";
+
+describe("toHRString", () => {
+  it.each([
+    [0, "0"],
+    [1, "1 B"],
+    [1023, "1023 B"],
+    [1024, "1 KB"],
+    [1536, "1.5 KB"],
+    [1100, "1.1 KB"],
+    [1_000_000, "976.6 KB"],
+    [1024 ** 2, "1 MB"],
+    [12.4 * 1024 ** 3, "12.4 GB"],
+    [3 * 1024 ** 4, "3 TB"],
+  ])("%d -> %s", (bytes, expected) => {
+    expect(toHRString(bytes)).toBe(expected);
+  });
+});
+
+describe("sizeCell", () => {
+  it("shows a file's raw byte count", () => {
+    expect(sizeCell(false, 50, false)).toBe("50");
+  });
+
+  it("annotates a directory, matching cdeAppCore's FormatDirectorySizeCell", () => {
+    expect(sizeCell(true, 0, false)).toBe("0 <Dir>");
+    expect(sizeCell(true, 2048, false)).toBe("2 KB <Dir>");
+  });
+
+  it("marks a reparse-point directory", () => {
+    expect(sizeCell(true, 1024, true)).toBe("1 KB <Dir R>");
+  });
+});
+
+describe("formatDate", () => {
+  it("formats a local timestamp as yyyy/MM/dd HH:mm:ss", () => {
+    expect(formatDate("2026-10-27T09:05:03", false)).toBe("2026/10/27 09:05:03");
+  });
+
+  it("shows <Bad Date> when the entry's modified time is flagged bad", () => {
+    expect(formatDate("2026-10-27T09:05:03", true)).toBe("<Bad Date>");
+  });
+
+  it("shows <Bad Date> for an unparseable timestamp", () => {
+    expect(formatDate("not a date", false)).toBe("<Bad Date>");
+  });
+});
+
+describe("mb", () => {
+  it("rounds bytes to whole megabytes", () => {
+    expect(mb(5 * 1024 * 1024)).toBe("5 MB");
+    expect(mb(5.6 * 1024 * 1024)).toBe("6 MB");
+  });
+});
+
+describe("parseSize", () => {
+  it.each([
+    ["100", 100],
+    ["25 KB", 25 * 1024],
+    ["25kb", 25 * 1024],
+    ["2.5 MB", 2.5 * 1024 ** 2],
+    ["4GB", 4 * 1024 ** 3],
+    [".5 K", 512],
+    ["  1 t  ", 1024 ** 4],
+  ])("%s -> %d", (text, expected) => {
+    expect(parseSize(text)).toBe(expected);
+  });
+
+  it.each(["", "   ", "abc", "5 XB", "-1 KB", "1.2.3"])("rejects %j", (text) => {
+    expect(parseSize(text)).toBeNull();
+  });
+});
+
+describe("parseAge", () => {
+  it("accepts whole numbers, trimming whitespace", () => {
+    expect(parseAge("3")).toBe(3);
+    expect(parseAge(" 0 ")).toBe(0);
+  });
+
+  it.each(["", "   ", "1.5", "-1", "two"])("rejects %j", (text) => {
+    expect(parseAge(text)).toBeNull();
+  });
+});
+
+describe("notOlderThanCutoff", () => {
+  const now = new Date(2026, 0, 15, 12, 30, 45, 500);
+
+  it("steps back hours and days in local time", () => {
+    expect(notOlderThanCutoff(3, "hours", now)).toEqual(new Date(2026, 0, 15, 9, 30, 45, 500));
+    expect(notOlderThanCutoff(20, "days", now)).toEqual(new Date(2025, 11, 26, 12, 30, 45, 500));
+  });
+
+  // Noon, not midnight: in zones with a DST gap at midnight, midnight doesn't exist on that day.
+  it("clamps the day to the target month like .NET AddMonths", () => {
+    expect(notOlderThanCutoff(1, "months", new Date(2026, 2, 31, 12))).toEqual(new Date(2026, 1, 28, 12));
+    expect(notOlderThanCutoff(1, "months", new Date(2024, 2, 31, 12))).toEqual(new Date(2024, 1, 29, 12));
+  });
+
+  it("steps back whole years, clamping Feb 29", () => {
+    expect(notOlderThanCutoff(1, "years", new Date(2024, 1, 29, 12))).toEqual(new Date(2023, 1, 28, 12));
+    expect(notOlderThanCutoff(2, "years", now)).toEqual(new Date(2024, 0, 15, 12, 30, 45, 500));
+  });
+
+  it("does not mutate the passed-in date", () => {
+    const before = now.getTime();
+    notOlderThanCutoff(5, "days", now);
+    expect(now.getTime()).toBe(before);
+  });
+});
+
+describe("toLocalIsoString", () => {
+  it("formats local wall-clock time with no offset", () => {
+    expect(toLocalIsoString(new Date(2026, 9, 27, 9, 5, 3))).toBe("2026-10-27T09:05:03");
+  });
+});
