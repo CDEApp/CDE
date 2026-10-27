@@ -90,10 +90,12 @@ jobs:
           --results-directory TestResults
       # The Cobertura report is named *.cobertura.xml, so SonarCloud's TestResults/**/*.xml would take
       # it for a second Xml report. Moving it out leaves SonarCloud only the one it can read.
+      # The collector names it <user>_<machine>_<timestamp>.cobertura.xml, which matches none of the
+      # Codecov CLI's search patterns, so it gets a fixed name here and is handed to Codecov by name.
       - name: Separate Codecov report
         run: |
           New-Item -ItemType Directory -Force coverage | Out-Null
-          Get-ChildItem TestResults -Recurse -Filter *.cobertura.xml | Move-Item -Destination coverage
+          Get-ChildItem TestResults -Recurse -Filter *.cobertura.xml | Move-Item -Destination coverage/coverage.cobertura.xml
       - name: End SonarCloud analysis
         if: env.SONAR_TOKEN != ''
         run: dotnet sonarscanner end /d:sonar.token="$env:SONAR_TOKEN"
@@ -105,7 +107,8 @@ jobs:
         uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
-          directory: coverage
+          files: coverage/coverage.cobertura.xml
+          disable_search: true
       - name: Publish
         run: |
           ./build.ps1 publish
