@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createRuleResolver, parseColourRules, parseStyle } from "./colourRules";
+import { createRuleResolver, parseColourRules, parseStyle, splitRowAndNameStyle } from "./colourRules";
 
 describe("parseStyle with the browser's CSS.supports", () => {
   // Node has no CSS global; stand in for the webview's, accepting only known values.
@@ -194,5 +194,87 @@ describe("createRuleResolver", () => {
     expect(a("x", false)).toEqual({ color: "red" });
     const b = createRuleResolver(parseColourRules("x blue").rules);
     expect(b("x", false)).toEqual({ color: "blue" });
+  });
+});
+
+describe("background / gradient text (#105)", () => {
+  const GRAD = "linear-gradient(90deg, #3b82f6, #a855f7)";
+  const supports = (_p: string, v: string) => !v.includes("nonsense");
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("parses the issue's gradient-text rule with no problems", () => {
+    vi.stubGlobal("CSS", { supports });
+    const parsed = parseColourRules(
+      `\\.mp4$   background: ${GRAD}; background-clip: text; -webkit-background-clip: text; color: transparent`,
+    );
+    expect(parsed.problems).toEqual([]);
+    expect(parsed.rules[0].style).toEqual({
+      background: GRAD,
+      backgroundClip: "text",
+      WebkitBackgroundClip: "text",
+      color: "transparent",
+    });
+  });
+
+  it("maps -webkit-text-fill-color", () => {
+    vi.stubGlobal("CSS", { supports });
+    expect(parseStyle("-webkit-text-fill-color: transparent")).toEqual({
+      style: { WebkitTextFillColor: "transparent" },
+      problems: [],
+    });
+  });
+
+  it("flags invalid gradient values", () => {
+    vi.stubGlobal("CSS", { supports });
+    expect(parseStyle("background: linear-gradient(nonsense)")).toEqual({
+      style: {},
+      problems: ["invalid value for `background`"],
+    });
+  });
+
+  it("flags url() even inside a gradient list", () => {
+    vi.stubGlobal("CSS", { supports });
+    const r = parseStyle(`background: ${GRAD}, url(x)`);
+    expect(r.style).toEqual({});
+    expect(r.problems).toEqual(["invalid value for `background`"]);
+  });
+
+  it("flags background + background-color on one line and keeps background", () => {
+    vi.stubGlobal("CSS", { supports });
+    const msg = "background and background-color both set; background-color ignored";
+    expect(parseStyle("background-color: red; background: blue")).toEqual({ style: { background: "blue" }, problems: [msg] });
+    expect(parseStyle("background: blue; background-color: red")).toEqual({ style: { background: "blue" }, problems: [msg] });
+  });
+});
+
+describe("splitRowAndNameStyle", () => {
+  it("sends background-related properties to the name, the rest to the row", () => {
+    const { row, name } = splitRowAndNameStyle({
+      background: "linear-gradient(red, blue)",
+      backgroundClip: "text",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+      fontWeight: "bold",
+      backgroundColor: "red",
+      color: "green",
+    });
+    expect(name).toEqual({
+      background: "linear-gradient(red, blue)",
+      backgroundClip: "text",
+      WebkitBackgroundClip: "text",
+      WebkitTextFillColor: "transparent",
+    });
+    expect(row).toEqual({ fontWeight: "bold", backgroundColor: "red", color: "green" });
+  });
+
+  it("moves color: transparent to the name so other cells stay visible", () => {
+    const { row, name } = splitRowAndNameStyle({ background: "red", color: "transparent", opacity: 0.5 });
+    expect(name).toEqual({ background: "red", color: "transparent" });
+    expect(row).toEqual({ opacity: 0.5 });
+  });
+
+  it("handles undefined and plain styles", () => {
+    expect(splitRowAndNameStyle(undefined)).toEqual({ row: undefined, name: undefined });
+    expect(splitRowAndNameStyle({ color: "red" })).toEqual({ row: { color: "red" }, name: undefined });
   });
 });
