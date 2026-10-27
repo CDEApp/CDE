@@ -11,7 +11,7 @@ public static class RegexHelper
         {
             try
             {
-                _ = Regex.Match("", testPattern);
+                _ = Regex.Match("", testPattern, RegexOptions.None, BoundedRegex.MatchTimeout);
             }
             catch (ArgumentException ae)
             {
