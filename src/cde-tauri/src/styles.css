@@ -169,6 +169,9 @@ ul.tree { padding-left: 2px; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 2px 8px; border-bottom: 1px solid var(--row-line); white-space: nowrap; }
 th { position: sticky; top: 0; background: var(--content-header); }
+.th-sort { all: unset; display: block; width: 100%; cursor: pointer; font-weight: inherit; }
+.th-sort:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
+.th-sort:hover { text-decoration: underline; }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--row-hover); }
 
