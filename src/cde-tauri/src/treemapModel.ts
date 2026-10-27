@@ -103,5 +103,5 @@ export function fullPathOf(
   for (let row = rowsById.get(nodeId); row && row.parentId != null; row = rowsById.get(row.parentId)) {
     names.push(row.name);
   }
-  return names.reverse().reduce(joinPath, rootFullPath);
+  return names.reverse().reduce((path, name) => joinPath(path, name), rootFullPath);
 }

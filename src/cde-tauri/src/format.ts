@@ -1,10 +1,18 @@
 const SUFFIX = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"];
 
-/** Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString. */
+/**
+ * Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString: rounds half away from zero.
+ * Cases shared with the C# tests live in src/testdata/size-format-cases.json.
+ */
 export function toHRString(val: number): string {
   if (val === 0) return "0";
-  const place = Math.floor(Math.log(val) / Math.log(1024));
-  const num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  let place = Math.floor(Math.log(val) / Math.log(1024));
+  let num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  if (num >= 1024 && place < SUFFIX.length - 1) {
+    // 1023.96 KB rounds to 1024; show it as 1 MB instead.
+    place++;
+    num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  }
   return `${num} ${SUFFIX[place]}`;
 }
 

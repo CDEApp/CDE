@@ -62,7 +62,7 @@ export default function App() {
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
     let disposed = false;
-    (async () => {
+    void (async () => {
       try {
         const sidecar = await startSidecar();
         if (disposed) {
