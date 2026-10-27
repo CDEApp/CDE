@@ -24,6 +24,36 @@ jobs:
       contents: read
       pull-requests: write
     steps:
+      # The autolabeler only adds labels. When a title is edited (feat: -> fix:), the label from the
+      # old title would stay and drive the wrong category and version bump, so first remove the
+      # labels this workflow manages that the new title no longer matches. Only those labels are
+      # touched; any other label on the PR is left alone. The patterns mirror the autolabeler
+      # section of .github/release-drafter.yml. Only on a title edit, so a label a maintainer adds
+      # by hand survives other events.
+      - name: Remove labels the new title no longer matches
+        if: ${{ github.event.action == 'edited' && github.event.changes.title != null }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: |
+          declare -A patterns=(
+            [breaking]='^[a-z]+(\(.+\))?!:'
+            [enhancement]='^feat(\(.+\))?!?:'
+            [bug]='^fix(\(.+\))?!?:'
+            [area-performance]='^perf(\(.+\))?!?:'
+            [documentation]='^docs(\(.+\))?!?:'
+            [chore]='^(chore|build|ci|style|refactor|test)(\(.+\))?!?:'
+          )
+          current=$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels" --jq '.[].name')
+          for label in "${!patterns[@]}"; do
+            if ! grep -qxF "$label" <<< "$current"; then continue; fi
+            if [[ "$PR_TITLE" =~ ${patterns[$label]} ]]; then continue; fi
+            echo "Removing '$label': the title no longer matches"
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/issues/$PR_NUMBER/labels/$label" > /dev/null
+          done
+
       - uses: release-drafter/release-drafter/autolabeler@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -23,6 +23,14 @@ on:
         description: 'Tag to release'
         required: true
         type: string
+  # To re-run a failed build for a tag that already exists (the tag blocks a new Publish Release for
+  # that version). Choose the tag in "Tag", with the workflow run from develop.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release, e.g. 2.1.0'
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -139,23 +147,55 @@ jobs:
       - name: Zip and checksum
         run: ./.github/scripts/stage-release.ps1 -Version "$env:TAG" -Phase Zip
 
-      # Publishes the rolling draft that Release Drafter has been accumulating from merged PRs, so
-      # any manual edits made to it are kept.
-      - name: Publish GitHub Release
+      # The release stays a draft until the very last step: the notes are brought up to date, the
+      # assets are attached, and only then is it published. A failure before that leaves a draft to
+      # fix and re-run, never a public release with no zip (which an immutable release would not
+      # let us fix).
+      #
+      # Brings the rolling draft that Release Drafter has been accumulating from merged PRs up to
+      # date for this tag, so any manual edits made to it are kept.
+      - name: Update draft release
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
-          publish: true
+          publish: false
           tag: ${{ env.TAG }}
           name: ${{ env.TAG }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Find draft release
+        id: draft
+        shell: bash
+        run: |
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id" | head -n1)
+          if [ -z "$id" ]; then
+            echo "::error::No draft release for tag $TAG. If it was already published, there is nothing to do."
+            exit 1
+          fi
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "Draft release id: $id"
+
+      # draft: true keeps the release a draft; the action would otherwise publish it.
+      - name: Upload release assets
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ env.TAG }}
+          draft: true
+          files: |
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip.sha256
+          fail_on_unmatched_files: true
+
       # Release Drafter has no first-time-contributor detection, so borrow GitHub's own and append
-      # its "New Contributors" section to the notes.
+      # its "New Contributors" section to the notes. Nice to have: a failure here must not stop the
+      # release.
       - name: Append new contributors
+        continue-on-error: true
         shell: bash
         env:
           PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
+          RELEASE_ID: ${{ steps.draft.outputs.id }}
         run: |
           if [ -n "$PREVIOUS_TAG" ]; then
             generated=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
@@ -165,25 +205,30 @@ jobs:
               -f tag_name="$TAG" --jq .body)
           fi
 
-          printf '%s\n' "$generated" | awk '/^## New Contributors/ { found = 1 } found { print }' > new-contributors.md
+          # From the "New Contributors" heading to the next heading or the "Full Changelog" line,
+          # which would otherwise add a second compare link.
+          printf '%s\n' "$generated" | awk '
+            /^## New Contributors/ { found = 1; print; next }
+            found && (/^## / || /^\*\*Full Changelog\*\*/) { exit }
+            found { print }' > new-contributors.md
 
           if [ ! -s new-contributors.md ]; then
             echo "No new contributors in this release."
             exit 0
           fi
 
-          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > notes.md
+          gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq .body > notes.md
           printf '\n' >> notes.md
           cat new-contributors.md >> notes.md
-          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F body=@notes.md > /dev/null
           echo "Appended:"
           cat new-contributors.md
 
-      - name: Upload release assets
-        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
-        with:
-          tag_name: ${{ env.TAG }}
-          files: |
-            artifacts/release/cde-${{ env.TAG }}-win-x64.zip
-            artifacts/release/cde-${{ env.TAG }}-win-x64.zip.sha256
-          fail_on_unmatched_files: true
+      # Last step: everything is attached, so make the release public.
+      - name: Publish release
+        shell: bash
+        env:
+          RELEASE_ID: ${{ steps.draft.outputs.id }}
+        run: |
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false > /dev/null
+          echo "Published $TAG"

@@ -16,13 +16,32 @@ of it.
    `release.yml`, which builds, zips and publishes the release.
 
 The version checks are: it is `MAJOR.MINOR.PATCH`, the tag does not exist, it is higher than the
-latest bare tag, and the branch is `develop`.
+latest bare tag, and the branch is `develop`. With no `version`, the version comes from the most
+recently created draft release; if that is not higher than the latest tag the run fails and says
+which tag and which draft disagree. Only one Publish Release run goes at a time.
 
 Pushing a tag such as `2.1.0` by hand also runs `release.yml`, but only if the tagged commit is on
 `develop`. Prefer Publish Release.
 
-If `release.yml` fails part way, fix the cause and re-run it from the Actions tab on the same tag
-(or push the tag again). It is safe to re-run before the release is published.
+`release.yml` keeps the release a draft until its last step: it builds, zips, updates the draft,
+attaches the zip and checksum, appends new contributors (optional; a failure there is ignored), and
+only then publishes. So a failed run never leaves a public release without its zip.
+
+### If a release run fails
+
+A pushed tag blocks that version: Publish Release refuses a tag that already exists. Either:
+
+- **Re-run the build for the same tag.** Fix the cause (on `develop` if it was a workflow or script
+  fix, noting the tag still points at the old commit, so a code fix needs a new tag), then in
+  Actions run **Release** with "Use workflow from" `develop` and `tag` set to the tag, for example
+  `2.1.0`. It checks out the tag, checks it is on `develop`, and runs the whole release again. It
+  needs the draft release to still exist; it finds the draft by tag.
+  Or open the failed run and use **Re-run failed jobs**.
+- **Delete the tag deliberately** if the tagged commit itself is wrong: delete the tag (and the
+  draft release, if you want a fresh one) on GitHub, fix `develop`, and run Publish Release again.
+  Never delete a tag of a published release.
+
+If the release was already published, there is nothing to re-run.
 
 ## Decisions
 
@@ -55,6 +74,10 @@ release-note category and the version bump (`.github/release-drafter.yml`).
 | `docs: ...` | `documentation` | patch |
 | `chore:`, `build:`, `ci:`, `style:`, `refactor:`, `test:` | `chore` | patch |
 | no prefix | none | patch |
+
+When a PR title is edited, the labels above that the new title no longer matches are removed and
+the right ones added, so a `feat:` to `fix:` change moves the PR to the right category. Other labels
+are left alone.
 
 The labels must exist in the repository (`breaking`, `chore`, `enhancement`, `bug`,
 `area-performance`, `documentation`, `dependencies`); the autolabeler cannot create them. The

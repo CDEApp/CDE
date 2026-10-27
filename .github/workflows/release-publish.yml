@@ -30,6 +30,11 @@ on:
 
 permissions: {}
 
+# One publish at a time, so two runs cannot race to tag the same version. A queued run waits.
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+
 jobs:
   prepare:
     name: Prepare release
@@ -66,13 +71,18 @@ jobs:
         run: |
           version="$INPUT_VERSION"
 
+          from_draft=false
           if [ -z "$version" ]; then
-            version=$(gh api "repos/$GITHUB_REPOSITORY/releases" \
-              --jq '[.[] | select(.draft)] | .[0].tag_name // ""')
+            # Every page of releases, drafts only, the most recently created one: Release Drafter
+            # keeps a single draft, but a stale one may linger from an earlier attempt.
+            version=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+              --jq '.[] | select(.draft) | [.created_at, .tag_name] | @tsv' \
+              | sort -r | head -n1 | cut -f2)
             if [ -z "$version" ]; then
               echo "::error::No release draft found - pass an explicit version input"
               exit 1
             fi
+            from_draft=true
             echo "Resolved from release draft: $version"
           fi
 
@@ -95,7 +105,11 @@ jobs:
           latest=$(git tag --list '[0-9]*' --sort=-v:refname | grep -E '^[0-9]+\.[0-9]+\.[0-9]+$' | head -n1 || true)
           if [ -n "$latest" ] && \
              [ "$(printf '%s\n%s\n' "$version" "$latest" | sort -V | head -n1)" = "$version" ]; then
-            echo "::error::$tag is not an increase over the latest tag $latest. If the release draft is wrong, pass an explicit version input."
+            if [ "$from_draft" = true ]; then
+              echo "::error::The release draft says $version but the latest tag is $latest, so the draft is out of date or the tag is ahead of it. Pass an explicit version input higher than $latest."
+            else
+              echo "::error::Version $version is not higher than the latest tag $latest."
+            fi
             exit 1
           fi
 
