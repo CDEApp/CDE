@@ -1,7 +1,7 @@
 import { useMemo } from "react";
 import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
-import type { StyleResolver } from "../colourRules";
+import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
 import { VirtualList } from "./VirtualList";
 
@@ -63,11 +63,13 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
             })}
           </div>
         }
-        renderRow={(n, _i, style) => (
+        renderRow={(n, _i, style) => {
+          const { row, name } = splitRowAndNameStyle(resolveStyle(n.name, n.isDirectory));
+          return (
           <div
             key={`${n.ref.catalogId}-${n.ref.entryIndex}`}
             className="vlist-row"
-            style={{ ...style, ...resolveStyle(n.name, n.isDirectory) }}
+            style={{ ...style, ...row }}
             onDoubleClick={() => onActivate(n)}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -75,11 +77,12 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
               onContextMenu(n, e.clientX, e.clientY);
             }}
           >
-            <div className="cell">{n.name}</div>
+            <div className="cell">{name ? <span className="name-text" style={name}>{n.name}</span> : n.name}</div>
             <div className="cell num">{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</div>
             <div className="cell">{formatDate(n.modified, n.isModifiedBad)}</div>
           </div>
-        )}
+          );
+        }}
       />
     </div>
   );

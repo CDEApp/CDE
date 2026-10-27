@@ -87,7 +87,7 @@ export function ColoursView({ text, onChange, save, saveError, getDefaults }: Pr
           {parsed.rules.map((r) => (
             <div key={r.line} className="colours-preview-row">
               <span className="colours-preview-line">line {r.line}</span>
-              <span style={r.style}>{r.isFolder ? "Folder name" : r.pattern}</span>
+              <span className="name-text" style={r.style}>{r.isFolder ? "Folder name" : r.pattern}</span>
             </div>
           ))}
         </div>

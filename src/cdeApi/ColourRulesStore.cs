@@ -35,7 +35,13 @@ public sealed class ColourRulesStore
         "#            files and folders alike. The reserved pattern [folder] matches every directory.\n" +
         "#   style    a bare colour (same as color: <value>), or CSS declarations separated by semicolons.\n" +
         "#            Allowed properties: color, background-color, font-weight, font-style,\n" +
-        "#            text-decoration, opacity. Other properties are flagged and ignored.\n" +
+        "#            text-decoration, opacity, background (gradients ok, url() is not), background-clip,\n" +
+        "#            -webkit-background-clip, -webkit-text-fill-color. Others are flagged and ignored.\n" +
+        "#            background, background-clip and text fill apply to the name only. Do not combine\n" +
+        "#            background with background-color (background-color is then ignored).\n" +
+        "#            Gradient text (one line):  \\.mp4$  background: linear-gradient(90deg, #3b82f6, #a855f7);\n" +
+        "#            background-clip: text; -webkit-background-clip: text; color: transparent\n" +
+        "#            (-webkit-text-fill-color: transparent also works)\n" +
         "#            CSS variables such as var(--dir) are allowed.\n" +
         "# The FIRST matching line wins, top to bottom. Lines starting with # are comments.\n" +
         "# Invalid lines are skipped; the valid lines keep working. Changes apply as you type.\n" +
