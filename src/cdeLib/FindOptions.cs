@@ -150,6 +150,7 @@ public class FindOptions
             // Use single-entry overload to avoid array allocation
             EntryHelper.TraverseTreePair(rootEntry, findFunc);
         });
+        ReportRegexExhausted();
         ProgressFunc(ProgressEnd, ProgressEnd); // end of Progress - always report 100%
     }
 
@@ -202,6 +203,7 @@ public class FindOptions
             // Handle cancellation gracefully
         }
 
+        ReportRegexExhausted();
         ProgressFunc(ProgressEnd, ProgressEnd); // Always report 100%
         watch.Stop();
         Debug.WriteLine($"Async Execution Time: {watch.ElapsedMilliseconds} ms");
@@ -278,7 +280,7 @@ public class FindOptions
             if (currentCount % 2000 == 0) // Reduced frequency for better performance
             {
                 // Use ConfigureAwait(false) to avoid unnecessary context switching
-                await Task.Delay(0, CancellationToken).ConfigureAwait(false);
+                await Task.Delay(0, CancellationToken.None).ConfigureAwait(false);
             }
             else if (currentCount % 500 == 0)
             {
@@ -290,11 +292,14 @@ public class FindOptions
         };
     }
 
-    private static readonly ConcurrentDictionary<string, Regex> RegexCache = new();
-    private const int MaxRegexCacheSize = 100; // Prevent unbounded growth
+    private BoundedRegex _activeRegex;
+
+    // Log (once per search) that a pathological regex made the results incomplete.
+    private void ReportRegexExhausted() => _activeRegex?.ReportIfExhausted();
 
     private Func<ICommonEntry, ICommonEntry, bool> GetPatternMatcher()
     {
+        _activeRegex = null;
         // Cache properties locally to avoid repeated field access
         var pattern = Pattern;
         var includePath = IncludePath;
@@ -305,22 +310,11 @@ public class FindOptions
 
         if (RegexMode)
         {
-            // Evict oldest entries if cache is too large (simple size-based eviction)
-            if (RegexCache.Count > MaxRegexCacheSize)
-            {
-                // Remove ~20% of entries to avoid frequent evictions
-                var toRemove = RegexCache.Keys.Take(MaxRegexCacheSize / 5).ToArray();
-                foreach (var key in toRemove)
-                {
-                    RegexCache.TryRemove(key, out _);
-                }
-            }
-
-            // Per-matcher bounded wrapper: a catastrophic-backtracking pattern times out (entry = no match)
-            // and, after a few timeouts, stops matching rather than hanging the search.
-            var regex = new BoundedRegex(RegexCache.GetOrAdd(pattern, p =>
-                new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase,
-                    BoundedRegex.MatchTimeout)));
+            // Per-search bounded wrapper over a shared compiled regex (cached in BoundedRegex): a
+            // catastrophic-backtracking pattern times out (entry = no match) and, after a few timeouts,
+            // stops matching rather than hanging the search. Reported via ReportRegexExhausted.
+            var regex = new BoundedRegex(pattern);
+            _activeRegex = regex;
 
             return includePath
                 ? (p, d) => regex.IsMatch(EntryHelper.MakeFullPathPooled(p, d))

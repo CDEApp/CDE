@@ -97,6 +97,53 @@ public class RegexTimeoutTests
         finally { File.Delete(file); }
     }
 
+    private sealed class ListSink : Serilog.Core.ILogEventSink
+    {
+        public readonly List<Serilog.Events.LogEvent> Events = new();
+        public void Emit(Serilog.Events.LogEvent e) { lock (Events) Events.Add(e); }
+    }
+
+    [Test]
+    [NonParallelizable]
+    public void ExhaustedRegex_LogsOneWarning_PerSearch_OnEveryPath()
+    {
+        var store = BuildStore();
+        var file = Path.Combine(Path.GetTempPath(), $"cdetest-rt-{Guid.NewGuid():N}.cdex");
+        ColumnarFormat.Write(store, file);
+        var sink = new ListSink();
+        var previous = Serilog.Log.Logger;
+        Serilog.Log.Logger = new Serilog.LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+        try
+        {
+            using var reader = new ColumnarCatalogReader(file);
+            var o = new EntryStoreFindOptions { Pattern = Evil, RegexMode = true };
+
+            void Check(string path, Action search)
+            {
+                sink.Events.Clear();
+                search();
+                Assert.That(sink.Events.FindAll(e => e.Level == Serilog.Events.LogEventLevel.Warning), Has.Count.EqualTo(1), path);
+                Assert.That(sink.Events[0].RenderMessage(), Does.Contain("incomplete").And.Contain("(a+)+"), path);
+            }
+
+            Check("EntryStore options", () => EntryStoreSearch.Find(store, o, _ => { }));
+            Check("EntryStore pattern", () => EntryStoreSearch.Find(store, Evil, true, false, true, true, _ => { }));
+            Check("reader options", () => reader.Find(o, _ => { }));
+            Check("reader FindRegex", () => reader.Find(Evil, true, false, true, true, _ => { }));
+        }
+        finally
+        {
+            Serilog.Log.Logger = previous;
+            File.Delete(file);
+        }
+    }
+
+    [Test]
+    public void BoundedRegex_RejectsRegexWithoutTimeout()
+    {
+        Assert.Throws<ArgumentException>(() => new BoundedRegex(new System.Text.RegularExpressions.Regex("a")));
+    }
+
     [Test]
     public void BoundedRegex_TimeoutIsNoMatch_ThenExhausted()
     {

@@ -89,6 +89,7 @@ public static class EntryStoreSearch
         }
         finally
         {
+            regex?.ReportIfExhausted(); // never truncate silently
             if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
             if (nameBuffer != null) ArrayPool<char>.Shared.Return(nameBuffer);
         }
@@ -193,6 +194,7 @@ public static class EntryStoreSearch
         }
         finally
         {
+            regex?.ReportIfExhausted(); // never truncate silently
             if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
             if (nameBuffer != null) ArrayPool<char>.Shared.Return(nameBuffer);
         }

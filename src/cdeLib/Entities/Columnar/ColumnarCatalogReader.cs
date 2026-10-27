@@ -218,7 +218,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 if (isCancelled != null && isCancelled()) return;
                 onScan?.Invoke(i);
             }
-            if (regex is { Exhausted: true }) return; // pattern timed out repeatedly; abandon the scan
+            if (regex is { Exhausted: true }) break; // pattern timed out repeatedly; abandon the scan
 
             var isDir = ((Flags)bits[i] & Entities.Flags.Directory) == Entities.Flags.Directory;
             if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
@@ -266,6 +266,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
             if (match) onMatch(i);
         }
+        regex?.ReportIfExhausted(); // never truncate silently
     }
 
     // Decode UTF-8 into a reused char buffer (grown as needed) and return the decoded span, so regex
@@ -362,6 +363,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 onMatch?.Invoke(i);
             }
         }
+        regex.ReportIfExhausted(); // never truncate silently
         return matches;
     }
 
