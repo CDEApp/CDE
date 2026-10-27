@@ -7,7 +7,6 @@ using cdeLib;
 using cdeLib.Catalog;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
-using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure.Config;
 using Humanizer;
 using JetBrains.Annotations;
@@ -69,7 +68,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
             ScanProgressConsole.EnqueueMessage("Saving catalog...");
             re.ActualFileName = cdexName;
-            await Task.Run(() => ColumnarFormat.Write(EntryStore.Build(re), cdexName), cancellationToken)
+            await Task.Run(() => ColumnarFormat.Write(re, cdexName), cancellationToken)
                 .ConfigureAwait(false);
             ScanProgressConsole.EnqueueMessage($"Saved to {cdexName}");
 
@@ -93,12 +92,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         }
 
         Log.Information("Found cache \"{FileName}\", Updating hashes for new scan from cache file", cdexName);
-        RootEntry oldRoot;
-        using (var reader = new ColumnarCatalogReader(cdexName))
-        {
-            oldRoot = CatalogTreeBuilder.FromSource(reader);
-        }
-        oldRoot.TraverseTreesCopyHash(re);
+        using var reader = new ColumnarCatalogReader(cdexName);
+        ColumnarHashReuse.CopyHashes(reader, re);
     }
 
     private static void ReportScanSummary(RootEntry re, string cdexName, System.Diagnostics.Stopwatch sw)

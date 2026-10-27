@@ -56,11 +56,19 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
         var header = new ReadOnlySpan<byte>(_base, ColumnarFormat.HeaderSize);
         if (!header[..4].SequenceEqual(ColumnarFormat.Magic))
+        {
+            Dispose(); // don't leak the mapping (and the file lock) when the constructor throws
             throw new InvalidDataException($"not a CDEX catalog: {path}");
+        }
+
         var version = BitConverter.ToInt32(header.Slice(4, 4));
         if (version != ColumnarFormat.Version)
+        {
+            Dispose();
             throw new InvalidDataException(
                 $"unsupported CDEX version {version} (expected {ColumnarFormat.Version}): {path}");
+        }
+
         Count = BitConverter.ToInt32(header.Slice(8, 4));
         HasHashes = (BitConverter.ToInt32(header.Slice(12, 4)) & ColumnarFormat.FlagHasHashes) != 0;
 

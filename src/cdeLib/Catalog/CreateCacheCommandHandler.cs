@@ -4,7 +4,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
-using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure.Config;
 using JetBrains.Annotations;
 using SlimMessageBus;
@@ -49,12 +48,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             {
                 Console.WriteLine($"Found cache \"{cdexName}\"");
                 Console.WriteLine("Updating hashes on new scan from found cache file.");
-                RootEntry oldRoot;
-                using (var reader = new ColumnarCatalogReader(cdexName))
-                {
-                    oldRoot = CatalogTreeBuilder.FromSource(reader);
-                }
-                oldRoot.TraverseTreesCopyHash(re);
+                using var reader = new ColumnarCatalogReader(cdexName);
+                ColumnarHashReuse.CopyHashes(reader, re);
             }
 
             re.SortAllChildrenByPath();
@@ -65,7 +60,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             }
 
             re.ActualFileName = cdexName;
-            await Task.Run(() => ColumnarFormat.Write(EntryStore.Build(re), cdexName), cancellationToken);
+            await Task.Run(() => ColumnarFormat.Write(re, cdexName), cancellationToken);
             var scanTimeSpan = re.ScanEndUtc - re.ScanStartUtc;
             Console.WriteLine($"Scanned path {re.Path}");
             Console.WriteLine($"Scan time {scanTimeSpan.TotalMilliseconds:0.00} msecs");

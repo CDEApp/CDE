@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.IO.Enumeration;
 using System.Linq;
 using System.Threading;
 using cdeLib.Extensions;
@@ -21,7 +22,6 @@ namespace cdeLib.Entities;
 [MessagePackObject]
 public sealed class RootEntry : object, ICommonEntry
 {
-    private const string MatchAll = "*";
     private readonly IDriveInfoService _driveInfoService;
     private readonly IFileSystemAdapter _fileSystemAdapter;
 
@@ -294,12 +294,13 @@ public sealed class RootEntry : object, ICommonEntry
         stack.Push((this, startPath));
 
         var progressTracker = new ScanProgressTracker(SimpleScanCountEvent);
+        var namePool = new ScanNamePool(); // scan-local; freed when the scan ends
 
         while (stack.Count > 0)
         {
             var (parent, directory) = stack.Pop();
 
-            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, token))
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, namePool, token))
             {
                 continue;
             }
@@ -323,16 +324,28 @@ public sealed class RootEntry : object, ICommonEntry
         Stack<(ICommonEntry, string)> stack,
         ref int entryCount,
         ScanProgressTracker progressTracker,
+        ScanNamePool namePool,
         CancellationToken token)
     {
         try
         {
-            var dirInfo = new DirectoryInfo(directory);
-            var fsInfos = dirInfo.EnumerateFileSystemInfos(MatchAll, SearchOption.TopDirectoryOnly);
-
-            foreach (var fsInfo in fsInfos)
+            // Raw directory records: no FileInfo/DirectoryInfo (and no per-entry path strings) are created.
+            using var enumerator = new ScanEnumerator(directory, namePool, _followJunctions);
+            while (enumerator.MoveNext())
             {
-                ProcessFileSystemEntry(fsInfo, parent, stack, ref entryCount, directory, progressTracker);
+                var dirEntry = enumerator.Current;
+                parent.AddChild(dirEntry);
+
+                // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
+                // would otherwise be descended into. By default we record them but do not follow them,
+                // avoiding cycles (e.g. a junction pointing at an ancestor) and duplicate content.
+                if (enumerator.DescendPath != null)
+                {
+                    stack.Push((dirEntry, enumerator.DescendPath));
+                }
+
+                entryCount++;
+                progressTracker.ReportProgress(entryCount, directory);
 
                 if (token.IsCancellationRequested)
                 {
@@ -350,29 +363,40 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     /// <summary>
-    /// Processes a single file system entry, creates a DirEntry, and pushes directories to the stack.
+    /// Enumerates one directory straight from the OS records. A full path string is built only for
+    /// the directories the scan will descend into.
     /// </summary>
-    private void ProcessFileSystemEntry(
-        FileSystemInfo fsInfo,
-        ICommonEntry parent,
-        Stack<(ICommonEntry, string)> stack,
-        ref int entryCount,
-        string currentDirectory,
-        ScanProgressTracker progressTracker)
+    private sealed class ScanEnumerator : FileSystemEnumerator<DirEntry>
     {
-        var dirEntry = new DirEntry(fsInfo);
-        parent.AddChild(dirEntry);
-
-        // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
-        // would otherwise be descended into. By default we record them but do not follow them,
-        // avoiding cycles (e.g. a junction pointing at an ancestor) and duplicate content.
-        if (dirEntry.IsDirectory && (_followJunctions || !dirEntry.IsReparsePoint))
+        private static readonly EnumerationOptions ScanOptions = new()
         {
-            stack.Push((dirEntry, fsInfo.FullName));
+            AttributesToSkip = 0, // include hidden/system, like the legacy enumeration
+            IgnoreInaccessible = false, // surface access-denied so it is recorded
+            ReturnSpecialDirectories = false,
+            RecurseSubdirectories = false,
+        };
+
+        private readonly ScanNamePool _namePool;
+        private readonly bool _followJunctions;
+
+        /// <summary>Full path of the current entry when it is a directory to descend into, else null.</summary>
+        public string DescendPath { get; private set; }
+
+        public ScanEnumerator(string directory, ScanNamePool namePool, bool followJunctions)
+            : base(directory, ScanOptions)
+        {
+            _namePool = namePool;
+            _followJunctions = followJunctions;
         }
 
-        entryCount++;
-        progressTracker.ReportProgress(entryCount, currentDirectory);
+        protected override DirEntry TransformEntry(ref FileSystemEntry entry)
+        {
+            var dirEntry = DirEntry.FromScan(ref entry, _namePool);
+            DescendPath = dirEntry.IsDirectory && (_followJunctions || !dirEntry.IsReparsePoint)
+                ? entry.ToFullPath()
+                : null;
+            return dirEntry;
+        }
     }
 
     /// <summary>
