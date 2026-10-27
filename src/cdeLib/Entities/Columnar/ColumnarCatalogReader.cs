@@ -5,8 +5,8 @@ using System.IO;
 using System.IO.MemoryMappedFiles;
 using System.Runtime.InteropServices;
 using System.Text;
-using System.Text.RegularExpressions;
 using cdeLib.Entities.Soa;
+using cdeLib.Infrastructure;
 
 namespace cdeLib.Entities.Columnar;
 
@@ -20,6 +20,9 @@ namespace cdeLib.Entities.Columnar;
 /// The mapping stays open for the lifetime of the reader; hold it for as long as the catalog is
 /// "loaded" and <see cref="Dispose"/> it on reload/exit. The file is read-only.
 /// </summary>
+// Deliberate: the columns are exposed as spans straight over the memory-mapped view (zero-copy design).
+[System.Diagnostics.CodeAnalysis.SuppressMessage("Major Code Smell", "S6640:Using unsafe code blocks is security-sensitive",
+    Justification = "Zero-copy reads over a read-only memory-mapped file; the pointer is only exposed as spans sized from the column offset/length table.")]
 public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 {
     private readonly MemoryMappedFile _mmf;
@@ -196,7 +199,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
         var hasPattern = !string.IsNullOrEmpty(o.Pattern);
         var regex = o.RegexMode && hasPattern
-            ? new Regex(o.Pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled)
+            ? new BoundedRegex(o.Pattern) // timeout per entry = no match; repeated timeouts end the scan
             : null;
         var matcher = hasPattern && !o.RegexMode ? new Utf8Matcher(o.Pattern) : default;
 
@@ -215,6 +218,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 if (isCancelled != null && isCancelled()) return;
                 onScan?.Invoke(i);
             }
+            if (regex is { Exhausted: true }) break; // pattern timed out repeatedly; abandon the scan
 
             var isDir = ((Flags)bits[i] & Entities.Flags.Directory) == Entities.Flags.Directory;
             if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
@@ -236,7 +240,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             if (!hasPattern) { onMatch(i); continue; }
 
             bool match;
-            if (o.RegexMode)
+            if (regex is not null)
             {
                 ReadOnlySpan<byte> utf8;
                 if (o.IncludePath)
@@ -262,6 +266,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
             if (match) onMatch(i);
         }
+        regex?.ReportIfExhausted(); // never truncate silently
     }
 
     // Decode UTF-8 into a reused char buffer (grown as needed) and return the decoded span, so regex
@@ -330,7 +335,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     private int FindRegex(string pattern, bool includePath, bool includeFiles, bool includeFolders,
         Action<int> onMatch)
     {
-        var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+        var regex = new BoundedRegex(pattern);
         var bits = BitFields;
         var offs = NameOffsets;
         var blob = NameBlob;
@@ -340,6 +345,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var matches = 0;
         for (var i = 1; i < Count; i++)
         {
+            if (regex.Exhausted) break; // pattern timed out repeatedly; abandon the scan
             if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
             ReadOnlySpan<byte> utf8;
             if (includePath)
@@ -357,6 +363,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 onMatch?.Invoke(i);
             }
         }
+        regex.ReportIfExhausted(); // never truncate silently
         return matches;
     }
 

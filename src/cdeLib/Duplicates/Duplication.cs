@@ -139,7 +139,7 @@ public class Duplication
         var timer = new Stopwatch();
         timer.Start();
 
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         var token = cts.Token;
         var outerOptions = new ParallelOptions { CancellationToken = token };
         _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInSizeDupes;
@@ -386,7 +386,7 @@ public class Duplication
             return;
         }
 
-        var cts = new CancellationTokenSource();
+        using var cts = new CancellationTokenSource();
         var token = cts.Token;
         var parallelOptions = new ParallelOptions
         {
