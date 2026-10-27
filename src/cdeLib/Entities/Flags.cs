@@ -21,5 +21,24 @@ public enum Flags : byte
     [Description("The Hash if done was a partial.")]
     PartialHash = 1 << 5,
     [Description("The Children are allready in default order.")]
-    DefaultSort = 1 << 6
+    DefaultSort = 1 << 6,
+    [Description("A partial hash made by the fixed first-N-bytes algorithm (issue #37). A PartialHash without this bit is a legacy partial hash and is treated as not hashed.")]
+    PartialHashV2 = 1 << 7
+}
+
+public static class FlagsExtensions
+{
+    /// <summary>
+    /// True when the entry has a hash that may be trusted. A partial hash without <see cref="Flags.PartialHashV2"/>
+    /// was made by the pre-#37 algorithm (it hashed the wrong block) and counts as not hashed.
+    /// </summary>
+    public static bool IsHashUsable(this Flags flags)
+    {
+        if ((flags & Flags.HashDone) == 0)
+        {
+            return false;
+        }
+
+        return (flags & Flags.PartialHash) == 0 || (flags & Flags.PartialHashV2) != 0;
+    }
 }

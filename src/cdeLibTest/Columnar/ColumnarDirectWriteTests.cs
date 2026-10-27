@@ -126,7 +126,9 @@ public class ColumnarDirectWriteTests
     {
         // Pins today's bytes so a change to the (shared) layout code cannot go unnoticed.
         var hash = Convert.ToHexString(SHA256.HashData(ViaStore(Fixture(@"C:\test", true, bigDir: true))));
-        Assert.That(hash, Is.EqualTo("BCD9335861F14CC59D975AD434ED3A8B3976C8244BC1E925B8616F5F594A4C4E"));
+        // Updated for #37: the fixture's partial hashes now carry Flags.PartialHashV2 (0x80). With that bit
+        // stripped from the store's BitFields the bytes hash to the previous value (BCD93358…4A4C4E).
+        Assert.That(hash, Is.EqualTo("3BE415B7A7052C97FEECE7A69D5445C6F219221724DD34AFEB9801E37DB7042E"));
     }
 
     [Test]

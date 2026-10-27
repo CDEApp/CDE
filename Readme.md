@@ -128,6 +128,7 @@ This application will continue to evolve driven by my own and a few friends desi
 - When hashing cde tries to avoid work, by only hashing a fixed byte at the start of large files, to try and collect just enough information about a file to exclude it from being a duplicate of another file.
 
   - partial hashes are promoted to a hash of the entire file if another file is encountered with the same file length and a matching partial hash.
+  - Compatibility note (issue #37): partial hashes made by older versions hashed the wrong block of the file. They are detected by the missing `PartialHashV2` flag, treated as not hashed, and recomputed by the next `cde hash`. Old catalogs stay readable and full hashes are unchanged. Downgrade caveat: an older build does not know the flag and may compare new partial hashes with old ones (missed duplicates), so re-run `cde hash` if you go back to an older build.
 
 - When scanning a file system that you allready have a catalog file for, cde will scan the file system and then load the old catalog file looking for any hashes in the old catalog file that still match on file paths, file names and file sizes to copy to the newly updated catalog file. So the work of hashing a file system with unchanged files should not be lost.
 

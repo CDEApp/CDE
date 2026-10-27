@@ -21,8 +21,18 @@ public class HashHelper
     /// Hash a file using a raw file handle and positional reads into a pooled buffer (no FileStream).
     /// bytesToHash null is a full hash, otherwise a partial hash of that many bytes.
     /// </summary>
+    /// <exception cref="ArgumentOutOfRangeException">
+    /// bytesToHash is zero or negative. A zero-length partial hash would be the hash of empty input for every
+    /// file (all colliding), so a bad first-pass size fails fast instead of producing meaningless hashes.
+    /// </exception>
     public async ValueTask<HashResponse> GetHashResponseFromFile(string filename, int? bytesToHash)
     {
+        if (bytesToHash <= 0)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bytesToHash), bytesToHash,
+                "The partial hash size (first pass size) must be greater than zero.");
+        }
+
         try
         {
             using SafeFileHandle handle = File.OpenHandle(filename, FileMode.Open, FileAccess.Read, FileShare.Read,
@@ -35,26 +45,16 @@ public class HashHelper
                 return new HashResponse(true, fullHash, false, fileLength);
             }
 
-            var bufferSize = bytesToHash.Value;
+            // Never ask for more than the file holds: a short file is read in one call with no extra read at EOF.
+            var bufferSize = (int)Math.Min(bytesToHash.Value, fileLength);
             var rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
-                long position = 0;
-                var bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
-                position += bytesRead;
+                // Partial hash is exactly the first N bytes (or the whole file when shorter), read once.
+                // Issue #37: the old loop re-read the next block over the first one.
+                var totalBytesRead = await FillAsync(new HandleReader(handle), rentedBuffer.AsMemory(0, bufferSize));
 
-                // Known quirk (issue #37): for files longer than the buffer this reads a second block over
-                // the first, so the partial hash covers the second block. Preserved so hashes do not change.
-                var totalBytesRead = (long)bytesRead;
-                while (bytesRead > 0 && totalBytesRead <= bytesToHash)
-                {
-                    bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
-                    position += bytesRead;
-                    totalBytesRead += bytesRead;
-                }
-
-                var actualBytesToHash = (int)Math.Min(totalBytesRead, bufferSize);
-                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, actualBytesToHash));
+                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, totalBytesRead));
                 return new HashResponse(true, partialHash, fileLength > bytesToHash, totalBytesRead);
             }
             finally
@@ -72,6 +72,49 @@ public class HashHelper
             _logger.LogException(ex, "Hash");
             return HashResponse.Failed;
         }
+    }
+
+    /// <summary>
+    /// Fill <paramref name="buffer"/> from the start of the file, looping over short reads until the buffer is
+    /// full or end of file. Returns the number of bytes placed in the buffer.
+    /// </summary>
+    /// <param name="read">Positional read: (destination, fileOffset) returning bytes read, 0 at end of file.</param>
+    public static ValueTask<int> FillBufferAsync(Func<Memory<byte>, long, ValueTask<int>> read, Memory<byte> buffer)
+        => FillAsync(new DelegateReader(read), buffer);
+
+    private interface IPositionalReader
+    {
+        ValueTask<int> ReadAsync(Memory<byte> destination, long fileOffset);
+    }
+
+    // Struct readers keep the hot path free of per-file closure/delegate allocations (issues #35/#36).
+    private readonly struct HandleReader(SafeFileHandle handle) : IPositionalReader
+    {
+        public ValueTask<int> ReadAsync(Memory<byte> destination, long fileOffset)
+            => RandomAccess.ReadAsync(handle, destination, fileOffset);
+    }
+
+    private readonly struct DelegateReader(Func<Memory<byte>, long, ValueTask<int>> read) : IPositionalReader
+    {
+        public ValueTask<int> ReadAsync(Memory<byte> destination, long fileOffset) => read(destination, fileOffset);
+    }
+
+    private static async ValueTask<int> FillAsync<TReader>(TReader reader, Memory<byte> buffer)
+        where TReader : struct, IPositionalReader
+    {
+        var filled = 0;
+        while (filled < buffer.Length)
+        {
+            var n = await reader.ReadAsync(buffer.Slice(filled), filled);
+            if (n <= 0)
+            {
+                break;
+            }
+
+            filled += n;
+        }
+
+        return filled;
     }
 
     private async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)

@@ -42,7 +42,9 @@ public interface ICommonEntry
     uint FileEntryCount { get; set; }
     uint DirEntryCount { get; set; }
     DateTime Modified { get; set; }
+    /// <summary>True when a trustworthy hash is present; a legacy (pre-#37) partial hash reads as false.</summary>
     bool IsHashDone { get; set; }
+    /// <summary>Raw partial bit; only meaningful when <see cref="IsHashDone"/> is true (check that first).</summary>
     bool IsPartialHash { get; set; }
     Hash16 Hash { get; set; }
     bool IsModifiedBad { get; set; }
