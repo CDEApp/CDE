@@ -2,3 +2,14 @@
 
 # RCS1226: Add paragraph to documentation comment.
 dotnet_diagnostic.RCS1226.severity = silent
+
+# ---- Test projects, benchmarks and probes (issue #112 WS6) ----
+# Globs are relative to src/ (this file's directory). Covers cdeLibTest, cdeAppCoreTest, cdeApiTest, cdeWinTest
+# and any *Spec* project, plus the developer-only cdeBenchmarks and cdeMemProbe tools.
+[{cdeLibTest,cdeAppCoreTest,cdeApiTest,cdeWinTest,*Spec*,cdeBenchmarks,cdeMemProbe}/**.cs]
+# CA1861: constant arrays as arguments - readability over micro-perf in test code.
+dotnet_diagnostic.CA1861.severity = none
+# CA1822: test helpers/fixtures need not be static.
+dotnet_diagnostic.CA1822.severity = none
+# CA1859: prefer interface types in tests for clarity; concrete-type perf hints are irrelevant.
+dotnet_diagnostic.CA1859.severity = none

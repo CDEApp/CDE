@@ -22,8 +22,7 @@ public class SearchBenchmarks
 {
     private IList<RootEntry> _roots = null!;
 
-    [Params(1_000_000)]
-    public int EntryCount { get; set; }
+    private const int EntryCount = 1_000_000;
 
     [GlobalSetup]
     public void Setup()
@@ -32,7 +31,7 @@ public class SearchBenchmarks
         _roots = new List<RootEntry> { CatalogFixture.BuildInMemory(EntryCount, withHashes: false) };
     }
 
-    private FindOptions MakeOptions(string pattern, bool regexMode, bool includePath, StrongBox<int> counter)
+    private static FindOptions MakeOptions(string pattern, bool regexMode, bool includePath, StrongBox<int> counter)
         => new()
         {
             Pattern = pattern,

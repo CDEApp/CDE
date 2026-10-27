@@ -165,6 +165,8 @@ public class DirEntryBenchmarks
     ///
     /// Expected: Directory creation includes collection pool overhead.
     /// </summary>
+    // BenchmarkDotNet requires [Benchmark] methods to be instance methods.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "BenchmarkDotNet benchmarks must be instance methods")]
     [Benchmark(Description = "Create DirEntry instances")]
     public DirEntry CreateDirEntries()
     {

@@ -38,7 +38,7 @@ public static class Program
     {
         if (args.Length == 0)
         {
-            Console.Error.WriteLine(
+            await Console.Error.WriteLineAsync(
                 "usage: cdeMemProbe --generate <N> [--hashes] [--out <path>] [--seed N]\n" +
                 "       cdeMemProbe <path.cde> [--no-header]");
             return 1;
@@ -75,7 +75,7 @@ public static class Program
     {
         if (!int.TryParse(countArg, NumberStyles.Integer, CultureInfo.InvariantCulture, out var count) || count <= 0)
         {
-            Console.Error.WriteLine("--generate requires a positive entry count, e.g. --generate 1000000");
+            await Console.Error.WriteLineAsync("--generate requires a positive entry count, e.g. --generate 1000000");
             return 1;
         }
 
@@ -86,7 +86,7 @@ public static class Program
             ? outArg!
             : Path.Combine(Path.GetTempPath(), $"cde-synthetic-{count}{(withHashes ? "-hashed" : "")}.cde");
 
-        Console.Error.WriteLine($"Generating ~{count:N0} entries (hashes={withHashes}, seed={seed}) ...");
+        await Console.Error.WriteLineAsync($"Generating ~{count:N0} entries (hashes={withHashes}, seed={seed}) ...");
         var sw = Stopwatch.StartNew();
         var root = SyntheticCatalog.Generate(count, withHashes, seed, sharedNames: sharedNames);
         root.ActualFileName = outPath;
@@ -98,9 +98,9 @@ public static class Program
 
         var actual = root.FileEntryCount + root.DirEntryCount;
         var fileInfo = new FileInfo(outPath);
-        Console.Error.WriteLine(
+        await Console.Error.WriteLineAsync(
             $"Wrote {actual:N0} entries to {outPath} ({fileInfo.Length:N0} bytes on disk) in {sw.ElapsedMilliseconds:N0} ms");
-        Console.WriteLine(outPath);
+        await Console.Out.WriteLineAsync(outPath);
         return 0;
     }
 
@@ -162,7 +162,7 @@ public static class Program
     {
         if (!File.Exists(file))
         {
-            Console.Error.WriteLine($"catalog not found: {file}");
+            await Console.Error.WriteLineAsync($"catalog not found: {file}");
             return 1;
         }
 
@@ -177,7 +177,7 @@ public static class Program
 
         if (measured == null)
         {
-            Console.Error.WriteLine($"failed to load catalog: {file}");
+            await Console.Error.WriteLineAsync($"failed to load catalog: {file}");
             return 1;
         }
 
@@ -198,10 +198,10 @@ public static class Program
 
         if (printHeader)
         {
-            Console.WriteLine(CsvHeader);
+            await Console.Out.WriteLineAsync(CsvHeader);
         }
 
-        Console.WriteLine(string.Join(',',
+        await Console.Out.WriteLineAsync(string.Join(',',
             Path.GetFileName(file),
             entries.ToString(CultureInfo.InvariantCulture),
             sw.ElapsedMilliseconds.ToString(CultureInfo.InvariantCulture),
