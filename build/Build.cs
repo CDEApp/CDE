@@ -83,75 +83,42 @@ class Build : FalloutBuild
             );
         });
 
+    [Parameter("Publish cde and cdewin self-contained (bundle the .NET runtime) - Default is false. Used by the release workflow.")]
+    readonly bool SelfContained;
+
     [UsedImplicitly]
     Target Publish => _ => _
         //.DependsOn(Pack)
-        .Executes(() =>
-        {
-            DotNetPublish(s => s
-                .SetProject("src/cde/cde.csproj")
-                .SetConfiguration(Configuration)
-                .SetOutput($"{ArtifactsDirectory}/cde")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .DisableSelfContained()
-            );
-
-            DotNetPublish(s => s
-                .SetProject("src/cdewin/cdewin.csproj")
-                .SetConfiguration(Configuration)
-                .SetOutput($"{ArtifactsDirectory}/cdewin")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .DisableSelfContained()
-            );
-
-            // cdeApi ships as a self-contained single-file binary so the Tauri frontend can bundle it
-            // as a sidecar on machines without the .NET runtime installed.
-            DotNetPublish(s => s
-                .SetProject("src/cdeApi/cdeApi.csproj")
-                .SetConfiguration(Configuration)
-                .SetOutput($"{ArtifactsDirectory}/cdeApi")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .EnableSelfContained()
-            );
-        });
+        .Executes(() => PublishApps(Configuration, SelfContained));
 
     [UsedImplicitly]
     Target PublishRelease => _ => _
-        .Description("Publish in Release configuration (always)")
-        .Executes(() =>
-        {
-            var releaseConfig = Configuration.Release;
+        .Description("Publish in Release configuration (always); pass --self-contained to bundle the runtime in cde and cdewin")
+        .Executes(() => PublishApps(Configuration.Release, SelfContained));
 
-            DotNetPublish(s => s
-                .SetProject("src/cde/cde.csproj")
-                .SetConfiguration(releaseConfig)
-                .SetOutput($"{ArtifactsDirectory}/cde")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .DisableSelfContained()
-            );
+    // The one place the publish settings live, so the CI build, a local publish and the release
+    // workflow cannot drift apart.
+    void PublishApps(Configuration configuration, bool selfContained)
+    {
+        PublishApp("src/cde/cde.csproj", "cde", configuration, selfContained);
+        PublishApp("src/cdewin/cdewin.csproj", "cdewin", configuration, selfContained);
 
-            DotNetPublish(s => s
-                .SetProject("src/cdewin/cdewin.csproj")
-                .SetConfiguration(releaseConfig)
-                .SetOutput($"{ArtifactsDirectory}/cdewin")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .DisableSelfContained()
-            );
+        // cdeApi ships as a self-contained single-file binary so the Tauri frontend can bundle it
+        // as a sidecar on machines without the .NET runtime installed.
+        PublishApp("src/cdeApi/cdeApi.csproj", "cdeApi", configuration, selfContained: true);
+    }
 
-            DotNetPublish(s => s
-                .SetProject("src/cdeApi/cdeApi.csproj")
-                .SetConfiguration(releaseConfig)
-                .SetOutput($"{ArtifactsDirectory}/cdeApi")
-                .SetRuntime(RunTime)
-                .EnablePublishSingleFile()
-                .EnableSelfContained()
-            );
-        });
+    void PublishApp(string project, string name, Configuration configuration, bool selfContained)
+    {
+        DotNetPublish(s => s
+            .SetProject(project)
+            .SetConfiguration(configuration)
+            .SetOutput($"{ArtifactsDirectory}/{name}")
+            .SetRuntime(RunTime)
+            .EnablePublishSingleFile()
+            .SetSelfContained(selfContained)
+        );
+    }
 
     Target Compile => _ => _
         .DependsOn(Restore)
