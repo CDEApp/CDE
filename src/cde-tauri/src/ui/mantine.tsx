@@ -3,6 +3,10 @@ import { createTheme, MantineProvider, type CSSVariablesResolver } from "@mantin
 import { Notifications } from "@mantine/notifications";
 // Only the component styles this app uses (modal + toasts), not the all-in-one stylesheet: that one
 // also carries a global "baseline" that would restyle the rest of the (non-Mantine) UI.
+// default-css-variables.css is required with per-component imports: MantineProvider only injects the
+// variables that differ from the defaults, so without it --mantine-spacing-*, font sizes and sizes are
+// undefined (no padding or gap, unsized buttons, a close icon that fills its box).
+import "@mantine/core/styles/default-css-variables.css";
 import "@mantine/core/styles/global.css";
 import "@mantine/core/styles/ModalBase.css";
 import "@mantine/core/styles/Modal.css";
