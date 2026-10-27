@@ -127,6 +127,7 @@ export default function App() {
         ref: { catalogId: c.catalogId, entryIndex: 0 },
         label: c.rootPath,
         fullPath: c.rootPath,
+        size: c.rootSize,
       })),
     );
   }, []);

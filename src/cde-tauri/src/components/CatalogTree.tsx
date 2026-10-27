@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
+import { toHRString } from "../format";
 
 export interface TreeRoot {
   ref: EntryRef;
   label: string;
   fullPath: string;
+  /** Total size of everything under the root (CatalogInfo.rootSize). */
+  size: number;
 }
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
@@ -43,6 +46,8 @@ interface TreeItemProps {
   nodeRef: EntryRef;
   label: string;
   fullPath: string;
+  /** Aggregated subtree size in bytes. */
+  size: number;
   hasChildren: boolean;
   /** Catalog root (drawn with a drive icon rather than a folder). */
   isRoot?: boolean;
@@ -53,7 +58,7 @@ interface TreeItemProps {
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, size, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
@@ -128,7 +133,8 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, isRoot, selec
           {hasChildren && <Chevron expanded={expanded} />}
         </span>
         <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
-        <span className="tree-label">{label}</span>
+        <span className="tree-label" title={fullPath}>{label}</span>
+        <span className="tree-size">{toHRString(size)}</span>
       </div>
       {expanded && children && (
         <ul>
@@ -139,6 +145,7 @@ function TreeItem({ client, nodeRef, label, fullPath, hasChildren, isRoot, selec
               nodeRef={c.ref}
               label={c.name}
               fullPath={c.fullPath}
+              size={c.size}
               hasChildren={c.hasChildren}
               selectedKey={selectedKey}
               revealKey={revealKey}
@@ -185,6 +192,7 @@ export function CatalogTree({
           nodeRef={r.ref}
           label={r.label}
           fullPath={r.fullPath}
+          size={r.size}
           hasChildren
           isRoot
           selectedKey={selectedKey}
