@@ -29,7 +29,10 @@ public sealed class BoundedRegex
     /// <summary>Wrap an existing regex (which must have been constructed with a match timeout).</summary>
     public BoundedRegex(Regex regex)
     {
-        _regex = regex ?? throw new ArgumentNullException(nameof(regex));
+        ArgumentNullException.ThrowIfNull(regex);
+        if (regex.MatchTimeout == Regex.InfiniteMatchTimeout)
+            throw new ArgumentException("Regex must have a match timeout.", nameof(regex));
+        _regex = regex;
     }
 
     /// <summary>True once <see cref="MaxTimeouts"/> matches have timed out.</summary>
