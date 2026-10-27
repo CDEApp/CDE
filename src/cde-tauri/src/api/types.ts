@@ -98,6 +98,8 @@ export interface CatalogInfo {
   actualFileName: string;
   defaultFileName: string;
   description: string;
+  /** Catalog was scanned following junctions (#66); false for older catalogs. */
+  followJunctions: boolean;
 }
 
 export interface CatalogsResponse {

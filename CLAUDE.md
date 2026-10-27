@@ -208,6 +208,7 @@ Located in `cdeLib/Infrastructure/`:
 - **Size**: Highly efficient - 500MB for 11 billion entries
 - **Format**:
   - `.cdex` - custom columnar binary, memory-mapped for zero-copy loads (not compressed)
+  - `.cdex` header flags (int32 at offset 12): bit0 = hasHashes, bit1 = followJunctions (issue #66, the scan option, exposed as `ColumnarCatalogReader.FollowJunctions` / `CatalogInfoDto.FollowJunctions`). Absent bit = false, so older catalogs load unchanged. Version stays 1; older builds ignore the unknown bit. `.cde` cannot carry it (reads as false).
   - `.cde` - MessagePack binary serialization by default (not compressed); protobuf/FlatBuffers selectable in code
 
 ## Common Operations

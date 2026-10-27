@@ -25,8 +25,10 @@ public sealed class RootEntry : object, ICommonEntry
     private readonly IDriveInfoService _driveInfoService;
     private readonly IFileSystemAdapter _fileSystemAdapter;
 
-    // Set per-scan by RecurseTree; when false, directory reparse points are not descended into.
-    private bool _followJunctions;
+    // Scan option, set per-scan by RecurseTree; when false, directory reparse points are not descended into.
+    // Persisted in the .cdex header flags (#66) so a rescan can reproduce the original scan.
+    [IgnoreMember]
+    public bool FollowJunctions { get; set; }
 
     [ProtoMember(2, IsRequired = true)]
     [FlatBufferItem(2)]
@@ -288,7 +290,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// </summary>
     public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default)
     {
-        _followJunctions = followJunctions;
+        FollowJunctions = followJunctions;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -330,7 +332,7 @@ public sealed class RootEntry : object, ICommonEntry
         try
         {
             // Raw directory records: no FileInfo/DirectoryInfo (and no per-entry path strings) are created.
-            using var enumerator = new ScanEnumerator(directory, namePool, _followJunctions);
+            using var enumerator = new ScanEnumerator(directory, namePool, FollowJunctions);
             while (enumerator.MoveNext())
             {
                 var dirEntry = enumerator.Current;

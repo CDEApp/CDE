@@ -18,7 +18,7 @@ namespace cdeLib.Entities.Columnar;
 ///     [0]  magic   "CDEX" (4 bytes)
 ///     [4]  int32   version
 ///     [8]  int32   count            (entries incl. root; index 0 = root)
-///     [12] int32   flags            (bit0 = hasHashes)
+///     [12] int32   flags            (bit0 = hasHashes, bit1 = followJunctions; unknown bits ignored)
 ///     [16] (int64 offset, int64 length) x <see cref="ColumnCount"/>   -- absolute, 8-aligned
 ///   column bodies (each padded to an 8-byte boundary), in <see cref="Col"/> order.
 ///
@@ -31,6 +31,8 @@ public static partial class ColumnarFormat
     public static ReadOnlySpan<byte> Magic => "CDEX"u8;
     public const int Version = 1;
     public const int FlagHasHashes = 1;
+    /// <summary>Header flags bit1: the catalog was scanned with FollowJunctions on (#66). Absent in older files = false.</summary>
+    public const int FlagFollowJunctions = 2;
 
     /// <summary>Fixed column ordering. Hash length is 0 when the catalog is un-hashed.</summary>
     public enum Col
@@ -104,7 +106,7 @@ public static partial class ColumnarFormat
         fs.Write(Magic);
         WriteI32(fs, Version);
         WriteI32(fs, count);
-        WriteI32(fs, hasHashes ? FlagHasHashes : 0);
+        WriteI32(fs, (hasHashes ? FlagHasHashes : 0) | (store.FollowJunctions ? FlagFollowJunctions : 0));
         for (var c = 0; c < ColumnCount; c++)
         {
             WriteI64(fs, off[c]);

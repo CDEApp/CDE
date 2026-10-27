@@ -35,6 +35,9 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     public int Count { get; }
     public bool HasHashes { get; }
 
+    /// <summary>True if the catalog was scanned following directory junctions/reparse points (#66). False for older files.</summary>
+    public bool FollowJunctions { get; }
+
     // Catalog-level metadata (parsed once from the small Meta blob — this is the only managed copy).
     public string RootPath { get; }
     public string VolumeName { get; }
@@ -73,7 +76,9 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         }
 
         Count = BitConverter.ToInt32(header.Slice(8, 4));
-        HasHashes = (BitConverter.ToInt32(header.Slice(12, 4)) & ColumnarFormat.FlagHasHashes) != 0;
+        var flags = BitConverter.ToInt32(header.Slice(12, 4));
+        HasHashes = (flags & ColumnarFormat.FlagHasHashes) != 0;
+        FollowJunctions = (flags & ColumnarFormat.FlagFollowJunctions) != 0;
 
         var p = ColumnarFormat.PreambleFixed;
         for (var c = 0; c < ColumnarFormat.ColumnCount; c++)

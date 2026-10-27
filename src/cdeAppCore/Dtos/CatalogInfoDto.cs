@@ -23,4 +23,7 @@ public sealed class CatalogInfoDto
     public string ActualFileName { get; set; }
     public string DefaultFileName { get; set; }
     public string Description { get; set; }
+
+    /// <summary>The catalog was scanned following junctions (#66); false for older catalogs. A rescan should reuse it.</summary>
+    public bool FollowJunctions { get; set; }
 }

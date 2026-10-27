@@ -54,6 +54,7 @@ public sealed class EntryStore : IEntrySource
     public string ActualFileName { get; set; }    // path of the loaded .cde
     public string DriveLetterHint { get; set; }
     public string Description { get; set; }
+    public bool FollowJunctions { get; set; }     // scan option (#66)
     public long AvailSpace { get; set; }
     public long TotalSpace { get; set; }
     public long ScanStartUtcTicks { get; set; }
@@ -228,6 +229,7 @@ public sealed class EntryStore : IEntrySource
             ActualFileName = root.ActualFileName,
             DriveLetterHint = root.DriveLetterHint,
             Description = root.Description,
+            FollowJunctions = root.FollowJunctions,
             AvailSpace = root.AvailSpace,
             TotalSpace = root.TotalSpace,
             ScanStartUtcTicks = root.ScanStartUtcTicks,
