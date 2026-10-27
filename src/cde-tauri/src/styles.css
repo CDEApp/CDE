@@ -219,6 +219,8 @@ tbody tr:hover { background: var(--row-hover); }
 .vlist-header > div.drop-before { box-shadow: inset 2px 0 0 var(--accent); }
 .vlist-header > div.drop-after { box-shadow: inset -2px 0 0 var(--accent); }
 .vlist-row .cell { padding: 0 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+/* Colour-rule name label (#105): shrink-wraps the text so a gradient + background-clip: text spans just the name. */
+.name-text { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
 .vlist-header .num, .vlist-row .cell.num { text-align: right; font-variant-numeric: tabular-nums; }
 
 /* status bar */

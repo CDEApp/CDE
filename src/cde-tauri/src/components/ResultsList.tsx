@@ -15,8 +15,9 @@ import {
 } from "@tanstack/react-table";
 import { SearchResultRow } from "../api/types";
 import { moveColumn, normalizeColumnOrder } from "../columnOrder";
-import type { StyleResolver } from "../colourRules";
+import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
+import { StyledName } from "./StyledName";
 import { VirtualList } from "./VirtualList";
 
 interface Props {
@@ -236,11 +237,12 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
       }
       renderRow={(row, i, style) => {
         const r = row.original;
+        const { row: rowStyle, name: nameStyle } = splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
         return (
           <div
             key={`${r.ref.catalogId}-${r.ref.entryIndex}-${i}`}
             className={`vlist-row${r.isDirectory ? " dir" : ""}`}
-            style={{ ...style, ...resolveStyle(r.name, r.isDirectory), gridTemplateColumns }}
+            style={{ ...style, ...rowStyle, gridTemplateColumns }}
             onDoubleClick={() => onActivate(r)}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -249,7 +251,9 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
             }}
           >
             {order.map((id) => (
-              <div key={id} className={CELLS[id].className}>{CELLS[id].render(r)}</div>
+              <div key={id} className={CELLS[id].className}>
+                <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
+              </div>
             ))}
           </div>
         );

@@ -4,6 +4,17 @@ import type { CSSProperties } from "react";
  * User-defined colour rules (issue #67). Plain text, one rule per line: `pattern` + whitespace +
  * `style`. `#` lines are comments. First matching line wins. This module is pure (no DOM / React
  * runtime) so it can be unit-tested in Node.
+ *
+ * Gradient text (#105): `background` (gradients allowed, `url(` is not), `background-clip` and
+ * `-webkit-background-clip` are accepted, plus `-webkit-text-fill-color` (the robust transparent
+ * fill on WebKit webviews). Example:
+ *   \.mp4$  background: linear-gradient(90deg, #3b82f6, #a855f7); background-clip: text; -webkit-background-clip: text; color: transparent
+ * Gradient text needs `background-clip: text` (and the `-webkit-` form) plus a transparent text
+ * colour (`color: transparent` or `-webkit-text-fill-color: transparent`). The order of the
+ * declarations does not matter: the parser emits `background` first, as the shorthand would reset
+ * the clip otherwise. With a clip present, the background properties and `color` are applied to the
+ * Name label only (see `splitRowAndNameStyle`), so the gradient is clipped to the name text, not
+ * stretched across the Size/Modified cells.
  */
 
 export interface ColourRule {
@@ -37,6 +48,10 @@ const ALLOWED: Record<string, keyof CSSProperties> = {
   "font-style": "fontStyle",
   "text-decoration": "textDecoration",
   opacity: "opacity",
+  background: "background",
+  "background-clip": "backgroundClip",
+  "-webkit-background-clip": "WebkitBackgroundClip",
+  "-webkit-text-fill-color": "WebkitTextFillColor",
 };
 
 const FOLDER_PATTERN = "[folder]";
@@ -82,7 +97,54 @@ export function parseStyle(text: string): { style: CSSProperties; problems: stri
       style[key] = value;
     }
   }
+  // React warns on shorthand + longhand together; the shorthand wins.
+  if (style.background !== undefined && style.backgroundColor !== undefined) {
+    delete style.backgroundColor;
+    problems.push("background and background-color both set; background-color ignored");
+  }
+  // `background` resets background-clip, and React assigns keys in object order, so put the
+  // shorthand first: the user's longhands then survive whatever order they were written in.
+  if (style.background !== undefined) {
+    const { background, ...rest } = style;
+    return { style: { background, ...rest } as CSSProperties, problems };
+  }
   return { style: style as CSSProperties, problems };
+}
+
+/** A rule with any of these is gradient text; it (and its colour) goes to the Name label only. */
+const CLIP_KEYS = ["backgroundClip", "WebkitBackgroundClip", "WebkitTextFillColor"] as const;
+const NAME_ONLY_KEYS = new Set<string>(["background", "backgroundClip", "WebkitBackgroundClip", "WebkitTextFillColor", "color"]);
+
+const splitCache = new WeakMap<object, { row: CSSProperties | undefined; name: CSSProperties | undefined }>();
+
+/**
+ * Splits a rule style into what goes on the row/cell and what goes on the Name label. If the rule
+ * has any of `background-clip`, `-webkit-background-clip` or `-webkit-text-fill-color` (gradient
+ * text), those plus `background` and `color` go to the name, whatever the colour value (so
+ * `Transparent`, `rgba(0,0,0,0)`, `#0000` cannot blank the Size/Modified cells). Otherwise the
+ * whole style stays on the row. `background-color` and everything else always stay on the row.
+ * Results are cached per style object (rule styles are stable), so rows don't allocate.
+ */
+export function splitRowAndNameStyle(style: CSSProperties | undefined): {
+  row: CSSProperties | undefined;
+  name: CSSProperties | undefined;
+} {
+  if (!style) return { row: undefined, name: undefined };
+  const cached = splitCache.get(style);
+  if (cached) return cached;
+  const row: Record<string, unknown> = {};
+  const name: Record<string, unknown> = {};
+  const gradientText = CLIP_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
+  for (const [k, v] of Object.entries(style)) {
+    if (gradientText && NAME_ONLY_KEYS.has(k)) name[k] = v;
+    else row[k] = v;
+  }
+  const result = {
+    row: Object.keys(row).length ? (row as CSSProperties) : undefined,
+    name: Object.keys(name).length ? (name as CSSProperties) : undefined,
+  };
+  splitCache.set(style, result);
+  return result;
 }
 
 export function parseColourRules(text: string): ParsedRules {

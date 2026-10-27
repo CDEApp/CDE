@@ -1,9 +1,10 @@
 import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
-import type { StyleResolver } from "../colourRules";
+import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
 import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
+import { StyledName } from "./StyledName";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
 export type { TreeRoot };
@@ -216,6 +217,10 @@ export function CatalogTree({
         handleRef={listRef}
         renderRow={(row, _i, style) => {
           const isSelected = row.key === selectedKey;
+          // Selected rows keep the selection look: no rule styles (transparent text must not hide the label).
+          const { row: rowStyle, name: nameStyle } = isSelected
+            ? { row: undefined, name: undefined }
+            : splitRowAndNameStyle(resolveStyle(row.label, true));
           return (
             <div // NOSONAR S6852: aria-activedescendant pattern (#89), focus stays on the container as rows unmount under virtualization
               key={row.key}
@@ -228,7 +233,7 @@ export function CatalogTree({
               style={{
                 ...style,
                 paddingLeft: 6 + row.depth * 16,
-                ...(isSelected ? undefined : resolveStyle(row.label, true)),
+                ...rowStyle,
               }}
               onClick={() => onSelect(row.ref, row.fullPath)}
               onDoubleClick={() => {
@@ -253,7 +258,7 @@ export function CatalogTree({
               </span>
               <NodeIcon kind={row.isRoot ? "drive" : row.expanded && row.hasChildren ? "folder-open" : "folder"} />
               <span className="tree-label" title={row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath}>
-                {row.label}
+                <StyledName nameStyle={nameStyle}>{row.label}</StyledName>
               </span>
               {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
               {row.catalogName && <span className="tree-catalog" title={row.catalogName}>[{row.catalogName}]</span>}
