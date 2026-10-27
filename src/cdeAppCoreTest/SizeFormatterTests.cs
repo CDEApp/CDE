@@ -21,7 +21,12 @@ public class SizeFormatterTests
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "testdata", "size-format-cases.json");
         var file = JsonSerializer.Deserialize<SizeCaseFile>(File.ReadAllText(path),
             new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-        foreach (var c in file!.Cases)
+        if (file?.Cases is not { Count: > 0 })
+        {
+            throw new InvalidDataException($"No size cases in {path}");
+        }
+
+        foreach (var c in file.Cases)
         {
             yield return new TestCaseData(c.Bytes).Returns(c.Expected).SetArgDisplayNames(c.Bytes.ToString(CultureInfo.InvariantCulture));
         }
@@ -39,9 +44,11 @@ public class SizeFormatterTests
         var original = Thread.CurrentThread.CurrentCulture;
         try
         {
-            SizeFormatter.ClearSizeCache();
+            // A value no other test formats, with the cache cleared just before, so a cached
+            // invariant string can't make this pass.
             Thread.CurrentThread.CurrentCulture = CultureInfo.GetCultureInfo("de-DE");
-            Assert.That(1536L.ToHRString(), Is.EqualTo("1.5 KB"));
+            SizeFormatter.ClearSizeCache();
+            Assert.That(1587L.ToHRString(), Is.EqualTo("1.5 KB"));
         }
         finally
         {

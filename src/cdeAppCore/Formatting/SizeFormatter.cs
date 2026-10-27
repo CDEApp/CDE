@@ -35,6 +35,13 @@ public static class SizeFormatter
         // Half away from zero and culture-invariant, matching cde-tauri's toHRString
         // (cases shared via src/testdata/size-format-cases.json).
         var num = Math.Round(val / Math.Pow(1024, place), 1, MidpointRounding.AwayFromZero);
+        if (num >= 1024 && place < Suffix.Length - 1)
+        {
+            // 1023.96 KB rounds to 1024; show it as 1 MB instead.
+            place++;
+            num = Math.Round(val / Math.Pow(1024, place), 1, MidpointRounding.AwayFromZero);
+        }
+
         var result = string.Create(CultureInfo.InvariantCulture, $"{num} {Suffix[place]}");
 
         // Cache (with simple size limit)
