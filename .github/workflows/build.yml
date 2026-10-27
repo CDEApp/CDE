@@ -3,9 +3,16 @@ name: .NET
 on:
   # A branch with a pull request open is covered by the pull_request trigger below. Building it
   # here as well would run everything twice for the same commit.
+  #
+  # A change that touches only Markdown files (README, docs, CLAUDE.md, ...) can't affect the build,
+  # so it doesn't run. A change with any other file runs everything as usual. No branch requires
+  # these checks; if one ever does, a skipped run reports nothing and the check waits forever, so
+  # switch to skipping inside the jobs instead.
   push:
     branches: [ "develop", "main" ]
+    paths-ignore: [ "**/*.md" ]
   pull_request:
+    paths-ignore: [ "**/*.md" ]
   # So that a branch with no pull request open can still be built, on request.
   workflow_dispatch:
 
