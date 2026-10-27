@@ -410,18 +410,3 @@ on the length of file and folder names.
 The 64 or AnyCPU build on a 64 bit Windows uses a lot more memory than the 32 bit version.
 
 The catalog files are not compressed internally as the use cases I have had till now makes them quicker without compression especially on SSD. They can be compressed quite well.
-
-### Acknowledgements
-
-The following software is used in the Development of this application.
-
-- [protobuf-net](https://code.google.com/p/protobuf-net/)
-- [NUnit](http://www.nunit.org/)
-
-The web version uses. (not available currently)
-
-- [AngularJS](https://angularjs.org/)
-- [Bootstrap](http://getbootstrap.com/)
-- [autofac](http://autofac.org/)
-- [SignalR](http://signalr.net/)
-
