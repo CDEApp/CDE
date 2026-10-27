@@ -9,20 +9,11 @@ import {
   toHRString,
   toLocalIsoString,
 } from "./format";
+// Shared with cdeAppCoreTest's SizeFormatterTests, so both frontends format sizes identically.
+import sizeCases from "../../testdata/size-format-cases.json";
 
 describe("toHRString", () => {
-  it.each([
-    [0, "0"],
-    [1, "1 B"],
-    [1023, "1023 B"],
-    [1024, "1 KB"],
-    [1536, "1.5 KB"],
-    [1100, "1.1 KB"],
-    [1_000_000, "976.6 KB"],
-    [1024 ** 2, "1 MB"],
-    [12.4 * 1024 ** 3, "12.4 GB"],
-    [3 * 1024 ** 4, "3 TB"],
-  ])("%d -> %s", (bytes, expected) => {
+  it.each(sizeCases.cases)("$bytes -> $expected", ({ bytes, expected }) => {
     expect(toHRString(bytes)).toBe(expected);
   });
 });

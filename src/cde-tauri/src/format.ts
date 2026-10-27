@@ -1,6 +1,9 @@
 const SUFFIX = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"];
 
-/** Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString. */
+/**
+ * Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString: rounds half away from zero.
+ * Cases shared with the C# tests live in src/testdata/size-format-cases.json.
+ */
 export function toHRString(val: number): string {
   if (val === 0) return "0";
   const place = Math.floor(Math.log(val) / Math.log(1024));

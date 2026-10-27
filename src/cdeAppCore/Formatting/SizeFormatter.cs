@@ -1,13 +1,15 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Threading;
 
 namespace cdeAppCore.Formatting;
 
 /// <summary>
 /// Human-readable byte-size formatting (e.g. <c>1.5 MB</c>), independent of any UI framework.
-/// Lifted verbatim from the WinForms <c>cdeWin.StringExtension</c> so output is byte-for-byte
-/// identical; a small bounded cache amortises the formatting of repeated sizes.
+/// Originally lifted from the WinForms <c>cdeWin.StringExtension</c>; now rounds half away from
+/// zero and formats culture-invariantly so it matches cde-tauri. A small bounded cache amortises
+/// the formatting of repeated sizes.
 /// </summary>
 public static class SizeFormatter
 {
@@ -30,8 +32,10 @@ public static class SizeFormatter
 
         // Compute
         var place = Convert.ToInt32(Math.Floor(Math.Log(val, 1024)));
-        var num = Math.Round(val / Math.Pow(1024, place), 1);
-        var result = $"{num} {Suffix[place]}";
+        // Half away from zero and culture-invariant, matching cde-tauri's toHRString
+        // (cases shared via src/testdata/size-format-cases.json).
+        var num = Math.Round(val / Math.Pow(1024, place), 1, MidpointRounding.AwayFromZero);
+        var result = string.Create(CultureInfo.InvariantCulture, $"{num} {Suffix[place]}");
 
         // Cache (with simple size limit)
         lock (SizeCacheLock)
