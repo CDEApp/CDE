@@ -8,7 +8,7 @@ namespace cdeWin;
 // From http://stackoverflow.com/a/254139
 // ReSharper disable InconsistentNaming
 [EditorBrowsable(EditorBrowsableState.Never)]
-public static class ListViewExtensions
+public static partial class ListViewExtensions
 {
     [StructLayout(LayoutKind.Sequential)]
     public struct HDITEM
@@ -51,11 +51,14 @@ public static class ListViewExtensions
     public const int HDM_GETITEM = HDM_FIRST + 11;
     public const int HDM_SETITEM = HDM_FIRST + 12;
 
-    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
-    private static extern IntPtr SendMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
+    [LibraryImport("user32.dll", EntryPoint = "SendMessageW", SetLastError = true)]
+    private static partial IntPtr SendMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, IntPtr lParam);
 
+    // HDITEM holds a string field (pszText), which is not blittable; keep the runtime marshaller for this overload.
+#pragma warning disable SYSLIB1054 // Use 'LibraryImportAttribute' instead of 'DllImportAttribute'
     [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
     private static extern IntPtr SendMessage(IntPtr hWnd, UInt32 msg, IntPtr wParam, ref HDITEM lParam);
+#pragma warning restore SYSLIB1054
 
     public static void SetSortIcon(this ListView listViewControl, int columnIndex, SortOrder order)
     {

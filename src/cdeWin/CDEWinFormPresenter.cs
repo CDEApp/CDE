@@ -41,7 +41,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     // The catalog session owns the loaded catalogs (zero-copy mmap .cdex readers or in-memory stores),
     // their lifetime, and load/dispose. Roots are still exposed as ICommonEntry (EntryRef) so the
     // existing WinForms virtual views and tree work unchanged in-process.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface on purpose: the presenter is tested against fakes and the session is shared with other frontends.")]
     private readonly ICatalogSession _session;
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance", Justification = "Interface on purpose: the presenter is tested against fakes.")]
     private readonly ISearchService _searchService;
     private readonly IShellActions _shellActions;
     private readonly IConfig _config;
@@ -268,7 +270,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.DirectoryListViewHelper.SortList();
     }
 
+    // Must stay an instance method: Presenter<TView>.GetPresenterEventHandlers discovers handlers by reflection (BindingFlags.Instance).
     [UsedImplicitly]
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1822:Mark members as static", Justification = "Bound to the view's FormActivated event by reflection as an instance method.")]
     public void FormActivated()
     {
     }
@@ -991,7 +995,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         });
     }
 
-    public ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
+    public static ListViewItem BuildListViewItem(string[] vals, Color firstColumnForeColor, object tag)
     {
         // Use a constructor that takes all subitems at once - avoids internal array resizes
         var lvItem = new ListViewItem(vals)
@@ -1026,6 +1030,9 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         _clientForm.IsAdvancedSearchMode = value;
     }
 
+    // Wired to the view's OnReloadCatalogs (EventAction, void) by reflection in Presenter<TView>, so it cannot return Task.
+    // The whole body is inside try/catch/finally, so no exception escapes the async void.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Major Bug", "S3168:\"async\" methods should not return \"void\"", Justification = "Top-level UI event entry point (EventAction); entire body is guarded by try/catch.")]
     public async void ReloadCatalogs()
     {
         try
