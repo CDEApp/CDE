@@ -1,7 +1,10 @@
-﻿using System.Threading;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
-using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
 using JetBrains.Annotations;
 using Serilog;
 using SlimMessageBus;
@@ -25,8 +28,7 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
 
     public Task OnHandle(FindDuplicatesCommand request, CancellationToken cancellationToken)
     {
-        // Dupes reads hashes from the columnar .cdex catalogs; reconstruct trees and reuse the
-        // existing duplicate-detection engine.
+        // Dupes is read-only: work directly over the memory-mapped .cdex readers, no pointer tree.
         var cdexFiles = _catalogRepository.GetColumnarFileList(["./"]);
         if (cdexFiles.Count == 0)
         {
@@ -34,7 +36,37 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
             return Task.CompletedTask;
         }
 
-        _duplication.FindDuplicates(CatalogTreeBuilder.FromColumnarFiles(cdexFiles));
+        var readers = new List<ColumnarCatalogReader>(cdexFiles.Count);
+        try
+        {
+            foreach (var file in cdexFiles)
+            {
+                try
+                {
+                    readers.Add(new ColumnarCatalogReader(file));
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException
+                                               or ArgumentException)
+                {
+                    // One corrupt or locked catalog must not abort the whole command.
+                    _logger.Warning("Skipping unreadable catalog {File}: {Message}", file, ex.Message);
+                }
+            }
+
+            if (readers.Count == 0)
+            {
+                _logger.Warning("No readable .cdex catalogs found.");
+                return Task.CompletedTask;
+            }
+
+            _duplication.FindDuplicates(readers);
+        }
+        finally
+        {
+            foreach (var reader in readers)
+                reader.Dispose();
+        }
+
         return Task.CompletedTask;
     }
 }

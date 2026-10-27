@@ -128,19 +128,7 @@ public class Duplication
             return size2.CompareTo(size1); // descending
         });
 
-        // Group by directory root without LINQ
-        var groupedByDirectoryRoot = new Dictionary<string, List<PairDirEntry>>();
-        foreach (var pde in flatList)
-        {
-            var root = System.IO.Directory.GetDirectoryRoot(pde.FullPath);
-            if (!groupedByDirectoryRoot.TryGetValue(root, out var group))
-            {
-                group = [];
-                groupedByDirectoryRoot[root] = group;
-            }
-
-            group.Add(pde);
-        }
+        var groupedByDirectoryRoot = GroupByDriveRoot(flatList);
 
         _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
@@ -158,7 +146,7 @@ public class Duplication
 
         try
         {
-            await Parallel.ForEachAsync(groupedByDirectoryRoot.Values, outerOptions, async (grp, _) =>
+            await Parallel.ForEachAsync(groupedByDirectoryRoot, outerOptions, async (grp, _) =>
             {
                 var parallelOptions = new ParallelOptions
                 {
@@ -176,7 +164,7 @@ public class Duplication
                 await Parallel.ForEachAsync(grp, parallelOptions, async (flatFile, _) =>
                 {
                     _duplicationStatistics.SeenFileSize(flatFile.ChildDE.Size);
-                    await CalculatePartialHashAsync(flatFile.FullPath, flatFile.ChildDE);
+                    await CalculatePartialHashAsync(flatFile);
                     if (_cancellation.IsCancellationRequested)
                     {
                         Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
@@ -217,43 +205,44 @@ public class Duplication
 
     public IDictionary<long, List<PairDirEntry>> GetSizePairs(IEnumerable<RootEntry> rootEntries)
     {
-        EntryHelper.TraverseTreePair(rootEntries, FindMatchesOnFileSize2);
+        var rootArray = rootEntries as RootEntry[] ?? rootEntries.ToArray();
+
+        // Per-run state: a second call on the same instance must not append duplicate pairs.
+        _duplicateFileSize.Clear();
+
+        // Pass 1: count how often each size occurs. Only counts are kept - no pair objects.
+        var sizeCounts = new Dictionary<long, int>();
+        EntryHelper.TraverseTreePair(rootArray, (_, de) =>
+        {
+            if (!de.IsDirectory && de.Size != 0)
+            {
+                sizeCounts.TryGetValue(de.Size, out var n);
+                sizeCounts[de.Size] = n + 1;
+            }
+
+            return true;
+        });
+        _logger.LogDebug("Post count of file sizes: {0}, distinct sizes {1}",
+            _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), sizeCounts.Count);
+
+        // Pass 2: create pairs only for files whose size occurs more than once.
+        EntryHelper.TraverseTreePair(rootArray, (ce, de) => FindMatchesOnFileSize2(ce, de, sizeCounts));
+
         _logger.LogDebug("Post TraverseMatchOnFileSize: {0}, dupeDictCount {1}",
-            _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
-
-        // Remove the single values from the dictionary - optimized without LINQ
-        var keysToRemove = CollectionPool.GetLongList();
-        try
-        {
-            foreach (var kvp in _duplicateFileSize)
-            {
-                if (kvp.Value.Count == 1)
-                {
-                    keysToRemove.Add(kvp.Key);
-                }
-            }
-
-            // Remove keys in separate loop to avoid modification during enumeration
-            foreach (var key in keysToRemove)
-            {
-                _duplicateFileSize.Remove(key);
-            }
-        }
-        finally
-        {
-            CollectionPool.ReturnLongList(keysToRemove);
-        }
-
-        _logger.LogDebug("Deleted entries from dictionary: {0}, dupeDictCount {1}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes(), _duplicateFileSize.Count);
         return _duplicateFileSize;
     }
 
-    private bool FindMatchesOnFileSize2(ICommonEntry ce, ICommonEntry de)
+    private bool FindMatchesOnFileSize2(ICommonEntry ce, ICommonEntry de, Dictionary<long, int> sizeCounts)
     {
         if (de.IsDirectory || de.Size == 0) // || dirEntry.Size < 4096)
         {
             return true;
+        }
+
+        if (!sizeCounts.TryGetValue(de.Size, out var count) || count < 2)
+        {
+            return true; // unique size cannot be a duplicate
         }
 
         // Create persistent PairDirEntry for storage in dictionary
@@ -271,21 +260,75 @@ public class Duplication
         return true;
     }
 
-    private async Task CalculatePartialHashAsync(string fullPath, ICommonEntry de)
+    /// <summary>
+    /// Groups pairs by the drive/share they live on, preserving input order within and between groups
+    /// (a group appears at its first member). Groups by the pair's cached <see cref="RootEntry"/> object
+    /// reference, so no per-file path or root string is built; the drive-root string is derived once
+    /// per distinct RootEntry so catalogs of the same drive still share a group (and hash serially).
+    /// Limitation: the drive root is taken from the first pair seen for each RootEntry, so a root that
+    /// contains a followed junction onto another volume groups those files with the root's drive
+    /// (serial instead of parallel hashing - performance only; junctions are not followed by default).
+    /// </summary>
+    public static List<List<PairDirEntry>> GroupByDriveRoot(IReadOnlyList<PairDirEntry> pairs)
     {
+        var groups = new List<List<PairDirEntry>>();
+        var byRootEntry = new Dictionary<RootEntry, List<PairDirEntry>>();
+        var byRootString = new Dictionary<string, List<PairDirEntry>>();
+        List<PairDirEntry> noRoot = null;
+        for (var i = 0; i < pairs.Count; i++)
+        {
+            var pde = pairs[i];
+            var rootEntry = pde.GetRootEntry();
+            List<PairDirEntry> group;
+            if (rootEntry == null)
+            {
+                // not expected (every entry has a RootEntry); keep such pairs together in one group
+                group = noRoot ??= AddGroup(groups);
+            }
+            else if (!byRootEntry.TryGetValue(rootEntry, out group))
+            {
+                var root = System.IO.Directory.GetDirectoryRoot(pde.FullPath);
+                if (!byRootString.TryGetValue(root, out group))
+                {
+                    group = AddGroup(groups);
+                    byRootString[root] = group;
+                }
+
+                byRootEntry[rootEntry] = group;
+            }
+
+            group.Add(pde);
+        }
+
+        return groups;
+    }
+
+    private static List<PairDirEntry> AddGroup(List<List<PairDirEntry>> groups)
+    {
+        var group = new List<PairDirEntry>();
+        groups.Add(group);
+        return group;
+    }
+
+    private async Task CalculatePartialHashAsync(PairDirEntry pair)
+    {
+        var de = pair.ChildDE;
         if (de.IsDirectory || de.IsHashDone)
         {
             _duplicationStatistics.AddAllreadyDonePartial();
             return;
         }
 
-        await CalculateHash(fullPath, de, true);
+        // The full path is built lazily, only for files that are actually read.
+        await CalculateHash(pair.FullPath, de, true);
     }
 
     private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
     {
         _logger.LogDebug(string.Empty);
         _logger.LogDebug("Checking duplicates and completing full hash.");
+        _duplicateFile.Clear(); // per-run state
+        _dirEntriesRequiringFullHashing.Clear();
         var commonEntries = rootEntries as RootEntry[] ?? rootEntries.ToArray();
         EntryHelper.TraverseTreePair(commonEntries, BuildDuplicateListIncludePartialHash);
 
@@ -542,8 +585,18 @@ public class Duplication
         }
     }
 
+    /// <summary>
+    /// Index-based equivalent of <see cref="FindDuplicates(IEnumerable{RootEntry})"/> that works directly
+    /// over memory-mapped columnar readers without rebuilding a pointer tree. Output is identical.
+    /// </summary>
+    public void FindDuplicates(IReadOnlyList<Entities.Columnar.ColumnarCatalogReader> readers)
+    {
+        new ColumnarDuplicateFinder(_logger).FindDuplicates(readers);
+    }
+
     public List<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
     {
+        _duplicateFile.Clear(); // per-run state
         EntryHelper.TraverseTreePair(rootEntries, BuildDuplicateList);
 
         // Optimized filtering without LINQ
