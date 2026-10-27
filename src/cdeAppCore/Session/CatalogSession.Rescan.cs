@@ -19,22 +19,33 @@ public sealed partial class CatalogSession
 
     public RescanPreflight PreflightRescan(int catalogId)
     {
+        lock (_gate)
+        {
+            if (_loading) return RescanPreflight.Busy; // the slot list is being rebuilt: ids mean nothing yet
+        }
+
         if (catalogId < 0 || catalogId >= _slots.Count) return RescanPreflight.UnknownCatalog;
         var slot = _slots[catalogId];
         if (slot.IsRescanning) return RescanPreflight.AlreadyRunning;
-        return IsRootAccessible(RootPathOf(slot)) ? RescanPreflight.Ready : RescanPreflight.RootNotAccessible;
+        if (string.IsNullOrEmpty(slot.SourcePath)) return RescanPreflight.NoSourceFile;
+        if (!slot.TryEnterRead(out var lease)) return RescanPreflight.Unavailable;
+        string rootPath;
+        using (lease) rootPath = lease.Source.RootPath;
+        return IsRootAccessible(rootPath) ? RescanPreflight.Ready : RescanPreflight.RootNotAccessible;
     }
-
-    // TODO(#66): read the catalog's stored FollowJunctions setting here. Until it is stored in the
-    // .cdex (and exposed on CatalogInfoDto), a rescan never follows junctions.
-    private static bool FollowJunctionsFor(CatalogSlot slot) => false;
 
     public async Task<RescanResult> RescanAsync(int catalogId, IProgress<RescanProgress> progress = null,
         CancellationToken cancellationToken = default)
     {
-        if (catalogId < 0 || catalogId >= _slots.Count) throw new ArgumentOutOfRangeException(nameof(catalogId));
-        var slot = _slots[catalogId];
-        if (!slot.TryBeginRescan()) throw new RescanAlreadyRunningException(catalogId);
+        CatalogSlot slot;
+        lock (_gate)
+        {
+            if (_loading) throw new InvalidOperationException("Cannot rescan while catalogs are being loaded.");
+            if (catalogId < 0 || catalogId >= _slots.Count) throw new ArgumentOutOfRangeException(nameof(catalogId));
+            slot = _slots[catalogId];
+            if (!slot.TryBeginRescan()) throw new RescanAlreadyRunningException(catalogId);
+        }
+
         try
         {
             // The scan is synchronous file-system work; keep it off the caller's thread.
@@ -50,16 +61,25 @@ public sealed partial class CatalogSession
     private RescanResult RescanCore(CatalogSlot slot, int catalogId, IProgress<RescanProgress> progress,
         CancellationToken ct)
     {
-        var rootPath = RootPathOf(slot);
+        if (string.IsNullOrEmpty(slot.SourcePath)) throw new NoSourceFileException(catalogId);
+
+        // One lease for everything we need to know about the current catalog.
+        string rootPath, description;
+        bool legacy, followJunctions;
+        if (!slot.TryEnterRead(out var lease)) throw new InvalidOperationException($"Catalog {catalogId} is unavailable; reload.");
+        using (lease)
+        {
+            rootPath = lease.Source.RootPath;
+            description = lease.Source.Description;
+            legacy = lease.Source is not ColumnarCatalogReader; // legacy .cde: reads FollowJunctions as false
+            followJunctions = lease.Source.FollowJunctions;     // the scan option stored with the catalog (#66)
+        }
+
         if (!IsRootAccessible(rootPath)) throw new RootNotAccessibleException(rootPath);
-        if (string.IsNullOrEmpty(slot.SourcePath))
-            throw new InvalidOperationException($"Catalog {catalogId} has no source file to save to.");
 
         // Legacy .cde: the new catalog is a .cdex beside it (the old file becomes .cde.bak at swap).
-        var legacy = !SourceIsColumnar(slot);
         var target = legacy ? Path.ChangeExtension(slot.SourcePath, ".cdex") : slot.SourcePath;
         var tmp = target + ".tmp";
-        var description = DescriptionOf(slot);
 
         try
         {
@@ -72,7 +92,7 @@ public sealed partial class CatalogSession
                     progress?.Report(new RescanProgress(catalogId, "scanning", count, current));
                 }
             };
-            tree.PopulateRoot(rootPath, FollowJunctionsFor(slot), ct);
+            tree.PopulateRoot(rootPath, followJunctions, ct);
             ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(rootPath)) throw new RootNotAccessibleException(rootPath); // vanished mid-scan
 
@@ -135,8 +155,9 @@ public sealed partial class CatalogSession
     /// <summary>
     /// Replace the slot's source with the file at <paramref name="tmp"/>. Takes the write lock (waits for
     /// running searches/listings), then, in this order: release the old mapping, (legacy: rename old
-    /// <c>.cde</c> to <c>.cde.bak</c>), rename the tmp over the target, map the new file. Any failure
-    /// puts the old file name and mapping back.
+    /// <c>.cde</c> to <c>.cde.bak</c>), move any existing target aside to <c>.old</c>, rename the tmp over
+    /// the target, map the new file, and only then delete the aside copy. Any failure restores the
+    /// previous files and re-opens the old catalog.
     /// </summary>
     private void Swap(CatalogSlot slot, int catalogId, string tmp, string target, bool legacy, CancellationToken ct)
     {
@@ -147,7 +168,9 @@ public sealed partial class CatalogSession
             var oldSource = slot.Source;
             var oldPath = slot.SourcePath;
             var bak = legacy ? oldPath + ".bak" : null;
+            var aside = target + ".old";
             var renamedToBak = false;
+            var movedAside = false;
 
             // Windows cannot rename over a memory-mapped file: release this catalog's mapping first.
             if (oldSource is ColumnarCatalogReader mapped) mapped.Dispose();
@@ -160,18 +183,31 @@ public sealed partial class CatalogSession
                     renamedToBak = true;
                 }
 
-                File.Move(tmp, target, overwrite: true);
-                var fresh = new ColumnarCatalogReader(target);
-                slot.Replace(fresh, target);
+                if (File.Exists(target))
+                {
+                    File.Move(target, aside, overwrite: true);
+                    movedAside = true;
+                }
+
+                File.Move(tmp, target);
+                var fresh = _openReader(target);
+                ReplaceSource(slot, catalogId, fresh, target);
             }
             catch
             {
+                // Put the old files back, then the old catalog in service.
+                if (movedAside)
+                {
+                    TryDelete(target); // the new (possibly bad) file
+                    TryMove(aside, target);
+                }
+
                 if (renamedToBak && !File.Exists(oldPath)) TryMove(bak, oldPath);
                 if (oldSource is ColumnarCatalogReader)
                 {
-                    // Put the old catalog back in service. If even that fails the catalog is unavailable
-                    // (reads throw) rather than pointing at a released mapping.
-                    try { slot.Replace(new ColumnarCatalogReader(oldPath), oldPath); }
+                    // If even re-opening fails the catalog is unavailable (reads throw for that catalog only,
+                    // listings skip it) rather than pointing at a released mapping.
+                    try { ReplaceSource(slot, catalogId, _openReader(oldPath), oldPath); }
                     catch (Exception ex)
                     {
                         _logger?.Error(ex, "Could not re-open {File} after a failed swap", oldPath);
@@ -182,7 +218,7 @@ public sealed partial class CatalogSession
                 throw;
             }
 
-            _roots = _roots.Select((r, i) => i == catalogId ? new EntryRef(slot.Source, 0) : r).ToList();
+            if (movedAside) TryDelete(aside); // swap succeeded: the previous file is no longer needed
         }
         finally
         {
@@ -190,22 +226,11 @@ public sealed partial class CatalogSession
         }
     }
 
-    private static string RootPathOf(CatalogSlot slot)
+    // Install a source and rebuild that catalog's root EntryRef so Roots never wraps a disposed reader.
+    private void ReplaceSource(CatalogSlot slot, int catalogId, IEntrySource source, string path)
     {
-        using var lease = slot.EnterRead();
-        return lease.Source.RootPath;
-    }
-
-    private static string DescriptionOf(CatalogSlot slot)
-    {
-        using var lease = slot.EnterRead();
-        return lease.Source.Description;
-    }
-
-    private static bool SourceIsColumnar(CatalogSlot slot)
-    {
-        using var lease = slot.EnterRead();
-        return lease.Source is ColumnarCatalogReader;
+        slot.Replace(source, path);
+        _roots = _roots.Select((r, i) => i == catalogId ? new EntryRef(source, 0) : r).ToList();
     }
 
     // Exists and can be listed: a drive that is unplugged, a moved folder or a denied folder all fail here.

@@ -46,7 +46,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10 (ASP.NET / Kestrel minimal API)
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
-    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE),
+    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE), `/catalogs/{id}/rescan` (SSE),
     `/shell`, `/shell/commands`, `/ui-state`
   - Publishes as a self-contained single-file binary for sidecar bundling
 

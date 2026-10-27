@@ -30,7 +30,23 @@ public enum RescanPreflight
     Ready,
     UnknownCatalog,
     AlreadyRunning,
-    RootNotAccessible
+    RootNotAccessible,
+
+    /// <summary>The catalog has no known source file to save over, so it cannot be rescanned.</summary>
+    NoSourceFile,
+
+    /// <summary>A catalog load is running (loads and rescans are mutually exclusive).</summary>
+    Busy,
+
+    /// <summary>The catalog failed an earlier swap and could not be re-opened; reload to recover.</summary>
+    Unavailable
+}
+
+/// <summary>The catalog has no source file path, so there is nowhere to save a rescan.</summary>
+public sealed class NoSourceFileException(int catalogId)
+    : InvalidOperationException($"Catalog {catalogId} has no source file to save a rescan to.")
+{
+    public int CatalogId { get; } = catalogId;
 }
 
 /// <summary>The catalog's root path does not exist or cannot be read. Nothing was changed.</summary>

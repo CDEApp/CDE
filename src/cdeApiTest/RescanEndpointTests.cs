@@ -165,6 +165,31 @@ public class RescanEndpointTests
     }
 
     [Test]
+    public async Task A_catalog_without_a_source_file_is_refused_with_no_source_file()
+    {
+        var tree = new RootEntry();
+        tree.PopulateRoot(_data);
+        tree.SetSummaryFields();
+        tree.ActualFileName = null;
+        using var legacy = new CatalogSession(new TreeLoader(tree), null);
+        await legacy.LoadAsync("x");
+        var (ctx, body) = NewContext();
+
+        await RescanEndpoint.HandleAsync(ctx, 0, legacy);
+
+        Assert.That(ctx.Response.StatusCode, Is.EqualTo(422));
+        Assert.That(JsonDocument.Parse(Text(body)).RootElement.GetProperty("code").GetString(), Is.EqualTo("no-source-file"));
+    }
+
+    private sealed class TreeLoader(RootEntry tree) : ILoadCatalogService
+    {
+        public Task<List<RootEntry>> LoadRootEntriesAsync(string configPath, Action<int, int, string> progressCallback,
+            CancellationToken cancellationToken = default) => Task.FromResult(new List<RootEntry> { tree });
+
+        public IList<string> GetColumnarFiles(string configPath) => [];
+    }
+
+    [Test]
     public void SseQueue_writes_error_and_rescan_progress_events()
     {
         var pipe = new TestPipeWriter();

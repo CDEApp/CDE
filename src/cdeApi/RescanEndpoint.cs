@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using cdeAppCore.Dtos;
 using cdeAppCore.Serialization;
@@ -18,6 +19,9 @@ public static class RescanEndpoint
 {
     public const string UnknownCatalog = "unknown-catalog";
     public const string AlreadyRunning = "already-running";
+    public const string Busy = "busy";
+    public const string CatalogUnavailable = "catalog-unavailable";
+    public const string NoSourceFile = "no-source-file";
     public const string RootNotAccessible = "root-not-accessible";
     public const string Failed = "rescan-failed";
 
@@ -48,6 +52,10 @@ public static class RescanEndpoint
                     await queue.WriteAsync(
                         new RescanError { Code = RootNotAccessible, Message = ex.Message, RootPath = ex.RootPath }, ct);
                 }
+                catch (NoSourceFileException ex)
+                {
+                    await queue.WriteAsync(new RescanError { Code = NoSourceFile, Message = ex.Message }, ct);
+                }
                 catch (RescanAlreadyRunningException ex)
                 {
                     await queue.WriteAsync(new RescanError { Code = AlreadyRunning, Message = ex.Message }, ct);
@@ -72,6 +80,12 @@ public static class RescanEndpoint
                 new RescanError { Code = UnknownCatalog, Message = $"No catalog {id}." }),
             RescanPreflight.AlreadyRunning => (StatusCodes.Status409Conflict,
                 new RescanError { Code = AlreadyRunning, Message = $"A rescan of catalog {id} is already running." }),
+            RescanPreflight.Busy => (StatusCodes.Status409Conflict,
+                new RescanError { Code = Busy, Message = "Catalogs are being loaded; try again when that finishes." }),
+            RescanPreflight.Unavailable => (StatusCodes.Status409Conflict,
+                new RescanError { Code = CatalogUnavailable, Message = $"Catalog {id} is unavailable after a failed rescan; reload catalogs." }),
+            RescanPreflight.NoSourceFile => (StatusCodes.Status422UnprocessableEntity,
+                new RescanError { Code = NoSourceFile, Message = $"Catalog {id} has no source file to save a rescan to." }),
             _ => (StatusCodes.Status422UnprocessableEntity, NotAccessible(session, id))
         };
         ctx.Response.StatusCode = status;
@@ -80,7 +94,8 @@ public static class RescanEndpoint
 
     private static RescanError NotAccessible(ICatalogSession session, int id)
     {
-        var rootPath = session.GetCatalogs()[id].RootPath;
+        // By CatalogId, not position: GetCatalogs skips an unavailable catalog.
+        var rootPath = session.GetCatalogs().FirstOrDefault(c => c.CatalogId == id)?.RootPath;
         return new RescanError
         {
             Code = RootNotAccessible,

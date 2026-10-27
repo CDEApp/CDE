@@ -50,10 +50,11 @@ public class CatalogSessionRescanTests
         return d;
     }
 
-    private string ScanToCdex(string dataDir, string cdexName, string description = null, Action<RootEntry> tweak = null)
+    private string ScanToCdex(string dataDir, string cdexName, string description = null, Action<RootEntry> tweak = null,
+        bool followJunctions = false)
     {
         var re = new RootEntry();
-        re.PopulateRoot(dataDir);
+        re.PopulateRoot(dataDir, followJunctions);
         re.SortAllChildrenByPath();
         re.SetSummaryFields();
         re.Description = description;
@@ -64,11 +65,13 @@ public class CatalogSessionRescanTests
         return path;
     }
 
-    private CatalogSession LoadCdex(params string[] cdexFiles)
+    private CatalogSession LoadCdex(params string[] cdexFiles) => LoadCdexWith(null, cdexFiles);
+
+    private CatalogSession LoadCdexWith(Func<string, ColumnarCatalogReader> openReader, params string[] cdexFiles)
     {
         var loader = Substitute.For<ILoadCatalogService>();
         loader.GetColumnarFiles(Arg.Any<string>()).Returns(cdexFiles.ToList());
-        _session = new CatalogSession(loader, Substitute.For<ILogger>());
+        _session = new CatalogSession(loader, Substitute.For<ILogger>(), openReader);
         _session.LoadAsync("config").GetAwaiter().GetResult();
         return _session;
     }
@@ -335,6 +338,168 @@ public class CatalogSessionRescanTests
         Assert.That(_session.GetCatalogs()[0].SourcePath, Is.EqualTo(cdex).IgnoreCase);
         Assert.That(_session.GetCatalogs()[0].Description, Is.EqualTo("legacy desc"));
         Assert.That(RootNames(_session, 0), Is.EqualTo(new[] { "a.txt", "b.txt" }));
+    }
+
+    [Test]
+    public async Task Rescan_keeps_follow_junctions_true_from_the_stored_catalog()
+    {
+        var data = MakeData("d1", "a.txt");
+        var path = ScanToCdex(data, "fj.cdex", followJunctions: true);
+        var s = LoadCdex(path);
+        Assert.That(s.GetCatalogs()[0].FollowJunctions, Is.True);
+
+        await s.RescanAsync(0);
+
+        Assert.That(s.GetCatalogs()[0].FollowJunctions, Is.True);
+        s.Dispose();
+        using var reader = new ColumnarCatalogReader(path);
+        Assert.That(reader.FollowJunctions, Is.True, "the rewritten file keeps the header bit");
+    }
+
+    [Test]
+    public async Task Rescan_keeps_follow_junctions_false()
+    {
+        var path = ScanToCdex(MakeData("d1", "a.txt"), "nofj.cdex");
+        var s = LoadCdex(path);
+
+        await s.RescanAsync(0);
+
+        Assert.That(s.GetCatalogs()[0].FollowJunctions, Is.False);
+    }
+
+    // Opens normally until armed, then fails the next `failures` opens (-1 = every open).
+    private sealed class FlakyOpener
+    {
+        public int Failures;
+
+        public ColumnarCatalogReader Open(string path)
+        {
+            if (Failures != 0)
+            {
+                if (Failures > 0) Failures--;
+                throw new InvalidDataException("injected open failure");
+            }
+
+            return new ColumnarCatalogReader(path);
+        }
+    }
+
+    [Test]
+    public async Task Failure_opening_the_new_file_restores_the_previous_file_and_catalog()
+    {
+        var data = MakeData("d1", "a.txt");
+        var path = ScanToCdex(data, "one.cdex");
+        var opener = new FlakyOpener();
+        var s = LoadCdexWith(opener.Open, path);
+        var bytes = File.ReadAllBytes(path);
+        File.WriteAllText(Path.Combine(data, "b.txt"), "new");
+        opener.Failures = 1; // the new file fails to open; re-opening the old one works
+
+        await Assert.ThatAsync(() => s.RescanAsync(0), Throws.TypeOf<InvalidDataException>());
+
+        Assert.That(File.ReadAllBytes(path), Is.EqualTo(bytes), "old file restored byte for byte");
+        Assert.That(Directory.GetFiles(_cat), Is.EqualTo(new[] { path }).IgnoreCase, "no .tmp / .old left behind");
+        Assert.That(RootNames(s, 0), Is.EqualTo(new[] { "a.txt" }));
+    }
+
+    [Test]
+    public async Task Roots_stay_usable_after_a_failed_swap()
+    {
+        var data = MakeData("d1", "a.txt");
+        var opener = new FlakyOpener();
+        var s = LoadCdexWith(opener.Open, ScanToCdex(data, "one.cdex"));
+        opener.Failures = 1;
+
+        await Assert.ThatAsync(() => s.RescanAsync(0), Throws.TypeOf<InvalidDataException>());
+
+        Assert.That(s.Roots[0].Path, Is.EqualTo(s.GetCatalogs()[0].RootPath));
+    }
+
+    [Test]
+    public async Task An_unavailable_catalog_does_not_break_the_others()
+    {
+        var d1 = MakeData("d1", "a.txt");
+        var d2 = MakeData("d2", "z.txt");
+        var opener = new FlakyOpener();
+        var s = LoadCdexWith(opener.Open, ScanToCdex(d1, "one.cdex"), ScanToCdex(d2, "two.cdex"));
+        opener.Failures = -1; // neither the new file nor the old one can be re-opened
+
+        await Assert.ThatAsync(() => s.RescanAsync(0), Throws.TypeOf<InvalidDataException>());
+        opener.Failures = 0;
+
+        var catalogs = s.GetCatalogs();
+        Assert.That(catalogs.Select(c => c.CatalogId), Is.EqualTo(new[] { 1 }));
+        Assert.That(s.TotalEntryCount, Is.EqualTo(1));
+        Assert.That(s.CatalogCount, Is.EqualTo(2));
+        Assert.That(RootNames(s, 1), Is.EqualTo(new[] { "z.txt" }));
+        Assert.That(s.PreflightRescan(0), Is.EqualTo(RescanPreflight.Unavailable));
+    }
+
+    private sealed class BlockingLoader : ILoadCatalogService
+    {
+        public readonly ManualResetEventSlim Entered = new();
+        public readonly ManualResetEventSlim Release = new();
+        public bool Block;
+        public string Cdex;
+
+        public Task<List<RootEntry>> LoadRootEntriesAsync(string configPath, Action<int, int, string> progressCallback,
+            CancellationToken cancellationToken = default) => Task.FromResult(new List<RootEntry>());
+
+        public IList<string> GetColumnarFiles(string configPath)
+        {
+            if (Block)
+            {
+                Entered.Set();
+                Release.Wait();
+            }
+
+            return [Cdex];
+        }
+    }
+
+    [Test]
+    public async Task Rescan_is_refused_while_a_load_runs_and_a_second_load_too()
+    {
+        var path = ScanToCdex(MakeData("d1", "a.txt"), "one.cdex");
+        var loader = new BlockingLoader { Cdex = path };
+        _session = new CatalogSession(loader, Substitute.For<ILogger>());
+        await _session.LoadAsync("c");
+        loader.Block = true;
+
+        var load = Task.Run(() => _session.LoadAsync("c"));
+        loader.Entered.Wait();
+        try
+        {
+            Assert.That(_session.PreflightRescan(0), Is.EqualTo(RescanPreflight.Busy));
+            await Assert.ThatAsync(() => _session.RescanAsync(0), Throws.TypeOf<InvalidOperationException>());
+            Assert.That(_session.AnyRescanning, Is.False, "a refused rescan must not leave the flag set");
+            await Assert.ThatAsync(() => _session.LoadAsync("c"), Throws.TypeOf<InvalidOperationException>());
+        }
+        finally
+        {
+            loader.Release.Set();
+        }
+
+        await load;
+        Assert.That(_session.PreflightRescan(0), Is.EqualTo(RescanPreflight.Ready));
+    }
+
+    [Test]
+    public async Task A_catalog_without_a_source_file_is_refused_up_front()
+    {
+        var tree = new RootEntry();
+        tree.PopulateRoot(MakeData("d1", "a.txt"));
+        tree.SetSummaryFields();
+        tree.ActualFileName = null;
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(new List<string>());
+        loader.LoadRootEntriesAsync(Arg.Any<string>(), Arg.Any<Action<int, int, string>>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromResult(new List<RootEntry> { tree }));
+        _session = new CatalogSession(loader, Substitute.For<ILogger>());
+        await _session.LoadAsync("c");
+
+        Assert.That(_session.PreflightRescan(0), Is.EqualTo(RescanPreflight.NoSourceFile));
+        await Assert.ThatAsync(() => _session.RescanAsync(0), Throws.TypeOf<NoSourceFileException>());
     }
 
     private sealed class SyncProgress(Action<RescanProgress> onReport) : IProgress<RescanProgress>

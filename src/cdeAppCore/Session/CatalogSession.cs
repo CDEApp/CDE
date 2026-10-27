@@ -27,18 +27,28 @@ public sealed partial class CatalogSession : ICatalogSession
     private List<CatalogSlot> _slots = [];
     private List<ICommonEntry> _roots = [];
 
-    public CatalogSession(ILoadCatalogService loadCatalogService, ILogger logger)
+    // Serialises LoadAsync against rescans: a load runs only with no rescan running, and no rescan can
+    // start while a load runs. Guards _loading and the slots' rescan flags.
+    private readonly object _gate = new();
+    private bool _loading;
+    private readonly Func<string, ColumnarCatalogReader> _openReader;
+
+    /// <param name="openReader">Opens a .cdex; defaults to mapping it. A seam for failure-injection tests.</param>
+    public CatalogSession(ILoadCatalogService loadCatalogService, ILogger logger,
+        Func<string, ColumnarCatalogReader> openReader = null)
     {
         _loadCatalogService = loadCatalogService;
         _logger = logger;
+        _openReader = openReader ?? (path => new ColumnarCatalogReader(path));
     }
 
     public int CatalogCount => _slots.Count;
 
-    public long TotalEntryCount => Enumerable.Range(0, _slots.Count).Sum(i =>
+    // An unavailable slot (failed swap that could not be rolled back) counts as empty rather than throwing.
+    public long TotalEntryCount => _slots.Sum(slot =>
     {
-        using var lease = _slots[i].EnterRead();
-        return (long)lease.Source.RootFileEntryCount + lease.Source.RootDirEntryCount;
+        if (!slot.TryEnterRead(out var lease)) return 0L;
+        using (lease) return (long)lease.Source.RootFileEntryCount + lease.Source.RootDirEntryCount;
     });
 
     public IReadOnlyList<ICommonEntry> Roots => _roots;
@@ -51,11 +61,27 @@ public sealed partial class CatalogSession : ICatalogSession
     public async Task LoadAsync(string configPath, IProgress<CatalogLoadProgress> progress = null,
         CancellationToken cancellationToken = default)
     {
-        if (AnyRescanning)
+        lock (_gate)
         {
-            throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
+            if (_loading) throw new InvalidOperationException("A catalog load is already running.");
+            if (_slots.Any(s => s.IsRescanning))
+                throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
+            _loading = true;
         }
 
+        try
+        {
+            await LoadCoreAsync(configPath, progress, cancellationToken);
+        }
+        finally
+        {
+            lock (_gate) _loading = false;
+        }
+    }
+
+    private async Task LoadCoreAsync(string configPath, IProgress<CatalogLoadProgress> progress,
+        CancellationToken cancellationToken)
+    {
         DisposeSlots();
 
         // Dedup by full path: the loader scans both "." and configPath, which collapse to the same
@@ -88,7 +114,7 @@ public sealed partial class CatalogSession : ICatalogSession
         {
             try
             {
-                slots.Add(new CatalogSlot(new ColumnarCatalogReader(file), file));
+                slots.Add(new CatalogSlot(_openReader(file), file));
             }
             catch (Exception ex)
             {
@@ -118,7 +144,8 @@ public sealed partial class CatalogSession : ICatalogSession
         var list = new List<CatalogInfoDto>(_slots.Count);
         for (var i = 0; i < _slots.Count; i++)
         {
-            using var lease = _slots[i].EnterRead();
+            if (!_slots[i].TryEnterRead(out var lease)) continue; // unavailable slot: skip, never throw
+            using var _ = lease;
             var s = lease.Source;
             list.Add(new CatalogInfoDto
             {

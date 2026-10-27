@@ -350,14 +350,15 @@ export default function App() {
     async (client: CdeApiClient, catalogId: number) => {
       const { selectedKey: selKey, dirPath: selPath } = latest.current;
       const selected = selKey ? parseRef(selKey) : null;
+      // Bookkeeping first: it must happen even if the refresh below fails.
       treeGenRef.current[catalogId] = (treeGenRef.current[catalogId] ?? 0) + 1;
-      await refreshCatalogs(client);
       setRescannedSinceSearch((prev) => new Set(prev).add(catalogId));
       // Indexes belong to the old file: a TreeMap request for this catalog is no longer valid.
       if (latest.current.treemapRequest?.ref.catalogId === catalogId) {
         setTreemapRequest(null);
         setView((v) => (v === "treemap" ? "directory" : v));
       }
+      await refreshCatalogs(client);
 
       if (selected?.catalogId !== catalogId) return;
       const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
@@ -386,39 +387,62 @@ export default function App() {
       latest.current.rescans = beginRescan(latest.current.rescans, catalogId, label);
       setRescans((s) => beginRescan(s, catalogId, label));
       try {
-        const result = await client.rescan(catalogId, {
-          signal: abort.signal,
-          onProgress: (p) =>
-            setRescans((s) => updateRescan(s, catalogId, { phase: p.phase, entriesScanned: p.entriesScanned })),
-        });
-        let finished = result !== null;
-        let entries = result?.entries ?? 0;
-        if (!finished) {
-          // Cancelled. If the cancel lost the race with the swap the catalog did change: detect that.
-          const now = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
-          if (now && before && now.scanEndUtcTicks !== before.scanEndUtcTicks) {
-            finished = true;
-            entries = now.dirEntryCount + now.fileEntryCount;
+        // Phase 1: the rescan's own outcome decides the success / failure toast.
+        let finished = false;
+        let entries = 0;
+        try {
+          const result = await client.rescan(catalogId, {
+            signal: abort.signal,
+            onProgress: (p) =>
+              setRescans((s) => updateRescan(s, catalogId, { phase: p.phase, entriesScanned: p.entriesScanned })),
+          });
+          finished = result !== null;
+          entries = result?.entries ?? 0;
+          if (!finished) {
+            // Cancelled. If the cancel lost the race with the swap the catalog did change: detect that.
+            try {
+              const now = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
+              if (now && before && now.scanEndUtcTicks !== before.scanEndUtcTicks) {
+                finished = true;
+                entries = now.dirEntryCount + now.fileEntryCount;
+              }
+            } catch {
+              /* could not check: report it as cancelled */
+            }
           }
+        } catch (e) {
+          if (e instanceof RescanFailure && e.rootNotAccessible) {
+            setUnreachableRoot(e.error.rootPath || label);
+          } else {
+            notifications.show({
+              color: "red",
+              title: "Rescan failed",
+              message: `${label}: ${e instanceof Error ? e.message : String(e)}. The catalog was left unchanged.`,
+            });
+          }
+          return;
         }
-        if (finished) {
+
+        if (!finished) {
+          notifications.show({ color: "gray", title: "Rescan cancelled", message: `${label} was left unchanged.` });
+          return;
+        }
+
+        // Phase 2: the swap succeeded. A failed view refresh must not be reported as a failed rescan.
+        try {
           await afterRescan(client, catalogId);
           notifications.show({
             color: "green",
             title: "Rescan complete",
             message: `Rescanned ${label} — ${entries.toLocaleString()} entries`,
           });
-        } else {
-          notifications.show({ color: "gray", title: "Rescan cancelled", message: `${label} was left unchanged.` });
-        }
-      } catch (e) {
-        if (e instanceof RescanFailure && e.rootNotAccessible) {
-          setUnreachableRoot(e.error.rootPath || label);
-        } else {
+        } catch (e) {
           notifications.show({
-            color: "red",
-            title: "Rescan failed",
-            message: `${label}: ${e instanceof Error ? e.message : String(e)}. The catalog was left unchanged.`,
+            color: "orange",
+            title: "Rescan complete, view not refreshed",
+            message: `Rescanned ${label}, but refreshing the view failed: ${
+              e instanceof Error ? e.message : String(e)
+            } — use Reload.`,
           });
         }
       } finally {

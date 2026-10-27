@@ -39,6 +39,22 @@ internal sealed class CatalogSlot(IEntrySource source, string sourcePath) : IDis
         return new CatalogReadLease(this, current);
     }
 
+    /// <summary>Like <see cref="EnterRead"/> but returns false (holding nothing) when the slot has no source.</summary>
+    public bool TryEnterRead(out CatalogReadLease lease)
+    {
+        _lock.EnterReadLock();
+        var current = Source;
+        if (current == null)
+        {
+            _lock.ExitReadLock();
+            lease = default;
+            return false;
+        }
+
+        lease = new CatalogReadLease(this, current);
+        return true;
+    }
+
     public void ExitRead() => _lock.ExitReadLock();
 
     /// <summary>Take the write lock, waiting for running readers. Polls so a cancel is honoured while waiting.</summary>
