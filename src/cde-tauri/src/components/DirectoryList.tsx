@@ -3,6 +3,7 @@ import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
 import type { StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
+import { VirtualList } from "./VirtualList";
 
 interface Props {
   path: string;
@@ -23,20 +24,31 @@ const COLUMNS: { column: SortColumn; label: string }[] = [
   { column: "modified", label: "Modified" },
 ];
 
-/** Per-directory listing (Name / Size / Modified). Double-click a folder drills in. */
+const ROW_HEIGHT = 22;
+
+/**
+ * Per-directory listing (Name / Size / Modified). Double-click a folder drills in. Virtualized: a
+ * folder with tens of thousands of entries (e.g. C:\Windows\WinSxS) only mounts the rows on screen.
+ */
 export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveStyle, sort, onSort }: Props) {
   const sorted = useMemo(() => sortDirectoryNodes(nodes, sort), [nodes, sort]);
   return (
-    <div className="grid dirlist">
+    <div className="dirlist">
       <div className="path-bar">{path}</div>
-      <table>
-        <thead>
-          <tr>
+      {/* Keyed by folder, so a newly opened folder starts at the top rather than at the last one's offset. */}
+      <VirtualList<DirectoryNode>
+        key={path}
+        className="dir-cols"
+        items={sorted}
+        rowHeight={ROW_HEIGHT}
+        header={
+          <div className="vlist-header" role="row">
             {COLUMNS.map(({ column, label }) => {
               const active = sort.column === column;
               return (
-                <th
+                <div
                   key={column}
+                  role="columnheader"
                   className={column === "size" ? "num" : undefined}
                   aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                 >
@@ -46,32 +58,29 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
                       {active ? (sort.direction === "asc" ? "▲" : "▼") : ""}
                     </span>
                   </button>
-                </th>
+                </div>
               );
             })}
-          </tr>
-        </thead>
-        <tbody>
-          {sorted.map((n) => {
-            const style = resolveStyle(n.name, n.isDirectory);
-            return (
-            <tr
-              key={`${n.ref.catalogId}-${n.ref.entryIndex}`}
-              onDoubleClick={() => onActivate(n)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                onContextMenu(n, e.clientX, e.clientY);
-              }}
-            >
-              <td style={style}>{n.name}</td>
-              <td className="num" style={style}>{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</td>
-              <td style={style}>{formatDate(n.modified, n.isModifiedBad)}</td>
-            </tr>
-            );
-          })}
-        </tbody>
-      </table>
+          </div>
+        }
+        renderRow={(n, _i, style) => (
+          <div
+            key={`${n.ref.catalogId}-${n.ref.entryIndex}`}
+            className="vlist-row"
+            style={{ ...style, ...resolveStyle(n.name, n.isDirectory) }}
+            onDoubleClick={() => onActivate(n)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onContextMenu(n, e.clientX, e.clientY);
+            }}
+          >
+            <div className="cell">{n.name}</div>
+            <div className="cell num">{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</div>
+            <div className="cell">{formatDate(n.modified, n.isModifiedBad)}</div>
+          </div>
+        )}
+      />
     </div>
   );
 }

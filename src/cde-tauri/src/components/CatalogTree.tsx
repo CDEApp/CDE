@@ -1,20 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import type { StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
+import { changedCatalogs, flattenTree, type TreeRoot, type TreeRow } from "../treeModel";
+import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
-export interface TreeRoot {
-  ref: EntryRef;
-  label: string;
-  fullPath: string;
-  /** Catalog file name without extension, shown in brackets after the root label. */
-  catalogName: string;
-  /** Total size of everything under the root (CatalogInfo.rootSize). */
-  size: number;
-  /** Bumped when the catalog is rescanned, so the root remounts and drops its cached children. */
-  generation?: number;
-}
+export type { TreeRoot };
+
+const ROW_HEIGHT = 22;
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -46,151 +40,132 @@ function NodeIcon({ kind }: { kind: "drive" | "folder" | "folder-open" }) {
   );
 }
 
-interface TreeItemProps {
-  client: CdeApiClient;
-  nodeRef: EntryRef;
-  label: string;
-  fullPath: string;
-  /** Aggregated subtree size in bytes. */
-  size: number;
-  hasChildren: boolean;
-  /** Root rows only: catalog name shown muted in brackets after the label. */
-  catalogName?: string;
-  /** Catalog root (drawn with a drive icon rather than a folder). */
-  isRoot?: boolean;
-  selectedKey: string | null;
-  revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
-  expandTo?: EntryRef[]; // path to auto-expand/select
-  onSelect: (ref: EntryRef, fullPath: string) => void;
-  onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
-  /** Name-rule styles (built with `[folder]` skipped). Selection colours override them. */
-  resolveStyle: StyleResolver;
-}
-
-function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu, resolveStyle }: TreeItemProps) {
-  const [expanded, setExpanded] = useState(false);
-  const [children, setChildren] = useState<DirectoryNode[] | null>(null);
-  const key = refToString(nodeRef);
-
-  // Scroll the selected node into view when it becomes selected. A deliberate reveal
-  // (view-in-tree, key === revealKey) centres it in the pane; a plain selection uses `nearest`,
-  // which is a no-op when the node is already on screen so clicks don't jump.
-  const isSelected = selectedKey === key;
-  const rowRef = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (isSelected) {
-      rowRef.current?.scrollIntoView({ block: revealKey === key ? "center" : "nearest" });
-    }
-  }, [isSelected, revealKey]);
-
-  async function ensureChildren() {
-    if (children == null) {
-      setChildren(await client.children(nodeRef, { foldersOnly: true, sort: "name" }));
-    }
-  }
-
-  async function toggle() {
-    if (!expanded) await ensureChildren();
-    setExpanded((e) => !e);
-  }
-
-  // Auto-expand along a requested path (view-in-tree / go-to-parent). Expansion ONLY — the
-  // selection is set by the initiating handler (selectNode) and shown via selectedKey. Calling
-  // onSelect here previously fought the user's clicks and reset the selection.
-  useEffect(() => {
-    if (!expandTo || expandTo.length === 0) return;
-    if (expandTo[0].catalogId === nodeRef.catalogId && expandTo[0].entryIndex === nodeRef.entryIndex) {
-      void ensureChildren().then(() => setExpanded(true));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [expandTo]);
-
-  // Memoised so children don't receive a brand-new array every render (which would otherwise
-  // re-fire their [expandTo] effect on each parent re-render).
-  const childExpandTo = useMemo(
-    () =>
-      expandTo && expandTo.length > 1 && expandTo[0].entryIndex === nodeRef.entryIndex
-        ? expandTo.slice(1)
-        : undefined,
-    [expandTo, nodeRef.entryIndex],
-  );
-
-  return (
-    <li>
-      <div
-        ref={rowRef}
-        className={`tree-row${isSelected ? " selected" : ""}`}
-        style={isSelected ? undefined : resolveStyle(label, true)}
-        onClick={() => onSelect(nodeRef, fullPath)}
-        onDoubleClick={() => {
-          if (hasChildren) void toggle();
-        }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          onContextMenu(nodeRef, fullPath, e.clientX, e.clientY);
-        }}
-      >
-        {/* Expander for folders with sub-folders; an equal-width blank keeps leaf labels aligned. */}
-        <span
-          className={`twisty${hasChildren ? "" : " leaf"}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            if (hasChildren) void toggle();
-          }}
-          onDoubleClick={(e) => e.stopPropagation()}
-        >
-          {hasChildren && <Chevron expanded={expanded} />}
-        </span>
-        <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
-        <span className="tree-label" title={catalogName ? `${fullPath} [${catalogName}]` : fullPath}>
-          {label}
-        </span>
-        {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
-        {catalogName && <span className="tree-catalog" title={catalogName}>[{catalogName}]</span>}
-        <span className="tree-size">{toHRString(size)}</span>
-      </div>
-      {expanded && children && (
-        <ul>
-          {children.map((c) => (
-            <TreeItem
-              key={refToString(c.ref)}
-              client={client}
-              nodeRef={c.ref}
-              label={c.name}
-              fullPath={c.fullPath}
-              size={c.size}
-              hasChildren={c.hasChildren}
-              selectedKey={selectedKey}
-              revealKey={revealKey}
-              expandTo={childExpandTo}
-              onSelect={onSelect}
-              onContextMenu={onContextMenu}
-              resolveStyle={resolveStyle}
-            />
-          ))}
-        </ul>
-      )}
-    </li>
-  );
-}
-
 interface Props {
   client: CdeApiClient;
   roots: TreeRoot[];
   selectedKey: string | null;
-  revealKey?: string | null;
-  expandTo?: EntryRef[];
+  revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
+  expandTo?: EntryRef[]; // path to auto-expand
   onSelect: (ref: EntryRef, fullPath: string) => void;
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
   /** Right-click on blank tree space (rows stop their own right-clicks from reaching here). */
   onBackgroundContextMenu?: (x: number, y: number) => void;
+  /** Name-rule styles (built with `[folder]` skipped). Selection colours override them. */
   resolveStyle: StyleResolver;
 }
 
+/**
+ * Folder tree, flattened to its visible rows and virtualized (issue #86): expanding a folder with
+ * tens of thousands of sub-folders, or changing the selection under one, only touches the rows on
+ * screen. Child folders are fetched on first expand and kept for later expands.
+ */
 export function CatalogTree({
   client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
 }: Props) {
+  const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
+  const [children, setChildren] = useState<ReadonlyMap<string, DirectoryNode[]>>(() => new Map());
+  // Fetches by node key, so a node is fetched once however often it is asked for.
+  const loads = useRef(new Map<string, Promise<void>>());
+  const listRef = useRef<VirtualListHandle>(null);
+
+  // A rescan, or a reload that puts a different catalog under the same id, invalidates that catalog's
+  // refs: drop its expansion and loaded children (other catalogs keep theirs).
+  const prevRoots = useRef<TreeRoot[]>([]);
+  useEffect(() => {
+    const changed = changedCatalogs(prevRoots.current, roots);
+    prevRoots.current = roots;
+    if (changed.size === 0) return;
+    const stale = (key: string) => changed.has(Number(key.slice(0, key.indexOf("-"))));
+    for (const key of [...loads.current.keys()]) if (stale(key)) loads.current.delete(key);
+    setChildren((prev) => new Map([...prev].filter(([key]) => !stale(key))));
+    setExpanded((prev) => new Set([...prev].filter((key) => !stale(key))));
+  }, [roots]);
+
+  const ensureChildren = useCallback(
+    (ref: EntryRef) => {
+      const key = refToString(ref);
+      let load = loads.current.get(key);
+      if (!load) {
+        const current = client.children(ref, { foldersOnly: true, sort: "name" }).then((kids) => {
+          // Dropped (rescan / reload) while in flight: these children belong to the old catalog.
+          if (loads.current.get(key) === current) setChildren((prev) => new Map(prev).set(key, kids));
+        });
+        current.catch(() => {
+          if (loads.current.get(key) === current) loads.current.delete(key); // a failed fetch may be retried
+        });
+        loads.current.set(key, current);
+        load = current;
+      }
+      return load;
+    },
+    [client],
+  );
+
+  const setOpen = (key: string, open: boolean) =>
+    setExpanded((prev) => {
+      if (prev.has(key) === open) return prev;
+      const next = new Set(prev);
+      if (open) next.add(key);
+      else next.delete(key);
+      return next;
+    });
+
+  async function toggle(row: TreeRow) {
+    if (row.expanded) {
+      setOpen(row.key, false);
+    } else {
+      try {
+        await ensureChildren(row.ref);
+      } catch (e) {
+        console.error("tree: loading sub-folders failed", e);
+        return;
+      }
+      setOpen(row.key, true);
+    }
+  }
+
+  // Auto-expand along a requested path (view-in-tree / go-to-parent), top down. Expansion ONLY: the
+  // selection is set by the initiating handler (selectNode) and shown via selectedKey.
+  useEffect(() => {
+    if (!expandTo || expandTo.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      for (const ref of expandTo) {
+        try {
+          await ensureChildren(ref);
+        } catch (e) {
+          console.error("tree: auto-expand failed", e);
+          return;
+        }
+        if (cancelled) return;
+        setOpen(refToString(ref), true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [expandTo, ensureChildren]);
+
+  const rows = useMemo(() => flattenTree(roots, expanded, children), [roots, expanded, children]);
+
+  // Scroll the selected node into view once it is selected and has a row (an auto-expand may still
+  // be loading its parents). A deliberate reveal (key === revealKey) centres it; a plain selection
+  // uses `nearest`, a no-op when the row is already on screen so clicks don't jump.
+  const pendingScroll = useRef<{ key: string; align: "nearest" | "center" } | null>(null);
+  useEffect(() => {
+    pendingScroll.current = selectedKey
+      ? { key: selectedKey, align: revealKey === selectedKey ? "center" : "nearest" }
+      : null;
+  }, [selectedKey, revealKey]);
+  useEffect(() => {
+    const pending = pendingScroll.current;
+    if (!pending) return;
+    const index = rows.findIndex((r) => r.key === pending.key);
+    if (index < 0) return;
+    listRef.current?.scrollToIndex(index, pending.align);
+    pendingScroll.current = null;
+  }, [rows, selectedKey, revealKey]);
+
   return (
     <div
       className="tree-host"
@@ -200,27 +175,54 @@ export function CatalogTree({
         onBackgroundContextMenu(e.clientX, e.clientY);
       }}
     >
-    <ul className="tree">
-      {roots.map((r) => (
-        <TreeItem
-          key={`${refToString(r.ref)}@${r.generation ?? 0}`}
-          client={client}
-          nodeRef={r.ref}
-          label={r.label}
-          fullPath={r.fullPath}
-          size={r.size}
-          catalogName={r.catalogName}
-          hasChildren
-          isRoot
-          selectedKey={selectedKey}
-          revealKey={revealKey}
-          expandTo={expandTo && expandTo[0]?.catalogId === r.ref.catalogId ? expandTo : undefined}
-          onSelect={onSelect}
-          onContextMenu={onContextMenu}
-          resolveStyle={resolveStyle}
-        />
-      ))}
-    </ul>
+      <VirtualList<TreeRow>
+        className="tree"
+        items={rows}
+        rowHeight={ROW_HEIGHT}
+        handleRef={listRef}
+        renderRow={(row, _i, style) => {
+          const isSelected = row.key === selectedKey;
+          return (
+            <div
+              key={row.key}
+              className={`tree-row${isSelected ? " selected" : ""}`}
+              style={{
+                ...style,
+                paddingLeft: 6 + row.depth * 16,
+                ...(isSelected ? undefined : resolveStyle(row.label, true)),
+              }}
+              onClick={() => onSelect(row.ref, row.fullPath)}
+              onDoubleClick={() => {
+                if (row.hasChildren) void toggle(row);
+              }}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onContextMenu(row.ref, row.fullPath, e.clientX, e.clientY);
+              }}
+            >
+              {/* Expander for folders with sub-folders; an equal-width blank keeps leaf labels aligned. */}
+              <span
+                className={`twisty${row.hasChildren ? "" : " leaf"}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (row.hasChildren) void toggle(row);
+                }}
+                onDoubleClick={(e) => e.stopPropagation()}
+              >
+                {row.hasChildren && <Chevron expanded={row.expanded} />}
+              </span>
+              <NodeIcon kind={row.isRoot ? "drive" : row.expanded && row.hasChildren ? "folder-open" : "folder"} />
+              <span className="tree-label" title={row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath}>
+                {row.label}
+              </span>
+              {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
+              {row.catalogName && <span className="tree-catalog" title={row.catalogName}>[{row.catalogName}]</span>}
+              <span className="tree-size">{toHRString(row.size)}</span>
+            </div>
+          );
+        }}
+      />
     </div>
   );
 }

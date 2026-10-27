@@ -90,8 +90,6 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .splitter:hover, .splitter:active { background: var(--accent); }
 
 /* tree */
-ul.tree, ul.tree ul { list-style: none; margin: 0; padding-left: 16px; }
-ul.tree { padding-left: 2px; }
 .tree-row { display: flex; align-items: center; gap: 3px; padding: 1px 4px; min-height: 22px; cursor: default; white-space: nowrap; user-select: none; }
 .tree-row:hover { background: var(--row-hover); }
 .tree-row.selected { background: var(--accent); color: #fff; }
@@ -114,7 +112,7 @@ ul.tree { padding-left: 2px; }
 .tree-row.selected .tree-size, .tree-row.selected .tree-catalog { color: #fff; }
 
 /* fill the pane so right-clicks below the last node still reach the tree */
-.tree-host { min-height: 100%; }
+.tree-host { height: 100%; }
 
 /* treemap tab */
 .treemap-view { display: flex; flex-direction: column; height: 100%; min-height: 0; }
@@ -182,6 +180,10 @@ tbody tr:hover { background: var(--row-hover); }
 .vlist.results-cols {
   --cols: minmax(160px, 2fr) 90px 150px minmax(120px, 1.4fr) minmax(200px, 3fr);
 }
+/* directory listing: path bar over a virtualized Name / Size / Modified list */
+.dirlist { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.dirlist > .vlist { flex: 1; height: auto; }
+.vlist.dir-cols { --cols: minmax(200px, 1fr) 100px 160px; }
 .vlist-header {
   display: grid; grid-template-columns: var(--cols);
   position: sticky; top: 0; z-index: 1;

@@ -166,6 +166,24 @@ public class ListingAndRowCharacterisationTests
         Assert.That(f.Session.GetChildren(many, false, 0, 0), Is.Empty);
     }
 
+    [Test]
+    public void GetChildren_WithoutHasChildren_LeavesItFalse_AndOtherwiseMatches()
+    {
+        using var f = new CatalogFixture(BuildTree(@"C:\"));
+        var root0 = new EntryRefDto(0, 0);
+        var with = f.Session.GetChildren(root0);
+        var without = f.Session.GetChildren(root0, withHasChildren: false);
+
+        Assert.That(with.Single(x => x.Name == "dirA").HasChildren, Is.True); // the check is really skipped
+        Assert.That(without.Select(x => x.HasChildren), Is.All.False);
+        Assert.That(without, Has.Count.EqualTo(with.Count));
+        for (var i = 0; i < with.Count; i++)
+        {
+            without[i].HasChildren = with[i].HasChildren;
+            AssertSame(with[i], without[i]);
+        }
+    }
+
     private static void AssertSame(DirectoryNodeDto a, DirectoryNodeDto b)
     {
         Assert.That(b.Ref, Is.EqualTo(a.Ref));

@@ -1,9 +1,15 @@
-import { CSSProperties, ReactNode, useEffect, useRef, useState } from "react";
+import { CSSProperties, ReactNode, Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { scrollTopFor, visibleRange } from "../visibleRange";
+
+export interface VirtualListHandle {
+  /** Scroll row `index` into view: `nearest` only if it is off screen, `center` mid-viewport. */
+  scrollToIndex: (index: number, align: "nearest" | "center") => void;
+}
 
 interface Props<T> {
   items: T[];
   rowHeight: number;
-  header: ReactNode;
+  header?: ReactNode;
   /** Render one row. Spread `style` onto the row element (it positions the row absolutely). */
   renderRow: (item: T, index: number, style: CSSProperties) => ReactNode;
   className?: string;
@@ -11,6 +17,7 @@ interface Props<T> {
   /** Extra style for the inner spacer — e.g. `minWidth` to drive horizontal scroll when
    *  fixed-width columns exceed the viewport. Both header and rows then share that scroll. */
   innerStyle?: CSSProperties;
+  handleRef?: Ref<VirtualListHandle>;
 }
 
 /**
@@ -18,8 +25,11 @@ interface Props<T> {
  * are mounted; a spacer of `items.length * rowHeight` drives the scrollbar. Keeps the DOM tiny and
  * constant regardless of result count (10 rows or 1,000,000).
  */
-export function VirtualList<T>({ items, rowHeight, header, renderRow, className, overscan = 8, innerStyle }: Props<T>) {
+export function VirtualList<T>({
+  items, rowHeight, header, renderRow, className, overscan = 8, innerStyle, handleRef,
+}: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
+  const innerRef = useRef<HTMLDivElement>(null);
   const [scrollTop, setScrollTop] = useState(0);
   const [viewport, setViewport] = useState(0);
 
@@ -33,9 +43,23 @@ export function VirtualList<T>({ items, rowHeight, header, renderRow, className,
     return () => ro.disconnect();
   }, []);
 
-  const total = items.length;
-  const start = Math.max(0, Math.floor(scrollTop / rowHeight) - overscan);
-  const end = Math.min(total, Math.ceil((scrollTop + viewport) / rowHeight) + overscan);
+  useImperativeHandle(
+    handleRef,
+    () => ({
+      scrollToIndex(index, align) {
+        const el = scrollRef.current;
+        if (!el) return;
+        // Rows start below the (sticky) header, which also covers the top of the viewport.
+        const offset = innerRef.current?.offsetTop ?? 0;
+        el.scrollTop =
+          offset +
+          scrollTopFor({ index, rowHeight, viewport: el.clientHeight - offset, scrollTop: el.scrollTop - offset, align });
+      },
+    }),
+    [rowHeight],
+  );
+
+  const { start, end } = visibleRange({ scrollTop, viewport, rowHeight, total: items.length, overscan });
 
   const rows: ReactNode[] = [];
   for (let i = start; i < end; i++) {
@@ -60,7 +84,7 @@ export function VirtualList<T>({ items, rowHeight, header, renderRow, className,
         {/* Header lives inside the scroll area (sticky) so it scrolls horizontally with the rows
             when columns are wider than the viewport, while staying pinned vertically. */}
         {header}
-        <div className="vlist-inner" style={{ height: total * rowHeight, ...innerStyle }}>
+        <div className="vlist-inner" ref={innerRef} style={{ height: items.length * rowHeight, ...innerStyle }}>
           {rows}
         </div>
       </div>
