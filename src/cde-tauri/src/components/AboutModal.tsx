@@ -20,9 +20,11 @@ const FALLBACK: AppInfo = { name: "CDE", version: "unknown" };
 /** The About dialog: program name, version (from the Tauri app), release date (build-time) and the repo link. */
 export function AboutModal({ opened, onClose }: Props) {
   const [info, setInfo] = useState<AppInfo>(FALLBACK);
+  const [linkError, setLinkError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!opened) return;
+    setLinkError(null);
     let cancelled = false;
     Promise.all([getName(), getVersion()])
       .then(([name, version]) => {
@@ -36,11 +38,18 @@ export function AboutModal({ opened, onClose }: Props) {
     };
   }, [opened]);
 
-  // Never let the webview navigate to the URL: hand it to the system browser. Outside Tauri this fails, so
-  // fall back to a new browser tab.
+  // Never let the webview navigate to the URL: hand it to the system browser. Only outside Tauri (plain
+  // browser dev) fall back to a new tab; inside Tauri a failure is a real problem, so surface it.
   const openRepo = (e: React.MouseEvent) => {
     e.preventDefault();
-    open(REPO_URL).catch(() => window.open(REPO_URL, "_blank", "noopener,noreferrer"));
+    open(REPO_URL).catch((err) => {
+      if (!("__TAURI_INTERNALS__" in window)) {
+        window.open(REPO_URL, "_blank", "noopener,noreferrer");
+        return;
+      }
+      console.error("Failed to open the repository link", err);
+      setLinkError(`Could not open the link: ${err instanceof Error ? err.message : String(err)}`);
+    });
   };
 
   return (
@@ -56,6 +65,11 @@ export function AboutModal({ opened, onClose }: Props) {
           {REPO_URL}
         </Anchor>
       </Text>
+      {linkError && (
+        <Text c="red" size="sm" mt="xs" role="alert">
+          {linkError}
+        </Text>
+      )}
       <Group justify="flex-end" mt="md">
         <Button onClick={onClose} data-autofocus>
           Close
