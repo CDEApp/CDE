@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.ComponentModel;
 using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
@@ -18,9 +17,7 @@ using cdeAppCore.Sorting;
 using cdeAppCore.Validation;
 using cdeLib;
 using cdeLib.Entities;
-using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
-using cdeLib.Infrastructure;
 using cdeWin.Cfg;
 using JetBrains.Annotations;
 using Serilog;
@@ -66,7 +63,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     // plus its bounded date cache.
     private readonly EntryFormatter _formatter;
 
-    private List<PairDirEntry> _searchResultList;
     private List<ICommonEntry> _directoryList;
 
     /// <summary>
@@ -549,7 +545,6 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     protected int SetSearchResultList(List<PairDirEntry> list)
     {
-        _searchResultList = list;
         return _clientForm.SearchResultListViewHelper.SetList(list);
     }
 
