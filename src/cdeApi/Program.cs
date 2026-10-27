@@ -63,6 +63,7 @@ builder.Services.AddSingleton<IShellActions>(_ => OperatingSystem.IsWindows()
     ? new WindowsShellActions(customCommands, logger)
     : new NoopShellActions(customCommands, logger));
 builder.Services.AddSingleton<UiStateStore>();
+builder.Services.AddSingleton<ColourRulesStore>();
 
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.TypeInfoResolverChain.Insert(0, AppCoreJsonContext.Default));
@@ -189,6 +190,24 @@ app.MapPut("/ui-state", async (HttpContext ctx, UiStateStore store) =>
     {
         return Results.BadRequest("body is not valid JSON");
     }
+});
+
+// Colour rules: plain text, stored as typed. GET creates the file from the defaults when missing;
+// /defaults is the single source of the default text (used by the UI's "Reset to defaults").
+app.MapGet("/colour-rules", (ColourRulesStore store) =>
+    Results.Text(store.Read(), "text/plain", System.Text.Encoding.UTF8));
+
+app.MapGet("/colour-rules/defaults", () =>
+    Results.Text(ColourRulesStore.DefaultText, "text/plain", System.Text.Encoding.UTF8));
+
+app.MapPut("/colour-rules", async (HttpContext ctx, ColourRulesStore store) =>
+{
+    using var reader = new StreamReader(ctx.Request.Body, System.Text.Encoding.UTF8);
+    var body = await reader.ReadToEndAsync();
+    if (body.Length > ColourRulesStore.MaxLength)
+        return Results.StatusCode(StatusCodes.Status413PayloadTooLarge);
+    store.Save(body);
+    return Results.Ok();
 });
 
 // POST /session/reload — reload catalogs, streaming load progress over SSE then a final `done`.
