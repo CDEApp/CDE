@@ -35,7 +35,9 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
   return (
     <div className="dirlist">
       <div className="path-bar">{path}</div>
+      {/* Keyed by folder, so a newly opened folder starts at the top rather than at the last one's offset. */}
       <VirtualList<DirectoryNode>
+        key={path}
         className="dir-cols"
         items={sorted}
         rowHeight={ROW_HEIGHT}

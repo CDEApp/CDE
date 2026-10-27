@@ -78,13 +78,14 @@ export function CatalogTree({
   const ensureChildren = useCallback(
     (ref: EntryRef) => {
       const key = refToString(ref);
-      let load = loads.current.get(key);
+      const tree = loads.current; // a reset swaps this map; a fetch from before it must not land
+      let load = tree.get(key);
       if (!load) {
         load = client.children(ref, { foldersOnly: true, sort: "name" }).then((kids) => {
-          setChildren((prev) => new Map(prev).set(key, kids));
+          if (loads.current === tree) setChildren((prev) => new Map(prev).set(key, kids));
         });
-        load.catch(() => loads.current.delete(key)); // a failed fetch may be retried
-        loads.current.set(key, load);
+        load.catch(() => tree.delete(key)); // a failed fetch may be retried
+        tree.set(key, load);
       }
       return load;
     },
@@ -104,7 +105,12 @@ export function CatalogTree({
     if (row.expanded) {
       setOpen(row.key, false);
     } else {
-      await ensureChildren(row.ref);
+      try {
+        await ensureChildren(row.ref);
+      } catch (e) {
+        console.error("tree: loading sub-folders failed", e);
+        return;
+      }
       setOpen(row.key, true);
     }
   }
@@ -116,7 +122,12 @@ export function CatalogTree({
     let cancelled = false;
     void (async () => {
       for (const ref of expandTo) {
-        await ensureChildren(ref);
+        try {
+          await ensureChildren(ref);
+        } catch (e) {
+          console.error("tree: auto-expand failed", e);
+          return;
+        }
         if (cancelled) return;
         setOpen(refToString(ref), true);
       }
