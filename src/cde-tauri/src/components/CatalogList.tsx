@@ -4,10 +4,13 @@ import { toHRString } from "../format";
 interface Props {
   catalogs: CatalogInfo[];
   onActivate: (catalog: CatalogInfo) => void;
+  onContextMenu?: (catalog: CatalogInfo, x: number, y: number) => void;
+  /** Catalog ids being rescanned right now (their rows are dimmed). */
+  rescanningIds?: ReadonlySet<number>;
 }
 
 /** Catalog list view. Double-click a catalog to make it the directory-tree root. */
-export function CatalogList({ catalogs, onActivate }: Props) {
+export function CatalogList({ catalogs, onActivate, onContextMenu, rescanningIds }: Props) {
   return (
     <div className="grid cataloglist">
       <table>
@@ -24,7 +27,17 @@ export function CatalogList({ catalogs, onActivate }: Props) {
         </thead>
         <tbody>
           {catalogs.map((c) => (
-            <tr key={c.catalogId} onDoubleClick={() => onActivate(c)}>
+            <tr
+              key={c.catalogId}
+              className={rescanningIds?.has(c.catalogId) ? "rescanning" : undefined}
+              onDoubleClick={() => onActivate(c)}
+              onContextMenu={(e) => {
+                if (!onContextMenu) return;
+                e.preventDefault();
+                e.stopPropagation();
+                onContextMenu(c, e.clientX, e.clientY);
+              }}
+            >
               <td>{c.rootPath}</td>
               <td>{c.volumeName}</td>
               <td className="num">{c.dirEntryCount.toLocaleString()}</td>
