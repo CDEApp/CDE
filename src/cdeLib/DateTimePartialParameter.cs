@@ -24,8 +24,7 @@ public class DateTimePartialParameter
     {
         var splitOnDash = str.Split('-');
 
-        int.TryParse(splitOnDash[0], out var year);
-        if (year < 1000) // this is not 4 digits, its only value e.g., 4 digits 0982 is 4 digits.
+        if (!int.TryParse(splitOnDash[0], out var year) || year < 1000) // this is not 4 digits, its only value e.g., 4 digits 0982 is 4 digits.
         {
             _e = new ArgumentException(
                 $"Require Year parameter be a 4 Digit Year <YYYY> as part of format '{Format}'");

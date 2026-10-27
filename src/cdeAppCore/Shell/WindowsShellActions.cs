@@ -73,6 +73,11 @@ public sealed class WindowsShellActions : IShellActions
     }
 
     // ShowFileProperties from http://stackoverflow.com/a/1936957
+    // SYSLIB1054 suppressed: SHELLEXECUTEINFO is non-blittable (string fields), so LibraryImport cannot marshal it
+    // automatically, and the generator needs AllowUnsafeBlocks (not enabled in cdeAppCore). This is a rare,
+    // user-initiated UI call, not a hot path, so the runtime-marshalled DllImport is kept.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Interoperability", "SYSLIB1054:Use 'LibraryImportAttribute' instead of 'DllImportAttribute'",
+        Justification = "Non-blittable SHELLEXECUTEINFO struct; not a hot path; cdeAppCore has no AllowUnsafeBlocks.")]
     [DllImport("shell32.dll", CharSet = CharSet.Auto)]
     private static extern bool ShellExecuteEx(ref SHELLEXECUTEINFO lpExecInfo);
 

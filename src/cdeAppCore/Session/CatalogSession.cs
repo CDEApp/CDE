@@ -111,7 +111,7 @@ public sealed partial class CatalogSession : ICatalogSession
     }
 
     // Open each .cdex as a zero-copy mmap reader. Unreadable files are skipped (logged).
-    private List<CatalogSlot> ReadColumnar(IList<string> cdexFiles)
+    private List<CatalogSlot> ReadColumnar(List<string> cdexFiles)
     {
         var slots = new List<CatalogSlot>(cdexFiles.Count);
         foreach (var file in cdexFiles)

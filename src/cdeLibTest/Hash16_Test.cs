@@ -46,11 +46,7 @@ public class Hash16_Test
         };
         // ReSharper restore RedundantExplicitArraySize
 
-        byte[] hash;
-        using (var md5 = MD5.Create())
-        {
-            hash = md5.ComputeHash(b);
-        }
+        var hash = MD5.HashData(b);
         var h16 = new Hash16(hash);
 
         Console.WriteLine($"h16.HashAsString {h16.HashAsString}");

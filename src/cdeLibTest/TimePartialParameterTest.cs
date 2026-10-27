@@ -85,4 +85,34 @@ public class TimePartialParameterTest
         var ex = Assert.Throws<ArgumentException>(() => _ = new TimePartialParameter(args).Hour);
         Assert.That(ex!.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
     }
+
+    [Test]
+    public void Hour_With_NonNumeric_Minute_Parameter()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => _ = new TimePartialParameter("3:x").Hour);
+        Assert.That(ex!.Message, Is.EqualTo("Require valid integer 1-59 or for Minute <MM> as part of format '<HH>:<MM>:<SS>'"));
+    }
+
+    [Test]
+    public void Hour_With_Minute_With_NonNumeric_Second_Parameter()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => _ = new TimePartialParameter("3:34:x").Hour);
+        Assert.That(ex!.Message, Is.EqualTo("Require valid integer 1-59 or for Second <SS> as part of format '<HH>:<MM>:<SS>'"));
+    }
+
+    [Test]
+    public void Empty_Hour_Parameter_Is_Rejected()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => _ = new TimePartialParameter("").Hour);
+        Assert.That(ex!.Message, Is.EqualTo("Require valid Integer 1-23 for Hour <HH> as part of format '<HH>:<MM>:<SS>'"));
+    }
+
+    [Test]
+    public void Upper_Bounds_Are_Accepted()
+    {
+        var d = new TimePartialParameter("23:59:59");
+        Assert.That(d.Hour, Is.EqualTo(23));
+        Assert.That(d.Minute, Is.EqualTo(59));
+        Assert.That(d.Second, Is.EqualTo(59));
+    }
 }
