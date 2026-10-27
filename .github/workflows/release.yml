@@ -2,8 +2,9 @@ name: Release
 
 # Builds cde, cdewin and cde-tauri from a tag, zips them, and publishes the GitHub Release.
 #
-# The tag is bare (2.1.0, no "v"); the glob requires a digit first, so a tag that merely starts
-# with a letter cannot fire a release. Releases are cut from develop: the tagged commit must be on
+# The tag is bare (2.1.0, no "v"), or a pre-release (2.1.0-beta.1; alpha, beta or rc). A
+# pre-release is published as a GitHub pre-release and is never "latest". The glob requires a digit
+# first, so a tag that merely starts with a letter cannot fire a release. Releases are cut from develop: the tagged commit must be on
 # it. Run Publish Release (release-publish.yml) to tag and release in one go; pushing a tag by hand
 # also works.
 #
@@ -61,17 +62,48 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
+      # Takes the pnpm version from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: src/cde-tauri/package.json
+
+      # Node runs the version rules below as well as the cde-tauri build.
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
+
+      # A stable tag (2.1.0) or a pre-release tag (2.1.0-beta.1); the rules live in the tested
+      # release-version module. A pre-release is published as a GitHub pre-release, from its own
+      # draft, and is never "latest"; a stable release goes through the Release Drafter draft.
       - name: Check tag
+        id: kind
         shell: bash
         run: |
-          if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
-            echo "::error::Tag '$TAG' is not MAJOR.MINOR.PATCH"
-            exit 1
-          fi
+          kind=$(node src/cde-tauri/scripts/release-version.mjs tag-kind --tag "$TAG")
           if ! git merge-base --is-ancestor HEAD origin/develop; then
             echo "::error::Tag $TAG is not on develop. Releases are cut from develop."
             exit 1
           fi
+          if [ "$kind" = prerelease ]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Tag $TAG is a $kind"
+
+      # The notes of a pre-release start at the latest stable tag.
+      - name: Resolve latest stable tag
+        id: stable
+        shell: bash
+        run: |
+          git tag --list > "$RUNNER_TEMP/tags.txt"
+          latest=$(node src/cde-tauri/scripts/release-version.mjs latest-stable --tags-file "$RUNNER_TEMP/tags.txt")
+          echo "tag=$latest" >> "$GITHUB_OUTPUT"
+          echo "Latest stable tag: ${latest:-<none>}"
 
       # Captured before publishing, because once this release is published it becomes "latest" and
       # can no longer serve as the previous tag.
@@ -88,19 +120,6 @@ jobs:
         uses: actions/setup-dotnet@v6
         with:
           dotnet-version: 10.0.x
-
-      # Takes the pnpm version from packageManager in package.json.
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          package_json_file: src/cde-tauri/package.json
-
-      - name: Setup Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 24
-          cache: pnpm
-          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
@@ -147,6 +166,53 @@ jobs:
       - name: Zip and checksum
         run: ./.github/scripts/stage-release.ps1 -Version "$env:TAG" -Phase Zip
 
+      # ---- Pre-release (alpha, beta, rc) ----
+      #
+      # The Release Drafter draft is for the next stable release and is left alone. A draft GitHub
+      # release is created for the tag with the zip and checksum already attached, notes generated
+      # since the latest stable tag, flagged as a pre-release and not "latest"; it is published as
+      # the very last step.
+      - name: Create pre-release draft
+        if: ${{ steps.kind.outputs.prerelease == 'true' }}
+        id: pre
+        shell: bash
+        env:
+          STABLE_TAG: ${{ steps.stable.outputs.tag }}
+        run: |
+          # A draft left by an earlier failed run for this tag is replaced. A published release for
+          # the tag makes `gh release create` fail below, which is right.
+          old=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id")
+          for id in $old; do
+            echo "Deleting leftover draft $id"
+            gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
+          done
+
+          args=(--draft --prerelease --generate-notes --latest=false --title "$TAG")
+          if [ -n "$STABLE_TAG" ]; then args+=(--notes-start-tag "$STABLE_TAG"); fi
+          gh release create "$TAG" "${args[@]}" \
+            "artifacts/release/cde-$TAG-win-x64.zip" \
+            "artifacts/release/cde-$TAG-win-x64.zip.sha256"
+
+          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
+            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id" | head -n1)
+          echo "id=$id" >> "$GITHUB_OUTPUT"
+          echo "Draft pre-release id: $id"
+
+      # Last step: everything is attached, so make the pre-release public. It stays a pre-release
+      # and is not marked "latest".
+      - name: Publish pre-release
+        if: ${{ steps.kind.outputs.prerelease == 'true' }}
+        shell: bash
+        env:
+          RELEASE_ID: ${{ steps.pre.outputs.id }}
+        run: |
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F draft=false -F prerelease=true -f make_latest=false > /dev/null
+          echo "Published pre-release $TAG"
+
+      # ---- Stable release ----
+      #
       # The release stays a draft until the very last step: the notes are brought up to date, the
       # assets are attached, and only then is it published. A failure before that leaves a draft to
       # fix and re-run, never a public release with no zip (which an immutable release would not
@@ -155,6 +221,7 @@ jobs:
       # Brings the rolling draft that Release Drafter has been accumulating from merged PRs up to
       # date for this tag, so any manual edits made to it are kept.
       - name: Update draft release
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
           publish: false
@@ -164,6 +231,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find draft release
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         id: draft
         shell: bash
         run: |
@@ -178,6 +246,7 @@ jobs:
 
       # draft: true keeps the release a draft; the action would otherwise publish it.
       - name: Upload release assets
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ env.TAG }}
@@ -191,6 +260,7 @@ jobs:
       # its "New Contributors" section to the notes. Nice to have: a failure here must not stop the
       # release.
       - name: Append new contributors
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         continue-on-error: true
         shell: bash
         env:
@@ -226,6 +296,7 @@ jobs:
 
       # Last step: everything is attached, so make the release public.
       - name: Publish release
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         shell: bash
         env:
           RELEASE_ID: ${{ steps.draft.outputs.id }}
