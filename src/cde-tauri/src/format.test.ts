@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  catalogName,
   formatDate,
   mb,
   notOlderThanCutoff,
@@ -121,5 +122,24 @@ describe("notOlderThanCutoff", () => {
 describe("toLocalIsoString", () => {
   it("formats local wall-clock time with no offset", () => {
     expect(toLocalIsoString(new Date(2026, 9, 27, 9, 5, 3))).toBe("2026-10-27T09:05:03");
+  });
+});
+
+describe("catalogName", () => {
+  it.each([
+    ["D-Backup2024.cdex", "D-Backup2024"],
+    ["C-V3Win7-C__users.cde", "C-V3Win7-C__users"],
+    ["E:\\catalogs\\D-Photos.cdex", "D-Photos"],
+    ["/home/me/catalogs/UNC-toothless_c__users_.CDEX", "UNC-toothless_c__users_"],
+    ["sub\\nested/name.cdex", "name"],
+    ["no-extension", "no-extension"],
+    ["keep.other.ext", "keep.other.ext"],
+    ["dotted.name.cdex", "dotted.name"],
+  ])("%j -> %j", (fileName, expected) => {
+    expect(catalogName(fileName)).toBe(expected);
+  });
+
+  it("is empty for an empty file name", () => {
+    expect(catalogName("")).toBe("");
   });
 });

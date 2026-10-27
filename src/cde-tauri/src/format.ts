@@ -14,6 +14,15 @@ export function sizeCell(isDirectory: boolean, size: number, isReparsePoint: boo
   return `${toHRString(size)} <Dir${isReparsePoint ? " R" : ""}>`;
 }
 
+/**
+ * A catalog's display name: the base name of its file (`CatalogInfo.actualFileName`, which may be
+ * a bare name or a full path) without a `.cdex` / `.cde` extension.
+ */
+export function catalogName(fileName: string): string {
+  const base = fileName.slice(Math.max(fileName.lastIndexOf("\\"), fileName.lastIndexOf("/")) + 1);
+  return base.replace(/\.cdex?$/i, "");
+}
+
 export function formatDate(iso: string, isModifiedBad: boolean): string {
   if (isModifiedBad) return "<Bad Date>";
   const d = new Date(iso);
