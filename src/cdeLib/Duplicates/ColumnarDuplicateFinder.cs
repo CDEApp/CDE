@@ -67,8 +67,8 @@ public sealed class ColumnarDuplicateFinder
     {
         var f = (Flags)bits[i];
         return (f & Flags.Directory) != Flags.Directory
-               && (f & Flags.HashDone) == Flags.HashDone
-               && (f & Flags.PartialHash) != Flags.PartialHash
+               && f.IsHashUsable()
+               && (f & Flags.PartialHash) == 0
                && size[i] != 0;
     }
 

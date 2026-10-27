@@ -613,6 +613,10 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
+    /// <summary>
+    /// True when the entry has a trustworthy hash. A legacy partial hash (PartialHash without PartialHashV2,
+    /// issue #37) reads as false here. Check this before <see cref="IsPartialHash"/>, which reflects only the raw bit.
+    /// </summary>
     [IgnoreMember]
     public bool IsHashDone
     {
@@ -630,6 +634,10 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
+    /// <summary>
+    /// The raw partial-hash bit. Only meaningful when <see cref="IsHashDone"/> is true; setting it also sets or
+    /// clears PartialHashV2 so new partial hashes are marked as made by the fixed algorithm.
+    /// </summary>
     [IgnoreMember]
     public bool IsPartialHash
     {

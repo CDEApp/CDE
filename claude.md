@@ -123,7 +123,7 @@ Two on-disk catalog formats:
 - **MD5Hash** - File content hashing
 - **MurmurHash3** - Fast non-cryptographic hashing
 - **Partial hashing strategy**: Initially hashes first 64KB, promotes to full hash when duplicates detected
-  - **Breaking change (issue #37)**: before the fix the partial hash covered the wrong block (the second block, or a mix) and read 2x the data. It is now exactly the first N bytes (whole file if shorter), read once, correct under short reads. New partial hashes carry `Flags.PartialHashV2` (bit 7). A partial hash WITHOUT that bit (an old catalog) is treated as "not hashed": `IsHashDone` is false for it, it is never compared or copied on rescan, and the next `cde hash` recomputes it. The `.cdex` version is not bumped and old catalogs stay readable. Full hashes are unchanged.
+  - **Breaking change (issue #37)**: before the fix the partial hash covered the wrong block (the second block, or a mix) and read 2x the data. It is now exactly the first N bytes (whole file if shorter), read once, correct under short reads. New partial hashes carry `Flags.PartialHashV2` (bit 7). A partial hash WITHOUT that bit (an old catalog) is treated as "not hashed": `IsHashDone` is false for it, it is never compared or copied on rescan, and the next `cde hash` recomputes it. The `.cdex` version is not bumped and old catalogs stay readable. Full hashes are unchanged. Downgrade caveat: an older build does not know the bit, so it reads new-style partial hashes as ordinary partials and may compare them with old-algorithm partials (missed duplicates); do not run an older build over catalogs hashed by a newer one, or run `cde hash` again afterwards.
 
 ### Performance Optimizations
 

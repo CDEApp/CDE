@@ -23,7 +23,9 @@ public interface IEntrySource
     long ModifiedTicksOf(int i); // raw stored ticks (for exact tree reconstruction)
     Flags FlagsOf(int i);
     bool IsDirectory(int i);
+    /// <summary>True when a trustworthy hash is present; a legacy (pre-#37) partial hash reads as false.</summary>
     bool IsHashDone(int i);
+    /// <summary>Raw partial bit; only meaningful when <see cref="IsHashDone"/> is true (check that first).</summary>
     bool IsPartialHash(int i);
     bool HasHash { get; }
     Hash16 HashOf(int i);

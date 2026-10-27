@@ -222,4 +222,52 @@ public class PartialHashCompatibilityTests
         }
         finally { Directory.Delete(dir, true); }
     }
+
+    [Test]
+    public void Columnar_hash_reuse_skips_legacy_partial_but_copies_new_partial_and_full()
+    {
+        var modified = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+
+        RootEntry Tree(Func<string, DirEntry> make)
+        {
+            var root = new RootEntry { Path = @"C:	est" };
+            foreach (var n in new[] { "legacy.bin", "newpartial.bin", "full.bin" })
+            {
+                var de = make(n);
+                de.Path = n;
+                de.Size = 100;
+                de.Modified = modified;
+                root.AddChild(de);
+            }
+            root.SetInMemoryFields();
+            return root;
+        }
+
+        var old = Tree(n => n switch
+        {
+            "legacy.bin" => Legacy(n, 1),
+            "newpartial.bin" => NewStyle(n, 2),
+            _ => NewStyle(n, 3, partial: false),
+        });
+
+        var path = Path.Combine(Path.GetTempPath(), $"cdetest-{Guid.NewGuid():N}.cdex");
+        try
+        {
+            ColumnarFormat.Write(EntryStore.Build(old), path);
+            var fresh = Tree(_ => new DirEntry(false));
+            using (var reader = new ColumnarCatalogReader(path))
+                ColumnarHashReuse.CopyHashes(reader, fresh);
+
+            DirEntry Get(string n) => (DirEntry)fresh.Children.First(c => c.Path == n);
+            Assert.That(Get("legacy.bin").IsHashDone, Is.False, "legacy partial must not be reused");
+            var np = Get("newpartial.bin");
+            Assert.That(np.IsHashDone && np.IsPartialHash, Is.True);
+            Assert.That(np.BitFields & EFlags.PartialHashV2, Is.EqualTo(EFlags.PartialHashV2));
+            Assert.That(np.Hash, Is.EqualTo(new Hash16(2UL, 0)));
+            var full = Get("full.bin");
+            Assert.That(full.IsHashDone && !full.IsPartialHash, Is.True);
+            Assert.That(full.Hash, Is.EqualTo(new Hash16(3UL, 0)));
+        }
+        finally { File.Delete(path); }
+    }
 }

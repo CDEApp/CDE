@@ -109,6 +109,24 @@ public class Duplication
 
         _logger.LogDebug("Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
+        // Issue #37: partial hashes from older versions hashed the wrong block and read as "not hashed".
+        var legacyPartials = 0;
+        foreach (var pde in flatList)
+        {
+            if (pde.ChildDE is DirEntry legacy && !legacy.IsDirectory && !legacy.IsHashDone
+                && (legacy.BitFields & (Flags.HashDone | Flags.PartialHash)) == (Flags.HashDone | Flags.PartialHash))
+            {
+                legacyPartials++;
+            }
+        }
+
+        if (legacyPartials > 0)
+        {
+            _logger.LogInfo(
+                "Found {0} partial hashes made by an older version (they hashed the wrong block). They will be recomputed.",
+                legacyPartials);
+        }
+
         // group by volume/network share
         _logger.LogDebug("GroupBy Volume/Share..");
 

@@ -58,4 +58,43 @@ public class PartialHashFirstBlockTests
 
         Assert.That(maxEnd, Is.EqualTo(1024));
     }
+
+    [TestCase(0)]
+    [TestCase(-1)]
+    public void Non_positive_first_pass_size_fails_fast_instead_of_hashing_empty_input(int firstPass)
+    {
+        var helper = new HashHelper(NSubstitute.Substitute.For<cdeLib.Infrastructure.ILogger>());
+
+        Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+            await helper.GetHashResponseFromFile("does-not-matter", firstPass));
+    }
+
+    [Test]
+    [NonParallelizable]
+    public async Task Partial_hash_of_small_files_allocates_little_per_file()
+    {
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "cde-alloc-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(dir);
+        try
+        {
+            const int files = 200;
+            var paths = new string[files];
+            for (var i = 0; i < files; i++)
+            {
+                paths[i] = System.IO.Path.Combine(dir, i + ".bin");
+                await System.IO.File.WriteAllBytesAsync(paths[i], Data(1000 + i));
+            }
+
+            var helper = new HashHelper(NSubstitute.Substitute.For<cdeLib.Infrastructure.ILogger>());
+            foreach (var p in paths) await helper.GetHashResponseFromFile(p, 65536); // warm up pool/JIT
+
+            var before = GC.GetAllocatedBytesForCurrentThread();
+            foreach (var p in paths) await helper.GetHashResponseFromFile(p, 65536);
+            var perFile = (GC.GetAllocatedBytesForCurrentThread() - before) / files;
+
+            TestContext.Out.WriteLine($"partial hash allocation: {perFile} bytes/file");
+            Assert.That(perFile, Is.LessThan(4096)); // was ~460 with the per-file closure; the rest is the async state machine
+        }
+        finally { System.IO.Directory.Delete(dir, true); }
+    }
 }
