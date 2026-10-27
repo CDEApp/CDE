@@ -81,7 +81,7 @@ public class ColourRulesStoreTests
     }
 
     [Test]
-    public void DefaultText_HasSingleActiveFolderRuleAndWarning()
+    public void DefaultText_HasFolderImageArchiveAndTempRulesAndWarning()
     {
         var active = ColourRulesStore.DefaultText
             .Split('\n')
@@ -89,8 +89,28 @@ public class ColourRulesStoreTests
             .Where(l => l.Length > 0 && !l.StartsWith('#'))
             .ToList();
 
-        Assert.That(active, Has.Count.EqualTo(1));
-        Assert.That(active[0], Does.StartWith("[folder]").And.Contain("var(--dir)"));
+        Assert.That(active, Has.Count.EqualTo(4));
+        Assert.That(active[0], Does.StartWith("[folder]").And.Contain("var(--dir)").And.Contain("font-weight:bold"));
+        Assert.That(active[1], Does.StartWith(@"\.(jpg|png|gif)$").And.EndWith("#2a9d8f"));
+        Assert.That(active[2], Does.StartWith(@"\.(zip|").And.Contain("7z").And.EndWith("#e5a34b"));
+        Assert.That(active[3], Does.StartWith(@"^~\$|\.tmp$").And.Contain("font-style: italic"));
+        Assert.That(ColourRulesStore.DefaultText, Does.Contain(@"# \.sys$"), ".sys stays a commented-out example");
         Assert.That(ColourRulesStore.DefaultText, Does.Contain("(a+)+$"));
+    }
+
+    [Test]
+    public void DefaultText_ActivePatternsAreValidRegexes()
+    {
+        // .NET and JavaScript regex syntax agree for these simple patterns; the app compiles them as JS.
+        var patterns = ColourRulesStore.DefaultText
+            .Split('\n')
+            .Select(l => l.Trim())
+            .Where(l => l.Length > 0 && !l.StartsWith('#') && !l.StartsWith("[folder]"))
+            .Select(l => l.Split((char[])null, 2, System.StringSplitOptions.RemoveEmptyEntries)[0]);
+
+        foreach (var p in patterns)
+        {
+            Assert.DoesNotThrow(() => _ = new System.Text.RegularExpressions.Regex(p), p);
+        }
     }
 }
