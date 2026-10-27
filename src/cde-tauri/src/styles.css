@@ -108,9 +108,9 @@ ul.tree { padding-left: 2px; }
 .tree-label { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 /* Fixed, right-aligned size column: every row (any indent depth) ends at the same right edge. */
 .tree-size { flex: 0 0 auto; min-width: 64px; margin-left: 8px; text-align: right; font-variant-numeric: tabular-nums; color: #9a9a9a; }
-/* Catalog name on root rows: sits right, next to the size. Never shrinks, so a narrow pane
-   truncates the path instead. */
-.tree-catalog { flex: 0 0 auto; margin-left: 8px; color: #9a9a9a; }
+/* Catalog name on root rows: sits right, next to the size. Capped at 45% of the row so a long
+   name can't squeeze out the path or push the size off the edge. */
+.tree-catalog { flex: 0 0 auto; max-width: 45%; overflow: hidden; text-overflow: ellipsis; margin-left: 8px; color: #9a9a9a; }
 .tree-row.selected .tree-size, .tree-row.selected .tree-catalog { color: #fff; }
 
 /* fill the pane so right-clicks below the last node still reach the tree */
