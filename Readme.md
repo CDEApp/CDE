@@ -9,28 +9,29 @@
 
 - [Introduction](#introduction)
   - [What is cde](#what-is-cde)
-    - [cde](#cde)
-    - [cdeWin](#cdewin)
-      - [Custom Shell Commands (right-click context menu)](#custom-shell-commands-right-click-context-menu)
-    - [cde-tauri (new, in progress)](#cde-tauri-new-in-progress)
-      - [cde-tauri configuration](#cde-tauri-configuration)
   - [Contact Author](#contact-author)
-- [Details](#details)
-  - [Catalog files ".cde"](#catalog-files-cde)
+- [Applications](#applications)
+  - [cde](#cde)
+  - [cdeWin](#cdewin)
+    - [Custom Shell Commands](#custom-shell-commands)
+  - [cde-tauri](#cde-tauri)
+    - [cde-tauri configuration](#cde-tauri-configuration)
+- [Using cde](#using-cde)
+  - [Catalog files](#catalog-files)
   - [cde Operation](#cde-operation)
+  - [Examples](#examples)
   - [cde scan Path](#cde-scan-path)
   - [cde find String](#cde-find-string)
   - [cde hash](#cde-hash)
   - [cde dupes](#cde-dupes)
   - [cde dump](#cde-dump)
-  - [cde migrate \[Path\]](#cde-migrate-path)
+  - [cde migrate](#cde-migrate)
   - [Parameter Options](#parameter-options)
     - [Date Time Format for parameters](#date-time-format-for-parameters)
     - [Time Format for parameters](#time-format-for-parameters)
     - [Size format for parameters](#size-format-for-parameters)
-- [Extra Details](#extra-details)
-  - [cde.config](#cdeconfig)
-  - [Examples](#examples)
+- [Configuration and Performance](#configuration-and-performance)
+  - [appsettings.json](#appsettingsjson)
   - [Catalog file sizes and memory usage](#catalog-file-sizes-and-memory-usage)
 
 ## Introduction
@@ -49,13 +50,21 @@ It is inspired by old and faithful utility called Cathy I have used in the past 
 >
 > If this is a concern, you can always check the [build pipeline](https://github.com/CDEApp/CDE/actions/workflows/release.yml) to see the source is compiled via CI.
 
-#### cde
+### Contact Author
+
+My name is Robin and you can contact me about cde on the github repository site.
+
+This application will continue to evolve driven by my own and a few friends desires.
+
+## Applications
+
+### cde
 
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
 
-The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation.
+The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation (see [appsettings.json](#appsettingsjson)).
 
-#### cdeWin
+### cdeWin
 
 cdeWin is a Windows Forms application for searching, sorting and browsing of catalogs.
 
@@ -73,7 +82,7 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
 
 The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .NET 10 is available with the behavior of the cdeWinView.cfg file as described just above.
 
-##### Custom Shell Commands (right-click context menu)
+#### Custom Shell Commands
 
 cdeWin lets you add your own commands to the right-click context menu of the search results, directory tree and directory list. Use this to launch a catalogued file or folder in another tool - for example an alternate file manager, an editor, or a hashing utility.
 
@@ -111,7 +120,7 @@ Notes:
 - Each configured command appears as its own item in the context menus.
 - Earlier versions of cdeWin had a single fixed "Explore Alt" command configured under an `ExplorerAlt` section. If that setting is still present and no `CustomCommands` are configured, it is migrated automatically into a single custom command labelled "Explore Alt", so an existing tool is not lost.
 
-#### cde-tauri (new, in progress)
+### cde-tauri
 
 A second desktop frontend built with Tauri (a Rust shell) hosting a React/TypeScript webview. It
 talks to a small localhost API (`cdeApi`, ASP.NET / Kestrel) that it bundles and supervises as a
@@ -125,7 +134,7 @@ only ever sees small pages of results. The `.cde`/`.cdex` formats and the `cde` 
 
 See `src/cde-tauri/README.md` for how to build and run it.
 
-##### cde-tauri configuration
+#### cde-tauri configuration
 
 cde-tauri keeps its settings in the Roaming Application Data folder of the current user (`%APPDATA%`, which is `C:\Users\username\AppData\Roaming` on Windows).
 
@@ -137,22 +146,16 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 | `%APPDATA%\com.cde.tauri\.window-state.json` | Window size and position | the Tauri window-state plugin |
 
 - To reset the view or the colour rules, close the app and delete `ui-state.json` or `colour-rules.txt`.
-- `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands-right-click-context-menu)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
+- `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
 - Catalog files are not kept in the configuration folder. cde-tauri loads the `.cdex` files in its current directory and one level below. When you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe. To use a different catalog folder, start the app from that folder.
 
-### Contact Author
+## Using cde
 
-My name is Robin and you can contact me about cde on the github repository site.
-
-This application will continue to evolve driven by my own and a few friends desires however the rate of change to date has not been very fast.
-
-## Details
-
-### Catalog files ".cde"
+### Catalog files
 
 - cde creates a separate catalog file for each file system it scans.
 
-- each catalog file ends with extension ".cde"
+- each catalog file ends with extension ".cdex". Catalogs made by older versions end with ".cde"; `cde migrate` converts them (see [cde migrate](#cde-migrate)).
 - each catalog file created has a file name derived from the drive letter, volume name and path or unc path to the file system.
   - These canonical names are not enforced, but are used when cde updates hashes on a file system that has an old catalog file available.
   - Renaming files is not a problem if you are not using hashes or don't care about hashes.
@@ -163,13 +166,13 @@ This application will continue to evolve driven by my own and a few friends desi
   cde scan c:\users\
   ```
 
-  Produces a cde file name of `C-V3Win7-C__users.cde` on my machine.
+  Produces a cde file name of `C-V3Win7-C__users.cdex` on my machine.
 
   ```batch
   cde scan \\unc\toothless\c$\users
   ```
 
-  Produces a cde file name of `UNC-toothless_c__users_.cde` on my home network.
+  Produces a cde file name of `UNC-toothless_c__users_.cdex` on my home network.
 
 - All catalog files in the current directory, or one directory below current directory will be loaded by cde or cdeWin when they are started.
 
@@ -202,6 +205,20 @@ Invalid:
 cde path -find afilename
 ```
 
+### Examples
+
+To create a cde catalog for C:\ drive.
+
+```batch
+cde scan C:\
+```
+
+To find files containing word "system.dll" in catalogs in current directory.
+
+```batch
+cde find system.dll
+```
+
 ### cde scan Path
 
 #### Valid Options for this mode
@@ -219,7 +236,7 @@ This is the mode of operation that creates and updates catalog files.
 
 When it creates new catalog files it will detect an old catalog file for the given scan target and copy any Hash values from the old file to the new file for matching file paths, file dates and sizes.
 
-Only Last Modified Time of file system entries is captured into .cde files.
+Only Last Modified Time of file system entries is captured into catalog files.
 
 By default cde records directory junctions and symbolic links (reparse points) in the catalog but does **not** descend into them, which avoids scan cycles (for example a junction pointing back at an ancestor directory) and duplicated content. Pass `--follow-junctions` to descend into them.
 
@@ -297,7 +314,7 @@ Consider using -minHourAge to limit Hash and Dupes work if your are cleanign up 
 
 Output the full tree of file entries in the catologs in text format.
 
-### cde migrate \[Path\]
+### cde migrate
 
 #### Valid Options for this mode
 
@@ -388,37 +405,23 @@ The following suffixes case independent on size fields modify there value.
 
 Suffixes must follow number with no spaces.
 
-## Extra Details
+## Configuration and Performance
 
-### cde.config
+### appsettings.json
 
-There are 3 values that can be modified to change cde behaviour.
+cde reads its settings from the `appsettings.json` file in the same folder as `cde.exe`. There are 3 values that can be modified to change cde behaviour.
 
-- `ProgressUpdateInterval` which defaults to 5000.
+- `AppConfig.Display.ProgressUpdateInterval` which defaults to 5000.
 
-  - the number of file entries scanned before a "." it output to console as a progress indicator.
+  - the number of file entries scanned between progress updates.
 
-- `Hash.FirstPassSizeInBytes` which defaults to 655356 bytes.
+- `AppConfig.Hashing.FirstPassSizeInBytes` which defaults to 65536 bytes.
 
-  - If you change cde.config after creating catalog files that contain collected hashes you need to recreate those hash files by deleting the catalog files, recreating with scan them and then hashing them again.
+  - If you change this value after creating catalog files that contain collected hashes you need to recreate those hash files by deleting the catalog files, recreating with scan them and then hashing them again.
 
-- `Hash.DegreesOfParallelism` which defaults to 2.
+- `AppConfig.Hashing.DegreesOfParallelism` which defaults to 2.
   - hashing will automatically try to do hashing on different file systems in parallel.
   - This setting defines how many concurrent processes will be hashing files on one file system.
-
-### Examples
-
-To create a cde catalog for C:\ drive.
-
-```batch
-cde scan C:\
-```
-
-To find files containing word "system.dll" in catalogs in current directory.
-
-```batch
-cde find system.dll
-```
 
 ### Catalog file sizes and memory usage
 
