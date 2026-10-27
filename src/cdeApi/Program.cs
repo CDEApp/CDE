@@ -124,33 +124,8 @@ app.MapGet("/catalogs", (ICatalogSession session) =>
     });
 });
 
-// hasChildren=false skips the per-folder has-sub-folder walk (a flat listing never shows expanders).
-app.MapGet("/entries/{ref}/children", (string @ref, bool? foldersOnly, int? skip, int? take,
-    string sort, bool? hasChildren, ICatalogSession session) =>
-{
-    if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
-    var nodes = session.GetChildren(entryRef, foldersOnly ?? false, skip ?? 0, take ?? int.MaxValue,
-        hasChildren ?? true);
-    return Results.Json(DirectoryNodeSort.Apply(nodes, sort));
-});
-
-app.MapGet("/entries/{ref}/path", (string @ref, ICatalogSession session) =>
-{
-    if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
-    return Results.Json(session.GetPath(entryRef));
-});
-
-// GET /entries/{ref}/treemap?depth=3&minFraction=0.0001 — depth-limited flat treemap rows.
-app.MapGet("/entries/{ref}/treemap", (string @ref, int? depth, double? minFraction,
-    ICatalogSession session, ITreemapService treemap) =>
-{
-    if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
-    if (entryRef.CatalogId < 0 || entryRef.CatalogId >= session.CatalogCount) return Results.NotFound("no such entry");
-    int entryCount;
-    using (var lease = session.AcquireRead(entryRef.CatalogId)) entryCount = lease.Source.Count;
-    if (entryRef.EntryIndex >= entryCount) return Results.NotFound("no such entry");
-    return Results.Json(treemap.Build(entryRef, depth ?? 3, minFraction ?? 0));
-});
+// /entries/{ref}/children | path | treemap
+app.MapEntryEndpoints();
 
 // POST /shell — entry-ref guarded (D11): resolve the path from the session, re-check existence,
 // then invoke the shell action in this (sidecar) process. Never accepts a client-supplied path.
