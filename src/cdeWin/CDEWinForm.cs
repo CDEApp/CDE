@@ -714,11 +714,13 @@ public partial class CDEWinForm : Form, ICDEWinForm
         LoggingBootstrap.LogSink.Attach(() =>
         {
             // Called from any logging thread: never block, never touch the control directly.
+            // Returning false (no drain scheduled) lets the sink signal again on the next event.
             try
             {
                 if (!IsDisposed && IsHandleCreated)
                 {
                     BeginInvoke(new Action(DrainLogToTextBox));
+                    return true;
                 }
             }
             catch (ObjectDisposedException)
@@ -727,6 +729,8 @@ public partial class CDEWinForm : Form, ICDEWinForm
             catch (InvalidOperationException)
             {
             }
+
+            return false;
         });
         FormClosed += (_, _) => LoggingBootstrap.LogSink.Detach();
     }
@@ -745,11 +749,16 @@ public partial class CDEWinForm : Form, ICDEWinForm
         }
 
         tbLog.AppendText(string.Join(Environment.NewLine, lines) + Environment.NewLine);
-        if (tbLog.Lines.Length > MaxLogTextLines + 1)
+
+        // Trim with native line indexes rather than tbLog.Lines, which copies every line on each
+        // drain. Allow 10% slack so trimming happens in occasional chunks, not on every drain.
+        var lineCount = tbLog.GetLineFromCharIndex(tbLog.TextLength) + 1;
+        if (lineCount > MaxLogTextLines + MaxLogTextLines / 10)
         {
-            var keep = tbLog.Lines[^(MaxLogTextLines + 1)..];
-            tbLog.Text = string.Join(Environment.NewLine, keep);
-            tbLog.SelectionStart = tbLog.TextLength;
+            var cut = tbLog.GetFirstCharIndexFromLine(lineCount - MaxLogTextLines);
+            tbLog.Select(0, cut);
+            tbLog.SelectedText = string.Empty;
+            tbLog.Select(tbLog.TextLength, 0);
             tbLog.ScrollToCaret();
         }
     }

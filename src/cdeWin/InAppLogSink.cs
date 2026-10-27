@@ -9,7 +9,8 @@ namespace cdeWin;
 /// <summary>
 /// Serilog sink feeding the in-app Log tab. WinForms free: buffers formatted lines (capped to the
 /// newest <c>maxLines</c>) until a subscriber drains them. Emit never blocks on the UI; it only
-/// takes a short lock, and signals the subscriber at most once per drain.
+/// takes a short lock, and signals the subscriber at most once per drain. The subscriber returns
+/// whether it scheduled a drain; if it did not (or threw), the next event signals it again.
 /// </summary>
 public sealed class InAppLogSink : ILogEventSink
 {
@@ -18,7 +19,7 @@ public sealed class InAppLogSink : ILogEventSink
     private readonly object _lock = new();
     private readonly int _maxLines;
     private readonly Queue<string> _pending = new();
-    private Action _onLinesAvailable;
+    private Func<bool> _onLinesAvailable;
     private bool _notified;
 
     public InAppLogSink(int maxLines = DefaultMaxLines)
@@ -36,7 +37,7 @@ public sealed class InAppLogSink : ILogEventSink
     public void Emit(LogEvent logEvent)
     {
         var line = Format(logEvent);
-        Action notify = null;
+        Func<bool> notify = null;
         lock (_lock)
         {
             _pending.Enqueue(line);
@@ -52,19 +53,17 @@ public sealed class InAppLogSink : ILogEventSink
             }
         }
 
-        // Invoked outside the lock; subscriber must be quick and non-blocking (e.g. BeginInvoke).
-        try
+        if (notify != null)
         {
-            notify?.Invoke();
-        }
-        catch
-        {
-            // Logging must never throw into the caller.
+            Notify(notify);
         }
     }
 
-    /// <summary>Subscribe; if lines were buffered before attach, the callback fires immediately.</summary>
-    public void Attach(Action onLinesAvailable)
+    /// <summary>
+    /// Subscribe; if lines were buffered before attach, the callback fires immediately. The callback
+    /// returns true if it scheduled a <see cref="Drain"/>.
+    /// </summary>
+    public void Attach(Func<bool> onLinesAvailable)
     {
         ArgumentNullException.ThrowIfNull(onLinesAvailable);
         bool notifyNow;
@@ -77,7 +76,31 @@ public sealed class InAppLogSink : ILogEventSink
 
         if (notifyNow)
         {
-            onLinesAvailable();
+            Notify(onLinesAvailable);
+        }
+    }
+
+    // Invoked outside the lock; subscriber must be quick and non-blocking (e.g. BeginInvoke).
+    private void Notify(Func<bool> notify)
+    {
+        bool scheduled;
+        try
+        {
+            scheduled = notify();
+        }
+        catch
+        {
+            // Logging must never throw into the caller.
+            scheduled = false;
+        }
+
+        if (!scheduled)
+        {
+            // No drain is coming, so re-arm; otherwise the flag stays set and the tab stops updating.
+            lock (_lock)
+            {
+                _notified = false;
+            }
         }
     }
 

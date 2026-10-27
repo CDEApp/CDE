@@ -27,7 +27,7 @@ public class InAppLogSinkTests
         log.Information("Loaded {Count} items", 3);
 
         var notified = 0;
-        sink.Attach(() => notified++);
+        sink.Attach(() => { notified++; return true; });
 
         Assert.That(notified, Is.EqualTo(1));
         var lines = sink.Drain();
@@ -41,7 +41,7 @@ public class InAppLogSinkTests
     {
         var (sink, _) = Create();
         var notified = 0;
-        sink.Attach(() => notified++);
+        sink.Attach(() => { notified++; return true; });
         Assert.That(notified, Is.EqualTo(0));
     }
 
@@ -50,7 +50,7 @@ public class InAppLogSinkTests
     {
         var (sink, log) = Create();
         var notified = 0;
-        sink.Attach(() => notified++);
+        sink.Attach(() => { notified++; return true; });
 
         log.Information("one");
         log.Information("two");
@@ -61,6 +61,34 @@ public class InAppLogSinkTests
 
         log.Information("three");
         Assert.That(notified, Is.EqualTo(2));
+    }
+
+    [Test]
+    public void SubscriberThatDoesNotScheduleDrain_IsNotifiedAgainOnNextEvent()
+    {
+        var (sink, log) = Create();
+        var notified = 0;
+        sink.Attach(() => { notified++; return false; });
+
+        log.Information("one");
+        log.Information("two");
+
+        Assert.That(notified, Is.EqualTo(2));
+        Assert.That(sink.Drain(), Has.Length.EqualTo(2));
+    }
+
+    [Test]
+    public void SubscriberThatThrows_DoesNotThrowIntoLogger_AndIsNotifiedAgain()
+    {
+        var (sink, log) = Create();
+        log.Information("before attach");
+        var notified = 0;
+
+        Assert.DoesNotThrow(() => sink.Attach(() => { notified++; throw new InvalidOperationException(); }));
+        log.Information("after attach");
+
+        Assert.That(notified, Is.EqualTo(2));
+        Assert.That(sink.Drain(), Has.Length.EqualTo(2));
     }
 
     [Test]
@@ -108,7 +136,7 @@ public class InAppLogSinkTests
     {
         var (sink, log) = Create();
         var notified = 0;
-        sink.Attach(() => notified++);
+        sink.Attach(() => { notified++; return true; });
         sink.Detach();
         log.Information("x");
         Assert.That(notified, Is.EqualTo(0));
@@ -120,7 +148,7 @@ public class InAppLogSinkTests
     {
         var (sink, log) = Create(maxLines: 500);
         var notifications = 0;
-        sink.Attach(() => Interlocked.Increment(ref notifications));
+        sink.Attach(() => { Interlocked.Increment(ref notifications); return true; });
 
         var drained = new List<string>();
         var done = false;
