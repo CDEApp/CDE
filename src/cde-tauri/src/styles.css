@@ -191,7 +191,6 @@ tbody tr:hover { background: var(--row-hover); }
 /* directory listing: path bar over a virtualized Name / Size / Modified list */
 .dirlist { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .dirlist > .vlist { flex: 1; height: auto; }
-.vlist.dir-cols { --cols: minmax(200px, 1fr) 100px 160px; }
 .vlist-header {
   display: grid; grid-template-columns: var(--cols);
   position: sticky; top: 0; z-index: 1;

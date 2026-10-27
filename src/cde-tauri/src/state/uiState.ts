@@ -15,6 +15,8 @@ export interface UiState {
   filtersExpanded?: boolean;
   /** Search-results column ids in display order. */
   searchResultColumnOrder?: string[];
+  /** Directory-listing column widths in px, keyed by column id; absent = default. */
+  directoryColumnWidths?: Record<string, number>;
   /** TreeMap levels shown below the mapped folder (1–5). */
   treemapDepth?: number;
   [key: string]: unknown;

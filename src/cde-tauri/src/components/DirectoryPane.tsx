@@ -2,6 +2,7 @@ import { memo } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef } from "../api/types";
 import type { StyleResolver } from "../colourRules";
+import type { ColumnWidths } from "../columnWidths";
 import type { DirectorySort, SortColumn } from "../directorySort";
 import { CatalogTree, type TreeRoot } from "./CatalogTree";
 import { DirectoryList } from "./DirectoryList";
@@ -17,6 +18,8 @@ interface Props {
   dirPath: string;
   dirNodes: DirectoryNode[];
   sort: DirectorySort;
+  columnWidths?: unknown;
+  onColumnWidthsChange: (widths: ColumnWidths) => void;
   initialLeftWidth: number;
   resolveTreeStyle: StyleResolver;
   resolveStyle: StyleResolver;
@@ -59,6 +62,8 @@ export const DirectoryPane = memo(function DirectoryPane(p: Props) {
           nodes={p.dirNodes}
           sort={p.sort}
           onSort={p.onSort}
+          columnWidths={p.columnWidths}
+          onColumnWidthsChange={p.onColumnWidthsChange}
           resolveStyle={p.resolveStyle}
           onActivate={p.onActivate}
           onContextMenu={p.onListContextMenu}

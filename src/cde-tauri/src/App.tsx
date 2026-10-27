@@ -57,6 +57,7 @@ import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
+import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
 import { createRequestGuard } from "./requestGuard";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
@@ -258,6 +259,10 @@ export default function App() {
       console.error("colour rules reload failed", e);
     }
     setView("colours");
+  }, []);
+
+  const onDirColumnWidthsChange = useCallback((directoryColumnWidths: ColumnWidths) => {
+    uiRef.current?.update({ directoryColumnWidths });
   }, []);
 
   const onTreePaneResize = useCallback((width: number) => {
@@ -835,6 +840,8 @@ export default function App() {
             dirPath={dirPath}
             dirNodes={dirNodes}
             sort={dirSort}
+            columnWidths={uiRef.current?.get().directoryColumnWidths}
+            onColumnWidthsChange={onDirColumnWidthsChange}
             initialLeftWidth={treePaneWidth}
             resolveTreeStyle={resolveTreeStyle}
             resolveStyle={resolveStyle}
