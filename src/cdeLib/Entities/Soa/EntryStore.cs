@@ -99,7 +99,7 @@ public sealed class EntryStore : IEntrySource
         => EntryStoreSearch.Find(this, options, onMatch, isCancelled, onScan);
 
     public bool IsDirectory(int i) => (Flags(i) & Entities.Flags.Directory) == Entities.Flags.Directory;
-    public bool IsHashDone(int i) => (Flags(i) & Entities.Flags.HashDone) == Entities.Flags.HashDone;
+    public bool IsHashDone(int i) => Flags(i).IsHashUsable();
     public bool IsPartialHash(int i) => (Flags(i) & Entities.Flags.PartialHash) == Entities.Flags.PartialHash;
     public DateTime Modified(int i) => DateTime.FromBinary(ModifiedTicks[i]);
 

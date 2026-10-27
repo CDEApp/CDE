@@ -10,8 +10,9 @@ using ILogger = cdeLib.Infrastructure.ILogger;
 namespace cdeLibTest.Hashing;
 
 /// <summary>
-/// Issue #36: per-file hashing must not change any hash value. The legacy implementation
-/// (including the partial-hash "second block" quirk tracked by #37) is the oracle.
+/// Issue #36: full hashes must not change; the legacy implementation is the oracle.
+/// Issue #37: partial hashes are now exactly the first N bytes (the legacy "second block" quirk is gone),
+/// so the partial tests assert against the first-N-bytes hash instead of the legacy oracle.
 /// </summary>
 [NonParallelizable]
 public class HashHelperTests
@@ -19,11 +20,11 @@ public class HashHelperTests
     // Small first-pass size so multi-block files stay tiny; 65536 is the production default.
     [TestCase(1024)]
     [TestCase(65536)]
-    public async Task Partial_hash_matches_legacy_for_all_size_classes(int firstPass)
+    public async Task Partial_hash_is_hash_of_exactly_first_N_bytes_for_all_size_classes(int firstPass)
     {
         foreach (var size in SizeClasses(firstPass))
         {
-            await AssertSameAsLegacy(size, firstPass);
+            await AssertPartialIsFirstNBytes(size, firstPass);
         }
     }
 
@@ -69,6 +70,31 @@ public class HashHelperTests
     [
         0, 1, n - 1, n, n + 1, n + n / 2, 2 * n - 1, 2 * n, 2 * n + 1, 3 * n, 3 * n + 5
     ];
+
+    private static async Task AssertPartialIsFirstNBytes(int size, int n)
+    {
+        var path = Path.Combine(Path.GetTempPath(), "cde-hashhelper-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var data = new byte[size];
+            new Random(size).NextBytes(data);
+            await File.WriteAllBytesAsync(path, data);
+
+            var hashed = Math.Min(size, n);
+            var expected = (ulong)MurmurHash.Net.MurmurHash3.Hash32(data.AsSpan(0, hashed), 123456U);
+            var actual = await new HashHelper(Substitute.For<ILogger>()).GetHashResponseFromFile(path, n);
+
+            var label = $"size {size}, first pass {n}";
+            Assert.That(actual.IsSuccess, Is.True, label);
+            Assert.That(actual.Hash, Is.EqualTo(expected), label);
+            Assert.That(actual.IsPartialHash, Is.EqualTo(size > n), label);
+            Assert.That(actual.BytesHashed, Is.EqualTo(hashed), label); // N bytes read, not 2N
+        }
+        finally
+        {
+            File.Delete(path);
+        }
+    }
 
     private static async Task AssertSameAsLegacy(int size, int? bytesToHash)
     {

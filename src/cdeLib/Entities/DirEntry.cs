@@ -138,7 +138,7 @@ public sealed class DirEntry : ICommonEntry
     [IgnoreMember]
     public bool IsHashDone
     {
-        get => (BitFields & Flags.HashDone) == Flags.HashDone;
+        get => BitFields.IsHashUsable();
         set
         {
             if (value)
@@ -160,11 +160,11 @@ public sealed class DirEntry : ICommonEntry
         {
             if (value)
             {
-                BitFields |= Flags.PartialHash;
+                BitFields |= Flags.PartialHash | Flags.PartialHashV2;
             }
             else
             {
-                BitFields &= ~Flags.PartialHash;
+                BitFields &= ~(Flags.PartialHash | Flags.PartialHashV2);
             }
         }
     }

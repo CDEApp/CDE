@@ -592,7 +592,7 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public bool IsHashDone
     {
-        get => (BitFields & Flags.HashDone) == Flags.HashDone;
+        get => BitFields.IsHashUsable();
         set
         {
             if (value)
@@ -614,11 +614,11 @@ public sealed class RootEntry : object, ICommonEntry
         {
             if (value)
             {
-                BitFields |= Flags.PartialHash;
+                BitFields |= Flags.PartialHash | Flags.PartialHashV2;
             }
             else
             {
-                BitFields &= ~Flags.PartialHash;
+                BitFields &= ~(Flags.PartialHash | Flags.PartialHashV2);
             }
         }
     }

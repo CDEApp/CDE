@@ -113,7 +113,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     public DateTime ModifiedOf(int i) => DateTime.FromBinary(ModifiedTicks[i]);
     public long ModifiedTicksOf(int i) => ModifiedTicks[i];
     public Flags FlagsOf(int i) => Flags(i);
-    public bool IsHashDone(int i) => (Flags(i) & Entities.Flags.HashDone) == Entities.Flags.HashDone;
+    public bool IsHashDone(int i) => Flags(i).IsHashUsable();
     public bool IsPartialHash(int i) => (Flags(i) & Entities.Flags.PartialHash) == Entities.Flags.PartialHash;
     public bool HasHash => HasHashes;
     public Hash16 HashOf(int i) =>

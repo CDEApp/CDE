@@ -39,22 +39,13 @@ public class HashHelper
             var rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
             try
             {
-                long position = 0;
-                var bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
-                position += bytesRead;
+                // Partial hash is exactly the first N bytes (or the whole file when shorter), read once.
+                // Issue #37: the old loop re-read the next block over the first one.
+                var totalBytesRead = await FillBufferAsync(
+                    (memory, offset) => RandomAccess.ReadAsync(handle, memory, offset),
+                    rentedBuffer.AsMemory(0, bufferSize));
 
-                // Known quirk (issue #37): for files longer than the buffer this reads a second block over
-                // the first, so the partial hash covers the second block. Preserved so hashes do not change.
-                var totalBytesRead = (long)bytesRead;
-                while (bytesRead > 0 && totalBytesRead <= bytesToHash)
-                {
-                    bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
-                    position += bytesRead;
-                    totalBytesRead += bytesRead;
-                }
-
-                var actualBytesToHash = (int)Math.Min(totalBytesRead, bufferSize);
-                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, actualBytesToHash));
+                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, totalBytesRead));
                 return new HashResponse(true, partialHash, fileLength > bytesToHash, totalBytesRead);
             }
             finally
@@ -72,6 +63,28 @@ public class HashHelper
             _logger.LogException(ex, "Hash");
             return HashResponse.Failed;
         }
+    }
+
+    /// <summary>
+    /// Fill <paramref name="buffer"/> from the start of the file, looping over short reads until the buffer is
+    /// full or end of file. Returns the number of bytes placed in the buffer.
+    /// </summary>
+    /// <param name="read">Positional read: (destination, fileOffset) returning bytes read, 0 at end of file.</param>
+    public static async ValueTask<int> FillBufferAsync(Func<Memory<byte>, long, ValueTask<int>> read, Memory<byte> buffer)
+    {
+        var filled = 0;
+        while (filled < buffer.Length)
+        {
+            var n = await read(buffer.Slice(filled), filled);
+            if (n <= 0)
+            {
+                break;
+            }
+
+            filled += n;
+        }
+
+        return filled;
     }
 
     private async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)
