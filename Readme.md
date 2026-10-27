@@ -5,6 +5,34 @@
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=CDEApp_CDE&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=CDEApp_CDE)
 [![codecov](https://codecov.io/gh/CDEApp/CDE/graph/badge.svg)](https://codecov.io/gh/CDEApp/CDE)
 
+## Contents
+
+- [Introduction](#introduction)
+  - [What is cde](#what-is-cde)
+    - [cde](#cde)
+    - [cdeWin](#cdewin)
+      - [Custom Shell Commands (right-click context menu)](#custom-shell-commands-right-click-context-menu)
+    - [cde-tauri (new, in progress)](#cde-tauri-new-in-progress)
+      - [cde-tauri configuration](#cde-tauri-configuration)
+  - [Contact Author](#contact-author)
+- [Details](#details)
+  - [Catalog files ".cde"](#catalog-files-cde)
+  - [cde Operation](#cde-operation)
+  - [cde scan Path](#cde-scan-path)
+  - [cde find String](#cde-find-string)
+  - [cde hash](#cde-hash)
+  - [cde dupes](#cde-dupes)
+  - [cde dump](#cde-dump)
+  - [cde migrate \[Path\]](#cde-migrate-path)
+  - [Parameter Options](#parameter-options)
+    - [Date Time Format for parameters](#date-time-format-for-parameters)
+    - [Time Format for parameters](#time-format-for-parameters)
+    - [Size format for parameters](#size-format-for-parameters)
+- [Extra Details](#extra-details)
+  - [cde.config](#cdeconfig)
+  - [Examples](#examples)
+  - [Catalog file sizes and memory usage](#catalog-file-sizes-and-memory-usage)
+
 ## Introduction
 
 ### What is cde
