@@ -9,8 +9,12 @@ import type { CSSProperties } from "react";
  * `-webkit-background-clip` are accepted, plus `-webkit-text-fill-color` (the robust transparent
  * fill on WebKit webviews). Example:
  *   \.mp4$  background: linear-gradient(90deg, #3b82f6, #a855f7); background-clip: text; -webkit-background-clip: text; color: transparent
- * These background properties are applied to the Name label only (see `splitRowAndNameStyle`), so
- * the gradient is clipped to the name text, not stretched across the Size/Modified cells.
+ * Gradient text needs `background-clip: text` (and the `-webkit-` form) plus a transparent text
+ * colour (`color: transparent` or `-webkit-text-fill-color: transparent`). The order of the
+ * declarations does not matter: the parser emits `background` first, as the shorthand would reset
+ * the clip otherwise. With a clip present, the background properties and `color` are applied to the
+ * Name label only (see `splitRowAndNameStyle`), so the gradient is clipped to the name text, not
+ * stretched across the Size/Modified cells.
  */
 
 export interface ColourRule {
@@ -98,18 +102,27 @@ export function parseStyle(text: string): { style: CSSProperties; problems: stri
     delete style.backgroundColor;
     problems.push("background and background-color both set; background-color ignored");
   }
+  // `background` resets background-clip, and React assigns keys in object order, so put the
+  // shorthand first: the user's longhands then survive whatever order they were written in.
+  if (style.background !== undefined) {
+    const { background, ...rest } = style;
+    return { style: { background, ...rest } as CSSProperties, problems };
+  }
   return { style: style as CSSProperties, problems };
 }
 
-/** Properties that apply to the Name label only (gradient text clips to the name, not the row). */
-const NAME_ONLY_KEYS = new Set<string>(["background", "backgroundClip", "WebkitBackgroundClip", "WebkitTextFillColor"]);
+/** A rule with any of these is gradient text; it (and its colour) goes to the Name label only. */
+const CLIP_KEYS = ["backgroundClip", "WebkitBackgroundClip", "WebkitTextFillColor"] as const;
+const NAME_ONLY_KEYS = new Set<string>(["background", "backgroundClip", "WebkitBackgroundClip", "WebkitTextFillColor", "color"]);
 
 const splitCache = new WeakMap<object, { row: CSSProperties | undefined; name: CSSProperties | undefined }>();
 
 /**
- * Splits a rule style into what goes on the row/cell and what goes on the Name label. Background
- * properties and text fill go to the name; `color: transparent` follows them (otherwise the
- * Size/Modified cells would vanish). `background-color` and everything else stay on the row.
+ * Splits a rule style into what goes on the row/cell and what goes on the Name label. If the rule
+ * has any of `background-clip`, `-webkit-background-clip` or `-webkit-text-fill-color` (gradient
+ * text), those plus `background` and `color` go to the name, whatever the colour value (so
+ * `Transparent`, `rgba(0,0,0,0)`, `#0000` cannot blank the Size/Modified cells). Otherwise the
+ * whole style stays on the row. `background-color` and everything else always stay on the row.
  * Results are cached per style object (rule styles are stable), so rows don't allocate.
  */
 export function splitRowAndNameStyle(style: CSSProperties | undefined): {
@@ -121,8 +134,9 @@ export function splitRowAndNameStyle(style: CSSProperties | undefined): {
   if (cached) return cached;
   const row: Record<string, unknown> = {};
   const name: Record<string, unknown> = {};
+  const gradientText = CLIP_KEYS.some((k) => (style as Record<string, unknown>)[k] !== undefined);
   for (const [k, v] of Object.entries(style)) {
-    if (NAME_ONLY_KEYS.has(k) || (k === "color" && v === "transparent")) name[k] = v;
+    if (gradientText && NAME_ONLY_KEYS.has(k)) name[k] = v;
     else row[k] = v;
   }
   const result = {

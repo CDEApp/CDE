@@ -17,6 +17,7 @@ import { SearchResultRow } from "../api/types";
 import { moveColumn, normalizeColumnOrder } from "../columnOrder";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
+import { StyledName } from "./StyledName";
 import { VirtualList } from "./VirtualList";
 
 interface Props {
@@ -251,7 +252,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
           >
             {order.map((id) => (
               <div key={id} className={CELLS[id].className}>
-                {id === "name" && nameStyle ? <span className="name-text" style={nameStyle}>{r.name}</span> : CELLS[id].render(r)}
+                <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
               </div>
             ))}
           </div>

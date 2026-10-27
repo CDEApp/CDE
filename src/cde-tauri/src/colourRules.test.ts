@@ -248,14 +248,13 @@ describe("background / gradient text (#105)", () => {
 });
 
 describe("splitRowAndNameStyle", () => {
-  it("sends background-related properties to the name, the rest to the row", () => {
+  it("sends clip, text fill and the colour to the name; the rest stays on the row", () => {
     const { row, name } = splitRowAndNameStyle({
       background: "linear-gradient(red, blue)",
       backgroundClip: "text",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
       fontWeight: "bold",
-      backgroundColor: "red",
       color: "green",
     });
     expect(name).toEqual({
@@ -263,18 +262,43 @@ describe("splitRowAndNameStyle", () => {
       backgroundClip: "text",
       WebkitBackgroundClip: "text",
       WebkitTextFillColor: "transparent",
+      color: "green",
     });
-    expect(row).toEqual({ fontWeight: "bold", backgroundColor: "red", color: "green" });
+    expect(row).toEqual({ fontWeight: "bold" });
   });
 
-  it("moves color: transparent to the name so other cells stay visible", () => {
-    const { row, name } = splitRowAndNameStyle({ background: "red", color: "transparent", opacity: 0.5 });
-    expect(name).toEqual({ background: "red", color: "transparent" });
-    expect(row).toEqual({ opacity: 0.5 });
+  it.each(["transparent", "Transparent", "rgba(0,0,0,0)", "#0000", "#00000000"])(
+    "moves color %s to the name so other cells stay visible",
+    (color) => {
+      const { row, name } = splitRowAndNameStyle({ background: "red", backgroundClip: "text", color, opacity: 0.5 });
+      expect(name).toEqual({ background: "red", backgroundClip: "text", color });
+      expect(row).toEqual({ opacity: 0.5 });
+    },
+  );
+
+  it("a text-fill-only rule moves its colour too", () => {
+    const { row, name } = splitRowAndNameStyle({ WebkitTextFillColor: "transparent", color: "#0000" });
+    expect(name).toEqual({ WebkitTextFillColor: "transparent", color: "#0000" });
+    expect(row).toBeUndefined();
   });
 
-  it("handles undefined and plain styles", () => {
+  it("without a clip or text fill, background and colour stay on the row", () => {
+    const { row, name } = splitRowAndNameStyle({ background: "red", color: "green" });
+    expect(name).toBeUndefined();
+    expect(row).toEqual({ background: "red", color: "green" });
+  });
+
+  it("handles undefined", () => {
     expect(splitRowAndNameStyle(undefined)).toEqual({ row: undefined, name: undefined });
-    expect(splitRowAndNameStyle({ color: "red" })).toEqual({ row: { color: "red" }, name: undefined });
+  });
+});
+
+describe("background shorthand order (#105)", () => {
+  it("emits background before its longhands whatever order the user wrote", () => {
+    const r = parseStyle(
+      "background-clip: text; -webkit-background-clip: text; color: transparent; background: linear-gradient(red, blue)",
+    );
+    expect(r.problems).toEqual([]);
+    expect(Object.keys(r.style)).toEqual(["background", "backgroundClip", "WebkitBackgroundClip", "color"]);
   });
 });

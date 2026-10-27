@@ -4,6 +4,7 @@ import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
 import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
+import { StyledName } from "./StyledName";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
 export type { TreeRoot };
@@ -253,7 +254,7 @@ export function CatalogTree({
               </span>
               <NodeIcon kind={row.isRoot ? "drive" : row.expanded && row.hasChildren ? "folder-open" : "folder"} />
               <span className="tree-label" title={row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath}>
-                {nameStyle ? <span className="name-text" style={nameStyle}>{row.label}</span> : row.label}
+                <StyledName nameStyle={nameStyle}>{row.label}</StyledName>
               </span>
               {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
               {row.catalogName && <span className="tree-catalog" title={row.catalogName}>[{row.catalogName}]</span>}
