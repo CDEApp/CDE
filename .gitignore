@@ -74,3 +74,6 @@ src/.vs/config/applicationhost.config
 
 # BenchmarkDotNet writes results here when running cdeBenchmarks
 **/BenchmarkDotNet.Artifacts/
+
+# Fallout build temp/log output
+/.fallout/temp/

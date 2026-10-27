@@ -18,8 +18,4 @@
     <ProjectReference Include="..\cdeLib\cdeLib.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="MinVer" Version="8.0.0" />
-  </ItemGroup>
-
 </Project>

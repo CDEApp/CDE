@@ -181,6 +181,7 @@ Entry (base class)
   - `build/Build.cs` - Build definition (uses `Fallout.Common`)
   - `.fallout/` - Fallout config, parameters, and temp/log output
   - Command: `build.cmd publish` - Creates artifacts in `./artifacts`
+  - Releases: tag-driven GitHub Actions pipeline that zips `cde`, `cdewin` and `cde-tauri`; see `docs/release.md`
 
 ### Key Command Handlers
 
