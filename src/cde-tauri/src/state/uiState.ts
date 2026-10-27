@@ -9,6 +9,8 @@ export interface UiState {
   limitResultCount?: number;
   lastView?: string;
   catalogDir?: string;
+  /** Catalog folders where "Not now" was chosen for migrating legacy catalogs: the dialog no longer opens by itself. */
+  legacyMigrateDismissed?: string[];
   /** The last root folder picked for File > New Catalog… (the picker starts there). */
   lastNewCatalogRoot?: string;
   treePaneWidth?: number;

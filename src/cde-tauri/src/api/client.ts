@@ -17,6 +17,9 @@ import {
   CreatePreflightResult,
   CreateProgress,
   CreateResult,
+  MigrateErrorBody,
+  MigrateProgress,
+  MigrateResultBody,
 } from "./types";
 
 export interface SearchHandlers {
@@ -39,6 +42,11 @@ export interface RescanHandlers {
 
 export interface CreateHandlers {
   onProgress?: (p: CreateProgress) => void;
+  signal?: AbortSignal;
+}
+
+export interface MigrateHandlers {
+  onProgress?: (p: MigrateProgress) => void;
   signal?: AbortSignal;
 }
 
@@ -73,6 +81,24 @@ export class CreateFailure extends Error {
     super(error.message);
     this.name = "CreateFailure";
   }
+}
+
+/** A migration that did not run: refused up front (busy, nothing to migrate), or failed mid-way. */
+export class MigrateFailure extends Error {
+  constructor(readonly error: MigrateErrorBody) {
+    super(error.message);
+    this.name = "MigrateFailure";
+  }
+}
+
+function parseMigrateRefusal(e: ApiError): MigrateErrorBody {
+  try {
+    const parsed = JSON.parse(e.body);
+    if (parsed && typeof parsed.code === "string") return parsed as MigrateErrorBody;
+  } catch {
+    /* not JSON: fall through */
+  }
+  return { code: "migrate-failed", message: e.body || `migrate: ${e.status}` };
 }
 
 function parseCreateRefusal(e: ApiError): CreateErrorBody {
@@ -369,6 +395,32 @@ export class CdeApiClient {
   }
 
   // --- minimal SSE-over-fetch parser ---
+  /**
+   * Convert the legacy catalogs the last load listed to .cdex, one at a time. Resolves with the report on `done`,
+   * or null when aborted (the catalogs already converted stay converted). Throws {@link MigrateFailure} for a
+   * refusal or an in-stream `error`. Loads nothing: reload afterwards to see the new catalogs.
+   */
+  async migrateLegacy(handlers: MigrateHandlers): Promise<MigrateResultBody | null> {
+    let result = null as MigrateResultBody | null;
+    let failure = null as MigrateErrorBody | null;
+    try {
+      await this.streamSse(
+        this.url(["catalogs", "migrate"]),
+        { method: "POST", headers: this.headers(), signal: handlers.signal },
+        (event, data) => {
+          if (event === "progress") handlers.onProgress?.(JSON.parse(data));
+          else if (event === "done") result = JSON.parse(data);
+          else if (event === "error") failure = JSON.parse(data);
+        },
+      );
+    } catch (e) {
+      if (e instanceof ApiError) throw new MigrateFailure(parseMigrateRefusal(e));
+      throw e;
+    }
+    if (failure) throw new MigrateFailure(failure);
+    return result;
+  }
+
   private async streamSse(
     url: string,
     init: RequestInit,

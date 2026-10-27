@@ -30,6 +30,8 @@ import { findCatalogByTarget } from "./newCatalog";
 import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import { AboutModal } from "./components/AboutModal";
+import { MigrateLegacyDialog } from "./components/MigrateLegacyDialog";
+import { dismissFolder, legacyNotice, shouldPromptLegacy } from "./legacyMigration";
 import {
   CatalogInfo,
   CatalogsResponse,
@@ -115,6 +117,8 @@ export default function App() {
   const rescanAborts = useRef(new Map<number, AbortController>());
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  // The migrate dialog for the legacy .cde catalogs the last load listed (the sidecar does not load them).
+  const [legacyOpen, setLegacyOpen] = useState(false);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
@@ -162,7 +166,7 @@ export default function App() {
         if (savedDir) setCatalogDir(savedDir);
         setStatus("Loading catalogs…");
         await client.reload({ onProgress: (p) => setStatus(p.message) }, savedDir);
-        await refreshCatalogs(client);
+        promptForLegacy(await refreshCatalogs(client));
         setReady(true);
         setStatus("");
       } catch (e) {
@@ -199,7 +203,7 @@ export default function App() {
     };
   }, []);
 
-  const refreshCatalogs = useCallback(async (client: CdeApiClient) => {
+  const refreshCatalogs = useCallback(async (client: CdeApiClient): Promise<CatalogsResponse> => {
     const cat = await client.catalogs();
     setCatalogs(cat);
     setRoots(
@@ -212,6 +216,22 @@ export default function App() {
         generation: (treeGenRef.current[c.catalogId] ?? 0) + reloadEpochRef.current,
       })),
     );
+    return cat;
+  }, []);
+
+  // After a load: open the migrate dialog when the folder has legacy catalogs, unless "Not now" was chosen for it.
+  const promptForLegacy = useCallback((cat: CatalogsResponse) => {
+    if (shouldPromptLegacy(cat.legacyCatalogs ?? [], cat.catalogDir, uiRef.current?.get().legacyMigrateDismissed)) {
+      setLegacyOpen(true);
+    }
+  }, []);
+
+  // Remember the folder so the dialog no longer opens by itself there; the status-bar notice stays.
+  const dismissLegacy = useCallback(() => {
+    const folder = latest.current.catalogs?.catalogDir;
+    const ui = uiRef.current;
+    if (folder && ui) ui.update({ legacyMigrateDismissed: dismissFolder(ui.get().legacyMigrateDismissed, folder) });
+    setLegacyOpen(false);
   }, []);
 
   const reloadCatalogs = useCallback(
@@ -233,7 +253,7 @@ export default function App() {
       setView((v) => (v === "treemap" ? "directory" : v));
       try {
         await client.reload({}, dir ?? undefined);
-        await refreshCatalogs(client);
+        promptForLegacy(await refreshCatalogs(client));
         setStatus("");
       } catch (e) {
         setStatus(`Reload failed: ${(e as Error).message}`);
@@ -245,7 +265,7 @@ export default function App() {
         }
       }
     },
-    [refreshCatalogs, navGuard],
+    [refreshCatalogs, promptForLegacy, navGuard],
   );
 
   // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
@@ -934,10 +954,29 @@ export default function App() {
         searchTiming={status || timing}
         jobs={jobStatusLines(rescans, creates)}
         onCancelJob={cancelJob}
+        legacyNotice={legacyNotice(catalogs?.legacyCatalogs ?? [])}
+        onMigrate={() => setLegacyOpen(true)}
       />
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
       <RootUnreachableModal rootPath={unreachableRoot} onClose={() => setUnreachableRoot(null)} />
       <AboutModal opened={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <MigrateLegacyDialog
+        opened={legacyOpen}
+        legacy={catalogs?.legacyCatalogs ?? []}
+        folder={catalogs?.catalogDir ?? ""}
+        blockedReason={
+          anyJobRunning(rescans, creates)
+            ? "Unavailable while a catalog is being rescanned or created; try again when that finishes."
+            : null
+        }
+        client={clientRef.current}
+        onNotNow={dismissLegacy}
+        onFinished={() => {
+          // The report has been seen: don't open again by itself here (failures stay in the status-bar notice).
+          dismissLegacy();
+          void reloadCatalogs(catalogDir);
+        }}
+      />
       <NewCatalogDialog
         rootPath={newCatalogRoot}
         client={clientRef.current}
