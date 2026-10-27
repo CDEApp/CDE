@@ -139,8 +139,9 @@ function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChil
         <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
         <span className="tree-label" title={catalogName ? `${fullPath} [${catalogName}]` : fullPath}>
           {label}
-          {catalogName && <span className="tree-catalog"> [{catalogName}]</span>}
         </span>
+        {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
+        {catalogName && <span className="tree-catalog">[{catalogName}]</span>}
         <span className="tree-size">{toHRString(size)}</span>
       </div>
       {expanded && children && (

@@ -139,7 +139,9 @@ describe("catalogName", () => {
     expect(catalogName(fileName)).toBe(expected);
   });
 
-  it("is empty for an empty file name", () => {
+  it("is empty for an empty or missing file name", () => {
     expect(catalogName("")).toBe("");
+    expect(catalogName(null)).toBe("");
+    expect(catalogName(undefined)).toBe("");
   });
 });
