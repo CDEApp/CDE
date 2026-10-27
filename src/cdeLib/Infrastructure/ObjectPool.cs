@@ -38,7 +38,7 @@ public sealed class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
     public T Get()
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        
+
         if (_objects.TryDequeue(out var item))
         {
             Interlocked.Decrement(ref _currentCount);
@@ -75,7 +75,7 @@ public sealed class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
     public void Dispose()
     {
         if (_disposed) return;
-        
+
         _disposed = true;
         Clear();
     }
@@ -86,15 +86,15 @@ public sealed class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
 /// </summary>
 public static class PoolManager
 {
-    private static readonly ObjectPool<StringBuilder> StringBuilderPool = 
+    private static readonly ObjectPool<StringBuilder> StringBuilderPool =
         new(() => new StringBuilder(256), sb => sb.Clear(), 50);
-    
-    private static readonly ObjectPool<List<string>> StringListPool = 
+
+    private static readonly ObjectPool<List<string>> StringListPool =
         new(() => [], list => list.Clear(), 30);
 
     public static StringBuilder GetStringBuilder() => StringBuilderPool.Get();
     public static void ReturnStringBuilder(StringBuilder sb) => StringBuilderPool.Return(sb);
-    
+
     public static List<string> GetStringList() => StringListPool.Get();
     public static void ReturnStringList(List<string> list) => StringListPool.Return(list);
 }

@@ -256,7 +256,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             _clientForm.Dispose();
         }
     }
-    
+
     [UsedImplicitly]
     public void FormShown()
     {
@@ -401,13 +401,20 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         IncludePath = _clientForm.IncludePathInSearch,
         IncludeFiles = _clientForm.IncludeFiles,
         IncludeFolders = _clientForm.IncludeFolders,
-        FromSizeEnable = _clientForm.FromSize.Checked, FromSize = FromSizeValue(),
-        ToSizeEnable = _clientForm.ToSize.Checked, ToSize = ToSizeValue(),
-        FromDateEnable = _clientForm.FromDate.Checked, FromDate = _clientForm.FromDateValue.Date,
-        ToDateEnable = _clientForm.ToDate.Checked, ToDate = _clientForm.ToDateValue.Date,
-        FromHourEnable = _clientForm.FromHour.Checked, FromHour = _clientForm.FromHourValue.TimeOfDay,
-        ToHourEnable = _clientForm.ToHour.Checked, ToHour = _clientForm.ToHourValue.TimeOfDay,
-        NotOlderThanEnable = _clientForm.NotOlderThan.Checked, NotOlderThan = NotOlderThanValue()
+        FromSizeEnable = _clientForm.FromSize.Checked,
+        FromSize = FromSizeValue(),
+        ToSizeEnable = _clientForm.ToSize.Checked,
+        ToSize = ToSizeValue(),
+        FromDateEnable = _clientForm.FromDate.Checked,
+        FromDate = _clientForm.FromDateValue.Date,
+        ToDateEnable = _clientForm.ToDate.Checked,
+        ToDate = _clientForm.ToDateValue.Date,
+        FromHourEnable = _clientForm.FromHour.Checked,
+        FromHour = _clientForm.FromHourValue.TimeOfDay,
+        ToHourEnable = _clientForm.ToHour.Checked,
+        ToHour = _clientForm.ToHourValue.TimeOfDay,
+        NotOlderThanEnable = _clientForm.NotOlderThan.Checked,
+        NotOlderThan = NotOlderThanValue()
     };
 
     // Stream results from the shared search service, mapping each SearchResultRow back to a

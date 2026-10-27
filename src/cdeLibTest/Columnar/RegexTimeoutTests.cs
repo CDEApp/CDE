@@ -141,9 +141,9 @@ public class RegexTimeoutTests
     [Test]
     public void BoundedRegex_RejectsRegexWithoutTimeout()
     {
-        #pragma warning disable SYSLIB1045 // Deliberately a runtime Regex without a timeout: [GeneratedRegex] would defeat this test.
+#pragma warning disable SYSLIB1045 // Deliberately a runtime Regex without a timeout: [GeneratedRegex] would defeat this test.
         Assert.Throws<ArgumentException>(() => new BoundedRegex(new System.Text.RegularExpressions.Regex("a")));
-        #pragma warning restore SYSLIB1045
+#pragma warning restore SYSLIB1045
     }
 
     [Test]

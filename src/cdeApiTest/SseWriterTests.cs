@@ -131,7 +131,7 @@ public class SseWriterTests
         var (w, pipe) = Create();
         pipe.FlushGate = new SemaphoreSlim(0); // stalled client: flushes block until released
         var ch = Channel.CreateBounded<object>(new BoundedChannelOptions(capacity)
-            { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true });
+        { FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true });
 
         var produced = 0;
         var producer = Task.Run(async () =>

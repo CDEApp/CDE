@@ -77,3 +77,5 @@ src/.vs/config/applicationhost.config
 
 # Fallout build temp/log output
 /.fallout/temp/
+
+/.claude/worktrees/*

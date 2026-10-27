@@ -98,7 +98,8 @@ public class HashColumnarMemoryMeasure
                 Interlocked.Exchange(ref peak, Math.Max(Interlocked.Read(ref peak), GC.GetTotalMemory(false)));
                 Thread.Sleep(1);
             }
-        }) { IsBackground = true };
+        })
+        { IsBackground = true };
         t.Start();
         a();
         Volatile.Write(ref stop, true);

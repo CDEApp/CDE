@@ -34,7 +34,7 @@ public sealed class CdeApp(
 
     public Task CreateCacheAsync(ScanOptions opts) =>
         messageBus.Send(new CreateCacheCommand(opts.Path)
-            { Description = opts.Description, FollowJunctions = opts.FollowJunctions }, cancellationToken: cancellation.Token);
+        { Description = opts.Description, FollowJunctions = opts.FollowJunctions }, cancellationToken: cancellation.Token);
 
     public Task HashCatalogAsync() =>
         messageBus.Send(new HashCatalogCommand(), cancellationToken: cancellation.Token);

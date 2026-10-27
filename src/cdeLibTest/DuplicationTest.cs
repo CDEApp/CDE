@@ -38,25 +38,25 @@ internal class DuplicationTest
     [Test]
     public void GetSizePairs_HashIrrelevant_NullIsNotAHashValue_PartialNotAUniqueHashForSize_OK()
     {
-        var re1 = new RootEntry(_configuration) {Path = @"C:\"};
-        var de1 = new DirEntry {Path = "de1", Size = 10, IsPartialHash = false};
+        var re1 = new RootEntry(_configuration) { Path = @"C:\" };
+        var de1 = new DirEntry { Path = "de1", Size = 10, IsPartialHash = false };
         de1.SetHash(10);
-        var de2 = new DirEntry {Path = "de2", Size = 10, IsPartialHash = false};
+        var de2 = new DirEntry { Path = "de2", Size = 10, IsPartialHash = false };
         de2.SetHash(11);
-        var de3 = new DirEntry {Path = "de3", Size = 11, IsPartialHash = false};
+        var de3 = new DirEntry { Path = "de3", Size = 11, IsPartialHash = false };
         de3.SetHash(10);
-        var de4 = new DirEntry {Path = "de4", Size = 11, IsPartialHash = false};
+        var de4 = new DirEntry { Path = "de4", Size = 11, IsPartialHash = false };
         de4.SetHash(11);
-        var de5 = new DirEntry {Path = "de5", Size = 11, IsPartialHash = false};
+        var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false };
         de5.SetHash(11);
-        var de6 = new DirEntry {Path = "de6", Size = 11, IsPartialHash = false};
+        var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false };
         de6.SetHash(12);
-        var de7 = new DirEntry {Path = "de7", Size = 11, IsPartialHash = true};
+        var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true };
         de7.SetHash(12);
-        var de8 = new DirEntry {Path = "de8", Size = 11, IsPartialHash = false};
+        var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false };
         de8.SetHash(12);
-        var de9 = new DirEntry {Path = "de9", Size = 11, IsPartialHash = false};
-        var de10 = new DirEntry {Path = "de10", Size = 11, IsPartialHash = true};
+        var de9 = new DirEntry { Path = "de9", Size = 11, IsPartialHash = false };
+        var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true };
         de10.SetHash(13);
         re1.AddChild(de1);
         re1.AddChild(de2);
@@ -68,7 +68,7 @@ internal class DuplicationTest
         re1.AddChild(de8);
         re1.AddChild(de9);
         re1.AddChild(de10);
-        var roots = new List<RootEntry> {re1};
+        var roots = new List<RootEntry> { re1 };
         re1.SetInMemoryFields();
 
         var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
@@ -85,25 +85,25 @@ internal class DuplicationTest
     [Test]
     public void GetDupePairs_DupeHashDoesNotMatchDiffSizeFilesOrPartialHash_OK()
     {
-        var re1 = new RootEntry(_configuration) {Path = @"C:\"};
-        var de1 = new DirEntry {Path = "de1", Size = 10, IsPartialHash = false};
+        var re1 = new RootEntry(_configuration) { Path = @"C:\" };
+        var de1 = new DirEntry { Path = "de1", Size = 10, IsPartialHash = false };
         de1.SetHash(10);
-        var de2 = new DirEntry {Path = "de2", Size = 10, IsPartialHash = false};
+        var de2 = new DirEntry { Path = "de2", Size = 10, IsPartialHash = false };
         de2.SetHash(11);
-        var de3 = new DirEntry {Path = "de3", Size = 11, IsPartialHash = false};
+        var de3 = new DirEntry { Path = "de3", Size = 11, IsPartialHash = false };
         de3.SetHash(10);
-        var de4 = new DirEntry {Path = "de4", Size = 11, IsPartialHash = false};
+        var de4 = new DirEntry { Path = "de4", Size = 11, IsPartialHash = false };
         de4.SetHash(11);
-        var de5 = new DirEntry {Path = "de5", Size = 11, IsPartialHash = false};
+        var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false };
         de5.SetHash(11);
-        var de6 = new DirEntry {Path = "de6", Size = 11, IsPartialHash = false};
+        var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false };
         de6.SetHash(12);
-        var de7 = new DirEntry {Path = "de7", Size = 11, IsPartialHash = true};
+        var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true };
         de7.SetHash(12);
-        var de8 = new DirEntry {Path = "de8", Size = 11, IsPartialHash = false};
+        var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false };
         de8.SetHash(12);
-        var de9 = new DirEntry {Path = "de9", Size = 11, IsPartialHash = false};
-        var de10 = new DirEntry {Path = "de10", Size = 11, IsPartialHash = true};
+        var de9 = new DirEntry { Path = "de9", Size = 11, IsPartialHash = false };
+        var de10 = new DirEntry { Path = "de10", Size = 11, IsPartialHash = true };
         de10.SetHash(13);
         re1.AddChild(de1);
         re1.AddChild(de2);
@@ -115,7 +115,7 @@ internal class DuplicationTest
         re1.AddChild(de8);
         re1.AddChild(de9);
         re1.AddChild(de10);
-        var roots = new List<RootEntry> {re1};
+        var roots = new List<RootEntry> { re1 };
 
         var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
         var dp = d.GetDupePairs(roots);
@@ -132,13 +132,13 @@ internal class DuplicationTest
     [Test]
     public void TestHashingWorks()
     {
-        var de5 = new DirEntry {Path = "de5", Size = 11, IsPartialHash = false};
+        var de5 = new DirEntry { Path = "de5", Size = 11, IsPartialHash = false };
         de5.SetHash(11);
-        var de6 = new DirEntry {Path = "de6", Size = 11, IsPartialHash = false};
+        var de6 = new DirEntry { Path = "de6", Size = 11, IsPartialHash = false };
         de6.SetHash(12);
-        var de7 = new DirEntry {Path = "de7", Size = 11, IsPartialHash = true};
+        var de7 = new DirEntry { Path = "de7", Size = 11, IsPartialHash = true };
         de7.SetHash(12);
-        var de8 = new DirEntry {Path = "de8", Size = 11, IsPartialHash = false};
+        var de8 = new DirEntry { Path = "de8", Size = 11, IsPartialHash = false };
         de8.SetHash(12);
 
         var ah5 = Hash16.EqualityComparer.StaticGetHashCode(de5.Hash);
@@ -180,7 +180,7 @@ internal class DuplicationTest
         }
 
         Program.InitProgram([]);
-        Program.CreateCache(new ScanOptions {Path = testPath}); // scan writes a columnar .cdex
+        Program.CreateCache(new ScanOptions { Path = testPath }); // scan writes a columnar .cdex
         Program.HashCatalog();                                  // hash operates on the .cdex
 
         // run tests. Load the hashed catalogs back from .cdex (where the hashes now live).

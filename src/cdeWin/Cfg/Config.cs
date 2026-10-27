@@ -13,7 +13,7 @@ public class Config : IConfig
     public string DateCustomFormatYMD => "yyyy/MM/dd";
     public string DateCustomFormatHMS => "HH:mm:ss";
     public string LinkRepository => "https://github.com/CDEApp/CDE";
-        
+
     public string Version { get; }
     public string ProductName { get; }
 

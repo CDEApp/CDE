@@ -43,7 +43,7 @@ public class DuplicationTests
         _configuration.HashFirstPassSize.Returns(1024);
         _configuration.DegreesOfParallelism.Returns(1);
         _configuration.Config.Returns(new AppConfigurationSection
-            { Display = new DisplaySection { ConsoleLogToSeq = true } });
+        { Display = new DisplaySection { ConsoleLogToSeq = true } });
 
         var logger = new LoggerConfiguration().WriteTo.Console().CreateLogger();
         _logger = new Logger(_configuration, logger);

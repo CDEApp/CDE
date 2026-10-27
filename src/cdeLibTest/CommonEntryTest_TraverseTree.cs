@@ -69,7 +69,7 @@ internal class CommonEntryTest_TraverseTree : RootEntryTestBase
     {
         var actionCalled = false;
         // only looks at Children for recurse.
-        var de1 = new DirEntry(true) { Path = "d1"};
+        var de1 = new DirEntry(true) { Path = "d1" };
         var de2 = new DirEntry { Path = "d2" };
         de1.AddChild(de2);
 
