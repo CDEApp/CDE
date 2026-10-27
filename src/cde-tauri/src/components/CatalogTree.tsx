@@ -184,6 +184,10 @@ export function CatalogTree({
       if (row) void toggle(row);
       return;
     }
+    if ("collapse" in nav) {
+      setOpen(nav.collapse, false); // the selection stays on the collapsed folder
+      return;
+    }
     const row = rows.find((r) => r.key === nav.select);
     if (row) onSelect(row.ref, row.fullPath);
   };
