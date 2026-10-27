@@ -34,7 +34,7 @@ public class DirEntryBenchmarks
         _mixedEntries = new DirEntry[EntryCount];
         _testPaths = new string[EntryCount];
 
-        var random = new Random(42); // Fixed seed for reproducibility
+        var random = new Random(42); // NOSONAR S2245: fixed seed for reproducible benchmark data, not security
 
         for (int i = 0; i < EntryCount; i++)
         {
