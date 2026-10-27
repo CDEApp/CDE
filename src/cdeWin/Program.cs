@@ -13,7 +13,7 @@ internal static class Program
 {
     public static IConfigurationRoot Configuration;
 
-    private static string Version => Application.ProductVersion;
+    private static string Version => VersionDisplay.ShortenBuildMetadata(Application.ProductVersion);
 
     private static string ProductName => Application.ProductName;
 
