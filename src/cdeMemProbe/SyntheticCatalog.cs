@@ -42,7 +42,7 @@ public static class SyntheticCatalog
         int subDirsPerDir = 5,
         bool sharedNames = false)
     {
-        var random = new Random(seed);
+        var random = new Random(seed); // NOSONAR S2245: seeded for reproducible synthetic data, not security
         var root = new RootEntry
         {
             Path = @"C:\synthetic",
