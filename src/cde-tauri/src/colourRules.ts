@@ -42,6 +42,16 @@ const ALLOWED: Record<string, keyof CSSProperties> = {
 const FOLDER_PATTERN = "[folder]";
 const FORBIDDEN_VALUE = /url\s*\(|expression\s*\(|@import|[{}<>]/i;
 
+/**
+ * Whether the webview accepts `value` for `prop`. A value it would ignore must be flagged, or the
+ * rule would still win first-match and silently shadow later rules. Unchecked where there is no
+ * CSS.supports (plain Node, i.e. unit tests).
+ */
+function isValidValue(prop: string, value: string): boolean {
+  if (FORBIDDEN_VALUE.test(value)) return false;
+  return typeof CSS === "undefined" || typeof CSS.supports !== "function" || CSS.supports(prop, value);
+}
+
 export function parseStyle(text: string): { style: CSSProperties; problems: string[] } {
   const style: Record<string, string> = {};
   const problems: string[] = [];
@@ -49,8 +59,9 @@ export function parseStyle(text: string): { style: CSSProperties; problems: stri
 
   if (!t.includes(":")) {
     // Bare colour (also var(--x), rgb(...), #hex) = `color: <value>`.
-    if (FORBIDDEN_VALUE.test(t)) problems.push("invalid value for `color`");
-    else if (t) style.color = t;
+    if (!t) return { style, problems };
+    if (isValidValue("color", t)) style.color = t;
+    else problems.push("invalid value for `color`");
     return { style, problems };
   }
 
@@ -65,7 +76,7 @@ export function parseStyle(text: string): { style: CSSProperties; problems: stri
       problems.push(`unknown property \`${prop}\``);
     } else if (!value) {
       problems.push(`missing value for \`${prop}\``);
-    } else if (FORBIDDEN_VALUE.test(value)) {
+    } else if (!isValidValue(prop, value)) {
       problems.push(`invalid value for \`${prop}\``);
     } else {
       style[key] = value;

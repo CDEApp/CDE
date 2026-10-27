@@ -27,6 +27,7 @@ import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
+import { createSerialSaver, SerialSaver } from "./serialSaver";
 
 type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
 
@@ -46,6 +47,10 @@ export default function App() {
   // Colour rules text (file-backed via the sidecar). Parsed + compiled once per change; the
   // resolvers (with their per-name caches) are rebuilt whenever the text changes.
   const [rulesText, setRulesText] = useState("");
+  // Saves live here, not in ColoursView, so a save flushed as the tab closes still runs in order
+  // and its error is still shown when the tab reopens.
+  const rulesSaverRef = useRef<SerialSaver | null>(null);
+  const [rulesSaveError, setRulesSaveError] = useState<string | null>(null);
   const rules = useMemo(() => parseColourRules(rulesText).rules, [rulesText]);
   const resolveStyle = useMemo(() => createRuleResolver(rules), [rules]);
   const resolveTreeStyle = useMemo(() => createRuleResolver(rules, { skipFolder: true }), [rules]);
@@ -81,6 +86,7 @@ export default function App() {
         const client = new CdeApiClient(sidecar.connection.baseUrl, sidecar.connection.token);
         clientRef.current = client;
         uiRef.current = new UiStateManager(client);
+        rulesSaverRef.current = createSerialSaver((text) => client.putColourRules(text), setRulesSaveError);
 
         const ui = await uiRef.current.load();
         setCommands(await client.shellCommands());
@@ -161,9 +167,11 @@ export default function App() {
   );
 
   // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
-  // switch, so the editor never shows stale text that a keystroke could then overwrite.
+  // switch, so the editor never shows stale text that a keystroke could then overwrite. Wait for
+  // pending saves first, or a save flushed as the tab last closed could land after this read.
   const openColours = useCallback(async () => {
     try {
+      await rulesSaverRef.current?.idle();
       setRulesText(await clientRef.current!.getColourRules());
     } catch (e) {
       console.error("colour rules reload failed", e);
@@ -447,7 +455,13 @@ export default function App() {
         )}
 
         {view === "colours" && (
-          <ColoursView client={clientRef.current!} text={rulesText} onChange={setRulesText} />
+          <ColoursView
+            text={rulesText}
+            onChange={setRulesText}
+            save={(text) => rulesSaverRef.current?.save(text)}
+            saveError={rulesSaveError}
+            getDefaults={() => clientRef.current!.getColourRuleDefaults()}
+          />
         )}
 
         {view === "treemap" && treemapRequest && (

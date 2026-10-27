@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CdeApiClient } from "../api/client";
 import { parseColourRules } from "../colourRules";
 
 interface Props {
-  client: CdeApiClient;
   /** Current rules text (held by App so the other tabs restyle live as this changes). */
   text: string;
   onChange: (text: string) => void;
+  /** Queue a save. Owned by App so a save flushed on unmount still runs, in order. */
+  save: (text: string) => void;
+  /** Error from the most recent save, or null. */
+  saveError: string | null;
+  getDefaults: () => Promise<string>;
 }
 
 const AUTOSAVE_MS = 500;
@@ -16,20 +19,11 @@ const AUTOSAVE_MS = 500;
  * problem) and a per-rule style preview. Edits apply live via `onChange` and are saved ~500 ms
  * after typing stops; a pending save is flushed when the tab is left.
  */
-export function ColoursView({ client, text, onChange }: Props) {
+export function ColoursView({ text, onChange, save, saveError, getDefaults }: Props) {
   const parsed = useMemo(() => parseColourRules(text), [text]);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [defaultsError, setDefaultsError] = useState<string | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pending = useRef<string | null>(null);
-
-  async function save(value: string) {
-    try {
-      await client.putColourRules(value);
-      setSaveError(null);
-    } catch (e) {
-      setSaveError((e as Error).message);
-    }
-  }
 
   function flush() {
     if (timer.current) clearTimeout(timer.current);
@@ -37,7 +31,7 @@ export function ColoursView({ client, text, onChange }: Props) {
     if (pending.current !== null) {
       const value = pending.current;
       pending.current = null;
-      void save(value);
+      save(value);
     }
   }
 
@@ -53,9 +47,10 @@ export function ColoursView({ client, text, onChange }: Props) {
 
   async function resetToDefaults() {
     try {
-      edit(await client.getColourRuleDefaults());
+      edit(await getDefaults());
+      setDefaultsError(null);
     } catch (e) {
-      setSaveError((e as Error).message);
+      setDefaultsError((e as Error).message);
     }
   }
 
@@ -67,6 +62,7 @@ export function ColoursView({ client, text, onChange }: Props) {
         </span>
         <button onClick={() => void resetToDefaults()}>Reset to defaults</button>
         {saveError && <span className="colours-error">Save failed: {saveError}</span>}
+        {defaultsError && <span className="colours-error">Reset failed: {defaultsError}</span>}
       </div>
       <textarea
         className="colours-editor"

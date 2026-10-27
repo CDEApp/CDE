@@ -59,6 +59,18 @@ public class ColourRulesStoreTests
     }
 
     [Test]
+    public void Save_OverExistingFile_ReplacesItAndLeavesNoTempFile()
+    {
+        File.WriteAllText(FilePath, "old red");
+        var store = new ColourRulesStore(FilePath);
+
+        store.Save("new blue");
+
+        Assert.That(File.ReadAllText(FilePath), Is.EqualTo("new blue"));
+        Assert.That(Directory.GetFiles(_dir).Select(Path.GetFileName), Is.EqualTo(new[] { "colour-rules.txt" }));
+    }
+
+    [Test]
     public void Save_EmptyText_IsKeptAndNotReplacedByDefaults()
     {
         var store = new ColourRulesStore(FilePath);

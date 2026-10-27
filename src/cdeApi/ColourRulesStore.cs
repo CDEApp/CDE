@@ -77,6 +77,10 @@ public sealed class ColourRulesStore
     {
         var dir = Path.GetDirectoryName(_path);
         if (!string.IsNullOrEmpty(dir)) Directory.CreateDirectory(dir);
-        File.WriteAllText(_path, text);
+        // Write a temp file then rename over the original, so a sidecar killed mid-autosave leaves
+        // the old rules rather than an empty or partial file.
+        var temp = _path + ".tmp";
+        File.WriteAllText(temp, text);
+        File.Move(temp, _path, overwrite: true);
     }
 }

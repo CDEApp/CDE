@@ -1,5 +1,30 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { createRuleResolver, parseColourRules, parseStyle } from "./colourRules";
+
+describe("parseStyle with the browser's CSS.supports", () => {
+  // Node has no CSS global; stand in for the webview's, accepting only known values.
+  const known = new Set(["color:red", "color:var(--dir)", "font-weight:bold"]);
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("flags values the browser would ignore, so they can't silently shadow later rules", () => {
+    vi.stubGlobal("CSS", { supports: (p: string, v: string) => known.has(`${p}:${v}`) });
+
+    expect(parseStyle("notacolour")).toEqual({ style: {}, problems: ["invalid value for `color`"] });
+    expect(parseStyle("color: red; font-weight: heavy")).toEqual({
+      style: { color: "red" },
+      problems: ["invalid value for `font-weight`"],
+    });
+    expect(parseStyle("var(--dir)").style).toEqual({ color: "var(--dir)" });
+  });
+
+  it("skips a rule left with no valid style", () => {
+    vi.stubGlobal("CSS", { supports: (p: string, v: string) => known.has(`${p}:${v}`) });
+
+    const parsed = parseColourRules("\\.sys$  notacolour\n\\.sys$  red");
+    expect(parsed.rules.map((r) => r.line)).toEqual([2]);
+    expect(parsed.problems.map((p) => p.line)).toContain(1);
+  });
+});
 
 describe("parseStyle", () => {
   it("treats a bare colour as color", () => {
