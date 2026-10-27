@@ -26,7 +26,7 @@ namespace cdeLib.Entities.Columnar;
     /// NameOffsets columns and never pages in Size / Modified / Hash. NameOffsets are 64-bit, so the on-disk
     /// name blob can exceed 2 GB (though Write currently buffers it in-memory, which is limited to ~2 GB).
     /// Entry count is 32-bit, matching <see cref="EntryStore"/>'s int indexing.
-public static class ColumnarFormat
+public static partial class ColumnarFormat
 {
     public static ReadOnlySpan<byte> Magic => "CDEX"u8;
     public const int Version = 1;
@@ -124,22 +124,30 @@ public static class ColumnarFormat
         WriteCol(fs, off[(int)Col.Meta], meta);
     }
 
-    private static byte[] BuildMeta(EntryStore s)
+    private static byte[] BuildMeta(EntryStore s) => BuildMeta(
+        s.RootPath, s.VolumeName, s.DefaultFileName, s.ActualFileName, s.DriveLetterHint, s.Description,
+        s.AvailSpace, s.TotalSpace, s.ScanStartUtcTicks, s.ScanEndUtcTicks, s.RootSize,
+        s.RootFileEntryCount, s.RootDirEntryCount);
+
+    private static byte[] BuildMeta(
+        string rootPath, string volumeName, string defaultFileName, string actualFileName,
+        string driveLetterHint, string description, long availSpace, long totalSpace,
+        long scanStartUtcTicks, long scanEndUtcTicks, long rootSize, uint rootFileCount, uint rootDirCount)
     {
         using var ms = new MemoryStream(256);
-        WriteLenString(ms, s.RootPath);
-        WriteLenString(ms, s.VolumeName);
-        WriteLenString(ms, s.DefaultFileName);
-        WriteLenString(ms, s.ActualFileName);
-        WriteLenString(ms, s.DriveLetterHint);
-        WriteLenString(ms, s.Description);
-        WriteI64(ms, s.AvailSpace);
-        WriteI64(ms, s.TotalSpace);
-        WriteI64(ms, s.ScanStartUtcTicks);
-        WriteI64(ms, s.ScanEndUtcTicks);
-        WriteI64(ms, s.RootSize);
-        WriteI32(ms, (int)s.RootFileEntryCount);
-        WriteI32(ms, (int)s.RootDirEntryCount);
+        WriteLenString(ms, rootPath);
+        WriteLenString(ms, volumeName);
+        WriteLenString(ms, defaultFileName);
+        WriteLenString(ms, actualFileName);
+        WriteLenString(ms, driveLetterHint);
+        WriteLenString(ms, description);
+        WriteI64(ms, availSpace);
+        WriteI64(ms, totalSpace);
+        WriteI64(ms, scanStartUtcTicks);
+        WriteI64(ms, scanEndUtcTicks);
+        WriteI64(ms, rootSize);
+        WriteI32(ms, (int)rootFileCount);
+        WriteI32(ms, (int)rootDirCount);
         return ms.ToArray();
     }
 
