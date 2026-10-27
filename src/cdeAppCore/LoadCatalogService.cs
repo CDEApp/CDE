@@ -23,6 +23,12 @@ public interface ILoadCatalogService
     /// exist the GUI memory-maps them instead of loading <c>.cde</c> trees. Empty/none ⇒ fall back.
     /// </summary>
     IList<string> GetColumnarFiles(string configPath);
+
+    /// <summary>
+    /// Discover legacy <c>.cde</c> catalogs in the same folders as <see cref="GetColumnarFiles"/>, without loading them.
+    /// Includes ones that already have a <c>.cdex</c> beside them.
+    /// </summary>
+    IList<string> GetLegacyFiles(string configPath) => [];
 }
 
 /// <summary>
@@ -58,6 +64,12 @@ public class LoadCatalogService : ILoadCatalogService
     {
         using var repo = new CatalogRepository(_logger);
         return DistinctFiles(repo.GetColumnarFileList(CachePaths(configPath)));
+    }
+
+    public IList<string> GetLegacyFiles(string configPath)
+    {
+        using var repo = new CatalogRepository(_logger);
+        return DistinctFiles(repo.GetCacheFileList(CachePaths(configPath)));
     }
 
     public async Task<List<RootEntry>> LoadRootEntriesAsync(

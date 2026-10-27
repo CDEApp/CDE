@@ -81,7 +81,7 @@ public static class RescanEndpoint
             RescanPreflight.AlreadyRunning => (StatusCodes.Status409Conflict,
                 new RescanError { Code = AlreadyRunning, Message = $"A rescan of catalog {id} is already running." }),
             RescanPreflight.Busy => (StatusCodes.Status409Conflict,
-                new RescanError { Code = Busy, Message = "Catalogs are being loaded; try again when that finishes." }),
+                new RescanError { Code = Busy, Message = "Catalogs are being loaded or migrated; try again when that finishes." }),
             RescanPreflight.Unavailable => (StatusCodes.Status409Conflict,
                 new RescanError { Code = CatalogUnavailable, Message = $"Catalog {id} is unavailable after a failed rescan; reload catalogs." }),
             RescanPreflight.NoSourceFile => (StatusCodes.Status422UnprocessableEntity,

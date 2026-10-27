@@ -31,7 +31,8 @@ public static class SessionEndpoints
             CatalogDir = session.CatalogDir,
             CatalogsLoaded = session.CatalogCount,
             TotalEntries = session.TotalEntryCount,
-            MemoryBytes = proc.PrivateMemorySize64
+            MemoryBytes = proc.PrivateMemorySize64,
+            LegacyCatalogs = session.LegacyCatalogs
         });
     }
 

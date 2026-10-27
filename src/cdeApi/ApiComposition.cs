@@ -37,8 +37,9 @@ public static class ApiComposition
 
         // Only the requested folder: the sidecar's current directory is wherever cde-tauri was launched.
         services.AddSingleton<ILoadCatalogService>(_ => new LoadCatalogService(logger, includeCurrentDirectory: false));
+        // Legacy .cde catalogs are listed, not loaded (slow and memory-heavy); the UI offers to migrate them.
         services.AddSingleton<ICatalogSession>(sp =>
-            new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger));
+            new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger) { LoadLegacyCatalogs = false });
         services.AddSingleton<ISearchService>(sp =>
             new SearchService(sp.GetRequiredService<ICatalogSession>()));
         services.AddSingleton<ITreemapService>(sp =>
@@ -82,6 +83,9 @@ public static class ApiComposition
         // POST /catalogs — scan a new root into a new .cdex in the working folder and add it to the session
         // (SSE: progress..., done | error). Refusals are plain JSON errors before the stream starts.
         app.MapPost("/catalogs", CreateCatalogEndpoint.HandleAsync);
+
+        // POST /catalogs/migrate — convert the listed legacy .cde catalogs to .cdex (SSE: progress..., done | error).
+        app.MapPost("/catalogs/migrate", MigrateEndpoint.HandleAsync);
 
         app.MapPost("/search", SearchEndpoint.HandleAsync);
 

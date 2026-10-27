@@ -81,6 +81,7 @@ public class ProgramTests
             "GET /shell/commands",
             "GET /ui-state",
             "POST /catalogs",
+            "POST /catalogs/migrate",
             "POST /catalogs/preflight",
             "POST /catalogs/{id:int}/rescan",
             "POST /search",
@@ -175,6 +176,29 @@ public class ProgramTests
         var catalogs = await CatalogsAsync(client);
         Assert.That(catalogs.CatalogsLoaded, Is.EqualTo(1));
         Assert.That(catalogs.Catalogs.Single().RootPath, Does.StartWith(data));
+    }
+
+    // Legacy .cde catalogs are slow and memory-heavy to load, so the sidecar lists them for the UI to migrate.
+    [Test]
+    public async Task Reload_lists_legacy_catalogs_instead_of_loading_them()
+    {
+        var data = Path.Combine(_dir, "data");
+        Directory.CreateDirectory(data);
+        File.WriteAllText(Path.Combine(data, "a.txt"), "a");
+        var re = new cdeLib.Entities.RootEntry();
+        re.PopulateRoot(data);
+        re.ActualFileName = Path.Combine(_dir, "old.cde");
+        using (var repo = new cdeLib.Catalog.CatalogRepository(Serilog.Core.Logger.None)) await repo.Save(re);
+        using var client = AuthorisedClient();
+
+        await client.PostAsync("/session/reload", null);
+
+        var catalogs = await CatalogsAsync(client);
+        Assert.That(catalogs.CatalogsLoaded, Is.EqualTo(0));
+        var legacy = catalogs.LegacyCatalogs.Single();
+        Assert.That(legacy.Path, Is.EqualTo(re.ActualFileName));
+        Assert.That(legacy.SizeBytes, Is.GreaterThan(0));
+        Assert.That(legacy.Writable, Is.True);
     }
 
     // The sidecar's current directory is just wherever cde-tauri was launched, so it is not searched.

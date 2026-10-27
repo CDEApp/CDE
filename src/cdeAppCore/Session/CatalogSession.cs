@@ -68,6 +68,8 @@ public sealed partial class CatalogSession : ICatalogSession
                 throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
             if (_creating > 0)
                 throw new InvalidOperationException("Cannot reload while a catalog is being created.");
+            if (_migrating)
+                throw new InvalidOperationException("Cannot reload while catalogs are being migrated.");
             _loading = true;
         }
 
@@ -94,11 +96,14 @@ public sealed partial class CatalogSession : ICatalogSession
             ?.Select(Path.GetFullPath)
             .Distinct(StringComparer.OrdinalIgnoreCase)
             .ToList();
+        // Without legacy loading, .cde files are listed instead (those with no .cdex beside them), so a frontend can
+        // offer to migrate them.
+        List<LegacyCatalogDto> legacy = LoadLegacyCatalogs ? [] : FindLegacyCatalogs(configPath);
         if (cdex is { Count: > 0 })
         {
             _slots = ReadColumnar(cdex);
         }
-        else
+        else if (LoadLegacyCatalogs)
         {
             var trees = await _loadCatalogService.LoadRootEntriesAsync(
                 configPath,
@@ -106,6 +111,12 @@ public sealed partial class CatalogSession : ICatalogSession
                 cancellationToken);
             _slots = BuildStores(trees);
         }
+        else
+        {
+            _slots = [];
+        }
+
+        lock (_gate) _legacyCatalogs = legacy;
 
         _roots = _slots.Select(ICommonEntry (s) => new EntryRef(s.Source, 0)).ToList();
     }
