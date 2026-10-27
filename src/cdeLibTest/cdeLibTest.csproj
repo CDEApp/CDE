@@ -33,5 +33,4 @@
     <ProjectReference Include="..\cde\cde.csproj" />
   </ItemGroup>
 
-
 </Project>

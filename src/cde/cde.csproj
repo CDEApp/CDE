@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
     
     <PropertyGroup>
         <OutputType>Exe</OutputType>
@@ -44,6 +43,5 @@
       <ProjectReference Include="..\cdeLib\cdeLib.csproj" />
       <ProjectReference Include="..\Mono.Terminal\Mono.Terminal.csproj" />
     </ItemGroup>
-
 
 </Project>

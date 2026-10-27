@@ -21,5 +21,4 @@
     <ProjectReference Include="..\cdeWin\cdeWin.csproj" />
   </ItemGroup>
 
-
 </Project>

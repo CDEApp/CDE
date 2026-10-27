@@ -19,5 +19,4 @@
     <ProjectReference Include="..\cdeAppCore\cdeAppCore.csproj" />
   </ItemGroup>
 
-
 </Project>
