@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib;
@@ -82,7 +83,8 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
             }
 
             var ts = stopwatch.Elapsed;
-            var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";
+            var elapsedTime = string.Create(CultureInfo.InvariantCulture,
+                $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}");
             HashProgressConsole.EnqueueMessage(
                 $"Hash Took {elapsedTime}, Memory: {_applicationDiagnostics.GetMemoryAllocated().FormatAsBytes()}");
             _logger.Information("Hash Took {ElapsedTime}, Memory: {Memory}", elapsedTime,

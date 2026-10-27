@@ -178,7 +178,8 @@ public sealed class CdeApp(
             if (MigrateOne(file)) converted++;
         }
 
-        Console.WriteLine($"Migrated {converted} of {files.Count} catalog(s) to .cdex.");
+        Console.WriteLine(string.Create(CultureInfo.CurrentCulture,
+            $"Migrated {converted} of {files.Count} catalog(s) to .cdex."));
     }
 
     private bool MigrateOne(string file)
@@ -198,9 +199,9 @@ public sealed class CdeApp(
 
             var srcLen = new FileInfo(file).Length;
             var dstLen = new FileInfo(outFile).Length;
-            Console.WriteLine(
+            Console.WriteLine(string.Create(CultureInfo.CurrentCulture,
                 $"  {Path.GetFileName(file)} ({srcLen:N0} B) -> {Path.GetFileName(outFile)} " +
-                $"({dstLen:N0} B, {store.Count:N0} entries)");
+                $"({dstLen:N0} B, {store.Count:N0} entries)"));
             return true;
         }
         catch (Exception ex)
@@ -212,7 +213,7 @@ public sealed class CdeApp(
 
     // ---- repl / inspection ----
 
-    public void InvokeRepl()
+    public static void InvokeRepl()
     {
         var le = new LineEditor(name: null);
         var running = true;

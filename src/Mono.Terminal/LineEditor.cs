@@ -229,7 +229,7 @@ public class LineEditor
     // BackgroundColor properties, so we have to use the terminfo driver in Mono to
     // fetch these values
 
-    private void GetUnixConsoleReset()
+    private static void GetUnixConsoleReset()
     {
         //
         // On Unix, we want to be able to reset the color for the pop-up completion
@@ -448,13 +448,13 @@ public class LineEditor
             Height = height;
 
             if (Col < 0)
-                throw new ArgumentException("Cannot be less than zero" + Col, "Col");
+                throw new ArgumentOutOfRangeException(nameof(col), col, "Cannot be less than zero");
             if (Row < 0)
-                throw new ArgumentException("Cannot be less than zero", "Row");
+                throw new ArgumentOutOfRangeException(nameof(row), row, "Cannot be less than zero");
             if (Width < 1)
-                throw new ArgumentException("Cannot be less than one", "Width");
+                throw new ArgumentOutOfRangeException(nameof(width), width, "Cannot be less than one");
             if (Height < 1)
-                throw new ArgumentException("Cannot be less than one", "Height");
+                throw new ArgumentOutOfRangeException(nameof(height), height, "Cannot be less than one");
         }
 
         private void DrawSelection()
@@ -1340,7 +1340,7 @@ public class LineEditor
         public History(string app, int size)
         {
             if (size < 1)
-                throw new ArgumentException("size");
+                throw new ArgumentOutOfRangeException(nameof(size), size, "Cannot be less than one");
 
             if (app != null)
             {

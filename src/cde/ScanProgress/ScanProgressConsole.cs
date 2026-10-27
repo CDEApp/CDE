@@ -20,7 +20,7 @@ public class ScanProgressConsole
 
     private static readonly Queue<string> Messages = new();
 
-    string NormalizeLength(string value, int maxLength)
+    static string NormalizeLength(string value, int maxLength)
     {
         if (value.Length <= maxLength)
             return value;
@@ -77,7 +77,7 @@ public class ScanProgressConsole
         }
     }
 
-    private long CalculateScansPerSecond(Stopwatch sw)
+    private static long CalculateScansPerSecond(Stopwatch sw)
     {
         var elapsedSec = sw.ElapsedMilliseconds / 1000;
         if (elapsedSec < 1) elapsedSec = 1;
