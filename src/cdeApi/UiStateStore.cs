@@ -17,11 +17,15 @@ public sealed class UiStateStore
     private readonly object _gate = new();
 
     public UiStateStore()
+        : this(Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "cde", "ui-state.json"))
     {
-        var dir = Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "cde");
-        Directory.CreateDirectory(dir);
-        _path = Path.Combine(dir, "ui-state.json");
+    }
+
+    public UiStateStore(string path)
+    {
+        _path = path;
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
     }
 
     // Core defaults the API knows about. The frontend layers its own document on top.
