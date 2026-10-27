@@ -267,6 +267,56 @@ public class CatalogSessionCreateTests
     }
 
     [Test]
+    public async Task A_cancel_that_surfaces_wrapped_from_the_scan_is_still_a_cancellation()
+    {
+        var s = LoadFiles();
+        using var cts = new CancellationTokenSource();
+        // The scan's progress callback can run on traversal workers, where a cancel may arrive wrapped.
+        var cap = new Capture
+        {
+            OnReport = r =>
+            {
+                if (r.Phase != "scanning") return;
+                cts.Cancel();
+                throw new AggregateException(new InvalidOperationException("wrapped by the traversal"));
+            }
+        };
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() =>
+            s.CreateCatalogAsync(Req(MakeData("d1", "a.txt"), "c"), cap, cts.Token));
+
+        Assert.That(Directory.GetFileSystemEntries(_cat), Is.Empty);
+        Assert.That(s.CatalogCount, Is.EqualTo(0));
+    }
+
+    [Test]
+    public async Task A_failed_load_does_not_move_the_working_folder()
+    {
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(new List<string>());
+        _session = new CatalogSession(loader, Substitute.For<ILogger>());
+        await _session.LoadAsync(_cat);
+        Assert.That(_session.CatalogDir, Is.EqualTo(Path.GetFullPath(_cat)));
+
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(_ => throw new DirectoryNotFoundException("mistyped"));
+        await Assert.ThatAsync(() => _session.LoadAsync(Path.Combine(_dir, "mistyped")), Throws.Exception);
+
+        Assert.That(_session.CatalogDir, Is.EqualTo(Path.GetFullPath(_cat)));
+        Assert.That(_session.PreflightCreate(new CreatePreflightRequest { RootPath = MakeData("d1", "a.txt") }).CatalogDir,
+            Is.EqualTo(Path.GetFullPath(_cat)));
+    }
+
+    [Test]
+    public async Task A_load_that_never_succeeded_leaves_no_working_folder()
+    {
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(_ => throw new DirectoryNotFoundException("mistyped"));
+        _session = new CatalogSession(loader, Substitute.For<ILogger>());
+        await Assert.ThatAsync(() => _session.LoadAsync(_cat), Throws.Exception);
+        Assert.That(_session.CatalogDir, Is.Null);
+    }
+
+    [Test]
     public async Task Cancel_just_before_the_rename_leaves_no_files_and_no_session_change()
     {
         var s = LoadFiles();

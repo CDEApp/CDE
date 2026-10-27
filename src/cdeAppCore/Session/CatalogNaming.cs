@@ -11,6 +11,10 @@ public static class CatalogNaming
     public const string Extension = ".cdex";
     public const int MaxNameLength = 150;
 
+    // Computed once. Always includes the control characters, whatever the platform reports.
+    private static readonly char[] InvalidNameChars =
+        Path.GetInvalidFileNameChars().Concat(Enumerable.Range(0, 32).Select(i => (char)i)).Distinct().ToArray();
+
     private static readonly string[] ReservedDeviceNames =
     [
         "CON", "PRN", "AUX", "NUL",
@@ -74,9 +78,11 @@ public static class CatalogNaming
         if (string.IsNullOrWhiteSpace(name)) return "Enter a file name.";
         if (name.Length > MaxNameLength) return $"The file name is too long (max {MaxNameLength} characters).";
         if (name.IndexOfAny(['\\', '/']) >= 0) return "The file name can't contain path separators (\\ or /).";
-        var bad = name.Where(c => Path.GetInvalidFileNameChars().Contains(c) || c < ' ').Distinct().ToArray();
-        if (bad.Length > 0)
+        if (name.IndexOfAny(InvalidNameChars) >= 0)
+        {
+            var bad = name.Where(c => Array.IndexOf(InvalidNameChars, c) >= 0).Distinct().ToArray();
             return "The file name can't contain: " + string.Join(" ", bad.Select(c => c < ' ' ? "control characters" : c.ToString()));
+        }
         if (name.EndsWith('.') || name.EndsWith(' ')) return "The file name can't end with a dot or a space.";
         var stem = name.Split('.')[0].TrimEnd();
         if (ReservedDeviceNames.Contains(stem, StringComparer.OrdinalIgnoreCase))

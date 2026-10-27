@@ -52,6 +52,12 @@ public sealed partial class CatalogSession
             return await Task.Run(() => RescanCore(slot, catalogId, progress, cancellationToken), CancellationToken.None)
                 .ConfigureAwait(false);
         }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested && ex is not OperationCanceledException)
+        {
+            // A cancel raised in the scan callback can arrive wrapped (traversal workers); the swap restores the
+            // old files on any failure, so this is a cancellation, not a rescan failure.
+            throw new OperationCanceledException(cancellationToken);
+        }
         finally
         {
             slot.EndRescan();

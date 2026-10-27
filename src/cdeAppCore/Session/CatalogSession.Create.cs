@@ -56,35 +56,43 @@ public sealed partial class CatalogSession
     private CreatePreflightResult PreflightCore(CreatePreflightRequest request, string ownReservation)
     {
         var rootPath = request?.RootPath;
-        var result = new CreatePreflightResult();
+        var defaultName = CatalogNaming.DefaultFileName(rootPath);
+        var typed = CatalogNaming.NormalizeFileName(request?.FileName);
+        var fileName = typed.Length > 0 ? typed : defaultName ?? "";
+        var nameError = CatalogNaming.ValidateFileName(fileName);
+
+        // One consistent view of the session state: busy, working folder, and whether the target is being written.
+        bool busy;
         string dir;
-        bool inFlight;
+        string target = null;
+        var inFlight = false;
         lock (_gate)
         {
-            result.Busy = _loading;
+            busy = _loading;
             dir = _catalogDir;
-            inFlight = false;
-        }
-
-        result.DefaultFileName = CatalogNaming.DefaultFileName(rootPath);
-        var typed = CatalogNaming.NormalizeFileName(request?.FileName);
-        result.FileName = typed.Length > 0 ? typed : result.DefaultFileName ?? "";
-        result.FileNameError = CatalogNaming.ValidateFileName(result.FileName);
-        var canonical = CatalogNaming.CanonicalRoot(rootPath);
-        result.RootAccessible = canonical != null && IsRootAccessible(canonical);
-        result.CatalogDir = dir;
-        result.Writable = IsWritable(dir);
-        result.SameRootCatalogIds = SameRootCatalogs(canonical);
-
-        if (dir != null && result.FileNameError == null)
-        {
-            var target = Path.Combine(dir, result.FileName + CatalogNaming.Extension);
-            result.TargetPath = target;
-            lock (_gate)
+            if (dir != null && nameError == null)
             {
+                target = Path.Combine(dir, fileName + CatalogNaming.Extension);
                 inFlight = _inFlightTargets.Contains(target) && !PathComparer.Equals(target, ownReservation);
             }
+        }
 
+        var canonical = CatalogNaming.CanonicalRoot(rootPath);
+        var result = new CreatePreflightResult
+        {
+            Busy = busy,
+            DefaultFileName = defaultName,
+            FileName = fileName,
+            FileNameError = nameError,
+            CatalogDir = dir,
+            TargetPath = target,
+            RootAccessible = canonical != null && IsRootAccessible(canonical),
+            Writable = IsWritable(dir),
+            SameRootCatalogIds = SameRootCatalogs(canonical)
+        };
+
+        if (target != null)
+        {
             result.Exists = inFlight || File.Exists(target);
             if (result.Exists) result.ExistingCatalogId = CatalogIdForFile(target);
         }
@@ -179,6 +187,12 @@ public sealed partial class CatalogSession
             // The scan is synchronous file-system work; keep it off the caller's thread.
             return await Task.Run(() => CreateCore(request, target, progress, cancellationToken), CancellationToken.None)
                 .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested && ex is not OperationCanceledException)
+        {
+            // The scan callback runs on traversal workers, so a cancel can arrive wrapped. Nothing was committed
+            // (a commit returns normally), so report it as the cancellation it is, not as a failure.
+            throw new OperationCanceledException(cancellationToken);
         }
         finally
         {
