@@ -22,6 +22,8 @@ namespace cdeAppCore.Search;
 /// </summary>
 public sealed class SearchService : ISearchService
 {
+    private const int ChannelCapacity = 1024;
+
     private readonly ICatalogSession _session;
 
     public SearchService(ICatalogSession session)
@@ -34,12 +36,18 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress = null,
         [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        var channel = Channel.CreateUnbounded<SearchResultRow>(
-            new UnboundedChannelOptions { SingleReader = true, SingleWriter = true });
+        // Bounded so a slow consumer holds the producer back instead of letting rows pile up.
+        var channel = Channel.CreateBounded<SearchResultRow>(
+            new BoundedChannelOptions(ChannelCapacity)
+            {
+                FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true
+            });
+        // Lets us release a producer blocked on a full channel if the consumer stops enumerating early.
+        using var producerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
         // The per-source Find is synchronous and CPU-bound; run it off the consumer's thread and
         // bridge matches through the channel.
-        var producer = Task.Run(() => Produce(query, channel.Writer, progress, cancellationToken), CancellationToken.None);
+        var producer = Task.Run(() => Produce(query, channel.Writer, progress, producerCts.Token), CancellationToken.None);
 
         try
         {
@@ -54,6 +62,7 @@ public sealed class SearchService : ISearchService
         finally
         {
             // Surface any producer exception and ensure the background work has finished.
+            producerCts.Cancel();
             await producer.ConfigureAwait(false);
         }
     }
@@ -110,8 +119,7 @@ public sealed class SearchService : ISearchService
                 onMatch: idx =>
                 {
                     if (matched >= limit) return;
-                    writer.TryWrite(BuildRow(source, localCatalogId, idx));
-                    matched++;
+                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, idx), ct)) matched++;
                 },
                 isCancelled: () => ct.IsCancellationRequested || matched >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
@@ -131,6 +139,20 @@ public sealed class SearchService : ISearchService
             lastReport = now;
             progress.Report(new SearchProgress(scanned, grandTotal, Stopwatch.GetElapsedTime(started)));
         }
+    }
+
+    // The find loop is synchronous CPU-bound work inside Task.Run, so waiting for space here is the
+    // backpressure; it blocks that pool thread by design. TryWrite on a full bounded channel would
+    // silently drop the row. Returns false (row not written) if the channel was completed.
+    private static bool WriteBlocking(ChannelWriter<SearchResultRow> writer, SearchResultRow row, CancellationToken ct)
+    {
+        while (!writer.TryWrite(row))
+        {
+            // Throws OperationCanceledException when cancelled; Produce treats that as a normal stop.
+            if (!writer.WaitToWriteAsync(ct).AsTask().GetAwaiter().GetResult()) return false;
+        }
+
+        return true;
     }
 
     private static SearchResultRow BuildRow(IEntrySource source, int catalogId, int idx)

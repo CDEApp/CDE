@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using cdeAppCore.Dtos;
 using cdeAppCore.Search;
 using cdeLib;
+using cdeLib.Entities;
 using NUnit.Framework;
 
 namespace cdeAppCoreTest;
@@ -123,5 +124,51 @@ public class SearchServiceTests
         Assert.That(seen, Is.GreaterThanOrEqualTo(1));
         Assert.That(last.Count, Is.EqualTo(last.Total));
         Assert.That(last.Total, Is.GreaterThan(0));
+    }
+
+    private static RootEntry BigTree(int files)
+    {
+        var root = new RootEntry
+        {
+            Path = @"C:ig", VolumeName = "VOL", DefaultFileName = "big.cde", ActualFileName = "big.cde",
+            DriveLetterHint = "C", Description = "d", AvailSpace = 1, TotalSpace = 2
+        };
+        for (var i = 0; i < files; i++) root.AddChild(new DirEntry(false) { Path = $"f{i}.txt", Size = i });
+        root.SetInMemoryFields();
+        return root;
+    }
+
+    [Test]
+    public async Task Search_WithMoreMatchesThanTheBoundedQueue_DropsNothing()
+    {
+        using var fixture = new CatalogFixture(BigTree(5000));
+        var search = new SearchService(fixture.Session);
+
+        var rows = new List<SearchResultRow>();
+        await foreach (var row in search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = 100000 }))
+        {
+            if (rows.Count % 500 == 0) await Task.Delay(5); // slow consumer: the producer must wait, not drop
+            rows.Add(row);
+        }
+
+        Assert.That(rows.FindAll(r => !r.IsDirectory), Has.Count.EqualTo(5000));
+    }
+
+    [Test]
+    public async Task Search_AbandonedByTheConsumer_DoesNotLeaveTheProducerBlocked()
+    {
+        using var fixture = new CatalogFixture(BigTree(5000));
+        var search = new SearchService(fixture.Session);
+
+        var consume = Task.Run(async () =>
+        {
+            await foreach (var _ in search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = 100000 }))
+            {
+                break; // leaves the bounded queue full
+            }
+        });
+
+        Assert.That(await Task.WhenAny(consume, Task.Delay(TimeSpan.FromSeconds(10))), Is.SameAs(consume),
+            "disposing the enumerator must release the producer");
     }
 }
