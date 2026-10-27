@@ -28,7 +28,7 @@ internal sealed class CatalogSlot(IEntrySource source, string sourcePath) : IDis
 
     public CatalogReadLease EnterRead()
     {
-        _lock.EnterReadLock();
+        _lock.EnterReadLock(); // NOSONAR S2222/S7133: read lock is handed to the CatalogReadLease, which releases it in Dispose
         var current = Source;
         if (current == null)
         {
@@ -42,7 +42,7 @@ internal sealed class CatalogSlot(IEntrySource source, string sourcePath) : IDis
     /// <summary>Like <see cref="EnterRead"/> but returns false (holding nothing) when the slot has no source.</summary>
     public bool TryEnterRead(out CatalogReadLease lease)
     {
-        _lock.EnterReadLock();
+        _lock.EnterReadLock(); // NOSONAR S2222/S7133: read lock is handed to the CatalogReadLease, which releases it in Dispose
         var current = Source;
         if (current == null)
         {
@@ -60,7 +60,7 @@ internal sealed class CatalogSlot(IEntrySource source, string sourcePath) : IDis
     /// <summary>Take the write lock, waiting for running readers. Polls so a cancel is honoured while waiting.</summary>
     public void EnterWrite(CancellationToken ct)
     {
-        while (!_lock.TryEnterWriteLock(TimeSpan.FromMilliseconds(50)))
+        while (!_lock.TryEnterWriteLock(TimeSpan.FromMilliseconds(50))) // NOSONAR S7133: EnterWrite/ExitWrite are paired by the caller (CatalogSession.Rescan swap)
         {
             ct.ThrowIfCancellationRequested();
         }
