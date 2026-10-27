@@ -83,7 +83,12 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .tabs .reload { margin-left: auto; }
 
 /* main */
-.main { overflow: hidden; background: var(--content); }
+.main { overflow: hidden; background: var(--content); position: relative; }
+/* A view kept mounted while another tab shows (the Directory view, #80). Hidden with visibility +
+   absolute positioning, not display:none, so it keeps its size and scroll offsets (virtual lists would
+   otherwise measure 0x0 and browsers may reset scrollTop). Hidden panes are unfocusable and inert. */
+.view-pane { height: 100%; }
+.view-pane-hidden { position: absolute; inset: 0; visibility: hidden; pointer-events: none; }
 .split { display: grid; grid-template-columns: 320px 6px 1fr; height: 100%; }
 .pane { overflow: auto; height: 100%; }
 .splitter { cursor: col-resize; background: var(--border); }

@@ -46,6 +46,7 @@ import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
+import { viewPaneClass } from "./viewPane";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
 
 type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
@@ -78,6 +79,8 @@ export default function App() {
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [revealKey, setRevealKey] = useState<string | null>(null);
+  // Bumped per View-in-Tree, so revealing the already-selected node again re-centres it (the tree stays mounted).
+  const [revealNonce, setRevealNonce] = useState(0);
   const [expandTo, setExpandTo] = useState<EntryRef[] | undefined>(undefined);
   const [dirPath, setDirPath] = useState("");
   const [dirNodes, setDirNodes] = useState<DirectoryNode[]>([]);
@@ -102,6 +105,9 @@ export default function App() {
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
   const treeGenRef = useRef<Record<number, number>>({});
+  // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
+  // so a reload must drop the tree's cached expansion + children itself.
+  const reloadEpochRef = useRef(0);
   // Latest values for async completions (a rescan finishes long after the click that started it).
   const latest = useRef({ catalogs, selectedKey, dirPath, rescans, treemapRequest });
   latest.current = { catalogs, selectedKey, dirPath, rescans, treemapRequest };
@@ -182,7 +188,7 @@ export default function App() {
         fullPath: c.rootPath,
         size: c.rootSize,
         catalogName: catalogName(c.actualFileName),
-        generation: treeGenRef.current[c.catalogId] ?? 0,
+        generation: (treeGenRef.current[c.catalogId] ?? 0) + reloadEpochRef.current,
       })),
     );
   }, []);
@@ -194,6 +200,13 @@ export default function App() {
       setStatus("Loading catalogs…");
       try {
         await client.reload({}, dir ?? undefined);
+        // Rebuild the tree from scratch: refs and expansion from the old load are not trusted.
+        reloadEpochRef.current += 1;
+        setSelectedKey(null);
+        setRevealKey(null);
+        setExpandTo(undefined);
+        setDirPath("");
+        setDirNodes([]);
         await refreshCatalogs(client);
         setStatus("");
       } catch (e) {
@@ -279,6 +292,7 @@ export default function App() {
       const parentNode = chain[chain.length - 2] ?? chain[chain.length - 1];
       await selectNode(parent, parentNode.fullPath);
       setRevealKey(refToString(parent)); // centre this node in the tree (it's the reveal target)
+      setRevealNonce((n) => n + 1);
     },
     [selectNode],
   );
@@ -590,7 +604,9 @@ export default function App() {
       </div>
 
       <div className="main">
-        {view === "directory" && (
+        {/* Stays mounted when another tab is active (#80): keeps expansion, loaded children, scroll
+            offsets, selection, listing and split width. Hidden via visibility (see viewPane.ts). */}
+        <div className={viewPaneClass<View>("directory", view)} aria-hidden={view !== "directory"}>
           <SplitPane
             initialLeftWidth={(uiRef.current?.get().treePaneWidth as number) ?? 320}
             onResizeEnd={onTreePaneResize}
@@ -600,6 +616,7 @@ export default function App() {
                 roots={roots}
                 selectedKey={selectedKey}
                 revealKey={revealKey}
+                revealNonce={revealNonce}
                 expandTo={expandTo}
                 onSelect={(ref, fp) => {
                   setRevealKey(null); // manual click: don't centre, just keep it visible
@@ -626,7 +643,7 @@ export default function App() {
               />
             }
           />
-        )}
+        </div>
 
         {view === "results" && (
           <div className="results-pane">

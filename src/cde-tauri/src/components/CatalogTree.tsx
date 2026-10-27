@@ -45,6 +45,8 @@ interface Props {
   roots: TreeRoot[];
   selectedKey: string | null;
   revealKey?: string | null; // when this key is selected, centre it in the pane (vs just nearest)
+  /** Bumped for each deliberate reveal, so revealing the already-selected node scrolls again. */
+  revealNonce?: number;
   expandTo?: EntryRef[]; // path to auto-expand
   onSelect: (ref: EntryRef, fullPath: string) => void;
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
@@ -60,7 +62,7 @@ interface Props {
  * screen. Child folders are fetched on first expand and kept for later expands.
  */
 export function CatalogTree({
-  client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
+  client, roots, selectedKey, revealKey, revealNonce, expandTo, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
 }: Props) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [children, setChildren] = useState<ReadonlyMap<string, DirectoryNode[]>>(() => new Map());
@@ -156,7 +158,7 @@ export function CatalogTree({
     pendingScroll.current = selectedKey
       ? { key: selectedKey, align: revealKey === selectedKey ? "center" : "nearest" }
       : null;
-  }, [selectedKey, revealKey]);
+  }, [selectedKey, revealKey, revealNonce]);
   useEffect(() => {
     const pending = pendingScroll.current;
     if (!pending) return;
@@ -164,7 +166,7 @@ export function CatalogTree({
     if (index < 0) return;
     listRef.current?.scrollToIndex(index, pending.align);
     pendingScroll.current = null;
-  }, [rows, selectedKey, revealKey]);
+  }, [rows, selectedKey, revealKey, revealNonce]);
 
   return (
     <div
