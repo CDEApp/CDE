@@ -1,7 +1,8 @@
-﻿using System.Threading;
+﻿using System.Collections.Generic;
+using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
-using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
 using JetBrains.Annotations;
 using Serilog;
 using SlimMessageBus;
@@ -25,8 +26,7 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
 
     public Task OnHandle(FindDuplicatesCommand request, CancellationToken cancellationToken)
     {
-        // Dupes reads hashes from the columnar .cdex catalogs; reconstruct trees and reuse the
-        // existing duplicate-detection engine.
+        // Dupes is read-only: work directly over the memory-mapped .cdex readers, no pointer tree.
         var cdexFiles = _catalogRepository.GetColumnarFileList(["./"]);
         if (cdexFiles.Count == 0)
         {
@@ -34,7 +34,19 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
             return Task.CompletedTask;
         }
 
-        _duplication.FindDuplicates(CatalogTreeBuilder.FromColumnarFiles(cdexFiles));
+        var readers = new List<ColumnarCatalogReader>(cdexFiles.Count);
+        try
+        {
+            foreach (var file in cdexFiles)
+                readers.Add(new ColumnarCatalogReader(file));
+            _duplication.FindDuplicates(readers);
+        }
+        finally
+        {
+            foreach (var reader in readers)
+                reader.Dispose();
+        }
+
         return Task.CompletedTask;
     }
 }

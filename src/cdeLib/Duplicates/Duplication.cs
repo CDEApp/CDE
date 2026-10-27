@@ -542,6 +542,15 @@ public class Duplication
         }
     }
 
+    /// <summary>
+    /// Index-based equivalent of <see cref="FindDuplicates(IEnumerable{RootEntry})"/> that works directly
+    /// over memory-mapped columnar readers without rebuilding a pointer tree. Output is identical.
+    /// </summary>
+    public void FindDuplicates(IReadOnlyList<Entities.Columnar.ColumnarCatalogReader> readers)
+    {
+        new ColumnarDuplicateFinder(_logger).FindDuplicates(readers);
+    }
+
     public List<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)
     {
         EntryHelper.TraverseTreePair(rootEntries, BuildDuplicateList);
