@@ -19,32 +19,45 @@ public interface ILoadCatalogService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Discover columnar <c>.cdex</c> catalogs (current dir + config path, one level down). When any
+    /// Discover columnar <c>.cdex</c> catalogs (config path, and the current dir unless excluded; one level down). When any
     /// exist the GUI memory-maps them instead of loading <c>.cde</c> trees. Empty/none ⇒ fall back.
     /// </summary>
     IList<string> GetColumnarFiles(string configPath);
 }
 
 /// <summary>
-/// Frontend-agnostic catalog loading. Sources catalogs from the current directory and the supplied
-/// <c>configPath</c> (one level down). No UI dependency: progress is reported via a plain callback,
-/// cancellation via a <see cref="CancellationToken"/>.
+/// Frontend-agnostic catalog loading. Sources catalogs from the supplied <c>configPath</c> and, unless
+/// constructed with <c>includeCurrentDirectory: false</c>, the current directory (each one level down).
+/// No UI dependency: progress is reported via a plain callback, cancellation via a <see cref="CancellationToken"/>.
 /// </summary>
 public class LoadCatalogService : ILoadCatalogService
 {
     private readonly ILogger _logger;
+    private readonly bool _includeCurrentDirectory;
 
-    public LoadCatalogService(ILogger logger)
+    /// <param name="logger">Logger for unreadable catalogs.</param>
+    /// <param name="includeCurrentDirectory">
+    /// Also search the current directory. cdeWin does; the cdeApi sidecar searches only the requested folder,
+    /// because its current directory is just wherever the app was launched.
+    /// </param>
+    public LoadCatalogService(ILogger logger, bool includeCurrentDirectory = true)
     {
         _logger = logger;
+        _includeCurrentDirectory = includeCurrentDirectory;
     }
 
-    private static string[] CachePaths(string configPath) => [".", configPath];
+    private string[] CachePaths(string configPath) =>
+        _includeCurrentDirectory ? [".", configPath] : [configPath];
+
+    // The search folders can overlap ("." and configPath are the same folder when the app runs in its
+    // catalog folder), so drop repeats by full path, keeping the first spelling.
+    private static List<string> DistinctFiles(IEnumerable<string> files) =>
+        files.DistinctBy(Path.GetFullPath, StringComparer.OrdinalIgnoreCase).ToList();
 
     public IList<string> GetColumnarFiles(string configPath)
     {
         using var repo = new CatalogRepository(_logger);
-        return repo.GetColumnarFileList(CachePaths(configPath));
+        return DistinctFiles(repo.GetColumnarFileList(CachePaths(configPath)));
     }
 
     public async Task<List<RootEntry>> LoadRootEntriesAsync(
@@ -53,7 +66,7 @@ public class LoadCatalogService : ILoadCatalogService
         CancellationToken cancellationToken = default)
     {
         using var repo = new CatalogRepository(_logger);
-        var cacheFiles = repo.GetCacheFileList(CachePaths(configPath));
+        var cacheFiles = DistinctFiles(repo.GetCacheFileList(CachePaths(configPath)));
         var totalFiles = cacheFiles.Count;
 
         if (totalFiles == 0)

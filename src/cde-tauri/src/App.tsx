@@ -156,12 +156,12 @@ export default function App() {
         } catch (e) {
           console.error("colour rules failed to load; continuing without custom colours", e);
         }
-        // Re-open the last-used catalog folder, if any.
+        // Load the last-used catalog folder, or the sidecar's default folder. The sidecar loads nothing on
+        // its own, so the handshake never waits on catalogs (a folder of legacy .cde files is slow).
         const savedDir = typeof ui.catalogDir === "string" ? ui.catalogDir : undefined;
-        if (savedDir) {
-          setCatalogDir(savedDir);
-          await client.reload({}, savedDir);
-        }
+        if (savedDir) setCatalogDir(savedDir);
+        setStatus("Loading catalogs…");
+        await client.reload({ onProgress: (p) => setStatus(p.message) }, savedDir);
         await refreshCatalogs(client);
         setReady(true);
         setStatus("");

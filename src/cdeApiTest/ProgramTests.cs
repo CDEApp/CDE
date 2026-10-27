@@ -138,19 +138,66 @@ public class ProgramTests
         Assert.That(response.Headers.GetValues("Access-Control-Allow-Origin"), Is.EqualTo(new[] { "*" }));
     }
 
-    [Test]
-    public async Task Startup_loads_the_catalogs_in_the_configured_folder()
+    private static string WriteCatalogIn(string dir)
     {
-        var data = Path.Combine(_dir, "data");
+        var data = Path.Combine(dir, "data");
         Directory.CreateDirectory(data);
         File.WriteAllText(Path.Combine(data, "a.txt"), "a");
-        TestCatalog.WriteCatalog(data, Path.Combine(_dir, "one.cdex"));
+        TestCatalog.WriteCatalog(data, Path.Combine(dir, "one.cdex"));
+        return data;
+    }
+
+    private static async Task<CatalogsResponse> CatalogsAsync(HttpClient client) =>
+        (await client.GetFromJsonAsync<CatalogsResponse>("/catalogs", JsonSerializerOptions.Web))!;
+
+    // The handshake must not wait on catalogs (a folder of legacy .cde files took over a minute); the UI
+    // starts the load with /session/reload and shows its progress.
+    [Test]
+    public async Task Startup_does_not_load_catalogs()
+    {
+        WriteCatalogIn(_dir);
         using var client = AuthorisedClient();
 
-        var catalogs = await client.GetFromJsonAsync<CatalogsResponse>("/catalogs", JsonSerializerOptions.Web);
+        Assert.That((await CatalogsAsync(client)).CatalogsLoaded, Is.EqualTo(0));
+    }
 
-        Assert.That(catalogs!.CatalogsLoaded, Is.EqualTo(1));
+    [Test]
+    public async Task Reload_without_a_path_loads_the_configured_folder()
+    {
+        var data = WriteCatalogIn(_dir);
+        using var client = AuthorisedClient();
+
+        var reload = await client.PostAsync("/session/reload", null);
+
+        var done = TestCatalog.Events(await reload.Content.ReadAsStringAsync()).Last();
+        Assert.That(done.Event, Is.EqualTo("done"));
+        Assert.That(done.Data.GetProperty("catalogs").GetInt32(), Is.EqualTo(1));
+        var catalogs = await CatalogsAsync(client);
+        Assert.That(catalogs.CatalogsLoaded, Is.EqualTo(1));
         Assert.That(catalogs.Catalogs.Single().RootPath, Does.StartWith(data));
+    }
+
+    // The sidecar's current directory is just wherever cde-tauri was launched, so it is not searched.
+    [Test]
+    public async Task Reload_does_not_search_the_current_directory()
+    {
+        var cwd = Directory.CreateTempSubdirectory("cde-api-program-cwd").FullName;
+        var cwdBefore = Directory.GetCurrentDirectory();
+        try
+        {
+            WriteCatalogIn(cwd);
+            Directory.SetCurrentDirectory(cwd);
+            using var client = AuthorisedClient();
+
+            await client.PostAsync("/session/reload", null);
+
+            Assert.That((await CatalogsAsync(client)).CatalogsLoaded, Is.EqualTo(0));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(cwdBefore);
+            Directory.Delete(cwd, recursive: true);
+        }
     }
 
     [Test]

@@ -3,7 +3,6 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using cdeApi;
-using cdeAppCore.Session;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Serilog;
@@ -40,18 +39,9 @@ app.UseTokenGate();
 
 app.MapCdeApi();
 
-// --- load the session up front, then start and report the handshake on stdout ---
-var session = app.Services.GetRequiredService<ICatalogSession>();
-try
-{
-    await session.LoadAsync(app.Services.GetRequiredService<ApiOptions>().ConfigPath);
-    logger.Information("Loaded {Catalogs} catalogs ({Entries} entries)", session.CatalogCount, session.TotalEntryCount);
-}
-catch (Exception ex)
-{
-    logger.Warning(ex, "Initial catalog load failed; starting with an empty session");
-}
-
+// --- start and report the handshake on stdout ---
+// No catalogs are loaded here: the UI starts the load with POST /session/reload and shows its progress. Loading
+// first would hold back the handshake, and a folder of legacy .cde catalogs takes longer than the UI waits.
 await app.StartAsync();
 
 var address = app.Services.GetRequiredService<IServer>()

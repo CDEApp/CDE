@@ -35,7 +35,8 @@ public static class ApiComposition
                 : new NoopShellActions(customCommands, logger);
         });
 
-        services.AddSingleton<ILoadCatalogService>(_ => new LoadCatalogService(logger));
+        // Only the requested folder: the sidecar's current directory is wherever cde-tauri was launched.
+        services.AddSingleton<ILoadCatalogService>(_ => new LoadCatalogService(logger, includeCurrentDirectory: false));
         services.AddSingleton<ICatalogSession>(sp =>
             new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger));
         services.AddSingleton<ISearchService>(sp =>
