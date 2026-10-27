@@ -165,7 +165,7 @@ public class CommonEntryTest_TraverseTreesCopyHash
     public void TraverseTreesCopyHash_DontCopyHashIfDestHasFullHash()
     {
         RecreateTestTree();
-        _dde1.SetHash(99); 
+        _dde1.SetHash(99);
         _dde1.IsPartialHash = false;
         var destHashBefore = _dde1.Hash;
 

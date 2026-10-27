@@ -190,7 +190,7 @@ public class ScanPipelineScanTests
         Directory.CreateDirectory(scanRoot);
         var link = Path.Combine(scanRoot, "link");
         var psi = new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"")
-            { CreateNoWindow = true, RedirectStandardOutput = true, UseShellExecute = false };
+        { CreateNoWindow = true, RedirectStandardOutput = true, UseShellExecute = false };
         using (var p = Process.Start(psi)) { p!.WaitForExit(); }
         if (!Directory.Exists(link)) Assert.Ignore("could not create junction");
 

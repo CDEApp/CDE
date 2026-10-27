@@ -23,7 +23,7 @@ namespace cdeWin;
 public class ContextMenuHelper : IDisposable
 {
     // Fields set on ContextMenuStrip remove space for icons on left of menu for items.
-    private readonly ContextMenuStrip _menu = new() {ShowCheckMargin = false, ShowImageMargin = false};
+    private readonly ContextMenuStrip _menu = new() { ShowCheckMargin = false, ShowImageMargin = false };
 
     private bool _isDisposed;
     private readonly ToolStripMenuItem _viewTree = new("View Tree");

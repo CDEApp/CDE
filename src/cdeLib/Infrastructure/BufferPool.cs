@@ -30,7 +30,7 @@ public class BufferPool
     public void Return(byte[] buffer)
     {
         if (buffer == null || buffer.Length != _bufferSize) return;
-        
+
         if (_currentCount < _maxBuffers)
         {
             _buffers.Enqueue(buffer);

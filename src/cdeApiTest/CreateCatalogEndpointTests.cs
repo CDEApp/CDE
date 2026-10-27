@@ -219,7 +219,11 @@ public class CreateCatalogEndpointTests
     {
         var pf = new CreatePreflightResult
         {
-            CatalogDir = _cat, Writable = true, RootAccessible = true, FileName = "x", TargetPath = "x.cdex"
+            CatalogDir = _cat,
+            Writable = true,
+            RootAccessible = true,
+            FileName = "x",
+            TargetPath = "x.cdex"
         };
         Assert.That(CreateCatalogEndpoint.Refuse(pf, Req()), Is.Null);
     }

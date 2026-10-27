@@ -26,7 +26,7 @@ public sealed class FileStreamManager : IDisposable
     public FileStream CreateReadStream(string filePath)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        
+
         return new FileStream(
             filePath,
             FileMode.Open,
@@ -42,7 +42,7 @@ public sealed class FileStreamManager : IDisposable
     public FileStream CreateWriteStream(string filePath)
     {
         ObjectDisposedException.ThrowIf(_disposed, this);
-        
+
         return new FileStream(
             filePath,
             FileMode.Create,
@@ -127,16 +127,16 @@ public sealed class FileStreamManager : IDisposable
     public void Dispose()
     {
         if (_disposed) return;
-        
+
         _disposed = true;
-        
+
         // Dispose all semaphores
         foreach (var semaphore in _fileLocks.Values)
         {
             semaphore.Dispose();
         }
         _fileLocks.Clear();
-        
+
         // Clear buffer pool
         _bufferPool.Dispose();
     }
@@ -148,7 +148,7 @@ public sealed class FileStreamManager : IDisposable
 public static class FileStreams
 {
     // ReSharper disable once InconsistentNaming
-    private static readonly Lazy<FileStreamManager> _instance = 
+    private static readonly Lazy<FileStreamManager> _instance =
         new(() => new FileStreamManager(), LazyThreadSafetyMode.ExecutionAndPublication);
 
     public static FileStreamManager Instance => _instance.Value;

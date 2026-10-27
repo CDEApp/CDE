@@ -539,7 +539,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
     public void SetCatalogsLoadedStatus(int i)
     {
-        catalogsLoadedStatus.Text = @"Catalogs " + i.ToString("N0",CultureInfo.InvariantCulture);
+        catalogsLoadedStatus.Text = @"Catalogs " + i.ToString("N0", CultureInfo.InvariantCulture);
     }
 
     public void SetMemoryStatus(string msg)

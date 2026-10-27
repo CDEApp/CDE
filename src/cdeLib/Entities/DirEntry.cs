@@ -376,18 +376,18 @@ public sealed class DirEntry : ICommonEntry
             case false when de.IsDirectory:
                 return 1; // this after de
             default:
-            {
-                //if (IsDirectory && de.IsDirectory)
-                //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ?
-                //    // really cheap to calculate dir size.... i think i should fill it in ?
-                //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
-                //}
-                // the cast breaks this.
-                var sizeCompare = Size.CompareTo(de.Size);
-                return sizeCompare == 0
-                    ? Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
-                    : sizeCompare;
-            }
+                {
+                    //if (IsDirectory && de.IsDirectory)
+                    //{   // sort by path if both dir's and sorting by Size ? maybe fill in size in field Hmm ?
+                    //    // really cheap to calculate dir size.... i think i should fill it in ?
+                    //    return MyCompareInfo.Compare(Path, de.Path, MyCompareOptions);
+                    //}
+                    // the cast breaks this.
+                    var sizeCompare = Size.CompareTo(de.Size);
+                    return sizeCompare == 0
+                        ? Path.AsSpan().CompareTo(de.Path.AsSpan(), StringComparison.OrdinalIgnoreCase)
+                        : sizeCompare;
+                }
         }
     }
 
@@ -500,7 +500,7 @@ public sealed class DirEntry : ICommonEntry
     public long Size { get; set; }
 
     private static readonly char[] PathSeparators = ['\\', '/'];
-    
+
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
     /// </summary>

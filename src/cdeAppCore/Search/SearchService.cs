@@ -40,7 +40,9 @@ public sealed class SearchService : ISearchService
         var channel = Channel.CreateBounded<SearchResultRow>(
             new BoundedChannelOptions(ChannelCapacity)
             {
-                FullMode = BoundedChannelFullMode.Wait, SingleReader = true, SingleWriter = true
+                FullMode = BoundedChannelFullMode.Wait,
+                SingleReader = true,
+                SingleWriter = true
             });
         // Lets us release a producer blocked on a full channel if the consumer stops enumerating early.
         using var producerCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -187,12 +189,19 @@ public sealed class SearchService : ISearchService
         IncludePath = q.IncludePath,
         IncludeFiles = q.IncludeFiles,
         IncludeFolders = q.IncludeFolders,
-        FromSizeEnable = q.FromSizeEnable, FromSize = q.FromSize,
-        ToSizeEnable = q.ToSizeEnable, ToSize = q.ToSize,
-        FromDateEnable = q.FromDateEnable, FromDate = q.FromDate,
-        ToDateEnable = q.ToDateEnable, ToDate = q.ToDate,
-        FromHourEnable = q.FromHourEnable, FromHour = q.FromHour,
-        ToHourEnable = q.ToHourEnable, ToHour = q.ToHour,
-        NotOlderThanEnable = q.NotOlderThanEnable, NotOlderThan = q.NotOlderThan
+        FromSizeEnable = q.FromSizeEnable,
+        FromSize = q.FromSize,
+        ToSizeEnable = q.ToSizeEnable,
+        ToSize = q.ToSize,
+        FromDateEnable = q.FromDateEnable,
+        FromDate = q.FromDate,
+        ToDateEnable = q.ToDateEnable,
+        ToDate = q.ToDate,
+        FromHourEnable = q.FromHourEnable,
+        FromHour = q.FromHour,
+        ToHourEnable = q.ToHourEnable,
+        ToHour = q.ToHour,
+        NotOlderThanEnable = q.NotOlderThanEnable,
+        NotOlderThan = q.NotOlderThan
     };
 }

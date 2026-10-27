@@ -129,7 +129,10 @@ public class ColumnarCatalogTests
             var viaOptions = new List<string>();
             reader.Find(new EntryStoreFindOptions
             {
-                Pattern = pattern, IncludePath = true, IncludeFiles = true, IncludeFolders = true
+                Pattern = pattern,
+                IncludePath = true,
+                IncludeFiles = true,
+                IncludeFolders = true
             }, i => viaOptions.Add(reader.FullPath(i)));
 
             Assert.That(viaFindPath.OrderBy(x => x), Is.EqualTo(expected.OrderBy(x => x)));

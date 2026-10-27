@@ -130,8 +130,14 @@ public class SearchServiceTests
     {
         var root = new RootEntry
         {
-            Path = @"C:ig", VolumeName = "VOL", DefaultFileName = "big.cde", ActualFileName = "big.cde",
-            DriveLetterHint = "C", Description = "d", AvailSpace = 1, TotalSpace = 2
+            Path = @"C:ig",
+            VolumeName = "VOL",
+            DefaultFileName = "big.cde",
+            ActualFileName = "big.cde",
+            DriveLetterHint = "C",
+            Description = "d",
+            AvailSpace = 1,
+            TotalSpace = 2
         };
         for (var i = 0; i < files; i++) root.AddChild(new DirEntry(false) { Path = $"f{i}.txt", Size = i });
         root.SetInMemoryFields();

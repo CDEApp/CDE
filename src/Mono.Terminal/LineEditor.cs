@@ -634,7 +634,7 @@ public class LineEditor
                 last = p;
             }
 
-            mismatch:
+        mismatch:
             var prefix = completion.Prefix ?? string.Empty;
             var displayCompletions = (string[])completions.Clone();
             if (last != -1)

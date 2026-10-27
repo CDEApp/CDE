@@ -59,7 +59,7 @@ public class WorkStealingTreeTraversal
         // Wait for all workers to complete with timeout to prevent hanging
         using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(30)); // 30 minute timeout
         using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken, timeoutCts.Token);
-        
+
         try
         {
             await Task.WhenAll(workers);
@@ -82,7 +82,7 @@ public class WorkStealingTreeTraversal
         _workQueue.RegisterWorker();
         var idleCount = 0;
         const int maxIdleIterations = 100; // Maximum idle iterations before giving up
-        
+
         try
         {
             while (!_cancellationToken.IsCancellationRequested)
@@ -96,7 +96,7 @@ public class WorkStealingTreeTraversal
                 {
                     // No work available - implement proper termination logic
                     idleCount++;
-                    
+
                     if (_workQueue.HasWork)
                     {
                         // There's still work in the system, but we couldn't get any
@@ -143,7 +143,7 @@ public class WorkStealingTreeTraversal
         }
     }
 
-    private async Task ProcessWorkItem(TraversalWorkItem workItem, 
+    private async Task ProcessWorkItem(TraversalWorkItem workItem,
         Func<ICommonEntry, ICommonEntry, Task<bool>> processor)
     {
         try
@@ -161,7 +161,7 @@ public class WorkStealingTreeTraversal
                 // Call processor for this child (parent=workItem.Entry, child=dirEntry)
                 var shouldContinue = await processor(workItem.Entry, dirEntry);
                 Interlocked.Increment(ref _totalEntriesProcessed);
-                
+
                 if (!shouldContinue)
                 {
                     break; // Stop processing if processor returns false (matches TraverseTreePair)
@@ -174,8 +174,8 @@ public class WorkStealingTreeTraversal
                 {
                     var childWorkItem = new TraversalWorkItem(null, dirEntry, workItem.Depth + 1);
                     _workQueue.AddWork(childWorkItem);
-                    
-                    logger.Verbose("Added directory to work queue: {DirectoryPath} (Depth: {Depth})", 
+
+                    logger.Verbose("Added directory to work queue: {DirectoryPath} (Depth: {Depth})",
                         dirEntry.Path, workItem.Depth + 1);
                 }
             }

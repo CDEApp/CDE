@@ -27,7 +27,10 @@ public class PathAndRegexCharacterisationTests
     {
         var root = new RootEntry
         {
-            Path = rootPath, VolumeName = "VOL", DefaultFileName = "t.cde", DriveLetterHint = "C",
+            Path = rootPath,
+            VolumeName = "VOL",
+            DefaultFileName = "t.cde",
+            DriveLetterHint = "C",
         };
 
         var cafe = new DirEntry(true) { Path = "caf\u00e9" };
@@ -192,8 +195,11 @@ public class PathAndRegexCharacterisationTests
             {
                 reader.Find(new EntryStoreFindOptions
                 {
-                    Pattern = pattern, RegexMode = true, IncludePath = includePath,
-                    IncludeFiles = includeFiles, IncludeFolders = includeFolders
+                    Pattern = pattern,
+                    RegexMode = true,
+                    IncludePath = includePath,
+                    IncludeFiles = includeFiles,
+                    IncludeFolders = includeFolders
                 }, actual.Add);
             }
             else
@@ -207,8 +213,11 @@ public class PathAndRegexCharacterisationTests
             if (viaOptions)
                 EntryStoreSearch.Find(store, new EntryStoreFindOptions
                 {
-                    Pattern = pattern, RegexMode = true, IncludePath = includePath,
-                    IncludeFiles = includeFiles, IncludeFolders = includeFolders
+                    Pattern = pattern,
+                    RegexMode = true,
+                    IncludePath = includePath,
+                    IncludeFiles = includeFiles,
+                    IncludeFolders = includeFolders
                 }, viaStore.Add);
             else
                 EntryStoreSearch.Find(store, pattern, true, includePath, includeFiles, includeFolders, viaStore.Add);
@@ -345,7 +354,7 @@ public class PathAndRegexCharacterisationTests
         {
             const string pattern = "no_such_text_anywhere";
             long Run(EntryStore s) => Best(() => EntryStoreSearch.Find(s, new EntryStoreFindOptions
-                { Pattern = pattern, RegexMode = true, IncludePath = includePath }, _ => { }), 3);
+            { Pattern = pattern, RegexMode = true, IncludePath = includePath }, _ => { }), 3);
             var a = Run(small);
             var b = Run(large);
             var extraEntries = large.Count - small.Count;

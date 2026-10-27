@@ -22,7 +22,11 @@ public class ListingAndRowCharacterisationTests
     {
         var root = new RootEntry
         {
-            Path = rootPath, VolumeName = "VOL", DefaultFileName = "t.cde", ActualFileName = "t.cde", DriveLetterHint = "C",
+            Path = rootPath,
+            VolumeName = "VOL",
+            DefaultFileName = "t.cde",
+            ActualFileName = "t.cde",
+            DriveLetterHint = "C",
         };
 
         var dirA = new DirEntry(true) { Path = "dirA" };

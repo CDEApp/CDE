@@ -94,23 +94,23 @@ public static class Program
     /// </summary>
     private static Task DispatchAsync(object options) => options switch
     {
-        ScanOptions o            => _app.CreateCacheAsync(o),
-        FindOptions o            => RunSync(() => _app.RunFind(o.Value, "--find")),
-        FindPathOptions o        => RunSync(() => _app.RunFind(o.Value, "--findpath")),
-        GrepOptions o            => RunSync(() => _app.RunFind(o.Value, "--grep")),
-        GrepPathOptions o        => RunSync(() => _app.RunFind(o.Value, "--greppath")),
-        ReplGrepPathOptions o    => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
-        ReplGrepOptions o        => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
-        ReplFindOptions o        => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
-        MigrateOptions o         => RunSync(() => _app.Migrate(o)),
+        ScanOptions o => _app.CreateCacheAsync(o),
+        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find")),
+        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath")),
+        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep")),
+        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath")),
+        ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
+        ReplGrepOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
+        ReplFindOptions o => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
+        MigrateOptions o => RunSync(() => _app.Migrate(o)),
         HashOptions => _app.HashCatalogAsync(),
         DupesOptions => _app.FindDupesAsync(),
         TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
         LoadWaitOptions => RunSync(_app.LoadWait),
         ReplOptions => RunSync(CdeApp.InvokeRepl),
         PopulousFoldersOptions o => RunSync(() => _app.FindPopulous(o.Count)),
-        UpdateOptions o          => _app.UpdateAsync(o),
-        _                        => Task.CompletedTask,
+        UpdateOptions o => _app.UpdateAsync(o),
+        _ => Task.CompletedTask,
     };
 
     private static Task RunSync(Action action)

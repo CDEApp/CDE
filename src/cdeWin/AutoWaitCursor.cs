@@ -399,7 +399,7 @@ public partial class AutoWaitCursor
             // Create the monitor thread
             _callbackThread = new Thread(ThreadCallbackLoop)
             {
-                Name = "AutoWaitCursorCallback", 
+                Name = "AutoWaitCursorCallback",
                 IsBackground = true
             };
             // Start the thread
@@ -439,7 +439,7 @@ public partial class AutoWaitCursor
                 ProcessCursorChangeAndIdleState();
             }
         }
-        
+
         private void ProcessCursorChangeAndIdleState()
         {
             try
