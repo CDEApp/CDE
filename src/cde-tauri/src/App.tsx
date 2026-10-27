@@ -29,6 +29,7 @@ import {
 import { findCatalogByTarget } from "./newCatalog";
 import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
+import { AboutModal } from "./components/AboutModal";
 import {
   CatalogInfo,
   CatalogsResponse,
@@ -112,6 +113,7 @@ export default function App() {
   const [rescans, setRescans] = useState<RescanState>(emptyRescanState);
   const rescanAborts = useRef(new Map<number, AbortController>());
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
+  const [aboutOpen, setAboutOpen] = useState(false);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
@@ -777,6 +779,7 @@ export default function App() {
         onOpenFolder={openFolder}
         onReload={() => void reloadCatalogs(catalogDir)}
         onExit={() => void getCurrentWindow().close()}
+        onAbout={() => setAboutOpen(true)}
         loadDisabledReason={loadBlockedReasonText}
       />
 
@@ -927,6 +930,7 @@ export default function App() {
       />
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
       <RootUnreachableModal rootPath={unreachableRoot} onClose={() => setUnreachableRoot(null)} />
+      <AboutModal opened={aboutOpen} onClose={() => setAboutOpen(false)} />
       <NewCatalogDialog
         rootPath={newCatalogRoot}
         client={clientRef.current}
