@@ -34,6 +34,16 @@ pnpm bundle-sidecar   # publishes cdeApi and stages it under src-tauri/binaries/
 pnpm tauri dev        # runs vite + the Rust shell
 ```
 
+## Test
+
+```bash
+pnpm test             # Vitest, single run (CI runs this plus `tsc --noEmit`)
+pnpm test:watch       # Vitest in watch mode
+```
+
+Tests sit next to the module they cover (`format.ts` → `format.test.ts`) and run in plain Node, so
+keep logic you want tested in React-free modules like `format.ts` and `treemapModel.ts`.
+
 ## Build a distributable
 
 ```bash

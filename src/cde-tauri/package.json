@@ -9,6 +9,8 @@
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "tauri": "tauri",
     "bundle-sidecar": "node scripts/bundle-sidecar.mjs"
   },
@@ -28,7 +30,8 @@
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "typescript": "^6.0.3",
-    "vite": "8.3.5"
+    "vite": "8.3.5",
+    "vitest": "^5.0.5"
   },
   "pnpm": {
     "onlyBuiltDependencies": [

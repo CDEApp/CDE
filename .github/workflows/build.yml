@@ -106,3 +106,32 @@ jobs:
         with:
           name: app
           path: artifacts/
+
+  # The Tauri webview frontend: typecheck and unit tests. The Rust shell and the sidecar bundle are
+  # not built here.
+  cde-tauri:
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: src/cde-tauri
+
+    steps:
+      - uses: actions/checkout@v7
+      # Takes the pnpm version from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          package_json_file: src/cde-tauri/package.json
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: lts/*
+          cache: pnpm
+          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
+      - name: Install
+        run: pnpm install --frozen-lockfile
+      - name: Typecheck
+        run: pnpm exec tsc --noEmit
+      - name: Test
+        run: pnpm test

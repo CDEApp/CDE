@@ -1,0 +1,143 @@
+import { describe, expect, it } from "vitest";
+import {
+  BRANCH_PALETTE,
+  MERGED_COLOR,
+  branchColors,
+  branchIdOf,
+  drillTargetId,
+  fullPathOf,
+  joinPath,
+  minFractionFor,
+  mix,
+  tileColor,
+} from "./treemapModel";
+
+describe("minFractionFor", () => {
+  it("is the minimum tile area as a fraction of the chart area", () => {
+    expect(minFractionFor(1000, 600)).toBeCloseTo(36 / 600_000);
+    expect(minFractionFor(100, 100, 10)).toBeCloseTo(0.01);
+  });
+
+  it("falls back to a 1000x600 area before the chart is measured", () => {
+    expect(minFractionFor(0, 0)).toBe(minFractionFor(1000, 600));
+  });
+
+  it("never exceeds one half", () => {
+    expect(minFractionFor(2, 2)).toBe(0.5);
+  });
+});
+
+describe("joinPath", () => {
+  it.each([
+    ["", "a", "a"],
+    ["C:\\", "Users", "C:\\Users"],
+    ["C:\\Users", "jason", "C:\\Users\\jason"],
+    ["/mnt/", "data", "/mnt/data"],
+  ])("joinPath(%j, %j) -> %j", (base, name, expected) => {
+    expect(joinPath(base, name)).toBe(expected);
+  });
+});
+
+describe("branchIdOf", () => {
+  it("is null for the mapped root", () => {
+    expect(branchIdOf({ id: "r", depth: 0, ancestorIds: [] })).toBeNull();
+  });
+
+  it("is the node itself at depth 1", () => {
+    expect(branchIdOf({ id: "a", depth: 1, ancestorIds: ["r"] })).toBe("a");
+  });
+
+  it("is the depth-1 ancestor for deeper nodes", () => {
+    expect(branchIdOf({ id: "c", depth: 3, ancestorIds: ["r", "a", "b"] })).toBe("a");
+  });
+});
+
+describe("branchColors", () => {
+  it("gives the largest branch the first palette colour", () => {
+    const colors = branchColors([
+      { nodeId: "small", size: 10, mergedCount: 0 },
+      { nodeId: "big", size: 100, mergedCount: 0 },
+    ]);
+    expect(colors.get("big")).toBe(BRANCH_PALETTE[0]);
+    expect(colors.get("small")).toBe(BRANCH_PALETTE[1]);
+  });
+
+  it("colours merged rows grey without using up a palette colour", () => {
+    const colors = branchColors([
+      { nodeId: "merged", size: 1000, mergedCount: 5 },
+      { nodeId: "a", size: 10, mergedCount: 0 },
+    ]);
+    expect(colors.get("merged")).toBe(MERGED_COLOR);
+    expect(colors.get("a")).toBe(BRANCH_PALETTE[0]);
+  });
+
+  it("cycles the palette past its length", () => {
+    const branches = Array.from({ length: BRANCH_PALETTE.length + 1 }, (_, i) => ({
+      nodeId: `b${i}`,
+      size: 100 - i,
+      mergedCount: 0,
+    }));
+    expect(branchColors(branches).get(`b${BRANCH_PALETTE.length}`)).toBe(BRANCH_PALETTE[0]);
+  });
+});
+
+describe("mix", () => {
+  it("blends toward the target by the given amount", () => {
+    expect(mix("#000000", "#ffffff", 0)).toBe("#000000");
+    expect(mix("#000000", "#ffffff", 0.5)).toBe("#808080");
+    expect(mix("#000000", "#ffffff", 1)).toBe("#ffffff");
+  });
+
+  it("clamps the amount to 0..1", () => {
+    expect(mix("#102030", "#ffffff", -1)).toBe("#102030");
+    expect(mix("#102030", "#ffffff", 2)).toBe("#ffffff");
+  });
+});
+
+describe("tileColor", () => {
+  it("leaves depth-1 tiles at the branch colour", () => {
+    expect(tileColor("#5b9bd5", 1)).toBe("#5b9bd5");
+  });
+
+  it("lightens each deeper level", () => {
+    expect(tileColor("#000000", 2)).toBe(mix("#000000", "#ffffff", 0.14));
+    expect(tileColor("#000000", 3)).toBe(mix("#000000", "#ffffff", 0.28));
+  });
+});
+
+describe("drillTargetId", () => {
+  const rows = new Map<string, { isDirectory: boolean; ref: unknown }>([
+    ["dir", { isDirectory: true, ref: { catalogId: 1, entryIndex: 5 } }],
+    ["file", { isDirectory: false, ref: { catalogId: 1, entryIndex: 6 } }],
+    ["merged", { isDirectory: true, ref: null }],
+  ]);
+
+  it("drills into the top-level directory branch of a deep node", () => {
+    expect(drillTargetId({ id: "x", depth: 3, ancestorIds: ["r", "dir", "y"] }, rows)).toBe("dir");
+  });
+
+  it("goes nowhere for the root, files, merged rows and unknown ids", () => {
+    expect(drillTargetId({ id: "r", depth: 0, ancestorIds: [] }, rows)).toBeNull();
+    expect(drillTargetId({ id: "file", depth: 1, ancestorIds: ["r"] }, rows)).toBeNull();
+    expect(drillTargetId({ id: "merged", depth: 1, ancestorIds: ["r"] }, rows)).toBeNull();
+    expect(drillTargetId({ id: "nope", depth: 1, ancestorIds: ["r"] }, rows)).toBeNull();
+  });
+});
+
+describe("fullPathOf", () => {
+  const rows = new Map<string, { parentId: string | null; name: string }>([
+    ["r", { parentId: null, name: "root" }],
+    ["a", { parentId: "r", name: "Users" }],
+    ["b", { parentId: "a", name: "jason" }],
+  ]);
+
+  it("joins row names under the mapped root path", () => {
+    expect(fullPathOf("b", rows, "C:\\")).toBe("C:\\Users\\jason");
+    expect(fullPathOf("a", rows, "D:\\data")).toBe("D:\\data\\Users");
+  });
+
+  it("is the root path for the root itself or an unknown id", () => {
+    expect(fullPathOf("r", rows, "C:\\")).toBe("C:\\");
+    expect(fullPathOf("missing", rows, "C:\\")).toBe("C:\\");
+  });
+});
