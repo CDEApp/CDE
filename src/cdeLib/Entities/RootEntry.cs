@@ -684,6 +684,12 @@ public sealed class RootEntry : object, ICommonEntry
         IsHashDone = true;
     }
 
+    public void SetHash(ulong hash)
+    {
+        Hash = new Hash16(hash, 0);
+        IsHashDone = true;
+    }
+
     // For testing convenience.
     public void SetHash(int hash)
     {

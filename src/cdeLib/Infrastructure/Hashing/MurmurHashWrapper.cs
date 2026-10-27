@@ -6,7 +6,7 @@ namespace cdeLib.Infrastructure.Hashing;
 
 public class MurmurHashWrapper : IHashAlgorithm
 {
-    private const UInt32 Seed = 123456U;
+    internal const UInt32 Seed = 123456U;
 
     public UInt64 Hash(byte[] data)
     {

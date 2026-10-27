@@ -1,4 +1,5 @@
 using System;
+using System.Buffers;
 using System.Collections.Generic;
 using System.IO;
 using System.IO.MemoryMappedFiles;
@@ -137,23 +138,15 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
     public void AppendFullPath(StringBuilder sb, int i)
     {
-        var parent = Parent;
-        var offs = NameOffsets;
-        var blob = NameBlob;
-        Span<int> chain = stackalloc int[256];
-        var depth = 0;
-        for (var cur = i; cur != EntryStore.None && depth < chain.Length; cur = parent[cur])
-            chain[depth++] = cur;
-        for (var k = depth - 1; k >= 0; k--)
+        byte[] buf = null;
+        int[] chain = null;
+        var n = BuildPathBytes(ref buf, ref chain, i);
+        if (sb.Length > 0)
         {
-            if (sb.Length > 0)
-            {
-                var last = sb[^1];
-                if (last != '\\' && last != '/') sb.Append(Path.DirectorySeparatorChar);
-            }
-            var idx = chain[k];
-            sb.Append(Encoding.UTF8.GetString(blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx]))));
+            var last = sb[^1];
+            if (last != '\\' && last != '/') sb.Append(Path.DirectorySeparatorChar);
         }
+        sb.Append(Encoding.UTF8.GetString(buf, 0, n));
     }
 
     /// <summary>UTF-8 full-name bytes of entry <paramref name="i"/>, sliced in place from the mapping.</summary>
@@ -204,7 +197,8 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var offs = NameOffsets;
         var blob = NameBlob;
         var pathBuf = o.IncludePath ? new byte[1024] : null;
-        Span<int> chain = o.IncludePath ? stackalloc int[256] : default;
+        var chain = o.IncludePath ? new int[64] : null;
+        var chars = o.RegexMode ? new char[512] : null; // reused decode buffer for span regex matching
 
         for (var i = 1; i < Count; i++) // index 0 is the root, never a result
         {
@@ -236,11 +230,21 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             bool match;
             if (o.RegexMode)
             {
-                match = regex.IsMatch(o.IncludePath ? FullPath(i) : Name(i));
+                ReadOnlySpan<byte> utf8;
+                if (o.IncludePath)
+                {
+                    var n = BuildPathBytes(ref pathBuf, ref chain, i);
+                    utf8 = pathBuf.AsSpan(0, n);
+                }
+                else
+                {
+                    utf8 = blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i]));
+                }
+                match = regex.IsMatch(DecodeUtf8(utf8, ref chars));
             }
             else if (o.IncludePath)
             {
-                var n = BuildPathBytes(ref pathBuf, chain, i, offs, blob);
+                var n = BuildPathBytes(ref pathBuf, ref chain, i);
                 match = matcher.Contains(pathBuf.AsSpan(0, n));
             }
             else
@@ -252,38 +256,94 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         }
     }
 
+    // Decode UTF-8 into a reused char buffer (grown as needed) and return the decoded span, so regex
+    // matching runs over a span with no per-entry string. Invalid sequences decode exactly as
+    // Encoding.UTF8.GetString would (U+FFFD), so results match the string-based path.
+    private static ReadOnlySpan<char> DecodeUtf8(ReadOnlySpan<byte> utf8, ref char[] chars)
+    {
+        // UTF-8 decoding never yields more chars than bytes.
+        if (utf8.Length > chars.Length) chars = new char[Math.Max(utf8.Length, chars.Length * 2)];
+        var n = Encoding.UTF8.GetChars(utf8, chars);
+        return chars.AsSpan(0, n);
+    }
+
     // Build entry i's full-path UTF-8 bytes into buf (grown as needed); returns the byte length.
-    private int BuildPathBytes(ref byte[] buf, Span<int> chain, int i,
-        ReadOnlySpan<long> offs, ReadOnlySpan<byte> blob)
+    // buf/chain may be null on entry (allocated on first use) and are reused across calls by the
+    // scan loops, so steady state allocates nothing.
+    private int BuildPathBytes(ref byte[] buf, ref int[] chain, int i)
+    {
+        var depth = CollectChain(i, ref chain);
+        var len = WritePath(chain.AsSpan(0, depth), default, write: false);
+        if (buf == null || len > buf.Length) buf = new byte[Math.Max(len, Math.Max(1024, (buf?.Length ?? 0) * 2))];
+        WritePath(chain.AsSpan(0, depth), buf, write: true);
+        return len;
+    }
+
+    // Walk the Parent column from i to the root, storing the indices root-LAST in chain[0..depth)
+    // (leaf first); returns depth. Grows chain if needed.
+    private int CollectChain(int i, ref int[] chain)
     {
         var parent = Parent;
         var depth = 0;
-        for (var cur = i; cur != EntryStore.None && depth < chain.Length; cur = parent[cur])
-            chain[depth++] = cur;
+        for (var cur = i; cur != EntryStore.None && depth < Count; cur = parent[cur]) depth++; // bounded: a corrupt cycle truncates
+
+        if (chain == null || depth > chain.Length) chain = new int[Math.Max(depth, Math.Max(64, (chain?.Length ?? 0) * 2))];
+        var k = 0;
+        for (var cur = i; cur != EntryStore.None && k < depth; cur = parent[cur]) chain[k++] = cur;
+        return depth;
+    }
+
+    // Lay out the path root-first from a leaf-first chain. With write:false only measures. Returns the
+    // total byte length. A separator goes between segments, but not after one already ending in one.
+    private int WritePath(ReadOnlySpan<int> chain, Span<byte> dest, bool write)
+    {
+        var offs = NameOffsets;
+        var blob = NameBlob;
         var n = 0;
-        for (var k = depth - 1; k >= 0; k--)
+        byte last = 0;
+        for (var k = chain.Length - 1; k >= 0; k--)
         {
-            if (NeedsSeparator(buf, n)) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
+            if (n > 0 && last != '\\' && last != '/')
+            {
+                if (write) dest[n] = (byte)Path.DirectorySeparatorChar;
+                n++;
+                last = (byte)Path.DirectorySeparatorChar;
+            }
             var idx = chain[k];
-            buf = Append(buf, ref n, blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx])));
+            var seg = blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx]));
+            if (seg.Length == 0) continue;
+            if (write) seg.CopyTo(dest[n..]);
+            n += seg.Length;
+            last = seg[^1];
         }
         return n;
     }
-
-    // Separator only between segments, and not after one that already ends in one (a "C:\" root).
-    private static bool NeedsSeparator(byte[] buf, int n) => n > 0 && buf[n - 1] != '\\' && buf[n - 1] != '/';
 
     private int FindRegex(string pattern, bool includePath, bool includeFiles, bool includeFolders,
         Action<int> onMatch)
     {
         var regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
         var bits = BitFields;
+        var offs = NameOffsets;
+        var blob = NameBlob;
+        byte[] pathBuf = null;
+        int[] chain = null;
+        var chars = new char[512];
         var matches = 0;
         for (var i = 1; i < Count; i++)
         {
             if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
-            var text = includePath ? FullPath(i) : Name(i);
-            if (regex.IsMatch(text))
+            ReadOnlySpan<byte> utf8;
+            if (includePath)
+            {
+                var n = BuildPathBytes(ref pathBuf, ref chain, i);
+                utf8 = pathBuf.AsSpan(0, n);
+            }
+            else
+            {
+                utf8 = blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i]));
+            }
+            if (regex.IsMatch(DecodeUtf8(utf8, ref chars)))
             {
                 matches++;
                 onMatch?.Invoke(i);
@@ -324,29 +384,16 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     public int FindPath(string pattern, bool includeFiles, bool includeFolders, Action<int> onMatch = null)
     {
         var matcher = new Utf8Matcher(pattern);
-        var parent = Parent;
-        var offs = NameOffsets;
-        var blob = NameBlob;
         var bits = BitFields;
-        Span<int> chain = stackalloc int[256];
-        var buf = new byte[1024];
+        int[] chain = null;
+        byte[] buf = null;
         var matches = 0;
 
         for (var i = 1; i < Count; i++) // index 0 is the root, never a result
         {
             if (!Wanted(bits[i], includeFiles, includeFolders)) continue;
 
-            var depth = 0;
-            for (var cur = i; cur != EntryStore.None && depth < chain.Length; cur = parent[cur])
-                chain[depth++] = cur;
-
-            var n = 0;
-            for (var k = depth - 1; k >= 0; k--)
-            {
-                if (NeedsSeparator(buf, n)) buf = Append(buf, ref n, (byte)Path.DirectorySeparatorChar);
-                var idx = chain[k];
-                buf = Append(buf, ref n, blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx])));
-            }
+            var n = BuildPathBytes(ref buf, ref chain, i);
 
             if (matcher.Contains(buf.AsSpan(0, n)))
             {
@@ -364,42 +411,45 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         return isDir ? includeFolders : includeFiles;
     }
 
+    /// <summary>
+    /// Full path of entry <paramref name="i"/> with exactly one managed allocation (the result string):
+    /// segment bytes are laid out into a stack buffer (pooled when long) and decoded once.
+    /// </summary>
     public string FullPath(int i)
     {
-        var parent = Parent;
-        var offs = NameOffsets;
-        var blob = NameBlob;
-        Span<int> chain = stackalloc int[256];
-        var depth = 0;
-        for (var cur = i; cur != EntryStore.None && depth < chain.Length; cur = parent[cur])
-            chain[depth++] = cur;
-        var sb = new StringBuilder(128);
-        for (var k = depth - 1; k >= 0; k--)
+        int[] chainArr = null;
+        byte[] bytesArr = null;
+        try
         {
-            if (sb.Length > 0)
+            Span<int> chain = stackalloc int[64];
+            var parent = Parent;
+            var depth = 0;
+            for (var cur = i; cur != EntryStore.None && depth < Count; cur = parent[cur]) depth++; // bounded: a corrupt cycle truncates
+
+            if (depth > chain.Length)
             {
-                var last = sb[^1];
-                if (last != '\\' && last != '/') sb.Append(Path.DirectorySeparatorChar);
+                chainArr = ArrayPool<int>.Shared.Rent(depth);
+                chain = chainArr;
             }
-            var idx = chain[k];
-            sb.Append(Encoding.UTF8.GetString(blob.Slice((int)offs[idx], (int)(offs[idx + 1] - offs[idx]))));
+            chain = chain[..depth];
+            var k = 0;
+            for (var cur = i; cur != EntryStore.None && k < depth; cur = parent[cur]) chain[k++] = cur;
+
+            var len = WritePath(chain, default, write: false);
+            Span<byte> bytes = stackalloc byte[512];
+            if (len > bytes.Length)
+            {
+                bytesArr = ArrayPool<byte>.Shared.Rent(len);
+                bytes = bytesArr;
+            }
+            WritePath(chain, bytes, write: true);
+            return Encoding.UTF8.GetString(bytes[..len]);
         }
-        return sb.ToString();
-    }
-
-    private static byte[] Append(byte[] buf, ref int n, byte b)
-    {
-        if (n + 1 > buf.Length) Array.Resize(ref buf, buf.Length * 2);
-        buf[n++] = b;
-        return buf;
-    }
-
-    private static byte[] Append(byte[] buf, ref int n, ReadOnlySpan<byte> src)
-    {
-        while (n + src.Length > buf.Length) Array.Resize(ref buf, buf.Length * 2);
-        src.CopyTo(buf.AsSpan(n));
-        n += src.Length;
-        return buf;
+        finally
+        {
+            if (chainArr != null) ArrayPool<int>.Shared.Return(chainArr);
+            if (bytesArr != null) ArrayPool<byte>.Shared.Return(bytesArr);
+        }
     }
 
     private static string ReadLenString(ReadOnlySpan<byte> s, ref int p)

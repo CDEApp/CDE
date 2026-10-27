@@ -191,5 +191,6 @@ public sealed class EntryRef : ICommonEntry
     public void AddChild(DirEntry child) => throw ReadOnly();
     public void SetSummaryFields() => throw ReadOnly();
     public void SetHash(byte[] hashResponseHash) => throw ReadOnly();
+    public void SetHash(ulong hash) => throw ReadOnly();
     public void TraverseTreesCopyHash(ICommonEntry destination) => throw ReadOnly();
 }
