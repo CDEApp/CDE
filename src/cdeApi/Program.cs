@@ -72,7 +72,7 @@ builder.Services.ConfigureHttpJsonOptions(o =>
 // production) than this loopback sidecar. The handshake token — not the origin — is the security
 // boundary, so any origin is allowed; the token middleware below still gates every real request.
 builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
-    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod()));
+    p.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod())); // NOSONAR S5122: loopback-only sidecar; the handshake token, not the origin, is the security boundary
 
 var app = builder.Build();
 
@@ -272,7 +272,7 @@ var address = app.Services.GetRequiredService<IServer>()
 
 // Handshake line for the Tauri shell: exact, single line, flushed.
 Console.WriteLine(JsonSerializer.Serialize(new { url = address, token }));
-Console.Out.Flush();
+await Console.Out.FlushAsync();
 
 await app.WaitForShutdownAsync();
 return;

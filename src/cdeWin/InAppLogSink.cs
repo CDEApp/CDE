@@ -24,10 +24,7 @@ public sealed class InAppLogSink : ILogEventSink
 
     public InAppLogSink(int maxLines = DefaultMaxLines)
     {
-        if (maxLines < 1)
-        {
-            throw new ArgumentOutOfRangeException(nameof(maxLines));
-        }
+        ArgumentOutOfRangeException.ThrowIfLessThan(maxLines, 1);
 
         _maxLines = maxLines;
     }

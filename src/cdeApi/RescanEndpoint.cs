@@ -89,7 +89,7 @@ public static class RescanEndpoint
             _ => (StatusCodes.Status422UnprocessableEntity, NotAccessible(session, id))
         };
         ctx.Response.StatusCode = status;
-        await ctx.Response.WriteAsJsonAsync(error, AppCoreJsonContext.Default.RescanError);
+        await ctx.Response.WriteAsJsonAsync(error, AppCoreJsonContext.Default.RescanError, cancellationToken: ctx.RequestAborted);
     }
 
     private static RescanError NotAccessible(ICatalogSession session, int id)

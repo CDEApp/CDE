@@ -117,7 +117,7 @@ public class HashHelper
         return filled;
     }
 
-    private async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)
+    private static async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)
     {
         var state = new MurMurHash3.Incremental(MurmurHashWrapper.Seed);
         var buffer = ArrayPool<byte>.Shared.Rent(MurMurHash3.StreamChunkSize);

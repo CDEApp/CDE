@@ -62,7 +62,7 @@ public sealed class SearchService : ISearchService
         finally
         {
             // Surface any producer exception and ensure the background work has finished.
-            producerCts.Cancel();
+            await producerCts.CancelAsync().ConfigureAwait(false);
             await producer.ConfigureAwait(false);
         }
     }

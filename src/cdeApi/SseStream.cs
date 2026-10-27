@@ -110,7 +110,7 @@ public static class SseStream
         {
             // Always observe the producer before cts is disposed; cancelling first releases a producer that is
             // waiting on a full queue if the drain stopped early.
-            cts.Cancel();
+            await cts.CancelAsync().ConfigureAwait(false);
             try { await work.ConfigureAwait(false); }
             catch (OperationCanceledException) { /* normal stop */ }
         }
