@@ -15,6 +15,7 @@ import {
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
+import { catalogName } from "./format";
 import { CatalogTree, TreeRoot } from "./components/CatalogTree";
 import { DirectoryList } from "./components/DirectoryList";
 import { ResultsList } from "./components/ResultsList";
@@ -75,7 +76,7 @@ export default function App() {
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
     let disposed = false;
-    (async () => {
+    void (async () => {
       try {
         const sidecar = await startSidecar();
         if (disposed) {
@@ -147,6 +148,7 @@ export default function App() {
         label: c.rootPath,
         fullPath: c.rootPath,
         size: c.rootSize,
+        catalogName: catalogName(c.actualFileName),
       })),
     );
   }, []);

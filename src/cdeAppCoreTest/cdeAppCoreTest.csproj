@@ -24,4 +24,9 @@
     <PackageReference Update="MinVer" Version="8.0.0" />
   </ItemGroup>
 
+  <!-- Size formatting cases shared with the cde-tauri Vitest suite (format.test.ts). -->
+  <ItemGroup>
+    <None Include="..\testdata\size-format-cases.json" Link="testdata\size-format-cases.json" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>

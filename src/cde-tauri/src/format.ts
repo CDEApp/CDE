@@ -1,10 +1,18 @@
 const SUFFIX = ["B", "KB", "MB", "GB", "TB", "PB", "EB", "ZB"];
 
-/** Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString. */
+/**
+ * Human-readable size, mirroring cdeAppCore SizeFormatter.ToHRString: rounds half away from zero.
+ * Cases shared with the C# tests live in src/testdata/size-format-cases.json.
+ */
 export function toHRString(val: number): string {
   if (val === 0) return "0";
-  const place = Math.floor(Math.log(val) / Math.log(1024));
-  const num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  let place = Math.floor(Math.log(val) / Math.log(1024));
+  let num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  if (num >= 1024 && place < SUFFIX.length - 1) {
+    // 1023.96 KB rounds to 1024; show it as 1 MB instead.
+    place++;
+    num = Math.round((val / Math.pow(1024, place)) * 10) / 10;
+  }
   return `${num} ${SUFFIX[place]}`;
 }
 
@@ -12,6 +20,16 @@ export function toHRString(val: number): string {
 export function sizeCell(isDirectory: boolean, size: number, isReparsePoint: boolean): string {
   if (!isDirectory) return String(size);
   return `${toHRString(size)} <Dir${isReparsePoint ? " R" : ""}>`;
+}
+
+/**
+ * A catalog's display name: the base name of its file (`CatalogInfo.actualFileName`, which may be
+ * a bare name or a full path) without a `.cdex` / `.cde` extension. Empty when there is none.
+ */
+export function catalogName(fileName: string | null | undefined): string {
+  if (!fileName) return "";
+  const base = fileName.slice(Math.max(fileName.lastIndexOf("\\"), fileName.lastIndexOf("/")) + 1);
+  return base.replace(/\.cdex?$/i, "");
 }
 
 export function formatDate(iso: string, isModifiedBad: boolean): string {

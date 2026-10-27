@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  catalogName,
   formatDate,
   mb,
   notOlderThanCutoff,
@@ -9,20 +10,11 @@ import {
   toHRString,
   toLocalIsoString,
 } from "./format";
+// Shared with cdeAppCoreTest's SizeFormatterTests, so both frontends format sizes identically.
+import sizeCases from "../../testdata/size-format-cases.json";
 
 describe("toHRString", () => {
-  it.each([
-    [0, "0"],
-    [1, "1 B"],
-    [1023, "1023 B"],
-    [1024, "1 KB"],
-    [1536, "1.5 KB"],
-    [1100, "1.1 KB"],
-    [1_000_000, "976.6 KB"],
-    [1024 ** 2, "1 MB"],
-    [12.4 * 1024 ** 3, "12.4 GB"],
-    [3 * 1024 ** 4, "3 TB"],
-  ])("%d -> %s", (bytes, expected) => {
+  it.each(sizeCases.cases)("$bytes -> $expected", ({ bytes, expected }) => {
     expect(toHRString(bytes)).toBe(expected);
   });
 });
@@ -121,5 +113,26 @@ describe("notOlderThanCutoff", () => {
 describe("toLocalIsoString", () => {
   it("formats local wall-clock time with no offset", () => {
     expect(toLocalIsoString(new Date(2026, 9, 27, 9, 5, 3))).toBe("2026-10-27T09:05:03");
+  });
+});
+
+describe("catalogName", () => {
+  it.each([
+    ["D-Backup2024.cdex", "D-Backup2024"],
+    ["C-V3Win7-C__users.cde", "C-V3Win7-C__users"],
+    ["E:\\catalogs\\D-Photos.cdex", "D-Photos"],
+    ["/home/me/catalogs/UNC-toothless_c__users_.CDEX", "UNC-toothless_c__users_"],
+    ["sub\\nested/name.cdex", "name"],
+    ["no-extension", "no-extension"],
+    ["keep.other.ext", "keep.other.ext"],
+    ["dotted.name.cdex", "dotted.name"],
+  ])("%j -> %j", (fileName, expected) => {
+    expect(catalogName(fileName)).toBe(expected);
+  });
+
+  it("is empty for an empty or missing file name", () => {
+    expect(catalogName("")).toBe("");
+    expect(catalogName(null)).toBe("");
+    expect(catalogName(undefined)).toBe("");
   });
 });
