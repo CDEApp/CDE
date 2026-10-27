@@ -46,7 +46,64 @@ public class DuplicationSizeMatchingTests
         Assert.That(pairs[10], Has.Count.EqualTo(3));
         Assert.That(pairs[20], Has.Count.EqualTo(2));
         // No pair objects were created for the 500 unique-size files, zero-size files or directories.
-        Assert.That(d.PairDirEntriesCreated, Is.EqualTo(5));
+        Assert.That(pairs.Values.Sum(l => l.Count), Is.EqualTo(5));
+    }
+
+    [Test]
+    public void GetSizePairs_CalledTwice_DoesNotAppendDuplicatePairs()
+    {
+        var root = new RootEntry { Path = @"C:\" };
+        root.AddChild(File_("a", 10));
+        root.AddChild(File_("b", 10));
+        root.SetInMemoryFields();
+
+        var d = NewDuplication();
+        d.GetSizePairs([root]);
+        var pairs = d.GetSizePairs([root]);
+
+        Assert.That(pairs[10], Has.Count.EqualTo(2));
+    }
+
+    [Test]
+    public async System.Threading.Tasks.Task FindDuplicateHandler_SkipsUnreadableCatalogAndStillReportsDuplicates()
+    {
+        var dir = System.IO.Path.Combine(System.IO.Path.GetTempPath(), "cdehandler-" + Guid.NewGuid().ToString("N"));
+        System.IO.Directory.CreateDirectory(dir);
+        try
+        {
+            var root = new RootEntry { Path = @"C:\data" };
+            foreach (var n in new[] { "x", "y" })
+            {
+                var f = File_(n, 100);
+                f.SetHash(1);
+                root.AddChild(f);
+            }
+
+            root.SetInMemoryFields();
+            var good = System.IO.Path.Combine(dir, "good.cdex");
+            cdeLib.Entities.Columnar.ColumnarFormat.Write(cdeLib.Entities.Soa.EntryStore.Build(root), good);
+            var bad = System.IO.Path.Combine(dir, "bad.cdex");
+            System.IO.File.WriteAllText(bad, "this is not a catalog at all, just text that is long enough");
+
+            var repo = Substitute.For<cdeLib.Catalog.ICatalogRepository>();
+            repo.GetColumnarFileList(Arg.Any<IEnumerable<string>>()).Returns(new List<string> { bad, good });
+            var serilog = Substitute.For<Serilog.ILogger>();
+            var handler = new FindDuplicateCommandHandler(NewDuplication(), repo, serilog);
+
+            var sw = new System.IO.StringWriter();
+            var original = Console.Out;
+            Console.SetOut(sw);
+            try { await handler.OnHandle(new FindDuplicatesCommand(), default); }
+            finally { Console.SetOut(original); }
+
+            Assert.That(sw.ToString(), Does.Contain(@"C:\data\x").And.Contain(@"C:\data\y"));
+            serilog.Received(1).Warning(Arg.Is<string>(s => s.Contains("Skipping unreadable")),
+                Arg.Is<string>(s => s == bad), Arg.Any<string>());
+        }
+        finally
+        {
+            System.IO.Directory.Delete(dir, true);
+        }
     }
 
     [Test]

@@ -17,13 +17,15 @@ namespace cdeLib.Duplicates;
 /// is a non-empty, non-directory entry with a completed full hash; two candidates are duplicates when
 /// size and 16-byte hash both match.
 ///
-/// Managed heap grows with the number of duplicate candidates (files whose size occurs more than
-/// once), not with the total entry count: unique-size files are only counted.
+/// Memory: the temporary size list is bounded by roughly sizesPerPass entries (about 8 MB by default)
+/// regardless of catalog size. The retained state - the set of repeated sizes and the (size, hash)
+/// groups - grows with the number of files that sit in a repeated-size bucket (every file sharing its
+/// size with another candidate), not with the total entry count: unique-size files are only counted.
+/// This is bounded by the candidate files, but it is not itself bounded by sizesPerPass.
 /// </summary>
 public sealed class ColumnarDuplicateFinder
 {
-    // Sizes are collected per pass; keep one pass's size list to roughly 8 MB so heap use during the
-    // size-counting phase stays bounded regardless of catalog size.
+    // Sizes are collected per pass; one pass's size list is about 8 MB (1M longs) at this default.
     private const int DefaultSizesPerPass = 1 << 20;
 
     private readonly ILogger _logger;
@@ -31,8 +33,9 @@ public sealed class ColumnarDuplicateFinder
 
     public ColumnarDuplicateFinder(ILogger logger, int sizesPerPass = DefaultSizesPerPass)
     {
-        _logger = logger;
+        ArgumentNullException.ThrowIfNull(logger);
         ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizesPerPass);
+        _logger = logger;
         _sizesPerPass = sizesPerPass;
     }
 
@@ -44,20 +47,20 @@ public sealed class ColumnarDuplicateFinder
         return (int)((x >> 32) % (ulong)passes);
     }
 
-    public readonly record struct EntryRef(int Catalog, int Index);
+    public readonly record struct CatalogEntry(int Catalog, int Index);
 
     private readonly record struct DupeKey(long Size, ulong HashA, ulong HashB);
 
     public sealed class DuplicateSet
     {
-        public DuplicateSet(long size, List<EntryRef> entries)
+        public DuplicateSet(long size, List<CatalogEntry> entries)
         {
             Size = size;
             Entries = entries;
         }
 
         public long Size { get; }
-        public List<EntryRef> Entries { get; }
+        public List<CatalogEntry> Entries { get; }
     }
 
     private static bool IsCandidate(ReadOnlySpan<byte> bits, ReadOnlySpan<long> size, int i)
@@ -75,21 +78,19 @@ public sealed class ColumnarDuplicateFinder
     /// </summary>
     public List<DuplicateSet> GetDuplicateSets(IReadOnlyList<ColumnarCatalogReader> readers)
     {
-        // Phase 1: which sizes occur more than once among candidates? Bucketed by size so the
-        // temporary size list never exceeds ~sizesPerPass entries.
-        long candidates = 0;
-        foreach (var r in readers)
-        {
-            var bits = r.BitFields;
-            var size = r.Size;
-            for (var i = 1; i < r.Count; i++)
-                if (IsCandidate(bits, size, i)) candidates++;
-        }
+        ArgumentNullException.ThrowIfNull(readers);
 
-        var passes = (int)Math.Max(1, (candidates + _sizesPerPass - 1) / _sizesPerPass);
+        // Phase 1: which sizes occur more than once among candidates? Sizes are bucketed (by a mixed
+        // hash of the size) over several passes so the temporary size list holds about
+        // sizesPerPass entries at a time. The pass count comes from the readers' header entry counts
+        // (an upper bound on the candidate count), so no separate counting scan is needed.
+        long totalEntries = 0;
+        foreach (var r in readers) totalEntries += r.Count;
+
+        var passes = (int)Math.Max(1, (totalEntries + _sizesPerPass - 1) / _sizesPerPass);
         long uniqueSizeKeys = 0;
         var repeatedSizes = new HashSet<long>();
-        var sizes = new List<long>((int)Math.Min(candidates, _sizesPerPass));
+        var sizes = new List<long>();
         for (var pass = 0; pass < passes; pass++)
         {
             sizes.Clear();
@@ -118,7 +119,7 @@ public sealed class ColumnarDuplicateFinder
         // Phase 2: traverse in the same order as the tree walk and group only files with a repeated
         // size by (size, hash). Dictionary enumeration is insertion order (no removals), matching the
         // original first-seen set order.
-        var groups = new Dictionary<DupeKey, List<EntryRef>>();
+        var groups = new Dictionary<DupeKey, List<CatalogEntry>>();
         var stack = new Stack<int>();
         for (var c = 0; c < readers.Count; c++)
         {
@@ -143,8 +144,8 @@ public sealed class ColumnarDuplicateFinder
 
                     var hash = r.HashOf(child);
                     var key = new DupeKey(size[child], hash.HashA, hash.HashB);
-                    if (groups.TryGetValue(key, out var list)) list.Add(new EntryRef(c, child));
-                    else groups[key] = new List<EntryRef>(2) { new(c, child) };
+                    if (groups.TryGetValue(key, out var list)) list.Add(new CatalogEntry(c, child));
+                    else groups[key] = new List<CatalogEntry>(2) { new(c, child) };
                 }
             }
         }

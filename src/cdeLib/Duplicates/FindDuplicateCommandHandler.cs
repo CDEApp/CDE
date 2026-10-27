@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Catalog;
@@ -38,7 +40,25 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
         try
         {
             foreach (var file in cdexFiles)
-                readers.Add(new ColumnarCatalogReader(file));
+            {
+                try
+                {
+                    readers.Add(new ColumnarCatalogReader(file));
+                }
+                catch (Exception ex) when (ex is IOException or InvalidDataException or UnauthorizedAccessException
+                                               or ArgumentException)
+                {
+                    // One corrupt or locked catalog must not abort the whole command.
+                    _logger.Warning("Skipping unreadable catalog {File}: {Message}", file, ex.Message);
+                }
+            }
+
+            if (readers.Count == 0)
+            {
+                _logger.Warning("No readable .cdex catalogs found.");
+                return Task.CompletedTask;
+            }
+
             _duplication.FindDuplicates(readers);
         }
         finally
