@@ -1,4 +1,5 @@
 import { DirectoryNode } from "../api/types";
+import type { StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
 
 interface Props {
@@ -6,10 +7,12 @@ interface Props {
   nodes: DirectoryNode[];
   onActivate: (node: DirectoryNode) => void;
   onContextMenu: (node: DirectoryNode, x: number, y: number) => void;
+  /** Colour-rule style for an entry name (undefined = no custom style). */
+  resolveStyle: StyleResolver;
 }
 
 /** Per-directory listing (Name / Size / Modified). Double-click a folder drills in. */
-export function DirectoryList({ path, nodes, onActivate, onContextMenu }: Props) {
+export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveStyle }: Props) {
   return (
     <div className="grid dirlist">
       <div className="path-bar">{path}</div>
@@ -22,10 +25,11 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu }: Props)
           </tr>
         </thead>
         <tbody>
-          {nodes.map((n) => (
+          {nodes.map((n) => {
+            const style = resolveStyle(n.name, n.isDirectory);
+            return (
             <tr
               key={`${n.ref.catalogId}-${n.ref.entryIndex}`}
-              className={n.isDirectory ? "dir" : ""}
               onDoubleClick={() => onActivate(n)}
               onContextMenu={(e) => {
                 e.preventDefault();
@@ -33,11 +37,12 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu }: Props)
                 onContextMenu(n, e.clientX, e.clientY);
               }}
             >
-              <td>{n.name}</td>
-              <td className="num">{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</td>
-              <td>{formatDate(n.modified, n.isModifiedBad)}</td>
+              <td style={style}>{n.name}</td>
+              <td className="num" style={style}>{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</td>
+              <td style={style}>{formatDate(n.modified, n.isModifiedBad)}</td>
             </tr>
-          ))}
+            );
+          })}
         </tbody>
       </table>
     </div>

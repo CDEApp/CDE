@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
 import { CdeApiClient } from "./api/client";
@@ -26,8 +26,11 @@ import { MenuBar } from "./components/MenuBar";
 import { SplitPane } from "./components/SplitPane";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
+import { ColoursView } from "./components/ColoursView";
+import { createRuleResolver, parseColourRules } from "./colourRules";
+import { createSerialSaver, SerialSaver } from "./serialSaver";
 
-type View = "directory" | "results" | "catalogs" | "treemap";
+type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
 
 const DEFAULT_TREEMAP_DEPTH = 3;
 
@@ -42,6 +45,16 @@ export default function App() {
   const [view, setView] = useState<View>("directory");
   const [catalogs, setCatalogs] = useState<CatalogsResponse | null>(null);
   const [roots, setRoots] = useState<TreeRoot[]>([]);
+  // Colour rules text (file-backed via the sidecar). Parsed + compiled once per change; the
+  // resolvers (with their per-name caches) are rebuilt whenever the text changes.
+  const [rulesText, setRulesText] = useState("");
+  // Saves live here, not in ColoursView, so a save flushed as the tab closes still runs in order
+  // and its error is still shown when the tab reopens.
+  const rulesSaverRef = useRef<SerialSaver | null>(null);
+  const [rulesSaveError, setRulesSaveError] = useState<string | null>(null);
+  const rules = useMemo(() => parseColourRules(rulesText).rules, [rulesText]);
+  const resolveStyle = useMemo(() => createRuleResolver(rules), [rules]);
+  const resolveTreeStyle = useMemo(() => createRuleResolver(rules, { skipFolder: true }), [rules]);
   const [commands, setCommands] = useState<{ id: number; label: string }[]>([]);
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
@@ -74,9 +87,15 @@ export default function App() {
         const client = new CdeApiClient(sidecar.connection.baseUrl, sidecar.connection.token);
         clientRef.current = client;
         uiRef.current = new UiStateManager(client);
+        rulesSaverRef.current = createSerialSaver((text) => client.putColourRules(text), setRulesSaveError);
 
         const ui = await uiRef.current.load();
         setCommands(await client.shellCommands());
+        try {
+          setRulesText(await client.getColourRules());
+        } catch (e) {
+          console.error("colour rules failed to load; continuing without custom colours", e);
+        }
         // Re-open the last-used catalog folder, if any.
         const savedDir = typeof ui.catalogDir === "string" ? ui.catalogDir : undefined;
         if (savedDir) {
@@ -148,6 +167,19 @@ export default function App() {
     },
     [refreshCatalogs],
   );
+
+  // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
+  // switch, so the editor never shows stale text that a keystroke could then overwrite. Wait for
+  // pending saves first, or a save flushed as the tab last closed could land after this read.
+  const openColours = useCallback(async () => {
+    try {
+      await rulesSaverRef.current?.idle();
+      setRulesText(await clientRef.current!.getColourRules());
+    } catch (e) {
+      console.error("colour rules reload failed", e);
+    }
+    setView("colours");
+  }, []);
 
   const onTreePaneResize = useCallback((width: number) => {
     uiRef.current?.update({ treePaneWidth: Math.round(width) });
@@ -347,6 +379,9 @@ export default function App() {
         <button className={view === "catalogs" ? "active" : ""} onClick={() => setView("catalogs")}>
           Catalogs
         </button>
+        <button className={view === "colours" ? "active" : ""} onClick={() => void openColours()}>
+          Colours
+        </button>
         {treemapRequest && (
           <button className={view === "treemap" ? "active" : ""} onClick={() => setView("treemap")}>
             TreeMap
@@ -377,12 +412,14 @@ export default function App() {
                   setMenu({ x, y, items: buildMenu(ref, fp, undefined, true) })
                 }
                 onBackgroundContextMenu={treeBackgroundMenu}
+                resolveStyle={resolveTreeStyle}
               />
             }
             right={
               <DirectoryList
                 path={dirPath}
                 nodes={dirNodes}
+                resolveStyle={resolveStyle}
                 onActivate={activateDir}
                 onContextMenu={(n, x, y) =>
                   setMenu({ x, y, items: buildMenu(n.ref, n.fullPath, undefined, n.isDirectory) })
@@ -395,6 +432,7 @@ export default function App() {
         {view === "results" && (
           <ResultsList
             rows={results}
+            resolveStyle={resolveStyle}
             columnOrder={uiRef.current?.get().searchResultColumnOrder}
             onColumnOrderChange={(searchResultColumnOrder) => uiRef.current?.update({ searchResultColumnOrder })}
             onActivate={(row) => void viewInTree(row.ref)}
@@ -415,6 +453,16 @@ export default function App() {
               setView("directory"); // synchronous navigation intent before the async listing load
               void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
             }}
+          />
+        )}
+
+        {view === "colours" && (
+          <ColoursView
+            text={rulesText}
+            onChange={setRulesText}
+            save={(text) => rulesSaverRef.current?.save(text)}
+            saveError={rulesSaveError}
+            getDefaults={() => clientRef.current!.getColourRuleDefaults()}
           />
         )}
 

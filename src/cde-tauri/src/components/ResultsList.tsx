@@ -15,6 +15,7 @@ import {
 } from "@tanstack/react-table";
 import { SearchResultRow } from "../api/types";
 import { moveColumn, normalizeColumnOrder } from "../columnOrder";
+import type { StyleResolver } from "../colourRules";
 import { formatDate, sizeCell } from "../format";
 import { VirtualList } from "./VirtualList";
 
@@ -25,6 +26,8 @@ interface Props {
   /** Persisted column order (column ids); reconciled against the current columns on mount. */
   columnOrder?: unknown;
   onColumnOrderChange: (order: string[]) => void;
+  /** Colour-rule style for an entry name (undefined = no custom style). */
+  resolveStyle: StyleResolver;
 }
 
 const ROW_HEIGHT = 22;
@@ -85,7 +88,7 @@ const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
  * Virtualized streaming search results (Name / Size / Modified / Catalog / Path): click a header
  * to sort, drag its right edge to resize, drag the header itself sideways to reorder.
  */
-export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onColumnOrderChange }: Props) {
+export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onColumnOrderChange, resolveStyle }: Props) {
   const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
 
   // Sorting, sizes and order live in the table's own store; useTable re-renders on their change.
@@ -237,7 +240,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
           <div
             key={`${r.ref.catalogId}-${r.ref.entryIndex}-${i}`}
             className={`vlist-row${r.isDirectory ? " dir" : ""}`}
-            style={{ ...style, gridTemplateColumns }}
+            style={{ ...style, ...resolveStyle(r.name, r.isDirectory), gridTemplateColumns }}
             onDoubleClick={() => onActivate(r)}
             onContextMenu={(e) => {
               e.preventDefault();

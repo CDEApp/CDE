@@ -149,13 +149,25 @@ ul.tree { padding-left: 2px; }
 .treemap-legend .legend-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .treemap-legend .legend-size, .treemap-legend .legend-pct { text-align: right; font-variant-numeric: tabular-nums; color: #bbb; }
 
+/* colours tab */
+.colours-view { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 6px 8px; gap: 6px; }
+.colours-toolbar { display: flex; align-items: center; gap: 10px; }
+.colours-hint { color: #9a9a9a; }
+.colours-error { color: #ff6b6b; }
+.colours-editor { flex: 1 1 60%; min-height: 80px; resize: none; font-family: Consolas, "Cascadia Mono", monospace; font-size: 13px; white-space: pre; overflow: auto; background: var(--panel); color: var(--fg); border: 1px solid var(--border); padding: 6px; tab-size: 4; }
+.colours-report { flex: 0 1 35%; min-height: 60px; display: flex; gap: 12px; overflow: hidden; }
+.colours-problems, .colours-preview { flex: 1; overflow: auto; }
+.colours-problem { color: #ff6b6b; font-family: Consolas, monospace; }
+.colours-ok { color: #9a9a9a; }
+.colours-preview-row { display: flex; gap: 10px; }
+.colours-preview-line { color: #9a9a9a; min-width: 60px; font-family: Consolas, monospace; }
+
 /* grids */
 .grid { height: 100%; overflow: auto; }
 .path-bar { padding: 3px 6px; background: var(--content-header); border-bottom: 1px solid var(--border); white-space: nowrap; }
 table { width: 100%; border-collapse: collapse; }
 th, td { text-align: left; padding: 2px 8px; border-bottom: 1px solid var(--row-line); white-space: nowrap; }
 th { position: sticky; top: 0; background: var(--content-header); }
-tr.dir td { color: var(--dir); }
 td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--row-hover); }
 
@@ -186,7 +198,6 @@ tbody tr:hover { background: var(--row-hover); }
   border-bottom: 1px solid var(--row-line); cursor: default;
 }
 .vlist-row:hover { background: var(--row-hover); }
-.vlist-row.dir { color: var(--dir); }
 /* header drag-to-reorder */
 .vlist-header.reordering, .vlist-header.reordering > div.sortable { cursor: grabbing; }
 .vlist-header > div.dragging { opacity: .5; }

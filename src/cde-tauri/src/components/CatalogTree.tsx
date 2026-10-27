@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
+import type { StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
 
 export interface TreeRoot {
@@ -60,9 +61,11 @@ interface TreeItemProps {
   expandTo?: EntryRef[]; // path to auto-expand/select
   onSelect: (ref: EntryRef, fullPath: string) => void;
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
+  /** Name-rule styles (built with `[folder]` skipped). Selection colours override them. */
+  resolveStyle: StyleResolver;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu, resolveStyle }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
@@ -115,6 +118,7 @@ function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChil
       <div
         ref={rowRef}
         className={`tree-row${isSelected ? " selected" : ""}`}
+        style={isSelected ? undefined : resolveStyle(label, true)}
         onClick={() => onSelect(nodeRef, fullPath)}
         onDoubleClick={() => {
           if (hasChildren) void toggle();
@@ -160,6 +164,7 @@ function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChil
               expandTo={childExpandTo}
               onSelect={onSelect}
               onContextMenu={onContextMenu}
+              resolveStyle={resolveStyle}
             />
           ))}
         </ul>
@@ -178,10 +183,11 @@ interface Props {
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
   /** Right-click on blank tree space (rows stop their own right-clicks from reaching here). */
   onBackgroundContextMenu?: (x: number, y: number) => void;
+  resolveStyle: StyleResolver;
 }
 
 export function CatalogTree({
-  client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu, onBackgroundContextMenu,
+  client, roots, selectedKey, revealKey, expandTo, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
 }: Props) {
   return (
     <div
@@ -209,6 +215,7 @@ export function CatalogTree({
           expandTo={expandTo && expandTo[0]?.catalogId === r.ref.catalogId ? expandTo : undefined}
           onSelect={onSelect}
           onContextMenu={onContextMenu}
+          resolveStyle={resolveStyle}
         />
       ))}
     </ul>
