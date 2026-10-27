@@ -15,7 +15,7 @@
   copies the sidecar next to it as cdeApi.exe (tauri-build strips the target triple from
   binaries/cdeApi-<triple>.exe), which is the name the app spawns, so it is copied from there as is.
 
-  Debug symbols (*.pdb) are left out of the zip.
+  Everything a publish wrote is copied, subfolders included. Debug symbols (*.pdb) are left out.
 
   -Phase Stage  copies the files and stops, so the versions can be checked before anything is zipped.
   -Phase Zip    zips the staged folder and writes the .sha256 file.
@@ -60,8 +60,15 @@ if ($Phase -in 'Stage', 'All') {
     if (-not (Test-Path -LiteralPath $exe)) { throw "Missing build output: $exe" }
     $dest = Join-Path $stage $app
     New-Item -ItemType Directory -Force $dest | Out-Null
-    Get-ChildItem -LiteralPath $src -File | Where-Object { $_.Extension -ne '.pdb' } |
-      Copy-Item -Destination $dest
+    # Everything the publish wrote, subfolders included, except debug symbols.
+    $srcFull = (Resolve-Path -LiteralPath $src).Path
+    Get-ChildItem -LiteralPath $src -File -Recurse | Where-Object { $_.Extension -ne '.pdb' } |
+      ForEach-Object {
+        $relative = [IO.Path]::GetRelativePath($srcFull, $_.FullName)
+        $target = Join-Path $dest $relative
+        New-Item -ItemType Directory -Force (Split-Path $target -Parent) | Out-Null
+        Copy-Item -LiteralPath $_.FullName -Destination $target
+      }
   }
 
   $tauriDest = Join-Path $stage 'cde-tauri'
