@@ -7,6 +7,7 @@ import {
   parseAge,
   parseSize,
   sizeCell,
+  sizeTitle,
   toHRString,
   toLocalIsoString,
 } from "./format";
@@ -20,8 +21,13 @@ describe("toHRString", () => {
 });
 
 describe("sizeCell", () => {
-  it("shows a file's raw byte count", () => {
-    expect(sizeCell(false, 50, false)).toBe("50");
+  it("shows a file's size human-readable, without the <Dir> marker", () => {
+    expect(sizeCell(false, 50, false)).toBe("50 B");
+    expect(sizeCell(false, 1258291, false)).toBe("1.2 MB");
+  });
+
+  it("shows a zero-byte file as 0, like an empty directory's size", () => {
+    expect(sizeCell(false, 0, false)).toBe("0");
   });
 
   it("annotates a directory, matching cdeAppCore's FormatDirectorySizeCell", () => {
@@ -31,6 +37,17 @@ describe("sizeCell", () => {
 
   it("marks a reparse-point directory", () => {
     expect(sizeCell(true, 1024, true)).toBe("1 KB <Dir R>");
+  });
+});
+
+describe("sizeTitle", () => {
+  it("gives the exact byte count, digit-grouped", () => {
+    expect(sizeTitle(1258291, "en-US")).toBe("1,258,291 bytes");
+    expect(sizeTitle(0, "en-US")).toBe("0 bytes");
+  });
+
+  it("uses the singular for one byte", () => {
+    expect(sizeTitle(1, "en-US")).toBe("1 byte");
   });
 });
 
