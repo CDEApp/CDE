@@ -16,7 +16,7 @@ import {
 import { SearchResultRow } from "../api/types";
 import { moveColumn, normalizeColumnOrder } from "../columnOrder";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
-import { formatDate, sizeCell } from "../format";
+import { formatDate, sizeCell, sizeTitle } from "../format";
 import { StyledName } from "./StyledName";
 import { VirtualList } from "./VirtualList";
 
@@ -75,9 +75,16 @@ const DEFAULT_COLUMN_IDS = columns.map((c) => c.id as string);
 const FILL_COLUMN = "path";
 
 // Row cell rendering per column id, so cells follow the current column order.
-const CELLS: Record<string, { className: string; render: (r: SearchResultRow) => ReactNode }> = {
+const CELLS: Record<
+  string,
+  { className: string; render: (r: SearchResultRow) => ReactNode; title?: (r: SearchResultRow) => string }
+> = {
   name: { className: "cell", render: (r) => r.name },
-  size: { className: "cell num", render: (r) => sizeCell(r.isDirectory, r.size, r.isReparsePoint) },
+  size: {
+    className: "cell num",
+    render: (r) => sizeCell(r.isDirectory, r.size, r.isReparsePoint),
+    title: (r) => sizeTitle(r.size),
+  },
   modified: { className: "cell", render: (r) => formatDate(r.modified, r.isModifiedBad) },
   catalog: { className: "cell", render: (r) => r.catalogName },
   path: { className: "cell", render: (r) => r.parentPath },
@@ -285,7 +292,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
             }}
           >
             {order.map((id) => (
-              <div key={id} role="gridcell" className={CELLS[id].className}>
+              <div key={id} role="gridcell" className={CELLS[id].className} title={CELLS[id].title?.(r)}>
                 <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
               </div>
             ))}
