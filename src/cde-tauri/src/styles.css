@@ -232,6 +232,20 @@ tbody tr:hover { background: var(--row-hover); }
 .stale-banner button { padding: 0 8px; }
 .cataloglist tr.rescanning td { color: #8a8a8a; font-style: italic; }
 
+/* new catalog: dialog form, Catalogs-tab toolbar, toast action */
+.nc-form { display: flex; flex-direction: column; gap: 4px; }
+.nc-label { margin-top: 8px; font-size: 12px; opacity: .8; }
+.nc-row { display: flex; align-items: center; gap: 8px; }
+.nc-input { flex: 1; min-width: 0; padding: 4px 6px; }
+.nc-input[readonly] { opacity: .75; }
+.nc-ext { opacity: .8; }
+.nc-check { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
+.nc-error { margin-top: 4px; color: #f48771; }
+.nc-warning { margin-top: 8px; padding: 4px 8px; background: #4a3d12; color: #f1e2a8; }
+.nc-rescan { margin-top: 4px; color: var(--fg); }
+.cataloglist-toolbar { padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.toast-action { padding: 0 8px; margin-left: 4px; }
+
 /* context menu */
 .context-menu {
   position: fixed; z-index: 1000; min-width: 180px; margin: 0; padding: 4px 0;

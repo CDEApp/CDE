@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import type { CreatePreflightResult } from "./api/types";
-import { deriveDialogState, normalizeFileName, validateFileName } from "./newCatalog";
+import { deriveDialogState, normalizeFileName, samePath, validateFileName } from "./newCatalog";
+
+describe("samePath", () => {
+  it("ignores case, separators and a trailing separator", () => {
+    expect(samePath("C:\\Cat\\New.cdex", "c:/cat/new.cdex")).toBe(true);
+    expect(samePath("C:\\Cat\\", "C:\\Cat")).toBe(true);
+    expect(samePath("C:\\Cat\\a.cdex", "C:\\Cat\\b.cdex")).toBe(false);
+  });
+});
 
 function pf(over: Partial<CreatePreflightResult> = {}): CreatePreflightResult {
   return {

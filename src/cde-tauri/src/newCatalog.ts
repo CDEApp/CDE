@@ -34,6 +34,12 @@ export function validateFileName(name: string): string | null {
   return null;
 }
 
+/** Whether two file paths name the same file: separators, trailing separator and case ignored. */
+export function samePath(a: string, b: string): boolean {
+  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
+  return norm(a) === norm(b);
+}
+
 export interface DialogInput {
   rootPath: string;
   /** What the user typed; null = untouched (the default name is used). */
