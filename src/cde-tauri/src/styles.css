@@ -93,7 +93,7 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .split { display: grid; grid-template-columns: 320px 6px 1fr; height: 100%; }
 .pane { overflow: auto; height: 100%; }
 .splitter { cursor: col-resize; background: var(--border); }
-.splitter:hover, .splitter:active { background: var(--accent); }
+.splitter:hover, .splitter:active, .splitter:focus-visible { background: var(--accent); outline: none; }
 
 /* tree */
 .tree-row { display: flex; align-items: center; gap: 3px; padding: 1px 4px; min-height: 22px; cursor: default; white-space: nowrap; user-select: none; }
@@ -200,6 +200,12 @@ tbody tr:hover { background: var(--row-hover); }
 .vlist-header > div { position: relative; padding: 3px 8px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .vlist-header > div.sortable { cursor: pointer; user-select: none; }
 .vlist-header > div.sortable:hover { background: var(--row-hover); }
+/* The sort control fills its header cell, so a click anywhere in it sorts and the keyboard can reach it. */
+.vlist-header .sort-btn {
+  all: unset; box-sizing: border-box; display: block; text-align: inherit; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  padding: 3px 8px; margin: -3px -8px; width: calc(100% + 16px); cursor: pointer; user-select: none;
+}
+.vlist-header .sort-btn:focus-visible, .vlist-header .resizer:focus-visible { outline: 2px solid var(--accent, #4daafc); outline-offset: -2px; }
 .vlist-header > div.sorted { color: var(--accent, #4daafc); }
 /* Drag handle on the right edge of each header cell to resize the column. */
 .vlist-header .resizer {
