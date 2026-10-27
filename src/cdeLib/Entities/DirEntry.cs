@@ -284,6 +284,75 @@ public sealed class DirEntry : ICommonEntry
     }
 
 
+    /// <summary>
+    /// Builds an entry straight from a raw directory enumeration record (no FileSystemInfo). Name and
+    /// extension strings come from the scan-local <paramref name="pool"/> rather than the
+    /// process-wide intern table. Modified is LOCAL time, matching <see cref="DirEntry(FileSystemInfo)"/>.
+    /// </summary>
+    internal static DirEntry FromScan(ref System.IO.Enumeration.FileSystemEntry entry, ScanNamePool pool)
+    {
+        var d = new DirEntry();
+        d.SetPathParts(entry.FileName, pool);
+
+        DateTime modified;
+        try
+        {
+            modified = entry.LastWriteTimeUtc.UtcDateTime.ToLocalTime();
+        }
+        catch (ArgumentOutOfRangeException)
+        {
+            Log.Logger.Warning("Invalid WriteTime for {Filename}, using CreationTime instead", entry.FileName.ToString());
+            try
+            {
+                modified = entry.CreationTimeUtc.UtcDateTime.ToLocalTime();
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                modified = DateTime.MinValue;
+                d.IsModifiedBad = true;
+            }
+        }
+        d.Modified = modified;
+
+        var attributes = entry.Attributes;
+        d.IsDirectory = (attributes & FileAttributes.Directory) != 0;
+        d.IsReparsePoint = (attributes & FileAttributes.ReparsePoint) != 0;
+
+        if (entry.IsDirectory)
+        {
+            d.Children = CollectionPool.GetDirEntryList();
+        }
+        else
+        {
+            d.Size = entry.Length;
+        }
+
+        return d;
+    }
+
+    // Same name/extension split as the Path setter, but pooled per scan instead of string.Intern.
+    private void SetPathParts(ReadOnlySpan<char> name, ScanNamePool pool)
+    {
+        if (name.IsEmpty)
+        {
+            _path = string.Empty;
+            _ext = null;
+            return;
+        }
+
+        var lastDot = name.LastIndexOf('.');
+        if (lastDot > 0 && lastDot > name.LastIndexOfAny(PathSeparators))
+        {
+            _ext = pool.Get(name[lastDot..]);
+            _path = pool.Get(name[..lastDot]);
+        }
+        else
+        {
+            _path = pool.Get(name);
+            _ext = null;
+        }
+    }
+
     public int SizeCompareWithDirTo(ICommonEntry de)
     {
         if (de == null)
