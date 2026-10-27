@@ -1,0 +1,94 @@
+name-template: '$RESOLVED_VERSION'
+# Bare tags, no "v" prefix, matching the existing 1.7.1 and 2.0.0 tags and MinVer's default.
+tag-template: '$RESOLVED_VERSION'
+
+# Categories double as version resolvers: `semver-increment` on a category bumps that part of the
+# version when any PR lands in it. The highest matching increment wins, and the trailing
+# `type: version-resolver` entry with no `when` is the fallback for anything uncategorised.
+#
+# The version is 2.x, so a breaking change is a major bump.
+categories:
+  - title: 'Breaking Changes'
+    semver-increment: 'major'
+    when:
+      labels:
+        - 'breaking'
+  - title: 'New Features'
+    semver-increment: 'minor'
+    when:
+      labels:
+        - 'enhancement'
+  - title: 'Bug Fixes'
+    when:
+      labels:
+        - 'bug'
+  - title: 'Performance'
+    when:
+      labels:
+        - 'area-performance'
+  - title: 'Documentation'
+    when:
+      labels:
+        - 'documentation'
+  - title: 'Dependencies'
+    when:
+      labels:
+        - 'dependencies'
+  - title: 'Other Changes'
+    when:
+      labels:
+        - 'chore'
+  - type: 'version-resolver'
+    semver-increment: 'patch'
+
+change-template: '- $TITLE (#$NUMBER) @$AUTHOR'
+change-title-escapes: '\<*_&'
+no-changes-template: 'No changes.'
+
+# Bots don't get a thank-you line.
+exclude-contributors:
+  - 'dependabot'
+  - 'dependabot[bot]'
+  - 'github-actions'
+  - 'github-actions[bot]'
+no-contributors-template: ''
+
+# The label, and therefore the release-note category and the version bump, comes from a
+# Conventional Commits prefix on the PR title. It is applied by pr-autolabel.yml. A title with no
+# prefix gets no label, lands under no category and bumps the patch version.
+# Every label named here must already exist in the repository; the autolabeler cannot create them.
+autolabeler:
+  - label: 'breaking'
+    title:
+      - '/^[a-z]+(\(.+\))?!:/'
+  - label: 'enhancement'
+    title:
+      - '/^feat(\(.+\))?!?:/'
+  - label: 'bug'
+    title:
+      - '/^fix(\(.+\))?!?:/'
+  - label: 'area-performance'
+    title:
+      - '/^perf(\(.+\))?!?:/'
+  - label: 'documentation'
+    title:
+      - '/^docs(\(.+\))?!?:/'
+  - label: 'chore'
+    title:
+      - '/^(chore|build|ci|style|refactor|test)(\(.+\))?!?:/'
+
+template: |
+  ## What's Changed
+
+  $CHANGES
+
+  Thanks to $CONTRIBUTORS for contributing to this release.
+
+  ## Install
+
+  Download `cde-$RESOLVED_VERSION-win-x64.zip`, unzip it anywhere, and run the app you want from its
+  folder (`cde`, `cdewin` or `cde-tauri`). Check the download against
+  `cde-$RESOLVED_VERSION-win-x64.zip.sha256`.
+
+  `cde.exe` and `cdewin.exe` include the .NET runtime, so nothing needs installing. `cde-tauri.exe`
+  needs the Microsoft Edge WebView2 runtime, which Windows 10 and 11 normally already have.

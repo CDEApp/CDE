@@ -1,0 +1,35 @@
+name: Release Drafter
+
+# Keeps one draft GitHub Release up to date as pull requests merge into develop: each merged PR is
+# added under the category its label names, and the draft's version is resolved from those labels
+# (see .github/release-drafter.yml). release.yml publishes that draft, so edits made to it by hand
+# survive into the release.
+#
+# A merge is a push to develop, so this runs on push rather than on pull_request_target: the draft
+# is built from every PR merged since the last release whatever started the run, and a push run
+# has a write token whether the PR came from a fork or not.
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-drafter
+  cancel-in-progress: false
+
+jobs:
+  update-release-draft:
+    runs-on: ubuntu-latest
+    # Creating the draft needs contents: write. Reading the merged PRs needs pull-requests: read.
+    permissions:
+      contents: write
+      pull-requests: read
+
+    steps:
+      # Labelling happens in pr-autolabel.yml while the PR is open; the autolabeler is a separate
+      # sub-action, so this only drafts the release.
+      - uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,189 @@
+name: Release
+
+# Builds cde, cdewin and cde-tauri from a tag, zips them, and publishes the GitHub Release.
+#
+# The tag is bare (2.1.0, no "v"); the glob requires a digit first, so a tag that merely starts
+# with a letter cannot fire a release. Releases are cut from develop: the tagged commit must be on
+# it. Run Publish Release (release-publish.yml) to tag and release in one go; pushing a tag by hand
+# also works.
+#
+# The zip, cde-<version>-win-x64.zip, holds:
+#   cde/        cde.exe (self-contained, single file) + appsettings.json
+#   cdewin/     cdewin.exe (self-contained, single file) + appsettings.json
+#   cde-tauri/  cde-tauri.exe + cdeApi.exe (the sidecar)
+on:
+  push:
+    tags: ['[0-9]*']
+  # Called by release-publish.yml, which creates the tag and then invokes this workflow directly. A
+  # tag pushed with GITHUB_TOKEN does not trigger the `push: tags` trigger above, so the call has
+  # to be explicit.
+  workflow_call:
+    inputs:
+      tag:
+        description: 'Tag to release'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 60
+    # contents: write to publish the release and upload the assets; pull-requests: read for
+    # Release Drafter to list the merged pull requests.
+    permissions:
+      contents: write
+      pull-requests: read
+
+    env:
+      TAG: ${{ inputs.tag || github.ref_name }}
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      # MinVer needs the full history and the tags to version the build from the tag.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Check tag
+        shell: bash
+        run: |
+          if ! printf '%s' "$TAG" | grep -qE '^[0-9]+\.[0-9]+\.[0-9]+$'; then
+            echo "::error::Tag '$TAG' is not MAJOR.MINOR.PATCH"
+            exit 1
+          fi
+          if ! git merge-base --is-ancestor HEAD origin/develop; then
+            echo "::error::Tag $TAG is not on develop. Releases are cut from develop."
+            exit 1
+          fi
+
+      # Captured before publishing, because once this release is published it becomes "latest" and
+      # can no longer serve as the previous tag.
+      - name: Resolve previous release tag
+        id: previous
+        shell: bash
+        run: |
+          prev=$(gh release list --repo "$GITHUB_REPOSITORY" --exclude-drafts --exclude-pre-releases \
+                   --limit 20 --json tagName --jq '[.[] | select(.tagName | test("^[0-9]"))] | .[0].tagName // ""')
+          echo "tag=$prev" >> "$GITHUB_OUTPUT"
+          echo "Previous release tag: ${prev:-<none>}"
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: 10.0.x
+
+      # Takes the pnpm version from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: src/cde-tauri/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/cde-tauri/src-tauri -> target
+
+      # One source of truth for the publish settings: the same Fallout target the CI build uses,
+      # with --self-contained so cde and cdewin carry the .NET runtime (cdeApi always does).
+      - name: Publish cde and cdewin
+        run: ./build.ps1 PublishRelease --self-contained true
+
+      - name: Install cde-tauri dependencies
+        working-directory: src/cde-tauri
+        run: pnpm install --frozen-lockfile
+
+      # Publishes cdeApi and stages it as src-tauri/binaries/cdeApi-<target triple>.exe.
+      - name: Bundle sidecar
+        working-directory: src/cde-tauri
+        run: pnpm bundle-sidecar
+
+      - name: Stamp cde-tauri version
+        working-directory: src/cde-tauri
+        run: node scripts/stamp-version.mjs "$env:TAG"
+
+      # --no-bundle builds the exe only (installers are deferred). tauri-build also copies the
+      # sidecar next to it as target/release/cdeApi.exe, the name the app spawns.
+      - name: Build cde-tauri
+        working-directory: src/cde-tauri
+        run: pnpm tauri build --no-bundle
+
+      - name: Stage release folder
+        run: ./.github/scripts/stage-release.ps1 -Version "$env:TAG" -Phase Stage
+
+      # Fails the run if MinVer did not see the tag or the Tauri version was not stamped.
+      - name: Verify versions match the tag
+        run: ./.github/scripts/verify-release-versions.ps1 -Version "$env:TAG" -Root "artifacts/release/cde-$env:TAG-win-x64"
+
+      - name: Zip and checksum
+        run: ./.github/scripts/stage-release.ps1 -Version "$env:TAG" -Phase Zip
+
+      # Publishes the rolling draft that Release Drafter has been accumulating from merged PRs, so
+      # any manual edits made to it are kept.
+      - name: Publish GitHub Release
+        uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
+        with:
+          publish: true
+          tag: ${{ env.TAG }}
+          name: ${{ env.TAG }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Release Drafter has no first-time-contributor detection, so borrow GitHub's own and append
+      # its "New Contributors" section to the notes.
+      - name: Append new contributors
+        shell: bash
+        env:
+          PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
+        run: |
+          if [ -n "$PREVIOUS_TAG" ]; then
+            generated=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="$TAG" -f previous_tag_name="$PREVIOUS_TAG" --jq .body)
+          else
+            generated=$(gh api --method POST "repos/$GITHUB_REPOSITORY/releases/generate-notes" \
+              -f tag_name="$TAG" --jq .body)
+          fi
+
+          printf '%s\n' "$generated" | awk '/^## New Contributors/ { found = 1 } found { print }' > new-contributors.md
+
+          if [ ! -s new-contributors.md ]; then
+            echo "No new contributors in this release."
+            exit 0
+          fi
+
+          gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json body --jq .body > notes.md
+          printf '\n' >> notes.md
+          cat new-contributors.md >> notes.md
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --notes-file notes.md
+          echo "Appended:"
+          cat new-contributors.md
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
+        with:
+          tag_name: ${{ env.TAG }}
+          files: |
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip.sha256
+          fail_on_unmatched_files: true
