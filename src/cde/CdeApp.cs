@@ -10,7 +10,6 @@ using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
-using cdeLib.Entities.Soa;
 using cdeLib.Hashing;
 using cdeLib.Upgrade;
 using Mono.Terminal;
@@ -147,7 +146,8 @@ public sealed class CdeApp(
     /// <summary>
     /// One-way migration of MessagePack .cde catalogs to the zero-copy columnar .cdex format. With a
     /// path argument, converts that file; otherwise converts every catalog discovered in the current
-    /// directory and one level down, writing a .cdex beside each source.
+    /// directory and one level down, writing a .cdex beside each source and renaming the source to
+    /// .cde.migrated. A .cde that already has a .cdex is skipped (see <see cref="CatalogMigrator"/>).
     /// </summary>
     public void Migrate(MigrateOptions opts)
     {
@@ -172,43 +172,38 @@ public sealed class CdeApp(
             return;
         }
 
+        var migrator = new CatalogMigrator(repository);
         var converted = 0;
         foreach (var file in files)
         {
-            if (MigrateOne(file)) converted++;
+            if (MigrateOne(migrator, file)) converted++;
         }
 
         Console.WriteLine(string.Create(CultureInfo.CurrentCulture,
             $"Migrated {converted} of {files.Count} catalog(s) to .cdex."));
     }
 
-    private bool MigrateOne(string file)
+    private static bool MigrateOne(CatalogMigrator migrator, string file)
     {
-        try
+        var srcLen = new FileInfo(file).Length;
+        var result = migrator.Migrate(file);
+        switch (result.Outcome)
         {
-            var root = repository.LoadDirCache(file);
-            if (root == null)
-            {
-                Console.WriteLine($"  skip (could not load): {file}");
+            case MigrationOutcome.Skipped:
+                Console.WriteLine($"  skip ({result.Message}): {file}");
                 return false;
-            }
-
-            var store = EntryStore.Build(root);
-            var outFile = Path.ChangeExtension(file, ".cdex");
-            ColumnarFormat.Write(store, outFile);
-
-            var srcLen = new FileInfo(file).Length;
-            var dstLen = new FileInfo(outFile).Length;
-            Console.WriteLine(string.Create(CultureInfo.CurrentCulture,
-                $"  {Path.GetFileName(file)} ({srcLen:N0} B) -> {Path.GetFileName(outFile)} " +
-                $"({dstLen:N0} B, {store.Count:N0} entries)"));
-            return true;
+            case MigrationOutcome.Failed:
+                Console.WriteLine($"  error migrating {file}: {result.Message}");
+                return false;
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"  error migrating {file}: {ex.Message}");
-            return false;
-        }
+
+        var dstLen = new FileInfo(result.TargetPath).Length;
+        Console.WriteLine(string.Create(CultureInfo.CurrentCulture,
+            $"  {Path.GetFileName(file)} ({srcLen:N0} B) -> {Path.GetFileName(result.TargetPath)} " +
+            $"({dstLen:N0} B, {result.Entries:N0} entries)"));
+        if (result.Outcome == MigrationOutcome.MigratedNotRenamed)
+            Console.WriteLine($"  warning: {Path.GetFileName(file)} {result.Message}");
+        return true;
     }
 
     // ---- repl / inspection ----
