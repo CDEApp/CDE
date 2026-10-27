@@ -179,7 +179,9 @@ public class SseWriterTests
         pipe.CompleteFlushes = true;
         var ch = Channel.CreateUnbounded<object>();
         ch.Writer.TryWrite(Row("a", "b"));
-        await w.DrainAsync(ch.Reader, Write, CancellationToken.None); // returns instead of hanging
+        var completed = await w.DrainAsync(ch.Reader, Write, CancellationToken.None)
+            .WaitAsync(TimeSpan.FromSeconds(5)); // returns instead of hanging
+        Assert.That(completed, Is.False, "a dead client must end the drain without it reporting a clean finish");
     }
 
     [Test]
@@ -306,7 +308,7 @@ public class SseWriterTests
             (w, c) => w.WriteDone(c), cts.Token, capacity: 1, flushEvery: 1);
         await Task.Delay(100);
         cts.Cancel();
-        await run.WaitAsync(TimeSpan.FromSeconds(5)); // completes without throwing
+        await Assert.DoesNotThrowAsync(async () => await run.WaitAsync(TimeSpan.FromSeconds(5))); // completes without throwing
     }
 
     [Test]

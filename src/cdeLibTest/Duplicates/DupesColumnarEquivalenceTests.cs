@@ -284,6 +284,7 @@ public class DupesColumnarEquivalenceTests
             var live = GC.GetTotalMemory(true) - baseline;
             var allocated = GC.GetAllocatedBytesForCurrentThread() - allocBefore;
             TestContext.Out.WriteLine($"  live heap held (results kept alive): {live:N0} bytes; total allocated: {allocated:N0}; sets: {sets.Count}");
+            Assert.That(sets.Count, Is.GreaterThan(0), "the generated catalog contains duplicate pairs");
             GC.KeepAlive(sets);
         }
     }

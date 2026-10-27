@@ -201,7 +201,9 @@ public class ScanPipelineMeasure
             Say($"#43 save allocated  legacy {legacySave:N0} B  current {currentSave:N0} B");
             Say($"#43 EntryStore copy retained during legacy save: {storeRetained:N0} B");
             Say($"#43 peak GC heap during save (1ms poll, includes uncollected garbage)  legacy {legacySavePeak:N0} B  current {currentSavePeak:N0} B");
-            Say($"#43 outputs identical: {File.ReadAllBytes(outA).AsSpan().SequenceEqual(File.ReadAllBytes(outB))}");
+            var identical = File.ReadAllBytes(outA).AsSpan().SequenceEqual(File.ReadAllBytes(outB));
+            Say($"#43 outputs identical: {identical}");
+            Assert.That(identical, Is.True, "legacy and current save paths must write identical bytes");
             GC.KeepAlive(saveTree);
         }
         finally
