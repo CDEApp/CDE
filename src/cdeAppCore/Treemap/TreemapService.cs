@@ -46,7 +46,8 @@ public sealed class TreemapService : ITreemapService
         if (double.IsNaN(minFraction)) minFraction = 0;
         minFraction = Math.Clamp(minFraction, 0, 0.5);
 
-        var source = _session.GetSource(root.CatalogId);
+        using var lease = _session.AcquireRead(root.CatalogId); // a rescan swap waits for this build
+        var source = lease.Source;
         var rootIndex = root.EntryIndex;
         var rootSize = source.SizeOf(rootIndex);
         if (rootIndex == 0 && rootSize == 0) rootSize = source.RootSize;

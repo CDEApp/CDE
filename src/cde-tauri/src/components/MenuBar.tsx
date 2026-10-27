@@ -4,10 +4,12 @@ interface Props {
   onOpenFolder: () => void;
   onReload: () => void;
   onExit: () => void;
+  /** When set, Open Folder and Reload are disabled and this is their tooltip (e.g. a rescan is running). */
+  loadDisabledReason?: string | null;
 }
 
 /** A lightweight native-style menu bar. "File ▸ Open Folder…" picks a catalog directory. */
-export function MenuBar({ onOpenFolder, onReload, onExit }: Props) {
+export function MenuBar({ onOpenFolder, onReload, onExit, loadDisabledReason }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -30,6 +32,23 @@ export function MenuBar({ onOpenFolder, onReload, onExit }: Props) {
     };
   }, [open]);
 
+  const loadBlocked = !!loadDisabledReason;
+  // A disabled item stays in the menu (greyed, with the reason as tooltip) and ignores clicks.
+  const loadItem = (label: string, action: () => void) => (
+    <li
+      className={loadBlocked ? "disabled" : undefined}
+      title={loadDisabledReason ?? undefined}
+      aria-disabled={loadBlocked}
+      onClick={() => {
+        if (loadBlocked) return;
+        setOpen(false);
+        action();
+      }}
+    >
+      {label}
+    </li>
+  );
+
   return (
     <div className="menubar" ref={ref}>
       <button className={`menu-title${open ? " open" : ""}`} onClick={() => setOpen((o) => !o)}>
@@ -37,22 +56,8 @@ export function MenuBar({ onOpenFolder, onReload, onExit }: Props) {
       </button>
       {open && (
         <ul className="menu-dropdown">
-          <li
-            onClick={() => {
-              setOpen(false);
-              onOpenFolder();
-            }}
-          >
-            Open Folder…
-          </li>
-          <li
-            onClick={() => {
-              setOpen(false);
-              onReload();
-            }}
-          >
-            Reload Catalogs
-          </li>
+          {loadItem("Open Folder…", onOpenFolder)}
+          {loadItem("Reload Catalogs", onReload)}
           <li className="menu-separator" role="separator" />
           <li
             onClick={() => {

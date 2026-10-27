@@ -54,6 +54,35 @@ public interface ICatalogSession : IDisposable
     /// <summary>Catalog roots as <see cref="ICommonEntry"/> for in-process consumers (tree build, search).</summary>
     IReadOnlyList<ICommonEntry> Roots { get; }
 
-    /// <summary>The <see cref="IEntrySource"/> backing the catalog with the given id.</summary>
+    /// <summary>
+    /// The <see cref="IEntrySource"/> backing the catalog with the given id. NOT safe across a rescan swap
+    /// (the mapping may be released): long-running consumers use <see cref="AcquireRead"/> instead.
+    /// </summary>
     IEntrySource GetSource(int catalogId);
+
+    /// <summary>
+    /// Take a read lock on one catalog and return its current source. Hold it for the duration of a search or
+    /// listing; a rescan swap waits for every outstanding lease on that catalog. Dispose to release (on the
+    /// thread that acquired it).
+    /// </summary>
+    CatalogReadLease AcquireRead(int catalogId);
+
+    /// <summary>Whether a rescan of the given catalog is currently running.</summary>
+    bool IsRescanning(int catalogId);
+
+    /// <summary>Whether any catalog is being rescanned (reload is refused meanwhile).</summary>
+    bool AnyRescanning { get; }
+
+    /// <summary>Cheap checks before a rescan: catalog exists, none already running, root path reachable.</summary>
+    RescanPreflight PreflightRescan(int catalogId);
+
+    /// <summary>
+    /// Rescan the catalog's root path in the background and replace the catalog in place (same
+    /// <c>CatalogId</c>). The previous data stays usable until the final swap, which takes the catalog's write
+    /// lock. Hashes of unchanged files and the description carry over. On failure or cancellation the old file
+    /// and in-session data are untouched and no <c>.tmp</c> is left. Throws
+    /// <see cref="RootNotAccessibleException"/> or <see cref="RescanAlreadyRunningException"/> before starting.
+    /// </summary>
+    Task<RescanResult> RescanAsync(int catalogId, IProgress<RescanProgress> progress = null,
+        CancellationToken cancellationToken = default);
 }

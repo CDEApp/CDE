@@ -1,6 +1,29 @@
 import { describe, expect, it } from "vitest";
 import type { DirectoryNode } from "./api/types";
-import { flattenTree, type TreeRoot } from "./treeModel";
+import { changedCatalogs, flattenTree, type TreeRoot } from "./treeModel";
+
+describe("changedCatalogs", () => {
+  const c = (catalogId: number, over: Partial<TreeRoot> = {}): TreeRoot => ({
+    ref: { catalogId, entryIndex: 0 },
+    label: `R${catalogId}`,
+    fullPath: `R${catalogId}`,
+    catalogName: `cat${catalogId}`,
+    size: 10,
+    ...over,
+  });
+
+  it("is empty when the same catalogs are passed again (a refresh keeps the open tree)", () => {
+    expect(changedCatalogs([c(0), c(1)], [c(0), c(1)])).toEqual(new Set());
+  });
+
+  it("flags only a rescanned catalog (generation bumped)", () => {
+    expect(changedCatalogs([c(0), c(1)], [c(0), c(1, { generation: 1 })])).toEqual(new Set([1]));
+  });
+
+  it("flags a catalog id now holding a different catalog, or one that went away", () => {
+    expect(changedCatalogs([c(0), c(1)], [c(0, { catalogName: "other", fullPath: "D:\\" })])).toEqual(new Set([0, 1]));
+  });
+});
 
 function root(catalogId: number, label: string): TreeRoot {
   return { ref: { catalogId, entryIndex: 0 }, label, fullPath: label, catalogName: `cat${catalogId}`, size: 100 };

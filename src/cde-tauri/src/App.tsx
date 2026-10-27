@@ -1,7 +1,24 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open } from "@tauri-apps/plugin-dialog";
-import { CdeApiClient } from "./api/client";
+import { notifications } from "@mantine/notifications";
+import { CdeApiClient, RescanFailure } from "./api/client";
+import {
+  anyRescanning,
+  beginRescan,
+  emptyRescanState,
+  endRescan,
+  isRescanning,
+  reloadDisabledReason,
+  rescanMenuItem,
+  resolveSurvivingFolder,
+  rowStillResolves,
+  staleResultsBanner,
+  statusLines,
+  updateRescan,
+  type RescanState,
+} from "./rescan";
+import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import {
   CatalogInfo,
   CatalogsResponse,
@@ -40,6 +57,7 @@ export default function App() {
   const sidecarRef = useRef<Sidecar | null>(null);
   const uiRef = useRef<UiStateManager | null>(null);
   const searchAbort = useRef<AbortController | null>(null);
+  const lastQueryRef = useRef<SearchQuery | null>(null); // for the stale-results "Search again"
 
   const [status, setStatus] = useState("Starting…");
   const [ready, setReady] = useState(false);
@@ -75,6 +93,18 @@ export default function App() {
   // the same folder again still re-fetches.
   const [treemapRequest, setTreemapRequest] = useState<{ ref: EntryRef; nonce: number } | null>(null);
   const [treemapDepth, setTreemapDepth] = useState<number | null>(null);
+
+  // --- rescan: which catalogs are rescanning, their cancel handles, and what went stale ---
+  const [rescans, setRescans] = useState<RescanState>(emptyRescanState);
+  const rescanAborts = useRef(new Map<number, AbortController>());
+  const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
+  // Catalogs rescanned since the current results were produced (drives the stale banner).
+  const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
+  // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
+  const treeGenRef = useRef<Record<number, number>>({});
+  // Latest values for async completions (a rescan finishes long after the click that started it).
+  const latest = useRef({ catalogs, selectedKey, dirPath, rescans, treemapRequest });
+  latest.current = { catalogs, selectedKey, dirPath, rescans, treemapRequest };
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -152,12 +182,14 @@ export default function App() {
         fullPath: c.rootPath,
         size: c.rootSize,
         catalogName: catalogName(c.actualFileName),
+        generation: treeGenRef.current[c.catalogId] ?? 0,
       })),
     );
   }, []);
 
   const reloadCatalogs = useCallback(
     async (dir?: string | null) => {
+      if (anyRescanning(latest.current.rescans)) return; // the menus are disabled too; belt and braces
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
       try {
@@ -190,6 +222,7 @@ export default function App() {
 
   // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
   const openFolder = useCallback(async () => {
+    if (anyRescanning(latest.current.rescans)) return;
     const picked = await open({ directory: true, multiple: false, title: "Select catalog folder" });
     if (typeof picked !== "string") return; // cancelled
     setCatalogDir(picked);
@@ -220,10 +253,25 @@ export default function App() {
 
   // view a search result in the directory tree (expand to its parent)
   const viewInTree = useCallback(
-    async (ref: EntryRef) => {
+    async (ref: EntryRef, expectedPath?: string) => {
       setView("directory"); // synchronous: this is the user's navigation intent
       const client = clientRef.current!;
-      const chain = await client.path(ref);
+      let chain: DirectoryNode[];
+      try {
+        chain = await client.path(ref);
+      } catch {
+        chain = [];
+      }
+      // A ref from before a rescan can be out of range or point at a different entry: verify by path.
+      if (expectedPath !== undefined && !rowStillResolves(expectedPath, chain)) {
+        notifications.show({
+          color: "yellow",
+          title: "Not found",
+          message: `${expectedPath} is no longer in the catalog (it may have been rescanned). Search again.`,
+        });
+        return;
+      }
+      if (chain.length === 0) return;
       const refs = chain.map((n) => n.ref);
       // expand to the parent (drop the entry itself), then select the parent
       const parent = refs.length > 1 ? refs[refs.length - 2] : refs[0];
@@ -238,6 +286,7 @@ export default function App() {
   // --- search ---
   const runSearch = useCallback(async (query: SearchQuery) => {
     const client = clientRef.current!;
+    lastQueryRef.current = query;
     uiRef.current?.pushSearchHistory(query.pattern);
     uiRef.current?.update({
       regexMode: query.regexMode,
@@ -249,6 +298,7 @@ export default function App() {
 
     setView("results");
     setResults([]);
+    setRescannedSinceSearch(new Set()); // fresh results are not stale
     setBusy(true);
     setTiming("Searching…");
 
@@ -293,6 +343,121 @@ export default function App() {
     searchAbort.current?.abort();
   }, []);
 
+  // --- rescan ---
+  // After the sidecar swapped the catalog in: refresh the lists, remount that catalog's tree root,
+  // mark results into it stale, and put the selection back (nearest surviving parent if it is gone).
+  const afterRescan = useCallback(
+    async (client: CdeApiClient, catalogId: number) => {
+      const { selectedKey: selKey, dirPath: selPath } = latest.current;
+      const selected = selKey ? parseRef(selKey) : null;
+      // Bookkeeping first: it must happen even if the refresh below fails.
+      treeGenRef.current[catalogId] = (treeGenRef.current[catalogId] ?? 0) + 1;
+      setRescannedSinceSearch((prev) => new Set(prev).add(catalogId));
+      // Indexes belong to the old file: a TreeMap request for this catalog is no longer valid.
+      if (latest.current.treemapRequest?.ref.catalogId === catalogId) {
+        setTreemapRequest(null);
+        setView((v) => (v === "treemap" ? "directory" : v));
+      }
+      await refreshCatalogs(client);
+
+      if (selected?.catalogId !== catalogId) return;
+      const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
+      if (!info) return;
+      const found = await resolveSurvivingFolder(
+        { catalogId, entryIndex: 0 },
+        info.rootPath,
+        selPath,
+        (ref) => client.children(ref, { foldersOnly: true, sort: "name" }),
+      );
+      setExpandTo(await refsToPath(client, found.ref));
+      await selectNode(found.ref, found.fullPath);
+    },
+    [refreshCatalogs, selectNode],
+  );
+
+  const rescanCatalog = useCallback(
+    async (catalogId: number) => {
+      const client = clientRef.current!;
+      if (isRescanning(latest.current.rescans, catalogId)) return;
+      const before = latest.current.catalogs?.catalogs.find((c) => c.catalogId === catalogId);
+      const label = before?.rootPath ?? `catalog ${catalogId}`;
+      const abort = new AbortController();
+      rescanAborts.current.set(catalogId, abort);
+      // Update the ref too: a second click in the same tick must see it as running.
+      latest.current.rescans = beginRescan(latest.current.rescans, catalogId, label);
+      setRescans((s) => beginRescan(s, catalogId, label));
+      try {
+        // Phase 1: the rescan's own outcome decides the success / failure toast.
+        let finished = false;
+        let entries = 0;
+        try {
+          const result = await client.rescan(catalogId, {
+            signal: abort.signal,
+            onProgress: (p) =>
+              setRescans((s) => updateRescan(s, catalogId, { phase: p.phase, entriesScanned: p.entriesScanned })),
+          });
+          finished = result !== null;
+          entries = result?.entries ?? 0;
+          if (!finished) {
+            // Cancelled. If the cancel lost the race with the swap the catalog did change: detect that.
+            try {
+              const now = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
+              if (now && before && now.scanEndUtcTicks !== before.scanEndUtcTicks) {
+                finished = true;
+                entries = now.dirEntryCount + now.fileEntryCount;
+              }
+            } catch {
+              /* could not check: report it as cancelled */
+            }
+          }
+        } catch (e) {
+          if (e instanceof RescanFailure && e.rootNotAccessible) {
+            setUnreachableRoot(e.error.rootPath || label);
+          } else {
+            notifications.show({
+              color: "red",
+              title: "Rescan failed",
+              message: `${label}: ${e instanceof Error ? e.message : String(e)}. The catalog was left unchanged.`,
+            });
+          }
+          return;
+        }
+
+        if (!finished) {
+          notifications.show({ color: "gray", title: "Rescan cancelled", message: `${label} was left unchanged.` });
+          return;
+        }
+
+        // Phase 2: the swap succeeded. A failed view refresh must not be reported as a failed rescan.
+        try {
+          await afterRescan(client, catalogId);
+          notifications.show({
+            color: "green",
+            title: "Rescan complete",
+            message: `Rescanned ${label} — ${entries.toLocaleString()} entries`,
+          });
+        } catch (e) {
+          notifications.show({
+            color: "orange",
+            title: "Rescan complete, view not refreshed",
+            message: `Rescanned ${label}, but refreshing the view failed: ${
+              e instanceof Error ? e.message : String(e)
+            } — use Reload.`,
+          });
+        }
+      } finally {
+        rescanAborts.current.delete(catalogId);
+        latest.current.rescans = endRescan(latest.current.rescans, catalogId);
+        setRescans((s) => endRescan(s, catalogId));
+      }
+    },
+    [afterRescan],
+  );
+
+  const cancelRescan = useCallback((catalogId: number) => {
+    rescanAborts.current.get(catalogId)?.abort();
+  }, []);
+
   // --- shell actions / context menu ---
   const runShell = useCallback(async (ref: EntryRef, action: ShellAction, commandId?: number) => {
     try {
@@ -306,6 +471,21 @@ export default function App() {
     setTreemapRequest((prev) => ({ ref, nonce: (prev?.nonce ?? 0) + 1 }));
     setView("treemap");
   }, []);
+
+  // The "Rescan" menu entry for a catalog: disabled (with a tooltip) while that catalog is rescanning.
+  const rescanItem = useCallback(
+    (catalogId: number): MenuItem => {
+      const m = rescanMenuItem(rescans, catalogId);
+      const root = catalogs?.catalogs.find((c) => c.catalogId === catalogId)?.rootPath;
+      return {
+        label: m.label,
+        disabled: m.disabled,
+        title: m.title ?? (root ? `Rescan ${root} in the background` : undefined),
+        onClick: () => void rescanCatalog(catalogId),
+      };
+    },
+    [rescans, catalogs, rescanCatalog],
+  );
 
   const buildMenu = useCallback(
     (ref: EntryRef, fullPath: string, onViewInTree?: () => void, isDirectory = false): MenuItem[] => {
@@ -324,9 +504,11 @@ export default function App() {
         onClick: () => void navigator.clipboard.writeText(fullPath),
       });
       if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
+      // A catalog root or any folder rescans its containing catalog.
+      if (isDirectory) items.push(rescanItem(ref.catalogId));
       return items;
     },
-    [commands, runShell, showTreemap],
+    [commands, runShell, showTreemap, rescanItem],
   );
 
   // Right-click on blank tree space: map the current selection (greyed out when there is none).
@@ -354,12 +536,19 @@ export default function App() {
     return <div className="boot">{status || "Loading…"}</div>;
   }
 
+  const loadBlockedReason = reloadDisabledReason(rescans);
+  const staleBanner = staleResultsBanner(results, rescannedSinceSearch, (id) => {
+    const c = catalogs?.catalogs.find((x) => x.catalogId === id);
+    return c ? c.rootPath : `#${id}`;
+  });
+
   return (
     <div className="app">
       <MenuBar
         onOpenFolder={openFolder}
         onReload={() => void reloadCatalogs(catalogDir)}
         onExit={() => void getCurrentWindow().close()}
+        loadDisabledReason={loadBlockedReason}
       />
 
       <SearchBar
@@ -390,7 +579,12 @@ export default function App() {
             TreeMap
           </button>
         )}
-        <button className="reload" onClick={() => void reloadCatalogs(catalogDir)}>
+        <button
+          className="reload"
+          disabled={!!loadBlockedReason}
+          title={loadBlockedReason ?? undefined}
+          onClick={() => void reloadCatalogs(catalogDir)}
+        >
           Reload
         </button>
       </div>
@@ -435,25 +629,45 @@ export default function App() {
         )}
 
         {view === "results" && (
-          <ResultsList
-            rows={results}
-            resolveStyle={resolveStyle}
-            columnOrder={uiRef.current?.get().searchResultColumnOrder}
-            onColumnOrderChange={(searchResultColumnOrder) => uiRef.current?.update({ searchResultColumnOrder })}
-            onActivate={(row) => void viewInTree(row.ref)}
-            onContextMenu={(row, x, y) =>
-              setMenu({
-                x,
-                y,
-                items: buildMenu(row.ref, row.fullPath, () => void viewInTree(row.ref), row.isDirectory),
-              })
-            }
-          />
+          <div className="results-pane">
+            {staleBanner && (
+              <div className="stale-banner" role="status">
+                <span>{staleBanner}</span>
+                <button
+                  disabled={busy}
+                  onClick={() => {
+                    const q = lastQueryRef.current;
+                    if (q) void runSearch(q);
+                  }}
+                >
+                  Search again
+                </button>
+              </div>
+            )}
+            <div className="results-fill">
+              <ResultsList
+                rows={results}
+                resolveStyle={resolveStyle}
+                columnOrder={uiRef.current?.get().searchResultColumnOrder}
+                onColumnOrderChange={(searchResultColumnOrder) => uiRef.current?.update({ searchResultColumnOrder })}
+                onActivate={(row) => void viewInTree(row.ref, row.fullPath)}
+                onContextMenu={(row, x, y) =>
+                  setMenu({
+                    x,
+                    y,
+                    items: buildMenu(row.ref, row.fullPath, () => void viewInTree(row.ref, row.fullPath), row.isDirectory),
+                  })
+                }
+              />
+            </div>
+          </div>
         )}
 
         {view === "catalogs" && (
           <CatalogList
             catalogs={catalogs?.catalogs ?? []}
+            rescanningIds={new Set(rescans.keys())}
+            onContextMenu={(c, x, y) => setMenu({ x, y, items: [rescanItem(c.catalogId)] })}
             onActivate={(c: CatalogInfo) => {
               setView("directory"); // synchronous navigation intent before the async listing load
               void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
@@ -486,8 +700,15 @@ export default function App() {
         )}
       </div>
 
-      <StatusBar catalogs={catalogs} resultCount={results.length} searchTiming={status || timing} />
+      <StatusBar
+        catalogs={catalogs}
+        resultCount={results.length}
+        searchTiming={status || timing}
+        rescans={statusLines(rescans)}
+        onCancelRescan={cancelRescan}
+      />
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
+      <RootUnreachableModal rootPath={unreachableRoot} onClose={() => setUnreachableRoot(null)} />
     </div>
   );
 }

@@ -14,6 +14,24 @@ export interface TreeRoot {
   catalogName: string;
   /** Total size of everything under the root (CatalogInfo.rootSize). */
   size: number;
+  /** Bumped when the catalog is rescanned, so its cached children are dropped. */
+  generation?: number;
+}
+
+const rootIdentity = (r: TreeRoot) => `${r.generation ?? 0}|${r.catalogName}|${r.fullPath}|${r.size}`;
+
+/**
+ * Catalog ids whose cached tree state (expansion, loaded children) is no longer valid going from
+ * `prev` to `next` roots: rescanned (generation bumped), replaced by a different catalog under the same
+ * id, or gone. Refs are only meaningful within one catalog version, so their entries must be dropped.
+ */
+export function changedCatalogs(prev: TreeRoot[], next: TreeRoot[]): Set<number> {
+  const now = new Map(next.map((r) => [r.ref.catalogId, rootIdentity(r)]));
+  const changed = new Set<number>();
+  for (const r of prev) {
+    if (now.get(r.ref.catalogId) !== rootIdentity(r)) changed.add(r.ref.catalogId);
+  }
+  return changed;
 }
 
 export interface TreeRow {

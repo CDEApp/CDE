@@ -8,6 +8,9 @@ import {
   SearchResultRow,
   ShellRequest,
   CatalogLoadProgress,
+  RescanErrorBody,
+  RescanProgress,
+  RescanResult,
   TreemapResponse,
 } from "./types";
 
@@ -22,6 +25,46 @@ export interface ReloadHandlers {
   onProgress?: (p: CatalogLoadProgress) => void;
   onDone?: (catalogs: number, entries: number) => void;
   signal?: AbortSignal;
+}
+
+export interface RescanHandlers {
+  onProgress?: (p: RescanProgress) => void;
+  signal?: AbortSignal;
+}
+
+/** A non-2xx response from the sidecar; `body` is the raw response text. */
+export class ApiError extends Error {
+  constructor(
+    readonly status: number,
+    readonly body: string,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
+/** A rescan that did not complete: refused up front, or failed mid-way. The catalog is unchanged. */
+export class RescanFailure extends Error {
+  constructor(readonly error: RescanErrorBody) {
+    super(error.message);
+    this.name = "RescanFailure";
+  }
+
+  /** The root path can't be reached: the UI shows its modal instead of a toast. */
+  get rootNotAccessible(): boolean {
+    return this.error.code === "root-not-accessible";
+  }
+}
+
+function parseRescanRefusal(e: ApiError): RescanErrorBody {
+  try {
+    const parsed = JSON.parse(e.body);
+    if (parsed && typeof parsed.code === "string") return parsed as RescanErrorBody;
+  } catch {
+    /* not JSON: fall through */
+  }
+  return { code: "rescan-failed", message: e.body || `rescan: ${e.status}` };
 }
 
 /**
@@ -162,6 +205,33 @@ export class CdeApiClient {
   }
 
   /**
+   * Rescan one catalog in the background. Resolves with the result on `done`, or null when aborted
+   * (the sidecar cancels the scan and leaves the catalog untouched). Throws {@link RescanFailure}
+   * for a refusal (unknown / already running / root unreachable) or an in-stream `error` event.
+   */
+  async rescan(catalogId: number, handlers: RescanHandlers): Promise<RescanResult | null> {
+    // Assigned inside the SSE callback; the casts stop TS narrowing them to `null` afterwards.
+    let result = null as RescanResult | null;
+    let failure = null as RescanErrorBody | null;
+    try {
+      await this.streamSse(
+        `${this.baseUrl}/catalogs/${catalogId}/rescan`,
+        { method: "POST", headers: this.headers(), signal: handlers.signal },
+        (event, data) => {
+          if (event === "progress") handlers.onProgress?.(JSON.parse(data));
+          else if (event === "done") result = JSON.parse(data);
+          else if (event === "error") failure = JSON.parse(data);
+        },
+      );
+    } catch (e) {
+      if (e instanceof ApiError) throw new RescanFailure(parseRescanRefusal(e));
+      throw e;
+    }
+    if (failure) throw new RescanFailure(failure);
+    return result;
+  }
+
+  /**
    * Run a search. Returns when the stream completes (done) or is aborted. Throws with the server's
    * 400 validation message when the query is invalid.
    */
@@ -191,7 +261,7 @@ export class CdeApiClient {
     const resp = await fetch(url, init);
     if (!resp.ok) {
       const msg = await resp.text();
-      throw new Error(msg || `request failed: ${resp.status}`);
+      throw new ApiError(resp.status, msg, msg || `request failed: ${resp.status}`);
     }
     if (!resp.body) return;
 

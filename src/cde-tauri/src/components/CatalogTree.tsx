@@ -3,7 +3,7 @@ import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import type { StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
-import { flattenTree, type TreeRoot, type TreeRow } from "../treeModel";
+import { changedCatalogs, flattenTree, type TreeRoot, type TreeRow } from "../treeModel";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
 export type { TreeRoot };
@@ -68,24 +68,33 @@ export function CatalogTree({
   const loads = useRef(new Map<string, Promise<void>>());
   const listRef = useRef<VirtualListHandle>(null);
 
-  // A catalog (re)load can reuse refs for different folders: start the tree afresh.
+  // A rescan, or a reload that puts a different catalog under the same id, invalidates that catalog's
+  // refs: drop its expansion and loaded children (other catalogs keep theirs).
+  const prevRoots = useRef<TreeRoot[]>([]);
   useEffect(() => {
-    loads.current = new Map();
-    setChildren(new Map());
-    setExpanded(new Set());
-  }, [client, roots]);
+    const changed = changedCatalogs(prevRoots.current, roots);
+    prevRoots.current = roots;
+    if (changed.size === 0) return;
+    const stale = (key: string) => changed.has(Number(key.slice(0, key.indexOf("-"))));
+    for (const key of [...loads.current.keys()]) if (stale(key)) loads.current.delete(key);
+    setChildren((prev) => new Map([...prev].filter(([key]) => !stale(key))));
+    setExpanded((prev) => new Set([...prev].filter((key) => !stale(key))));
+  }, [roots]);
 
   const ensureChildren = useCallback(
     (ref: EntryRef) => {
       const key = refToString(ref);
-      const tree = loads.current; // a reset swaps this map; a fetch from before it must not land
-      let load = tree.get(key);
+      let load = loads.current.get(key);
       if (!load) {
-        load = client.children(ref, { foldersOnly: true, sort: "name" }).then((kids) => {
-          if (loads.current === tree) setChildren((prev) => new Map(prev).set(key, kids));
+        const current = client.children(ref, { foldersOnly: true, sort: "name" }).then((kids) => {
+          // Dropped (rescan / reload) while in flight: these children belong to the old catalog.
+          if (loads.current.get(key) === current) setChildren((prev) => new Map(prev).set(key, kids));
         });
-        load.catch(() => tree.delete(key)); // a failed fetch may be retried
-        tree.set(key, load);
+        current.catch(() => {
+          if (loads.current.get(key) === current) loads.current.delete(key); // a failed fetch may be retried
+        });
+        loads.current.set(key, current);
+        load = current;
       }
       return load;
     },
