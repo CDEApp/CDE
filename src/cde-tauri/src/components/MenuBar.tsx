@@ -54,7 +54,10 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
     ],
     [onNewCatalog, onOpenFolder, onReload, onExit, onAbout, loadBlocked, loadTitle],
   );
-  const ids = useMemo(() => menus.map((m) => m.id), [menus]);
+  // Latest ids live in a ref so the window listeners below subscribe only when a menu opens or closes,
+  // not on every App render (inline handler props change identity each render).
+  const idsRef = useRef<string[]>([]);
+  idsRef.current = menus.map((m) => m.id);
 
   const isOpen = state.openId !== null;
   useEffect(() => {
@@ -63,9 +66,14 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
       if (ref.current && !ref.current.contains(e.target as Node)) setState(closeMenus());
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      if (e.key === "Escape") {
         e.preventDefault();
-        setState((s) => keyMenu(s, e.key, ids));
+        setState((s) => keyMenu(s, e.key));
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // Only when focus is inside the menu bar, so carets in text inputs keep working.
+        if (!ref.current?.contains(document.activeElement)) return;
+        e.preventDefault();
+        setState((s) => keyMenu(s, e.key, idsRef.current));
       }
     };
     const id = window.setTimeout(() => {
@@ -77,7 +85,7 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
       window.removeEventListener("mousedown", onDown, true);
       window.removeEventListener("keydown", onKey);
     };
-  }, [isOpen, ids]);
+  }, [isOpen]);
 
   return (
     <div className="menubar" ref={ref}>
@@ -87,7 +95,6 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
           <div className="menu" key={menu.id}>
             <button
               className={`menu-title${open ? " open" : ""}`}
-              aria-haspopup="menu"
               aria-expanded={open}
               onClick={() => setState((s) => toggleMenu(s, menu.id))}
               onMouseEnter={() => setState((s) => hoverMenu(s, menu.id))}
@@ -95,14 +102,13 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
               {menu.title}
             </button>
             {open && (
-              <ul className="menu-dropdown" role="menu">
+              <ul className="menu-dropdown">
                 {menu.entries.map((entry, i) =>
                   entry.kind === "separator" ? (
                     <li key={i} className="menu-separator" role="separator" />
                   ) : (
                     <li
                       key={i}
-                      role="menuitem"
                       className={entry.disabled ? "disabled" : undefined}
                       title={entry.title}
                       aria-disabled={!!entry.disabled}
