@@ -1,15 +1,20 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { defineChart, type ChartInteractionController } from "@tanstack/charts";
 import { treemap, type TreemapNode } from "@tanstack/charts/hierarchy/treemap";
 import { Chart } from "@tanstack/charts/react";
+import { treemapSquarify } from "d3-hierarchy";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, TreemapResponse, TreemapRow } from "../api/types";
 import { toHRString } from "../format";
 import {
   branchColors,
   branchIdOf,
+  capturingTiler,
   drillTargetId,
   fullPathOf,
+  LABEL_PADDING,
+  labelLines,
+  type TileRect,
   MERGED_COLOR,
   minFractionFor,
   mix,
@@ -29,6 +34,36 @@ interface Props {
 }
 
 type Node = TreemapNode<TreemapRow>;
+/** The d3 hierarchy node handed to a tiler (`data.id` is our nodeId; `id` is lost on copy). */
+interface LayoutNode extends TileRect {
+  data: { id: string };
+  parent: unknown;
+  children?: LayoutNode[];
+}
+
+const NAME_FONT_PX = 11;
+const SIZE_FONT_PX = 10;
+const LABEL_FILL = "#141414";
+const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2; // the treemap mark's default squarify ratio
+
+/** The tile rectangles of one rendered layout, in the chart's own pixel space. */
+interface TileLayout {
+  generation: number;
+  width: number;
+  height: number;
+  rects: Map<string, TileRect>;
+  rowsById: Map<string, TreemapRow>;
+}
+
+/** Text width in px via canvas; a coarse per-character estimate where canvas is unavailable. */
+function makeMeasurer(fontFamily: string): (text: string, px: number) => number {
+  const ctx = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
+  return (text, px) => {
+    if (!ctx) return text.length * px * 0.6;
+    ctx.font = `${px}px ${fontFamily}`;
+    return ctx.measureText(text).width;
+  };
+}
 
 const DIM_TARGET = "#2a2a2a"; // tiles outside a highlighted branch fade toward the pane colour
 
@@ -49,6 +84,14 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
   const tooltipRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<ChartInteractionController<Node> | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  const [tileLayout, setTileLayout] = useState<TileLayout | null>(null);
+
+  // Records every leaf rectangle the chart lays out (the mark only labels leaves). One stable
+  // instance: each relayout (resize, depth/data change, highlight) starts a new generation.
+  const capture = useMemo(
+    () => capturingTiler<LayoutNode>(treemapSquarify.ratio(GOLDEN_RATIO) as never, (n) => String(n.data.id)),
+    [],
+  );
 
   // A new "Show TreeMap" request (a new nonce) re-roots the view. Keyed on the nonce alone: a
   // caller passing a fresh-but-equal ref object each render must not re-fetch in a loop.
@@ -105,6 +148,8 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
 
   const rows = data?.rows ?? [];
   const rowsById = useMemo(() => new Map(rows.map((r) => [r.nodeId, r])), [rows]);
+  const rowsByIdRef = useRef(rowsById);
+  rowsByIdRef.current = rowsById;
   const rootRow = useMemo(() => rows.find((r) => r.parentId == null), [rows]);
   const branches = useMemo(
     () => rows.filter((r) => r.parentId === rootRow?.nodeId).sort((a, b) => b.size - a.size),
@@ -125,6 +170,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
             value: "value",
             paddingOuter: 2,
             paddingInner: 1,
+            method: capture.tile as never,
             inset: 0.5,
             fill: (n: Node) => {
               const branch = branchIdOf(n);
@@ -135,9 +181,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
             },
             stroke: "#1e1e1e",
             strokeWidth: 0.5,
-            label: (n: Node) => n.data?.name ?? null,
-            labelFill: "#141414",
-            labelFontSize: 11,
+            // No `label`: names and sizes are drawn by the overlay below (the mark has no second line).
           }),
         ],
         scales: { x: null, y: null },
@@ -145,8 +189,56 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
         margin: 0,
         tooltip: false,
       }),
-    [rows, colors, highlight],
+    [rows, colors, highlight, capture],
   );
+
+  // After every chart render, publish the rectangles it was laid out with. Reading them here (not
+  // during our render) keeps them in step with what is on screen after a resize or depth change.
+  const onChartRender = useCallback(
+    (ctx: { interaction: unknown; scene: { width: number; height: number } }) => {
+      interactionRef.current = ctx.interaction as unknown as ChartInteractionController<Node>;
+      const generation = capture.generation();
+      setTileLayout((prev) =>
+        prev && prev.generation === generation && prev.width === ctx.scene.width && prev.height === ctx.scene.height
+          ? prev
+          : {
+              generation,
+              width: ctx.scene.width,
+              height: ctx.scene.height,
+              rects: capture.current(),
+              rowsById: rowsByIdRef.current,
+            },
+      );
+    },
+    [capture],
+  );
+
+  const tileLabels = useMemo(() => {
+    if (!tileLayout) return [];
+    const measure = makeMeasurer(bodyRef.current ? getComputedStyle(bodyRef.current).fontFamily : "sans-serif");
+    const out: { id: string; cx: number; cy: number; name: string; size?: string }[] = [];
+    for (const [id, rect] of tileLayout.rects) {
+      const row = tileLayout.rowsById.get(id);
+      if (!row || !row.name) continue;
+      const size = toHRString(row.size);
+      const lines = labelLines(
+        rect,
+        measure(row.name, NAME_FONT_PX),
+        measure(size, SIZE_FONT_PX),
+        NAME_FONT_PX,
+        LABEL_PADDING,
+      );
+      if (lines === "none") continue;
+      out.push({
+        id,
+        cx: (rect.x0 + rect.x1) / 2,
+        cy: (rect.y0 + rect.y1) / 2,
+        name: row.name,
+        size: lines === "both" ? size : undefined,
+      });
+    }
+    return out;
+  }, [tileLayout]);
 
   const up = crumbs.length > 1 ? crumbs[crumbs.length - 2].ref : null;
 
@@ -245,10 +337,29 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
               ariaLabel={`Treemap of ${data.rootFullPath}`}
               height={size.height}
               onFocusChange={(point) => setHover((point?.datum as Node | undefined) ?? null)}
-              onRender={(ctx) => {
-                interactionRef.current = ctx.interaction as unknown as ChartInteractionController<Node>;
-              }}
+              onRender={onChartRender}
             />
+          )}
+          {data && definition && size.height > 0 && tileLayout && (
+            <svg
+              className="treemap-labels"
+              width={tileLayout.width}
+              height={tileLayout.height}
+              aria-hidden="true"
+            >
+              {tileLabels.map((l) => (
+                <g key={l.id} textAnchor="middle" dominantBaseline="middle" fill={LABEL_FILL}>
+                  <text x={l.cx} y={l.size ? l.cy - NAME_FONT_PX / 2 : l.cy} fontSize={NAME_FONT_PX}>
+                    {l.name}
+                  </text>
+                  {l.size && (
+                    <text x={l.cx} y={l.cy + NAME_FONT_PX / 2} fontSize={SIZE_FONT_PX} fillOpacity={0.75}>
+                      {l.size}
+                    </text>
+                  )}
+                </g>
+              ))}
+            </svg>
           )}
           <div ref={tooltipRef} className="treemap-tooltip" hidden={!hoverRow}>
             {hoverRow && data && (

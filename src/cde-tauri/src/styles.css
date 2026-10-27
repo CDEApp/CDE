@@ -135,6 +135,7 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .treemap-depth select { margin-left: 6px; }
 .treemap-content { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 260px; }
 .treemap-body { position: relative; min-width: 0; min-height: 0; overflow: hidden; cursor: pointer; }
+.treemap-labels { position: absolute; top: 0; left: 0; pointer-events: none; user-select: none; }
 .treemap-empty { padding: 1rem; color: #999; }
 .treemap-tooltip {
   position: absolute; z-index: 5; pointer-events: none; max-width: 480px;
