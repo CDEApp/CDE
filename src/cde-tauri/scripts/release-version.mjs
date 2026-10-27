@@ -15,6 +15,10 @@
 //                                                          print the next free pre-release tag
 //   validate-stable    --version V --tags-file F [--from-draft]
 //   validate-prerelease --tag T --tags-file F
+//   validate-release-tag --tag T --tags-file F             stable or pre-release; the tag may be in F
+//   latest-draft       --releases-file F                   tag of the newest stable-named draft
+//   draft-for-tag      --tag T --releases-file F           ids of the drafts for T, newest first
+//                      (F is the output of `gh api --paginate [--slurp] repos/<repo>/releases`)
 //   tag-kind           --tag T                             print "stable" or "prerelease"
 //
 // A validate command prints GitHub Actions ::error:: / ::warning:: lines and exits 1 on an error.
@@ -132,6 +136,77 @@ export function validatePrerelease(tag, tags) {
   return { errors, warnings };
 }
 
+/**
+ * Check the tag a Release run was started for, whichever way it started (tag push, Publish
+ * workflow, or a re-run). The tag itself is expected to be in the list on a re-run, so it is left
+ * out of the comparison. A stable tag must be higher than every other stable tag; a pre-release's
+ * base must be higher than the latest stable tag.
+ */
+export function validateReleaseTag(tag, tags) {
+  const v = parseVersion(tag);
+  if (!v) {
+    return {
+      errors: [`Tag '${tag}' is neither MAJOR.MINOR.PATCH nor MAJOR.MINOR.PATCH-(${CHANNELS.join("|")}).N`],
+      warnings: [],
+    };
+  }
+  const others = tags.filter((t) => t !== tag);
+  return isStable(v) ? validateStable(tag, others) : validatePrerelease(tag, others);
+}
+
+// ---- Releases (the JSON of `gh api --paginate [--slurp] repos/<repo>/releases`) ----
+
+/** Parse the releases JSON: one array, an array of pages (--slurp), or pages run together. */
+export function parseReleases(text) {
+  // Split the text into its top-level JSON values by tracking brackets outside strings, so a "] ["
+  // inside a release body is left alone.
+  const values = [];
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+  let start = -1;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inString) {
+      if (escaped) escaped = false;
+      else if (c === "\\") escaped = true;
+      else if (c === '"') inString = false;
+    } else if (c === '"') inString = true;
+    else if (c === "[" || c === "{") {
+      if (depth === 0) start = i;
+      depth++;
+    } else if (c === "]" || c === "}") {
+      depth--;
+      if (depth === 0) values.push(JSON.parse(text.slice(start, i + 1)));
+    }
+  }
+  return values.flat(Infinity);
+}
+
+const byNewest = (a, b) => (a.created_at < b.created_at ? 1 : a.created_at > b.created_at ? -1 : 0);
+
+/**
+ * The tag of the newest draft release named like a stable version (X.Y.Z): the draft Release Drafter
+ * keeps for the next stable release. A draft for a pre-release tag is ignored. Null if none.
+ */
+export function latestDraft(releases) {
+  const drafts = releases
+    .filter((r) => {
+      const v = parseVersion(r.tag_name);
+      return r.draft && v !== null && isStable(v);
+    })
+    .sort(byNewest);
+  return drafts.length > 0 ? drafts[0].tag_name : null;
+}
+
+/** The ids of the draft releases for exactly this tag, newest first. */
+export function draftsForTag(tag, releases) {
+  return releases
+    .filter((r) => r.draft && r.tag_name === tag)
+    .sort(byNewest)
+    .map((r) => r.id);
+}
+
 // ---- CLI ----
 
 function readTags(file) {
@@ -140,6 +215,11 @@ function readTags(file) {
     .split(/\r?\n/)
     .map((l) => l.trim())
     .filter(Boolean);
+}
+
+function readReleases(file) {
+  if (!file) throw new Error("--releases-file is required");
+  return parseReleases(readFileSync(file, "utf8"));
 }
 
 function parseArgs(argv) {
@@ -179,6 +259,16 @@ export function run(argv) {
       return 0;
     case "validate-stable":
       return report(validateStable(args.version, readTags(args["tags-file"]), { fromDraft: args["from-draft"] === true }));
+    case "validate-release-tag":
+      return report(validateReleaseTag(args.tag, readTags(args["tags-file"])));
+    case "latest-draft": {
+      const tag = latestDraft(readReleases(args["releases-file"]));
+      if (tag) console.log(tag);
+      return 0;
+    }
+    case "draft-for-tag":
+      for (const id of draftsForTag(args.tag, readReleases(args["releases-file"]))) console.log(id);
+      return 0;
     case "validate-prerelease":
       return report(validatePrerelease(args.tag, readTags(args["tags-file"])));
     case "tag-kind": {

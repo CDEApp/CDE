@@ -10,12 +10,14 @@
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { parseVersion } from "./release-version.mjs";
 
-const SEMVER = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(-[0-9A-Za-z.-]+)?$/;
-
+// The version rules live in release-version.mjs; this accepts exactly what it accepts.
 export function assertVersion(version) {
-  if (typeof version !== "string" || !SEMVER.test(version)) {
-    throw new Error(`'${version}' is not a semantic version (expected MAJOR.MINOR.PATCH, no 'v' prefix)`);
+  if (parseVersion(version) === null) {
+    throw new Error(
+      `'${version}' is not a release version (expected MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-(alpha|beta|rc).N, no 'v' prefix)`,
+    );
   }
   return version;
 }

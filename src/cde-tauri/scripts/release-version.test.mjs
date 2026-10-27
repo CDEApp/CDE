@@ -1,12 +1,107 @@
 import { describe, expect, it } from "vitest";
 import {
   compareVersions,
+  draftsForTag,
+  latestDraft,
   latestStable,
   nextPrerelease,
+  parseReleases,
   parseVersion,
   validatePrerelease,
+  validateReleaseTag,
   validateStable,
 } from "./release-version.mjs";
+
+describe("validateReleaseTag", () => {
+  const tags = ["1.7.1", "2.0.0"];
+  it("accepts a higher stable tag, whether or not it is in the list yet", () => {
+    expect(validateReleaseTag("2.1.0", tags).errors).toEqual([]);
+    expect(validateReleaseTag("2.1.0", [...tags, "2.1.0"]).errors).toEqual([]);
+  });
+  it("accepts a re-run of the tag that is the latest stable tag", () => {
+    expect(validateReleaseTag("2.0.0", tags).errors).toEqual([]);
+  });
+  it("rejects a stable tag lower than the latest stable tag, in the list or not", () => {
+    expect(validateReleaseTag("1.9.0", tags).errors.join()).toContain("not higher than the latest tag 2.0.0");
+    expect(validateReleaseTag("1.9.0", [...tags, "1.9.0"]).errors).toHaveLength(1);
+  });
+  it("ignores pre-release tags when comparing a stable tag", () => {
+    expect(validateReleaseTag("2.1.0", ["2.0.0", "2.1.0-rc.2"]).errors).toEqual([]);
+  });
+  it("accepts a pre-release on a higher base, new or a re-run", () => {
+    expect(validateReleaseTag("2.1.0-beta.1", tags).errors).toEqual([]);
+    expect(validateReleaseTag("2.1.0-beta.1", [...tags, "2.1.0-beta.1"]).errors).toEqual([]);
+  });
+  it("rejects a pre-release whose base is not above the latest stable tag", () => {
+    expect(validateReleaseTag("2.0.0-rc.1", [...tags, "2.0.0-rc.1"]).errors.join()).toContain("not higher than");
+    expect(validateReleaseTag("1.9.0-beta.1", tags).errors).toHaveLength(1);
+  });
+  it("rejects a tag that is not a version", () => {
+    expect(validateReleaseTag("v2.1.0", tags).errors).toHaveLength(1);
+    expect(validateReleaseTag("2.1.0-beta.0", tags).errors).toHaveLength(1);
+  });
+});
+
+describe("releases JSON", () => {
+  const rel = (id, tag_name, created_at, draft = true) => ({ id, tag_name, created_at, draft });
+  const releases = [
+    rel(1, "2.0.0", "2022-10-03", false),
+    rel(2, "2.1.0", "2026-01-01"),
+    rel(3, "2.1.0-beta.1", "2026-03-01"),
+    rel(4, "2.2.0", "2026-02-01"),
+    rel(5, "2.2.0", "2026-02-15"),
+    rel(6, "untagged-abc", "2026-04-01"),
+  ];
+
+  describe("latestDraft", () => {
+    it("is null with no drafts", () => {
+      expect(latestDraft([])).toBeNull();
+      expect(latestDraft([rel(1, "2.0.0", "2022-10-03", false)])).toBeNull();
+    });
+    it("takes the newest stable-named draft", () => {
+      expect(latestDraft(releases)).toBe("2.2.0");
+    });
+    it("ignores pre-release-named and odd drafts, and published releases", () => {
+      expect(latestDraft([rel(3, "2.1.0-beta.1", "2026-03-01"), rel(6, "untagged-abc", "2026-04-01")])).toBeNull();
+      expect(latestDraft([rel(1, "9.0.0", "2030-01-01", false), rel(2, "2.1.0", "2026-01-01")])).toBe("2.1.0");
+    });
+  });
+
+  describe("draftsForTag", () => {
+    it("lists the ids newest first", () => {
+      expect(draftsForTag("2.2.0", releases)).toEqual([5, 4]);
+    });
+    it("is empty for no draft, and ignores published releases", () => {
+      expect(draftsForTag("2.0.0", releases)).toEqual([]);
+      expect(draftsForTag("9.9.9", releases)).toEqual([]);
+    });
+    it("finds a pre-release draft by its exact tag", () => {
+      expect(draftsForTag("2.1.0-beta.1", releases)).toEqual([3]);
+    });
+  });
+
+  describe("parseReleases", () => {
+    const page1 = JSON.stringify([rel(1, "2.1.0", "a")]);
+    const page2 = JSON.stringify([rel(2, "2.2.0", "b")]);
+    it("reads a single array", () => {
+      expect(parseReleases(page1)).toHaveLength(1);
+    });
+    it("reads pages run together (gh --paginate)", () => {
+      expect(parseReleases(`${page1}\n${page2}\n`).map((r) => r.id)).toEqual([1, 2]);
+    });
+    it("reads an array of pages (gh --paginate --slurp)", () => {
+      expect(parseReleases(`[${page1},${page2}]`).map((r) => r.id)).toEqual([1, 2]);
+    });
+    it("is not fooled by brackets inside a string", () => {
+      const tricky = JSON.stringify([{ id: 1, body: 'a ] [ b "] [" \\', draft: true, tag_name: "2.1.0", created_at: "a" }]);
+      expect(parseReleases(`${tricky}${page2}`).map((r) => r.id)).toEqual([1, 2]);
+    });
+    it("reads empty output", () => {
+      expect(parseReleases("")).toEqual([]);
+      expect(parseReleases("[]")).toEqual([]);
+    });
+  });
+});
 
 describe("parseVersion", () => {
   it("parses a stable version", () => {
