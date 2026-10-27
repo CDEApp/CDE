@@ -202,22 +202,25 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
     var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
 
-    var channel = Channel.CreateUnbounded<(string evt, string data)>();
-    var progress = new SseProgress<CatalogLoadProgress>(channel.Writer,
-        p => JsonSerializer.Serialize(p, AppCoreJsonContext.Default.CatalogLoadProgress));
+    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    var channel = SseQueue.Create();
+    var progress = new SseProgress(channel.Writer);
 
     var work = Task.Run(async () =>
     {
-        try { await session.LoadAsync(loadPath, progress, ct); }
-        finally
-        {
-            channel.Writer.TryWrite(("done",
-                JsonSerializer.Serialize(new { catalogs = session.CatalogCount, entries = session.TotalEntryCount })));
-            channel.Writer.Complete();
-        }
+        try { await session.LoadAsync(loadPath, progress, cts.Token); }
+        finally { channel.Writer.TryComplete(); }
     }, CancellationToken.None);
 
-    await Drain(ctx.Response, channel.Reader, ct);
+    using var sse = new SseWriter(ctx.Response.BodyWriter);
+    try
+    {
+        await sse.DrainAsync(channel.Reader, SseQueue.WriteItem, ct);
+        sse.WriteDone(session.CatalogCount, session.TotalEntryCount);
+        await sse.FlushAsync(ct);
+    }
+    catch (OperationCanceledException) { /* client disconnected */ }
+    finally { cts.Cancel(); } // a drain that stopped early must not leave the producer waiting on a full queue
     await work;
 });
 
@@ -240,31 +243,38 @@ app.MapPost("/search", async (HttpContext ctx, SearchQuery query, ISearchService
     var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
 
-    var channel = Channel.CreateUnbounded<(string evt, string data)>();
-    var progress = new SseProgress<SearchProgress>(channel.Writer,
-        p => JsonSerializer.Serialize(p, AppCoreJsonContext.Default.SearchProgress));
+    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+    var channel = SseQueue.Create();
+    var progress = new SseProgress(channel.Writer);
 
     var work = Task.Run(async () =>
     {
-        var count = 0;
         try
         {
-            await foreach (var row in search.SearchAsync(query, progress, ct))
+            await foreach (var row in search.SearchAsync(query, progress, cts.Token))
             {
-                count++;
-                channel.Writer.TryWrite(("result",
-                    JsonSerializer.Serialize(row, AppCoreJsonContext.Default.SearchResultRow)));
+                // Bounded queue: waits when the client can't keep up, so the search is held back too.
+                await channel.Writer.WriteAsync(row, cts.Token);
             }
         }
         catch (OperationCanceledException) { /* client disconnect / cancel */ }
-        finally
-        {
-            channel.Writer.TryWrite(("done", JsonSerializer.Serialize(new { count })));
-            channel.Writer.Complete();
-        }
+        finally { channel.Writer.TryComplete(); }
     }, CancellationToken.None);
 
-    await Drain(ctx.Response, channel.Reader, ct);
+    var count = 0;
+    using var sse = new SseWriter(ctx.Response.BodyWriter);
+    try
+    {
+        await sse.DrainAsync(channel.Reader, (w, item) =>
+        {
+            if (item is SearchResultRow) count++;
+            SseQueue.WriteItem(w, item);
+        }, ct);
+        sse.WriteDone(count);
+        await sse.FlushAsync(ct);
+    }
+    catch (OperationCanceledException) { /* client disconnected */ }
+    finally { cts.Cancel(); } // a drain that stopped early must not leave the producer waiting on a full queue
     await work;
 });
 
@@ -292,22 +302,38 @@ Console.Out.Flush();
 await app.WaitForShutdownAsync();
 return;
 
-// Single-threaded drain of the SSE event channel to the response body.
-static async Task Drain(HttpResponse response, ChannelReader<(string evt, string data)> reader, CancellationToken ct)
+/// <summary>The bounded hand-off between the producers (search / load) and the single SSE drain loop.</summary>
+internal static class SseQueue
 {
-    try
-    {
-        await foreach (var (evt, data) in reader.ReadAllAsync(ct))
+    // Small on purpose: this only smooths bursts. When it is full the producer waits for the client.
+    private const int Capacity = 1024;
+
+    public static Channel<object> Create() => Channel.CreateBounded<object>(
+        new BoundedChannelOptions(Capacity)
         {
-            await Sse.EventAsync(response, evt, data, ct);
+            FullMode = BoundedChannelFullMode.Wait,
+            SingleReader = true
+        });
+
+    /// <summary>Write one queued item as its SSE event. Items are boxed DTOs; progress is infrequent.</summary>
+    public static void WriteItem(SseWriter w, object item)
+    {
+        switch (item)
+        {
+            case SearchResultRow r: w.Write("result"u8, r, AppCoreJsonContext.Default.SearchResultRow); break;
+            case SearchProgress p: w.Write("progress"u8, p, AppCoreJsonContext.Default.SearchProgress); break;
+            case CatalogLoadProgress l: w.Write("progress"u8, l, AppCoreJsonContext.Default.CatalogLoadProgress); break;
         }
     }
-    catch (OperationCanceledException) { /* client disconnected */ }
 }
 
-/// <summary>Bridges an <see cref="IProgress{T}"/> report into an SSE <c>progress</c> event on the channel.</summary>
-internal sealed class SseProgress<T>(ChannelWriter<(string evt, string data)> writer, Func<T, string> serialize)
-    : IProgress<T>
+/// <summary>
+/// Bridges <see cref="IProgress{T}"/> reports into the SSE queue. Progress is lossy by nature: if a stalled
+/// client has filled the queue the report is dropped rather than blocking the producer (the next report, or
+/// the final <c>done</c>, supersedes it).
+/// </summary>
+internal sealed class SseProgress(ChannelWriter<object> writer) : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>
 {
-    public void Report(T value) => writer.TryWrite(("progress", serialize(value)));
+    public void Report(SearchProgress value) => writer.TryWrite(value);
+    public void Report(CatalogLoadProgress value) => writer.TryWrite(value);
 }
