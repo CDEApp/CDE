@@ -58,9 +58,9 @@ public class CDEWinFormPresenterTest
         {
             _ = new CDEWinFormPresenter(_mockForm, _stubConfig);
 
-            _mockSearchResultListViewHelper.ColumnSortCompare = Arg.Any<Comparison<PairDirEntry>>();
-            _mockCatalogListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
-            _mockDirectoryListViewHelper.ColumnSortCompare = Arg.Any<Comparison<ICommonEntry>>();
+            Assert.That(_mockSearchResultListViewHelper.ColumnSortCompare, Is.Not.Null);
+            Assert.That(_mockCatalogListViewHelper.ColumnSortCompare, Is.Not.Null);
+            Assert.That(_mockDirectoryListViewHelper.ColumnSortCompare, Is.Not.Null);
         }
 
         [Test]
@@ -429,7 +429,8 @@ public class CDEWinFormPresenterTest
         {
             _sutPresenter.TestSetSearchResultList(null);
 
-            _sutPresenter.SearchResultRetrieveVirtualItem();
+            Assert.DoesNotThrow(() => _sutPresenter.SearchResultRetrieveVirtualItem());
+            _mockSearchResultListViewHelper.DidNotReceive().RenderItem = Arg.Any<ListViewItem>();
         }
 
         [Test]
@@ -438,7 +439,8 @@ public class CDEWinFormPresenterTest
             var pairDirList = new List<PairDirEntry>();
             _sutPresenter.TestSetSearchResultList(pairDirList);
 
-            _sutPresenter.SearchResultRetrieveVirtualItem();
+            Assert.DoesNotThrow(() => _sutPresenter.SearchResultRetrieveVirtualItem());
+            _mockSearchResultListViewHelper.DidNotReceive().RenderItem = Arg.Any<ListViewItem>();
         }
 
         /// <summary>
@@ -535,7 +537,7 @@ public class CDEWinFormPresenterTest
         [Test]
         public void Nothing_Bombs_If_No_ListViewEntries()
         {
-            _sutPresenter.DirectoryRetrieveVirtualItem();
+            Assert.DoesNotThrow(() => _sutPresenter.DirectoryRetrieveVirtualItem());
         }
 
         [Test]
@@ -543,7 +545,7 @@ public class CDEWinFormPresenterTest
         {
             MockDirectoryTreeViewAfterSelect(_sutPresenter);
 
-            _sutPresenter.DirectoryRetrieveVirtualItem();
+            Assert.DoesNotThrow(() => _sutPresenter.DirectoryRetrieveVirtualItem());
         }
     }
     // ReSharper restore InconsistentNaming

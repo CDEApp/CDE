@@ -167,8 +167,12 @@ public class CommonEntryTest_TraverseTreesCopyHash
         RecreateTestTree();
         _dde1.SetHash(99); 
         _dde1.IsPartialHash = false;
+        var destHashBefore = _dde1.Hash;
 
         _reSource.TraverseTreesCopyHash(_reDest);
+
+        Assert.That(_dde1.Hash, Is.EqualTo(destHashBefore));
+        Assert.That(_dde1.Hash, Is.Not.EqualTo(_sde1.Hash));
     }
 
     private void RecreateTestTree()

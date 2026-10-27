@@ -147,6 +147,9 @@ internal class DuplicationTest
         var ah8 = Hash16.EqualityComparer.StaticGetHashCode(de8.Hash);
         Console.WriteLine($"de5.Hash {ah5}  de6.Hash {ah6} de7.Hash {ah7} de8.Hash {ah8}");
 
+        Assert.That(ah6, Is.EqualTo(ah8), "Same hash value should give the same hash code.");
+        Assert.That(ah5, Is.Not.EqualTo(ah6), "Different hash values should give different hash codes.");
+
         // TODO: Fix
         // var a5 = DirEntry.EqualityComparer.StaticGetHashCode(de5);
         // var a6 = DirEntry.EqualityComparer.StaticGetHashCode(de6);
@@ -262,14 +265,14 @@ internal class DuplicationTest
     // this one is useful to test drive ApplyHash outside of the app.
     // I copy a .cde file into the compile folder for testing, but it works with none.
     [Test]
-    public async Task
+    public void
         ApplyMd5Checksum_CheckDupesAndCompleteFullHash_DoesItEnsureAllPartialDupesAreFullHashed_Exercise()
     {
         var catalogRepository = new CatalogRepository(Log.Logger);
         var rootEntries = catalogRepository.LoadCurrentDirCache();
 
         var d = new Duplication(_logger, _configuration, _applicationDiagnostics, new OperationCancellation());
-        await d.ApplyHash(rootEntries).ConfigureAwait(false);
+        Assert.DoesNotThrowAsync(async () => await d.ApplyHash(rootEntries).ConfigureAwait(false));
     }
     // ReSharper restore InconsistentNaming
 }
