@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Button, Group, Modal } from "@mantine/core";
 import type { CdeApiClient } from "../api/client";
 import type { CatalogInfo, CreatePreflightResult } from "../api/types";
@@ -35,6 +35,7 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   const [followJunctions, setFollowJunctions] = useState(false);
   const [preflight, setPreflight] = useState<CreatePreflightResult | null>(null);
   const [preflightError, setPreflightError] = useState<string | null>(null);
+  const [preflightRoot, setPreflightRoot] = useState<string | null>(null); // the root the answer above was asked for
   const seq = useRef(0);
 
   // A different root starts a fresh form (its own default name); the description and junctions stay as typed.
@@ -57,10 +58,12 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
           .then((r) => {
             if (mine !== seq.current) return;
             setPreflight(r);
+            setPreflightRoot(rootPath);
             setPreflightError(null);
           })
           .catch((e) => {
             if (mine !== seq.current || (e as Error)?.name === "AbortError") return;
+            setPreflightRoot(rootPath);
             setPreflightError(e instanceof Error ? e.message : String(e));
           });
       },
@@ -73,8 +76,8 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   }, [rootPath, typedName, client]);
 
   const state = useMemo(
-    () => deriveDialogState({ rootPath: rootPath ?? "", fileName, preflight, preflightError }),
-    [rootPath, fileName, preflight, preflightError],
+    () => deriveDialogState({ rootPath: rootPath ?? "", fileName, preflight, preflightRoot, preflightError }),
+    [rootPath, fileName, preflight, preflightRoot, preflightError],
   );
 
   const existingRoot =
@@ -91,11 +94,16 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
     });
   };
 
+  // Enter creates, but only from the two editable text inputs (not the read-only fields or the checkbox).
+  const createOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") create();
+  };
+
   const shownName = fileName ?? preflight?.defaultFileName ?? "";
 
   return (
     <Modal opened={rootPath !== null} onClose={onClose} title="New catalog" centered size="lg">
-      <div className="nc-form" onKeyDown={(e) => e.key === "Enter" && (e.target as HTMLElement).tagName === "INPUT" && create()}>
+      <div className="nc-form">
         <label className="nc-label">Root</label>
         <div className="nc-row">
           <input className="nc-input" value={rootPath ?? ""} readOnly title={rootPath ?? undefined} />
@@ -116,6 +124,7 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
             data-autofocus
             spellCheck={false}
             onChange={(e) => setFileName(e.target.value)}
+            onKeyDown={createOnEnter}
           />
           <span className="nc-ext">{CATALOG_EXTENSION}</span>
         </div>
@@ -145,6 +154,7 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
           value={description}
           placeholder="(optional)"
           onChange={(e) => setDescription(e.target.value)}
+          onKeyDown={createOnEnter}
         />
 
         <label className="nc-check">

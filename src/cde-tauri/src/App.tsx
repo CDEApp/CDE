@@ -26,7 +26,7 @@ import {
   updateCreate,
   type CreateJobs,
 } from "./catalogJobs";
-import { samePath } from "./newCatalog";
+import { findCatalogByTarget } from "./newCatalog";
 import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import {
@@ -533,9 +533,8 @@ export default function App() {
           if (!result && form.targetPath) {
             // Cancelled. If the cancel lost the race with the final rename the catalog was added: detect that.
             try {
-              const found = (await client.catalogs()).catalogs.find(
-                (c) => c.sourcePath && samePath(c.sourcePath, form.targetPath!),
-              );
+              // Exact match on the path the sidecar reported: no case guessing on the client.
+              const found = findCatalogByTarget((await client.catalogs()).catalogs, form.targetPath);
               if (found) {
                 result = {
                   catalogId: found.catalogId,

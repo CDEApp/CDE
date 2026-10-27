@@ -1,12 +1,37 @@
 import { describe, expect, it } from "vitest";
 import type { CreatePreflightResult } from "./api/types";
-import { deriveDialogState, normalizeFileName, samePath, validateFileName } from "./newCatalog";
+import {
+  deriveDialogState,
+  findCatalogByTarget,
+  isPreflightCurrent,
+  normalizeFileName,
+  validateFileName,
+} from "./newCatalog";
 
-describe("samePath", () => {
-  it("ignores case, separators and a trailing separator", () => {
-    expect(samePath("C:\\Cat\\New.cdex", "c:/cat/new.cdex")).toBe(true);
-    expect(samePath("C:\\Cat\\", "C:\\Cat")).toBe(true);
-    expect(samePath("C:\\Cat\\a.cdex", "C:\\Cat\\b.cdex")).toBe(false);
+describe("findCatalogByTarget", () => {
+  const cats = [{ id: 1, sourcePath: "C:\\cat\\Foo.cdex" }, { id: 2, sourcePath: "C:\\cat\\foo.cdex" }, { id: 3, sourcePath: null }];
+
+  it("matches the sidecar's exact path, never a different-case file", () => {
+    expect(findCatalogByTarget(cats, "C:\\cat\\foo.cdex")?.id).toBe(2);
+    expect(findCatalogByTarget(cats, "C:\\cat\\Foo.cdex")?.id).toBe(1);
+    expect(findCatalogByTarget(cats.slice(0, 1), "C:\\cat\\foo.cdex")).toBeUndefined();
+  });
+
+  it("finds nothing without a target", () => {
+    expect(findCatalogByTarget(cats, null)).toBeUndefined();
+    expect(findCatalogByTarget(cats, "")).toBeUndefined();
+  });
+});
+
+describe("isPreflightCurrent", () => {
+  const answer = { fileName: "D-Photos" } as CreatePreflightResult;
+
+  it("needs the same root and the same effective name", () => {
+    expect(isPreflightCurrent(answer, "D:\\Photos", "D:\\Photos", "D-Photos")).toBe(true);
+    expect(isPreflightCurrent(answer, "D:\\Photos", "E:\\Music", "D-Photos")).toBe(false); // root just changed
+    expect(isPreflightCurrent(answer, "D:\\Photos", "D:\\Photos", "other")).toBe(false); // still typing
+    expect(isPreflightCurrent(null, "D:\\Photos", "D:\\Photos", "D-Photos")).toBe(false);
+    expect(isPreflightCurrent(answer, null, "D:\\Photos", "D-Photos")).toBe(false);
   });
 });
 
@@ -59,7 +84,23 @@ describe("validateFileName", () => {
 });
 
 describe("deriveDialogState", () => {
-  const base = { rootPath: "D:\\Photos", fileName: null as string | null };
+  const base = { rootPath: "D:\\Photos", fileName: null as string | null, preflightRoot: "D:\\Photos" as string | null };
+
+  it("ignores an answer asked for another root, even for one render after Change…", () => {
+    const stale = deriveDialogState({ ...base, rootPath: "E:\\Music", preflight: pf() });
+    expect(stale.checking).toBe(true);
+    expect(stale.canCreate).toBe(false);
+    expect(stale.effectiveName).toBe(""); // not the old root's default name
+    expect(stale.nameError).toBeNull();
+
+    // Even when the new root's name happens to equal the old answer's name.
+    const same = deriveDialogState({ ...base, rootPath: "E:\\Music", fileName: "D-Photos", preflight: pf() });
+    expect(same.canCreate).toBe(false);
+
+    const staleError = deriveDialogState({ ...base, rootPath: "E:\\Music", preflight: null, preflightError: "old failure" });
+    expect(staleError.preflightError).toBeNull();
+    expect(staleError.checking).toBe(true);
+  });
 
   it("is checking, with Create disabled, until the preflight arrives", () => {
     const s = deriveDialogState({ ...base, preflight: null });

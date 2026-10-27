@@ -34,10 +34,30 @@ export function validateFileName(name: string): string | null {
   return null;
 }
 
-/** Whether two file paths name the same file: separators, trailing separator and case ignored. */
-export function samePath(a: string, b: string): boolean {
-  const norm = (p: string) => p.replace(/\\/g, "/").replace(/\/+$/, "").toLowerCase();
-  return norm(a) === norm(b);
+/**
+ * The catalog a create just added, found by the exact `targetPath` the sidecar reported (preflight). The sidecar
+ * builds a catalog's `sourcePath` from the same string, so no case or separator rules are guessed here: on a
+ * case-sensitive file system `Foo.cdex` and `foo.cdex` are different files.
+ */
+export function findCatalogByTarget<T extends { sourcePath: string | null }>(
+  catalogs: readonly T[],
+  targetPath: string | null,
+): T | undefined {
+  if (!targetPath) return undefined;
+  return catalogs.find((c) => c.sourcePath === targetPath);
+}
+
+/**
+ * Whether a preflight answer describes the dialog as it is now: asked for this root AND this effective name.
+ * Anything else (the root was just changed, the user kept typing) is stale and must not enable Create.
+ */
+export function isPreflightCurrent(
+  preflight: CreatePreflightResult | null,
+  preflightRoot: string | null,
+  rootPath: string,
+  effectiveName: string,
+): preflight is CreatePreflightResult {
+  return preflight !== null && preflightRoot === rootPath && preflight.fileName === effectiveName;
 }
 
 export interface DialogInput {
@@ -46,6 +66,8 @@ export interface DialogInput {
   fileName: string | null;
   /** The latest preflight answer, or null while none has arrived. */
   preflight: CreatePreflightResult | null;
+  /** The root that `preflight` / `preflightError` were asked for; answers for another root are ignored. */
+  preflightRoot: string | null;
   /** The preflight call itself failed. */
   preflightError?: string | null;
 }
@@ -71,13 +93,16 @@ export interface DialogState {
 }
 
 export function deriveDialogState(input: DialogInput): DialogState {
-  const { rootPath, fileName, preflight } = input;
-  const preflightError = input.preflightError ?? null;
+  const { rootPath, fileName } = input;
+  // Answers for another root (the user just pressed "Change…") are ignored entirely, even for one render.
+  const sameRoot = input.preflightRoot === rootPath;
+  const preflight = sameRoot ? input.preflight : null;
+  const preflightError = sameRoot ? (input.preflightError ?? null) : null;
   const typed = fileName !== null;
   const effectiveName = typed ? normalizeFileName(fileName) : (preflight?.defaultFileName ?? "");
 
   // A preflight for a different name (the user kept typing) says nothing about this one.
-  const current = preflight !== null && preflight.fileName === effectiveName ? preflight : null;
+  const current = isPreflightCurrent(preflight, input.preflightRoot, rootPath, effectiveName) ? preflight : null;
   const checking = current === null && preflightError === null;
 
   // The client rules apply as soon as there is a name to judge; before the default arrives there is none.
