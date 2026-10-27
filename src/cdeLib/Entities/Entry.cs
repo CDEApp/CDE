@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using FlatSharp.Attributes;
 using ProtoBuf;
 
 namespace cdeLib.Entities;
@@ -25,33 +24,24 @@ namespace cdeLib.Entities;
 //
 // a million at an array does not seem bad.
 [ProtoContract]
-[FlatBufferTable]
 public sealed class Entry : object
 {
     [ProtoMember(1, IsRequired = true)]
-    [FlatBufferItem(1)]
     public ulong Size { get; set; }
     [ProtoMember(2, IsRequired = true)]
-    [FlatBufferItem(2)]
     public DateTime Modified { get; set; }
     [ProtoMember(3, IsRequired = true)]
-    [FlatBufferItem(3)]
     public string Name { get; set; }
     [ProtoMember(4, IsRequired = true)]
-    [FlatBufferItem(4)]
     public string FullPath { get; set; }
     [ProtoMember(5, IsRequired = true)]
-    [FlatBufferItem(5)]
     public Hash16 Hash { get; set; } // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
     [ProtoMember(6, IsRequired = true)]
-    [FlatBufferItem(6)]
     public int Child { get; set; }
     [ProtoMember(7, IsRequired = true)]
-    [FlatBufferItem(7)]
     public int Sibling { get; set; }
     [ProtoMember(8, IsRequired = true)]
-    [FlatBufferItem(8)]
     public int Parent { get; set; }
 
     [Flags]
@@ -74,7 +64,6 @@ public sealed class Entry : object
     }
 
     [ProtoMember(9, IsRequired = true)]
-    [FlatBufferItem(9)]
     public Flags BitFields { get; set; }
     #region BitFields based properties
     public bool IsDirectory

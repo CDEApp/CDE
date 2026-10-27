@@ -121,6 +121,7 @@ Two on-disk catalog formats:
 - **Legacy `.cde` tree format** - The original materialised directory-tree format, serialized via a pluggable `SerializerProtocol` in `Catalog/CatalogRepository.cs`:
   - **MessagePack** - default protocol for `.cde` (`MessagePackConfig.Options`, custom `Hash16Formatter`/resolver)
   - **FlatSharp** (FlatBuffers) and **protobuf-net** - alternative protocols selectable via `SerializerProtocol`
+  - FlatSharp 7 has no runtime code generation: the FlatBuffers layout is `Catalog/FlatBuffers/Catalog.fbs`, compiled at build time into `Fb*` types that `FlatBufferCatalogSerializer` maps to/from `RootEntry`/`DirEntry`. Field ids are positional and match the old FlatSharp 6 attribute indexes (the `deprecated` fields fill the gaps), so add new fields at the end of a table. The schema compiler runs on the .NET 9 runtime, which CI installs alongside 10.
 
 ### Hashing
 

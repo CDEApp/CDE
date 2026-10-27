@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using cdeLib.Infrastructure;
-using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
@@ -12,7 +11,6 @@ namespace cdeLib.Entities;
 
 [DebuggerDisplay("Path = {Path} {Size}, Count = {Children != null ? Children.Count : 0} P{IsPartialHash} #{Hash.IsSet ? Hash.HashB : 0}")]
 [ProtoContract]
-[FlatBufferTable]
 [MessagePackObject]
 public sealed class DirEntry : ICommonEntry
 {
@@ -58,12 +56,10 @@ public sealed class DirEntry : ICommonEntry
     }
 
     [ProtoMember(1, IsRequired = true)]
-    [FlatBufferItem(1)]
     [Key(1)]
     public long ModifiedTicks { get; set; }
 
     [ProtoMember(2, IsRequired = false)]
-    [FlatBufferItem(2)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(2)]
     public Hash16 Hash { get; set; }
@@ -78,7 +74,6 @@ public sealed class DirEntry : ICommonEntry
     public bool HashSpecified => IsHashDone;
 
     [ProtoMember(6, IsRequired = false)] // is there a better default value than 0 here
-    [FlatBufferItem(6)]
     [Key(6)]
     public Flags BitFields { get; set; }
 
@@ -472,7 +467,6 @@ public sealed class DirEntry : ICommonEntry
 
     // ReSharper disable MemberCanBePrivate.Global
     [ProtoMember(3, IsRequired = false)]
-    [FlatBufferItem(3)]
     [Key(3)]
     public IList<DirEntry> Children
     {
@@ -502,7 +496,6 @@ public sealed class DirEntry : ICommonEntry
     }
 
     [ProtoMember(4, IsRequired = true)]
-    [FlatBufferItem(4)]
     [Key(4)]
     public long Size { get; set; }
 
@@ -512,7 +505,6 @@ public sealed class DirEntry : ICommonEntry
     /// RootEntry this is the root path, DirEntry this is the entry name.
     /// </summary>
     [ProtoMember(5, IsRequired = true)]
-    [FlatBufferItem(5)]
     [Key(5)]
     public string Path
     {

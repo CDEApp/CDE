@@ -1,0 +1,52 @@
+// FlatBuffers schema for the legacy .cde tree format (SerializerProtocol.Flatbuffers).
+// FlatSharp 7 generates the Fb* types from this file at build time; FlatBufferCatalogSerializer
+// maps them to and from the RootEntry/DirEntry domain entities.
+//
+// Field ids are positional. They match the FlatBufferItem indexes the entities carried under
+// FlatSharp 6, so the wire layout is unchanged. The (deprecated) fields only hold the ids that
+// were never used: do not remove them, and add new fields at the end of a table.
+
+attribute "fs_serializer";
+attribute "fs_valueStruct";
+
+namespace cdeLib.Catalog.FlatBuffers;
+
+struct FbHash16 (fs_valueStruct) {
+    HashA:ulong;
+    HashB:ulong;
+}
+
+table FbDirEntry {
+    Unused0:int (deprecated);
+    ModifiedTicks:long;
+    Hash:FbHash16;
+    Children:[FbDirEntry];
+    Size:long;
+    Path:string;
+    // cdeLib.Entities.Flags
+    BitFields:ubyte;
+}
+
+// Lazy: the mapper reads each field once, so nothing is cached or kept beyond the domain tree.
+table FbRootEntry (fs_serializer:"Lazy") {
+    Unused0:int (deprecated);
+    Unused1:int (deprecated);
+    Description:string;
+    PathsWithUnauthorisedExceptions:[string];
+    DefaultFileName:string;
+    DriveLetterHint:string;
+    AvailSpace:long;
+    TotalSpace:long;
+    ScanStartUtcTicks:long;
+    ScanEndUtcTicks:long;
+    RootIndex:int (deprecated);
+    Version:int;
+    // cdeLib.Entities.Flags
+    BitFields:ubyte;
+    Hash:FbHash16;
+    ModifiedTicks:long;
+    Children:[FbDirEntry];
+    Size:long;
+    Path:string;
+    VolumeName:string;
+}
