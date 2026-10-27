@@ -100,13 +100,14 @@ describe("notOlderThanCutoff", () => {
     expect(notOlderThanCutoff(20, "days", now)).toEqual(new Date(2025, 11, 26, 12, 30, 45, 500));
   });
 
+  // Noon, not midnight: in zones with a DST gap at midnight, midnight doesn't exist on that day.
   it("clamps the day to the target month like .NET AddMonths", () => {
-    expect(notOlderThanCutoff(1, "months", new Date(2026, 2, 31))).toEqual(new Date(2026, 1, 28));
-    expect(notOlderThanCutoff(1, "months", new Date(2024, 2, 31))).toEqual(new Date(2024, 1, 29));
+    expect(notOlderThanCutoff(1, "months", new Date(2026, 2, 31, 12))).toEqual(new Date(2026, 1, 28, 12));
+    expect(notOlderThanCutoff(1, "months", new Date(2024, 2, 31, 12))).toEqual(new Date(2024, 1, 29, 12));
   });
 
   it("steps back whole years, clamping Feb 29", () => {
-    expect(notOlderThanCutoff(1, "years", new Date(2024, 1, 29))).toEqual(new Date(2023, 1, 28));
+    expect(notOlderThanCutoff(1, "years", new Date(2024, 1, 29, 12))).toEqual(new Date(2023, 1, 28, 12));
     expect(notOlderThanCutoff(2, "years", now)).toEqual(new Date(2024, 0, 15, 12, 30, 45, 500));
   });
 

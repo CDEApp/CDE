@@ -112,6 +112,7 @@ jobs:
   cde-tauri:
 
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: src/cde-tauri
@@ -126,7 +127,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
-          node-version: lts/*
+          node-version: 24
           cache: pnpm
           cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
       - name: Install
