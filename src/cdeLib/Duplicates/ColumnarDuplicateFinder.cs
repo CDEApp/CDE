@@ -32,7 +32,16 @@ public sealed class ColumnarDuplicateFinder
     public ColumnarDuplicateFinder(ILogger logger, int sizesPerPass = DefaultSizesPerPass)
     {
         _logger = logger;
+        ArgumentOutOfRangeException.ThrowIfNegativeOrZero(sizesPerPass);
         _sizesPerPass = sizesPerPass;
+    }
+
+    // Mix the bits before taking the modulus so block-aligned sizes (multiples of 4096 etc.) spread
+    // evenly across passes instead of piling into bucket 0.
+    private static int PassOf(long size, int passes)
+    {
+        var x = (ulong)size * 0x9E3779B97F4A7C15UL;
+        return (int)((x >> 32) % (ulong)passes);
     }
 
     public readonly record struct EntryRef(int Catalog, int Index);
@@ -89,7 +98,7 @@ public sealed class ColumnarDuplicateFinder
                 var bits = r.BitFields;
                 var size = r.Size;
                 for (var i = 1; i < r.Count; i++)
-                    if (IsCandidate(bits, size, i) && (passes == 1 || size[i] % passes == pass))
+                    if (IsCandidate(bits, size, i) && (passes == 1 || PassOf(size[i], passes) == pass))
                         sizes.Add(size[i]);
             }
 
