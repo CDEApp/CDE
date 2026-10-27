@@ -44,19 +44,20 @@ import {
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
 import { catalogName } from "./format";
-import { CatalogTree, TreeRoot } from "./components/CatalogTree";
-import { DEFAULT_SORT, type DirectorySort, nextSort } from "./directorySort";
-import { DirectoryList } from "./components/DirectoryList";
+import type { TreeRoot } from "./components/CatalogTree";
+import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
+import { DirectoryPane } from "./components/DirectoryPane";
 import { ResultsList } from "./components/ResultsList";
 import { CatalogList } from "./components/CatalogList";
 import { SearchBar } from "./components/SearchBar";
 import { StatusBar } from "./components/StatusBar";
 import { MenuBar } from "./components/MenuBar";
-import { SplitPane } from "./components/SplitPane";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
+import { viewPaneClass } from "./viewPane";
+import { createRequestGuard } from "./requestGuard";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
 
 type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
@@ -89,6 +90,8 @@ export default function App() {
 
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [revealKey, setRevealKey] = useState<string | null>(null);
+  // Bumped per View-in-Tree, so revealing the already-selected node again re-centres it (the tree stays mounted).
+  const [revealNonce, setRevealNonce] = useState(0);
   const [expandTo, setExpandTo] = useState<EntryRef[] | undefined>(undefined);
   const [dirPath, setDirPath] = useState("");
   const [dirNodes, setDirNodes] = useState<DirectoryNode[]>([]);
@@ -118,6 +121,11 @@ export default function App() {
   const [creates, setCreates] = useState<CreateJobs>(emptyCreateJobs);
   const createAborts = useRef(new Map<number, AbortController>());
   const createSeq = useRef(0);
+  // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
+  // so a reload must drop the tree's cached expansion + children itself.
+  const reloadEpochRef = useRef(0);
+  // Last-navigation-wins: drops a children/path response that a newer selection or a reload overtook.
+  const navGuard = useMemo(() => createRequestGuard(), []);
   // Latest values for async completions (a rescan finishes long after the click that started it).
   const latest = useRef({ catalogs, selectedKey, dirPath, rescans, creates, treemapRequest });
   latest.current = { catalogs, selectedKey, dirPath, rescans, creates, treemapRequest };
@@ -198,7 +206,7 @@ export default function App() {
         fullPath: c.rootPath,
         size: c.rootSize,
         catalogName: catalogName(c.actualFileName),
-        generation: treeGenRef.current[c.catalogId] ?? 0,
+        generation: (treeGenRef.current[c.catalogId] ?? 0) + reloadEpochRef.current,
       })),
     );
   }, []);
@@ -208,15 +216,33 @@ export default function App() {
       if (anyJobRunning(latest.current.rescans, latest.current.creates)) return; // the menus are disabled too; belt and braces
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
+      // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
+      // already have dropped the old catalogs): refs and expansion from the old load are not
+      // trusted, and in-flight navigation responses must not land after this.
+      navGuard.invalidate();
+      reloadEpochRef.current += 1;
+      setSelectedKey(null);
+      setRevealKey(null);
+      setExpandTo(undefined);
+      setDirPath("");
+      setDirNodes([]);
+      setTreemapRequest(null); // its ref belongs to the old catalog set
+      setView((v) => (v === "treemap" ? "directory" : v));
       try {
         await client.reload({}, dir ?? undefined);
         await refreshCatalogs(client);
         setStatus("");
       } catch (e) {
         setStatus(`Reload failed: ${(e as Error).message}`);
+        // Best effort: re-read the catalog list so the tree picks up the new epoch and rebuilds.
+        try {
+          await refreshCatalogs(client);
+        } catch {
+          /* keep the failure message */
+        }
       }
     },
-    [refreshCatalogs],
+    [refreshCatalogs, navGuard],
   );
 
   // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
@@ -250,21 +276,32 @@ export default function App() {
   // Update the directory selection + listing. Deliberately does NOT change `view`: the view is
   // switched synchronously by whichever handler initiated the navigation, so a late-resolving
   // listing fetch here can never clobber a newer tab click.
-  const selectNode = useCallback(async (ref: EntryRef, fullPath: string) => {
-    const client = clientRef.current!;
-    setSelectedKey(refToString(ref));
-    setDirPath(fullPath);
-    setDirNodes(await client.children(ref, { sort: "name", hasChildren: false }));
-  }, []);
+  // Returns false when the response was dropped (a newer selection or a reload came first).
+  const selectNode = useCallback(
+    async (ref: EntryRef, fullPath: string): Promise<boolean> => {
+      const client = clientRef.current!;
+      const token = navGuard.begin();
+      setSelectedKey(refToString(ref));
+      setDirPath(fullPath);
+      const nodes = await client.children(ref, { sort: "name", hasChildren: false });
+      if (!navGuard.isCurrent(token)) return false;
+      setDirNodes(nodes);
+      return true;
+    },
+    [navGuard],
+  );
 
   // drill into a directory row (already in the directory view)
   const activateDir = useCallback(
     async (node: DirectoryNode) => {
       if (!node.isDirectory) return;
-      setExpandTo(await refsToPath(clientRef.current!, node.ref));
+      const token = navGuard.begin();
+      const path = await refsToPath(clientRef.current!, node.ref);
+      if (!navGuard.isCurrent(token)) return;
+      setExpandTo(path);
       await selectNode(node.ref, node.fullPath);
     },
-    [selectNode],
+    [selectNode, navGuard],
   );
 
   // view a search result in the directory tree (expand to its parent)
@@ -272,12 +309,14 @@ export default function App() {
     async (ref: EntryRef, expectedPath?: string) => {
       setView("directory"); // synchronous: this is the user's navigation intent
       const client = clientRef.current!;
+      const token = navGuard.begin();
       let chain: DirectoryNode[];
       try {
         chain = await client.path(ref);
       } catch {
         chain = [];
       }
+      if (!navGuard.isCurrent(token)) return; // superseded, or the catalogs were reloaded meanwhile
       // A ref from before a rescan can be out of range or point at a different entry: verify by path.
       if (expectedPath !== undefined && !rowStillResolves(expectedPath, chain)) {
         notifications.show({
@@ -293,10 +332,11 @@ export default function App() {
       const parent = refs.length > 1 ? refs[refs.length - 2] : refs[0];
       setExpandTo(refs.slice(0, -1));
       const parentNode = chain[chain.length - 2] ?? chain[chain.length - 1];
-      await selectNode(parent, parentNode.fullPath);
+      if (!(await selectNode(parent, parentNode.fullPath))) return;
       setRevealKey(refToString(parent)); // centre this node in the tree (it's the reveal target)
+      setRevealNonce((n) => n + 1);
     },
-    [selectNode],
+    [selectNode, navGuard],
   );
 
   // --- search ---
@@ -671,17 +711,46 @@ export default function App() {
   );
 
   // Right-click on blank tree space: map the current selection (greyed out when there is none).
+  // Handlers for the memoised DirectoryPane must keep a stable identity, or every App render (e.g. each
+  // streamed search flush) would re-render the hidden tree + listing. They read the latest
+  // buildMenu / selection through refs at event time instead of closing over them.
+  const buildMenuRef = useRef(buildMenu);
+  buildMenuRef.current = buildMenu;
+  const selectedKeyRef = useRef(selectedKey);
+  selectedKeyRef.current = selectedKey;
+
   const treeBackgroundMenu = useCallback(
     (x: number, y: number) => {
-      const selected = selectedKey ? parseRef(selectedKey) : null;
+      const key = selectedKeyRef.current;
+      const selected = key ? parseRef(key) : null;
       setMenu({
         x,
         y,
         items: [{ label: "Show TreeMap", disabled: !selected, onClick: () => selected && showTreemap(selected) }],
       });
     },
-    [selectedKey, showTreemap],
+    [showTreemap],
   );
+  const onTreeSelect = useCallback(
+    (ref: EntryRef, fp: string) => {
+      setRevealKey(null); // manual click: don't centre, just keep it visible
+      void selectNode(ref, fp);
+    },
+    [selectNode],
+  );
+  const onTreeContextMenu = useCallback(
+    (ref: EntryRef, fp: string, x: number, y: number) =>
+      setMenu({ x, y, items: buildMenuRef.current(ref, fp, undefined, true) }),
+    [],
+  );
+  const onListContextMenu = useCallback(
+    (n: DirectoryNode, x: number, y: number) =>
+      setMenu({ x, y, items: buildMenuRef.current(n.ref, n.fullPath, undefined, n.isDirectory) }),
+    [],
+  );
+  const onDirSort = useCallback((column: SortColumn) => setDirSort((cur) => nextSort(cur, column)), []);
+  // Initial split width only (SplitPane owns it afterwards). A plain number, so it is a stable prop.
+  const treePaneWidth = (uiRef.current?.get().treePaneWidth as number) ?? 320;
 
   const onTreemapTileMenu = useCallback(
     (row: TreemapRow, fullPath: string, x: number, y: number) => {
@@ -750,43 +819,31 @@ export default function App() {
       </div>
 
       <div className="main">
-        {view === "directory" && (
-          <SplitPane
-            initialLeftWidth={(uiRef.current?.get().treePaneWidth as number) ?? 320}
+        {/* Stays mounted when another tab is active (#80): keeps expansion, loaded children, scroll
+            offsets, selection, listing and split width. Hidden via visibility (see viewPane.ts). */}
+        <div className={viewPaneClass<View>("directory", view)} aria-hidden={view !== "directory"}>
+          <DirectoryPane
+            client={clientRef.current!}
+            roots={roots}
+            selectedKey={selectedKey}
+            revealKey={revealKey}
+            revealNonce={revealNonce}
+            expandTo={expandTo}
+            dirPath={dirPath}
+            dirNodes={dirNodes}
+            sort={dirSort}
+            initialLeftWidth={treePaneWidth}
+            resolveTreeStyle={resolveTreeStyle}
+            resolveStyle={resolveStyle}
             onResizeEnd={onTreePaneResize}
-            left={
-              <CatalogTree
-                client={clientRef.current!}
-                roots={roots}
-                selectedKey={selectedKey}
-                revealKey={revealKey}
-                expandTo={expandTo}
-                onSelect={(ref, fp) => {
-                  setRevealKey(null); // manual click: don't centre, just keep it visible
-                  void selectNode(ref, fp);
-                }}
-                onContextMenu={(ref, fp, x, y) =>
-                  setMenu({ x, y, items: buildMenu(ref, fp, undefined, true) })
-                }
-                onBackgroundContextMenu={treeBackgroundMenu}
-                resolveStyle={resolveTreeStyle}
-              />
-            }
-            right={
-              <DirectoryList
-                path={dirPath}
-                nodes={dirNodes}
-                sort={dirSort}
-                onSort={(column) => setDirSort((cur) => nextSort(cur, column))}
-                resolveStyle={resolveStyle}
-                onActivate={activateDir}
-                onContextMenu={(n, x, y) =>
-                  setMenu({ x, y, items: buildMenu(n.ref, n.fullPath, undefined, n.isDirectory) })
-                }
-              />
-            }
+            onSelect={onTreeSelect}
+            onTreeContextMenu={onTreeContextMenu}
+            onBackgroundContextMenu={treeBackgroundMenu}
+            onSort={onDirSort}
+            onActivate={activateDir}
+            onListContextMenu={onListContextMenu}
           />
-        )}
+        </div>
 
         {view === "results" && (
           <div className="results-pane">
