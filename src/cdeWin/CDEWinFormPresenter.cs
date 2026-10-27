@@ -137,17 +137,16 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
             SetCatalogListView();
             SetMemoryStatus();
-            _clientForm.AddLine("Total Load time was {0} msec", watch.ElapsedMilliseconds);
+            Log.Information("Total load time was {ElapsedMs} msec", watch.ElapsedMilliseconds);
             _clientForm.SetSearchTimeStatus("");
         }
         catch (OperationCanceledException)
         {
-            _clientForm.AddLine("Catalog loading was cancelled");
+            Log.Information("Catalog loading was cancelled");
             _clientForm.SetSearchTimeStatus("Loading cancelled");
         }
         catch (Exception ex)
         {
-            _clientForm.AddLine("Error loading catalogs: {0}", ex.Message);
             _clientForm.SetSearchTimeStatus("Loading error");
             Log.Error(ex, "Error loading catalogs");
         }
@@ -209,7 +208,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
     private void InitialiseLog()
     {
-        _clientForm.AddLine("{0} v{1}", _config.ProductName, _config.Version);
+        Log.Information("{ProductName} v{Version}", _config.ProductName, _config.Version);
     }
 
     private void RegisterListViewSorters()
@@ -1041,8 +1040,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             var directoryListHelper = _clientForm.DirectoryListViewHelper;
             directoryListHelper.SetList(null);
 
-            _clientForm.AddLine(string.Empty);
-            _clientForm.AddLine("{0} v{1} reloading catalogs", _config.ProductName, _config.Version);
+            Log.Information("{ProductName} v{Version} reloading catalogs", _config.ProductName, _config.Version);
 
             _isLoadingCatalogs = true;
             _loadingCts = new CancellationTokenSource();
@@ -1068,17 +1066,16 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
 
             SetCatalogListView();
             SetMemoryStatus();
-            _clientForm.AddLine("Reload time was {0} msec", watch.ElapsedMilliseconds);
+            Log.Information("Reload time was {ElapsedMs} msec", watch.ElapsedMilliseconds);
             _clientForm.SetSearchTimeStatus("");
         }
         catch (OperationCanceledException)
         {
-            _clientForm.AddLine("Catalog reload was cancelled");
+            Log.Information("Catalog reload was cancelled");
             _clientForm.SetSearchTimeStatus("Reload cancelled");
         }
         catch (Exception ex)
         {
-            _clientForm.AddLine("Error reloading catalogs: {0}", ex.Message);
             _clientForm.SetSearchTimeStatus("Reload error");
             Log.Error(ex, "Error reloading catalogs");
         }

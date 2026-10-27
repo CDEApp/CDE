@@ -156,6 +156,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         AutoWaitCursor.MainWindowHandle = Handle;
         AutoWaitCursor.Start();
         RegisterClientEvents();
+        AttachLogSink();
     }
 
     public void CleanUp()
@@ -706,9 +707,60 @@ public partial class CDEWinForm : Form, ICDEWinForm
         MyAboutBox.MyShow(this, _config);
     }
 
-    public void AddLine(string format, params object[] args)
+    private const int MaxLogTextLines = InAppLogSink.DefaultMaxLines;
+
+    private void AttachLogSink()
     {
-        tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
+        LoggingBootstrap.LogSink.Attach(() =>
+        {
+            // Called from any logging thread: never block, never touch the control directly.
+            // Returning false (no drain scheduled) lets the sink signal again on the next event.
+            try
+            {
+                if (!IsDisposed && IsHandleCreated)
+                {
+                    BeginInvoke(new Action(DrainLogToTextBox));
+                    return true;
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+
+            return false;
+        });
+        FormClosed += (_, _) => LoggingBootstrap.LogSink.Detach();
+    }
+
+    private void DrainLogToTextBox()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        var lines = LoggingBootstrap.LogSink.Drain();
+        if (lines.Length == 0)
+        {
+            return;
+        }
+
+        tbLog.AppendText(string.Join(Environment.NewLine, lines) + Environment.NewLine);
+
+        // Trim with native line indexes rather than tbLog.Lines, which copies every line on each
+        // drain. Allow 10% slack so trimming happens in occasional chunks, not on every drain.
+        var lineCount = tbLog.GetLineFromCharIndex(tbLog.TextLength) + 1;
+        if (lineCount > MaxLogTextLines + MaxLogTextLines / 10)
+        {
+            var cut = tbLog.GetFirstCharIndexFromLine(lineCount - MaxLogTextLines);
+            tbLog.Select(0, cut);
+            tbLog.SelectedText = string.Empty;
+            tbLog.Select(tbLog.TextLength, 0);
+            tbLog.ScrollToCaret();
+        }
     }
 
     private void CDEWinFormShown(object sender, EventArgs e)
