@@ -45,8 +45,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
         try
         {
             re.SimpleScanCountEvent = (count, currentFile) =>
-                _messageBus.Publish(new ScanProgressEvent(count, currentFile), cancellationToken: cancellationToken);
-            re.SimpleScanEndEvent = () => _messageBus.Publish(new ScanCompletedEvent(), cancellationToken: cancellationToken);
+                _ = _messageBus.Publish(new ScanProgressEvent(count, currentFile), cancellationToken: cancellationToken);
+            re.SimpleScanEndEvent = () => _ = _messageBus.Publish(new ScanCompletedEvent(), cancellationToken: cancellationToken);
             re.ExceptionEvent = PrintException;
 
             re.PopulateRoot(request.Path, request.FollowJunctions, _cancellation.Token);

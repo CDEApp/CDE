@@ -66,9 +66,9 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
         // Route hashing progress and status lines to the Spectre console via the message bus.
         _duplication.ProgressEvent = (processed, toHash, phase) =>
-            _messageBus.Publish(new HashProgressEvent(processed, toHash, phase), cancellationToken: cancellationToken);
+            _ = _messageBus.Publish(new HashProgressEvent(processed, toHash, phase), cancellationToken: cancellationToken);
         _duplication.StatusMessageEvent = message =>
-            _messageBus.Publish(new HashStatusMessageEvent(message), cancellationToken: cancellationToken);
+            _ = _messageBus.Publish(new HashStatusMessageEvent(message), cancellationToken: cancellationToken);
 
         var stopwatch = Stopwatch.StartNew();
         try
