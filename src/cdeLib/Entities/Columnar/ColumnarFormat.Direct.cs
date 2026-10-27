@@ -28,6 +28,24 @@ public static partial class ColumnarFormat
     {
         ArgumentNullException.ThrowIfNull(root);
 
+        // Write beside the target and move into place, so a failure part-way never destroys an
+        // existing good catalog (it holds hashes that are expensive to recompute).
+        var tempPath = outPath + ".tmp";
+        try
+        {
+            WriteTo(root, tempPath);
+            File.Move(tempPath, outPath, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(tempPath); } catch (IOException) { /* best effort */ }
+            throw;
+        }
+    }
+
+    private static void WriteTo(RootEntry root, string outPath)
+    {
+
         // ---- pass 1: sizes + first-child index per directory ----
         var firstChildOfDir = new List<int> { NoEntry }; // [0] = root; one slot per directory, in encounter order
         var rootNameBytes = Utf8Length(root.Path);
