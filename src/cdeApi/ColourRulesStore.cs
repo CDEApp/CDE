@@ -42,12 +42,13 @@ public sealed class ColourRulesStore
         "#\n" +
         "# WARNING: pathological regexes (for example (a+)+$) can slow or freeze the app.\n" +
         "\n" +
-        "[folder]  var(--dir)\n" +
+        "[folder]  color:var(--dir);font-weight:bold\n" +
         "\n" +
         "# Examples (remove the leading # to enable):\n" +
         "# \\.sys$               red\n" +
-        "# \\.(jpg|png|gif)$     #2a9d8f\n" +
-        "# ^~\\$|\\.tmp$          color: grey; font-style: italic\n";
+        "\\.(jpg|png|gif)$     #2a9d8f\n" +
+        "\\.(zip|zipx|rar|r[0-9]{2}|7z|tar|gz|bz2|xz|zst|tgz|tbz2?|txz|cab|iso|wim|arj|lz|lzma|lzh|001)$    #e5a34b\n" +
+        "^~\\$|\\.tmp$          color: grey; font-style: italic\n";
 
     /// <summary>The rules text. Creates the file from <see cref="DefaultText"/> when it is missing.</summary>
     public string Read()
