@@ -63,7 +63,7 @@ public abstract class Presenter<TView> where TView : class, IView
         return typeof(TView).GetEvents().Select(x => x.Name).ToList();
     }
 
-    private static IDictionary<string, EventInfo> GetViewEvents(TView view, ICollection<string> actionProperties)
+    private static Dictionary<string, EventInfo> GetViewEvents(TView view, ICollection<string> actionProperties)
     {
         return view
             .GetType()
@@ -79,7 +79,7 @@ public abstract class Presenter<TView> where TView : class, IView
         return actionProperties.Contains(x.Name);
     }
 
-    private static IDictionary<string, MethodInfo> GetPresenterEventHandlers<TPresenter>(ICollection<string> actionProperties, TPresenter presenter)
+    private static Dictionary<string, MethodInfo> GetPresenterEventHandlers<TPresenter>(ICollection<string> actionProperties, TPresenter presenter)
     {
         return presenter
             .GetType()

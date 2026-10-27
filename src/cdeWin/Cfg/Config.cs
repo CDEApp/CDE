@@ -222,7 +222,7 @@ public class Config : IConfig
         return dateValue;
     }
 
-    private static IEnumerable<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
+    private static List<ColumnConfig> RestoreColumnConfig(ListViewConfig initial, ListViewConfig active)
     {
         var columnMismatch = false;
         if (initial.Columns.Count == active.Columns.Count)

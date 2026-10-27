@@ -349,7 +349,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         catalogHelper.RenderItem = lvi;
     }
 
-    private Color CreateRowValuesForRootEntry(IList<string> vals, ICommonEntry catalogRoot, Color listViewForeColor)
+    private Color CreateRowValuesForRootEntry(string[] vals, ICommonEntry catalogRoot, Color listViewForeColor)
     {
         var s = SourceOf(catalogRoot);
         var scanStart = new DateTime(s.ScanStartUtcTicks, DateTimeKind.Utc);
@@ -614,7 +614,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
         directoryHelper.RenderItem = lvi;
     }
 
-    private Color CreateRowValuesForDirectory(IList<string> vals, ICommonEntry dirEntry, Color itemColor)
+    private Color CreateRowValuesForDirectory(string[] vals, ICommonEntry dirEntry, Color itemColor)
     {
         vals[0] = dirEntry.Path;
         vals[1] = EntryFormatter.FormatDirectorySizeCell(dirEntry);
