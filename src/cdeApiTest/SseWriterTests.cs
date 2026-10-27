@@ -225,6 +225,131 @@ public class SseWriterTests
         Assert.That(oldPerRow, Is.GreaterThan(500), "sanity: the baseline really allocates");
     }
 
+    [Test]
+    public async Task Drain_reports_false_when_the_client_has_gone_away()
+    {
+        var (w, pipe) = Create();
+        pipe.CompleteFlushes = true;
+        var ch = Channel.CreateUnbounded<object>();
+        ch.Writer.TryWrite(Row("a", "b"));
+        Assert.That(await w.DrainAsync(ch.Reader, Write, CancellationToken.None), Is.False);
+
+        var ch2 = Channel.CreateUnbounded<object>();
+        ch2.Writer.Complete();
+        Assert.That(await w.DrainAsync(ch2.Reader, Write, CancellationToken.None), Is.True);
+    }
+
+    [Test]
+    public async Task Stream_skips_done_when_the_client_has_gone_away()
+    {
+        var pipe = new TestPipeWriter { CompleteFlushes = true };
+        var doneWritten = false;
+        await SseStream.RunAsync(pipe,
+            async (_, q, ct) => await q.WriteAsync(Row("a", "b"), ct),
+            (w, _) => doneWritten = true, CancellationToken.None);
+        Assert.That(doneWritten, Is.False);
+        Assert.That(pipe.Text, Does.Not.Contain("event: done"));
+    }
+
+    [Test]
+    public async Task Final_progress_dropped_by_a_full_queue_is_still_delivered_before_done()
+    {
+        var pipe = new TestPipeWriter { FlushGate = new SemaphoreSlim(0) }; // stalled client
+        var final = new SearchProgress(10, 10, TimeSpan.FromSeconds(1));
+        var reported = new TaskCompletionSource();
+
+        var run = SseStream.RunAsync(pipe,
+            async (progress, q, ct) =>
+            {
+                await q.WriteAsync(Row("r1", @"C:\x"), ct); // drain takes it and blocks in its flush (flushEvery = 1)
+                await q.WriteAsync(Row("r2", @"C:\x"), ct); // fills the capacity-1 queue
+                progress.Report(new SearchProgress(5, 10, TimeSpan.Zero)); // rejected: queue full
+                progress.Report(final); // rejected too; newest must win
+                reported.SetResult();
+            },
+            (w, count) => w.WriteDone(count), CancellationToken.None, capacity: 1, flushEvery: 1);
+
+        await reported.Task;
+        pipe.FlushGate.Release(1000);
+        await run;
+
+        var events = pipe.Text.Split("\n\n", StringSplitOptions.RemoveEmptyEntries);
+        Assert.That(events, Has.Length.EqualTo(4));
+        Assert.That(events[0], Does.StartWith("event: result"));
+        Assert.That(events[1], Does.StartWith("event: result"));
+        Assert.That(events[2], Is.EqualTo("event: progress\ndata: " +
+            JsonSerializer.Serialize(final, AppCoreJsonContext.Default.SearchProgress)));
+        Assert.That(events[3], Is.EqualTo("event: done\ndata: {\"count\":2}"));
+    }
+
+    [Test]
+    public async Task Stream_observes_a_producer_failure_after_sending_done()
+    {
+        var pipe = new TestPipeWriter();
+        var ex = await Assert.ThrowsAsync<InvalidOperationException>(() => SseStream.RunAsync(pipe,
+            (_, _, _) => throw new InvalidOperationException("boom"),
+            (w, c) => w.WriteDone(c), CancellationToken.None));
+        Assert.That(ex.Message, Is.EqualTo("boom"));
+        Assert.That(pipe.Text, Is.EqualTo("event: done\ndata: {\"count\":0}\n\n")); // unchanged from develop
+    }
+
+    [Test]
+    public async Task Stream_cancellation_releases_a_producer_waiting_on_a_full_queue()
+    {
+        var pipe = new TestPipeWriter { FlushGate = new SemaphoreSlim(0) };
+        using var cts = new CancellationTokenSource();
+        var run = SseStream.RunAsync(pipe,
+            async (_, q, ct) =>
+            {
+                for (var i = 0; i < 100; i++) await q.WriteAsync(Row("r", "p"), ct);
+            },
+            (w, c) => w.WriteDone(c), cts.Token, capacity: 1, flushEvery: 1);
+        await Task.Delay(100);
+        cts.Cancel();
+        await run.WaitAsync(TimeSpan.FromSeconds(5)); // completes without throwing
+    }
+
+    [Test]
+    public void A_failed_serialization_leaves_no_partial_frame_in_the_pipe()
+    {
+        var options = new JsonSerializerOptions
+        {
+            Converters = { new ThrowingConverter() },
+            TypeInfoResolver = new System.Text.Json.Serialization.Metadata.DefaultJsonTypeInfoResolver()
+        };
+        var info = (System.Text.Json.Serialization.Metadata.JsonTypeInfo<Boom>)options.GetTypeInfo(typeof(Boom));
+        var (w, pipe) = Create();
+        w.Write("result"u8, Row("before", "p"), AppCoreJsonContext.Default.SearchResultRow);
+        Assert.Throws<InvalidOperationException>(() => w.Write("result"u8, new Boom(), info));
+        w.Write("result"u8, Row("after", "p"), AppCoreJsonContext.Default.SearchResultRow);
+        w.FlushAsync().AsTask().GetAwaiter().GetResult();
+
+        var expected = OldFormat("result", JsonSerializer.Serialize(Row("before", "p"), AppCoreJsonContext.Default.SearchResultRow))
+                       + OldFormat("result", JsonSerializer.Serialize(Row("after", "p"), AppCoreJsonContext.Default.SearchResultRow));
+        Assert.That(pipe.Text, Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Unknown_queue_items_are_rejected_not_silently_dropped()
+    {
+        var (w, _) = Create();
+        Assert.Throws<InvalidOperationException>(() => SseQueue.WriteItem(w, "surprise"));
+    }
+
+    private sealed class Boom;
+
+    private sealed class ThrowingConverter : System.Text.Json.Serialization.JsonConverter<Boom>
+    {
+        public override Boom Read(ref Utf8JsonReader reader, Type t, JsonSerializerOptions o) => throw new NotSupportedException();
+
+        public override void Write(Utf8JsonWriter writer, Boom value, JsonSerializerOptions o)
+        {
+            writer.WriteStartObject();
+            writer.WritePropertyName("half");
+            throw new InvalidOperationException("mid-serialization failure");
+        }
+    }
+
     private static void Write(SseWriter w, object item)
     {
         switch (item)

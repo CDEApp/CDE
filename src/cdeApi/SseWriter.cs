@@ -1,5 +1,5 @@
-using System.Buffers;
 using System;
+using System.Buffers;
 using System.IO.Pipelines;
 using System.Text.Json;
 using System.Text.Json.Serialization.Metadata;
@@ -10,10 +10,10 @@ using System.Threading.Tasks;
 namespace cdeApi;
 
 /// <summary>
-/// Server-Sent Events writer that serializes each event straight into the response's
-/// <see cref="PipeWriter"/>: a reused <see cref="Utf8JsonWriter"/> plus the source-generated
-/// type info, so a row costs no intermediate JSON string, no <c>data:</c> string and no encode copy.
-/// Wire format per event is <c>event: NAME\ndata: {single-line json}\n\n</c>.
+/// Server-Sent Events writer. Each event's JSON is serialized with a reused <see cref="Utf8JsonWriter"/> and the
+/// source-generated type info into a reused scratch buffer, then the complete frame is copied into the response's
+/// <see cref="PipeWriter"/>: no per-row JSON or <c>data:</c> strings, and a serialization failure leaves no partial
+/// frame in the pipe. Wire format per event is <c>event: NAME\ndata: {single-line json}\n\n</c>.
 /// Not thread-safe: all writes must come from the single drain loop (<see cref="DrainAsync{T}"/>).
 /// </summary>
 public sealed class SseWriter : IDisposable
@@ -22,47 +22,48 @@ public sealed class SseWriter : IDisposable
     public const int DefaultFlushEvery = 64;
 
     private readonly PipeWriter _pipe;
+    private readonly ArrayBufferWriter<byte> _scratch = new(1024);
     private readonly Utf8JsonWriter _json;
 
     public SseWriter(PipeWriter pipe)
     {
         _pipe = pipe;
-        _json = new Utf8JsonWriter(pipe);
+        _json = new Utf8JsonWriter(_scratch);
     }
 
     /// <summary>Write one event whose data is <paramref name="value"/> serialized with <paramref name="typeInfo"/>. Does not flush.</summary>
     public void Write<T>(ReadOnlySpan<byte> eventName, T value, JsonTypeInfo<T> typeInfo)
     {
-        Begin(eventName);
-        _json.Reset(_pipe);
+        _scratch.Clear();
+        _json.Reset();
         JsonSerializer.Serialize(_json, value, typeInfo);
         _json.Flush();
-        End();
+        Commit(eventName);
     }
 
     /// <summary>The final search event, <c>{"count":N}</c>. Does not flush.</summary>
     public void WriteDone(int count)
     {
-        Begin("done"u8);
-        _json.Reset(_pipe);
+        _scratch.Clear();
+        _json.Reset();
         _json.WriteStartObject();
         _json.WriteNumber("count"u8, count);
         _json.WriteEndObject();
         _json.Flush();
-        End();
+        Commit("done"u8);
     }
 
     /// <summary>The final reload event, <c>{"catalogs":N,"entries":M}</c>. Does not flush.</summary>
     public void WriteDone(int catalogs, long entries)
     {
-        Begin("done"u8);
-        _json.Reset(_pipe);
+        _scratch.Clear();
+        _json.Reset();
         _json.WriteStartObject();
         _json.WriteNumber("catalogs"u8, catalogs);
         _json.WriteNumber("entries"u8, entries);
         _json.WriteEndObject();
         _json.Flush();
-        End();
+        Commit("done"u8);
     }
 
     /// <summary>
@@ -78,10 +79,11 @@ public sealed class SseWriter : IDisposable
     /// <summary>
     /// Drain <paramref name="reader"/> to the response: each item is written by <paramref name="write"/>, and
     /// output is flushed every <paramref name="flushEvery"/> events and whenever the queue runs dry, so nothing
-    /// is held back while idle. Returns when the reader completes (tail flushed) or the client goes away;
-    /// throws <see cref="OperationCanceledException"/> on cancellation.
+    /// is held back while idle. Returns true when the reader completed (tail flushed), or false if the client
+    /// went away first (the caller must not write further). Throws <see cref="OperationCanceledException"/> on
+    /// cancellation.
     /// </summary>
-    public async Task DrainAsync<T>(ChannelReader<T> reader, Action<SseWriter, T> write, CancellationToken ct,
+    public async Task<bool> DrainAsync<T>(ChannelReader<T> reader, Action<SseWriter, T> write, CancellationToken ct,
         int flushEvery = DefaultFlushEvery)
     {
         while (await reader.WaitToReadAsync(ct).ConfigureAwait(false))
@@ -92,23 +94,26 @@ public sealed class SseWriter : IDisposable
                 write(this, item);
                 if (++pending >= flushEvery)
                 {
-                    if (!await FlushAsync(ct).ConfigureAwait(false)) return;
+                    if (!await FlushAsync(ct).ConfigureAwait(false)) return false;
                     pending = 0;
                 }
             }
 
-            if (pending > 0 && !await FlushAsync(ct).ConfigureAwait(false)) return;
+            if (pending > 0 && !await FlushAsync(ct).ConfigureAwait(false)) return false;
         }
+
+        return true;
     }
 
     public void Dispose() => _json.Dispose();
 
-    private void Begin(ReadOnlySpan<byte> eventName)
+    // Copy the finished frame into the pipe in one go.
+    private void Commit(ReadOnlySpan<byte> eventName)
     {
         _pipe.Write("event: "u8);
         _pipe.Write(eventName);
         _pipe.Write("\ndata: "u8);
+        _pipe.Write(_scratch.WrittenSpan);
+        _pipe.Write("\n\n"u8);
     }
-
-    private void End() => _pipe.Write("\n\n"u8);
 }

@@ -119,8 +119,7 @@ public sealed class SearchService : ISearchService
                 onMatch: idx =>
                 {
                     if (matched >= limit) return;
-                    WriteBlocking(writer, BuildRow(source, localCatalogId, idx), ct);
-                    matched++;
+                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, idx), ct)) matched++;
                 },
                 isCancelled: () => ct.IsCancellationRequested || matched >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
@@ -142,15 +141,18 @@ public sealed class SearchService : ISearchService
         }
     }
 
-    // The find loop is synchronous on a pool thread, so waiting for space here is the backpressure:
-    // TryWrite on a full bounded channel would silently drop the row.
-    private static void WriteBlocking(ChannelWriter<SearchResultRow> writer, SearchResultRow row, CancellationToken ct)
+    // The find loop is synchronous CPU-bound work inside Task.Run, so waiting for space here is the
+    // backpressure; it blocks that pool thread by design. TryWrite on a full bounded channel would
+    // silently drop the row. Returns false (row not written) if the channel was completed.
+    private static bool WriteBlocking(ChannelWriter<SearchResultRow> writer, SearchResultRow row, CancellationToken ct)
     {
         while (!writer.TryWrite(row))
         {
             // Throws OperationCanceledException when cancelled; Produce treats that as a normal stop.
-            if (!writer.WaitToWriteAsync(ct).AsTask().GetAwaiter().GetResult()) return;
+            if (!writer.WaitToWriteAsync(ct).AsTask().GetAwaiter().GetResult()) return false;
         }
+
+        return true;
     }
 
     private static SearchResultRow BuildRow(IEntrySource source, int catalogId, int idx)

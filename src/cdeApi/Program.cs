@@ -199,29 +199,11 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
     var requested = ctx.Request.Query["path"].FirstOrDefault();
     var loadPath = string.IsNullOrWhiteSpace(requested) ? configPath : requested;
 
-    var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
-
-    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-    var channel = SseQueue.Create();
-    var progress = new SseProgress(channel.Writer);
-
-    var work = Task.Run(async () =>
-    {
-        try { await session.LoadAsync(loadPath, progress, cts.Token); }
-        finally { channel.Writer.TryComplete(); }
-    }, CancellationToken.None);
-
-    using var sse = new SseWriter(ctx.Response.BodyWriter);
-    try
-    {
-        await sse.DrainAsync(channel.Reader, SseQueue.WriteItem, ct);
-        sse.WriteDone(session.CatalogCount, session.TotalEntryCount);
-        await sse.FlushAsync(ct);
-    }
-    catch (OperationCanceledException) { /* client disconnected */ }
-    finally { cts.Cancel(); } // a drain that stopped early must not leave the producer waiting on a full queue
-    await work;
+    await SseStream.RunAsync(ctx.Response.BodyWriter,
+        (progress, _, ct) => session.LoadAsync(loadPath, progress, ct),
+        (sse, _) => sse.WriteDone(session.CatalogCount, (long)session.TotalEntryCount),
+        ctx.RequestAborted);
 });
 
 // POST /search — validate first (400 + message), then stream result/progress/done over SSE.
@@ -240,42 +222,18 @@ app.MapPost("/search", async (HttpContext ctx, SearchQuery query, ISearchService
         return;
     }
 
-    var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
-
-    using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
-    var channel = SseQueue.Create();
-    var progress = new SseProgress(channel.Writer);
-
-    var work = Task.Run(async () =>
-    {
-        try
+    await SseStream.RunAsync(ctx.Response.BodyWriter,
+        async (progress, queue, ct) =>
         {
-            await foreach (var row in search.SearchAsync(query, progress, cts.Token))
+            await foreach (var row in search.SearchAsync(query, progress, ct))
             {
                 // Bounded queue: waits when the client can't keep up, so the search is held back too.
-                await channel.Writer.WriteAsync(row, cts.Token);
+                await queue.WriteAsync(row, ct);
             }
-        }
-        catch (OperationCanceledException) { /* client disconnect / cancel */ }
-        finally { channel.Writer.TryComplete(); }
-    }, CancellationToken.None);
-
-    var count = 0;
-    using var sse = new SseWriter(ctx.Response.BodyWriter);
-    try
-    {
-        await sse.DrainAsync(channel.Reader, (w, item) =>
-        {
-            if (item is SearchResultRow) count++;
-            SseQueue.WriteItem(w, item);
-        }, ct);
-        sse.WriteDone(count);
-        await sse.FlushAsync(ct);
-    }
-    catch (OperationCanceledException) { /* client disconnected */ }
-    finally { cts.Cancel(); } // a drain that stopped early must not leave the producer waiting on a full queue
-    await work;
+        },
+        (sse, count) => sse.WriteDone(count),
+        ctx.RequestAborted);
 });
 
 // --- load the session up front, then start and report the handshake on stdout ---
@@ -301,39 +259,3 @@ Console.Out.Flush();
 
 await app.WaitForShutdownAsync();
 return;
-
-/// <summary>The bounded hand-off between the producers (search / load) and the single SSE drain loop.</summary>
-internal static class SseQueue
-{
-    // Small on purpose: this only smooths bursts. When it is full the producer waits for the client.
-    private const int Capacity = 1024;
-
-    public static Channel<object> Create() => Channel.CreateBounded<object>(
-        new BoundedChannelOptions(Capacity)
-        {
-            FullMode = BoundedChannelFullMode.Wait,
-            SingleReader = true
-        });
-
-    /// <summary>Write one queued item as its SSE event. Items are boxed DTOs; progress is infrequent.</summary>
-    public static void WriteItem(SseWriter w, object item)
-    {
-        switch (item)
-        {
-            case SearchResultRow r: w.Write("result"u8, r, AppCoreJsonContext.Default.SearchResultRow); break;
-            case SearchProgress p: w.Write("progress"u8, p, AppCoreJsonContext.Default.SearchProgress); break;
-            case CatalogLoadProgress l: w.Write("progress"u8, l, AppCoreJsonContext.Default.CatalogLoadProgress); break;
-        }
-    }
-}
-
-/// <summary>
-/// Bridges <see cref="IProgress{T}"/> reports into the SSE queue. Progress is lossy by nature: if a stalled
-/// client has filled the queue the report is dropped rather than blocking the producer (the next report, or
-/// the final <c>done</c>, supersedes it).
-/// </summary>
-internal sealed class SseProgress(ChannelWriter<object> writer) : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>
-{
-    public void Report(SearchProgress value) => writer.TryWrite(value);
-    public void Report(CatalogLoadProgress value) => writer.TryWrite(value);
-}
