@@ -49,7 +49,7 @@ public static class SessionEndpoints
         if (session.AnyCatalogJobRunning)
         {
             ctx.Response.StatusCode = StatusCodes.Status409Conflict;
-            await ctx.Response.WriteAsync("a rescan or a new catalog is running");
+            await ctx.Response.WriteAsync("a rescan or a new catalog is running", ctx.RequestAborted);
             return;
         }
 

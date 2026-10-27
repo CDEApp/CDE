@@ -22,7 +22,7 @@ public static class SearchEndpoint
         if (!v.IsValid)
         {
             ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
-            await ctx.Response.WriteAsync(v.Message);
+            await ctx.Response.WriteAsync(v.Message, ctx.RequestAborted);
             return;
         }
 

@@ -64,6 +64,3 @@ await Console.Out.FlushAsync();
 
 await app.WaitForShutdownAsync();
 return;
-
-/// <summary>Public so tests can start the real entry point with <c>WebApplicationFactory&lt;Program&gt;</c>.</summary>
-public partial class Program;

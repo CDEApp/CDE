@@ -46,7 +46,7 @@ public static class TokenGate
                 Encoding.ASCII.GetBytes(token)))
         {
             ctx.Response.StatusCode = StatusCodes.Status401Unauthorized;
-            await ctx.Response.WriteAsync("unauthorized");
+            await ctx.Response.WriteAsync("unauthorized", ctx.RequestAborted);
             return;
         }
 
