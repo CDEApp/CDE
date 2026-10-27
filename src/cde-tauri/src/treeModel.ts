@@ -128,7 +128,10 @@ export function nextSelection(rows: readonly TreeRow[], selectedKey: string | nu
     case "ArrowLeft": {
       if (index < 0) return null;
       const row = rows[index];
-      if (row.expanded) return { collapse: row.key };
+      // Collapse only when that visibly changes something: an open folder with an empty (or stale)
+      // child list shows no children, so Left goes straight to the parent instead.
+      const showsChildren = row.expanded && rows[index + 1]?.parentKey === row.key;
+      if (showsChildren) return { collapse: row.key };
       return row.parentKey === null ? null : { select: row.parentKey };
     }
     case "ArrowRight": {
