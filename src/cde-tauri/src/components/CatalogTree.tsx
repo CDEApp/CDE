@@ -145,7 +145,7 @@ function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChil
           {label}
         </span>
         {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
-        {catalogName && <span className="tree-catalog">[{catalogName}]</span>}
+        {catalogName && <span className="tree-catalog" title={catalogName}>[{catalogName}]</span>}
         <span className="tree-size">{toHRString(size)}</span>
       </div>
       {expanded && children && (
