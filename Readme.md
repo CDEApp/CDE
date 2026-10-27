@@ -300,11 +300,11 @@ You can also use the option -minSize to limit the size of Hashed files and Dupes
 [`-minHourAge`](#parameter-options)
 
 This mode looks for duplicate files in all catalog files available.
-It does no hashing itself and is very fast, however it does depend on hash being available in the catalog file and will not find any duplicated if no hashing has been done. So you will need to run Hash mode before using Dupes.
+It does no hashing itself and is very fast, however it does depend on hash being available in the catalog file and will not find any duplicates if no hashing has been done. So you will need to run Hash mode before using Dupes.
 
 Dupes does not look at files on the file system at all, so if you run Dupes on a set of catlog files and it reports file duplicate and the file system has changed since the hashing of the catalogs was done you will not get useful results - Be Careful -
 
-Consider using -minHourAge to limit Hash and Dupes work if your are cleaning up file systems.
+Consider using -minHourAge to limit Hash and Dupes work if you are cleaning up file systems.
 
 ### cde dump
 
