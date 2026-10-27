@@ -54,8 +54,7 @@ public class TimePartialParameter
     {
         var activeFormat1 = activeFormat;
         var splitOnColon = str.Split(':');
-        int.TryParse(splitOnColon[0], out var hour);
-        if (hour is 0 or > 23)
+        if (!int.TryParse(splitOnColon[0], out var hour) || hour is 0 or > 23)
         {
             _e = new ArgumentException(
                 $"Require valid Integer 1-23 for Hour <HH> as part of format '{activeFormat1}'");
@@ -70,8 +69,7 @@ public class TimePartialParameter
                 return;
             }
 
-            int.TryParse(splitOnColon[1], out var minute);
-            if (minute is 0 or > 59)
+            if (!int.TryParse(splitOnColon[1], out var minute) || minute is 0 or > 59)
             {
                 _e = new ArgumentException(
                     $"Require valid integer 1-59 or for Minute <MM> as part of format '{activeFormat1}'");
@@ -87,8 +85,7 @@ public class TimePartialParameter
                 return;
             }
 
-            int.TryParse(splitOnColon[2], out var second);
-            if (second is 0 or > 59)
+            if (!int.TryParse(splitOnColon[2], out var second) || second is 0 or > 59)
             {
                 _e = new ArgumentException(
                     $"Require valid integer 1-59 or for Second <SS> as part of format '{activeFormat1}'");

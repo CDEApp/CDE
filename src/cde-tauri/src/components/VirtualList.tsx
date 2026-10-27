@@ -18,6 +18,9 @@ interface Props<T> {
    *  fixed-width columns exceed the viewport. Both header and rows then share that scroll. */
   innerStyle?: CSSProperties;
   handleRef?: Ref<VirtualListHandle>;
+  /** Optional ARIA role (e.g. "grid") and label for the list root. */
+  role?: string;
+  ariaLabel?: string;
 }
 
 /**
@@ -26,7 +29,7 @@ interface Props<T> {
  * constant regardless of result count (10 rows or 1,000,000).
  */
 export function VirtualList<T>({
-  items, rowHeight, header, renderRow, className, overscan = 8, innerStyle, handleRef,
+  items, rowHeight, header, renderRow, className, overscan = 8, innerStyle, handleRef, role, ariaLabel,
 }: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -75,7 +78,7 @@ export function VirtualList<T>({
   }
 
   return (
-    <div className={`vlist ${className ?? ""}`}>
+    <div className={`vlist ${className ?? ""}`} role={role} aria-label={ariaLabel}>
       <div
         className="vlist-scroll"
         ref={scrollRef}

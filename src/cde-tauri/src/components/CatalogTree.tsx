@@ -246,16 +246,29 @@ export function CatalogTree({
               }}
             >
               {/* Expander for folders with sub-folders; an equal-width blank keeps leaf labels aligned. */}
-              <span
-                className={`twisty${row.hasChildren ? "" : " leaf"}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (row.hasChildren) void toggle(row);
-                }}
-                onDoubleClick={(e) => e.stopPropagation()}
-              >
-                {row.hasChildren && <Chevron expanded={row.expanded} />}
-              </span>
+              {row.hasChildren ? (
+                <span
+                  className="twisty"
+                  role="button"
+                  tabIndex={-1} // the tree container owns focus (aria-activedescendant); this is for assistive tech and the pointer
+                  aria-label={row.expanded ? "Collapse" : "Expand"}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    void toggle(row);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key !== "Enter" && e.key !== " ") return;
+                    e.preventDefault();
+                    e.stopPropagation();
+                    void toggle(row);
+                  }}
+                  onDoubleClick={(e) => e.stopPropagation()}
+                >
+                  <Chevron expanded={row.expanded} />
+                </span>
+              ) : (
+                <span className="twisty leaf" aria-hidden="true" />
+              )}
               <NodeIcon kind={row.isRoot ? "drive" : row.expanded && row.hasChildren ? "folder-open" : "folder"} />
               <span className="tree-label" title={row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath}>
                 <StyledName nameStyle={nameStyle}>{row.label}</StyledName>

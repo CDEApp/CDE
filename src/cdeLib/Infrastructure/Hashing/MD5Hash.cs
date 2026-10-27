@@ -8,18 +8,13 @@ public class MD5Hash : IHashAlgorithm
 {
     public UInt64 Hash(byte[] data)
     {
-        var md5 = MD5.Create();
-        return BitConverter.ToUInt64(md5.ComputeHash(data), 0);
+        return BitConverter.ToUInt64(MD5.HashData(data), 0);
     }
 
     public UInt64 Hash(ReadOnlySpan<byte> data)
     {
-        using var md5 = MD5.Create();
         Span<byte> hash = stackalloc byte[16]; // MD5 produces 16 bytes
-        if (!md5.TryComputeHash(data, hash, out _))
-        {
-            throw new InvalidOperationException("Failed to compute MD5 hash");
-        }
+        MD5.HashData(data, hash);
         return BitConverter.ToUInt64(hash);
     }
 

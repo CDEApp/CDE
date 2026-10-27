@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace cde.Config;
 
-public class ConfigBuilder
+public static class ConfigBuilder
 {
     public const string AppSettingsFileName = "appsettings.json";
 

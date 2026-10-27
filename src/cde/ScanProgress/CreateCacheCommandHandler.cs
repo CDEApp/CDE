@@ -115,7 +115,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             re.DirEntryCount, re.Size.Bytes().Humanize(CultureInfo.CurrentCulture));
     }
 
-    private void PrintException(string path, Exception ex)
+    private static void PrintException(string path, Exception ex)
     {
         Console.WriteLine($"Exception {ex.GetType()}, Path \"{path}\"");
     }

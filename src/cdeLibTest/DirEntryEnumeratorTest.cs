@@ -48,7 +48,7 @@ public class DirEntryEnumeratorTest : DirEntryTestBase
     public void Constructor_Minimal_NoErrors()
     {
         RootEntries = [];
-        _ = new DirEntryEnumerator(RootEntries);
+        Assert.DoesNotThrow(() => _ = new DirEntryEnumerator(RootEntries));
     }
 
     [Test]

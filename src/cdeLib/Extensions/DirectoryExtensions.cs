@@ -5,11 +5,11 @@ namespace cdeLib.Extensions;
 /// <summary>
 /// A compilation of the properties of folders and files in a file system.
 /// </summary>
-public struct FileSystemProperties
+public partial struct FileSystemProperties
 {
+    [LibraryImport("kernel32.dll", EntryPoint = "GetDiskFreeSpaceExW", SetLastError = true, StringMarshalling = StringMarshalling.Utf16)]
     [return: MarshalAs(UnmanagedType.Bool)]
-    [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Unicode)]
-    private static extern bool GetDiskFreeSpaceEx(string lpDirectoryName, out ulong lpFreeBytesAvailable,
+    private static partial bool GetDiskFreeSpaceEx(string lpDirectoryName, out ulong lpFreeBytesAvailable,
         out ulong lpTotalNumberOfBytes, out ulong lpTotalNumberOfFreeBytes);
 
     private FileSystemProperties(long? totalBytes, long? freeBytes, long? availableBytes)

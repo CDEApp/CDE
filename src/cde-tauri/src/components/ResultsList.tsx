@@ -90,6 +90,10 @@ const CELLS: Record<
   path: { className: "cell", render: (r) => r.parentPath },
 };
 
+const SORT_ARIA = { none: "none", asc: "ascending", desc: "descending" } as const;
+const MIN_COLUMN_WIDTH = 30;
+const KEY_STEP = 10;
+const KEY_STEP_LARGE = 50;
 const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
 
 /**
@@ -172,6 +176,11 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
     window.addEventListener("mouseup", onUp);
   }
 
+  // Keyboard column resize; a filling Path column is pinned to its rendered width by setting it.
+  function nudge(id: string, width: number) {
+    table.setColumnSizing((old) => ({ ...old, [id]: Math.max(MIN_COLUMN_WIDTH, width) }));
+  }
+
   // Show the drop marker only where releasing would actually move the column.
   const marker = drag && moveColumn(order, drag.id, drag.drop) !== order ? drag.drop : -1;
 
@@ -181,9 +190,12 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
       items={table.getRowModel().rows}
       rowHeight={ROW_HEIGHT}
       innerStyle={{ minWidth: totalWidth }}
+      role="grid"
+      ariaLabel="Search results"
       header={
         <div
           ref={headerRef}
+          role="row"
           className={`vlist-header results-cols${drag ? " reordering" : ""}`}
           style={{ gridTemplateColumns, minWidth: totalWidth }}
         >
@@ -212,30 +224,50 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
             return (
               <div
                 key={h.id}
+                role="columnheader"
+                aria-sort={SORT_ARIA[sorted || "none"]}
                 className={classes.filter(Boolean).join(" ")}
-                title="Click to sort, drag to move"
-                onMouseDown={(e) => startReorder(e, h.column.id)}
-                onClick={(e) => {
-                  if (suppressClickRef.current) return;
-                  h.column.getToggleSortingHandler()?.(e);
-                }}
               >
-                {String(h.column.columnDef.header)}
-                {sorted ? SORT_GLYPH[sorted] : ""}
+                <button
+                  type="button"
+                  className="sort-btn"
+                  title="Click to sort, drag to move"
+                  onMouseDown={(e) => startReorder(e, h.column.id)}
+                  onClick={(e) => {
+                    if (suppressClickRef.current) return;
+                    h.column.getToggleSortingHandler()?.(e);
+                  }}
+                >
+                  {String(h.column.columnDef.header)}
+                  {sorted ? SORT_GLYPH[sorted] : ""}
+                </button>
                 <span
                   className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}
+                  role="separator"
+                  aria-orientation="vertical"
+                  aria-label={`Resize ${String(h.column.columnDef.header)} column`}
+                  aria-valuenow={h.column.getSize()}
+                  aria-valuemin={MIN_COLUMN_WIDTH}
+                  tabIndex={0}
                   onMouseDown={(e) => {
                     e.stopPropagation(); // resizing, not reordering
                     resize(e);
                   }}
                   onTouchStart={resize}
-                  onClick={(e) => e.stopPropagation()}
+                  onKeyDown={(e) => {
+                    const step = e.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
+                    if (e.key === "ArrowRight") nudge(h.column.id, h.column.getSize() + step);
+                    else if (e.key === "ArrowLeft") nudge(h.column.id, h.column.getSize() - step);
+                    else if (e.key === "Home") h.column.resetSize();
+                    else return;
+                    e.preventDefault();
+                  }}
                   // Back to the default width (and, for Path, back to filling the spare width).
                   onDoubleClick={(e) => {
                     e.stopPropagation();
                     h.column.resetSize();
                   }}
-                  title="Drag to resize, double-click to reset"
+                  title="Drag or use the arrow keys to resize, double-click or Home to reset"
                 />
               </div>
             );
@@ -248,6 +280,8 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
         return (
           <div
             key={`${r.ref.catalogId}-${r.ref.entryIndex}-${i}`}
+            role="row"
+            aria-rowindex={i + 2}
             className={`vlist-row${r.isDirectory ? " dir" : ""}`}
             style={{ ...style, ...rowStyle, gridTemplateColumns }}
             onDoubleClick={() => onActivate(r)}
@@ -258,7 +292,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
             }}
           >
             {order.map((id) => (
-              <div key={id} className={CELLS[id].className} title={CELLS[id].title?.(r)}>
+              <div key={id} role="gridcell" className={CELLS[id].className} title={CELLS[id].title?.(r)}>
                 <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
               </div>
             ))}

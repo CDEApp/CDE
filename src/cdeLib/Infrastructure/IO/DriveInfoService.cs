@@ -10,7 +10,7 @@ public interface IDriveInfoService
     DriveInformation GetDriveSpace(string path);
 }
 
-public class DriveInfoService : IDriveInfoService
+public sealed class DriveInfoService : IDriveInfoService
 {
     public DriveInformation GetDriveSpace(string path)
     {
@@ -38,8 +38,8 @@ public class DriveInfoService : IDriveInfoService
         };
     }
 
-    public bool IsUncPath(string path)
+    public static bool IsUncPath(string path)
     {
-        return path.StartsWith("\\");
+        return path.StartsWith('\\');
     }
 }

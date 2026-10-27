@@ -296,6 +296,8 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
         <div
           ref={bodyRef}
           className="treemap-body"
+          role="application"
+          aria-label="Treemap. Arrow keys move between tiles, Enter opens the focused folder"
           onMouseMove={(e) => {
             const tip = tooltipRef.current;
             const box = bodyRef.current?.getBoundingClientRect();
@@ -310,6 +312,13 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
           onClick={(e) => {
             const node = nodeAt(e.clientX, e.clientY);
             if (node) drill(drillTargetId(node, rowsById));
+          }}
+          // Keyboard: the chart host is focusable and arrow keys move its focus between tiles (reported
+          // through onFocusChange into `hover`); Enter or Space then drills into the focused tile's branch.
+          onKeyDown={(e) => {
+            if ((e.key !== "Enter" && e.key !== " ") || !hover) return;
+            e.preventDefault();
+            drill(drillTargetId(hover, rowsById));
           }}
           onContextMenu={(e) => {
             e.preventDefault();

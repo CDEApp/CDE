@@ -49,7 +49,7 @@ namespace cdeWin;
 /// }
 /// </example>
 [DebuggerStepThrough]
-public class AutoWaitCursor
+public partial class AutoWaitCursor
 {
     // ReSharper disable MemberHidesStaticFromOuterClass
 
@@ -80,7 +80,7 @@ public class AutoWaitCursor
     /// <summary>
     /// Returns the amount of time the application has been idle.
     /// </summary>
-    public TimeSpan ApplicationIdleTime => _appStateMonitor.ApplicationIdleTime;
+    public static TimeSpan ApplicationIdleTime => _appStateMonitor.ApplicationIdleTime;
 
     /// <summary>
     /// Returns true if the auto wait cursor has been started.
@@ -152,7 +152,7 @@ public class AutoWaitCursor
     /// Private class that monitors the state of the application and automatically
     /// changes the cursor accordingly.
     /// </summary>
-    private class ApplicationStateMonitor : IDisposable
+    private partial class ApplicationStateMonitor : IDisposable
     {
         #region Member Variables
 
@@ -217,8 +217,8 @@ public class AutoWaitCursor
         }
 
         // FROM http://www.pinvoke.net/default.aspx/user32.SendMessageTimeout, this fixes the crash in vs2015 64bit Debug mode in vshost.exe
-        [DllImport("user32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-        private static extern IntPtr SendMessageTimeout(
+        [LibraryImport("user32.dll", EntryPoint = "SendMessageTimeoutW", SetLastError = true)]
+        private static partial IntPtr SendMessageTimeout(
             IntPtr windowHandle,
             uint msg,
             IntPtr wParam,
@@ -227,11 +227,12 @@ public class AutoWaitCursor
             uint timeout,
             out IntPtr result);
 
-        [DllImport("USER32.DLL")]
-        private static extern uint AttachThreadInput(uint attachTo, uint attachFrom, bool attach);
+        [LibraryImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static partial bool AttachThreadInput(uint attachTo, uint attachFrom, [MarshalAs(UnmanagedType.Bool)] bool attach);
 
-        [DllImport("KERNEL32.DLL")]
-        private static extern uint GetCurrentThreadId();
+        [LibraryImport("kernel32.dll")]
+        private static partial uint GetCurrentThreadId();
 
         // ReSharper disable InconsistentNaming
         //private const int SMTO_NORMAL = 0x0000;
@@ -311,7 +312,11 @@ public class AutoWaitCursor
             _callbackThreadId = GetCurrentThreadId();
 
             // Have to call this before calling Cursor.Current
-            AttachThreadInput(_callbackThreadId, _mainThreadId, true);
+            if (!AttachThreadInput(_callbackThreadId, _mainThreadId, true))
+            {
+                // Best effort: the wait cursor still works for this thread, just without shared input state.
+                Debug.WriteLine("AutoWaitCursor: AttachThreadInput(attach) failed");
+            }
 
             _oldCursor = Cursor.Current;
             Cursor.Current = _waitCursor;
@@ -325,7 +330,10 @@ public class AutoWaitCursor
             // Restore the cursor
             Cursor.Current = _oldCursor;
             // Detach from Main thread input
-            AttachThreadInput(_callbackThreadId, _mainThreadId, false);
+            if (!AttachThreadInput(_callbackThreadId, _mainThreadId, false))
+            {
+                Debug.WriteLine("AutoWaitCursor: AttachThreadInput(detach) failed");
+            }
         }
 
         /// <summary>

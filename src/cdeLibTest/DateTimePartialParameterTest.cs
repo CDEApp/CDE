@@ -125,4 +125,17 @@ public class DateTimePartialParameterTest
         var d = new DateTimePartialParameter(args).GetDate();
         Assert.That(d, Is.EqualTo(new DateTime(2014, 04, 05, 12, 45, 00)));
     }
+
+    [Test]
+    public void NonNumeric_Year_Is_Rejected()
+    {
+        var ex = Assert.Throws<ArgumentException>(() => new DateTimePartialParameter("abcd").GetDate());
+        Assert.That(ex!.Message, Does.StartWith("Require Year parameter be a 4 Digit Year"));
+    }
+
+    [Test]
+    public void Year_Only_Is_Accepted()
+    {
+        Assert.That(new DateTimePartialParameter("2012").GetDate(), Is.EqualTo(new DateTime(2012, 1, 1)));
+    }
 }

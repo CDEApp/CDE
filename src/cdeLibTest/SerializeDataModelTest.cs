@@ -144,7 +144,7 @@ internal class SerializeDataModelTest
 
 public static class TreeDuplicate
 {
-    public static string LastMessage;
+    public static string LastMessage { get; set; }
 
     public static bool SameTree(this RootEntry re1, RootEntry re2)
     {
@@ -172,4 +172,4 @@ public static class TreeDuplicate
         var bothTreesComplete = !e1.MoveNext() && !e2.MoveNext();
         return !differenceFound && bothTreesComplete;
     }
-}
+}
