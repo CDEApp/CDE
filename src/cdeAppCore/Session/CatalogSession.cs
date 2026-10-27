@@ -66,7 +66,10 @@ public sealed partial class CatalogSession : ICatalogSession
             if (_loading) throw new InvalidOperationException("A catalog load is already running.");
             if (_slots.Any(s => s.IsRescanning))
                 throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
+            if (_creating > 0)
+                throw new InvalidOperationException("Cannot reload while a catalog is being created.");
             _loading = true;
+            RememberCatalogDir(configPath);
         }
 
         try
