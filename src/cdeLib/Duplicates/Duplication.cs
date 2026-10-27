@@ -457,7 +457,7 @@ public class Duplication
 
             var hashResponse = await _hashHelper.GetHashResponseFromFile(fullPath, _configuration.HashFirstPassSize);
 
-            if (hashResponse != null)
+            if (hashResponse.IsSuccess)
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;
@@ -502,7 +502,7 @@ public class Duplication
             }
 
             var hashResponse = await _hashHelper.GetHashResponseFromFile(fullPath, null);
-            if (hashResponse != null)
+            if (hashResponse.IsSuccess)
             {
                 de.SetHash(hashResponse.Hash);
                 de.IsPartialHash = hashResponse.IsPartialHash;

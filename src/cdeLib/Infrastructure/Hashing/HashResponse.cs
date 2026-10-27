@@ -1,8 +1,10 @@
 namespace cdeLib.Infrastructure.Hashing;
 
-public class HashResponse
+/// <summary>
+/// Result of hashing one file. A value type so hashing a file allocates no response object.
+/// <see cref="IsSuccess"/> is false when the file could not be opened or read.
+/// </summary>
+public readonly record struct HashResponse(bool IsSuccess, ulong Hash, bool IsPartialHash, long BytesHashed)
 {
-    public byte[] Hash { get; set; }
-    public bool IsPartialHash { get; set; }
-    public long BytesHashed { get; set; }
+    public static HashResponse Failed => default;
 }

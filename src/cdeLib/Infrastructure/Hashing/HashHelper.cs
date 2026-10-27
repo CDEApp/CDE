@@ -2,6 +2,7 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.Threading.Tasks;
+using Microsoft.Win32.SafeHandles;
 
 namespace cdeLib.Infrastructure.Hashing;
 
@@ -16,66 +17,82 @@ public class HashHelper
         _hashAlgorithm = new MurmurHashWrapper();
     }
 
-    public async Task<HashResponse> GetHashResponseFromFile(string filename, int? bytesToHash)
+    /// <summary>
+    /// Hash a file using a raw file handle and positional reads into a pooled buffer (no FileStream).
+    /// bytesToHash null is a full hash, otherwise a partial hash of that many bytes.
+    /// </summary>
+    public async ValueTask<HashResponse> GetHashResponseFromFile(string filename, int? bytesToHash)
     {
-        var hashResponse = new HashResponse();
         try
         {
-            await using Stream stream = File.OpenRead(filename);
-            long totalBytesRead;
-            var streamLength = stream.Length;
+            using SafeFileHandle handle = File.OpenHandle(filename, FileMode.Open, FileAccess.Read, FileShare.Read,
+                FileOptions.Asynchronous | FileOptions.SequentialScan);
+            var fileLength = RandomAccess.GetLength(handle);
+
             if (bytesToHash == null)
             {
-                //avoid 'Array dimensions exceeded supported range', don't use byte[]
-                totalBytesRead = streamLength;
-                hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.HashStream(stream));
+                var fullHash = await HashWholeFile(handle);
+                return new HashResponse(true, fullHash, false, fileLength);
             }
-            else
+
+            var bufferSize = bytesToHash.Value;
+            var rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
+            try
             {
-                // Rent buffer from pool to avoid allocation
-                byte[] rentedBuffer = null;
-                try
+                long position = 0;
+                var bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
+                position += bytesRead;
+
+                // Known quirk (issue #37): for files longer than the buffer this reads a second block over
+                // the first, so the partial hash covers the second block. Preserved so hashes do not change.
+                var totalBytesRead = (long)bytesRead;
+                while (bytesRead > 0 && totalBytesRead <= bytesToHash)
                 {
-                    var bufferSize = bytesToHash.Value;
-                    rentedBuffer = ArrayPool<byte>.Shared.Rent(bufferSize);
-                    var buf = rentedBuffer.AsMemory(0, bufferSize);
-
-                    var bytesRead = await stream.ReadAsync(buf);
-
-                    totalBytesRead = bytesRead;
-                    while (bytesRead > 0 && totalBytesRead <= bytesToHash)
-                    {
-                        bytesRead = await stream.ReadAsync(rentedBuffer.AsMemory(0, bufferSize));
-                        totalBytesRead += bytesRead;
-                    }
-
-                    // Hash only the actual bytes read, using Span-based overload
-                    var actualBytesToHash = (int)Math.Min(totalBytesRead, bufferSize);
-                    hashResponse.Hash = BitConverter.GetBytes(_hashAlgorithm.Hash(rentedBuffer.AsSpan(0, actualBytesToHash)));
+                    bytesRead = await RandomAccess.ReadAsync(handle, rentedBuffer.AsMemory(0, bufferSize), position);
+                    position += bytesRead;
+                    totalBytesRead += bytesRead;
                 }
-                finally
-                {
-                    if (rentedBuffer != null)
-                    {
-                        ArrayPool<byte>.Shared.Return(rentedBuffer);
-                    }
-                }
+
+                var actualBytesToHash = (int)Math.Min(totalBytesRead, bufferSize);
+                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, actualBytesToHash));
+                return new HashResponse(true, partialHash, fileLength > bytesToHash, totalBytesRead);
             }
-
-            hashResponse.BytesHashed = totalBytesRead;
-            hashResponse.IsPartialHash = streamLength > bytesToHash;
-
-            return hashResponse;
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(rentedBuffer);
+            }
         }
         catch (FileLoadException) // if doing hashing on system drive cant open files don't care.
         {
-            return null;
+            return HashResponse.Failed;
         }
         catch (Exception ex)
         {
             _logger.LogDebug($" original filename \"{filename}\"");
             _logger.LogException(ex, "Hash");
-            return null;
+            return HashResponse.Failed;
         }
+    }
+
+    private async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)
+    {
+        var state = new MurMurHash3.Incremental(MurmurHashWrapper.Seed);
+        var buffer = ArrayPool<byte>.Shared.Rent(MurMurHash3.StreamChunkSize);
+        try
+        {
+            long position = 0;
+            int read;
+            while ((read = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, MurMurHash3.StreamChunkSize), position)) > 0)
+            {
+                state.Append(buffer.AsSpan(0, read));
+                position += read;
+            }
+        }
+        finally
+        {
+            ArrayPool<byte>.Shared.Return(buffer);
+        }
+
+        return state.Finish();
     }
 }

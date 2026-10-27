@@ -199,26 +199,11 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
     var requested = ctx.Request.Query["path"].FirstOrDefault();
     var loadPath = string.IsNullOrWhiteSpace(requested) ? configPath : requested;
 
-    var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
-
-    var channel = Channel.CreateUnbounded<(string evt, string data)>();
-    var progress = new SseProgress<CatalogLoadProgress>(channel.Writer,
-        p => JsonSerializer.Serialize(p, AppCoreJsonContext.Default.CatalogLoadProgress));
-
-    var work = Task.Run(async () =>
-    {
-        try { await session.LoadAsync(loadPath, progress, ct); }
-        finally
-        {
-            channel.Writer.TryWrite(("done",
-                JsonSerializer.Serialize(new { catalogs = session.CatalogCount, entries = session.TotalEntryCount })));
-            channel.Writer.Complete();
-        }
-    }, CancellationToken.None);
-
-    await Drain(ctx.Response, channel.Reader, ct);
-    await work;
+    await SseStream.RunAsync(ctx.Response.BodyWriter,
+        (progress, _, ct) => session.LoadAsync(loadPath, progress, ct),
+        (sse, _) => sse.WriteDone(session.CatalogCount, (long)session.TotalEntryCount),
+        ctx.RequestAborted);
 });
 
 // POST /search — validate first (400 + message), then stream result/progress/done over SSE.
@@ -237,35 +222,18 @@ app.MapPost("/search", async (HttpContext ctx, SearchQuery query, ISearchService
         return;
     }
 
-    var ct = ctx.RequestAborted;
     Sse.Start(ctx.Response);
-
-    var channel = Channel.CreateUnbounded<(string evt, string data)>();
-    var progress = new SseProgress<SearchProgress>(channel.Writer,
-        p => JsonSerializer.Serialize(p, AppCoreJsonContext.Default.SearchProgress));
-
-    var work = Task.Run(async () =>
-    {
-        var count = 0;
-        try
+    await SseStream.RunAsync(ctx.Response.BodyWriter,
+        async (progress, queue, ct) =>
         {
             await foreach (var row in search.SearchAsync(query, progress, ct))
             {
-                count++;
-                channel.Writer.TryWrite(("result",
-                    JsonSerializer.Serialize(row, AppCoreJsonContext.Default.SearchResultRow)));
+                // Bounded queue: waits when the client can't keep up, so the search is held back too.
+                await queue.WriteAsync(row, ct);
             }
-        }
-        catch (OperationCanceledException) { /* client disconnect / cancel */ }
-        finally
-        {
-            channel.Writer.TryWrite(("done", JsonSerializer.Serialize(new { count })));
-            channel.Writer.Complete();
-        }
-    }, CancellationToken.None);
-
-    await Drain(ctx.Response, channel.Reader, ct);
-    await work;
+        },
+        (sse, count) => sse.WriteDone(count),
+        ctx.RequestAborted);
 });
 
 // --- load the session up front, then start and report the handshake on stdout ---
@@ -291,23 +259,3 @@ Console.Out.Flush();
 
 await app.WaitForShutdownAsync();
 return;
-
-// Single-threaded drain of the SSE event channel to the response body.
-static async Task Drain(HttpResponse response, ChannelReader<(string evt, string data)> reader, CancellationToken ct)
-{
-    try
-    {
-        await foreach (var (evt, data) in reader.ReadAllAsync(ct))
-        {
-            await Sse.EventAsync(response, evt, data, ct);
-        }
-    }
-    catch (OperationCanceledException) { /* client disconnected */ }
-}
-
-/// <summary>Bridges an <see cref="IProgress{T}"/> report into an SSE <c>progress</c> event on the channel.</summary>
-internal sealed class SseProgress<T>(ChannelWriter<(string evt, string data)> writer, Func<T, string> serialize)
-    : IProgress<T>
-{
-    public void Report(T value) => writer.TryWrite(("progress", serialize(value)));
-}

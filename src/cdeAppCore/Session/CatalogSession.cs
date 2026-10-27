@@ -132,27 +132,47 @@ public sealed class CatalogSession : ICatalogSession
         int skip = 0, int take = int.MaxValue)
     {
         var source = _sources[parent.CatalogId];
-        var parentRef = new EntryRef(source, parent.EntryIndex);
+        var result = new List<DirectoryNodeDto>();
+        if (take != int.MaxValue && take <= 0) return result; // matches Enumerable.Take semantics
 
-        IEnumerable<ICommonEntry> children = parentRef.Children ?? [];
-        if (foldersOnly)
+        // Walk the sibling chain by index, applying filter/skip/take before anything is built, so only
+        // the returned page allocates (whatever the folder size).
+        var first = source.FirstChildOf(parent.EntryIndex);
+        if (first == EntryStore.None) return result;
+
+        if (take != int.MaxValue) result.Capacity = Math.Min(take, 256);
+        var parentPath = source.FullPath(parent.EntryIndex); // once; each child adds separator + name
+        var skipped = 0;
+        for (var c = first; c != EntryStore.None && result.Count < take; c = source.NextSiblingOf(c))
         {
-            children = children.Where(c => c.IsDirectory);
+            if (foldersOnly && !source.IsDirectory(c)) continue;
+            if (skipped < skip) { skipped++; continue; }
+
+            var name = source.FullName(c);
+            result.Add(ToNodeDto(parent.CatalogId, source, c, name, PathJoin.Child(parentPath, name)));
         }
 
-        if (skip > 0) children = children.Skip(skip);
-        if (take != int.MaxValue) children = children.Take(take);
-
-        return children.Select(c => ToNodeDto(parent.CatalogId, c)).ToList();
+        return result;
     }
 
     public IReadOnlyList<DirectoryNodeDto> GetPath(EntryRefDto entry)
     {
         var source = _sources[entry.CatalogId];
-        var entryRef = new EntryRef(source, entry.EntryIndex);
-        return entryRef.GetListFromRoot()
-            .Select(e => ToNodeDto(entry.CatalogId, e))
-            .ToList();
+        var chain = new List<int>(8);
+        for (var cur = entry.EntryIndex; cur != EntryStore.None; cur = source.ParentOf(cur)) chain.Add(cur);
+        chain.Reverse();
+
+        // Root-first; each full path is the previous one plus separator and name.
+        var result = new List<DirectoryNodeDto>(chain.Count);
+        string path = null;
+        foreach (var idx in chain)
+        {
+            var name = source.FullName(idx);
+            path = path == null ? source.FullPath(idx) : PathJoin.Child(path, name);
+            result.Add(ToNodeDto(entry.CatalogId, source, idx, name, path));
+        }
+
+        return result;
     }
 
     public string ResolveFullPath(EntryRefDto entry)
@@ -167,21 +187,34 @@ public sealed class CatalogSession : ICatalogSession
             : File.Exists(path);
     }
 
-    private static DirectoryNodeDto ToNodeDto(int catalogId, ICommonEntry entry)
+    private static DirectoryNodeDto ToNodeDto(int catalogId, IEntrySource source, int index,
+        string name, string fullPath)
     {
-        var index = (entry as EntryRef)?.Index ?? 0;
+        var isDirectory = source.IsDirectory(index);
+        var flags = source.FlagsOf(index);
         return new DirectoryNodeDto
         {
             Ref = new EntryRefDto(catalogId, index),
-            Name = entry.Path,
-            FullPath = entry.FullPath,
-            IsDirectory = entry.IsDirectory,
-            HasChildren = entry.IsDirectory && (entry.Children?.Any(c => c.IsDirectory) ?? false),
-            Size = entry.Size,
-            Modified = entry.Modified,
-            IsModifiedBad = entry.IsModifiedBad,
-            IsReparsePoint = entry.IsReparsePoint
+            Name = name,
+            FullPath = fullPath,
+            IsDirectory = isDirectory,
+            HasChildren = isDirectory && HasChildDirectory(source, index),
+            Size = source.SizeOf(index),
+            Modified = source.ModifiedOf(index),
+            IsModifiedBad = (flags & Flags.ModifiedBad) == Flags.ModifiedBad,
+            IsReparsePoint = (flags & Flags.ReparsePoint) == Flags.ReparsePoint
         };
+    }
+
+    // Allocation-free: walks the sibling chain and stops at the first child directory.
+    private static bool HasChildDirectory(IEntrySource source, int index)
+    {
+        for (var c = source.FirstChildOf(index); c != EntryStore.None; c = source.NextSiblingOf(c))
+        {
+            if (source.IsDirectory(c)) return true;
+        }
+
+        return false;
     }
 
     private void DisposeSources()
