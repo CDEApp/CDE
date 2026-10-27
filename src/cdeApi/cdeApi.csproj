@@ -14,6 +14,9 @@
     <!-- 6.6: publish as a self-contained single file (see README): dotnet publish -c Release
          -r win-x64 with self-contained and PublishSingleFile enabled. -->
     <RuntimeIdentifiers>win-x64;linux-x64;osx-x64</RuntimeIdentifiers>
+    <!-- Compress the bundled runtime in the single-file exe (~128MB -> ~56MB on win-x64). Only
+         takes effect for a self-contained single-file publish; costs a brief decompress at startup. -->
+    <EnableCompressionInSingleFile>true</EnableCompressionInSingleFile>
   </PropertyGroup>
 
   <ItemGroup>
