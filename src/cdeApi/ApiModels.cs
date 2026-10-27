@@ -26,3 +26,10 @@ public sealed class ShellRequest
     public string Action { get; set; }
     public int? CommandId { get; set; }
 }
+
+/// <summary>A configured custom command as a menu item; <see cref="Id"/> is the <see cref="ShellRequest.CommandId"/> that runs it.</summary>
+public sealed class ShellCommandInfo
+{
+    public int Id { get; set; }
+    public string Label { get; set; }
+}
