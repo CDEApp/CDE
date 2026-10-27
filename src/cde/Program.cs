@@ -107,7 +107,7 @@ public static class Program
         DupesOptions => _app.FindDupesAsync(),
         TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
         LoadWaitOptions => RunSync(_app.LoadWait),
-        ReplOptions => RunSync(_app.InvokeRepl),
+        ReplOptions => RunSync(CdeApp.InvokeRepl),
         PopulousFoldersOptions o => RunSync(() => _app.FindPopulous(o.Count)),
         UpdateOptions o          => _app.UpdateAsync(o),
         _                        => Task.CompletedTask,

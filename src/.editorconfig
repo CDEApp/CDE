@@ -2,3 +2,6 @@
 
 # RCS1226: Add paragraph to documentation comment.
 dotnet_diagnostic.RCS1226.severity = silent
+
+# MA0038: deprecated in favour of CA1822 (same finding); keep only CA1822.
+dotnet_diagnostic.MA0038.severity = none

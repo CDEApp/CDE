@@ -77,7 +77,7 @@ public class HashProgressConsole
         return FilesProcessed / elapsedSec;
     }
 
-    private void ShowProgress(Stopwatch sw, StatusContext ctx)
+    private static void ShowProgress(Stopwatch sw, StatusContext ctx)
     {
         var defaultNumberFormat = new NumberFormatInfo();
         var filesPerSec = CalculateFilesPerSecond(sw);
@@ -91,8 +91,8 @@ public class HashProgressConsole
         var percent = FilesToHash > 0 ? 100.0 * processed / FilesToHash : 0.0;
         var phase = string.IsNullOrEmpty(Phase) ? "Hashing" : Phase;
 
-        var msg =
-            $"[yellow]{Markup.Escape(phase)}[/] [yellow]{processedText}[/] of [yellow]{toHashText}[/] ([yellow]{percent:F1}%[/]) Avg [yellow]{perSecText}[/]/sec";
+        var msg = string.Create(CultureInfo.CurrentCulture,
+            $"[yellow]{Markup.Escape(phase)}[/] [yellow]{processedText}[/] of [yellow]{toHashText}[/] ([yellow]{percent:F1}%[/]) Avg [yellow]{perSecText}[/]/sec");
 
         try
         {
