@@ -20,8 +20,7 @@ public class CatalogLoadBenchmarks
     private string _catalogPath = null!;
 
     // 10M takes real time/disk; start at 1M for routine runs and opt into 10M explicitly via filter.
-    [Params(1_000_000)]
-    public int EntryCount { get; set; }
+    private const int EntryCount = 1_000_000;
 
     [Params(false, true)]
     public bool WithHashes { get; set; }

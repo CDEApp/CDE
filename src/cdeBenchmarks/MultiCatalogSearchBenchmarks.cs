@@ -38,7 +38,7 @@ public class MultiCatalogSearchBenchmarks
         _roots = roots;
     }
 
-    private FindOptions MakeOptions(StrongBox<int> counter) => new()
+    private static FindOptions MakeOptions(StrongBox<int> counter) => new()
     {
         Pattern = "zzzznomatchzzzz", // full scan — measures pure traversal throughput
         RegexMode = false,
