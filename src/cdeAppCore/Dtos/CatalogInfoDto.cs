@@ -23,4 +23,7 @@ public sealed class CatalogInfoDto
     public string ActualFileName { get; set; }
     public string DefaultFileName { get; set; }
     public string Description { get; set; }
+
+    /// <summary>The exact file this catalog was loaded from (the file a rescan saves over).</summary>
+    public string SourcePath { get; set; }
 }

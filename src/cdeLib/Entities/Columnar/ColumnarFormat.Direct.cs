@@ -43,6 +43,17 @@ public static partial class ColumnarFormat
         }
     }
 
+    /// <summary>
+    /// Writes the catalog straight to <paramref name="outPath"/> with no temp file and no rename, for callers
+    /// that manage their own temp file and swap (e.g. a rescan that must release a mapping before renaming).
+    /// A failure may leave a partial file at <paramref name="outPath"/>; the caller deletes it.
+    /// </summary>
+    public static void WriteDirect(RootEntry root, string outPath)
+    {
+        ArgumentNullException.ThrowIfNull(root);
+        WriteTo(root, outPath);
+    }
+
     private static void WriteTo(RootEntry root, string outPath)
     {
 

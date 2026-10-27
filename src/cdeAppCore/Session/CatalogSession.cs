@@ -13,17 +13,18 @@ using Serilog;
 namespace cdeAppCore.Session;
 
 /// <summary>
-/// Default <see cref="ICatalogSession"/>. Holds one <see cref="IEntrySource"/> per loaded catalog —
-/// a zero-copy <see cref="ColumnarCatalogReader"/> over a memory-mapped <c>.cdex</c> when present,
+/// Default <see cref="ICatalogSession"/>. Holds one <see cref="CatalogSlot"/> per loaded catalog — a
+/// zero-copy <see cref="ColumnarCatalogReader"/> over a memory-mapped <c>.cdex</c> when present,
 /// otherwise an in-memory <see cref="EntryStore"/> built from a loaded <c>.cde</c> tree. Catalog id is
-/// the index into that list; an entry is addressed by (catalog id, entry index).
+/// the index into that list; an entry is addressed by (catalog id, entry index). Each slot has a
+/// reader/writer lock so a rescan can swap one catalog's source without disturbing the others.
 /// </summary>
-public sealed class CatalogSession : ICatalogSession
+public sealed partial class CatalogSession : ICatalogSession
 {
     private readonly ILoadCatalogService _loadCatalogService;
     private readonly ILogger _logger;
 
-    private List<IEntrySource> _sources = [];
+    private List<CatalogSlot> _slots = [];
     private List<ICommonEntry> _roots = [];
 
     public CatalogSession(ILoadCatalogService loadCatalogService, ILogger logger)
@@ -32,19 +33,30 @@ public sealed class CatalogSession : ICatalogSession
         _logger = logger;
     }
 
-    public int CatalogCount => _sources.Count;
+    public int CatalogCount => _slots.Count;
 
-    public long TotalEntryCount =>
-        _sources.Sum(s => (long)s.RootFileEntryCount + s.RootDirEntryCount);
+    public long TotalEntryCount => Enumerable.Range(0, _slots.Count).Sum(i =>
+    {
+        using var lease = _slots[i].EnterRead();
+        return (long)lease.Source.RootFileEntryCount + lease.Source.RootDirEntryCount;
+    });
 
     public IReadOnlyList<ICommonEntry> Roots => _roots;
 
-    public IEntrySource GetSource(int catalogId) => _sources[catalogId];
+    public IEntrySource GetSource(int catalogId) => _slots[catalogId].Source
+        ?? throw new InvalidOperationException("The catalog is unavailable.");
+
+    public CatalogReadLease AcquireRead(int catalogId) => _slots[catalogId].EnterRead();
 
     public async Task LoadAsync(string configPath, IProgress<CatalogLoadProgress> progress = null,
         CancellationToken cancellationToken = default)
     {
-        DisposeSources();
+        if (AnyRescanning)
+        {
+            throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
+        }
+
+        DisposeSlots();
 
         // Dedup by full path: the loader scans both "." and configPath, which collapse to the same
         // directory (and thus duplicate catalogs) when the host runs in its catalog directory.
@@ -54,7 +66,7 @@ public sealed class CatalogSession : ICatalogSession
             .ToList();
         if (cdex is { Count: > 0 })
         {
-            _sources = ReadColumnar(cdex);
+            _slots = ReadColumnar(cdex);
         }
         else
         {
@@ -62,21 +74,21 @@ public sealed class CatalogSession : ICatalogSession
                 configPath,
                 (current, total, message) => progress?.Report(new CatalogLoadProgress(current, total, message)),
                 cancellationToken);
-            _sources = BuildStores(trees);
+            _slots = BuildStores(trees);
         }
 
-        _roots = _sources.Select(ICommonEntry (s) => new EntryRef(s, 0)).ToList();
+        _roots = _slots.Select(ICommonEntry (s) => new EntryRef(s.Source, 0)).ToList();
     }
 
     // Open each .cdex as a zero-copy mmap reader. Unreadable files are skipped (logged).
-    private List<IEntrySource> ReadColumnar(IList<string> cdexFiles)
+    private List<CatalogSlot> ReadColumnar(IList<string> cdexFiles)
     {
-        var sources = new List<IEntrySource>(cdexFiles.Count);
+        var slots = new List<CatalogSlot>(cdexFiles.Count);
         foreach (var file in cdexFiles)
         {
             try
             {
-                sources.Add(new ColumnarCatalogReader(file));
+                slots.Add(new CatalogSlot(new ColumnarCatalogReader(file), file));
             }
             catch (Exception ex)
             {
@@ -84,28 +96,30 @@ public sealed class CatalogSession : ICatalogSession
             }
         }
 
-        return sources;
+        return slots;
     }
 
-    private static List<IEntrySource> BuildStores(List<RootEntry> trees)
+    private static List<CatalogSlot> BuildStores(List<RootEntry> trees)
     {
-        var sources = new List<IEntrySource>(trees?.Count ?? 0);
-        if (trees == null) return sources;
+        var slots = new List<CatalogSlot>(trees?.Count ?? 0);
+        if (trees == null) return slots;
         for (var i = 0; i < trees.Count; i++)
         {
-            sources.Add(EntryStore.Build(trees[i]));
+            var path = string.IsNullOrEmpty(trees[i].ActualFileName) ? null : Path.GetFullPath(trees[i].ActualFileName);
+            slots.Add(new CatalogSlot(EntryStore.Build(trees[i]), path));
             trees[i] = null; // release the tree so it can be collected
         }
 
-        return sources;
+        return slots;
     }
 
     public IReadOnlyList<CatalogInfoDto> GetCatalogs()
     {
-        var list = new List<CatalogInfoDto>(_sources.Count);
-        for (var i = 0; i < _sources.Count; i++)
+        var list = new List<CatalogInfoDto>(_slots.Count);
+        for (var i = 0; i < _slots.Count; i++)
         {
-            var s = _sources[i];
+            using var lease = _slots[i].EnterRead();
+            var s = lease.Source;
             list.Add(new CatalogInfoDto
             {
                 CatalogId = i,
@@ -121,7 +135,8 @@ public sealed class CatalogSession : ICatalogSession
                 ScanEndUtcTicks = s.ScanEndUtcTicks,
                 ActualFileName = s.ActualFileName,
                 DefaultFileName = s.DefaultFileName,
-                Description = s.Description
+                Description = s.Description,
+                SourcePath = _slots[i].SourcePath
             });
         }
 
@@ -131,7 +146,8 @@ public sealed class CatalogSession : ICatalogSession
     public IReadOnlyList<DirectoryNodeDto> GetChildren(EntryRefDto parent, bool foldersOnly = false,
         int skip = 0, int take = int.MaxValue)
     {
-        var source = _sources[parent.CatalogId];
+        using var lease = AcquireRead(parent.CatalogId);
+        var source = lease.Source;
         var result = new List<DirectoryNodeDto>();
         if (take != int.MaxValue && take <= 0) return result; // matches Enumerable.Take semantics
 
@@ -157,7 +173,8 @@ public sealed class CatalogSession : ICatalogSession
 
     public IReadOnlyList<DirectoryNodeDto> GetPath(EntryRefDto entry)
     {
-        var source = _sources[entry.CatalogId];
+        using var lease = AcquireRead(entry.CatalogId);
+        var source = lease.Source;
         var chain = new List<int>(8);
         for (var cur = entry.EntryIndex; cur != EntryStore.None; cur = source.ParentOf(cur)) chain.Add(cur);
         chain.Reverse();
@@ -176,15 +193,22 @@ public sealed class CatalogSession : ICatalogSession
     }
 
     public string ResolveFullPath(EntryRefDto entry)
-        => _sources[entry.CatalogId].FullPath(entry.EntryIndex);
+    {
+        using var lease = AcquireRead(entry.CatalogId);
+        return lease.Source.FullPath(entry.EntryIndex);
+    }
 
     public bool ExistsOnFileSystem(EntryRefDto entry)
     {
-        var source = _sources[entry.CatalogId];
-        var path = source.FullPath(entry.EntryIndex);
-        return source.IsDirectory(entry.EntryIndex)
-            ? Directory.Exists(path)
-            : File.Exists(path);
+        string path;
+        bool isDirectory;
+        using (var lease = AcquireRead(entry.CatalogId))
+        {
+            path = lease.Source.FullPath(entry.EntryIndex);
+            isDirectory = lease.Source.IsDirectory(entry.EntryIndex);
+        }
+
+        return isDirectory ? Directory.Exists(path) : File.Exists(path);
     }
 
     private static DirectoryNodeDto ToNodeDto(int catalogId, IEntrySource source, int index,
@@ -217,16 +241,13 @@ public sealed class CatalogSession : ICatalogSession
         return false;
     }
 
-    private void DisposeSources()
+    private void DisposeSlots()
     {
-        foreach (var source in _sources)
-        {
-            if (source is IDisposable disposable) disposable.Dispose();
-        }
+        foreach (var slot in _slots) slot.Dispose();
 
-        _sources = [];
+        _slots = [];
         _roots = [];
     }
 
-    public void Dispose() => DisposeSources();
+    public void Dispose() => DisposeSlots();
 }

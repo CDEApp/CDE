@@ -98,7 +98,8 @@ public sealed class SearchService : ISearchService
         var grandTotal = 0;
         for (var i = 0; i < _session.CatalogCount; i++)
         {
-            grandTotal += _session.GetSource(i).Count;
+            using var lease = _session.AcquireRead(i);
+            grandTotal += lease.Source.Count;
         }
 
         var matched = 0;
@@ -111,7 +112,9 @@ public sealed class SearchService : ISearchService
         {
             if (ct.IsCancellationRequested || matched >= limit) break;
 
-            var source = _session.GetSource(catalogId);
+            // Read lock for this catalog's scan: a rescan swap of it waits until the scan is done.
+            using var lease = _session.AcquireRead(catalogId);
+            var source = lease.Source;
             var baseScanned = scannedBase;
             var localCatalogId = catalogId;
 
