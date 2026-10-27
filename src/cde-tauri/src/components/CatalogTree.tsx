@@ -7,6 +7,8 @@ export interface TreeRoot {
   ref: EntryRef;
   label: string;
   fullPath: string;
+  /** Catalog file name without extension, shown in brackets after the root label. */
+  catalogName: string;
   /** Total size of everything under the root (CatalogInfo.rootSize). */
   size: number;
 }
@@ -49,6 +51,8 @@ interface TreeItemProps {
   /** Aggregated subtree size in bytes. */
   size: number;
   hasChildren: boolean;
+  /** Root rows only: catalog name shown muted in brackets after the label. */
+  catalogName?: string;
   /** Catalog root (drawn with a drive icon rather than a folder). */
   isRoot?: boolean;
   selectedKey: string | null;
@@ -58,7 +62,7 @@ interface TreeItemProps {
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
 }
 
-function TreeItem({ client, nodeRef, label, fullPath, size, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
+function TreeItem({ client, nodeRef, label, fullPath, size, catalogName, hasChildren, isRoot, selectedKey, revealKey, expandTo, onSelect, onContextMenu }: TreeItemProps) {
   const [expanded, setExpanded] = useState(false);
   const [children, setChildren] = useState<DirectoryNode[] | null>(null);
   const key = refToString(nodeRef);
@@ -133,7 +137,11 @@ function TreeItem({ client, nodeRef, label, fullPath, size, hasChildren, isRoot,
           {hasChildren && <Chevron expanded={expanded} />}
         </span>
         <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
-        <span className="tree-label" title={fullPath}>{label}</span>
+        <span className="tree-label" title={catalogName ? `${fullPath} [${catalogName}]` : fullPath}>
+          {label}
+        </span>
+        {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}
+        {catalogName && <span className="tree-catalog">[{catalogName}]</span>}
         <span className="tree-size">{toHRString(size)}</span>
       </div>
       {expanded && children && (
@@ -193,6 +201,7 @@ export function CatalogTree({
           label={r.label}
           fullPath={r.fullPath}
           size={r.size}
+          catalogName={r.catalogName}
           hasChildren
           isRoot
           selectedKey={selectedKey}
