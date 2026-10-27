@@ -115,6 +115,29 @@ export class CdeApiClient {
     });
   }
 
+  /** The colour-rules text; the sidecar creates the file from its defaults when missing. */
+  async getColourRules(): Promise<string> {
+    const r = await fetch(`${this.baseUrl}/colour-rules`, { headers: this.headers() });
+    if (!r.ok) throw new Error(`colour-rules: ${r.status}`);
+    return r.text();
+  }
+
+  /** The sidecar's built-in default rules text (single source for "Reset to defaults"). */
+  async getColourRuleDefaults(): Promise<string> {
+    const r = await fetch(`${this.baseUrl}/colour-rules/defaults`, { headers: this.headers() });
+    if (!r.ok) throw new Error(`colour-rules/defaults: ${r.status}`);
+    return r.text();
+  }
+
+  async putColourRules(text: string): Promise<void> {
+    const r = await fetch(`${this.baseUrl}/colour-rules`, {
+      method: "PUT",
+      headers: this.headers({ "Content-Type": "text/plain; charset=utf-8" }),
+      body: text,
+    });
+    if (!r.ok) throw new Error(`colour-rules: ${r.status}`);
+  }
+
   /**
    * Reload catalogs, streaming load progress then a final done event. When `path` is given, the
    * sidecar loads .cdex catalogs from that folder (and one level down) instead of its default.
