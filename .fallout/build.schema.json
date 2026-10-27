@@ -120,10 +120,6 @@
           ],
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)"
         },
-        "SelfContained": {
-          "type": "boolean",
-          "description": "Publish cde and cdewin self-contained (bundle the .NET runtime) - Default is false. Used by the release workflow"
-        },
         "Solution": {
           "type": "string",
           "description": "Path to a solution file that is automatically loaded"

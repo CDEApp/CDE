@@ -32,7 +32,7 @@ function setup(columnWidths?: unknown) {
   return { onSort, onColumnWidthsChange };
 }
 
-const sizeResizer = () => screen.getAllByRole("separator")[1];
+const sizeResizer = () => screen.getAllByRole("slider")[1];
 const header = () => screen.getAllByRole("row")[0];
 
 describe("DirectoryList column resize", () => {
@@ -73,7 +73,7 @@ describe("DirectoryList column resize", () => {
 
   it("double-click resets a column to its default", () => {
     const { onColumnWidthsChange } = setup({ name: 300, size: 140 });
-    fireEvent.doubleClick(screen.getAllByRole("separator")[0]);
+    fireEvent.doubleClick(screen.getAllByRole("slider")[0]);
     expect(onColumnWidthsChange).toHaveBeenCalledWith({ size: 140 });
     expect(header().style.gridTemplateColumns).toBe("minmax(200px, 1fr) 140px 160px");
   });

@@ -120,8 +120,8 @@ export function DirectoryList({
                   </button>
                   <span
                     className="resizer"
-                    role="separator"
-                    aria-orientation="vertical"
+                    role="slider"
+                    aria-orientation="horizontal"
                     aria-label={`Resize ${label} column`}
                     aria-valuenow={widthOf(widths, column)}
                     aria-valuemin={DIR_MIN_WIDTH[column]}
