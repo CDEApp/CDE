@@ -13,6 +13,14 @@ This is a utility to capture directory entries into catalog files for later proc
 
 It is inspired by old and faithful utility called Cathy I have used in the past (Website now gone). One of the driving reasons to write cde was that Cathy is internally limited to 65535 directory entries.
 
+> **Note: the executables are not signed.** `cde.exe`, `cdeWin.exe`, `cde-tauri.exe` and `cdeApi.exe` are not signed with a code signing certificate. When you first run a downloaded copy, Microsoft Defender SmartScreen shows "Windows protected your PC" with the publisher "Unknown publisher". To run it, click **More info**, then **Run anyway**.
+>
+> To stop the warning for every file at once, unblock the zip before you extract it: right-click the zip, select **Properties**, select **Unblock**, then click **OK**.
+>
+> If Smart App Control is on (Windows 11), Windows can block unsigned apps with no option to run them.
+>
+> If this is a concern, you can always check the [build pipeline](https://github.com/CDEApp/CDE/actions/workflows/release.yml) to see the source is compiled via CI.
+
 #### cde
 
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
