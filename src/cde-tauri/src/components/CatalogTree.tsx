@@ -133,7 +133,7 @@ function TreeItem({ client, nodeRef, label, fullPath, size, hasChildren, isRoot,
           {hasChildren && <Chevron expanded={expanded} />}
         </span>
         <NodeIcon kind={isRoot ? "drive" : expanded && hasChildren ? "folder-open" : "folder"} />
-        <span className="tree-label">{label}</span>
+        <span className="tree-label" title={fullPath}>{label}</span>
         <span className="tree-size">{toHRString(size)}</span>
       </div>
       {expanded && children && (
