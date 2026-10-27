@@ -287,7 +287,7 @@ public class Duplication
             List<PairDirEntry> group;
             if (rootEntry == null)
             {
-                // not expected (every entry has a RootEntry); fall back to the path-derived root
+                // not expected (every entry has a RootEntry); keep such pairs together in one group
                 group = noRoot ??= AddGroup(groups);
             }
             else if (!byRootEntry.TryGetValue(rootEntry, out group))
