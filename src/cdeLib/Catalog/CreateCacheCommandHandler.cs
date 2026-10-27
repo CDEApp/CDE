@@ -49,12 +49,8 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             {
                 Console.WriteLine($"Found cache \"{cdexName}\"");
                 Console.WriteLine("Updating hashes on new scan from found cache file.");
-                RootEntry oldRoot;
-                using (var reader = new ColumnarCatalogReader(cdexName))
-                {
-                    oldRoot = CatalogTreeBuilder.FromSource(reader);
-                }
-                oldRoot.TraverseTreesCopyHash(re);
+                using var reader = new ColumnarCatalogReader(cdexName);
+                ColumnarHashReuse.CopyHashes(reader, re);
             }
 
             re.SortAllChildrenByPath();
