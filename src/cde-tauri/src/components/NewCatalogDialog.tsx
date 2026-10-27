@@ -104,9 +104,9 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   return (
     <Modal opened={rootPath !== null} onClose={onClose} title="New catalog" centered size="lg">
       <div className="nc-form">
-        <label className="nc-label">Root</label>
+        <label className="nc-label" htmlFor="nc-root">Root</label>
         <div className="nc-row">
-          <input className="nc-input" value={rootPath ?? ""} readOnly title={rootPath ?? undefined} />
+          <input id="nc-root" className="nc-input" value={rootPath ?? ""} readOnly title={rootPath ?? undefined} />
           <button type="button" onClick={onChangeRoot}>
             Change…
           </button>
@@ -162,8 +162,8 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
           Follow junctions
         </label>
 
-        <label className="nc-label">Saved to</label>
-        <input className="nc-input" value={preflight?.catalogDir ?? ""} readOnly title={preflight?.catalogDir ?? undefined} />
+        <label className="nc-label" htmlFor="nc-catalog-dir">Saved to</label>
+        <input id="nc-catalog-dir" className="nc-input" value={preflight?.catalogDir ?? ""} readOnly title={preflight?.catalogDir ?? undefined} />
         {state.folderError && <div className="nc-error">{state.folderError}</div>}
         {state.busyError && <div className="nc-error">{state.busyError}</div>}
         {state.preflightError && <div className="nc-error">Could not check the settings: {state.preflightError}</div>}

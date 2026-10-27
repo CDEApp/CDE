@@ -123,6 +123,13 @@ export function rowStillResolves(rowFullPath: string, chain: readonly Pick<Direc
 
 // ---------------------------------------------------------------- selection fallback
 
+/** Drop any trailing "/" characters (linear scan; avoids a backtracking regex). */
+function trimTrailingSlashes(p: string): string {
+  let end = p.length;
+  while (end > 0 && p.charCodeAt(end - 1) === 47) end--;
+  return p.slice(0, end);
+}
+
 export interface SurvivingFolder {
   ref: EntryRef;
   fullPath: string;
@@ -141,8 +148,8 @@ export async function resolveSurvivingFolder(
   listFolders: (ref: EntryRef) => Promise<readonly DirectoryNode[]>,
 ): Promise<SurvivingFolder> {
   const norm = (p: string) => p.replace(/\\/g, "/").toLowerCase();
-  const root = norm(rootPath).replace(/\/+$/, "");
-  const target = norm(targetPath).replace(/\/+$/, "");
+  const root = trimTrailingSlashes(norm(rootPath));
+  const target = trimTrailingSlashes(norm(targetPath));
   let current: SurvivingFolder = { ref: rootRef, fullPath: rootPath, exact: true };
 
   if (target === root || !target.startsWith(root + "/")) {

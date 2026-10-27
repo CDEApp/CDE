@@ -97,23 +97,44 @@ function parseRescanRefusal(e: ApiError): RescanErrorBody {
 }
 
 /**
+ * Join `baseUrl` with `path` segments, percent-encoding each segment (so a segment can never add a `/`,
+ * `?` or `#`), then append `query`. ASP.NET decodes route values, so `refToString` output (`{catalog}-{index}`)
+ * round-trips unchanged.
+ */
+export function buildApiUrl(
+  baseUrl: string,
+  path: readonly (string | number)[],
+  query?: URLSearchParams | Record<string, string>,
+): string {
+  const base = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+  const url = `${base}/${path.map((seg) => encodeURIComponent(String(seg))).join("/")}`;
+  const qs = (query instanceof URLSearchParams ? query : new URLSearchParams(query)).toString();
+  return qs ? `${url}?${qs}` : url;
+}
+
+/**
  * HTTP + SSE client for the cdeApi sidecar. Every request carries the handshake token. SSE is read
  * over fetch's streaming body (EventSource can't set the auth header) and parsed event-by-event.
  */
 export class CdeApiClient {
   constructor(private readonly baseUrl: string, private readonly token: string) {}
 
+  /** Build an endpoint URL; every path segment and query value is percent-encoded here, never by callers. */
+  private url(path: readonly (string | number)[], query?: URLSearchParams | Record<string, string>): string {
+    return buildApiUrl(this.baseUrl, path, query);
+  }
+
   private headers(extra?: Record<string, string>): Record<string, string> {
     return { "X-CDE-Token": this.token, ...extra };
   }
 
   async health(): Promise<boolean> {
-    const r = await fetch(`${this.baseUrl}/health`, { headers: this.headers() });
+    const r = await fetch(this.url(["health"]), { headers: this.headers() });
     return r.ok;
   }
 
   async catalogs(): Promise<CatalogsResponse> {
-    const r = await fetch(`${this.baseUrl}/catalogs`, { headers: this.headers() });
+    const r = await fetch(this.url(["catalogs"]), { headers: this.headers() });
     if (!r.ok) throw new Error(`catalogs: ${r.status}`);
     return r.json();
   }
@@ -129,9 +150,8 @@ export class CdeApiClient {
     if (opts?.skip != null) q.set("skip", String(opts.skip));
     if (opts?.take != null) q.set("take", String(opts.take));
     if (opts?.sort) q.set("sort", opts.sort);
-    const qs = q.toString();
     const r = await fetch(
-      `${this.baseUrl}/entries/${refToString(ref)}/children${qs ? `?${qs}` : ""}`,
+      this.url(["entries", refToString(ref), "children"], q),
       { headers: this.headers() },
     );
     if (!r.ok) throw new Error(`children: ${r.status}`);
@@ -139,7 +159,7 @@ export class CdeApiClient {
   }
 
   async path(ref: EntryRef): Promise<DirectoryNode[]> {
-    const r = await fetch(`${this.baseUrl}/entries/${refToString(ref)}/path`, {
+    const r = await fetch(this.url(["entries", refToString(ref), "path"]), {
       headers: this.headers(),
     });
     if (!r.ok) throw new Error(`path: ${r.status}`);
@@ -152,7 +172,7 @@ export class CdeApiClient {
     opts: { depth: number; minFraction: number; signal?: AbortSignal },
   ): Promise<TreemapResponse> {
     const q = new URLSearchParams({ depth: String(opts.depth), minFraction: String(opts.minFraction) });
-    const r = await fetch(`${this.baseUrl}/entries/${refToString(ref)}/treemap?${q}`, {
+    const r = await fetch(this.url(["entries", refToString(ref), "treemap"], q), {
       headers: this.headers(),
       signal: opts.signal,
     });
@@ -161,13 +181,13 @@ export class CdeApiClient {
   }
 
   async shellCommands(): Promise<{ id: number; label: string }[]> {
-    const r = await fetch(`${this.baseUrl}/shell/commands`, { headers: this.headers() });
+    const r = await fetch(this.url(["shell", "commands"]), { headers: this.headers() });
     if (!r.ok) throw new Error(`shell/commands: ${r.status}`);
     return r.json();
   }
 
   async shell(req: ShellRequest): Promise<void> {
-    const r = await fetch(`${this.baseUrl}/shell`, {
+    const r = await fetch(this.url(["shell"]), {
       method: "POST",
       headers: this.headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(req),
@@ -176,13 +196,13 @@ export class CdeApiClient {
   }
 
   async getUiState(): Promise<Record<string, unknown>> {
-    const r = await fetch(`${this.baseUrl}/ui-state`, { headers: this.headers() });
+    const r = await fetch(this.url(["ui-state"]), { headers: this.headers() });
     if (!r.ok) throw new Error(`ui-state: ${r.status}`);
     return r.json();
   }
 
   async putUiState(state: Record<string, unknown>): Promise<void> {
-    await fetch(`${this.baseUrl}/ui-state`, {
+    await fetch(this.url(["ui-state"]), {
       method: "PUT",
       headers: this.headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(state),
@@ -191,20 +211,20 @@ export class CdeApiClient {
 
   /** The colour-rules text; the sidecar creates the file from its defaults when missing. */
   async getColourRules(): Promise<string> {
-    const r = await fetch(`${this.baseUrl}/colour-rules`, { headers: this.headers() });
+    const r = await fetch(this.url(["colour-rules"]), { headers: this.headers() });
     if (!r.ok) throw new Error(`colour-rules: ${r.status}`);
     return r.text();
   }
 
   /** The sidecar's built-in default rules text (single source for "Reset to defaults"). */
   async getColourRuleDefaults(): Promise<string> {
-    const r = await fetch(`${this.baseUrl}/colour-rules/defaults`, { headers: this.headers() });
+    const r = await fetch(this.url(["colour-rules", "defaults"]), { headers: this.headers() });
     if (!r.ok) throw new Error(`colour-rules/defaults: ${r.status}`);
     return r.text();
   }
 
   async putColourRules(text: string): Promise<void> {
-    const r = await fetch(`${this.baseUrl}/colour-rules`, {
+    const r = await fetch(this.url(["colour-rules"]), {
       method: "PUT",
       headers: this.headers({ "Content-Type": "text/plain; charset=utf-8" }),
       body: text,
@@ -217,9 +237,7 @@ export class CdeApiClient {
    * sidecar loads .cdex catalogs from that folder (and one level down) instead of its default.
    */
   async reload(handlers: ReloadHandlers, path?: string): Promise<void> {
-    const url = path
-      ? `${this.baseUrl}/session/reload?path=${encodeURIComponent(path)}`
-      : `${this.baseUrl}/session/reload`;
+    const url = this.url(["session", "reload"], path ? { path } : undefined);
     await this.streamSse(
       url,
       { method: "POST", headers: this.headers(), signal: handlers.signal },
@@ -244,7 +262,7 @@ export class CdeApiClient {
     let failure = null as RescanErrorBody | null;
     try {
       await this.streamSse(
-        `${this.baseUrl}/catalogs/${catalogId}/rescan`,
+        this.url(["catalogs", catalogId, "rescan"]),
         { method: "POST", headers: this.headers(), signal: handlers.signal },
         (event, data) => {
           if (event === "progress") handlers.onProgress?.(JSON.parse(data));
@@ -265,7 +283,7 @@ export class CdeApiClient {
    * folder, whether the target exists / is a loaded catalog, writability, same-root catalogs.
    */
   async preflightCreate(req: CreatePreflightRequest, signal?: AbortSignal): Promise<CreatePreflightResult> {
-    const r = await fetch(`${this.baseUrl}/catalogs/preflight`, {
+    const r = await fetch(this.url(["catalogs", "preflight"]), {
       method: "POST",
       headers: this.headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(req),
@@ -285,7 +303,7 @@ export class CdeApiClient {
     let failure = null as CreateErrorBody | null;
     try {
       await this.streamSse(
-        `${this.baseUrl}/catalogs`,
+        this.url(["catalogs"]),
         {
           method: "POST",
           headers: this.headers({ "Content-Type": "application/json" }),
@@ -312,7 +330,7 @@ export class CdeApiClient {
    */
   async search(query: SearchQuery, handlers: SearchHandlers): Promise<void> {
     await this.streamSse(
-      `${this.baseUrl}/search`,
+      this.url(["search"]),
       {
         method: "POST",
         headers: this.headers({ "Content-Type": "application/json" }),

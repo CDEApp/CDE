@@ -95,9 +95,10 @@ export function parseColourRules(text: string): ParsedRules {
     const trimmed = raw.trim();
     if (!trimmed || trimmed.startsWith("#")) return;
 
-    const m = /^(\S+)\s*(.*)$/.exec(trimmed)!;
-    const pattern = m[1];
-    const styleText = m[2].trim();
+    // Pattern is the first whitespace-delimited token; the rest is the style text.
+    const split = trimmed.search(/\s/);
+    const pattern = split < 0 ? trimmed : trimmed.slice(0, split);
+    const styleText = split < 0 ? "" : trimmed.slice(split).trim();
     if (!styleText) {
       problems.push({ line, message: "missing style" });
       return;
@@ -107,7 +108,7 @@ export function parseColourRules(text: string): ParsedRules {
     let regex: RegExp | null = null;
     if (!isFolder) {
       try {
-        regex = new RegExp(pattern, "i");
+        regex = new RegExp(pattern, "i"); // NOSONAR S2631: regexes are user-written (accepted risk, #67); docs and default rules warn about it
       } catch {
         problems.push({ line, message: "invalid regex" });
         return;
