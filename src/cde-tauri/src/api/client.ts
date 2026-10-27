@@ -96,6 +96,10 @@ function parseRescanRefusal(e: ApiError): RescanErrorBody {
   return { code: "rescan-failed", message: e.body || `rescan: ${e.status}` };
 }
 
+/** Sort keys `GET /entries/{ref}/children` accepts; a leading `-` means descending. */
+export type ChildrenSort = "name" | "size" | "date" | "-name" | "-size" | "-date";
+const CHILDREN_SORTS: ReadonlySet<string> = new Set<ChildrenSort>(["name", "size", "date", "-name", "-size", "-date"]);
+
 /**
  * Join `baseUrl` with `path` segments, percent-encoding each segment (so a segment can never add a `/`,
  * `?` or `#`), then append `query`. ASP.NET decodes route values, so `refToString` output (`{catalog}-{index}`)
@@ -142,14 +146,14 @@ export class CdeApiClient {
   async children(
     ref: EntryRef,
     /** `hasChildren: false` leaves every `hasChildren` false (skips the server's sub-folder walk). */
-    opts?: { foldersOnly?: boolean; skip?: number; take?: number; sort?: string; hasChildren?: boolean },
+    opts?: { foldersOnly?: boolean; skip?: number; take?: number; sort?: ChildrenSort; hasChildren?: boolean },
   ): Promise<DirectoryNode[]> {
     const q = new URLSearchParams();
     if (opts?.foldersOnly) q.set("foldersOnly", "true");
     if (opts?.hasChildren === false) q.set("hasChildren", "false");
     if (opts?.skip != null) q.set("skip", String(opts.skip));
     if (opts?.take != null) q.set("take", String(opts.take));
-    if (opts?.sort) q.set("sort", opts.sort);
+    if (opts?.sort && CHILDREN_SORTS.has(opts.sort)) q.set("sort", opts.sort);
     const r = await fetch(
       this.url(["entries", refToString(ref), "children"], q),
       { headers: this.headers() },
