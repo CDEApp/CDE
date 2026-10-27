@@ -6,9 +6,6 @@ using System.Threading.Tasks;
 using cdeLib;
 using cdeLib.Catalog;
 using cdeLib.Duplicates;
-using cdeLib.Entities;
-using cdeLib.Entities.Columnar;
-using cdeLib.Entities.Soa;
 using cdeLib.Hashing;
 using cdeLib.Infrastructure;
 using JetBrains.Annotations;
@@ -42,8 +39,8 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
     public async Task OnHandle(HashCatalogCommand request, CancellationToken cancellationToken)
     {
-        // Hash operates on the columnar .cdex catalogs. The hashing engine is tree-based, so each
-        // catalog is reconstructed into a mutable tree, hashed, then written back as a fresh .cdex.
+        // Hash operates on the columnar .cdex catalogs straight from their memory-mapped readers (no
+        // pointer tree, issue #40), then rewrites each catalog with its new hashes.
         var cdexFiles = _catalogRepository.GetColumnarFileList(["./"]);
         if (cdexFiles.Count == 0)
         {
@@ -59,10 +56,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
 
     private async Task MainLoop(IList<string> cdexFiles, CancellationToken cancellationToken)
     {
-        _logger.Information("Memory pre-catalog load: {MemoryAllocated}",
-            _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-        var rootEntries = CatalogTreeBuilder.FromColumnarFiles(cdexFiles);
-        _logger.Information("Memory post-catalog load: {MemoryAllocated}",
+        _logger.Information("Memory pre-hash: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // Route hashing progress and status lines to the Spectre console via the message bus.
@@ -74,13 +68,8 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         var stopwatch = Stopwatch.StartNew();
         try
         {
-            await _duplication.ApplyHash(rootEntries).ConfigureAwait(false);
-
-            foreach (var rootEntry in rootEntries)
-            {
-                HashProgressConsole.EnqueueMessage($"Saving catalog {rootEntry.ActualFileName}");
-                ColumnarFormat.Write(EntryStore.Build(rootEntry), rootEntry.ActualFileName);
-            }
+            await ColumnarCatalogHashing.HashAndSave(_duplication, cdexFiles,
+                file => HashProgressConsole.EnqueueMessage($"Saving catalog {file}")).ConfigureAwait(false);
 
             var ts = stopwatch.Elapsed;
             var elapsedTime = string.Create(CultureInfo.InvariantCulture,

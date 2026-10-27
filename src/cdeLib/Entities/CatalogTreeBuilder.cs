@@ -6,11 +6,10 @@ namespace cdeLib.Entities;
 /// <summary>
 /// Reconstructs a mutable <see cref="RootEntry"/> tree from a read-only <see cref="IEntrySource"/>
 /// (an <see cref="Soa.EntryStore"/> or a memory-mapped <see cref="ColumnarCatalogReader"/>). This is
-/// the inverse of <see cref="Soa.EntryStore.Build"/>, used by the batch <c>hash</c>/<c>dupes</c>
-/// commands: they need the existing tree-based hashing engine (two-phase partial→full hashing,
-/// cross-catalog size pairing, parallel-by-volume), so they rebuild a tree from the columnar catalog,
-/// mutate it (hashes), and write a fresh <c>.cdex</c> back. Field values (modified ticks, flags, hash)
-/// are copied verbatim so the rewritten catalog round-trips exactly.
+/// the inverse of <see cref="Soa.EntryStore.Build"/>. The batch <c>hash</c> and <c>dupes</c> commands no
+/// longer use it (they work over the memory-mapped readers by index, issues #39 and #40); it remains for
+/// code that needs a mutable tree, and as the reference those commands are tested against. Field values
+/// (modified ticks, flags, hash) are copied verbatim so a rewritten catalog round-trips exactly.
 /// </summary>
 public static class CatalogTreeBuilder
 {

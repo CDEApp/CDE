@@ -108,6 +108,9 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     private ReadOnlySpan<byte> Bytes(ColumnarFormat.Col col)
         => new(_base + _off[(int)col], (int)_len[(int)col]);
 
+    /// <summary>The raw bytes of one column, for writers that copy a catalog column by column.</summary>
+    internal ReadOnlySpan<byte> ColumnBytes(ColumnarFormat.Col col) => Bytes(col);
+
     private ReadOnlySpan<T> As<T>(ColumnarFormat.Col col) where T : struct
         => MemoryMarshal.Cast<byte, T>(Bytes(col));
 
