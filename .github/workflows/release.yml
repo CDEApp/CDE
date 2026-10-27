@@ -234,10 +234,15 @@ jobs:
       #
       # Brings the rolling draft that Release Drafter has been accumulating from merged PRs up to
       # date for this tag, so any manual edits made to it are kept.
+      #
+      # config-name uses file: (read from the checkout) because on a Windows runner the action builds
+      # the repo path with the OS separator (.github\release-drafter.yml), which the GitHub contents
+      # API answers with a 404. The checkout is the tag, so this is the same file a remote fetch reads.
       - name: Update draft release
         if: ${{ steps.kind.outputs.prerelease == 'false' }}
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
+          config-name: file:release-drafter.yml
           publish: false
           tag: ${{ env.TAG }}
           name: ${{ env.TAG }}
