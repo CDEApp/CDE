@@ -243,8 +243,8 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
                 </button>
                 <span
                   className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}
-                  role="separator"
-                  aria-orientation="vertical"
+                  role="slider"
+                  aria-orientation="horizontal"
                   aria-label={`Resize ${String(h.column.columnDef.header)} column`}
                   aria-valuenow={h.column.getSize()}
                   aria-valuemin={MIN_COLUMN_WIDTH}

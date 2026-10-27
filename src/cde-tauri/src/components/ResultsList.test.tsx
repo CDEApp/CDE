@@ -71,7 +71,7 @@ describe("ResultsList header accessibility", () => {
 
   it("the resize handle is a focusable separator that arrow keys resize", () => {
     setup();
-    const handle = within(nameHeader()).getByRole("separator");
+    const handle = within(nameHeader()).getByRole("slider");
     expect(handle.tabIndex).toBe(0);
     expect(handle.getAttribute("aria-valuenow")).toBe("260");
     fireEvent.keyDown(handle, { key: "ArrowRight" });

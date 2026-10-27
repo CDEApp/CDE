@@ -201,7 +201,7 @@ tbody tr:hover { background: var(--row-hover); }
 .vlist-header > div.sortable:hover { background: var(--row-hover); }
 /* The sort control fills its header cell, so a click anywhere in it sorts and the keyboard can reach it. */
 .vlist-header .sort-btn {
-  all: unset; box-sizing: border-box; display: block; text-align: inherit; width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  all: unset; box-sizing: border-box; display: block; text-align: inherit; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   padding: 3px 8px; margin: -3px -8px; width: calc(100% + 16px); cursor: pointer; user-select: none;
 }
 .vlist-header .sort-btn:focus-visible, .vlist-header .resizer:focus-visible { outline: 2px solid var(--accent, #4daafc); outline-offset: -2px; }

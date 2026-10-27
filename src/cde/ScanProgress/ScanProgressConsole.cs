@@ -84,7 +84,7 @@ public class ScanProgressConsole
         return ScanCount / elapsedSec;
     }
 
-    private void ShowProgress(Stopwatch sw, StatusContext ctx)
+    private static void ShowProgress(Stopwatch sw, StatusContext ctx)
     {
         var defaultNumberFormat = new NumberFormatInfo();
         var scansPerSec = CalculateScansPerSecond(sw);
