@@ -48,10 +48,12 @@ export class CdeApiClient {
 
   async children(
     ref: EntryRef,
-    opts?: { foldersOnly?: boolean; skip?: number; take?: number; sort?: string },
+    /** `hasChildren: false` leaves every `hasChildren` false (skips the server's sub-folder walk). */
+    opts?: { foldersOnly?: boolean; skip?: number; take?: number; sort?: string; hasChildren?: boolean },
   ): Promise<DirectoryNode[]> {
     const q = new URLSearchParams();
     if (opts?.foldersOnly) q.set("foldersOnly", "true");
+    if (opts?.hasChildren === false) q.set("hasChildren", "false");
     if (opts?.skip != null) q.set("skip", String(opts.skip));
     if (opts?.take != null) q.set("take", String(opts.take));
     if (opts?.sort) q.set("sort", opts.sort);

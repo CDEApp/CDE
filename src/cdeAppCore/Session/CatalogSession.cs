@@ -130,7 +130,7 @@ public sealed class CatalogSession : ICatalogSession
     }
 
     public IReadOnlyList<DirectoryNodeDto> GetChildren(EntryRefDto parent, bool foldersOnly = false,
-        int skip = 0, int take = int.MaxValue)
+        int skip = 0, int take = int.MaxValue, bool withHasChildren = true)
     {
         var source = _sources[parent.CatalogId];
         var result = new List<DirectoryNodeDto>();
@@ -150,7 +150,8 @@ public sealed class CatalogSession : ICatalogSession
             if (skipped < skip) { skipped++; continue; }
 
             var name = source.FullName(c);
-            result.Add(ToNodeDto(parent.CatalogId, source, c, name, PathJoin.Child(parentPath, name)));
+            result.Add(ToNodeDto(parent.CatalogId, source, c, name, PathJoin.Child(parentPath, name),
+                withHasChildren));
         }
 
         return result;
@@ -189,7 +190,7 @@ public sealed class CatalogSession : ICatalogSession
     }
 
     private static DirectoryNodeDto ToNodeDto(int catalogId, IEntrySource source, int index,
-        string name, string fullPath)
+        string name, string fullPath, bool withHasChildren = true)
     {
         var isDirectory = source.IsDirectory(index);
         var flags = source.FlagsOf(index);
@@ -199,7 +200,7 @@ public sealed class CatalogSession : ICatalogSession
             Name = name,
             FullPath = fullPath,
             IsDirectory = isDirectory,
-            HasChildren = isDirectory && HasChildDirectory(source, index),
+            HasChildren = withHasChildren && isDirectory && HasChildDirectory(source, index),
             Size = source.SizeOf(index),
             Modified = source.ModifiedOf(index),
             IsModifiedBad = (flags & Flags.ModifiedBad) == Flags.ModifiedBad,

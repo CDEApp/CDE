@@ -124,11 +124,13 @@ app.MapGet("/catalogs", (ICatalogSession session) =>
     });
 });
 
+// hasChildren=false skips the per-folder has-sub-folder walk (a flat listing never shows expanders).
 app.MapGet("/entries/{ref}/children", (string @ref, bool? foldersOnly, int? skip, int? take,
-    string sort, ICatalogSession session) =>
+    string sort, bool? hasChildren, ICatalogSession session) =>
 {
     if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
-    var nodes = session.GetChildren(entryRef, foldersOnly ?? false, skip ?? 0, take ?? int.MaxValue);
+    var nodes = session.GetChildren(entryRef, foldersOnly ?? false, skip ?? 0, take ?? int.MaxValue,
+        hasChildren ?? true);
     return Results.Json(DirectoryNodeSort.Apply(nodes, sort));
 });
 

@@ -35,10 +35,12 @@ public interface ICatalogSession : IDisposable
     /// <summary>
     /// Children of the referenced directory as DTOs. <paramref name="foldersOnly"/> yields only
     /// child directories (tree lazy-expand); otherwise files and directories (directory listing).
-    /// <paramref name="skip"/>/<paramref name="take"/> page the listing.
+    /// <paramref name="skip"/>/<paramref name="take"/> page the listing. With
+    /// <paramref name="withHasChildren"/> false, <see cref="DirectoryNodeDto.HasChildren"/> is left
+    /// false rather than walking each child folder (for listings that never show an expander).
     /// </summary>
     IReadOnlyList<DirectoryNodeDto> GetChildren(EntryRefDto parent, bool foldersOnly = false,
-        int skip = 0, int take = int.MaxValue);
+        int skip = 0, int take = int.MaxValue, bool withHasChildren = true);
 
     /// <summary>The root → entry chain (for view-in-tree and go-to-parent).</summary>
     IReadOnlyList<DirectoryNodeDto> GetPath(EntryRefDto entry);

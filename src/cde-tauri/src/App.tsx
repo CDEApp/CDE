@@ -205,7 +205,7 @@ export default function App() {
     const client = clientRef.current!;
     setSelectedKey(refToString(ref));
     setDirPath(fullPath);
-    setDirNodes(await client.children(ref, { sort: "name" }));
+    setDirNodes(await client.children(ref, { sort: "name", hasChildren: false }));
   }, []);
 
   // drill into a directory row (already in the directory view)
