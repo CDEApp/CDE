@@ -30,6 +30,8 @@ public static class SseQueue
             case SearchResultRow r: w.Write("result"u8, r, AppCoreJsonContext.Default.SearchResultRow); break;
             case SearchProgress p: w.Write("progress"u8, p, AppCoreJsonContext.Default.SearchProgress); break;
             case CatalogLoadProgress l: w.Write("progress"u8, l, AppCoreJsonContext.Default.CatalogLoadProgress); break;
+            case RescanProgress rp: w.Write("progress"u8, rp, AppCoreJsonContext.Default.RescanProgress); break;
+            case RescanError re: w.Write("error"u8, re, AppCoreJsonContext.Default.RescanError); break;
             default: throw new InvalidOperationException($"No SSE mapping for queued item {item?.GetType()}");
         }
     }
@@ -40,12 +42,14 @@ public static class SseQueue
 /// is full the report is not queued but remembered; the newest such report is handed back by
 /// <see cref="TakePending"/> so the final progress (e.g. 100%) still reaches the client before <c>done</c>.
 /// </summary>
-public sealed class SseProgress(ChannelWriter<object> writer) : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>
+public sealed class SseProgress(ChannelWriter<object> writer)
+    : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>, IProgress<RescanProgress>
 {
     private object _pending;
 
     public void Report(SearchProgress value) => Offer(value);
     public void Report(CatalogLoadProgress value) => Offer(value);
+    public void Report(RescanProgress value) => Offer(value);
 
     private void Offer(object value)
     {

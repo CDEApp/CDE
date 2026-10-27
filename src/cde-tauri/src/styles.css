@@ -215,6 +215,21 @@ tbody tr:hover { background: var(--row-hover); }
 /* status bar */
 .statusbar { display: flex; gap: 18px; padding: 3px 10px; border-top: 1px solid var(--border); background: var(--panel); }
 
+/* rescan: status-bar progress, disabled controls, stale-results banner */
+.statusbar .rescan-status { display: inline-flex; align-items: center; gap: 8px; }
+.statusbar .rescan-status button { padding: 0 8px; }
+.menu-dropdown li.disabled { color: #777; }
+.menu-dropdown li.disabled:hover { background: none; color: #777; }
+.tabs button:disabled { color: #777; cursor: default; }
+.results-pane { display: flex; flex-direction: column; height: 100%; min-height: 0; }
+.results-fill { flex: 1; min-height: 0; }
+.stale-banner {
+  display: flex; align-items: center; gap: 10px; padding: 4px 10px;
+  background: #4a3d12; color: #f1e2a8; border-bottom: 1px solid var(--border);
+}
+.stale-banner button { padding: 0 8px; }
+.cataloglist tr.rescanning td { color: #8a8a8a; font-style: italic; }
+
 /* context menu */
 .context-menu {
   position: fixed; z-index: 1000; min-width: 180px; margin: 0; padding: 4px 0;

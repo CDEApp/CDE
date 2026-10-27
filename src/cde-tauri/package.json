@@ -15,6 +15,9 @@
     "bundle-sidecar": "node scripts/bundle-sidecar.mjs"
   },
   "dependencies": {
+    "@mantine/core": "9.7.4",
+    "@mantine/hooks": "9.7.4",
+    "@mantine/notifications": "9.7.4",
     "@tanstack/charts": "^1.1.0",
     "@tauri-apps/api": "^2.12.4",
     "@tauri-apps/plugin-dialog": "^2.8.3",

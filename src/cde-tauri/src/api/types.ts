@@ -98,6 +98,8 @@ export interface CatalogInfo {
   actualFileName: string;
   defaultFileName: string;
   description: string;
+  /** The exact file this catalog was loaded from (a rescan saves over it). */
+  sourcePath: string | null;
   /** Catalog was scanned following junctions (#66); false for older catalogs. */
   followJunctions: boolean;
 }
@@ -119,6 +121,29 @@ export interface CatalogLoadProgress {
   current: number;
   total: number;
   message: string;
+}
+
+export interface RescanProgress {
+  catalogId: number;
+  /** "scanning" | "writing" | "swapping" */
+  phase: string;
+  entriesScanned: number;
+  currentPath: string | null;
+}
+
+export interface RescanResult {
+  catalogId: number;
+  rootPath: string;
+  /** Files + directories in the new catalog (root excluded, as in the status bar total). */
+  entries: number;
+  savedPath: string;
+}
+
+/** Wire shape of a refusal (JSON, status 404/409/422) or an in-stream `error` event. */
+export interface RescanErrorBody {
+  code: "unknown-catalog" | "already-running" | "root-not-accessible" | "rescan-failed" | string;
+  message: string;
+  rootPath?: string | null;
 }
 
 export type ShellAction = "open" | "explore" | "properties" | "custom";

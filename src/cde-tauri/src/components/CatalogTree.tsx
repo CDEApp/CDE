@@ -12,6 +12,8 @@ export interface TreeRoot {
   catalogName: string;
   /** Total size of everything under the root (CatalogInfo.rootSize). */
   size: number;
+  /** Bumped when the catalog is rescanned, so the root remounts and drops its cached children. */
+  generation?: number;
 }
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
@@ -201,7 +203,7 @@ export function CatalogTree({
     <ul className="tree">
       {roots.map((r) => (
         <TreeItem
-          key={refToString(r.ref)}
+          key={`${refToString(r.ref)}@${r.generation ?? 0}`}
           client={client}
           nodeRef={r.ref}
           label={r.label}

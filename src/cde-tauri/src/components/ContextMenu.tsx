@@ -4,6 +4,8 @@ export interface MenuItem {
   label: string;
   onClick: () => void;
   disabled?: boolean;
+  /** Tooltip, e.g. why the item is disabled. */
+  title?: string;
   separator?: boolean;
 }
 
@@ -62,6 +64,7 @@ export function ContextMenu({ menu, onClose }: Props) {
           <li
             key={i}
             className={item.disabled ? "disabled" : ""}
+            title={item.title}
             onClick={() => {
               if (!item.disabled) {
                 item.onClick();
