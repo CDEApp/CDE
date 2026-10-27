@@ -100,6 +100,8 @@ export interface CatalogInfo {
   description: string;
   /** The exact file this catalog was loaded from (a rescan saves over it). */
   sourcePath: string | null;
+  /** Catalog was scanned following junctions (#66); false for older catalogs. */
+  followJunctions: boolean;
 }
 
 export interface CatalogsResponse {

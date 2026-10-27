@@ -24,6 +24,7 @@ public static class CatalogTreeBuilder
             ActualFileName = s.ActualFileName,
             DriveLetterHint = s.DriveLetterHint,
             Description = s.Description,
+            FollowJunctions = s.FollowJunctions,
             AvailSpace = s.AvailSpace,
             TotalSpace = s.TotalSpace,
             ScanStartUtcTicks = s.ScanStartUtcTicks,

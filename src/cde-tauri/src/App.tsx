@@ -34,6 +34,7 @@ import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
 import { catalogName } from "./format";
 import { CatalogTree, TreeRoot } from "./components/CatalogTree";
+import { DEFAULT_SORT, type DirectorySort, nextSort } from "./directorySort";
 import { DirectoryList } from "./components/DirectoryList";
 import { ResultsList } from "./components/ResultsList";
 import { CatalogList } from "./components/CatalogList";
@@ -80,6 +81,8 @@ export default function App() {
   const [expandTo, setExpandTo] = useState<EntryRef[] | undefined>(undefined);
   const [dirPath, setDirPath] = useState("");
   const [dirNodes, setDirNodes] = useState<DirectoryNode[]>([]);
+  // Directory-listing sort: session-only (deliberately not in uiState) and kept across folders.
+  const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
 
   const [results, setResults] = useState<SearchResultRow[]>([]);
   const [busy, setBusy] = useState(false);
@@ -589,6 +592,8 @@ export default function App() {
               <DirectoryList
                 path={dirPath}
                 nodes={dirNodes}
+                sort={dirSort}
+                onSort={(column) => setDirSort((cur) => nextSort(cur, column))}
                 resolveStyle={resolveStyle}
                 onActivate={activateDir}
                 onContextMenu={(n, x, y) =>

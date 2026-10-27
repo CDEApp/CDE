@@ -26,4 +26,7 @@ public sealed class CatalogInfoDto
 
     /// <summary>The exact file this catalog was loaded from (the file a rescan saves over).</summary>
     public string SourcePath { get; set; }
+
+    /// <summary>The catalog was scanned following junctions (#66); false for older catalogs. A rescan reuses it.</summary>
+    public bool FollowJunctions { get; set; }
 }

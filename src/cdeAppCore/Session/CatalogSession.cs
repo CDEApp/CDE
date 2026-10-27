@@ -136,7 +136,8 @@ public sealed partial class CatalogSession : ICatalogSession
                 ActualFileName = s.ActualFileName,
                 DefaultFileName = s.DefaultFileName,
                 Description = s.Description,
-                SourcePath = _slots[i].SourcePath
+                SourcePath = _slots[i].SourcePath,
+                FollowJunctions = s.FollowJunctions
             });
         }
 
