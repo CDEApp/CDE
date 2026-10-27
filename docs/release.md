@@ -16,8 +16,8 @@ of it.
    `release.yml`, which builds, zips and publishes the release.
 
 The version checks are: it is `MAJOR.MINOR.PATCH`, the tag does not exist, it is higher than the
-latest bare tag, and the branch is `develop`. With no `version`, the version comes from the most
-recently created draft release; if that is not higher than the latest tag the run fails and says
+latest stable tag, and the branch is `develop`. With no `version`, the version comes from the most
+recently created draft release; if that is not higher than the latest stable tag the run fails and says
 which tag and which draft disagree. Only one Publish Release run goes at a time.
 
 Pushing a tag such as `2.1.0` by hand also runs `release.yml`, but only if the tagged commit is on
@@ -42,6 +42,58 @@ A pushed tag blocks that version: Publish Release refuses a tag that already exi
   Never delete a tag of a published release.
 
 If the release was already published, there is nothing to re-run.
+
+## Publishing a pre-release
+
+Use a pre-release to put an alpha, beta or release candidate in people's hands before the stable
+release. The version rules (parsing, ordering, the next number) are in
+`src/cde-tauri/scripts/release-version.mjs`, which has unit tests; the workflows call it.
+
+1. Open Actions, choose **Publish Pre-release**, and set "Use workflow from" to `develop`.
+2. Pick the `channel`: `alpha`, `beta` or `rc`.
+3. Leave `base` empty to use the next stable version from the release draft (for example `2.1.0`),
+   or type the version the pre-release leads to.
+4. Run it with **dry-run** ticked (the default). The summary shows the tag it would create.
+5. Run it again with **dry-run** unticked. It creates an annotated tag, pushes it, and calls
+   `release.yml`.
+
+**Tag and numbering.** The tag is `X.Y.Z-<channel>.N`, for example `2.1.0-beta.1`. `N` is the
+highest existing number for that base and channel plus one, starting at 1, so the next run gives
+`2.1.0-beta.2`, and `2.1.0-rc.1` starts again at 1. The base must be higher than the latest stable
+tag, and the tag must be new. Going backwards in channel (an `alpha` after an `rc` for the same
+base) is allowed, with a warning in the log. Order is SemVer: `2.1.0-alpha.1` < `2.1.0-beta.1` <
+`2.1.0-rc.1` < `2.1.0`.
+
+**What it publishes.** `release.yml` builds and zips exactly as for a stable release, named
+`cde-2.1.0-beta.1-win-x64.zip` with its `.sha256`. It then creates a draft GitHub release with the
+zip attached, generated notes (changes since the latest stable tag), marked as a pre-release and
+not "latest", and publishes it as the last step. The .NET exes get the version from MinVer, and the
+Tauri app is stamped with the full pre-release version. The version check compares each exe's
+ProductVersion with the tag (see "Versions in the exes" below).
+
+**Relation to the next stable release.** A pre-release does not touch the Release Drafter draft,
+which keeps collecting merged PRs for the next stable release. Release Drafter ignores published
+pre-releases when it looks for the previous release (`include-pre-releases: false`), so the stable
+notes cover everything since the last stable release, and the stable version is still worked out
+from the labels. When you are ready, run **Publish Release** as usual: `2.1.0` is higher than
+`2.1.0-rc.2` and releases normally. Publish Release compares against stable tags only.
+
+**Re-runs.** If the build for a pre-release tag fails, run **Release** with "Use workflow from"
+`develop` and `tag` set to the pre-release tag (see "If a release run fails"). A leftover draft for
+the tag is replaced. The next Publish Pre-release run would pick the next number instead.
+
+### Versions in the exes
+
+For the tag `2.1.0-beta.1`:
+
+| Exe | ProductVersion | FileVersion |
+|---|---|---|
+| `cde.exe`, `cdewin.exe`, `cdeApi.exe` (MinVer) | `2.1.0-beta.1+<commit>` | `2.1.0.0` |
+| `cde-tauri.exe` (stamped) | `2.1.0-beta.1` | `2.1.0-beta.1` |
+
+A Windows file version is numeric only, so MinVer drops the label there; Tauri writes the stamped
+string as is. `verify-release-versions.ps1` checks ProductVersion (without the `+commit`) against
+the tag, and FileVersion against `X.Y.Z.0` for the MinVer exes and the tag for the Tauri exe.
 
 ## Decisions
 

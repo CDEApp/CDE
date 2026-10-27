@@ -35,8 +35,8 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-  throw "Version '$Version' is not MAJOR.MINOR.PATCH (no 'v' prefix)."
+if ($Version -notmatch '^\d+\.\d+\.\d+(-(alpha|beta|rc)\.\d+)?$') {
+  throw "Version '$Version' is not MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-(alpha|beta|rc).N (no 'v' prefix)."
 }
 
 $name = "cde-$Version-win-x64"
