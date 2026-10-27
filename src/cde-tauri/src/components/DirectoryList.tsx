@@ -7,6 +7,7 @@ import {
   clampWidth,
   type ColumnWidths,
   type DirColumnId,
+  DIR_MIN_WIDTH,
   gridTemplate,
   normalizeColumnWidths,
   totalWidth,
@@ -39,6 +40,8 @@ const COLUMNS: { column: SortColumn; label: string }[] = [
 ];
 
 const ROW_HEIGHT = 22;
+const KEY_STEP = 10;
+const KEY_STEP_LARGE = 50;
 
 /**
  * Per-directory listing (Name / Size / Modified). Double-click a folder drills in. Virtualized: a
@@ -73,6 +76,13 @@ export function DirectoryList({
     };
     window.addEventListener("mousemove", onMove);
     window.addEventListener("mouseup", onUp);
+  }
+
+  // Keyboard resize from the focused handle; the current width is the pinned one, else the default.
+  function nudge(id: DirColumnId, width: number) {
+    const next = { ...widths, [id]: clampWidth(id, width) };
+    setWidths(next);
+    onColumnWidthsChange(next);
   }
 
   // Back to the default width (and, for Name, back to filling the spare width).
@@ -112,8 +122,21 @@ export function DirectoryList({
                     className="resizer"
                     role="separator"
                     aria-orientation="vertical"
-                    title="Drag to resize, double-click to reset"
+                    aria-label={`Resize ${label} column`}
+                    aria-valuenow={widthOf(widths, column)}
+                    aria-valuemin={DIR_MIN_WIDTH[column]}
+                    tabIndex={0}
+                    title="Drag or use the arrow keys to resize, double-click or Home to reset"
                     onMouseDown={(e) => startResize(e, column)}
+                    onKeyDown={(e) => {
+                      const step = e.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
+                      const current = widthOf(widths, column);
+                      if (e.key === "ArrowRight") nudge(column, current + step);
+                      else if (e.key === "ArrowLeft") nudge(column, current - step);
+                      else if (e.key === "Home") resetWidth(column);
+                      else return;
+                      e.preventDefault();
+                    }}
                     onClick={(e) => e.stopPropagation()}
                     onDoubleClick={(e) => {
                       e.stopPropagation();

@@ -78,6 +78,17 @@ describe("DirectoryList column resize", () => {
     expect(header().style.gridTemplateColumns).toBe("minmax(200px, 1fr) 140px 160px");
   });
 
+  it("resizes from the keyboard and resets with Home", () => {
+    const { onColumnWidthsChange } = setup();
+    const resizer = sizeResizer();
+    fireEvent.keyDown(resizer, { key: "ArrowRight" });
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({ size: 110 });
+    fireEvent.keyDown(resizer, { key: "ArrowLeft", shiftKey: true });
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({ size: 60 });
+    fireEvent.keyDown(resizer, { key: "Home" });
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({});
+  });
+
   it("still sorts when a header is clicked", () => {
     const { onSort } = setup();
     fireEvent.click(screen.getByRole("button", { name: /Size/ }));
