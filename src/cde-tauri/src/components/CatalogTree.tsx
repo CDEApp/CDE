@@ -1,14 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import type { StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
-import { changedCatalogs, flattenTree, type TreeRoot, type TreeRow } from "../treeModel";
+import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
 export type { TreeRoot };
 
 const ROW_HEIGHT = 22;
+const TREE_KEYS = new Set(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"]);
+const rowDomId = (key: string) => `tree-row-${key}`;
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -168,9 +170,35 @@ export function CatalogTree({
     pendingScroll.current = null;
   }, [rows, selectedKey, revealKey, revealNonce]);
 
+  // Keyboard navigation (issue #89). Focus stays on the host (rows unmount under virtualization);
+  // the selected row is exposed through aria-activedescendant. A key selects exactly as a click does
+  // (same onSelect), so the listing follows and the existing scroll-on-selection keeps it in view.
+  const onKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.target !== e.currentTarget || e.ctrlKey || e.altKey || e.metaKey || e.shiftKey) return;
+    const nav = nextSelection(rows, selectedKey, e.key);
+    // Tree keys never scroll the pane, even when they do nothing (e.g. Left on a root).
+    if (TREE_KEYS.has(e.key)) e.preventDefault();
+    if (!nav) return;
+    if ("expand" in nav) {
+      const row = rows.find((r) => r.key === nav.expand);
+      if (row) void toggle(row);
+      return;
+    }
+    const row = rows.find((r) => r.key === nav.select);
+    if (row) onSelect(row.ref, row.fullPath);
+  };
+
   return (
     <div
       className="tree-host"
+      role="tree"
+      aria-label="Directory tree"
+      tabIndex={0}
+      aria-activedescendant={selectedKey && rows.some((r) => r.key === selectedKey) ? rowDomId(selectedKey) : undefined}
+      onKeyDown={onKeyDown}
+      onMouseDown={(e) => {
+        if (e.button === 0) e.currentTarget.focus({ preventScroll: true });
+      }}
       onContextMenu={(e) => {
         if (!onBackgroundContextMenu) return;
         e.preventDefault();
@@ -187,6 +215,11 @@ export function CatalogTree({
           return (
             <div
               key={row.key}
+              id={rowDomId(row.key)}
+              role="treeitem"
+              aria-level={row.depth + 1}
+              aria-expanded={row.hasChildren ? row.expanded : undefined}
+              aria-selected={isSelected}
               className={`tree-row${isSelected ? " selected" : ""}`}
               style={{
                 ...style,
