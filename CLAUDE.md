@@ -30,7 +30,8 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 - **cdeAppCore** - Frontend-agnostic application core
   - Target: .NET 10 (no WinForms, no ASP.NET; references only `cdeLib`)
   - Transport-agnostic services + serializable DTOs shared by every frontend: `ICatalogSession`
-    (owned, disposable catalog lifetime over mmap `.cdex`), streamed `ISearchService`
+    (owned, disposable catalog lifetime over mmap `.cdex`; per-catalog rescan "replace", create "add" and the
+    `CatalogDir` working folder, all under one session gate), streamed `ISearchService`
     (`IAsyncEnumerable<SearchResultRow>` + `IProgress<SearchProgress>`), `IShellActions`
     (open/explore/properties + custom commands), and the pure formatting/sorting/validation helpers
     lifted out of the WinForms presenter
