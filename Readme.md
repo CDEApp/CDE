@@ -80,7 +80,7 @@ This application reads and writes a configuration file `cdeWinView.cfg`.
   - size of all the columns in list views
   - values of fields in the search parameters
 
-The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .NET 10 is available with the behavior of the cdeWinView.cfg file as described just above.
+The executable `cdeWin.exe` can be copied around by it self to be used anywhere that .NET 10 is available with the behaviour of the cdeWinView.cfg file as described just above.
 
 #### Custom Shell Commands
 
@@ -122,14 +122,14 @@ Notes:
 
 ### cde-tauri
 
-A second desktop frontend built with Tauri (a Rust shell) hosting a React/TypeScript webview. It
+A second desktop frontend built with Tauri (a Rust shell) hosting a React/TypeScript WebView. It
 talks to a small localhost API (`cdeApi`, ASP.NET / Kestrel) that it bundles and supervises as a
 sidecar process, reaching it over loopback HTTP + Server-Sent Events with a startup handshake token.
 
 Both `cdeWin` and `cde-tauri` are thin frontends over a shared, frontend-agnostic core
 (`cdeAppCore`): catalog session, streamed search, shell actions and serializable DTOs. `cdeWin`
 calls the core in-process (keeping the zero-copy memory-mapped read path); `cde-tauri` calls the
-same services across the `cdeApi` boundary, so the catalog data stays in the sidecar and the webview
+same services across the `cdeApi` boundary, so the catalog data stays in the sidecar and the WebView
 only ever sees small pages of results. The `.cde`/`.cdex` formats and the `cde` CLI are unchanged.
 
 See `src/cde-tauri/README.md` for how to build and run it.
@@ -156,7 +156,7 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 - cde creates a separate catalog file for each file system it scans.
 
 - each catalog file ends with extension ".cdex". Catalogs made by older versions end with ".cde"; `cde migrate` converts them (see [cde migrate](#cde-migrate)).
-- each catalog file created has a file name derived from the drive letter, volume name and path or unc path to the file system.
+- each catalog file created has a file name derived from the drive letter, volume name and path or UNC path to the file system.
   - These canonical names are not enforced, but are used when cde updates hashes on a file system that has an old catalog file available.
   - Renaming files is not a problem if you are not using hashes or don't care about hashes.
   - Duplicating a catalog to a different name will cause cde to load both original and duplicate as it does not check for duplicates catalog file contents.
@@ -187,7 +187,7 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
   - partial hashes are promoted to a hash of the entire file if another file is encountered with the same file length and a matching partial hash.
   - Compatibility note (issue #37): partial hashes made by older versions hashed the wrong block of the file. They are detected by the missing `PartialHashV2` flag, treated as not hashed, and recomputed by the next `cde hash`. Old catalogs stay readable and full hashes are unchanged. Downgrade caveat: an older build does not know the flag and may compare new partial hashes with old ones (missed duplicates), so re-run `cde hash` if you go back to an older build.
 
-- When scanning a file system that you allready have a catalog file for, cde will scan the file system and then load the old catalog file looking for any hashes in the old catalog file that still match on file paths, file names and file sizes to copy to the newly updated catalog file. So the work of hashing a file system with unchanged files should not be lost.
+- When scanning a file system that you already have a catalog file for, cde will scan the file system and then load the old catalog file looking for any hashes in the old catalog file that still match on file paths, file names and file sizes to copy to the newly updated catalog file. So the work of hashing a file system with unchanged files should not be lost.
 
 ### cde Operation
 
@@ -276,11 +276,11 @@ This is the mode for finding files in your catalogs using assorted filter criter
 
 This mode exists to provide file hashes to the Dupes mode.
 
-It hashes files on different file systems in parallel. File systems are determined in a naive manner by a simple grouping of the root Volume or Share Name.
+It hashes files on different file systems in parallel. File systems are determined in a naïve manner by a simple grouping of the root Volume or Share Name.
 
 It will hash files in descending file size order.
 
-If you have Hash running in Phase one and hit Ctrl-C it will actualy move from Phase one of hashing to Phase two where files are checked if they need to be promoted to Full Hash to determine uniqueness.
+If you have Hash running in Phase one and hit Ctrl-C it will actually move from Phase one of hashing to Phase two where files are checked if they need to be promoted to Full Hash to determine uniqueness.
 This second phase can also be interrupted with Ctrl-C.
 By doing this you can limit the hashing of files to try and run Dupes on a subset of the larger files in the cataloged file system.
 
@@ -300,11 +300,11 @@ You can also use the option -minSize to limit the size of Hashed files and Dupes
 [`-minHourAge`](#parameter-options)
 
 This mode looks for duplicate files in all catalog files available.
-It does no hashing itself and is very fast, however it does depend on hash being availabe in the catalog file and will not find any duplicated if no hashing has been done. So you will need to run Hash mode before using Dupes.
+It does no hashing itself and is very fast, however it does depend on hash being available in the catalog file and will not find any duplicated if no hashing has been done. So you will need to run Hash mode before using Dupes.
 
 Dupes does not look at files on the file system at all, so if you run Dupes on a set of catlog files and it reports file duplicate and the file system has changed since the hashing of the catalogs was done you will not get useful results - Be Careful -
 
-Consider using -minHourAge to limit Hash and Dupes work if your are cleanign up file systems.
+Consider using -minHourAge to limit Hash and Dupes work if your are cleaning up file systems.
 
 ### cde dump
 
@@ -350,7 +350,7 @@ For each file converted cde prints the source and destination file names, their 
 |     | `-maxSize {Size}`                                                                                               | Maximum size of file in bytes to include in processing.                                                                                                                                                                                                                                                       |
 |     | `-minHours {Int}`                                                                                               | Minimum age of file in hours to include in processing.                                                                                                                                                                                                                                                        |
 |     | `-minDate {DateTime}`                                                                                           | Minimum date and time inclusive to include in processing.                                                                                                                                                                                                                                                     |
-|     | `-maxDate {DateTime}`                                                                                           | Maxnimum date and time inclusive to include in processing.                                                                                                                                                                                                                                                    |
+|     | `-maxDate {DateTime}`                                                                                           | Maximum date and time inclusive to include in processing.                                                                                                                                                                                                                                                    |
 |     | `-minTime {T}`                                                                                                  | Minimum time inclusive to include in processing. This ignores the date part of file time.                                                                                                                                                                                                                     |
 |     | `-maxTime {T}`                                                                                                  | Maximum time inclusive to include in processing. This ignores the date part of file time.                                                                                                                                                                                                                     |
 |     | `-maxResults {Int}`                                                                                             | Maximum number of results returned by cde.                                                                                                                                                                                                                                                                    |
@@ -365,7 +365,7 @@ For each file converted cde prints the source and destination file names, their 
 
 - Month field is an integer 1-12 or short Month Name
 - There is no need to fill out all the fields of the date format to get a valid value.
-- You may just specify from the beggining the parts you need.
+- You may just specify from the beginning the parts you need.
 - The `T` between date and time is required and must be upper case.
 
 Valid Examples:
