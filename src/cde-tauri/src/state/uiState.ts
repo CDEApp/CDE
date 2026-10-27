@@ -9,6 +9,8 @@ export interface UiState {
   limitResultCount?: number;
   lastView?: string;
   catalogDir?: string;
+  /** The last root folder picked for File > New Catalog… (the picker starts there). */
+  lastNewCatalogRoot?: string;
   treePaneWidth?: number;
   filtersExpanded?: boolean;
   /** Search-results column ids in display order. */

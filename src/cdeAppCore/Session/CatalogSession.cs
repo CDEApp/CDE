@@ -66,12 +66,16 @@ public sealed partial class CatalogSession : ICatalogSession
             if (_loading) throw new InvalidOperationException("A catalog load is already running.");
             if (_slots.Any(s => s.IsRescanning))
                 throw new InvalidOperationException("Cannot reload while a catalog is being rescanned.");
+            if (_creating > 0)
+                throw new InvalidOperationException("Cannot reload while a catalog is being created.");
             _loading = true;
         }
 
         try
         {
             await LoadCoreAsync(configPath, progress, cancellationToken);
+            // Only a folder that actually loaded becomes the working folder; a failed load keeps the previous one.
+            lock (_gate) RememberCatalogDir(configPath);
         }
         finally
         {

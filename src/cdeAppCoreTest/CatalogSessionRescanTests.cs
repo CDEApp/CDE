@@ -203,6 +203,26 @@ public class CatalogSessionRescanTests
     }
 
     [Test]
+    public async Task A_cancel_that_surfaces_wrapped_from_the_scan_is_still_a_cancellation()
+    {
+        var data = MakeData("d1", "a.txt");
+        var path = ScanToCdex(data, "one.cdex");
+        var s = LoadCdex(path);
+        using var cts = new CancellationTokenSource();
+        var progress = new SyncProgress(p =>
+        {
+            if (p.Phase != "scanning") return;
+            cts.Cancel();
+            throw new AggregateException(new InvalidOperationException("wrapped by the traversal"));
+        });
+
+        await Assert.ThrowsAsync<OperationCanceledException>(() => s.RescanAsync(0, progress, cts.Token));
+
+        Assert.That(Directory.GetFiles(_cat), Is.EqualTo(new[] { path }).IgnoreCase);
+        Assert.That(s.IsRescanning(0), Is.False);
+    }
+
+    [Test]
     public async Task Cancelled_rescan_leaves_old_file_and_data_and_no_tmp()
     {
         var data = MakeData("d1", "a.txt");

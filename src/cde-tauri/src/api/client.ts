@@ -12,6 +12,12 @@ import {
   RescanProgress,
   RescanResult,
   TreemapResponse,
+  CreateCatalogRequest,
+  CreateErrorBody,
+  CreatePreflightRequest,
+  CreatePreflightResult,
+  CreateProgress,
+  CreateResult,
 } from "./types";
 
 export interface SearchHandlers {
@@ -29,6 +35,11 @@ export interface ReloadHandlers {
 
 export interface RescanHandlers {
   onProgress?: (p: RescanProgress) => void;
+  signal?: AbortSignal;
+}
+
+export interface CreateHandlers {
+  onProgress?: (p: CreateProgress) => void;
   signal?: AbortSignal;
 }
 
@@ -55,6 +66,24 @@ export class RescanFailure extends Error {
   get rootNotAccessible(): boolean {
     return this.error.code === "root-not-accessible";
   }
+}
+
+/** A create that did not complete: refused up front, or failed mid-way. Nothing was written or added. */
+export class CreateFailure extends Error {
+  constructor(readonly error: CreateErrorBody) {
+    super(error.message);
+    this.name = "CreateFailure";
+  }
+}
+
+function parseCreateRefusal(e: ApiError): CreateErrorBody {
+  try {
+    const parsed = JSON.parse(e.body);
+    if (parsed && typeof parsed.code === "string") return parsed as CreateErrorBody;
+  } catch {
+    /* not JSON: fall through */
+  }
+  return { code: "create-failed", message: e.body || `create: ${e.status}` };
 }
 
 function parseRescanRefusal(e: ApiError): RescanErrorBody {
@@ -228,6 +257,52 @@ export class CdeApiClient {
       throw e;
     }
     if (failure) throw new RescanFailure(failure);
+    return result;
+  }
+
+  /**
+   * Everything the New Catalog dialog needs before Create: cde's default file name for the root, the working
+   * folder, whether the target exists / is a loaded catalog, writability, same-root catalogs.
+   */
+  async preflightCreate(req: CreatePreflightRequest, signal?: AbortSignal): Promise<CreatePreflightResult> {
+    const r = await fetch(`${this.baseUrl}/catalogs/preflight`, {
+      method: "POST",
+      headers: this.headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(req),
+      signal,
+    });
+    if (!r.ok) throw new Error(`catalogs/preflight: ${r.status} ${await r.text()}`);
+    return r.json();
+  }
+
+  /**
+   * Scan a new root into a new catalog in the working folder. Resolves with the result on `done`, or null when
+   * aborted (the sidecar cancels and leaves no file and no session change, unless the cancel lost the race with the
+   * final rename). Throws {@link CreateFailure} for a refusal or an in-stream `error` event.
+   */
+  async createCatalog(req: CreateCatalogRequest, handlers: CreateHandlers): Promise<CreateResult | null> {
+    let result = null as CreateResult | null;
+    let failure = null as CreateErrorBody | null;
+    try {
+      await this.streamSse(
+        `${this.baseUrl}/catalogs`,
+        {
+          method: "POST",
+          headers: this.headers({ "Content-Type": "application/json" }),
+          body: JSON.stringify(req),
+          signal: handlers.signal,
+        },
+        (event, data) => {
+          if (event === "progress") handlers.onProgress?.(JSON.parse(data));
+          else if (event === "done") result = JSON.parse(data);
+          else if (event === "error") failure = JSON.parse(data);
+        },
+      );
+    } catch (e) {
+      if (e instanceof ApiError) throw new CreateFailure(parseCreateRefusal(e));
+      throw e;
+    }
+    if (failure) throw new CreateFailure(failure);
     return result;
   }
 

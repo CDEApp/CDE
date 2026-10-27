@@ -52,6 +52,12 @@ public sealed partial class CatalogSession
             return await Task.Run(() => RescanCore(slot, catalogId, progress, cancellationToken), CancellationToken.None)
                 .ConfigureAwait(false);
         }
+        catch (Exception ex) when (cancellationToken.IsCancellationRequested && ex is not OperationCanceledException)
+        {
+            // A cancel raised in the scan callback can arrive wrapped (traversal workers); the swap restores the
+            // old files on any failure, so this is a cancellation, not a rescan failure.
+            throw new OperationCanceledException(cancellationToken);
+        }
         finally
         {
             slot.EndRescan();
@@ -230,7 +236,11 @@ public sealed partial class CatalogSession
     private void ReplaceSource(CatalogSlot slot, int catalogId, IEntrySource source, string path)
     {
         slot.Replace(source, path);
-        _roots = _roots.Select((r, i) => i == catalogId ? new EntryRef(source, 0) : r).ToList();
+        // Under the gate: a create appending a catalog rebuilds _roots too, and one must not lose the other's update.
+        lock (_gate)
+        {
+            _roots = _roots.Select((r, i) => i == catalogId ? new EntryRef(source, 0) : r).ToList();
+        }
     }
 
     // Exists and can be listed: a drive that is unplugged, a moved folder or a denied folder all fail here.

@@ -73,6 +73,29 @@ public interface ICatalogSession : IDisposable
     /// <summary>Whether any catalog is being rescanned (reload is refused meanwhile).</summary>
     bool AnyRescanning { get; }
 
+    /// <summary>
+    /// The working folder: the folder catalogs were last loaded from (full path), where new catalogs are written.
+    /// Null until a load has been requested. The single source of truth for both preflight and create.
+    /// </summary>
+    string CatalogDir { get; }
+
+    /// <summary>Whether any background catalog job (a rescan or a create) is running; a reload is refused meanwhile.</summary>
+    bool AnyCatalogJobRunning { get; }
+
+    /// <summary>Everything the New Catalog dialog needs before Create: default name, folder, collisions. Never throws.</summary>
+    CreatePreflightResult PreflightCreate(CreatePreflightRequest request);
+
+    /// <summary>
+    /// Scan <see cref="CreateCatalogRequest.RootPath"/> into a new <c>.cdex</c> in <see cref="CatalogDir"/> and add it
+    /// to the session under a new <c>CatalogId</c> (existing ids are unchanged). The file is written as <c>.tmp</c> and
+    /// renamed without overwrite; a failure or cancellation leaves no file and no session change. Throws
+    /// <see cref="InvalidCatalogFileNameException"/>, <see cref="CatalogFileExistsException"/>,
+    /// <see cref="CatalogFolderNotWritableException"/>, <see cref="NoCatalogDirException"/> or
+    /// <see cref="RootNotAccessibleException"/> before scanning, and <see cref="InvalidOperationException"/> during a load.
+    /// </summary>
+    Task<CreateCatalogResult> CreateCatalogAsync(CreateCatalogRequest request, IProgress<CreateProgress> progress = null,
+        CancellationToken cancellationToken = default);
+
     /// <summary>Cheap checks before a rescan: catalog exists, none already running, root path reachable.</summary>
     RescanPreflight PreflightRescan(int catalogId);
 

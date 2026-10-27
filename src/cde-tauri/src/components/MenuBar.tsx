@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 interface Props {
+  onNewCatalog: () => void;
   onOpenFolder: () => void;
   onReload: () => void;
   onExit: () => void;
@@ -8,8 +9,8 @@ interface Props {
   loadDisabledReason?: string | null;
 }
 
-/** A lightweight native-style menu bar. "File ▸ Open Folder…" picks a catalog directory. */
-export function MenuBar({ onOpenFolder, onReload, onExit, loadDisabledReason }: Props) {
+/** A lightweight native-style menu bar. "File ▸ New Catalog…" scans a folder into a new catalog; "Open Folder…" picks a catalog directory. */
+export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, loadDisabledReason }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -56,6 +57,15 @@ export function MenuBar({ onOpenFolder, onReload, onExit, loadDisabledReason }: 
       </button>
       {open && (
         <ul className="menu-dropdown">
+          <li
+            title="Scan a folder into a new catalog file in the catalog folder"
+            onClick={() => {
+              setOpen(false);
+              onNewCatalog();
+            }}
+          >
+            New Catalog…
+          </li>
           {loadItem("Open Folder…", onOpenFolder)}
           {loadItem("Reload Catalogs", onReload)}
           <li className="menu-separator" role="separator" />

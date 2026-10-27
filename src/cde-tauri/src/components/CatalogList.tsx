@@ -4,15 +4,24 @@ import { toHRString } from "../format";
 interface Props {
   catalogs: CatalogInfo[];
   onActivate: (catalog: CatalogInfo) => void;
+  /** File > New Catalog… from the tab itself. */
+  onNewCatalog?: () => void;
   onContextMenu?: (catalog: CatalogInfo, x: number, y: number) => void;
   /** Catalog ids being rescanned right now (their rows are dimmed). */
   rescanningIds?: ReadonlySet<number>;
 }
 
 /** Catalog list view. Double-click a catalog to make it the directory-tree root. */
-export function CatalogList({ catalogs, onActivate, onContextMenu, rescanningIds }: Props) {
+export function CatalogList({ catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds }: Props) {
   return (
     <div className="grid cataloglist">
+      {onNewCatalog && (
+        <div className="cataloglist-toolbar">
+          <button onClick={onNewCatalog} title="Scan a folder into a new catalog file">
+            New Catalog
+          </button>
+        </div>
+      )}
       <table>
         <thead>
           <tr>

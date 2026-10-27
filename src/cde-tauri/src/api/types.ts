@@ -106,6 +106,8 @@ export interface CatalogInfo {
 
 export interface CatalogsResponse {
   catalogs: CatalogInfo[];
+  /** The working folder: where catalogs were last loaded from and new ones are written; null before any load. */
+  catalogDir: string | null;
   catalogsLoaded: number;
   totalEntries: number;
   memoryBytes: number;
@@ -146,7 +148,78 @@ export interface RescanErrorBody {
   rootPath?: string | null;
 }
 
-export type ShellAction = "open" | "explore" | "properties" | "custom";
+// ---------------------------------------------------------------- new catalog (#82)
+
+/** Body of POST /catalogs/preflight. */
+export interface CreatePreflightRequest {
+  rootPath: string;
+  /** The name being typed (no extension); omit to check the default name. */
+  fileName?: string | null;
+}
+
+/** What the New Catalog dialog needs before Create (POST /catalogs/preflight). */
+export interface CreatePreflightResult {
+  /** cde's default name for the root, without extension. */
+  defaultFileName: string | null;
+  /** The name that was checked (requested, else default), without extension. */
+  fileName: string;
+  fileNameError: string | null;
+  /** The working folder new catalogs are written to; null before any load. */
+  catalogDir: string | null;
+  /** Full path the catalog would be written to; null if not computable. */
+  targetPath: string | null;
+  exists: boolean;
+  /** When `exists`: the loaded catalog backed by that file (Rescan existing), else null. */
+  existingCatalogId: number | null;
+  writable: boolean;
+  sameRootCatalogIds: number[];
+  rootAccessible: boolean;
+  /** A catalog load is running. */
+  busy: boolean;
+}
+
+/** Body of POST /catalogs. */
+export interface CreateCatalogRequest {
+  rootPath: string;
+  /** Without extension; `.cdex` is appended by the sidecar. */
+  fileName: string;
+  description: string;
+  followJunctions: boolean;
+}
+
+export interface CreateProgress {
+  /** "scanning" | "writing" | "saving" */
+  phase: string;
+  entriesScanned: number;
+  currentPath: string | null;
+}
+
+export interface CreateResult {
+  /** The new catalog's id; existing catalogs keep theirs. */
+  catalogId: number;
+  rootPath: string;
+  entries: number;
+  savedPath: string;
+}
+
+/** Wire shape of a create refusal (JSON, 400/409/422) or an in-stream `error` event. */
+export interface CreateErrorBody {
+  code:
+    | "invalid-file-name"
+    | "busy"
+    | "file-exists"
+    | "no-catalog-dir"
+    | "root-not-accessible"
+    | "folder-not-writable"
+    | "create-failed"
+    | string;
+  message: string;
+  rootPath?: string | null;
+  /** For `file-exists`: the loaded catalog backed by that file, if any. */
+  existingCatalogId?: number | null;
+}
+
+export type ShellAction ="open" | "explore" | "properties" | "custom";
 
 export interface ShellRequest {
   ref: string;
