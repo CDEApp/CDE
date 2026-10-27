@@ -3,6 +3,7 @@
 # cde - Catalog Directory Entries
 
 [![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=CDEApp_CDE&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=CDEApp_CDE)
+[![codecov](https://codecov.io/gh/CDEApp/CDE/graph/badge.svg)](https://codecov.io/gh/CDEApp/CDE)
 
 ## Introduction
 
