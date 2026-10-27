@@ -126,6 +126,5 @@ public interface ICDEWinForm : IView
 
     void MessageBox(string message);
     void AboutDialog();
-    void AddLine(string format, params object[] args);
     ICommonEntry GetSelectedTreeItem();
 }

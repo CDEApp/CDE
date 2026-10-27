@@ -156,6 +156,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         AutoWaitCursor.MainWindowHandle = Handle;
         AutoWaitCursor.Start();
         RegisterClientEvents();
+        AttachLogSink();
     }
 
     public void CleanUp()
@@ -706,9 +707,51 @@ public partial class CDEWinForm : Form, ICDEWinForm
         MyAboutBox.MyShow(this, _config);
     }
 
-    public void AddLine(string format, params object[] args)
+    private const int MaxLogTextLines = InAppLogSink.DefaultMaxLines;
+
+    private void AttachLogSink()
     {
-        tbLog.AppendText(string.Format(format, args) + Environment.NewLine);
+        LoggingBootstrap.LogSink.Attach(() =>
+        {
+            // Called from any logging thread: never block, never touch the control directly.
+            try
+            {
+                if (!IsDisposed && IsHandleCreated)
+                {
+                    BeginInvoke(new Action(DrainLogToTextBox));
+                }
+            }
+            catch (ObjectDisposedException)
+            {
+            }
+            catch (InvalidOperationException)
+            {
+            }
+        });
+        FormClosed += (_, _) => LoggingBootstrap.LogSink.Detach();
+    }
+
+    private void DrainLogToTextBox()
+    {
+        if (IsDisposed)
+        {
+            return;
+        }
+
+        var lines = LoggingBootstrap.LogSink.Drain();
+        if (lines.Length == 0)
+        {
+            return;
+        }
+
+        tbLog.AppendText(string.Join(Environment.NewLine, lines) + Environment.NewLine);
+        if (tbLog.Lines.Length > MaxLogTextLines + 1)
+        {
+            var keep = tbLog.Lines[^(MaxLogTextLines + 1)..];
+            tbLog.Text = string.Join(Environment.NewLine, keep);
+            tbLog.SelectionStart = tbLog.TextLength;
+            tbLog.ScrollToCaret();
+        }
     }
 
     private void CDEWinFormShown(object sender, EventArgs e)
