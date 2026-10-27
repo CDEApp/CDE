@@ -76,7 +76,9 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
   const [fontsVersion, setFontsVersion] = useState(0);
   useEffect(() => {
     let live = true;
-    document.fonts?.ready.then(() => live && setFontsVersion((v) => v + 1));
+    void document.fonts?.ready.then(() => {
+      if (live) setFontsVersion((v) => v + 1);
+    });
     return () => {
       live = false;
     };
