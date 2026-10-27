@@ -1,0 +1,137 @@
+name: Publish Pre-release
+
+# One-click pre-release (alpha, beta or rc) of cde, cdewin and cde-tauri:
+#
+#   1. checks the branch is develop and resolves the base version (the base input, or the next
+#      stable version from the newest release draft)
+#   2. works out the tag, X.Y.Z-<channel>.N, where N is the next free number for that base and
+#      channel, and checks the base is higher than the latest stable tag and the tag is new
+#   3. tags the commit (annotated, bare tag such as 2.1.0-beta.1, no "v") and pushes the tag
+#   4. calls release.yml, which builds, zips and publishes a GitHub pre-release
+#
+# Run it from the Actions tab with "Use workflow from" set to develop. The dry run is the default:
+# it does steps 1 and 2 and writes a summary, and changes nothing.
+#
+# A pre-release is never "latest" and does not use the Release Drafter draft, which stays for the
+# next stable release. The version rules live in src/cde-tauri/scripts/release-version.mjs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      channel:
+        description: 'Pre-release channel'
+        required: true
+        default: beta
+        type: choice
+        options:
+          - alpha
+          - beta
+          - rc
+      base:
+        description: 'Base version the pre-release leads to, e.g. 2.1.0. Leave empty to use the next stable version from the release draft.'
+        required: false
+        type: string
+      dry-run:
+        description: 'Dry run: show the tag that would be created, without tagging or publishing'
+        required: false
+        default: true
+        type: boolean
+
+permissions: {}
+
+# The same group as Publish Release, so a stable and a pre-release cannot race. A queued run waits.
+concurrency:
+  group: release-publish
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    name: Prepare pre-release
+    runs-on: ubuntu-latest
+    # contents: write both to read the draft release and to push the tag.
+    permissions:
+      contents: write
+    outputs:
+      tag: ${{ steps.resolve.outputs.tag }}
+
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    steps:
+      - name: Check branch
+        run: |
+          if [ "$GITHUB_REF_NAME" != "develop" ]; then
+            echo "::error::Releases must be published from develop (got $GITHUB_REF_NAME)"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Resolve tag
+        id: resolve
+        # Inputs are passed through the environment, never interpolated into the script: a
+        # workflow_dispatch input is attacker-controlled text.
+        env:
+          INPUT_BASE: ${{ inputs.base }}
+          INPUT_CHANNEL: ${{ inputs.channel }}
+        run: |
+          cli=src/cde-tauri/scripts/release-version.mjs
+          git tag --list > "$RUNNER_TEMP/tags.txt"
+
+          base="$INPUT_BASE"
+          if [ -z "$base" ]; then
+            # The newest stable-named draft across all pages: the one Release Drafter keeps for the
+            # next stable release (a leftover pre-release draft is skipped).
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+            base=$(node "$cli" latest-draft --releases-file "$RUNNER_TEMP/releases.json")
+            if [ -z "$base" ]; then
+              echo "::error::No release draft found - pass an explicit base input"
+              exit 1
+            fi
+            echo "Base from release draft: $base"
+          fi
+
+          tag=$(node "$cli" next-prerelease --base "$base" --channel "$INPUT_CHANNEL" --tags-file "$RUNNER_TEMP/tags.txt")
+          node "$cli" validate-prerelease --tag "$tag" --tags-file "$RUNNER_TEMP/tags.txt"
+          latest=$(node "$cli" latest-stable --tags-file "$RUNNER_TEMP/tags.txt")
+
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Pre-releasing $tag (latest stable tag: ${latest:-none})"
+
+      - name: Dry run summary
+        if: ${{ inputs.dry-run }}
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          {
+            echo "### Dry run - nothing was tagged or published"
+            echo
+            echo "Would tag **$(git rev-parse --short HEAD)** on develop as **$TAG** and publish it as a pre-release."
+            echo
+            echo "Re-run with **dry-run** unchecked to tag and publish."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Tag
+        if: ${{ !inputs.dry-run }}
+        env:
+          TAG: ${{ steps.resolve.outputs.tag }}
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git tag -a "$TAG" -m "Pre-release $TAG"
+          git push origin "$TAG"
+
+  release:
+    name: Release
+    needs: prepare
+    if: ${{ !inputs.dry-run }}
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    # A called workflow gets at most what its caller grants.
+    permissions:
+      contents: write
+      pull-requests: read

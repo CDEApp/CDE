@@ -35,8 +35,12 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-if ($Version -notmatch '^\d+\.\d+\.\d+$') {
-  throw "Version '$Version' is not MAJOR.MINOR.PATCH (no 'v' prefix)."
+# The version rules live in release-version.mjs (tested); ask it, so there is one pattern. It exits
+# non-zero, and prints why, for anything that is not X.Y.Z or X.Y.Z-(alpha|beta|rc).N.
+$versionModule = Join-Path $PSScriptRoot '../../src/cde-tauri/scripts/release-version.mjs'
+& node $versionModule tag-kind --tag $Version | Out-Null
+if ($LASTEXITCODE -ne 0) {
+  throw "Version '$Version' is not MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-(alpha|beta|rc).N (no 'v' prefix)."
 }
 
 $name = "cde-$Version-win-x64"

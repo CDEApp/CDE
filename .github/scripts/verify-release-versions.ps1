@@ -7,8 +7,10 @@
   as 1.7.2-alpha.0.354) or the Tauri version was not stamped (it would still say 0.1.0). Either way
   the zip must not be published.
 
+  The version is the tag: 2.1.0 or a pre-release such as 2.1.0-beta.1.
+
   .NET apps (MinVer): ProductVersion is "<version>" optionally followed by "+<commit>", and
-  FileVersion is "<version>.0".
+  FileVersion is the numeric "X.Y.Z.0" (a Windows file version cannot carry a pre-release label).
   Tauri app: Tauri writes the version from tauri.conf.json into both fields as "<version>".
 
 .EXAMPLE
@@ -30,6 +32,9 @@ $checks = @(
   @{ Path = 'cde-tauri/cde-tauri.exe'; Kind = 'Tauri' }
 )
 
+# 2.1.0-beta.1 -> 2.1.0
+$numeric = ($Version -split '-')[0]
+
 $failed = $false
 foreach ($check in $checks) {
   $file = Join-Path $Root $check.Path
@@ -44,8 +49,9 @@ foreach ($check in $checks) {
   $fileVersion = [string] $info.FileVersion
 
   if ($check.Kind -eq 'MinVer') {
+    # A pre-release tag (2.1.0-beta.1) is in ProductVersion in full; FileVersion is numeric only.
     $okProduct = ($product -split '\+')[0] -eq $Version
-    $okFile = $fileVersion -eq "$Version.0"
+    $okFile = $fileVersion -eq "$numeric.0"
   }
   else {
     $okProduct = $product -eq $Version

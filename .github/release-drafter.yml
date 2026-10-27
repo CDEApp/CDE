@@ -2,6 +2,12 @@ name-template: '$RESOLVED_VERSION'
 # Bare tags, no "v" prefix, matching the existing 1.7.1 and 2.0.0 tags and MinVer's default.
 tag-template: '$RESOLVED_VERSION'
 
+# The draft is for the next stable release. When Release Drafter looks for the last published
+# release to scan changes up to, a published pre-release (2.1.0-beta.1) must not count, or the
+# next stable's notes would start at the beta and its version would be computed from it. This is
+# the v7.7.0 default (`include-pre-releases`: "Default false"); it is spelled out so it stays so.
+include-pre-releases: false
+
 # Categories double as version resolvers: `semver-increment` on a category bumps that part of the
 # version when any PR lands in it. The highest matching increment wins, and the trailing
 # `type: version-resolver` entry with no `when` is the fallback for anything uncategorised.

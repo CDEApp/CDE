@@ -1,13 +1,22 @@
 import { describe, expect, it } from "vitest";
+import { parseVersion } from "./release-version.mjs";
 import { assertVersion, stampCargoLock, stampCargoToml, stampJson } from "./stamp-version.mjs";
 
 describe("assertVersion", () => {
-  it.each(["2.1.0", "0.0.1", "10.20.30", "2.1.0-rc.1"])("accepts %s", (v) => {
+  it.each(["2.1.0", "0.0.1", "10.20.30", "2.1.0-rc.1", "2.1.0-beta.12"])("accepts %s", (v) => {
     expect(assertVersion(v)).toBe(v);
   });
   it.each(["v2.1.0", "2.1", "2.1.0.1", "", "01.2.3", undefined])("rejects %s", (v) => {
     expect(() => assertVersion(v)).toThrow();
   });
+  // The rules are release-version.mjs's: nothing it rejects may be stamped.
+  it.each(["2.1.0-beta.0", "2.1.0-gamma.1", "2.1.0-beta", "2.1.0-rc.1.2", "2.1.0-1", "2.1.0+build"])(
+    "rejects %s, as release-version does",
+    (v) => {
+      expect(parseVersion(v)).toBeNull();
+      expect(() => assertVersion(v)).toThrow();
+    },
+  );
 });
 
 describe("stampJson", () => {
