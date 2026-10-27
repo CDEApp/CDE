@@ -5,10 +5,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using cdeLib.Catalog.FlatBuffers;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Serialization;
-using FlatSharp;
 using MessagePack;
 using ProtoBuf;
 using Serilog;
@@ -52,8 +52,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
 
                     using (Operation.Time("Deserialize"))
                     {
-                        var serializer = new FlatBufferSerializer(new FlatBufferSerializerOptions());
-                        return serializer.Parse<RootEntry>(bytes.AsMemory());
+                        return FlatBufferCatalogSerializer.Deserialize(bytes);
                     }
                 case SerializerProtocol.MessagePack:
                     return MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
@@ -84,9 +83,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     var bytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
                     using (Operation.Time("Deserialize"))
                     {
-                        var serializer = new FlatBufferSerializer(
-                            new FlatBufferSerializerOptions());
-                        return serializer.Parse<RootEntry>(bytes);
+                        return FlatBufferCatalogSerializer.Deserialize(bytes);
                     }
                 case SerializerProtocol.MessagePack:
                     // Read file into memory first (async I/O), then deserialize on thread pool.
@@ -268,10 +265,8 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
 
                 break;
             case SerializerProtocol.Flatbuffers:
-                var maxBytesNeeded = FlatBufferSerializer.Default.GetMaxSize(rootEntry);
-                var buffer = new byte[maxBytesNeeded];
-                FlatBufferSerializer.Default.Serialize(rootEntry, buffer);
-                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName, buffer);
+                await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName,
+                    FlatBufferCatalogSerializer.Serialize(rootEntry));
                 break;
             case SerializerProtocol.MessagePack:
                 // Use ArrayBufferWriter to avoid intermediate byte[] allocation

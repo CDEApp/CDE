@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using cdeLib.Infrastructure;
-using FlatSharp.Attributes;
 using MessagePack;
 using ProtoBuf;
 
@@ -14,17 +13,14 @@ namespace cdeLib.Entities;
 /// </summary>
 [DebuggerDisplay("HashA = {HashA}, HashB = {HashB}")]
 [ProtoContract]
-[FlatBufferStruct]
 [MessagePackObject]
 public readonly record struct Hash16
 {
     [ProtoMember(1, IsRequired = true)]
-    [FlatBufferItem(0)]
     [Key(0)]
     public ulong HashA { get; init; } // first 8 bytes
 
     [ProtoMember(2, IsRequired = true)]
-    [FlatBufferItem(1)]
     [Key(1)]
     public ulong HashB { get; init; } // last 8 bytes
 

@@ -11,7 +11,10 @@
     <PackageReference Include="Autofac" Version="9.3.4" />
     <PackageReference Include="AutofacSerilogIntegration" Version="5.0.0" />
     <PackageReference Include="Dawn.Guard" Version="1.12.0" />
-    <PackageReference Include="FlatSharp" Version="6.3.5" />
+    <PackageReference Include="FlatSharp.Compiler" Version="7.9.0">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
     <PackageReference Include="FlatSharp.Runtime" Version="7.9.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageReference Include="SlimMessageBus" Version="3.0.0" />
@@ -35,6 +38,7 @@
 
   <ItemGroup>
     <InternalsVisibleTo Include="cdeLibTest" />
+    <FlatSharpSchema Include="Catalog\FlatBuffers\Catalog.fbs" />
   </ItemGroup>
 
 </Project>

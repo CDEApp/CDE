@@ -129,7 +129,10 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
         with:
-          dotnet-version: 10.0.x
+          # 9.0.x runs the FlatSharp schema compiler (its newest build targets net9.0).
+          dotnet-version: |
+            9.0.x
+            10.0.x
 
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable

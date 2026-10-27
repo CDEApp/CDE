@@ -105,6 +105,52 @@ internal class SerializeDataModelTest
         Assert.That(hashed.Hash, Is.EqualTo(de2a.Hash));
     }
 
+    // The FlatBuffers protocol maps the tree to FlatSharp 7 types generated from Catalog.fbs, so a
+    // field missed by the mapper would be silently dropped.
+    [Test]
+    public void FlatBuffers_RoundTrip_PreservesTreeHashesAndRootFields()
+    {
+        re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
+        de2a.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        de2a.IsPartialHash = true;
+        de2a.Size = 1234;
+        de2a.ModifiedTicks = 638_000_000_000_000_000;
+        re1.Description = "desc";
+        re1.VolumeName = "vol";
+        re1.DefaultFileName = "C-vol-C_.cde";
+        re1.PathsWithUnauthorisedExceptions = ["C:\\denied"];
+        re1.AvailSpace = 10;
+        re1.TotalSpace = 20;
+        re1.ScanStartUtcTicks = 30;
+        re1.ScanEndUtcTicks = 40;
+
+        var bytes = cdeLib.Catalog.FlatBuffers.FlatBufferCatalogSerializer.Serialize(re1);
+        var re2 = cdeLib.Catalog.FlatBuffers.FlatBufferCatalogSerializer.Deserialize(bytes);
+
+        Assert.That(re1.SameTree(re2), Is.True, TreeDuplicate.LastMessage);
+        Assert.That(re2.Description, Is.EqualTo("desc"));
+        Assert.That(re2.VolumeName, Is.EqualTo("vol"));
+        Assert.That(re2.DefaultFileName, Is.EqualTo("C-vol-C_.cde"));
+        Assert.That(re2.PathsWithUnauthorisedExceptions, Is.EqualTo(new[] { "C:\\denied" }));
+        Assert.That(re2.AvailSpace, Is.EqualTo(10));
+        Assert.That(re2.TotalSpace, Is.EqualTo(20));
+        Assert.That(re2.ScanStartUtcTicks, Is.EqualTo(30));
+        Assert.That(re2.ScanEndUtcTicks, Is.EqualTo(40));
+        Assert.That(re2.Version, Is.EqualTo(re1.Version));
+
+        var hashed = re2.Children.SelectMany(c => (c.Children ?? []).Prepend(c))
+            .Single(c => c.Path == de2a.Path);
+        Assert.That(hashed.IsHashDone, Is.True);
+        Assert.That(hashed.IsPartialHash, Is.True);
+        Assert.That(hashed.Hash, Is.EqualTo(de2a.Hash));
+        Assert.That(hashed.Size, Is.EqualTo(1234));
+        Assert.That(hashed.ModifiedTicks, Is.EqualTo(638_000_000_000_000_000));
+
+        // A file has no child list; it must not come back as an empty one.
+        var file = re2.Children.SelectMany(c => (c.Children ?? []).Prepend(c)).First(c => !c.IsDirectory);
+        Assert.That(file.Children, Is.Null);
+    }
+
     [Ignore("Cant do this as dir tree is part of root entry bending test to toy with protobuf-net a bit")]
     [Test]
     public void DeSerialize_JustRootEntryThatHasTree()
