@@ -7,6 +7,8 @@ import {
   drillTargetId,
   fullPathOf,
   joinPath,
+  labelLines,
+  LABEL_PADDING,
   minFractionFor,
   mix,
   tileColor,
@@ -139,5 +141,48 @@ describe("fullPathOf", () => {
   it("is the root path for the root itself or an unknown id", () => {
     expect(fullPathOf("r", rows, "C:\\")).toBe("C:\\");
     expect(fullPathOf("missing", rows, "C:\\")).toBe("C:\\");
+  });
+});
+
+describe("labelLines", () => {
+  const rect = (w: number, h: number) => ({ x0: 10, y0: 20, x1: 10 + w, y1: 20 + h });
+  const P = 4.5;
+
+  it("shows both lines when the name and size fit with two lines of height", () => {
+    expect(labelLines(rect(100, 40), 60, 30, 11, P)).toBe("both");
+  });
+
+  it("fits exactly at the boundaries (inclusive)", () => {
+    // available = 2*P less than the rect: width 60 + 9 = 69, height 22 + 9 = 31
+    expect(labelLines(rect(69, 31), 60, 60, 11, P)).toBe("both");
+    expect(labelLines(rect(68.9, 31), 60, 60, 11, P)).toBe("none");
+    expect(labelLines(rect(69, 30.9), 60, 60, 11, P)).toBe("name");
+  });
+
+  it("falls back to the name when the size is too wide", () => {
+    expect(labelLines(rect(80, 40), 70, 75, 11, P)).toBe("name");
+  });
+
+  it("falls back to the name when there is only room for one line", () => {
+    expect(labelLines(rect(100, 20), 60, 30, 11, P)).toBe("name");
+  });
+
+  it("shows nothing when the name does not fit", () => {
+    expect(labelLines(rect(50, 40), 60, 30, 11, P)).toBe("none");
+    expect(labelLines(rect(100, 15), 60, 30, 11, P)).toBe("none");
+  });
+
+  it("shows nothing for a tile smaller than the padding", () => {
+    expect(labelLines(rect(8, 8), 0, 0, 11, P)).toBe("none");
+  });
+
+  it("shows nothing for zero or negative rectangles", () => {
+    expect(labelLines(rect(0, 0), 10, 10, 11, P)).toBe("none");
+    expect(labelLines(rect(-5, 40), 10, 10, 11, P)).toBe("none");
+    expect(labelLines(rect(100, -5), 10, 10, 11, P)).toBe("none");
+  });
+
+  it("uses the mark labelPadding (the drawn rect is already inset)", () => {
+    expect(LABEL_PADDING).toBe(4);
   });
 });
