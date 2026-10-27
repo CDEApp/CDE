@@ -190,6 +190,9 @@ importers:
       '@tauri-apps/plugin-window-state':
         specifier: ^2.5.0
         version: 2.5.0
+      d3-hierarchy:
+        specifier: 3.1.2
+        version: 3.1.2
     devDependencies:
       '@tanstack/react-table':
         specifier: ^9.3.1
@@ -197,6 +200,9 @@ importers:
       '@tauri-apps/cli':
         specifier: ^2.12.4
         version: 2.12.4
+      '@types/d3-hierarchy':
+        specifier: 3.1.7
+        version: 3.1.7
       '@types/react':
         specifier: 19.3.0
         version: 19.3.0

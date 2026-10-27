@@ -105,3 +105,68 @@ export function fullPathOf(
   }
   return names.reverse().reduce((path, name) => joinPath(path, name), rootFullPath);
 }
+
+/** Inset (0.5) + labelPadding (4): the library's clearance between a tile edge and its label. */
+export const LABEL_PADDING = 4.5;
+
+export interface TileRect {
+  x0: number;
+  y0: number;
+  x1: number;
+  y1: number;
+}
+
+export type LabelLines = "both" | "name" | "none";
+
+/**
+ * Which label lines fit inside a tile: the name over the size, the name alone, or nothing. Mirrors
+ * the treemap mark's own rule (label bounds must sit inside the rect shrunk by `padding` on every
+ * side), with the size as a second line of `lineHeight` below the name. Widths are measured text.
+ */
+export function labelLines(
+  rect: TileRect,
+  nameWidth: number,
+  sizeWidth: number,
+  lineHeight: number,
+  padding: number,
+): LabelLines {
+  const availW = rect.x1 - rect.x0 - 2 * padding;
+  const availH = rect.y1 - rect.y0 - 2 * padding;
+  if (!(availW > 0 && availH > 0)) return "none";
+  if (nameWidth > availW || lineHeight > availH) return "none";
+  return sizeWidth <= availW && 2 * lineHeight <= availH ? "both" : "name";
+}
+
+interface TileNode {
+  parent?: unknown;
+  children?: (TileNode & TileRect)[];
+}
+
+/**
+ * Wraps a d3-style tiler `(node, x0, y0, x1, y1)` so every leaf rectangle it assigns is recorded
+ * by id. The treemap mark only labels leaves (`hierarchy.leaves()`), and a tiler call for the root
+ * starts a new layout, so each (re)layout yields a fresh map and bumps `generation()`.
+ */
+export function capturingTiler<N extends TileNode>(
+  base: (node: N, x0: number, y0: number, x1: number, y1: number) => void,
+  idOf: (node: N) => string,
+) {
+  let rects = new Map<string, TileRect>();
+  let generation = 0;
+  return {
+    tile(node: N, x0: number, y0: number, x1: number, y1: number): void {
+      base(node, x0, y0, x1, y1);
+      if (!node.parent) {
+        rects = new Map();
+        generation++;
+      }
+      for (const child of (node.children ?? []) as (N & TileRect)[]) {
+        if (!child.children?.length) {
+          rects.set(idOf(child), { x0: child.x0, y0: child.y0, x1: child.x1, y1: child.y1 });
+        }
+      }
+    },
+    current: () => rects,
+    generation: () => generation,
+  };
+}
