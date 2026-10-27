@@ -35,8 +35,5 @@
     <Resource Include="Resources\CDE-logo-02_GFI.ico" />
   </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Update="MinVer" Version="8.0.0" />
-  </ItemGroup>
 
 </Project>
