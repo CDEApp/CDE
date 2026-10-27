@@ -179,8 +179,8 @@ public class CatalogSessionMigrateTests
         try
         {
             Assert.That(session.AnyCatalogJobRunning, Is.True);
-            Assert.ThrowsAsync<InvalidOperationException>(() => session.LoadAsync(_dir));
-            Assert.ThrowsAsync<CatalogJobBusyException>(() => session.MigrateLegacyCatalogsAsync());
+            await Assert.ThrowsAsync<InvalidOperationException>(() => session.LoadAsync(_dir));
+            await Assert.ThrowsAsync<CatalogJobBusyException>(() => session.MigrateLegacyCatalogsAsync());
             Assert.That(session.PreflightCreate(new CreatePreflightRequest { RootPath = _data }).Busy, Is.True);
         }
         finally
@@ -214,7 +214,7 @@ public class CatalogSessionMigrateTests
 
         try
         {
-            Assert.ThrowsAsync<CatalogJobBusyException>(() => session.MigrateLegacyCatalogsAsync());
+            await Assert.ThrowsAsync<CatalogJobBusyException>(() => session.MigrateLegacyCatalogsAsync());
         }
         finally
         {
