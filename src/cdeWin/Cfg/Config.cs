@@ -103,7 +103,7 @@ public class Config : IConfig
 
     public string ConfigPath => _configPath;
 
-    private Configuration Read(string fileName)
+    private static Configuration Read(string fileName)
     {
         if (File.Exists(fileName))
         {
