@@ -21,7 +21,10 @@ recently created draft release; if that is not higher than the latest stable tag
 which tag and which draft disagree. Only one Publish Release run goes at a time.
 
 Pushing a tag such as `2.1.0` by hand also runs `release.yml`, but only if the tagged commit is on
-`develop`. Prefer Publish Release.
+`develop`. Prefer Publish Release. `release.yml` checks the tag on every path (tag push, Publish
+workflows, re-run) against the other existing tags: a stable tag must be higher than every other
+stable tag, and a pre-release's base must be higher than the latest stable tag. So a hand-pushed
+`1.9.0` after `2.0.0` is refused, and a stable release is always marked "latest".
 
 `release.yml` keeps the release a draft until its last step: it builds, zips, updates the draft,
 attaches the zip and checksum, appends new contributors (optional; a failure there is ignored), and

@@ -85,9 +85,8 @@ jobs:
           if [ -z "$base" ]; then
             # The newest stable-named draft across all pages: the one Release Drafter keeps for the
             # next stable release (a leftover pre-release draft is skipped).
-            base=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-              --jq '.[] | select(.draft and (.tag_name | test("^[0-9]+[.][0-9]+[.][0-9]+$"))) | [.created_at, .tag_name] | @tsv' \
-              | sort -r | head -n1 | cut -f2)
+            gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+            base=$(node "$cli" latest-draft --releases-file "$RUNNER_TEMP/releases.json")
             if [ -z "$base" ]; then
               echo "::error::No release draft found - pass an explicit base input"
               exit 1
@@ -136,4 +135,3 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
-    secrets: inherit

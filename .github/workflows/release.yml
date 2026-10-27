@@ -83,7 +83,15 @@ jobs:
         id: kind
         shell: bash
         run: |
-          kind=$(node src/cde-tauri/scripts/release-version.mjs tag-kind --tag "$TAG")
+          cli=src/cde-tauri/scripts/release-version.mjs
+
+          # Whatever started this run (a tag push, Publish Release / Publish Pre-release, or a
+          # re-run), the tag must be valid against the existing tags, leaving out the tag itself,
+          # which exists by design. A hand-pushed 1.9.0 while 2.0.0 is released is refused here, so
+          # it can never be built, published or marked "latest".
+          git tag --list > "$RUNNER_TEMP/tags.txt"
+          node "$cli" validate-release-tag --tag "$TAG" --tags-file "$RUNNER_TEMP/tags.txt"
+          kind=$(node "$cli" tag-kind --tag "$TAG")
           if ! git merge-base --is-ancestor HEAD origin/develop; then
             echo "::error::Tag $TAG is not on develop. Releases are cut from develop."
             exit 1
@@ -106,8 +114,10 @@ jobs:
           echo "Latest stable tag: ${latest:-<none>}"
 
       # Captured before publishing, because once this release is published it becomes "latest" and
-      # can no longer serve as the previous tag.
+      # can no longer serve as the previous tag. Only the stable path uses it, so a pre-release
+      # skips it and cannot be aborted by it.
       - name: Resolve previous release tag
+        if: ${{ steps.kind.outputs.prerelease == 'false' }}
         id: previous
         shell: bash
         run: |
@@ -181,8 +191,9 @@ jobs:
         run: |
           # A draft left by an earlier failed run for this tag is replaced. A published release for
           # the tag makes `gh release create` fail below, which is right.
-          old=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id")
+          cli=src/cde-tauri/scripts/release-version.mjs
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+          old=$(node "$cli" draft-for-tag --tag "$TAG" --releases-file "$RUNNER_TEMP/releases.json")
           for id in $old; do
             echo "Deleting leftover draft $id"
             gh api --method DELETE "repos/$GITHUB_REPOSITORY/releases/$id"
@@ -194,8 +205,8 @@ jobs:
             "artifacts/release/cde-$TAG-win-x64.zip" \
             "artifacts/release/cde-$TAG-win-x64.zip.sha256"
 
-          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id" | head -n1)
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+          id=$(node "$cli" draft-for-tag --tag "$TAG" --releases-file "$RUNNER_TEMP/releases.json" | head -n1)
           echo "id=$id" >> "$GITHUB_OUTPUT"
           echo "Draft pre-release id: $id"
 
@@ -235,8 +246,8 @@ jobs:
         id: draft
         shell: bash
         run: |
-          id=$(gh api --paginate "repos/$GITHUB_REPOSITORY/releases" \
-            --jq ".[] | select(.draft and .tag_name == \"$TAG\") | .id" | head -n1)
+          gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
+          id=$(node src/cde-tauri/scripts/release-version.mjs draft-for-tag --tag "$TAG" --releases-file "$RUNNER_TEMP/releases.json" | head -n1)
           if [ -z "$id" ]; then
             echo "::error::No draft release for tag $TAG. If it was already published, there is nothing to do."
             exit 1
@@ -301,5 +312,8 @@ jobs:
         env:
           RELEASE_ID: ${{ steps.draft.outputs.id }}
         run: |
-          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" -F draft=false > /dev/null
+          # make_latest is set explicitly: "Check tag" has already validated this tag as higher than
+          # every other stable tag, so it is the latest release.
+          gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+            -F draft=false -f make_latest=true > /dev/null
           echo "Published $TAG"
