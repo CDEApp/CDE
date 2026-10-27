@@ -48,6 +48,8 @@ export interface TreeRow {
   /** Shown open: expanded and its children are loaded. */
   expanded: boolean;
   isRoot: boolean;
+  /** Key of the parent row; null for roots. */
+  parentKey: string | null;
   /** Root rows only. */
   catalogName?: string;
 }
@@ -78,6 +80,7 @@ export function flattenTree(
         depth: row.depth + 1,
         hasChildren: c.hasChildren,
         isRoot: false,
+        parentKey: row.key,
       });
     }
   };
@@ -92,8 +95,44 @@ export function flattenTree(
       depth: 0,
       hasChildren: true,
       isRoot: true,
+      parentKey: null,
       catalogName: r.catalogName,
     });
   }
   return rows;
+}
+
+export type TreeNav = { select: string } | { expand: string };
+
+/**
+ * What a key press does in the tree (issue #89), or null when it does nothing (or is not a tree key).
+ * Down/Up: next/previous visible row. Home/End: first/last. Left: the parent (a root does nothing; it
+ * never collapses). Right: expand a collapsed folder that has children, else nothing. A selection not in
+ * `rows` (null, or collapsed out of view) acts as "nothing selected": Down/Home pick the first row,
+ * End the last.
+ */
+export function nextSelection(rows: readonly TreeRow[], selectedKey: string | null, key: string): TreeNav | null {
+  if (rows.length === 0) return null;
+  const index = selectedKey === null ? -1 : rows.findIndex((r) => r.key === selectedKey);
+  const go = (i: number): TreeNav | null => (i === index || i < 0 || i >= rows.length ? null : { select: rows[i].key });
+  switch (key) {
+    case "ArrowDown":
+      return go(index + 1);
+    case "ArrowUp":
+      return index < 0 ? null : go(index - 1);
+    case "Home":
+      return go(0);
+    case "End":
+      return go(rows.length - 1);
+    case "ArrowLeft": {
+      const parent = index < 0 ? null : rows[index].parentKey;
+      return parent === null ? null : { select: parent };
+    }
+    case "ArrowRight": {
+      const row = index < 0 ? undefined : rows[index];
+      return row && row.hasChildren && !row.expanded ? { expand: row.key } : null;
+    }
+    default:
+      return null;
+  }
 }
