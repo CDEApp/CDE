@@ -143,9 +143,10 @@ app.MapGet("/entries/{ref}/treemap", (string @ref, int? depth, double? minFracti
     ICatalogSession session, ITreemapService treemap) =>
 {
     if (!EntryRefRoute.TryParse(@ref, out var entryRef)) return Results.BadRequest("bad ref");
-    if (entryRef.CatalogId >= session.CatalogCount ||
-        entryRef.EntryIndex >= session.GetSource(entryRef.CatalogId).Count)
-        return Results.NotFound("no such entry");
+    if (entryRef.CatalogId < 0 || entryRef.CatalogId >= session.CatalogCount) return Results.NotFound("no such entry");
+    int entryCount;
+    using (var lease = session.AcquireRead(entryRef.CatalogId)) entryCount = lease.Source.Count;
+    if (entryRef.EntryIndex >= entryCount) return Results.NotFound("no such entry");
     return Results.Json(treemap.Build(entryRef, depth ?? 3, minFraction ?? 0));
 });
 
@@ -210,6 +211,10 @@ app.MapPut("/colour-rules", async (HttpContext ctx, ColourRulesStore store) =>
     return Results.Ok();
 });
 
+// POST /catalogs/{id}/rescan — rescan one catalog in the background (SSE: progress..., done | error).
+// Refusals (unknown / already running / root unreachable) are plain JSON errors before the stream starts.
+app.MapPost("/catalogs/{id:int}/rescan", RescanEndpoint.HandleAsync);
+
 // POST /session/reload — reload catalogs, streaming load progress over SSE then a final `done`.
 // Optional ?path=<dir> loads .cdex catalogs from that folder (and one level down); otherwise the
 // configured default path is used.
@@ -217,6 +222,14 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
 {
     var requested = ctx.Request.Query["path"].FirstOrDefault();
     var loadPath = string.IsNullOrWhiteSpace(requested) ? configPath : requested;
+
+    // A reload would drop the catalog a rescan is about to swap into.
+    if (session.AnyRescanning)
+    {
+        ctx.Response.StatusCode = StatusCodes.Status409Conflict;
+        await ctx.Response.WriteAsync("a rescan is running");
+        return;
+    }
 
     Sse.Start(ctx.Response);
     await SseStream.RunAsync(ctx.Response.BodyWriter,
