@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+r
 namespace cdeWin;
 
 public static class VersionDisplay
