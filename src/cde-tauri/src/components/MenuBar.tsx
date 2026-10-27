@@ -1,26 +1,80 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { closeMenus, hoverMenu, keyMenu, toggleMenu, type MenuState } from "../menuModel";
 
 interface Props {
   onNewCatalog: () => void;
   onOpenFolder: () => void;
   onReload: () => void;
   onExit: () => void;
+  onAbout: () => void;
   /** When set, Open Folder and Reload are disabled and this is their tooltip (e.g. a rescan is running). */
   loadDisabledReason?: string | null;
 }
 
-/** A lightweight native-style menu bar. "File ▸ New Catalog…" scans a folder into a new catalog; "Open Folder…" picks a catalog directory. */
-export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, loadDisabledReason }: Props) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+type MenuEntry =
+  | { kind: "item"; label: string; action: () => void; title?: string; disabled?: boolean }
+  | { kind: "separator" };
 
+interface MenuDef {
+  id: string;
+  title: string;
+  entries: MenuEntry[];
+}
+
+/**
+ * A lightweight native-style menu bar: a list of menus (File, About), one open at a time. Escape or an
+ * outside click closes; hovering another title while one is open switches to it; Left/Right move between
+ * menus. "File ▸ New Catalog…" scans a folder into a new catalog; "Open Folder…" picks a catalog directory.
+ */
+export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout, loadDisabledReason }: Props) {
+  const [state, setState] = useState<MenuState>(closeMenus());
+  const ref = useRef<HTMLDivElement>(null);
+  const loadBlocked = !!loadDisabledReason;
+  const loadTitle = loadDisabledReason ?? undefined;
+
+  // A disabled item stays in the menu (greyed, with the reason as tooltip) and ignores clicks.
+  const menus: MenuDef[] = useMemo(
+    () => [
+      {
+        id: "file",
+        title: "File",
+        entries: [
+          { kind: "item", label: "New Catalog…", action: onNewCatalog, title: "Scan a folder into a new catalog file in the catalog folder" },
+          { kind: "item", label: "Open Folder…", action: onOpenFolder, disabled: loadBlocked, title: loadTitle },
+          { kind: "item", label: "Reload Catalogs", action: onReload, disabled: loadBlocked, title: loadTitle },
+          { kind: "separator" },
+          { kind: "item", label: "Exit", action: onExit },
+        ],
+      },
+      {
+        id: "about",
+        title: "About",
+        entries: [{ kind: "item", label: "About CDE…", action: onAbout }],
+      },
+    ],
+    [onNewCatalog, onOpenFolder, onReload, onExit, onAbout, loadBlocked, loadTitle],
+  );
+  // Latest ids live in a ref so the window listeners below subscribe only when a menu opens or closes,
+  // not on every App render (inline handler props change identity each render).
+  const idsRef = useRef<string[]>([]);
+  idsRef.current = menus.map((m) => m.id);
+
+  const isOpen = state.openId !== null;
   useEffect(() => {
-    if (!open) return;
+    if (!isOpen) return;
     const onDown = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) setState(closeMenus());
     };
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setState((s) => keyMenu(s, e.key));
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        // Only when focus is inside the menu bar, so carets in text inputs keep working.
+        if (!ref.current?.contains(document.activeElement)) return;
+        e.preventDefault();
+        setState((s) => keyMenu(s, e.key, idsRef.current));
+      }
     };
     const id = window.setTimeout(() => {
       window.addEventListener("mousedown", onDown, true);
@@ -31,54 +85,48 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, loadDisa
       window.removeEventListener("mousedown", onDown, true);
       window.removeEventListener("keydown", onKey);
     };
-  }, [open]);
-
-  const loadBlocked = !!loadDisabledReason;
-  // A disabled item stays in the menu (greyed, with the reason as tooltip) and ignores clicks.
-  const loadItem = (label: string, action: () => void) => (
-    <li
-      className={loadBlocked ? "disabled" : undefined}
-      title={loadDisabledReason ?? undefined}
-      aria-disabled={loadBlocked}
-      onClick={() => {
-        if (loadBlocked) return;
-        setOpen(false);
-        action();
-      }}
-    >
-      {label}
-    </li>
-  );
+  }, [isOpen]);
 
   return (
     <div className="menubar" ref={ref}>
-      <button className={`menu-title${open ? " open" : ""}`} onClick={() => setOpen((o) => !o)}>
-        File
-      </button>
-      {open && (
-        <ul className="menu-dropdown">
-          <li
-            title="Scan a folder into a new catalog file in the catalog folder"
-            onClick={() => {
-              setOpen(false);
-              onNewCatalog();
-            }}
-          >
-            New Catalog…
-          </li>
-          {loadItem("Open Folder…", onOpenFolder)}
-          {loadItem("Reload Catalogs", onReload)}
-          <li className="menu-separator" role="separator" />
-          <li
-            onClick={() => {
-              setOpen(false);
-              onExit();
-            }}
-          >
-            Exit
-          </li>
-        </ul>
-      )}
+      {menus.map((menu) => {
+        const open = state.openId === menu.id;
+        return (
+          <div className="menu" key={menu.id}>
+            <button
+              className={`menu-title${open ? " open" : ""}`}
+              aria-expanded={open}
+              onClick={() => setState((s) => toggleMenu(s, menu.id))}
+              onMouseEnter={() => setState((s) => hoverMenu(s, menu.id))}
+            >
+              {menu.title}
+            </button>
+            {open && (
+              <ul className="menu-dropdown">
+                {menu.entries.map((entry, i) =>
+                  entry.kind === "separator" ? (
+                    <li key={i} className="menu-separator" role="separator" />
+                  ) : (
+                    <li
+                      key={i}
+                      className={entry.disabled ? "disabled" : undefined}
+                      title={entry.title}
+                      aria-disabled={!!entry.disabled}
+                      onClick={() => {
+                        if (entry.disabled) return;
+                        setState(closeMenus());
+                        entry.action();
+                      }}
+                    >
+                      {entry.label}
+                    </li>
+                  ),
+                )}
+              </ul>
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }

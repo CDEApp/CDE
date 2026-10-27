@@ -33,6 +33,7 @@ body {
 
 /* menu bar */
 .menubar { position: relative; display: flex; background: #2d2d2d; border-bottom: 1px solid var(--border); }
+.menu { position: relative; }
 .menu-title { background: none; color: var(--fg); padding: 3px 12px; }
 .menu-title:hover, .menu-title.open { background: var(--accent); color: #fff; }
 .menu-dropdown {

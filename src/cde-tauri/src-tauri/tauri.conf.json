@@ -23,6 +23,11 @@
       "csp": null
     }
   },
+  "plugins": {
+    "shell": {
+      "open": "^https://github\\.com/CDEApp/CDE/?$"
+    }
+  },
   "bundle": {
     "active": true,
     "targets": "all",
