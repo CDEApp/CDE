@@ -229,6 +229,24 @@ public class HashColumnarEquivalenceTests
     }
 
     [Test]
+    public async Task A_catalog_that_cannot_be_saved_does_not_stop_the_others_being_saved()
+    {
+        var files = BuildCatalogs();
+        var expected = HashWithTrees(files);
+        var original = File.ReadAllBytes(files[0]);
+        File.SetAttributes(files[0], FileAttributes.ReadOnly);
+        try
+        {
+            await Assert.ThrowsAsync<IOException>(() => ColumnarCatalogHashing.HashAndSave(NewDuplication(), files, null));
+
+            Assert.That(File.ReadAllBytes(files[0]), Is.EqualTo(original), "the unsaved catalog is left as it was");
+            Assert.That(File.Exists(files[0] + ".tmp"), Is.False);
+            Assert.That(File.ReadAllBytes(files[1]), Is.EqualTo(expected[1]), "the other catalog is still saved");
+        }
+        finally { File.SetAttributes(files[0], FileAttributes.Normal); }
+    }
+
+    [Test]
     public async Task A_second_run_over_hashed_catalogs_changes_nothing()
     {
         var files = BuildCatalogs();

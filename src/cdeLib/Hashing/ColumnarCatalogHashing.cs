@@ -33,6 +33,8 @@ public static class ColumnarCatalogHashing
 
             var updates = await duplication.ApplyHash(readers).ConfigureAwait(false);
 
+            // A catalog that fails to save does not stop the others: their hashes are expensive to redo.
+            List<Exception> failures = null;
             for (var c = 0; c < readers.Count; c++)
             {
                 var file = cdexFiles[c];
@@ -44,11 +46,18 @@ public static class ColumnarCatalogHashing
                     readers[c].Dispose(); // release the mapping so the file can be replaced
                     File.Move(tempPath, file, overwrite: true);
                 }
-                catch
+                catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    try { File.Delete(tempPath); } catch (IOException) { /* best effort */ }
-                    throw;
+                    TryDelete(tempPath);
+                    (failures ??= []).Add(ex);
                 }
+            }
+
+            if (failures != null)
+            {
+                throw failures.Count == 1
+                    ? new IOException($"Failed to save a hashed catalog: {failures[0].Message}", failures[0])
+                    : new AggregateException("Failed to save some hashed catalogs.", failures);
             }
         }
         finally
@@ -57,6 +66,18 @@ public static class ColumnarCatalogHashing
             {
                 reader.Dispose();
             }
+        }
+    }
+
+    private static void TryDelete(string path)
+    {
+        try
+        {
+            File.Delete(path);
+        }
+        catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+        {
+            // best effort: the failure being reported matters more than a stale temp file
         }
     }
 }

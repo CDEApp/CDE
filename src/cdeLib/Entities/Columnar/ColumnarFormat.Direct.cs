@@ -101,25 +101,8 @@ public static partial class ColumnarFormat
         len[(int)Col.Hash] = hasHashes ? (long)count * 16 : 0;
         len[(int)Col.Meta] = meta.Length;
 
-        var off = new long[ColumnCount];
-        var pos = (long)HeaderSize;
-        for (var c = 0; c < ColumnCount; c++)
-        {
-            pos = Align8(pos);
-            off[c] = pos;
-            pos += len[c];
-        }
-
-        var header = new byte[HeaderSize];
-        Magic.CopyTo(header);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(4), Version);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(8), count);
-        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(12), ComposeFlags(hasHashes, root.FollowJunctions));
-        for (var c = 0; c < ColumnCount; c++)
-        {
-            BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(PreambleFixed + c * 16), off[c]);
-            BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(PreambleFixed + c * 16 + 8), len[c]);
-        }
+        var off = LayOut(len, out var pos);
+        var header = BuildHeader(count, ComposeFlags(hasHashes, root.FollowJunctions), off, len);
 
         // ---- pass 2: stream the columns ----
         using var handle = File.OpenHandle(outPath, FileMode.Create, FileAccess.Write, FileShare.None, FileOptions.None);
@@ -206,6 +189,41 @@ public static partial class ColumnarFormat
         }
 
         RandomAccess.Write(handle, meta, off[(int)Col.Meta]);
+    }
+
+    /// <summary>
+    /// Column offsets for these column lengths: each column starts on an 8-byte boundary after the header,
+    /// in <see cref="Col"/> order. <paramref name="fileLength"/> is the end of the last column.
+    /// </summary>
+    private static long[] LayOut(long[] len, out long fileLength)
+    {
+        var off = new long[ColumnCount];
+        var pos = (long)HeaderSize;
+        for (var c = 0; c < ColumnCount; c++)
+        {
+            pos = Align8(pos);
+            off[c] = pos;
+            pos += len[c];
+        }
+
+        fileLength = pos;
+        return off;
+    }
+
+    private static byte[] BuildHeader(int count, int flags, long[] off, long[] len)
+    {
+        var header = new byte[HeaderSize];
+        Magic.CopyTo(header);
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(4), Version);
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(8), count);
+        BinaryPrimitives.WriteInt32LittleEndian(header.AsSpan(12), flags);
+        for (var c = 0; c < ColumnCount; c++)
+        {
+            BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(PreambleFixed + c * 16), off[c]);
+            BinaryPrimitives.WriteInt64LittleEndian(header.AsSpan(PreambleFixed + c * 16 + 8), len[c]);
+        }
+
+        return header;
     }
 
     private static int Utf8Length(string value)

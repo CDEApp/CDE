@@ -43,25 +43,8 @@ public partial class Duplication
 
         long totalFiles = 0;
         foreach (var r in readers) totalFiles += r.RootFileEntryCount;
-        var sizeSets = 0;
-        var longestRun = -1;
-        long longestRunSize = 0;
-        // candidates are in descending size order, so equal sizes are adjacent.
-        for (var s = 0; s < candidates.Length;)
-        {
-            var e = s + 1;
-            while (e < candidates.Length && candidates[e].Size == candidates[s].Size) e++;
-            sizeSets++;
-            if (e - s > longestRun)
-            {
-                longestRun = e - s;
-                longestRunSize = candidates[s].Size;
-            }
-
-            s = e;
-        }
-
-        ReportSizeMatches(sizeSets, totalFiles, candidates.Length, longestRun, longestRunSize);
+        ReportSizeMatches(grouping.RepeatedSizes.Count, totalFiles, candidates.Length, grouping.LongestRun,
+            grouping.LongestRunSize);
 
         // Issue #37: partial hashes from older versions hashed the wrong block and read as "not hashed".
         var legacyPartials = 0;
@@ -172,6 +155,11 @@ public partial class Duplication
                     continue;
                 }
 
+                if (n == candidates.Length)
+                {
+                    throw new InvalidOperationException("A catalog changed while it was being hashed.");
+                }
+
                 candidates[n++] = new HashCandidate
                 {
                     Catalog = c,
@@ -181,6 +169,11 @@ public partial class Duplication
                     Hash = flags.IsHashUsable() ? r.HashOf(i) : default,
                 };
             }
+        }
+
+        if (n != candidates.Length)
+        {
+            throw new InvalidOperationException("A catalog changed while it was being hashed.");
         }
 
         Array.Sort(candidates, static (a, b) =>
@@ -202,7 +195,7 @@ public partial class Duplication
         HashCandidate[] candidates)
     {
         var groupOfCatalog = new List<int>[readers.Count];
-        var byRootString = new Dictionary<string, List<int>>(StringComparer.OrdinalIgnoreCase);
+        var byRootString = new Dictionary<string, List<int>>();
         var groups = new List<List<int>>();
         for (var k = 0; k < candidates.Length; k++)
         {
@@ -210,7 +203,9 @@ public partial class Duplication
             var group = groupOfCatalog[catalog];
             if (group == null)
             {
-                var root = System.IO.Directory.GetDirectoryRoot(readers[catalog].RootPath);
+                // As the tree version: the root of the catalog's first file, so an empty or relative root
+                // path resolves the same way it does when the file is hashed.
+                var root = System.IO.Directory.GetDirectoryRoot(readers[catalog].FullPath(candidates[k].Index));
                 if (!byRootString.TryGetValue(root, out group))
                 {
                     group = [];
