@@ -2,7 +2,6 @@ import {
   CatalogsResponse,
   DirectoryNode,
   EntryRef,
-  refToString,
   SearchProgress,
   SearchQuery,
   SearchResultRow,
@@ -100,9 +99,29 @@ function parseRescanRefusal(e: ApiError): RescanErrorBody {
 export type ChildrenSort = "name" | "size" | "date" | "-name" | "-size" | "-date";
 const CHILDREN_SORTS: ReadonlySet<string> = new Set<ChildrenSort>(["name", "size", "date", "-name", "-size", "-date"]);
 
+const MAX_INT32 = 2 ** 31 - 1;
+
+/**
+ * A catalog id or entry index as a URL path segment. Refs come back from the sidecar as JSON, so their
+ * fields are only typed as numbers; anything but a non-negative int32 (what the server route accepts)
+ * throws instead of reaching a request URL.
+ */
+export function idSegment(value: number): string {
+  const n = Number(value);
+  if (typeof value !== "number" || !Number.isInteger(n) || n < 0 || n > MAX_INT32) {
+    throw new RangeError(`not a valid id: ${String(value)}`);
+  }
+  return String(n);
+}
+
+/** An {@link EntryRef} as the `{catalog}-{index}` path segment the server route parses. */
+export function refSegment(ref: EntryRef): string {
+  return `${idSegment(ref.catalogId)}-${idSegment(ref.entryIndex)}`;
+}
+
 /**
  * Join `baseUrl` with `path` segments, percent-encoding each segment (so a segment can never add a `/`,
- * `?` or `#`), then append `query`. ASP.NET decodes route values, so `refToString` output (`{catalog}-{index}`)
+ * `?` or `#`), then append `query`. ASP.NET decodes route values, so `refSegment` output (`{catalog}-{index}`)
  * round-trips unchanged.
  */
 export function buildApiUrl(
@@ -155,7 +174,7 @@ export class CdeApiClient {
     if (opts?.take != null) q.set("take", String(opts.take));
     if (opts?.sort && CHILDREN_SORTS.has(opts.sort)) q.set("sort", opts.sort);
     const r = await fetch(
-      this.url(["entries", refToString(ref), "children"], q),
+      this.url(["entries", refSegment(ref), "children"], q),
       { headers: this.headers() },
     );
     if (!r.ok) throw new Error(`children: ${r.status}`);
@@ -163,7 +182,7 @@ export class CdeApiClient {
   }
 
   async path(ref: EntryRef): Promise<DirectoryNode[]> {
-    const r = await fetch(this.url(["entries", refToString(ref), "path"]), {
+    const r = await fetch(this.url(["entries", refSegment(ref), "path"]), {
       headers: this.headers(),
     });
     if (!r.ok) throw new Error(`path: ${r.status}`);
@@ -176,7 +195,7 @@ export class CdeApiClient {
     opts: { depth: number; minFraction: number; signal?: AbortSignal },
   ): Promise<TreemapResponse> {
     const q = new URLSearchParams({ depth: String(opts.depth), minFraction: String(opts.minFraction) });
-    const r = await fetch(this.url(["entries", refToString(ref), "treemap"], q), {
+    const r = await fetch(this.url(["entries", refSegment(ref), "treemap"], q), {
       headers: this.headers(),
       signal: opts.signal,
     });
@@ -266,7 +285,7 @@ export class CdeApiClient {
     let failure = null as RescanErrorBody | null;
     try {
       await this.streamSse(
-        this.url(["catalogs", catalogId, "rescan"]),
+        this.url(["catalogs", idSegment(catalogId), "rescan"]),
         { method: "POST", headers: this.headers(), signal: handlers.signal },
         (event, data) => {
           if (event === "progress") handlers.onProgress?.(JSON.parse(data));
