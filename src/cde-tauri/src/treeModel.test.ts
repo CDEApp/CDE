@@ -129,10 +129,17 @@ describe("nextSelection", () => {
     expect(nav("0-0", "ArrowUp")).toBeNull();
   });
 
-  it("Left selects the parent; on a root does nothing and never collapses", () => {
+  it("Left collapses an expanded folder and keeps the selection on it", () => {
+    expect(nav("0-2", "ArrowLeft")).toEqual({ collapse: "0-2" });
+  });
+
+  it("Left on a collapsed folder or a leaf selects the parent", () => {
     expect(nav("0-3", "ArrowLeft")).toEqual({ select: "0-2" });
-    expect(nav("0-2", "ArrowLeft")).toEqual({ select: "0-0" });
-    expect(nav("0-0", "ArrowLeft")).toBeNull();
+    expect(nav("0-1", "ArrowLeft")).toEqual({ select: "0-0" });
+  });
+
+  it("Left collapses an expanded root; on a collapsed root does nothing", () => {
+    expect(nav("0-0", "ArrowLeft")).toEqual({ collapse: "0-0" });
     expect(nav("1-0", "ArrowLeft")).toBeNull();
   });
 

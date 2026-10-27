@@ -102,14 +102,15 @@ export function flattenTree(
   return rows;
 }
 
-export type TreeNav = { select: string } | { expand: string };
+export type TreeNav = { select: string } | { expand: string } | { collapse: string };
 
 /**
- * What a key press does in the tree (issue #89), or null when it does nothing (or is not a tree key).
- * Down/Up: next/previous visible row. Home/End: first/last. Left: the parent (a root does nothing; it
- * never collapses). Right: expand a collapsed folder that has children, else nothing. A selection not in
- * `rows` (null, or collapsed out of view) acts as "nothing selected": Down/Home pick the first row,
- * End the last.
+ * What a key press does in the tree (issues #89, #103), or null when it does nothing (or is not a tree
+ * key). Down/Up: next/previous visible row. Home/End: first/last. Left: collapse an expanded folder
+ * (roots included), keeping the selection on it; on a collapsed folder or a leaf, select the parent (a
+ * collapsed root does nothing). Right: expand a collapsed folder that has children, else nothing. A
+ * selection not in `rows` (null, or collapsed out of view) acts as "nothing selected": Down/Home pick
+ * the first row, End the last.
  */
 export function nextSelection(rows: readonly TreeRow[], selectedKey: string | null, key: string): TreeNav | null {
   if (rows.length === 0) return null;
@@ -125,8 +126,10 @@ export function nextSelection(rows: readonly TreeRow[], selectedKey: string | nu
     case "End":
       return go(rows.length - 1);
     case "ArrowLeft": {
-      const parent = index < 0 ? null : rows[index].parentKey;
-      return parent === null ? null : { select: parent };
+      if (index < 0) return null;
+      const row = rows[index];
+      if (row.expanded) return { collapse: row.key };
+      return row.parentKey === null ? null : { select: row.parentKey };
     }
     case "ArrowRight": {
       const row = index < 0 ? undefined : rows[index];
