@@ -1,6 +1,6 @@
 using System;
 using System.Buffers;
-using System.Text.RegularExpressions;
+using cdeLib.Infrastructure;
 
 namespace cdeLib.Entities.Soa;
 
@@ -25,9 +25,11 @@ public static class EntryStoreSearch
         ArgumentNullException.ThrowIfNull(o);
         if (!o.IncludeFiles && !o.IncludeFolders) return;
 
-        Regex regex = null;
+        // Non-null exactly when regex mode applies; the match site tests it (not RegexMode) so the flow is
+        // provably non-null. Bounded: a pathological pattern times out per entry (no match) and ends the scan.
+        BoundedRegex regex = null;
         if (o.RegexMode && !string.IsNullOrEmpty(o.Pattern))
-            regex = new Regex(o.Pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            regex = new BoundedRegex(o.Pattern);
 
         var hasPattern = !string.IsNullOrEmpty(o.Pattern);
 
@@ -44,6 +46,7 @@ public static class EntryStoreSearch
                     if (isCancelled != null && isCancelled()) return;
                     onScan?.Invoke(i);
                 }
+                if (regex is { Exhausted: true }) return; // pattern timed out repeatedly; abandon the scan
 
                 var isDir = store.IsDirectory(i);
                 if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
@@ -69,14 +72,14 @@ public static class EntryStoreSearch
                 if (o.IncludePath)
                 {
                     var path = WritePath(store, i, ref pathBuffer);
-                    match = o.RegexMode
+                    match = regex is not null
                         ? regex.IsMatch(path)
                         : path.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
                     var name = FullNameSpan(store, i, ref nameBuffer);
-                    match = o.RegexMode
+                    match = regex is not null
                         ? regex.IsMatch(name)
                         : name.Contains(o.Pattern, StringComparison.OrdinalIgnoreCase);
                 }
@@ -145,10 +148,10 @@ public static class EntryStoreSearch
 
         if (!includeFiles && !includeFolders) return;
 
-        Regex regex = null;
+        BoundedRegex regex = null; // non-null exactly when regex mode applies (see Find)
         if (regexMode && !string.IsNullOrEmpty(pattern))
         {
-            regex = new Regex(pattern, RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled);
+            regex = new BoundedRegex(pattern);
         }
 
         var hasPattern = !string.IsNullOrEmpty(pattern);
@@ -161,6 +164,7 @@ public static class EntryStoreSearch
             {
                 var isDir = store.IsDirectory(i);
                 if (isDir ? !includeFolders : !includeFiles) continue;
+                if (regex is { Exhausted: true }) return; // pattern timed out repeatedly; abandon the scan
 
                 if (!hasPattern)
                 {
@@ -172,14 +176,14 @@ public static class EntryStoreSearch
                 if (includePath)
                 {
                     var path = WritePath(store, i, ref pathBuffer);
-                    match = regexMode
+                    match = regex is not null
                         ? regex.IsMatch(path)
                         : path.Contains(pattern, StringComparison.OrdinalIgnoreCase);
                 }
                 else
                 {
                     var name = FullNameSpan(store, i, ref nameBuffer);
-                    match = regexMode
+                    match = regex is not null
                         ? regex.IsMatch(name)
                         : name.Contains(pattern, StringComparison.OrdinalIgnoreCase);
                 }

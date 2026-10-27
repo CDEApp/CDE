@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
+using cdeLib.Infrastructure;
 using RootEntry = cdeLib.Entities.RootEntry;
 using TraverseFunc = cdeLib.Entities.TraverseFunc;
 
@@ -277,7 +278,7 @@ public class FindOptions
             if (currentCount % 2000 == 0) // Reduced frequency for better performance
             {
                 // Use ConfigureAwait(false) to avoid unnecessary context switching
-                await Task.Delay(0).ConfigureAwait(false);
+                await Task.Delay(0, CancellationToken).ConfigureAwait(false);
             }
             else if (currentCount % 500 == 0)
             {
@@ -315,8 +316,11 @@ public class FindOptions
                 }
             }
 
-            var regex = RegexCache.GetOrAdd(pattern, p =>
-                new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase));
+            // Per-matcher bounded wrapper: a catastrophic-backtracking pattern times out (entry = no match)
+            // and, after a few timeouts, stops matching rather than hanging the search.
+            var regex = new BoundedRegex(RegexCache.GetOrAdd(pattern, p =>
+                new Regex(p, RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase,
+                    BoundedRegex.MatchTimeout)));
 
             return includePath
                 ? (p, d) => regex.IsMatch(EntryHelper.MakeFullPathPooled(p, d))
