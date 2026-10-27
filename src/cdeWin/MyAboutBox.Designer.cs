@@ -82,9 +82,10 @@ namespace cdeWin
             // 
             // tbVersion
             // 
+            this.tbVersion.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
             this.tbVersion.Location = new System.Drawing.Point(12, 305);
             this.tbVersion.Name = "tbVersion";
-            this.tbVersion.Size = new System.Drawing.Size(153, 20);
+            this.tbVersion.Size = new System.Drawing.Size(270, 20);
             this.tbVersion.TabIndex = 5;
             // 
             // linkRepository
@@ -102,7 +103,7 @@ namespace cdeWin
             // 
             //this.pictureCDEIcon.Image = global::cdeWin.Properties.Resources.CDE_logo_02;
             this.pictureCDEIcon.Image = ((System.Drawing.Image) (resources.GetObject("cdeWin-Logo")));
-            this.pictureCDEIcon.Location = new System.Drawing.Point(218, 234);
+            this.pictureCDEIcon.Location = new System.Drawing.Point(218, 12);
             this.pictureCDEIcon.Name = "pictureCDEIcon";
             this.pictureCDEIcon.Size = new System.Drawing.Size(64, 64);
             this.pictureCDEIcon.SizeMode = System.Windows.Forms.PictureBoxSizeMode.AutoSize;
