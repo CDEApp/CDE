@@ -89,6 +89,21 @@ only ever sees small pages of results. The `.cde`/`.cdex` formats and the `cde` 
 
 See `src/cde-tauri/README.md` for how to build and run it.
 
+##### cde-tauri configuration
+
+cde-tauri keeps its settings in the Roaming Application Data folder of the current user (`%APPDATA%`, which is `C:\Users\username\AppData\Roaming` on Windows).
+
+| File | Contents | Written by |
+| ---- | -------- | ---------- |
+| `%APPDATA%\cde\ui-state.json` | UI state: panel layout, sort order, columns and other view settings | the app, when you change the view |
+| `%APPDATA%\cde\colour-rules.txt` | The colour rules, stored exactly as you entered them | the app, when you save the rules |
+| `%APPDATA%\cde\shell.json` | Custom shell commands (optional) | you, by hand |
+| `%APPDATA%\com.cde.tauri\.window-state.json` | Window size and position | the Tauri window-state plugin |
+
+- To reset the view or the colour rules, close the app and delete `ui-state.json` or `colour-rules.txt`.
+- `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands-right-click-context-menu)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
+- Catalog files are not kept in the configuration folder. cde-tauri loads the `.cdex` files in its current directory and one level below. When you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe. To use a different catalog folder, start the app from that folder.
+
 ### Contact Author
 
 My name is Robin and you can contact me about cde on the github repository site.
