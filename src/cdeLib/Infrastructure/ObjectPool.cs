@@ -19,7 +19,7 @@ public interface IObjectPool<T> where T : class
 /// <summary>
 /// High-performance object pool implementation with configurable creation and reset policies
 /// </summary>
-public class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
+public sealed class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
 {
     private readonly ConcurrentQueue<T> _objects = new();
     private readonly Func<T> _objectGenerator;
@@ -37,7 +37,7 @@ public class ObjectPool<T> : IObjectPool<T>, IDisposable where T : class
 
     public T Get()
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(ObjectPool<>));
+        ObjectDisposedException.ThrowIf(_disposed, this);
         
         if (_objects.TryDequeue(out var item))
         {

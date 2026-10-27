@@ -9,6 +9,9 @@ namespace cdeLib.Infrastructure.Hashing;
 public class HashHelper
 {
     private readonly ILogger _logger;
+    // CA1859 suppressed: deliberately the interface so the hash algorithm stays swappable (see IHashAlgorithm).
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance",
+        Justification = "Hash algorithm abstraction; kept as an interface so it can be swapped or substituted.")]
     private readonly IHashAlgorithm _hashAlgorithm;
 
     public HashHelper(ILogger logger)

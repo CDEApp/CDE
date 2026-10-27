@@ -9,7 +9,7 @@ namespace cdeLib.Infrastructure;
 /// <summary>
 /// Manages pooled file streams with optimal buffer sizes for I/O operations
 /// </summary>
-public class FileStreamManager : IDisposable
+public sealed class FileStreamManager : IDisposable
 {
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _fileLocks = new();
     private readonly ObjectPool<byte[]> _bufferPool;
@@ -25,7 +25,7 @@ public class FileStreamManager : IDisposable
     /// </summary>
     public FileStream CreateReadStream(string filePath)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(FileStreamManager));
+        ObjectDisposedException.ThrowIf(_disposed, this);
         
         return new FileStream(
             filePath,
@@ -41,7 +41,7 @@ public class FileStreamManager : IDisposable
     /// </summary>
     public FileStream CreateWriteStream(string filePath)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(FileStreamManager));
+        ObjectDisposedException.ThrowIf(_disposed, this);
         
         return new FileStream(
             filePath,
@@ -75,7 +75,7 @@ public class FileStreamManager : IDisposable
     /// </summary>
     public async Task<byte[]> ReadAllBytesOptimizedAsync(string filePath)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(FileStreamManager));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var fileLock = GetFileLock(filePath);
         await fileLock.WaitAsync();
@@ -107,7 +107,7 @@ public class FileStreamManager : IDisposable
     /// </summary>
     public async Task WriteAllBytesOptimizedAsync(string filePath, ReadOnlyMemory<byte> data)
     {
-        if (_disposed) throw new ObjectDisposedException(nameof(FileStreamManager));
+        ObjectDisposedException.ThrowIf(_disposed, this);
 
         var fileLock = GetFileLock(filePath);
         await fileLock.WaitAsync();

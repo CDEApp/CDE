@@ -22,6 +22,9 @@ namespace cdeLib.Entities;
 [MessagePackObject]
 public sealed class RootEntry : object, ICommonEntry
 {
+    // CA1859 suppressed: deliberately the interface so the drive-space lookup can be substituted in tests.
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance",
+        Justification = "Injected service abstraction; kept as an interface for testing.")]
     private readonly IDriveInfoService _driveInfoService;
     private readonly IFileSystemAdapter _fileSystemAdapter;
 
@@ -977,7 +980,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// <summary>
     /// Validates that source and destination are compatible for hash copying.
     /// </summary>
-    private static void ValidateTreeCopyParameters(ICommonEntry source, ICommonEntry destination)
+    private static void ValidateTreeCopyParameters(RootEntry source, ICommonEntry destination)
     {
         if (source == null || destination == null)
         {

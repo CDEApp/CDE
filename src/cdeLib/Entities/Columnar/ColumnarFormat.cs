@@ -167,14 +167,14 @@ public static partial class ColumnarFormat
         fs.Write(body);
     }
 
-    private static void WriteUtf8(Stream s, string value)
+    private static void WriteUtf8(MemoryStream s, string value)
     {
         if (string.IsNullOrEmpty(value)) return;
         var bytes = Encoding.UTF8.GetBytes(value);
         s.Write(bytes, 0, bytes.Length);
     }
 
-    private static void WriteLenString(Stream s, string value)
+    private static void WriteLenString(MemoryStream s, string value)
     {
         var bytes = string.IsNullOrEmpty(value) ? [] : Encoding.UTF8.GetBytes(value);
         WriteI32(s, bytes.Length);
