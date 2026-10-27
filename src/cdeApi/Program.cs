@@ -118,6 +118,7 @@ app.MapGet("/catalogs", (ICatalogSession session) =>
     return Results.Json(new CatalogsResponse
     {
         Catalogs = session.GetCatalogs(),
+        CatalogDir = session.CatalogDir,
         CatalogsLoaded = session.CatalogCount,
         TotalEntries = session.TotalEntryCount,
         MemoryBytes = proc.PrivateMemorySize64
@@ -192,6 +193,13 @@ app.MapPut("/colour-rules", async (HttpContext ctx, ColourRulesStore store) =>
 // Refusals (unknown / already running / root unreachable) are plain JSON errors before the stream starts.
 app.MapPost("/catalogs/{id:int}/rescan", RescanEndpoint.HandleAsync);
 
+// POST /catalogs/preflight — default name, working folder, collisions for the New Catalog dialog (JSON).
+app.MapPost("/catalogs/preflight", CreateCatalogEndpoint.PreflightAsync);
+
+// POST /catalogs — scan a new root into a new .cdex in the working folder and add it to the session
+// (SSE: progress..., done | error). Refusals are plain JSON errors before the stream starts.
+app.MapPost("/catalogs", CreateCatalogEndpoint.HandleAsync);
+
 // POST /session/reload — reload catalogs, streaming load progress over SSE then a final `done`.
 // Optional ?path=<dir> loads .cdex catalogs from that folder (and one level down); otherwise the
 // configured default path is used.
@@ -200,11 +208,11 @@ app.MapPost("/session/reload", async (HttpContext ctx, ICatalogSession session) 
     var requested = ctx.Request.Query["path"].FirstOrDefault();
     var loadPath = string.IsNullOrWhiteSpace(requested) ? configPath : requested;
 
-    // A reload would drop the catalog a rescan is about to swap into.
-    if (session.AnyRescanning)
+    // A reload would drop the catalog a rescan is about to swap into, or the session a create is adding to.
+    if (session.AnyCatalogJobRunning)
     {
         ctx.Response.StatusCode = StatusCodes.Status409Conflict;
-        await ctx.Response.WriteAsync("a rescan is running");
+        await ctx.Response.WriteAsync("a rescan or a new catalog is running");
         return;
     }
 

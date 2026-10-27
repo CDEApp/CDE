@@ -7,6 +7,8 @@ namespace cdeApi;
 public sealed class CatalogsResponse
 {
     public IReadOnlyList<CatalogInfoDto> Catalogs { get; set; }
+    /// <summary>The working folder (where catalogs were last loaded from, and new ones are written); null before any load.</summary>
+    public string CatalogDir { get; set; }
     public int CatalogsLoaded { get; set; }
     public long TotalEntries { get; set; }
     public long MemoryBytes { get; set; }
