@@ -16,10 +16,18 @@ export function toHRString(val: number): string {
   return `${num} ${SUFFIX[place]}`;
 }
 
-/** Directory-listing size cell: raw size for files, annotated for directories. */
+/**
+ * Size cell for the directory listing and search results: human-readable, annotated for directories.
+ * Directories match cdeAppCore's FormatDirectorySizeCell; files differ (cdeWin still shows raw bytes).
+ */
 export function sizeCell(isDirectory: boolean, size: number, isReparsePoint: boolean): string {
-  if (!isDirectory) return String(size);
+  if (!isDirectory) return toHRString(size);
   return `${toHRString(size)} <Dir${isReparsePoint ? " R" : ""}>`;
+}
+
+/** Size cell tooltip: the exact byte count, digit-grouped for `locale` (default: the user's). */
+export function sizeTitle(size: number, locale?: string): string {
+  return `${size.toLocaleString(locale)} ${size === 1 ? "byte" : "bytes"}`;
 }
 
 /**

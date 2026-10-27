@@ -2,7 +2,7 @@ import { useMemo } from "react";
 import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
-import { formatDate, sizeCell } from "../format";
+import { formatDate, sizeCell, sizeTitle } from "../format";
 import { StyledName } from "./StyledName";
 import { VirtualList } from "./VirtualList";
 
@@ -79,7 +79,9 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
               }}
             >
               <div className="cell"><StyledName nameStyle={name}>{n.name}</StyledName></div>
-              <div className="cell num">{sizeCell(n.isDirectory, n.size, n.isReparsePoint)}</div>
+              <div className="cell num" title={sizeTitle(n.size)}>
+                {sizeCell(n.isDirectory, n.size, n.isReparsePoint)}
+              </div>
               <div className="cell">{formatDate(n.modified, n.isModifiedBad)}</div>
             </div>
           );
