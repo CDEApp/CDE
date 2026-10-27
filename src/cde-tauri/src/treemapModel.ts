@@ -72,7 +72,7 @@ export function mix(color: string, target: string, amount: number): string {
 
 function parseHex(hex: string): [number, number, number] {
   const h = hex.replace("#", "");
-  return [0, 2, 4].map((i) => parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
+  return [0, 2, 4].map((i) => Number.parseInt(h.slice(i, i + 2), 16)) as [number, number, number];
 }
 
 /** Tile fill: the branch colour, lightened a little per level deeper so nesting reads. */

@@ -131,7 +131,7 @@ public sealed partial class CatalogSession
     }
 
     // Hash reuse reads the old catalog under a read lock (the swap cannot run while we use its mapping).
-    private void CarryHashesForward(CatalogSlot slot, RootEntry fresh, CancellationToken ct)
+    private static void CarryHashesForward(CatalogSlot slot, RootEntry fresh, CancellationToken ct)
     {
         using var lease = slot.EnterRead();
         if (!string.Equals(lease.Source.RootPath, fresh.Path, StringComparison.OrdinalIgnoreCase)) return;

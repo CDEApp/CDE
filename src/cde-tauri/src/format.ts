@@ -69,11 +69,11 @@ const SIZE_UNITS: Record<string, number> = {
 export function parseSize(text: string): number | null {
   const s = text.trim();
   if (s === "") return null;
-  const m = /^([0-9]*\.?[0-9]+)\s*([a-zA-Z]*)$/.exec(s);
+  const m = /^(\d*\.\d+|\d+)\s*([a-zA-Z]*)$/.exec(s);
   if (!m) return null;
   const mult = SIZE_UNITS[m[2].toUpperCase()];
   if (mult === undefined) return null;
-  return Math.round(parseFloat(m[1]) * mult);
+  return Math.round(Number.parseFloat(m[1]) * mult);
 }
 
 export type AgeUnit = "hours" | "days" | "months" | "years";

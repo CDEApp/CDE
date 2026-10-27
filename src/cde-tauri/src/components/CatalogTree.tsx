@@ -213,7 +213,7 @@ export function CatalogTree({
         renderRow={(row, _i, style) => {
           const isSelected = row.key === selectedKey;
           return (
-            <div
+            <div // NOSONAR S6852: aria-activedescendant pattern (#89), focus stays on the container as rows unmount under virtualization
               key={row.key}
               id={rowDomId(row.key)}
               role="treeitem"

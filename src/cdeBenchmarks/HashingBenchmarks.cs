@@ -19,7 +19,7 @@ public class HashingBenchmarks
     {
         _path = Path.Combine(Path.GetTempPath(), $"cde-hash-bench-{Guid.NewGuid():N}.bin");
         var data = new byte[64 * 1024 * 1024];
-        new Random(42).NextBytes(data);
+        new Random(42).NextBytes(data); // NOSONAR S2245: benchmark test data, not security
         File.WriteAllBytes(_path, data);
     }
 
@@ -47,7 +47,7 @@ public class HashingBenchmarks
         _smallDir = Path.Combine(Path.GetTempPath(), $"cde-hash-small-{Guid.NewGuid():N}");
         Directory.CreateDirectory(_smallDir);
         _smallFiles = new string[1000];
-        var rnd = new Random(1);
+        var rnd = new Random(1); // NOSONAR S2245: benchmark test data, not security
         for (var i = 0; i < _smallFiles.Length; i++)
         {
             _smallFiles[i] = Path.Combine(_smallDir, $"f{i}.bin");

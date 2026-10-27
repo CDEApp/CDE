@@ -30,7 +30,7 @@ public static class CreateCatalogEndpoint
     {
         ctx.Response.StatusCode = StatusCodes.Status200OK;
         await ctx.Response.WriteAsJsonAsync(session.PreflightCreate(request ?? new CreatePreflightRequest()),
-            AppCoreJsonContext.Default.CreatePreflightResult);
+            AppCoreJsonContext.Default.CreatePreflightResult, cancellationToken: ctx.RequestAborted);
     }
 
     public static async Task HandleAsync(HttpContext ctx, CreateCatalogRequest request, ICatalogSession session)
@@ -41,7 +41,7 @@ public static class CreateCatalogEndpoint
         if (refusal is var (status, error))
         {
             ctx.Response.StatusCode = status;
-            await ctx.Response.WriteAsJsonAsync(error, AppCoreJsonContext.Default.CreateCatalogError);
+            await ctx.Response.WriteAsJsonAsync(error, AppCoreJsonContext.Default.CreateCatalogError, cancellationToken: ctx.RequestAborted);
             return;
         }
 

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Runtime.Versioning;
 using Serilog;
@@ -36,7 +37,7 @@ public sealed class WindowsShellActions : IShellActions
 
     public void Explore(string fullPath)
     {
-        Process.Start("explorer.exe", "/select,\"" + fullPath + "\"");
+        Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "/select,\"" + fullPath + "\"");
     }
 
     public void ShowProperties(string fullPath)

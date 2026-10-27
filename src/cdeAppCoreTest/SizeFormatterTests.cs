@@ -13,6 +13,8 @@ public class SizeFormatterTests
 {
     private sealed record SizeCase(long Bytes, string Expected);
 
+    private static readonly JsonSerializerOptions CaseInsensitive = new() { PropertyNameCaseInsensitive = true };
+
     private sealed record SizeCaseFile(List<SizeCase> Cases);
 
     // The same file drives cde-tauri's toHRString tests, so both frontends format sizes identically.
@@ -20,7 +22,7 @@ public class SizeFormatterTests
     {
         var path = Path.Combine(TestContext.CurrentContext.TestDirectory, "testdata", "size-format-cases.json");
         var file = JsonSerializer.Deserialize<SizeCaseFile>(File.ReadAllText(path),
-            new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+            CaseInsensitive);
         if (file?.Cases is not { Count: > 0 })
         {
             throw new InvalidDataException($"No size cases in {path}");
