@@ -4,7 +4,6 @@ import {
   MERGED_COLOR,
   branchColors,
   branchIdOf,
-  capturingTiler,
   drillTargetId,
   fullPathOf,
   joinPath,
@@ -183,50 +182,7 @@ describe("labelLines", () => {
     expect(labelLines(rect(100, -5), 10, 10, 11, P)).toBe("none");
   });
 
-  it("matches the library's inset 0.5 + labelPadding 4", () => {
-    expect(LABEL_PADDING).toBe(4.5);
-  });
-});
-
-describe("capturingTiler", () => {
-  type N = { id: string; parent?: N | null; children?: N[]; x0: number; y0: number; x1: number; y1: number };
-  const n = (id: string, children?: N[]): N => {
-    const node: N = { id, children, x0: 0, y0: 0, x1: 0, y1: 0 };
-    children?.forEach((c) => (c.parent = node));
-    return node;
-  };
-  // A fake tiler that splits the area into equal vertical strips.
-  const strips = (node: N, x0: number, y0: number, x1: number, y1: number) => {
-    const kids = node.children ?? [];
-    kids.forEach((c, i) => {
-      c.x0 = x0 + ((x1 - x0) * i) / kids.length;
-      c.x1 = x0 + ((x1 - x0) * (i + 1)) / kids.length;
-      c.y0 = y0;
-      c.y1 = y1;
-    });
-  };
-  const idOf = (node: N) => node.id;
-
-  it("delegates to the base tiler and records leaf rectangles only", () => {
-    const sink = capturingTiler<N>(strips, idOf);
-    const dir = n("dir", [n("a"), n("b")]);
-    const root = n("root", [dir, n("c")]);
-    sink.tile(root, 0, 0, 100, 50);
-    sink.tile(dir, 0, 0, 50, 50);
-    expect(sink.current().get("c")).toEqual({ x0: 50, y0: 0, x1: 100, y1: 50 });
-    expect(sink.current().get("a")).toEqual({ x0: 0, y0: 0, x1: 25, y1: 50 });
-    expect(sink.current().has("dir")).toBe(false);
-  });
-
-  it("starts a fresh capture each time the root is tiled again (re-layout)", () => {
-    const sink = capturingTiler<N>(strips, idOf);
-    const root = n("root", [n("a"), n("b")]);
-    sink.tile(root, 0, 0, 100, 50);
-    const first = sink.current();
-    sink.tile(root, 0, 0, 200, 50);
-    expect(sink.current()).not.toBe(first);
-    expect(first.get("b")?.x1).toBe(100);
-    expect(sink.current().get("b")?.x1).toBe(200);
-    expect(sink.generation()).toBe(2);
+  it("uses the mark labelPadding (the drawn rect is already inset)", () => {
+    expect(LABEL_PADDING).toBe(4);
   });
 });

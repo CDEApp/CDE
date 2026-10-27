@@ -1,3 +1,4 @@
+import type { TreemapRow } from "./api/types";
 // Pure helpers for the TreeMap view: kept free of React and the chart library so they unit-test
 // in plain Node.
 
@@ -106,8 +107,8 @@ export function fullPathOf(
   return names.reverse().reduce((path, name) => joinPath(path, name), rootFullPath);
 }
 
-/** Inset (0.5) + labelPadding (4): the library's clearance between a tile edge and its label. */
-export const LABEL_PADDING = 4.5;
+/** The mark labelPadding: clearance between a drawn (already inset) tile edge and its label. */
+export const LABEL_PADDING = 4;
 
 export interface TileRect {
   x0: number;
@@ -137,36 +138,87 @@ export function labelLines(
   return sizeWidth <= availW && 2 * lineHeight <= availH ? "both" : "name";
 }
 
-interface TileNode {
-  parent?: unknown;
-  children?: (TileNode & TileRect)[];
+/** Whether a tile is big enough to hold even one line; a cheap pre-check before measuring text. */
+export function canFitAnyText(rect: TileRect, lineHeight: number, padding: number): boolean {
+  return rect.x1 - rect.x0 > 2 * padding && rect.y1 - rect.y0 >= 2 * padding + lineHeight;
+}
+
+/** One drawn tile read from the rendered scene: its row and its final on-screen rectangle. */
+export interface SceneLeaf {
+  id: string;
+  row: TreemapRow;
+  rect: TileRect;
+}
+
+export interface TileLayout {
+  width: number;
+  height: number;
+  leaves: SceneLeaf[];
+}
+
+interface SceneNodeLike {
+  kind: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  translateX?: number;
+  translateY?: number;
+  children?: readonly SceneNodeLike[];
+  interaction?: { point?: { datum?: { id?: unknown; data?: unknown } } };
 }
 
 /**
- * Wraps a d3-style tiler `(node, x0, y0, x1, y1)` so every leaf rectangle it assigns is recorded
- * by id. The treemap mark only labels leaves (`hierarchy.leaves()`), and a tiler call for the root
- * starts a new layout, so each (re)layout yields a fresh map and bumps `generation()`.
+ * The drawn tiles of a rendered chart scene. The treemap mark emits one `rect` per leaf (already
+ * reduced by its paddingInner/rounding/inset), tagged with the node it belongs to, so these are
+ * the exact bounds on screen. Reading them from the scene avoids re-deriving the library's layout.
  */
-export function capturingTiler<N extends TileNode>(
-  base: (node: N, x0: number, y0: number, x1: number, y1: number) => void,
-  idOf: (node: N) => string,
-) {
-  let rects = new Map<string, TileRect>();
-  let generation = 0;
-  return {
-    tile(node: N, x0: number, y0: number, x1: number, y1: number): void {
-      base(node, x0, y0, x1, y1);
-      if (!node.parent) {
-        rects = new Map();
-        generation++;
-      }
-      for (const child of (node.children ?? []) as (N & TileRect)[]) {
-        if (!child.children?.length) {
-          rects.set(idOf(child), { x0: child.x0, y0: child.y0, x1: child.x1, y1: child.y1 });
-        }
-      }
-    },
-    current: () => rects,
-    generation: () => generation,
+export function sceneLeaves(nodes: readonly SceneNodeLike[], dx = 0, dy = 0, out: SceneLeaf[] = []): SceneLeaf[] {
+  for (const node of nodes) {
+    if (node.kind === "group" && node.children) {
+      sceneLeaves(node.children, dx + (node.translateX ?? 0), dy + (node.translateY ?? 0), out);
+    } else if (node.kind === "rect") {
+      const datum = node.interaction?.point?.datum;
+      if (!datum || datum.id == null || node.x == null || node.y == null) continue;
+      const x0 = dx + node.x;
+      const y0 = dy + node.y;
+      out.push({
+        id: String(datum.id),
+        row: datum.data as TreemapRow,
+        rect: { x0, y0, x1: x0 + (node.width ?? 0), y1: y0 + (node.height ?? 0) },
+      });
+    }
+  }
+  return out;
+}
+
+/** True when two layouts have the same size, tiles, rectangles and row objects. */
+export function sameTileLayout(a: TileLayout, b: TileLayout): boolean {
+  if (a === b) return true;
+  if (a.width !== b.width || a.height !== b.height || a.leaves.length !== b.leaves.length) return false;
+  return a.leaves.every((l, i) => {
+    const o = b.leaves[i];
+    return (
+      l.id === o.id &&
+      l.row === o.row &&
+      l.rect.x0 === o.rect.x0 &&
+      l.rect.y0 === o.rect.y0 &&
+      l.rect.x1 === o.rect.x1 &&
+      l.rect.y1 === o.rect.y1
+    );
+  });
+}
+
+/** Wraps a raw `(font, text) => width` measurer with a cache so repeated names aren't re-measured. */
+export function createTextMeasurer(raw: (font: string, text: string) => number) {
+  const cache = new Map<string, number>();
+  return (font: string, text: string): number => {
+    const key = `${font}\u0000${text}`;
+    let w = cache.get(key);
+    if (w === undefined) {
+      w = raw(font, text);
+      cache.set(key, w);
+    }
+    return w;
   };
 }

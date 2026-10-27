@@ -2,19 +2,21 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { defineChart, type ChartInteractionController } from "@tanstack/charts";
 import { treemap, type TreemapNode } from "@tanstack/charts/hierarchy/treemap";
 import { Chart } from "@tanstack/charts/react";
-import { treemapSquarify } from "d3-hierarchy";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, TreemapResponse, TreemapRow } from "../api/types";
 import { toHRString } from "../format";
 import {
   branchColors,
   branchIdOf,
-  capturingTiler,
+  canFitAnyText,
+  createTextMeasurer,
   drillTargetId,
   fullPathOf,
   LABEL_PADDING,
   labelLines,
-  type TileRect,
+  sameTileLayout,
+  sceneLeaves,
+  type TileLayout,
   MERGED_COLOR,
   minFractionFor,
   mix,
@@ -34,36 +36,20 @@ interface Props {
 }
 
 type Node = TreemapNode<TreemapRow>;
-/** The d3 hierarchy node handed to a tiler (`data.id` is our nodeId; `id` is lost on copy). */
-interface LayoutNode extends TileRect {
-  data: { id: string };
-  parent: unknown;
-  children?: LayoutNode[];
-}
-
 const NAME_FONT_PX = 11;
 const SIZE_FONT_PX = 10;
 const LABEL_FILL = "#141414";
-const GOLDEN_RATIO = (1 + Math.sqrt(5)) / 2; // the treemap mark's default squarify ratio
 
-/** The tile rectangles of one rendered layout, in the chart's own pixel space. */
-interface TileLayout {
-  generation: number;
-  width: number;
-  height: number;
-  rects: Map<string, TileRect>;
-  rowsById: Map<string, TreemapRow>;
-}
-
-/** Text width in px via canvas; a coarse per-character estimate where canvas is unavailable. */
-function makeMeasurer(fontFamily: string): (text: string, px: number) => number {
-  const ctx = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
-  return (text, px) => {
-    if (!ctx) return text.length * px * 0.6;
-    ctx.font = `${px}px ${fontFamily}`;
-    return ctx.measureText(text).width;
-  };
-}
+let measureCtx: CanvasRenderingContext2D | null | undefined;
+/** One shared canvas for all text measurement; null where canvas is unavailable (tests). */
+const measureWidth = createTextMeasurer((font, text) => {
+  if (measureCtx === undefined) {
+    measureCtx = typeof document === "undefined" ? null : document.createElement("canvas").getContext("2d");
+  }
+  if (!measureCtx) return text.length * 6;
+  measureCtx.font = font;
+  return measureCtx.measureText(text).width;
+});
 
 const DIM_TARGET = "#2a2a2a"; // tiles outside a highlighted branch fade toward the pane colour
 
@@ -84,14 +70,17 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
   const tooltipRef = useRef<HTMLDivElement>(null);
   const interactionRef = useRef<ChartInteractionController<Node> | null>(null);
   const [size, setSize] = useState({ width: 0, height: 0 });
+  // The drawn tiles of the last chart render, read from its scene (exact bounds and rows).
   const [tileLayout, setTileLayout] = useState<TileLayout | null>(null);
-
-  // Records every leaf rectangle the chart lays out (the mark only labels leaves). One stable
-  // instance: each relayout (resize, depth/data change, highlight) starts a new generation.
-  const capture = useMemo(
-    () => capturingTiler<LayoutNode>(treemapSquarify.ratio(GOLDEN_RATIO) as never, (n) => String(n.data.id)),
-    [],
-  );
+  // Bumped when web fonts finish loading so label fits are re-measured with the final font.
+  const [fontsVersion, setFontsVersion] = useState(0);
+  useEffect(() => {
+    let live = true;
+    document.fonts?.ready.then(() => live && setFontsVersion((v) => v + 1));
+    return () => {
+      live = false;
+    };
+  }, []);
 
   // A new "Show TreeMap" request (a new nonce) re-roots the view. Keyed on the nonce alone: a
   // caller passing a fresh-but-equal ref object each render must not re-fetch in a loop.
@@ -128,6 +117,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
         if (abort.signal.aborted) return;
         settled = true;
         setData(map);
+        setTileLayout(null); // old labels belong to the old chart
         setCrumbs(path);
         setHighlight(null);
         setHover(null);
@@ -148,8 +138,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
 
   const rows = data?.rows ?? [];
   const rowsById = useMemo(() => new Map(rows.map((r) => [r.nodeId, r])), [rows]);
-  const rowsByIdRef = useRef(rowsById);
-  rowsByIdRef.current = rowsById;
+
   const rootRow = useMemo(() => rows.find((r) => r.parentId == null), [rows]);
   const branches = useMemo(
     () => rows.filter((r) => r.parentId === rootRow?.nodeId).sort((a, b) => b.size - a.size),
@@ -170,7 +159,6 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
             value: "value",
             paddingOuter: 2,
             paddingInner: 1,
-            method: capture.tile as never,
             inset: 0.5,
             fill: (n: Node) => {
               const branch = branchIdOf(n);
@@ -189,42 +177,39 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
         margin: 0,
         tooltip: false,
       }),
-    [rows, colors, highlight, capture],
+    [rows, colors, highlight],
   );
 
-  // After every chart render, publish the rectangles it was laid out with. Reading them here (not
-  // during our render) keeps them in step with what is on screen after a resize or depth change.
+  // After every chart render, read the drawn tiles (final bounds + their rows) off the scene, so
+  // labels always match what is on screen after a resize, depth change or data change. Colour-only
+  // renders (legend highlight) yield identical geometry and keep the previous state object.
   const onChartRender = useCallback(
-    (ctx: { interaction: unknown; scene: { width: number; height: number } }) => {
+    (ctx: { interaction: unknown; scene: { width: number; height: number; nodes: readonly unknown[] } }) => {
       interactionRef.current = ctx.interaction as unknown as ChartInteractionController<Node>;
-      const generation = capture.generation();
-      setTileLayout((prev) =>
-        prev && prev.generation === generation && prev.width === ctx.scene.width && prev.height === ctx.scene.height
-          ? prev
-          : {
-              generation,
-              width: ctx.scene.width,
-              height: ctx.scene.height,
-              rects: capture.current(),
-              rowsById: rowsByIdRef.current,
-            },
-      );
+      const next: TileLayout = {
+        width: ctx.scene.width,
+        height: ctx.scene.height,
+        leaves: sceneLeaves(ctx.scene.nodes as never),
+      };
+      setTileLayout((prev) => (prev && sameTileLayout(prev, next) ? prev : next));
     },
-    [capture],
+    [],
   );
 
   const tileLabels = useMemo(() => {
     if (!tileLayout) return [];
-    const measure = makeMeasurer(bodyRef.current ? getComputedStyle(bodyRef.current).fontFamily : "sans-serif");
+    // Measure with the font the overlay <text> inherits (see .treemap-labels in styles.css).
+    const family = bodyRef.current ? getComputedStyle(bodyRef.current).fontFamily : "sans-serif";
+    const nameFont = `400 ${NAME_FONT_PX}px ${family}`;
+    const sizeFont = `400 ${SIZE_FONT_PX}px ${family}`;
     const out: { id: string; cx: number; cy: number; name: string; size?: string }[] = [];
-    for (const [id, rect] of tileLayout.rects) {
-      const row = tileLayout.rowsById.get(id);
-      if (!row || !row.name) continue;
+    for (const { id, row, rect } of tileLayout.leaves) {
+      if (!row?.name || !canFitAnyText(rect, NAME_FONT_PX, LABEL_PADDING)) continue;
       const size = toHRString(row.size);
       const lines = labelLines(
         rect,
-        measure(row.name, NAME_FONT_PX),
-        measure(size, SIZE_FONT_PX),
+        measureWidth(nameFont, row.name),
+        measureWidth(sizeFont, size),
         NAME_FONT_PX,
         LABEL_PADDING,
       );
@@ -238,7 +223,8 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
       });
     }
     return out;
-  }, [tileLayout]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tileLayout, fontsVersion]);
 
   const up = crumbs.length > 1 ? crumbs[crumbs.length - 2].ref : null;
 
