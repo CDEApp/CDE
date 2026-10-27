@@ -88,9 +88,16 @@ public class PartialHashFirstBlockTests
             var helper = new HashHelper(NSubstitute.Substitute.For<cdeLib.Infrastructure.ILogger>());
             foreach (var p in paths) await helper.GetHashResponseFromFile(p, 65536); // warm up pool/JIT
 
-            var before = GC.GetAllocatedBytesForCurrentThread();
-            foreach (var p in paths) await helper.GetHashResponseFromFile(p, 65536);
-            var perFile = (GC.GetAllocatedBytesForCurrentThread() - before) / files;
+            // Process-wide, not per-thread: the awaits resume on thread-pool threads, so a per-thread counter
+            // read before and after can come from different threads. The fixture is NonParallelizable; take
+            // the best of a few runs to shed unrelated background allocations.
+            var perFile = long.MaxValue;
+            for (var run = 0; run < 5; run++)
+            {
+                var before = GC.GetTotalAllocatedBytes(precise: true);
+                foreach (var p in paths) await helper.GetHashResponseFromFile(p, 65536);
+                perFile = Math.Min(perFile, (GC.GetTotalAllocatedBytes(precise: true) - before) / files);
+            }
 
             TestContext.Out.WriteLine($"partial hash allocation: {perFile} bytes/file");
             Assert.That(perFile, Is.LessThan(4096)); // was ~460 with the per-file closure; the rest is the async state machine
