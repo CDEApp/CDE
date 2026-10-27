@@ -6,7 +6,7 @@
 //
 // tauri.conf.json's "version" is what Tauri writes into the exe's Windows version resource.
 // The pure functions are exported for scripts/stamp-version.test.mjs; the CLI runs only when
-// this file is the entry point.
+// this file is the entry point. It rewrites tracked files, so run it on a throwaway checkout (CI).
 import { readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -20,20 +20,33 @@ export function assertVersion(version) {
   return version;
 }
 
-// Replace the first top-level "version": "..." in a JSON document, keeping the formatting.
+// Set the top-level "version" of a JSON document. The text is parsed and written back with
+// two-space indentation and a trailing newline, so a nested "version" key is never touched.
 export function stampJson(text, version) {
   assertVersion(version);
-  const re = /^(\s{0,4}"version"\s*:\s*)"[^"]*"/m;
-  if (!re.test(text)) throw new Error('no top-level "version" field found');
-  return text.replace(re, `$1"${version}"`);
+  const obj = JSON.parse(text);
+  if (obj === null || typeof obj !== "object" || Array.isArray(obj) || typeof obj.version !== "string") {
+    throw new Error('no top-level "version" field found');
+  }
+  obj.version = version;
+  return `${JSON.stringify(obj, null, 2)}\n`;
 }
 
-// Replace the version in the [package] table of Cargo.toml (not a dependency's version).
+// Replace the version in the [package] table of Cargo.toml (not a dependency's version). Works line
+// by line: from the [package] header to the next table header, the first `version = ...` line.
 export function stampCargoToml(text, version) {
   assertVersion(version);
-  const re = /(\[package\][^[]*?^version\s*=\s*)"[^"]*"/ms;
-  if (!re.test(text)) throw new Error("no version found in the [package] table");
-  return text.replace(re, `$1"${version}"`);
+  const lines = text.split("\n");
+  const start = lines.findIndex((l) => /^\s*\[package\]\s*(#.*)?\r?$/.test(l));
+  if (start < 0) throw new Error("no [package] table found");
+  for (let i = start + 1; i < lines.length && !/^\s*\[/.test(lines[i]); i++) {
+    const m = /^(\s*version\s*=\s*)"[^"]*"(.*)$/s.exec(lines[i]);
+    if (m) {
+      lines[i] = `${m[1]}"${version}"${m[2]}`;
+      return lines.join("\n");
+    }
+  }
+  throw new Error("no version found in the [package] table");
 }
 
 // Replace the version of the named package in Cargo.lock.
