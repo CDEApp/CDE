@@ -172,7 +172,9 @@ th { position: sticky; top: 0; background: var(--content-header); }
 .th-sort { all: unset; display: block; width: 100%; cursor: pointer; font-weight: inherit; }
 .th-sort:focus-visible { outline: 1px solid var(--fg); outline-offset: 2px; }
 .th-sort:hover { text-decoration: underline; }
-td.num { text-align: right; font-variant-numeric: tabular-nums; }
+/* Always takes its width, so the header text doesn't shift as the arrow appears or flips. */
+.sort-arrow { display: inline-block; width: 1em; margin-left: 0.25em; text-align: left; }
+th.num, td.num { text-align: right; font-variant-numeric: tabular-nums; }
 tbody tr:hover { background: var(--row-hover); }
 
 /* virtualized list (search results) */

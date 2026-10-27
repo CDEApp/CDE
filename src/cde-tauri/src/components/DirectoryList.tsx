@@ -37,12 +37,13 @@ export function DirectoryList({ path, nodes, onActivate, onContextMenu, resolveS
               return (
                 <th
                   key={column}
+                  className={column === "size" ? "num" : undefined}
                   aria-sort={active ? (sort.direction === "asc" ? "ascending" : "descending") : "none"}
                 >
                   <button type="button" className="th-sort" onClick={() => onSort(column)}>
                     {label}
                     <span className="sort-arrow" aria-hidden="true">
-                      {active ? (sort.direction === "asc" ? " ▲" : " ▼") : ""}
+                      {active ? (sort.direction === "asc" ? "▲" : "▼") : ""}
                     </span>
                   </button>
                 </th>

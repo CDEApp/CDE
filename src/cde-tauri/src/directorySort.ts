@@ -18,10 +18,9 @@ export function nextSort(current: DirectorySort, clicked: SortColumn): Directory
   return { column: clicked, direction: "asc" };
 }
 
-// Ordinal ignore-case, like the server's StringComparer.OrdinalIgnoreCase (upper-cased code units).
-function compareNames(a: string, b: string): number {
-  const x = a.toUpperCase();
-  const y = b.toUpperCase();
+// Ordinal ignore-case, like the server's StringComparer.OrdinalIgnoreCase: compare upper-cased
+// keys by code unit. Keys are computed once per sort, not per comparison.
+function compareKeys(x: string, y: string): number {
   return x < y ? -1 : x > y ? 1 : 0;
 }
 
@@ -39,27 +38,31 @@ function modifiedMs(n: DirectoryNode): number | null {
  */
 export function sortDirectoryNodes(nodes: readonly DirectoryNode[], sort: DirectorySort): DirectoryNode[] {
   const sign = sort.direction === "asc" ? 1 : -1;
-  return [...nodes].sort((a, b) => {
-    if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
+  // Decorate once so a large folder doesn't upper-case names or parse dates on every comparison.
+  const rows = nodes.map((n) => ({
+    n,
+    key: n.name.toUpperCase(),
+    ms: sort.column === "modified" ? modifiedMs(n) : null,
+  }));
+  rows.sort((a, b) => {
+    if (a.n.isDirectory !== b.n.isDirectory) return a.n.isDirectory ? -1 : 1;
     let c = 0;
     switch (sort.column) {
       case "name":
-        c = sign * compareNames(a.name, b.name);
+        c = sign * compareKeys(a.key, b.key);
         break;
       case "size":
-        c = sign * (a.size - b.size);
+        c = sign * (a.n.size - b.n.size);
         break;
-      case "modified": {
-        const ma = modifiedMs(a);
-        const mb = modifiedMs(b);
-        if (ma === null || mb === null) {
-          if (ma === mb) break;
-          return ma === null ? 1 : -1;
+      case "modified":
+        if (a.ms === null || b.ms === null) {
+          if (a.ms === b.ms) break;
+          return a.ms === null ? 1 : -1;
         }
-        c = sign * (ma - mb);
+        c = sign * (a.ms - b.ms);
         break;
-      }
     }
-    return c !== 0 ? c : compareNames(a.name, b.name);
+    return c !== 0 ? c : compareKeys(a.key, b.key);
   });
+  return rows.map((r) => r.n);
 }
