@@ -10,8 +10,8 @@ namespace cdeLib;
 /// <summary>
 /// The <c>--template</c> text for a find/grep match line, parsed once into literal and placeholder segments so
 /// rendering a match does no parsing. Placeholders (case-insensitive): <c>{catalog}</c>, <c>{fullpath}</c>,
-/// <c>{filename}</c>, <c>{directory}</c>, <c>{size}</c> and <c>{modified}</c>. <c>{modified}</c> takes an optional
-/// format after a colon, such as <c>{modified:yyyy-MM-dd}</c>. <c>{{</c> and <c>}}</c> are literal braces;
+/// <c>{filename}</c>, <c>{directory}</c>, <c>{size}</c> and <c>{modified}</c>. <c>{modified}</c> and <c>{size}</c>
+/// take an optional format after a colon, such as <c>{modified:yyyy-MM-dd}</c> or <c>{size:MB}</c>. <c>{{</c> and <c>}}</c> are literal braces;
 /// <c>\t</c> and <c>\n</c> are a tab and a newline; any other backslash is literal so Windows paths can be
 /// written in a template.
 /// </summary>
@@ -22,14 +22,21 @@ public sealed class MatchTemplate
     // The tokens of a {modified:...} format. They are case-sensitive: MM is the month, mm the minutes.
     private enum DateToken { Literal, Year, Month, Day, Hour, Minute, Second }
 
+    // The formats of {size}. The values from Bytes up are the power of 1024 the size is divided by.
+    private enum SizeUnit { Auto = -1, Bytes = 0, KB = 1, MB = 2, GB = 3, TB = 4 }
+
+    private static readonly string[] AutoSuffix = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+
     private const string ValidNames = "{catalog}, {fullpath}, {filename}, {directory}, {size}, {modified}";
+    private const string ValidSizeFormats = "auto, B, KB, MB, GB, TB";
     private const string DefaultModifiedFormat = "yyyy-MM-dd HH:mm:ss";
 
     private readonly Segment[] _segments;
 
     [ThreadStatic] private static StringBuilder _builder;
 
-    private readonly record struct Segment(Part Part, string Text, (DateToken Token, string Text)[] Date);
+    private readonly record struct Segment(
+        Part Part, string Text, (DateToken Token, string Text)[] Date, SizeUnit Unit = SizeUnit.Auto);
 
     private MatchTemplate(Segment[] segments) => _segments = segments;
 
@@ -115,10 +122,26 @@ public sealed class MatchTemplate
             return new Segment(part, null, MergeLiterals(DateGrammar.Parse(format ?? DefaultModifiedFormat)));
         }
 
+        if (part == Part.Size)
+            return new Segment(part, null, null, ParseSizeUnit(format));
+
         if (format != null)
-            throw new FormatException($"Template placeholder '{{{name}}}' does not take a format; only {{modified}} does.");
+            throw new FormatException(
+                $"Template placeholder '{{{name}}}' does not take a format; only {{modified}} and {{size}} do.");
         return new Segment(part, null, null);
     }
+
+    private static SizeUnit ParseSizeUnit(string format) => format?.ToLowerInvariant() switch
+    {
+        null or "auto" => SizeUnit.Auto,
+        "b" => SizeUnit.Bytes,
+        "kb" => SizeUnit.KB,
+        "mb" => SizeUnit.MB,
+        "gb" => SizeUnit.GB,
+        "tb" => SizeUnit.TB,
+        _ => throw new FormatException(
+            $"Unknown size format '{format}' in '{{size:{format}}}'. Valid size formats are {ValidSizeFormats}."),
+    };
 
     // Joins neighbouring literals so a match is rendered with as few appends as possible.
     private static Segment[] MergeLiterals(Segment[] segments)
@@ -184,7 +207,7 @@ public sealed class MatchTemplate
                     sb.Append(fullPath.AsSpan(0, slash < 0 ? 0 : slash));
                     break;
                 case Part.Size:
-                    sb.Append(CultureInfo.InvariantCulture, $"{size}");
+                    AppendSize(sb, size, segment.Unit);
                     break;
                 case Part.Modified:
                     AppendDate(sb, segment.Date, modified);
@@ -194,6 +217,52 @@ public sealed class MatchTemplate
 
         return sb.ToString();
     }
+
+    // Sizes use powers of 1024 with one decimal, rounded half away from zero and written culture-invariantly,
+    // as cdeAppCore's SizeFormatter does for the GUIs (cdeLib cannot reference it; a cdeAppCoreTest runs the
+    // shared cases through both). Every format writes the unit name after the value, such as "4096 KB"; auto
+    // picks the unit, and writes a size of 0 as just "0" like the GUIs.
+    private static void AppendSize(StringBuilder sb, long size, SizeUnit unit)
+    {
+        if (unit == SizeUnit.Auto)
+        {
+            if (size < 0)
+                sb.Append(CultureInfo.InvariantCulture, $"{size} B");
+            else
+                AppendAutoSize(sb, size);
+        }
+        else if (unit == SizeUnit.Bytes || size < 0)
+        {
+            sb.Append(CultureInfo.InvariantCulture, $"{size} B");
+        }
+        else
+        {
+            sb.Append(CultureInfo.InvariantCulture, $"{ScaledSize(size, (int)unit)} {AutoSuffix[(int)unit]}");
+        }
+    }
+
+    private static void AppendAutoSize(StringBuilder sb, long size)
+    {
+        if (size == 0)
+        {
+            sb.Append('0');
+            return;
+        }
+
+        var place = (63 - System.Numerics.BitOperations.LeadingZeroCount((ulong)size)) / 10; // floor(log1024(size))
+        var scaled = ScaledSize(size, place);
+        if (scaled >= 1024 && place < AutoSuffix.Length - 1)
+        {
+            // 1023.96 KB rounds to 1024; show it as 1 MB instead.
+            place++;
+            scaled = ScaledSize(size, place);
+        }
+
+        sb.Append(CultureInfo.InvariantCulture, $"{scaled} {AutoSuffix[place]}");
+    }
+
+    private static double ScaledSize(long size, int place) =>
+        Math.Round(size / Math.Pow(1024, place), 1, MidpointRounding.AwayFromZero);
 
     private static void AppendDate(StringBuilder sb, (DateToken Token, string Text)[] tokens, DateTime date)
     {
