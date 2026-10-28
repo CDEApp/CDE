@@ -107,10 +107,10 @@ public static class Program
     private static Task DispatchAsync(object options) => options switch
     {
         ScanOptions o => _app.CreateCacheAsync(o),
-        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template)),
-        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template)),
-        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template)),
-        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template)),
+        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template, o.Filter)),
+        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template, o.Filter)),
+        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template, o.Filter)),
+        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template, o.Filter)),
         ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
         ReplGrepOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
         ReplFindOptions o => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),

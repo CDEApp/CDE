@@ -51,11 +51,14 @@ public sealed class CdeApp(
     /// Run a find, preferring the zero-copy columnar format: if any <c>.cdex</c> catalogs exist in the
     /// current dir (or one level down) they are searched over their memory maps with no managed catalog
     /// load; otherwise we fall back to loading the MessagePack <c>.cde</c> trees. A <paramref name="template"/>
-    /// (see <see cref="MatchTemplate"/>) is parsed first, so a bad one fails before any catalog is opened.
+    /// (see <see cref="MatchTemplate"/>) and any <paramref name="filters"/> (see <see cref="MatchFilter"/>) are
+    /// parsed first, so a bad one fails before any catalog is opened.
     /// </summary>
-    public void RunFind(string value, string param, string template = null)
+    public void RunFind(string value, string param, string template = null, IEnumerable<string> filters = null)
     {
+        var filterList = filters?.ToList();
         findService.Template = template == null ? null : MatchTemplate.Parse(template);
+        findService.Filter = filterList is { Count: > 0 } ? MatchFilter.Parse(filterList) : null;
 
         var cdex = repository.GetColumnarFileList(["./"]);
         if (cdex.Count == 0)
