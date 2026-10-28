@@ -37,6 +37,9 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
             return;
         }
 
+        cdexFiles = await HashCatalogTargets.ReachableAsync(cdexFiles, _logger).ConfigureAwait(false);
+        if (cdexFiles.Count == 0) return;
+
         _logger.Information("Memory pre-hash: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         var stopwatch = Stopwatch.StartNew();
