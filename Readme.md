@@ -270,8 +270,18 @@ This is the mode for finding files in your catalogs using assorted filter criter
 | `{fullpath}` | The full path of the match |
 | `{filename}` | The last part of the path, with its extension |
 | `{directory}` | The folder that holds the match, with no trailing separator |
-| `{size}` | The size in bytes, with no thousands separators |
+| `{size}` | The size, in the unit that suits it (for example `1.5 MB`) unless you give a format |
 | `{modified}` | The last modified time, as `yyyy-MM-dd HH:mm:ss` unless you give a format |
+
+`{size}` takes a format after a colon, for example `{size:MB}`. Sizes use 1024 for each step and one decimal place, the same as the sizes in cdeWin and the Tauri app.
+
+| Format | Value |
+|---|---|
+| `auto` | The default. The most suitable unit, with its name: `531 B`, `1.5 KB`, `5.3 GB`. A size of 0 is written as `0`. |
+| `B` | The exact number of bytes, with no thousands separators: `1234567 B` |
+| `KB`, `MB`, `GB`, `TB` | The size in that unit, followed by the unit name: `4096 KB`, `1.5 MB`. A size too small for the unit is written as `0 MB`. |
+
+The format names are not case-sensitive.
 
 `{modified}` takes a format after a colon, for example `{modified:yyyy-MM-dd}`. These parts of the format are replaced, and every other character is copied as it is. They are case-sensitive: `MM` is the month and `mm` is the minutes.
 
@@ -290,6 +300,7 @@ Placeholder names are not case-sensitive. Write `{{` and `}}` for a literal brac
 cde grep "\.log$" --template "{catalog} {fullpath}"
 cde greppath report --template "{filename}\t{directory}"
 cde find .log --template "{modified:yyyy-MM-dd} {size} {fullpath}"
+cde find .iso --template "{size:GB}\t{filename}"
 ```
 
 ### cde hash

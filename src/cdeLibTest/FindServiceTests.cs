@@ -368,9 +368,9 @@ public class FindServiceTests
     {
         var file = Path.Combine(_dir, "data", "docs", "report-2024.txt");
         using var reader = Columnar();
-        var expected = $"{new FileInfo(file).Length}|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
+        var expected = $"{new FileInfo(file).Length} B|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
 
-        new FindService { Template = MatchTemplate.Parse("{size}|{modified:yyyy-MM-dd HH:mm:ss}") }
+        new FindService { Template = MatchTemplate.Parse("{size:B}|{modified:yyyy-MM-dd HH:mm:ss}") }
             .FindColumnar("report-2024", FindService.ParamFind, [reader]);
 
         Assert.That(Matches(), Is.EqualTo(new[] { expected }));
@@ -381,9 +381,9 @@ public class FindServiceTests
     {
         var root = Scan();
         var file =Path.Combine(_dir, "data", "docs", "report-2024.txt");
-        var expected = $"{new FileInfo(file).Length}|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
+        var expected = $"{new FileInfo(file).Length} B|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
 
-        new FindService { Template = MatchTemplate.Parse("{size}|{modified:yyyy-MM-dd HH:mm:ss}") }
+        new FindService { Template = MatchTemplate.Parse("{size:B}|{modified:yyyy-MM-dd HH:mm:ss}") }
             .Find("report-2024", FindService.ParamFind, [root]);
 
         Assert.That(Matches(), Is.EqualTo(new[] { expected }));

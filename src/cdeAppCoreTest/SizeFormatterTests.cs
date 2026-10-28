@@ -40,6 +40,14 @@ public class SizeFormatterTests
         return bytes.ToHRString();
     }
 
+    // cdeLib cannot reference cdeAppCore, so the cde --template {size} carries its own copy of this formatting.
+    // Running the same shared cases through both keeps the CLI and the GUIs from drifting apart.
+    [TestCaseSource(nameof(SharedCases))]
+    public string MatchTemplateSize_MatchesSharedCases(long bytes)
+    {
+        return cdeLib.MatchTemplate.Parse("{size}").Render("catalog", @"C:\a.txt", bytes);
+    }
+
     [Test]
     public void ToHRString_IsCultureInvariant()
     {
