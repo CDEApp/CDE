@@ -35,8 +35,9 @@ public sealed class CdeApp(
         messageBus.Send(new CreateCacheCommand(opts.Path)
         { Description = opts.Description, FollowJunctions = opts.FollowJunctions }, cancellationToken: cancellation.Token);
 
-    public Task HashCatalogAsync() =>
-        messageBus.Send(new HashCatalogCommand(), cancellationToken: cancellation.Token);
+    /// <param name="catalogPath">The one .cdex catalog to hash, or null for every catalog found.</param>
+    public Task HashCatalogAsync(string catalogPath = null) =>
+        messageBus.Send(new HashCatalogCommand { CatalogPath = catalogPath }, cancellationToken: cancellation.Token);
 
     public Task FindDupesAsync() =>
         messageBus.Send(new FindDuplicatesCommand(), cancellationToken: cancellation.Token);
