@@ -32,6 +32,7 @@
     <PackageReference Include="MurmurHash.Net" Version="0.0.2" />
     <PackageReference Include="protobuf-net" Version="3.2.56" />
     <PackageReference Include="Serilog" Version="4.4.0" />
+    <PackageReference Include="Superpower" Version="3.2.1" />
     <PackageReference Include="SerilogTimings" Version="3.1.0" />
     <PackageReference Include="System.Configuration.ConfigurationManager" Version="10.0.14" />
   </ItemGroup>

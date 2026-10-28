@@ -232,6 +232,16 @@ public class MatchTemplateTests
     }
 
     [Test]
+    public void A_syntax_error_says_where_it_is()
+    {
+        var stray = Assert.Throws<FormatException>(() => MatchTemplate.Parse("{filename} } {fullpath}"));
+        var unclosed = Assert.Throws<FormatException>(() => MatchTemplate.Parse("{filename} {fullpath"));
+
+        Assert.That(stray!.Message, Does.Contain("column 12"));
+        Assert.That(unclosed!.Message, Does.Contain("end of input"));
+    }
+
+    [Test]
     public void Null_or_empty_template_throws()
     {
         Assert.Catch<ArgumentException>(() => MatchTemplate.Parse(null));

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using Superpower;
+using Superpower.Parsers;
 
 namespace cdeLib;
 
@@ -31,68 +33,69 @@ public sealed class MatchTemplate
 
     private MatchTemplate(Segment[] segments) => _segments = segments;
 
+    // ---- grammar ----
+    // A template is a run of literal text, escapes and {name} / {name:format} placeholders. A placeholder's name
+    // and format are read as plain text here and checked afterwards (ToSegment), which keeps the error messages
+    // for an unknown name or a bad format specific.
+
+    private static Segment Literal(string text) => new(Part.Literal, text, null);
+
+    private static readonly TextParser<Segment> PlainText =
+        Character.Matching(c => c is not ('{' or '}' or '\\'), "text").AtLeastOnce()
+            .Select(chars => Literal(new string(chars)));
+
+    // {{ and }} are braces, \t and \n a tab and a newline. Any other backslash is a plain backslash.
+    private static readonly TextParser<Segment> EscapedText =
+        Span.EqualTo("{{").Value(Literal("{")).Try()
+            .Or(Span.EqualTo("}}").Value(Literal("}")).Try())
+            .Or(Span.EqualTo("\\t").Value(Literal("\t")).Try())
+            .Or(Span.EqualTo("\\n").Value(Literal("\n")).Try())
+            .Or(Character.EqualTo('\\').Value(Literal("\\")));
+
+    private static readonly TextParser<Segment> Placeholder =
+        from open in Character.EqualTo('{')
+        from name in Character.Matching(c => c is not (':' or '}'), "placeholder name").Many()
+        from format in Character.EqualTo(':')
+            .IgnoreThen(Character.Matching(c => c != '}', "format").Many())
+            .OptionalOrDefault()
+        from close in Character.EqualTo('}')
+        select ToSegment(new string(name), format == null ? null : new string(format));
+
+    private static readonly TextParser<Segment[]> TemplateGrammar =
+        EscapedText.Or(PlainText).Or(Placeholder).Many().AtEnd();
+
+    // A {modified:...} format is a run of date tokens, longest first, and anything else is literal.
+    private static TextParser<(DateToken Token, string Text)> DateTokenText(string text, DateToken token) =>
+        Span.EqualTo(text).Value((token, (string)null)).Try();
+
+    private static readonly TextParser<(DateToken Token, string Text)> DateItem =
+        DateTokenText("yyyy", DateToken.Year)
+            .Or(DateTokenText("MM", DateToken.Month))
+            .Or(DateTokenText("dd", DateToken.Day))
+            .Or(DateTokenText("HH", DateToken.Hour))
+            .Or(DateTokenText("mm", DateToken.Minute))
+            .Or(DateTokenText("ss", DateToken.Second))
+            .Or(Character.AnyChar.Select(c => (DateToken.Literal, c.ToString())));
+
+    private static readonly TextParser<(DateToken Token, string Text)[]> DateGrammar = DateItem.Many().AtEnd();
+
     /// <summary>Parse a template. Throws <see cref="FormatException"/> for an unknown placeholder, a bad format or unbalanced braces.</summary>
     public static MatchTemplate Parse(string template)
     {
         ArgumentException.ThrowIfNullOrEmpty(template);
 
-        var segments = new List<Segment>();
-        var literal = new StringBuilder();
-
-        void FlushLiteral()
+        try
         {
-            if (literal.Length == 0) return;
-            segments.Add(new Segment(Part.Literal, literal.ToString(), null));
-            literal.Clear();
+            return new MatchTemplate(MergeLiterals(TemplateGrammar.Parse(template)));
         }
-
-        for (var i = 0; i < template.Length; i++)
+        catch (ParseException ex)
         {
-            var c = template[i];
-            var next = i + 1 < template.Length ? template[i + 1] : '\0';
-            switch (c)
-            {
-                case '{' when next == '{':
-                    literal.Append('{');
-                    i++;
-                    break;
-                case '}' when next == '}':
-                    literal.Append('}');
-                    i++;
-                    break;
-                case '{':
-                    var end = template.IndexOf('}', i + 1);
-                    if (end < 0) throw new FormatException($"Template has an unclosed '{{' at position {i}.");
-                    FlushLiteral();
-                    segments.Add(ParsePlaceholder(template.Substring(i + 1, end - i - 1)));
-                    i = end;
-                    break;
-                case '}':
-                    throw new FormatException($"Template has an unmatched '}}' at position {i}; use '}}}}' for a literal brace.");
-                case '\\' when next == 't':
-                    literal.Append('\t');
-                    i++;
-                    break;
-                case '\\' when next == 'n':
-                    literal.Append('\n');
-                    i++;
-                    break;
-                default:
-                    literal.Append(c);
-                    break;
-            }
+            throw new FormatException($"Invalid template: {ex.Message}", ex);
         }
-
-        FlushLiteral();
-        return new MatchTemplate([.. segments]);
     }
 
-    private static Segment ParsePlaceholder(string body)
+    private static Segment ToSegment(string name, string format)
     {
-        var colon = body.IndexOf(':');
-        var name = colon < 0 ? body : body[..colon];
-        var format = colon < 0 ? null : body[(colon + 1)..];
-
         var part = name.ToLowerInvariant() switch
         {
             "catalog" => Part.Catalog,
@@ -109,7 +112,7 @@ public sealed class MatchTemplate
         {
             if (format is { Length: 0 })
                 throw new FormatException("Template placeholder '{modified:}' has an empty format.");
-            return new Segment(part, null, ParseDateFormat(format ?? DefaultModifiedFormat));
+            return new Segment(part, null, MergeLiterals(DateGrammar.Parse(format ?? DefaultModifiedFormat)));
         }
 
         if (format != null)
@@ -117,51 +120,34 @@ public sealed class MatchTemplate
         return new Segment(part, null, null);
     }
 
-    private static (DateToken, string)[] ParseDateFormat(string format)
+    // Joins neighbouring literals so a match is rendered with as few appends as possible.
+    private static Segment[] MergeLiterals(Segment[] segments)
     {
-        var tokens = new List<(DateToken, string)>();
-        var literal = new StringBuilder();
-
-        void FlushLiteral()
+        var merged = new List<Segment>(segments.Length);
+        foreach (var segment in segments)
         {
-            if (literal.Length == 0) return;
-            tokens.Add((DateToken.Literal, literal.ToString()));
-            literal.Clear();
+            if (segment.Part == Part.Literal && merged.Count > 0 && merged[^1].Part == Part.Literal)
+                merged[^1] = Literal(merged[^1].Text + segment.Text);
+            else
+                merged.Add(segment);
         }
 
-        for (var i = 0; i < format.Length; i++)
-        {
-            var token = TokenAt(format, i);
-            if (token == DateToken.Literal)
-            {
-                literal.Append(format[i]);
-                continue;
-            }
+        return [.. merged];
+    }
 
-            FlushLiteral();
-            tokens.Add((token, null));
-            i += TokenLength(token) - 1;
+    private static (DateToken, string)[] MergeLiterals((DateToken Token, string Text)[] tokens)
+    {
+        var merged = new List<(DateToken Token, string Text)>(tokens.Length);
+        foreach (var token in tokens)
+        {
+            if (token.Token == DateToken.Literal && merged.Count > 0 && merged[^1].Token == DateToken.Literal)
+                merged[^1] = (DateToken.Literal, merged[^1].Text + token.Text);
+            else
+                merged.Add(token);
         }
 
-        FlushLiteral();
-        return [.. tokens];
+        return [.. merged];
     }
-
-    private static DateToken TokenAt(string format, int i)
-    {
-        if (StartsWith(format, i, "yyyy")) return DateToken.Year;
-        if (StartsWith(format, i, "MM")) return DateToken.Month;
-        if (StartsWith(format, i, "dd")) return DateToken.Day;
-        if (StartsWith(format, i, "HH")) return DateToken.Hour;
-        if (StartsWith(format, i, "mm")) return DateToken.Minute;
-        if (StartsWith(format, i, "ss")) return DateToken.Second;
-        return DateToken.Literal;
-    }
-
-    private static bool StartsWith(string s, int i, string token) =>
-        string.CompareOrdinal(s, i, token, 0, token.Length) == 0;
-
-    private static int TokenLength(DateToken token) => token == DateToken.Year ? 4 : 2;
 
     /// <summary>
     /// Render one match. <paramref name="catalog"/> is the catalog's file name or path (only the file name,
