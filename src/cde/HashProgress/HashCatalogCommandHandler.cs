@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -47,6 +48,11 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
             _logger.Warning("{Problem}", problem);
             return;
         }
+
+        // Up to CatalogRootProbe.DefaultTimeout when a share is offline, so say what is happening.
+        Console.WriteLine($"Checking that the drive or share of each of {cdexFiles.Count} catalog(s) can be reached...");
+        cdexFiles = await HashCatalogTargets.ReachableAsync(cdexFiles, _logger).ConfigureAwait(false);
+        if (cdexFiles.Count == 0) return;
 
         // The token is the Ctrl-C break signal. For hashing a break ends the current phase (handled inside Duplication),
         // then the hashes so far are saved, so nothing here may stop on it: not the work, the display, or the

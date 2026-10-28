@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using cdeLib.Catalog;
 
 namespace cdeLib.Hashing;
@@ -36,5 +37,26 @@ public static class HashCatalogTargets
             problem = $"{catalogPath} is not a .cdex catalog.";
 
         return problem == null ? [Path.GetFullPath(catalogPath)] : [];
+    }
+
+    /// <summary>
+    /// <paramref name="cdexFiles"/> without the catalogs whose root can't be reached (see <see cref="CatalogRootProbe"/>),
+    /// warning about each one left out: hashing them would only fail every file, slowly on an offline share.
+    /// </summary>
+    public static async Task<IList<string>> ReachableAsync(IList<string> cdexFiles, Serilog.ILogger logger,
+        TimeSpan? timeout = null)
+    {
+        ArgumentNullException.ThrowIfNull(logger);
+        var check = await CatalogRootProbe.CheckAsync(cdexFiles, timeout ?? CatalogRootProbe.DefaultTimeout)
+            .ConfigureAwait(false);
+        foreach (var skipped in check.Unreachable)
+        {
+            logger.Warning("Skipping {Catalog}: root {Root} {Reason}.", skipped.CatalogPath, skipped.RootPath,
+                skipped.Reason);
+        }
+
+        if (check.Reachable.Count == 0 && check.Unreachable.Count > 0)
+            logger.Warning("None of the catalogs can be reached; nothing to hash.");
+        return check.Reachable;
     }
 }
