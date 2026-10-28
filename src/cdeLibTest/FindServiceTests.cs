@@ -293,4 +293,110 @@ public class FindServiceTests
 
         Assert.That(Matches(), Is.EqualTo(fromTree));
     }
+
+    // ---- --template ----
+
+    [Test]
+    public void New_service_has_no_template()
+    {
+        Assert.That(new FindService().Template, Is.Null);
+    }
+
+    [Test]
+    public void Default_output_is_a_leading_space_then_the_full_path()
+    {
+        using var reader = Columnar();
+
+        new FindService().FindColumnar("report-2024", FindService.ParamFind, [reader]);
+
+        var expected = " " + Path.Combine(_dir, "data", "docs", "report-2024.txt") + Environment.NewLine;
+        Assert.That(_captured.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void FindColumnar_renders_each_match_with_the_template()
+    {
+        using var reader = Columnar("one.cdex");
+
+        new FindService { Template = MatchTemplate.Parse("{catalog}|{directory}|{filename}") }
+            .FindColumnar("report-2024", FindService.ParamFind, [reader]);
+
+        var expected = $"one|{Path.Combine(_dir, "data", "docs")}|report-2024.txt{Environment.NewLine}";
+        Assert.That(_captured.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void FindColumnar_template_names_the_catalog_each_match_came_from()
+    {
+        using var first = Columnar("first.cdex");
+        using var second = Columnar("second.cdex");
+
+        new FindService { Template = MatchTemplate.Parse("{catalog}") }
+            .FindColumnar("notes", FindService.ParamFind, [first, second]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { "first", "second" }));
+    }
+
+    [Test]
+    public void Find_renders_each_match_with_the_template_on_the_tree_path()
+    {
+        var root = Scan();
+        root.ActualFileName = Path.Combine(_dir, "tree.cde");
+
+        new FindService { Template = MatchTemplate.Parse("{catalog}|{fullpath}") }
+            .Find("report-2024", FindService.ParamFind, [root]);
+
+        var expected = $"tree|{Path.Combine(_dir, "data", "docs", "report-2024.txt")}{Environment.NewLine}";
+        Assert.That(_captured.ToString(), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Tree_path_falls_back_to_the_default_file_name_for_the_catalog()
+    {
+        var root = Scan();
+        root.ActualFileName = null;
+        root.DefaultFileName = "generated.cde";
+
+        new FindService { Template = MatchTemplate.Parse("{catalog}") }
+            .Find("notes", FindService.ParamFind, [root]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { "generated" }));
+    }
+
+    [Test]
+    public void FindColumnar_template_renders_size_and_modified()
+    {
+        var file = Path.Combine(_dir, "data", "docs", "report-2024.txt");
+        using var reader = Columnar();
+        var expected = $"{new FileInfo(file).Length}|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
+
+        new FindService { Template = MatchTemplate.Parse("{size}|{modified:yyyy-MM-dd HH:mm:ss}") }
+            .FindColumnar("report-2024", FindService.ParamFind, [reader]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { expected }));
+    }
+
+    [Test]
+    public void Find_template_renders_size_and_modified_on_the_tree_path()
+    {
+        var root = Scan();
+        var file =Path.Combine(_dir, "data", "docs", "report-2024.txt");
+        var expected = $"{new FileInfo(file).Length}|{File.GetLastWriteTime(file):yyyy-MM-dd HH:mm:ss}";
+
+        new FindService { Template = MatchTemplate.Parse("{size}|{modified:yyyy-MM-dd HH:mm:ss}") }
+            .Find("report-2024", FindService.ParamFind, [root]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { expected }));
+    }
+
+    [Test]
+    public void Template_works_with_the_greppath_verb()
+    {
+        using var reader = Columnar();
+
+        new FindService { Template = MatchTemplate.Parse("{filename}") }
+            .FindColumnar(@"docs.report-\d+\.txt$", FindService.ParamGrepPath, [reader]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { "report-2024.txt" }));
+    }
 }

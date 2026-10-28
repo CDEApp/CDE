@@ -262,6 +262,36 @@ By default cde records directory junctions and symbolic links (reparse points) i
 
 This is the mode for finding files in your catalogs using assorted filter criteria. If you wish to sort and browse it is suggested you use use cdeWin rather than cde.
 
+`find`, `findpath`, `grep` and `greppath` take `--template` to set how each match line is written. By default a match prints as its full path.
+
+| Placeholder | Value |
+|---|---|
+| `{catalog}` | The catalog file name without its extension, for example `C-V3Win7-C__users` |
+| `{fullpath}` | The full path of the match |
+| `{filename}` | The last part of the path, with its extension |
+| `{directory}` | The folder that holds the match, with no trailing separator |
+| `{size}` | The size in bytes, with no thousands separators |
+| `{modified}` | The last modified time, as `yyyy-MM-dd HH:mm:ss` unless you give a format |
+
+`{modified}` takes a format after a colon, for example `{modified:yyyy-MM-dd}`. These parts of the format are replaced, and every other character is copied as it is. They are case-sensitive: `MM` is the month and `mm` is the minutes.
+
+| Part | Value |
+|---|---|
+| `yyyy` | Year, 4 digits |
+| `MM` | Month, 2 digits |
+| `dd` | Day, 2 digits |
+| `HH` | Hour, 24-hour clock, 2 digits |
+| `mm` | Minutes, 2 digits |
+| `ss` | Seconds, 2 digits |
+
+Placeholder names are not case-sensitive. Write `{{` and `}}` for a literal brace, and `\t` or `\n` for a tab or a newline. Each match ends with a newline. An unknown placeholder stops the command with an error before any catalog is read.
+
+```batch
+cde grep "\.log$" --template "{catalog} {fullpath}"
+cde greppath report --template "{filename}\t{directory}"
+cde find .log --template "{modified:yyyy-MM-dd} {size} {fullpath}"
+```
+
 ### cde hash
 
 #### Valid Options for this mode
