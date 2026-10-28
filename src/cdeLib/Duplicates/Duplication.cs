@@ -60,6 +60,23 @@ public partial class Duplication
     /// </summary>
     public Action<string> StatusMessageEvent { get; set; }
 
+    /// <summary>Reported once when a break stops the first-pass hashing phase.</summary>
+    public const string PartialPhaseBreakMessage =
+        "Break key: stopping first-pass hashing. Checking the files hashed so far; press Ctrl-C again to stop that too.";
+
+    /// <summary>Reported once when a break stops the full hashing phase.</summary>
+    public const string FullPhaseBreakMessage = "Break key: stopping full hashing. The hashes computed so far are kept.";
+
+    /// <summary>Reported when Ctrl-C was pressed again before the full hashing phase began, so it is skipped.</summary>
+    public const string FullPhaseSkippedMessage =
+        "Break key pressed again: skipping full hashing. The hashes computed so far are kept.";
+
+    // A break is seen by every worker that finishes a file: tell the user once per phase. Pass a fresh int per phase.
+    private void ReportBreakOnce(ref int reported, string message)
+    {
+        if (Interlocked.Exchange(ref reported, 1) == 0) ReportStatus(message);
+    }
+
     private void ReportStatus(string message)
     {
         if (StatusMessageEvent is not null)
@@ -154,6 +171,7 @@ public partial class Duplication
         var token = cts.Token;
         var outerOptions = new ParallelOptions { CancellationToken = token };
         _duplicationStatistics.FilesToCheckForDuplicatesCount = totalEntriesInSizeDupes;
+        var breakReported = 0;
 
         try
         {
@@ -178,7 +196,7 @@ public partial class Duplication
                     await CalculatePartialHashAsync(flatFile);
                     if (_cancellation.IsCancellationRequested)
                     {
-                        Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
+                        ReportBreakOnce(ref breakReported, PartialPhaseBreakMessage);
                         await cts.CancelAsync();
                     }
                 });
@@ -196,8 +214,12 @@ public partial class Duplication
 
         ReportPartialPhaseDone(timer);
 
-        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
-        CheckDupesAndCompleteFullHash(rootEntries);
+        // Ctrl-C pressed again while the first-pass phase was stopping means stop the full phase too (Reset would
+        // otherwise lose it); otherwise require a fresh break to stop the full hash phase.
+        var skipFullHashing = _cancellation.BreakCount > 1;
+        _cancellation.Reset();
+        if (skipFullHashing) ReportStatus(FullPhaseSkippedMessage);
+        else CheckDupesAndCompleteFullHash(rootEntries);
 
         timer.Stop();
         ReportHashingDone(timer);
@@ -438,6 +460,7 @@ public partial class Duplication
             CancellationToken = token,
             MaxDegreeOfParallelism = 2
         };
+        var breakReported = 0;
 
         try
         {
@@ -470,7 +493,7 @@ public partial class Duplication
 
                     if (_cancellation.IsCancellationRequested)
                     {
-                        _logger.LogInfo("Break key detected, exiting full hash phase.");
+                        ReportBreakOnce(ref breakReported, FullPhaseBreakMessage);
                         await cts.CancelAsync();
                     }
                 }

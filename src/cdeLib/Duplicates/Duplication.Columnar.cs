@@ -67,6 +67,7 @@ public partial class Duplication
         var token = cts.Token;
         var outerOptions = new ParallelOptions { CancellationToken = token };
         _duplicationStatistics.FilesToCheckForDuplicatesCount = candidates.Length;
+        var breakReported = 0;
 
         try
         {
@@ -84,7 +85,7 @@ public partial class Duplication
                     await CalculateFirstPassHashAsync(readers, candidates, c);
                     if (_cancellation.IsCancellationRequested)
                     {
-                        Console.WriteLine("\n * Break key detected exiting hashing phase inner.");
+                        ReportBreakOnce(ref breakReported, PartialPhaseBreakMessage);
                         await cts.CancelAsync();
                     }
                 });
@@ -101,8 +102,12 @@ public partial class Duplication
 
         ReportPartialPhaseDone(timer);
 
-        _cancellation.Reset(); // require you to press break again to stop the full hash phase.
-        await CompleteFullHashesAsync(readers, candidates);
+        // Ctrl-C pressed again while the first-pass phase was stopping means stop the full phase too (Reset would
+        // otherwise lose it); otherwise require a fresh break to stop the full hash phase.
+        var skipFullHashing = _cancellation.BreakCount > 1;
+        _cancellation.Reset();
+        if (skipFullHashing) ReportStatus(FullPhaseSkippedMessage);
+        else await CompleteFullHashesAsync(readers, candidates);
 
         timer.Stop();
         ReportHashingDone(timer);
@@ -310,6 +315,7 @@ public partial class Duplication
             CancellationToken = cts.Token,
             MaxDegreeOfParallelism = 2
         };
+        var breakReported = 0;
 
         try
         {
@@ -335,7 +341,7 @@ public partial class Duplication
 
                 if (_cancellation.IsCancellationRequested)
                 {
-                    _logger.LogInfo("Break key detected, exiting full hash phase.");
+                    ReportBreakOnce(ref breakReported, FullPhaseBreakMessage);
                     await cts.CancelAsync();
                 }
             });
