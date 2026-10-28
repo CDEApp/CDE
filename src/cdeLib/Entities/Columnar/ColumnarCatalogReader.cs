@@ -32,6 +32,9 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     private readonly long[] _off = new long[ColumnarFormat.ColumnCount];
     private readonly long[] _len = new long[ColumnarFormat.ColumnCount];
 
+    /// <summary>The path this catalog was opened from.</summary>
+    public string FilePath { get; }
+
     public int Count { get; }
     public bool HasHashes { get; }
 
@@ -55,6 +58,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
     public ColumnarCatalogReader(string path)
     {
+        FilePath = path;
         _mmf = MemoryMappedFile.CreateFromFile(path, FileMode.Open, mapName: null,
             capacity: 0, MemoryMappedFileAccess.Read);
         _view = _mmf.CreateViewAccessor(0, 0, MemoryMappedFileAccess.Read);

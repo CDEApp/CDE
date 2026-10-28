@@ -25,6 +25,9 @@ public interface IFindService
     bool IncludeFiles { get; set; }
 
     bool IncludeFolders { get; set; }
+
+    /// <summary>How each match line is written; null writes the default, a leading space then the full path.</summary>
+    MatchTemplate Template { get; set; }
 }
 
 public class FindService : IFindService
@@ -43,6 +46,8 @@ public class FindService : IFindService
     public bool IncludeFiles { get; set; }
 
     public bool IncludeFolders { get; set; }
+
+    public MatchTemplate Template { get; set; }
 
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
@@ -73,7 +78,7 @@ public class FindService : IFindService
                 idx =>
                 {
                     ++totalFound;
-                    Console.WriteLine(" {0}", store.FullPath(idx));
+                    WriteMatch(store, idx);
                 });
         }
 
@@ -96,7 +101,7 @@ public class FindService : IFindService
                 idx =>
                 {
                     ++totalFound;
-                    Console.WriteLine(" {0}", reader.FullPath(idx));
+                    WriteMatch(reader, idx);
                 });
         }
 
@@ -104,6 +109,25 @@ public class FindService : IFindService
         Log.Logger.Information(
             "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
             timer.ElapsedMilliseconds, pattern, totalFound);
+    }
+
+    // Size and modified are read only when a template is set, so the default output pays nothing for them.
+    private void WriteMatch(EntryStore store, int idx)
+    {
+        if (Template == null)
+            Console.WriteLine(" {0}", store.FullPath(idx));
+        else
+            Console.WriteLine(Template.Render(store.ActualFileName ?? store.DefaultFileName, store.FullPath(idx),
+                store.SizeOf(idx), store.ModifiedOf(idx)));
+    }
+
+    private void WriteMatch(ColumnarCatalogReader reader, int idx)
+    {
+        if (Template == null)
+            Console.WriteLine(" {0}", reader.FullPath(idx));
+        else
+            Console.WriteLine(Template.Render(reader.FilePath, reader.FullPath(idx),
+                reader.SizeOf(idx), reader.ModifiedOf(idx)));
     }
 
     public Task FindAsync(string pattern, string param, IList<RootEntry> rootEntries)

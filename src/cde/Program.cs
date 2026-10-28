@@ -82,6 +82,12 @@ public static class Program
                 return 0;
             }
         }
+        catch (FormatException ex)
+        {
+            // a bad --template: report it plainly (no stack trace) and fail the command
+            await Console.Error.WriteLineAsync($"error: {ex.Message}").ConfigureAwait(false);
+            return 1;
+        }
         catch (OperationCanceledException)
         {
             // Ctrl-C stops long operations cooperatively; one that ends with this exception has still stopped cleanly.
@@ -101,10 +107,10 @@ public static class Program
     private static Task DispatchAsync(object options) => options switch
     {
         ScanOptions o => _app.CreateCacheAsync(o),
-        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find")),
-        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath")),
-        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep")),
-        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath")),
+        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template)),
+        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template)),
+        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template)),
+        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template)),
         ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
         ReplGrepOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
         ReplFindOptions o => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
