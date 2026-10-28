@@ -272,4 +272,51 @@ public class HashColumnarEquivalenceTests
         Assert.That(hashed, Is.Not.Empty, "hashes computed before the break are kept");
         Assert.That(hashed.Count, Is.LessThan(allHashed), "the break stopped the run early");
     }
+
+    // Every hashing worker that finishes a file after the break sees it; the user must be told once, through the
+    // status channel (the CLI shows it in its progress display rather than as raw console lines).
+    [Test]
+    public async Task A_break_during_partial_hashing_is_reported_once()
+    {
+        var files = BuildCatalogs();
+        var cancellation = new OperationCancellation();
+        cancellation.Cancel();
+        var duplication = NewDuplication(cancellation);
+        var messages = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        duplication.StatusMessageEvent = messages.Enqueue;
+
+        await HashWithReaders(files, duplication);
+
+        Assert.That(messages.Count(m => m.Contains(Duplication.PartialPhaseBreakMessage, StringComparison.Ordinal)),
+            Is.EqualTo(1), string.Join(" | ", messages));
+    }
+
+    private static async Task<List<string>> StatusMessagesAfterBreaks(List<string> files, int presses)
+    {
+        var cancellation = new OperationCancellation();
+        for (var i = 0; i < presses; i++) cancellation.Cancel();
+        var duplication = NewDuplication(cancellation);
+        var messages = new System.Collections.Concurrent.ConcurrentQueue<string>();
+        duplication.StatusMessageEvent = messages.Enqueue;
+        await HashWithReaders(files, duplication);
+        return [.. messages];
+    }
+
+    // The first-pass phase can take a while to stop (a file being opened on an unreachable share blocks for tens of
+    // seconds), and Ctrl-C pressed again meanwhile means "stop the full phase too": it must not be lost.
+    [Test]
+    public async Task A_second_break_before_the_full_phase_starts_skips_it()
+    {
+        var messages = await StatusMessagesAfterBreaks(BuildCatalogs(), presses: 2);
+
+        Assert.That(messages.Count(m => m == Duplication.FullPhaseSkippedMessage), Is.EqualTo(1), string.Join(" | ", messages));
+    }
+
+    [Test]
+    public async Task A_single_break_still_runs_the_full_phase()
+    {
+        var messages = await StatusMessagesAfterBreaks(BuildCatalogs(), presses: 1);
+
+        Assert.That(messages, Has.None.EqualTo(Duplication.FullPhaseSkippedMessage));
+    }
 }

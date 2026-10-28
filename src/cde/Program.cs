@@ -82,6 +82,12 @@ public static class Program
                 return 0;
             }
         }
+        catch (OperationCanceledException)
+        {
+            // Ctrl-C stops long operations cooperatively; one that ends with this exception has still stopped cleanly.
+            Console.WriteLine(" * Cancelled.");
+            return 130; // the conventional exit code for a command interrupted by Ctrl-C
+        }
         finally
         {
             await Log.CloseAndFlushAsync().ConfigureAwait(false);
@@ -121,7 +127,7 @@ public static class Program
 
     private static void BreakConsole(object sender, ConsoleCancelEventArgs e)
     {
-        Console.WriteLine("\n * Break key detected. will exit as soon as current file process is completed.");
+        Console.WriteLine("\n * Break key detected. Please wait... finishing up tasks.");
         _cancellation.Cancel();
         e.Cancel = true;
     }

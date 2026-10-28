@@ -48,22 +48,25 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
             return;
         }
 
-        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles, cancellationToken), cancellationToken);
+        // The token is the Ctrl-C break signal. For hashing a break ends the current phase (handled inside Duplication),
+        // then the hashes so far are saved, so nothing here may stop on it: not the work, the display, or the
+        // in-process notifications. The token stays cancelled after the first break, so passing it on would fail them.
+        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles), CancellationToken.None);
         var console = new HashProgressConsole();
-        console.Start(mainLoopTask, cancellationToken);
+        console.Start(mainLoopTask);
         await mainLoopTask.ConfigureAwait(false);
     }
 
-    private async Task MainLoop(IList<string> cdexFiles, CancellationToken cancellationToken)
+    private async Task MainLoop(IList<string> cdexFiles)
     {
         _logger.Information("Memory pre-hash: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         // Route hashing progress and status lines to the Spectre console via the message bus.
         _duplication.ProgressEvent = (processed, toHash, phase) =>
-            FireAndForget.Observe(_messageBus.Publish(new HashProgressEvent(processed, toHash, phase), cancellationToken: cancellationToken), nameof(HashProgressEvent));
+            FireAndForget.Observe(_messageBus.Publish(new HashProgressEvent(processed, toHash, phase), cancellationToken: CancellationToken.None), nameof(HashProgressEvent));
         _duplication.StatusMessageEvent = message =>
-            FireAndForget.Observe(_messageBus.Publish(new HashStatusMessageEvent(message), cancellationToken: cancellationToken), nameof(HashStatusMessageEvent));
+            FireAndForget.Observe(_messageBus.Publish(new HashStatusMessageEvent(message), cancellationToken: CancellationToken.None), nameof(HashStatusMessageEvent));
 
         var stopwatch = Stopwatch.StartNew();
         try
@@ -81,7 +84,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         }
         finally
         {
-            await _messageBus.Publish(new HashCompletedEvent(), cancellationToken: cancellationToken)
+            await _messageBus.Publish(new HashCompletedEvent(), cancellationToken: CancellationToken.None)
                 .ConfigureAwait(false);
         }
     }

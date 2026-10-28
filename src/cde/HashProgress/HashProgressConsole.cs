@@ -38,7 +38,11 @@ public class HashProgressConsole
         Messages.Enqueue(message);
     }
 
-    public void Start(Task mainLoopTask, CancellationToken cancellationToken)
+    /// <summary>
+    /// Renders progress until <paramref name="mainLoopTask"/> completes. It does not stop on a break: after Ctrl-C
+    /// hashing moves to its next phase and then saves, and the user should see that happen.
+    /// </summary>
+    public void Start(Task mainLoopTask)
     {
         var sw = new Stopwatch();
         sw.Start();
@@ -47,7 +51,7 @@ public class HashProgressConsole
             .Spinner(Spinner.Known.Default)
             .Start("Hashing...", ctx =>
             {
-                while (!mainLoopTask.IsCompleted && !cancellationToken.IsCancellationRequested)
+                while (!mainLoopTask.IsCompleted)
                 {
                     ShowProgress(sw, ctx);
                     // Throttle the refresh loop so it doesn't busy-spin a core while hashing.
