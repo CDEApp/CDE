@@ -81,14 +81,8 @@ public class MigrateOptions
     public string Path { get; [UsedImplicitly] set; }
 }
 
-[Verb("hash", HelpText = "Hash all catalogs in current directory, or one catalog")]
-public class HashOptions
-{
-    [Value(0, Required = false,
-        HelpText = "Specific .cdex catalog to hash. If omitted, hashes every catalog in the current directory " +
-                   "and one level down. Only files that share a size with another file in the same catalog are hashed.")]
-    public string Path { get; [UsedImplicitly] set; }
-}
+[Verb("hash", HelpText = "Hash all catalogs in current directory")]
+public class HashOptions;
 
 [Verb("dupes", HelpText = "List all duplicate files (that already have hash computed")]
 public class DupesOptions;

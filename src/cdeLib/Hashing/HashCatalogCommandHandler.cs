@@ -30,10 +30,10 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
     {
         // Hash operates on the columnar .cdex catalogs straight from their memory-mapped readers (no
         // pointer tree, issue #40), then rewrites each catalog with its new hashes.
-        var cdexFiles = HashCatalogTargets.Resolve(request.CatalogPath, _catalogRepository, out var problem);
+        var cdexFiles = _catalogRepository.GetColumnarFileList(["./"]);
         if (cdexFiles.Count == 0)
         {
-            _logger.Warning("{Problem}", problem);
+            _logger.Warning("No .cdex catalogs found. Run 'cde migrate' to create them first.");
             return;
         }
 
