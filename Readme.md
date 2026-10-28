@@ -303,6 +303,22 @@ cde find .log --template "{modified:yyyy-MM-dd} {size} {fullpath}"
 cde find .iso --template "{size:GB}\t{filename}"
 ```
 
+`find`, `findpath`, `grep` and `greppath` also take `--filter` to keep only some of the matches. For now the only filter is `{size:...}`.
+
+```batch
+cde grep "\.iso$" --filter "{size:>4GB}"
+cde find .log --filter "{size:>10KB}" --filter "{size:<4MB}"
+```
+
+Put the filter in quotes, because `<` and `>` mean redirection in a shell. Repeat `--filter` to require all of them, which is how you set a range. There is no "or".
+
+| Part | Value |
+|---|---|
+| Operator | `<`, `<=`, `>`, `>=`, `=` or `!=`. A value with no operator, such as `{size:4MB}`, means `=`. |
+| Value | A number, with decimals if you want (`1.5KB`), then an optional unit of `B`, `KB`, `MB`, `GB` or `TB`. With no unit it is bytes. Units are not case-sensitive and a space before the unit is allowed. |
+
+Each step of the units is 1024, the same as `{size:KB}` in `--template`. The size filter in cdeWin uses 1000 per step, so a limit such as 10 KB is slightly different there. A folder is compared by the total size of what is in it. An unknown filter, an unknown unit or text that is not a filter stops the command with an error before any catalog is read. Matches that are filtered out are not counted in the "Total found" figure.
+
 ### cde hash
 
 #### Valid Options for this mode

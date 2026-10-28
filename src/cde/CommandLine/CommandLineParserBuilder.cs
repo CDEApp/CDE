@@ -14,6 +14,7 @@ public static class CommandLineParserBuilder
             cfg.CaseSensitive = false;
             cfg.AutoHelp = true;
             cfg.AutoVersion = true;
+            cfg.AllowMultiInstance = true; // --filter can be repeated
             cfg.ParsingCulture = CultureInfo.InvariantCulture;
             cfg.HelpWriter = Console.Error;
             try

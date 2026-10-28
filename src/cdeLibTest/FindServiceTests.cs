@@ -389,6 +389,120 @@ public class FindServiceTests
         Assert.That(Matches(), Is.EqualTo(new[] { expected }));
     }
 
+    // ---- --filter ----
+
+    // sized/
+    //   small.txt   10 bytes
+    //   medium.txt  2000 bytes
+    //   big.txt     5000 bytes
+    //   sub/        (a folder)
+    //     inner.dat 100 bytes
+    private RootEntry ScanSized()
+    {
+        var data = Path.Combine(_dir, "sized");
+        Directory.CreateDirectory(Path.Combine(data, "sub"));
+        File.WriteAllBytes(Path.Combine(data, "small.txt"), new byte[10]);
+        File.WriteAllBytes(Path.Combine(data, "medium.txt"), new byte[2000]);
+        File.WriteAllBytes(Path.Combine(data, "big.txt"), new byte[5000]);
+        File.WriteAllBytes(Path.Combine(data, "sub", "inner.dat"), new byte[100]);
+        var root = new RootEntry();
+        root.PopulateRoot(data);
+        root.SortAllChildrenByPath();
+        root.SetSummaryFields();
+        return root;
+    }
+
+    private ColumnarCatalogReader ColumnarSized()
+    {
+        var cdex = Path.Combine(_dir, "sized.cdex");
+        ColumnarFormat.Write(ScanSized(), cdex);
+        return new ColumnarCatalogReader(cdex);
+    }
+
+    [Test]
+    public void New_service_has_no_filter()
+    {
+        Assert.That(new FindService().Filter, Is.Null);
+    }
+
+    [Test]
+    public void FindColumnar_filter_keeps_only_matches_of_the_size()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService { Filter = MatchFilter.Parse(["{size:>1KB}"]) }
+            .FindColumnar(@"\.txt$", FindService.ParamGrep, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "big.txt", "medium.txt" }));
+    }
+
+    [Test]
+    public void Find_filter_keeps_only_matches_of_the_size_on_the_tree_path()
+    {
+        new FindService { Filter = MatchFilter.Parse(["{size:>1KB}"]) }
+            .Find(@"\.txt$", FindService.ParamGrep, [ScanSized()]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "big.txt", "medium.txt" }));
+    }
+
+    [Test]
+    public void Two_filters_make_a_range()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService { Filter = MatchFilter.Parse(["{size:>1KB}", "{size:<4KB}"]) }
+            .FindColumnar(@"\.txt$", FindService.ParamGrep, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "medium.txt" }));
+    }
+
+    [Test]
+    public void A_folder_is_compared_by_the_total_size_of_what_is_in_it()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService { Filter = MatchFilter.Parse(["{size:>=100}", "{size:<=100}"]) }
+            .FindColumnar("^(sub|inner.dat)$", FindService.ParamGrep, [reader]);
+
+        // sub holds only inner.dat, so both are exactly 100 bytes
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "inner.dat", "sub" }));
+    }
+
+    [Test]
+    public void No_filter_shows_every_match()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService().FindColumnar(@"\.txt$", FindService.ParamGrep, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "big.txt", "medium.txt", "small.txt" }));
+    }
+
+    [Test]
+    public void A_filter_that_matches_nothing_prints_nothing()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService { Filter = MatchFilter.Parse(["{size:>1GB}"]) }
+            .FindColumnar(@"\.txt$", FindService.ParamGrep, [reader]);
+
+        Assert.That(_captured.ToString(), Is.Empty);
+    }
+
+    [Test]
+    public void Filter_and_template_work_together()
+    {
+        using var reader = ColumnarSized();
+
+        new FindService
+        {
+            Filter = MatchFilter.Parse(["{size:>1KB}"]),
+            Template = MatchTemplate.Parse("{filename}={size:B}"),
+        }.FindColumnar(@"\.txt$", FindService.ParamGrep, [reader]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { "big.txt=5000 B", "medium.txt=2000 B" }));
+    }
+
     [Test]
     public void Template_works_with_the_greppath_verb()
     {
