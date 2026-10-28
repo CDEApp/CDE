@@ -111,6 +111,43 @@ export interface CatalogsResponse {
   catalogsLoaded: number;
   totalEntries: number;
   memoryBytes: number;
+  /** Legacy .cde catalogs the last load found and did not load (no .cdex beside them); offered for migration. */
+  legacyCatalogs: LegacyCatalog[];
+}
+
+export interface LegacyCatalog {
+  path: string;
+  sizeBytes: number;
+  /** Its folder can be written to, so it can be migrated there. */
+  writable: boolean;
+}
+
+/** Migration progress: starting catalog `current` of `total`. */
+export interface MigrateProgress {
+  current: number;
+  total: number;
+  path: string;
+}
+
+export interface MigrateIssue {
+  path: string;
+  message: string;
+}
+
+/** The migrate `done` payload. */
+export interface MigrateResultBody {
+  migrated: number;
+  total: number;
+  /** Not converted; still legacy catalogs. */
+  failures: MigrateIssue[];
+  /** Converted, but the source could not be renamed (or a .cdex appeared meanwhile). */
+  warnings: MigrateIssue[];
+}
+
+/** A migrate refusal (409 busy / 422 nothing-to-migrate) or in-stream `error`. */
+export interface MigrateErrorBody {
+  code: string;
+  message: string;
 }
 
 export interface SearchProgress {

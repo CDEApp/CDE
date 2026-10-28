@@ -61,11 +61,12 @@ public class PartialHashFirstBlockTests
 
     [TestCase(0)]
     [TestCase(-1)]
-    public void Non_positive_first_pass_size_fails_fast_instead_of_hashing_empty_input(int firstPass)
+    public async Task Non_positive_first_pass_size_fails_fast_instead_of_hashing_empty_input(int firstPass)
     {
         var helper = new HashHelper(NSubstitute.Substitute.For<cdeLib.Infrastructure.ILogger>());
 
-        Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
+        // NUnit 5's ThrowsAsync returns a Task: without the await, a failure would never be observed.
+        await Assert.ThrowsAsync<ArgumentOutOfRangeException>(async () =>
             await helper.GetHashResponseFromFile("does-not-matter", firstPass));
     }
 

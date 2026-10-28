@@ -128,7 +128,7 @@ export function deriveDialogState(input: DialogInput): DialogState {
   }
 
   const rootError = current && !current.rootAccessible ? `${rootPath} can't be reached.` : null;
-  const busyError = current?.busy ? "Catalogs are being loaded; try again when that finishes." : null;
+  const busyError = current?.busy ? "Catalogs are being loaded or migrated; try again when that finishes." : null;
 
   const same = current?.sameRootCatalogIds.length ?? 0;
   const sameRootWarning =

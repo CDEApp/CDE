@@ -34,6 +34,8 @@ public static class SseQueue
             case RescanError re: w.Write("error"u8, re, AppCoreJsonContext.Default.RescanError); break;
             case CreateProgress cp: w.Write("progress"u8, cp, AppCoreJsonContext.Default.CreateProgress); break;
             case CreateCatalogError ce: w.Write("error"u8, ce, AppCoreJsonContext.Default.CreateCatalogError); break;
+            case MigrateProgress mp: w.Write("progress"u8, mp, AppCoreJsonContext.Default.MigrateProgress); break;
+            case MigrateError me: w.Write("error"u8, me, AppCoreJsonContext.Default.MigrateError); break;
             default: throw new InvalidOperationException($"No SSE mapping for queued item {item?.GetType()}");
         }
     }
@@ -45,7 +47,8 @@ public static class SseQueue
 /// <see cref="TakePending"/> so the final progress (e.g. 100%) still reaches the client before <c>done</c>.
 /// </summary>
 public sealed class SseProgress(ChannelWriter<object> writer)
-    : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>, IProgress<RescanProgress>, IProgress<CreateProgress>
+    : IProgress<SearchProgress>, IProgress<CatalogLoadProgress>, IProgress<RescanProgress>, IProgress<CreateProgress>,
+        IProgress<MigrateProgress>
 {
     private object _pending;
 
@@ -53,6 +56,7 @@ public sealed class SseProgress(ChannelWriter<object> writer)
     public void Report(CatalogLoadProgress value) => Offer(value);
     public void Report(RescanProgress value) => Offer(value);
     public void Report(CreateProgress value) => Offer(value);
+    public void Report(MigrateProgress value) => Offer(value);
 
     private void Offer(object value)
     {

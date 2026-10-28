@@ -148,6 +148,7 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 - To reset the view or the colour rules, close the app and delete `ui-state.json` or `colour-rules.txt`.
 - `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
 - Catalog files are not kept in the configuration folder. cde-tauri loads the catalogs in its catalog folder and one level below. To choose the catalog folder, use **File ▸ Open Folder…**; cde-tauri remembers it (`catalogDir` in `ui-state.json`) and opens it again next time. Until you choose one, the catalog folder is the current directory: when you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe.
+- cde-tauri does not load legacy `.cde` catalogs: they load slowly and use a lot of memory. When the catalog folder has `.cde` files with no `.cdex` beside them, cde-tauri offers to convert them, in the same way as [cde migrate](#cde-migrate). If you choose **Not now**, it doesn't ask again for that folder (`legacyMigrateDismissed` in `ui-state.json`), but the status bar keeps a **Migrate…** button.
 
 ## Using cde
 
@@ -334,9 +335,14 @@ This mode performs a one-way conversion of the original MessagePack `.cde` catal
   cde migrate
   ```
 
-For each catalog a `.cdex` file is written beside the source `.cde`, keeping the same base name. The original `.cde` file is left in place and is not deleted, so the conversion is non-destructive. Re-running migrate simply overwrites the `.cdex` output.
+For each catalog a `.cdex` file is written beside the source `.cde`, keeping the same base name. Then the source is renamed to `.cde.migrated` (for example `C-V3Win7-C__users.cde.migrated`), so it is not found as a catalog again. Nothing is deleted, so the conversion is non-destructive.
+
+- A `.cde` that already has a `.cdex` of the same base name is skipped, so an existing `.cdex` (which may hold newer hashes) is never overwritten.
+- An existing `.cde.migrated` is never overwritten. If the source can't be renamed, the `.cdex` is kept and cde prints a warning.
 
 For each file converted cde prints the source and destination file names, their byte sizes and the entry count, then a summary of how many catalogs were migrated. Files that cannot be loaded are skipped and reported.
+
+> **Note:** older versions of cde and cdeWin can't read `.cdex` files and don't look for `.cde.migrated` files. To use a migrated catalog with an older version, rename its `.cde.migrated` file back to `.cde`.
 
 ### Parameter Options
 

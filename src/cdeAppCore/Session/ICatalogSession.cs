@@ -79,8 +79,23 @@ public interface ICatalogSession : IDisposable
     /// </summary>
     string CatalogDir { get; }
 
-    /// <summary>Whether any background catalog job (a rescan or a create) is running; a reload is refused meanwhile.</summary>
+    /// <summary>Whether any background catalog job (a rescan, a create or a migration) is running; a reload is refused meanwhile.</summary>
     bool AnyCatalogJobRunning { get; }
+
+    /// <summary>
+    /// The legacy <c>.cde</c> catalogs the last load found and did not load (no <c>.cdex</c> beside them). Empty when
+    /// the session loads legacy catalogs itself (<see cref="CatalogSession.LoadLegacyCatalogs"/>).
+    /// </summary>
+    IReadOnlyList<LegacyCatalogDto> LegacyCatalogs { get; }
+
+    /// <summary>
+    /// Convert the writable <see cref="LegacyCatalogs"/> to <c>.cdex</c>, one at a time, renaming each source to
+    /// <c>.cde.migrated</c> (see <c>CatalogMigrator</c>). A failed catalog is reported and stays listed; converted ones
+    /// leave the list. Loads nothing: reload to see the new catalogs. Throws <see cref="CatalogJobBusyException"/>
+    /// while a load or another catalog job runs; on cancel, the catalogs already converted stay converted.
+    /// </summary>
+    Task<MigrateResult> MigrateLegacyCatalogsAsync(IProgress<MigrateProgress> progress = null,
+        CancellationToken cancellationToken = default);
 
     /// <summary>Everything the New Catalog dialog needs before Create: default name, folder, collisions. Never throws.</summary>
     CreatePreflightResult PreflightCreate(CreatePreflightRequest request);

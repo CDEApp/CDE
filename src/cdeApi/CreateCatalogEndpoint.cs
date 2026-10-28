@@ -75,7 +75,7 @@ public static class CreateCatalogEndpoint
     {
         if (pf.Busy)
             return (StatusCodes.Status409Conflict,
-                new CreateCatalogError { Code = Busy, Message = "Catalogs are being loaded; try again when that finishes." });
+                new CreateCatalogError { Code = Busy, Message = "Catalogs are being loaded or migrated; try again when that finishes." });
         if (pf.FileNameError != null)
             return (StatusCodes.Status400BadRequest, new CreateCatalogError { Code = InvalidFileName, Message = pf.FileNameError });
         if (pf.CatalogDir == null)

@@ -35,7 +35,7 @@ public sealed partial class CatalogSession
     {
         get
         {
-            lock (_gate) return _creating > 0 || AnyRescanning;
+            lock (_gate) return _creating > 0 || _migrating || AnyRescanning;
         }
     }
 
@@ -68,7 +68,7 @@ public sealed partial class CatalogSession
         var inFlight = false;
         lock (_gate)
         {
-            busy = _loading;
+            busy = _loading || _migrating;
             dir = _catalogDir;
             if (dir != null && nameError == null)
             {
@@ -171,7 +171,8 @@ public sealed partial class CatalogSession
         string target;
         lock (_gate)
         {
-            if (_loading) throw new CatalogJobBusyException("Cannot create a catalog while catalogs are being loaded.");
+            if (_loading || _migrating)
+                throw new CatalogJobBusyException("Cannot create a catalog while catalogs are being loaded or migrated.");
             if (_catalogDir == null) throw new NoCatalogDirException();
             target = Path.Combine(_catalogDir, name + CatalogNaming.Extension);
             if (_inFlightTargets.Contains(target)) throw new CatalogFileExistsException(target, null);

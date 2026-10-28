@@ -1,6 +1,6 @@
-import { describe, expect, it } from "vitest";
-import { buildApiUrl, idSegment, refSegment } from "./client";
-import { refToString } from "./types";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { buildApiUrl, CdeApiClient, idSegment, MigrateFailure, refSegment } from "./client";
+import { refToString, type MigrateProgress } from "./types";
 
 describe("buildApiUrl", () => {
   const base = "http://127.0.0.1:5000";
@@ -50,5 +50,56 @@ describe("refSegment / idSegment", () => {
       expect(() => refSegment({ catalogId: v as number, entryIndex: 1 })).toThrow();
       expect(() => refSegment({ catalogId: 1, entryIndex: v as number })).toThrow();
     }
+  });
+});
+
+describe("migrateLegacy", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+  const sse = (...events: [string, unknown][]) =>
+    new Response(events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join(""), { status: 200 });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("posts to /catalogs/migrate with the token, reports progress and resolves with the report", async () => {
+    const fetch = vi.fn().mockResolvedValue(
+      sse(
+        ["progress", { current: 1, total: 2, path: "C:\\a.cde" }],
+        ["progress", { current: 2, total: 2, path: "C:\\b.cde" }],
+        ["done", { migrated: 2, total: 2, failures: [], warnings: [] }],
+      ),
+    );
+    vi.stubGlobal("fetch", fetch);
+    const progress: MigrateProgress[] = [];
+
+    const result = await client.migrateLegacy({ onProgress: (p) => progress.push(p) });
+
+    expect(fetch.mock.calls[0][0]).toBe("http://127.0.0.1:5000/catalogs/migrate");
+    expect(fetch.mock.calls[0][1]).toMatchObject({ method: "POST", headers: { "X-CDE-Token": "tok" } });
+    expect(progress.map((p) => p.current)).toEqual([1, 2]);
+    expect(result).toEqual({ migrated: 2, total: 2, failures: [], warnings: [] });
+  });
+
+  it("throws MigrateFailure with the refusal's code", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(JSON.stringify({ code: "busy", message: "job running" }), { status: 409 })),
+    );
+
+    const err = await client.migrateLegacy({}).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(MigrateFailure);
+    expect((err as MigrateFailure).error).toEqual({ code: "busy", message: "job running" });
+  });
+
+  it("throws MigrateFailure for an in-stream error", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sse(["error", { code: "migrate-failed", message: "disk full" }])));
+
+    await expect(client.migrateLegacy({})).rejects.toMatchObject({ error: { code: "migrate-failed" } });
+  });
+
+  it("resolves null when the stream ends without done (cancelled)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sse(["progress", { current: 1, total: 9, path: "a.cde" }])));
+
+    expect(await client.migrateLegacy({})).toBeNull();
   });
 });

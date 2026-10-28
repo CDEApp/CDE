@@ -21,7 +21,8 @@ public sealed partial class CatalogSession
     {
         lock (_gate)
         {
-            if (_loading) return RescanPreflight.Busy; // the slot list is being rebuilt: ids mean nothing yet
+            // Loading: the slot list is being rebuilt, so ids mean nothing yet. Migrating: catalog jobs are exclusive.
+            if (_loading || _migrating) return RescanPreflight.Busy;
         }
 
         if (catalogId < 0 || catalogId >= _slots.Count) return RescanPreflight.UnknownCatalog;
@@ -40,7 +41,8 @@ public sealed partial class CatalogSession
         CatalogSlot slot;
         lock (_gate)
         {
-            if (_loading) throw new InvalidOperationException("Cannot rescan while catalogs are being loaded.");
+            if (_loading || _migrating)
+                throw new InvalidOperationException("Cannot rescan while catalogs are being loaded or migrated.");
             if (catalogId < 0 || catalogId >= _slots.Count) throw new ArgumentOutOfRangeException(nameof(catalogId));
             slot = _slots[catalogId];
             if (!slot.TryBeginRescan()) throw new RescanAlreadyRunningException(catalogId);
