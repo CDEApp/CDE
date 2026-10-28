@@ -103,7 +103,7 @@ public static class Program
         ReplGrepOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
         ReplFindOptions o => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
         MigrateOptions o => RunSync(() => _app.Migrate(o)),
-        HashOptions => _app.HashCatalogAsync(),
+        HashOptions o => _app.HashCatalogAsync(o.Path),
         DupesOptions => _app.FindDupesAsync(),
         TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
         LoadWaitOptions => RunSync(_app.LoadWait),

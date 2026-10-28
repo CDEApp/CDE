@@ -277,6 +277,15 @@ This is the mode for finding files in your catalogs using assorted filter criter
 
 This mode exists to provide file hashes to the Dupes mode.
 
+- With no argument, every catalog in the current directory and one directory below is hashed.
+- With a path argument, only that one `.cdex` catalog is hashed and saved. Only its file system needs to be connected.
+
+  ```batch
+  cde hash C-V3Win7-C__users.cdex
+  ```
+
+  Hashing compares file sizes only within the catalogs being hashed. So a file whose only same-size match is in another catalog is not hashed this way: run `cde hash` with no argument to find duplicates across catalogs. A legacy `.cde` catalog can't be hashed; convert it first with [cde migrate](#cde-migrate).
+
 It hashes files on different file systems in parallel. File systems are determined in a naïve manner by a simple grouping of the root Volume or Share Name.
 
 It will hash files in descending file size order.
