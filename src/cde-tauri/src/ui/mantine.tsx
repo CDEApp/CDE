@@ -23,7 +23,7 @@ import "@mantine/core/styles/Notification.css";
 import "@mantine/notifications/styles.css";
 
 /**
- * Mantine is used ONLY for the modals (rescan "cannot be reached", new catalog, About) and the success/failure toasts.
+ * Mantine is used ONLY for the modals (rescan "cannot be reached", new catalog, About, Search Syntax) and the success/failure toasts.
  * It is themed from the app's own CSS variables (styles.css) so it follows whatever palette the app
  * defines, and uses the app's font.
  */

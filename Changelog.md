@@ -14,6 +14,13 @@
   hosts` matches `hosts` in a folder path containing `system32`; `no-path:` matches the name only even when Include
   path is on. A modifier goes directly in front of one word, phrase or group (`path:<a | b>`), and `!path:foo` negates
   it. The `\:` alias and the global `?path:` form are not supported yet. (#148)
+- feature (cdeWin, cde-tauri): The Everything mode understands the `file:` and `folder:` filters. `folder:music`
+  matches folders only and `file: .mp3` matches files only; with neither it searches files and folders. `!file:`
+  gives folders and `<file: a> | <folder: b>` works. While Everything is ticked the Files/Folders choice is ignored
+  and greyed out (it shows both), and your choice comes back when you untick it. Include path is ignored and greyed
+  out too in this mode: use `path:` to match the path, otherwise a term matches the name. (#150)
+- feature (cdeWin, cde-tauri): The About menu is now **Help** (in cdeWin About moved out of File). **Help > Search Syntax**
+  shows the Everything-search operators, modifiers and filters with examples. (#150)
 
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 

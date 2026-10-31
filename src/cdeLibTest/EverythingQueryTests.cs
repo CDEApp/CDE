@@ -256,8 +256,96 @@ public class EverythingQueryTests
         Assert.That(q.Matches(new Utf8Entry(name, path), false), Is.True);
     }
 
-    private sealed class Utf8Entry(string name, string path) : IEntryText
+    // ---- file: and folder: filters ----
+
+    // Each argument is a name; the entry is a folder when isFolder, else a file.
+    private static bool K(string query, string name, bool isFolder) =>
+        EverythingQuery.Parse(query).Matches(name, @"C:\x\" + name, false, isFolder);
+
+    [Test]
+    public void Folder_filter_keeps_folders_and_file_filter_keeps_files()
     {
+        Assert.That(K("folder:music", "Music", isFolder: true), Is.True);
+        Assert.That(K("folder:music", "Music", isFolder: false), Is.False, "a file named Music is not a folder");
+        Assert.That(K("file: .mp3", "a.mp3", isFolder: false), Is.True);
+        Assert.That(K("file: .mp3", "a.mp3", isFolder: true), Is.False, "a folder named a.mp3 is not a file");
+    }
+
+    [Test]
+    public void Filter_names_are_case_insensitive_and_the_text_after_the_colon_is_its_own_term()
+    {
+        Assert.That(K("FOLDER:Music", "music", isFolder: true), Is.True);
+        Assert.That(K("File:MUSIC", "music", isFolder: false), Is.True);
+        Assert.That(K("folder:music", "videos", isFolder: true), Is.False, "folder: AND music");
+        Assert.That(K("folder: music", "music", isFolder: true), Is.EqualTo(K("folder:music", "music", isFolder: true)));
+    }
+
+    [Test]
+    public void Filter_alone_is_valid_and_matches_every_entry_of_that_kind()
+    {
+        var files = EverythingQuery.Parse("file:");
+        Assert.That(files.IsEmpty, Is.False, "it is a real filter, not an empty query");
+        Assert.That(files.Matches("anything", @"C:\anything", false, isFolder: false), Is.True);
+        Assert.That(files.Matches("anything", @"C:\anything", false, isFolder: true), Is.False);
+        Assert.That(EverythingQuery.Parse("folder:").Matches("x", @"C:\x", false, isFolder: true), Is.True);
+    }
+
+    [Test]
+    public void File_and_folder_together_match_nothing_without_an_error()
+    {
+        Assert.That(K("file: folder:", "x", isFolder: true), Is.False);
+        Assert.That(K("file: folder:", "x", isFolder: false), Is.False);
+    }
+
+    [Test]
+    public void Filters_compose_with_not_or_and_groups()
+    {
+        Assert.That(K("!file:", "x", isFolder: true), Is.True, "!file: is folders");
+        Assert.That(K("!file:", "x", isFolder: false), Is.False);
+        Assert.That(K("<file: a> | <folder: b>", "a", isFolder: false), Is.True);
+        Assert.That(K("<file: a> | <folder: b>", "b", isFolder: true), Is.True);
+        Assert.That(K("<file: a> | <folder: b>", "a", isFolder: true), Is.False);
+        Assert.That(K("<file: a> | <folder: b>", "b", isFolder: false), Is.False);
+        Assert.That(K("!folder:music", "music", isFolder: false), Is.True, "a bang applies to the filter only");
+    }
+
+    [Test]
+    public void Filters_work_with_path_terms_and_the_entry_overloads()
+    {
+        Assert.That(EverythingQuery.Parse("folder: path:x").Matches("m", @"C:\x\m", false, isFolder: true), Is.True);
+        Assert.That(EverythingQuery.Parse("folder: path:x").Matches("m", @"C:\y\m", false, isFolder: true), Is.False);
+        var q = EverythingQuery.Parse("file: path:café");
+        Assert.That(q.Matches(new Utf8Entry("n.txt", @"C:\café\n.txt", isFolder: false), false), Is.True);
+        Assert.That(q.Matches(new Utf8Entry("n.txt", @"C:\café\n.txt", isFolder: true), false), Is.False);
+    }
+
+    [Test]
+    public void Quotes_make_filter_colons_literal_and_longer_words_are_not_filters()
+    {
+        Assert.That(EverythingQuery.Parse("\"file:\"").Matches("my file: here", isFolder: true), Is.True);
+        Assert.That(M("files:x", "files:x"), Is.True, "files: is just a word");
+        Assert.That(M("myfile:x", "myfile:x"), Is.True, "only at the start of a term");
+    }
+
+    [TestCase("path:file:", 0)]
+    [TestCase("a path:folder:b", 2)]
+    public void A_filter_is_not_a_term_a_path_modifier_can_attach_to(string query, int position)
+    {
+        var ex = Assert.Throws<EverythingQueryException>(() => EverythingQuery.Parse(query));
+        Assert.That(ex.Position, Is.EqualTo(position), ex.Message);
+    }
+
+    [Test]
+    public void A_filter_inside_a_group_after_path_is_fine_and_the_filter_ignores_the_modifier()
+    {
+        var q = EverythingQuery.Parse("path:<file: x>");
+        Assert.That(q.Matches("a", @"C:\x\a", false, isFolder: false), Is.True);
+        Assert.That(q.Matches("a", @"C:\x\a", false, isFolder: true), Is.False);
+    }
+
+    private sealed class Utf8Entry(string name, string path, bool isFolder = false) : IEntryText
+    {
+        public bool IsFolder => isFolder;
         private readonly byte[] _name = Encoding.UTF8.GetBytes(name);
         private readonly byte[] _path = Encoding.UTF8.GetBytes(path);
         public ReadOnlySpan<byte> Name => _name;

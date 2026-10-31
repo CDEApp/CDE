@@ -30,6 +30,7 @@ import { findCatalogByTarget } from "./newCatalog";
 import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import { AboutModal } from "./components/AboutModal";
+import { SearchSyntaxModal } from "./components/SearchSyntaxModal";
 import { MigrateLegacyDialog } from "./components/MigrateLegacyDialog";
 import { dismissFolder, legacyNotice, shouldPromptLegacy } from "./legacyMigration";
 import {
@@ -118,6 +119,7 @@ export default function App() {
   const rescanAborts = useRef(new Map<number, AbortController>());
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [syntaxOpen, setSyntaxOpen] = useState(false);
   // The migrate dialog for the legacy .cde catalogs the last load listed (the sidecar does not load them).
   const [legacyOpen, setLegacyOpen] = useState(false);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
@@ -818,6 +820,7 @@ export default function App() {
         onReload={() => void reloadCatalogs(catalogDir)}
         onExit={() => void getCurrentWindow().close()}
         onAbout={() => setAboutOpen(true)}
+        onSearchSyntax={() => setSyntaxOpen(true)}
         loadDisabledReason={loadBlockedReasonText}
       />
 
@@ -973,6 +976,7 @@ export default function App() {
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
       <RootUnreachableModal rootPath={unreachableRoot} onClose={() => setUnreachableRoot(null)} />
       <AboutModal opened={aboutOpen} onClose={() => setAboutOpen(false)} />
+      <SearchSyntaxModal opened={syntaxOpen} onClose={() => setSyntaxOpen(false)} />
       <MigrateLegacyDialog
         opened={legacyOpen}
         legacy={catalogs?.legacyCatalogs ?? []}

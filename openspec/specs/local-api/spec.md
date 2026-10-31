@@ -40,6 +40,11 @@ process start and provided to the launching host; requests without the valid tok
 - **WHEN** a search request has `everythingMode` set and a malformed `pattern`
 - **THEN** the API responds `400` with the validation message (ending `(at position N)`) and streams nothing
 
+#### Scenario: Everything mode ignores the path and kind flags
+- **WHEN** a search request has `everythingMode` set
+- **THEN** `includePath` is ignored (treated as false) and `includeFiles` and `includeFolders` are ignored (both
+  treated as true); `path:`, `file:` and `folder:` in the `pattern` choose the path and the kind
+
 #### Scenario: Disconnect cancels the search
 - **WHEN** the client closes the SSE connection mid-search
 - **THEN** the server cancels the `CancellationToken` and the underlying traversal stops

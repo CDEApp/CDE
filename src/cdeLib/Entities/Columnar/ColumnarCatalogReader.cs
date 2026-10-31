@@ -263,15 +263,15 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 switch (texts)
                 {
                     case EverythingTexts.Name:
-                        match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])));
+                        match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])), isDir);
                         break;
                     case EverythingTexts.Path:
                         var n = BuildPathBytes(ref pathBuf, ref chain, i);
-                        match = everything.Matches(pathBuf.AsSpan(0, n));
+                        match = everything.Matches(pathBuf.AsSpan(0, n), isDir);
                         break;
                     default:
                         // Terms for both texts: the path is built only if a term reaches one that needs it.
-                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]));
+                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]), isDir);
                         match = everything.Matches(entryText, o.IncludePath);
                         break;
                 }
@@ -330,8 +330,11 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         private int _nameLength;
         private int _pathLength = -1;
 
-        public void Reset(int index, int nameStart, int nameLength)
+        public bool IsFolder { get; private set; }
+
+        public void Reset(int index, int nameStart, int nameLength, bool isFolder)
         {
+            IsFolder = isFolder;
             _index = index;
             _nameStart = nameStart;
             _nameLength = nameLength;

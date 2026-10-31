@@ -2,7 +2,7 @@ import { useState } from "react";
 import { SearchQuery } from "../api/types";
 import { AGE_UNITS, notOlderThanCutoff, parseAge, parseSize, toLocalIsoString, type AgeUnit } from "../format";
 import { PatternCombo } from "./PatternCombo";
-import { EVERYTHING_SYNTAX_HINT } from "../everythingSearch";
+import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls } from "../everythingSearch";
 
 interface Props {
   busy: boolean;
@@ -53,6 +53,11 @@ export function SearchBar({
   const toSizeInvalid = toSizeEnable && toSizeText.trim() !== "" && parseSize(toSizeText) === null;
   const notOlderThanAmount = parseAge(notOlderThanText);
   const notOlderThanInvalid = notOlderThanEnable && notOlderThanAmount === null;
+
+  const pathBox = includePathControl(everythingMode, includePath);
+  const pathTitle = everythingMode ? "Everything searches names; use path: in the query to match the path" : "";
+  const kinds = kindControls(everythingMode, includeFiles, includeFolders);
+  const kindTitle = everythingMode ? "Everything searches files and folders; use file: or folder: in the query" : "";
 
   function submit() {
     // Don't run a search with a filter the user asked for but we can't apply.
@@ -115,9 +120,15 @@ export function SearchBar({
         <label title={EVERYTHING_SYNTAX_HINT}>
           <input type="checkbox" checked={everythingMode} onChange={(e) => setEverythingMode(e.target.checked)} /> Everything
         </label>
-        <label><input type="checkbox" checked={includePath} onChange={(e) => setIncludePath(e.target.checked)} /> Include path</label>
-        <label><input type="checkbox" checked={includeFiles} onChange={(e) => setIncludeFiles(e.target.checked)} /> Files</label>
-        <label><input type="checkbox" checked={includeFolders} onChange={(e) => setIncludeFolders(e.target.checked)} /> Folders</label>
+        <label title={pathTitle}>
+          <input type="checkbox" checked={pathBox.checked} disabled={pathBox.disabled} onChange={(e) => setIncludePath(e.target.checked)} /> Include path
+        </label>
+        <label title={kindTitle}>
+          <input type="checkbox" checked={kinds.files} disabled={kinds.disabled} onChange={(e) => setIncludeFiles(e.target.checked)} /> Files
+        </label>
+        <label title={kindTitle}>
+          <input type="checkbox" checked={kinds.folders} disabled={kinds.disabled} onChange={(e) => setIncludeFolders(e.target.checked)} /> Folders
+        </label>
         <label>
           Limit
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>

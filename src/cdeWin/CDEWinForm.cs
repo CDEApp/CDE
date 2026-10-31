@@ -185,17 +185,32 @@ public partial class CDEWinForm : Form, ICDEWinForm
 
         SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
         SetToolTip(everythingCheckbox,
-            "Everything-style search: space=AND  |=OR  !=NOT  <>=group  \"phrase\"  path:term  no-path:term. Turns Regex off.");
-        everythingCheckbox.CheckedChanged += (_, _) => regexCheckbox.Enabled = !everythingCheckbox.Checked;
+            "Everything-style search: space=AND  |=OR  !=NOT  <>=group  \"phrase\"  path:term  no-path:term  file:  folder:. Turns Regex off. Include Path and the Files/Folders box are ignored: use path:, file: or folder:.");
+        everythingCheckbox.CheckedChanged += (_, _) =>
+        {
+            regexCheckbox.Enabled = !everythingCheckbox.Checked;
+            _findEntryFilter.SetEverything(everythingCheckbox.Checked);
+            _includePath.SetEverything(everythingCheckbox.Checked);
+            ShowFindEntryFilter();
+            ShowIncludePath();
+        };
         whatToSearchComboBox.Items.AddRange("Include Path in Search", "Exclude Path from Search");
         whatToSearchComboBox.SelectedIndex = 0; // default Include
         whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        whatToSearchComboBox.SelectedIndexChanged += (_, _) =>
+        {
+            if (!_includePath.EverythingMode) _includePath.Choose(whatToSearchComboBox.SelectedIndex == 0);
+        };
         SetToolTip(whatToSearchComboBox,
             "Excluding Path so that only entry Names are searched makes search faster.");
 
         findComboBox.Items.AddRange("Files and Folders", "Files Only", "Folders Only");
         findComboBox.SelectedIndex = 0; // default Files and Folders
         findComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
+        findComboBox.SelectedIndexChanged += (_, _) =>
+        {
+            if (!_findEntryFilter.EverythingMode) _findEntryFilter.Choose(findComboBox.SelectedIndex);
+        };
 
         // TODO having ListViewHelper set up in VIEW breaks passive view. i think.
         // * it does register a bunch of events which it fires.... ? so not real bad.
@@ -249,6 +264,7 @@ public partial class CDEWinForm : Form, ICDEWinForm
         // ReSharper disable PossibleNullReferenceException
         exitToolStripMenuItem.Click += (_, _) => OnExitMenuItem();
         aboutToolStripMenuItem.Click += (_, _) => OnAboutMenuItem();
+        searchSyntaxToolStripMenuItem.Click += (_, _) => SearchSyntaxForm.MyShow(this);
 
         searchButton.Click += (_, _) => OnSearch();
         // ReSharper restore PossibleNullReferenceException
@@ -519,6 +535,15 @@ public partial class CDEWinForm : Form, ICDEWinForm
         }
     }
 
+    private readonly FindEntryFilterState _findEntryFilter = new();
+
+    // Everything mode shows "Files and Folders" greyed out; the saved choice comes back when it is switched off.
+    private void ShowFindEntryFilter()
+    {
+        findComboBox.SelectedIndex = _findEntryFilter.Shown;
+        findComboBox.Enabled = _findEntryFilter.ComboEnabled;
+    }
+
     public bool IncludeFiles => findComboBox.SelectedIndex is 0 or 1;
 
     public bool IncludeFolders => findComboBox.SelectedIndex is 0 or 2;
@@ -526,15 +551,32 @@ public partial class CDEWinForm : Form, ICDEWinForm
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public int FindEntryFilter
     {
-        get => findComboBox.SelectedIndex;
-        set => findComboBox.SelectedIndex = value;
+        get => _findEntryFilter.Saved; // config records the saved choice, not the greyed-out display
+        set
+        {
+            _findEntryFilter.Choose(value);
+            ShowFindEntryFilter();
+        }
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
     public bool IncludePathInSearch
     {
-        get => whatToSearchComboBox.SelectedIndex == 0;
-        set => whatToSearchComboBox.SelectedIndex = value ? 0 : 1;
+        get => _includePath.Saved; // config records the saved choice, not the greyed-out display
+        set
+        {
+            _includePath.Choose(value);
+            ShowIncludePath();
+        }
+    }
+
+    private readonly IncludePathState _includePath = new();
+
+    // Everything mode shows "Exclude Path from Search" greyed out; the saved choice comes back when it is switched off.
+    private void ShowIncludePath()
+    {
+        whatToSearchComboBox.SelectedIndex = _includePath.Shown ? 0 : 1;
+        whatToSearchComboBox.Enabled = _includePath.ComboEnabled;
     }
 
     public void SetSearchResultStatus(int i)

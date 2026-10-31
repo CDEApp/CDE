@@ -68,10 +68,12 @@ found, progress SHALL be reported during the search, and cancellation SHALL stop
 Everything-style (voidtools) query and `RegexMode` SHALL be ignored. Iteration 1 supports only: space (AND),
 `|` (OR), `!` (NOT, applying to the next term, group or phrase), `< >` (grouping) and `"..."` (a literal phrase;
 operators inside quotes are plain text). Precedence from tightest is `!`, groups, space, `|`. Each term is a
-case-insensitive substring of the entry name, or of the full path when `IncludePath` is set. An empty or
+case-insensitive substring of the entry name; only a `path:` term reaches the full path. An empty or
 whitespace-only query matches everything. Backslash is an ordinary character. Wildcards, functions such as
-`ext:` and regex are out of scope. The `path:` and `no-path:` modifiers are supported (below). Groups SHALL nest no deeper than 32 levels. The columnar and in-memory stores
-SHALL return the same rows, and the plain and regex paths SHALL be unchanged when the flag is off.
+`ext:` and regex are out of scope. The `path:` and `no-path:` modifiers and the `file:` and `folder:` filters are supported (below). Groups SHALL nest no deeper than 32 levels. The columnar and in-memory stores
+SHALL return the same rows, and the plain and regex paths SHALL be unchanged when the flag is off. In Everything
+mode `IncludePath` SHALL be ignored (treated as false) and `IncludeFiles` and `IncludeFolders` SHALL be ignored
+(both treated as true): the query text alone chooses the path (`path:`) and files or folders (`file:`, `folder:`).
 
 #### Scenario: Space is AND
 - **WHEN** the query is `do win` in Everything mode
@@ -84,12 +86,22 @@ SHALL return the same rows, and the plain and regex paths SHALL be unchanged whe
 #### Scenario: path: and no-path: modifiers
 - **WHEN** a word, phrase or group is directly preceded (no space) by `path:`
 - **THEN** its terms match the full path, including the name; `no-path:` makes them match the name only
-- **AND** a term with no modifier matches the name, or the full path when `IncludePath` is set
+- **AND** a term with no modifier matches the name
 - **AND** the modifier applies to that one word, phrase or group, the innermost modifier wins inside a group,
   `!` goes in front of the modifier (`!path:foo`), and modifier names are case-insensitive
 - **AND** the full path is built for an entry only when evaluation reaches a term that needs it
 - **AND** `"path:x"` in quotes is the literal text; the `\:` alias and the global `?path:` form are rejected as
   not supported yet
+
+#### Scenario: file: and folder: filters
+- **WHEN** the query contains `file:` or `folder:`
+- **THEN** it is a stand-alone yes/no test on the entry kind that joins the AND, OR, NOT and group tree like any term
+  (`!file:` is folders, `<file: a> | <folder: b>` works); the text after the colon, with or without a space, is its
+  own term (`folder:music` means `folder: music`)
+- **AND** the default with no filter is files and folders
+- **AND** the names are case-insensitive, `file:` or `folder:` alone is valid and lists every entry of that kind,
+  `file: folder:` matches nothing without an error, and `"file:"` in quotes is the literal text
+- **AND** `path:` or `no-path:` directly before a filter is an error, because a filter is not a term to attach to
 
 #### Scenario: Malformed query is rejected with a position
 - **WHEN** the query has an unbalanced `<` or `"`, a dangling `|`, a lone `!`, an empty `<>`, adjacent operators

@@ -71,17 +71,28 @@ public class SearchServiceTests
     }
 
     [Test]
-    public async Task Everything_mode_overrides_regex_mode_and_honours_include_path()
+    public async Task Everything_mode_overrides_regex_mode_and_ignores_include_path()
     {
         // 'docs' only appears in a path, not in any name; with RegexMode also set it must still be a plain term.
         var byName = await Drain(_search.SearchAsync(
             new SearchQuery { Pattern = "docs alpha", EverythingMode = true, RegexMode = true }));
         Assert.That(byName, Is.Empty);
 
-        var byPath = await Drain(_search.SearchAsync(
+        // Include Path does not apply in Everything mode: only a path: term reaches the path.
+        var ignored = await Drain(_search.SearchAsync(
             new SearchQuery { Pattern = "docs alpha", EverythingMode = true, RegexMode = true, IncludePath = true }));
+        Assert.That(ignored, Is.Empty);
+
+        var viaModifier = await Drain(_search.SearchAsync(
+            new SearchQuery { Pattern = "path:docs alpha", EverythingMode = true, IncludePath = true }));
+        Assert.That(viaModifier.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md" }));
+    }
+
+    [Test]
+    public async Task Plain_search_still_honours_include_path()
+    {
+        var byPath = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "docs", IncludePath = true }));
         Assert.That(byPath.ConvertAll(r => r.Name), Does.Contain("alpha.md"));
-        Assert.That(byPath.ConvertAll(r => r.Name), Does.Not.Contain("alpha.txt"));
     }
 
     [Test]
@@ -93,9 +104,35 @@ public class SearchServiceTests
 
         var big = await Drain(_search.SearchAsync(new SearchQuery
         {
-            Pattern = "alpha", EverythingMode = true, FromSizeEnable = true, FromSize = 150, IncludeFolders = false
+            Pattern = "alpha", EverythingMode = true, FromSizeEnable = true, FromSize = 150
         }));
         Assert.That(big.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md" }));
+    }
+
+    [Test]
+    public async Task Everything_mode_ignores_the_files_and_folders_flags_and_file_folder_filters_choose()
+    {
+        // The flags say "nothing", yet Everything mode searches both kinds and only the query text restricts.
+        var folders = await Drain(_search.SearchAsync(new SearchQuery
+            { Pattern = "folder:", EverythingMode = true, IncludeFiles = false, IncludeFolders = false }));
+        Assert.That(folders.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "dir1", "docs" }));
+
+        var files = await Drain(_search.SearchAsync(new SearchQuery
+            { Pattern = "file: alpha", EverythingMode = true, IncludeFiles = false, IncludeFolders = false }));
+        Assert.That(files.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.txt", "alpha.md" }));
+
+        var both = await Drain(_search.SearchAsync(new SearchQuery
+            { Pattern = "<folder: do> | <file: beta>", EverythingMode = true, IncludeFiles = false }));
+        Assert.That(both.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "docs", "beta.log" }));
+    }
+
+    [Test]
+    public async Task Plain_search_still_honours_the_files_and_folders_flags()
+    {
+        var onlyFiles = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "d", IncludeFolders = false }));
+        Assert.That(onlyFiles.ConvertAll(r => r.IsDirectory), Has.None.True);
+        var onlyFolders = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "d", IncludeFiles = false }));
+        Assert.That(onlyFolders.ConvertAll(r => r.IsDirectory), Has.All.True);
     }
 
     [Test]

@@ -187,9 +187,11 @@ public sealed class SearchService : ISearchService
         Pattern = q.Pattern,
         RegexMode = q.RegexMode,
         EverythingMode = q.EverythingMode,
-        IncludePath = q.IncludePath,
-        IncludeFiles = q.IncludeFiles,
-        IncludeFolders = q.IncludeFolders,
+        // Everything mode reaches the path with path: in the query, so Include Path does not apply.
+        IncludePath = !q.EverythingMode && q.IncludePath,
+        // Everything mode chooses files or folders with file: and folder: in the query, so the flags do not apply.
+        IncludeFiles = q.EverythingMode || q.IncludeFiles,
+        IncludeFolders = q.EverythingMode || q.IncludeFolders,
         FromSizeEnable = q.FromSizeEnable,
         FromSize = q.FromSize,
         ToSizeEnable = q.ToSizeEnable,
