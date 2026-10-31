@@ -42,6 +42,45 @@ public class SearchFilterValidatorTests
     }
 
     [Test]
+    public void Everything_MalformedQuery_IsInvalidWithPosition()
+    {
+        var r = SearchFilterValidator.ValidateEverything(true, "a | | b");
+        Assert.That(r.IsValid, Is.False);
+        Assert.That(r.Field, Is.EqualTo(SearchFilterField.Everything));
+        Assert.That(r.Position, Is.EqualTo(4));
+        Assert.That(r.Message, Does.Contain("position 4"));
+    }
+
+    [Test]
+    public void Everything_BadModifier_IsInvalidWithPosition()
+    {
+        var r = SearchFilterValidator.ValidateEverything(true, "a path: b");
+        Assert.That(r.IsValid, Is.False);
+        Assert.That(r.Position, Is.EqualTo(2));
+        Assert.That(SearchFilterValidator.ValidateEverything(true, "path:a no-path:b").IsValid, Is.True);
+    }
+
+    [Test]
+    public void Everything_NotInEverythingMode_OrEmpty_IsValid()
+    {
+        Assert.That(SearchFilterValidator.ValidateEverything(false, "a || b").IsValid, Is.True);
+        Assert.That(SearchFilterValidator.ValidateEverything(true, "").IsValid, Is.True);
+        Assert.That(SearchFilterValidator.ValidateEverything(true, "do win").IsValid, Is.True);
+    }
+
+    [Test]
+    public void Validate_EverythingMode_SkipsRegexCheckButReportsBadEverythingQuery()
+    {
+        static SearchValidationResult V(bool regex, string p, bool everything) => SearchFilterValidator.Validate(
+            regex, p, false, 0, false, 0, false, default, false, default, false, default, false, default, everything);
+
+        Assert.That(V(true, "(unterminated", everything: true).Field, Is.EqualTo(SearchFilterField.None).Or.EqualTo(SearchFilterField.Everything));
+        Assert.That(V(true, "(unterminated", everything: true).IsValid, Is.True, "'(' is a plain term in Everything mode");
+        Assert.That(V(true, "<a", everything: true).Field, Is.EqualTo(SearchFilterField.Everything));
+        Assert.That(V(true, "(unterminated", everything: false).Field, Is.EqualTo(SearchFilterField.Regex));
+    }
+
+    [Test]
     public void Regex_InvalidPattern_IsInvalidWithMessage()
     {
         var r = SearchFilterValidator.ValidateRegex(true, "(unterminated");

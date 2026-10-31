@@ -13,6 +13,8 @@ export function refToString(r: EntryRef): string {
 export interface SearchQuery {
   pattern: string;
   regexMode?: boolean;
+  /** Everything-style query (space=AND, |=OR, !=NOT, <>=group, "phrase"); overrides regexMode. */
+  everythingMode?: boolean;
   includePath?: boolean;
   includeFiles?: boolean;
   includeFolders?: boolean;

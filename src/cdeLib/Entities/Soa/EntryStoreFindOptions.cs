@@ -11,6 +11,13 @@ public sealed class EntryStoreFindOptions
 {
     public string Pattern { get; set; }
     public bool RegexMode { get; set; }
+
+    /// <summary>
+    /// Treat <see cref="Pattern"/> as an Everything-style query (<see cref="EverythingQuery"/>) instead of a plain
+    /// substring. Takes precedence over <see cref="RegexMode"/>. The pattern must be valid (check with
+    /// <see cref="EverythingQuery.Parse"/> first); a malformed one throws <see cref="EverythingQueryException"/>.
+    /// </summary>
+    public bool EverythingMode { get; set; }
     public bool IncludePath { get; set; }
     public bool IncludeFiles { get; set; } = true;
     public bool IncludeFolders { get; set; } = true;

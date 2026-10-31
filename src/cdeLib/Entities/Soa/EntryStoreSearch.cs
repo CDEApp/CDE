@@ -27,16 +27,22 @@ public static class EntryStoreSearch
 
         // Non-null exactly when regex mode applies; the match site tests it (not RegexMode) so the flow is
         // provably non-null. Bounded: a pathological pattern times out per entry (no match) and ends the scan.
+        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty) : null;
         BoundedRegex regex = null;
-        if (o.RegexMode && !string.IsNullOrEmpty(o.Pattern))
+        if (o.RegexMode && everything is null && !string.IsNullOrEmpty(o.Pattern))
             regex = new BoundedRegex(o.Pattern);
 
-        var hasPattern = !string.IsNullOrEmpty(o.Pattern);
+        var hasPattern = everything is null ? !string.IsNullOrEmpty(o.Pattern) : !everything.IsEmpty;
 
         // Substring path matching runs Span<char>.Contains over a rented buffer; only regex mode
         // (rarer) materialises a string. Avoids a full-path string allocation per scanned entry.
-        var pathBuffer = o.IncludePath ? ArrayPool<char>.Shared.Rent(512) : null;
-        var nameBuffer = o.IncludePath ? null : ArrayPool<char>.Shared.Rent(256);
+        // An Everything query that reads one text only works like a plain search on that text; one that reads both
+        // (a path: term next to a name term) uses EntryChars, which builds the path only when a term needs it.
+        var texts = everything?.TextsRead(o.IncludePath) ?? EverythingTexts.Name;
+        var readsPath = everything is null ? o.IncludePath : texts == EverythingTexts.Path;
+        var pathBuffer = readsPath ? ArrayPool<char>.Shared.Rent(512) : null;
+        var nameBuffer = readsPath ? null : ArrayPool<char>.Shared.Rent(256);
+        using var entryChars = texts == EverythingTexts.Both ? new EntryChars(store) : null;
         try
         {
             for (var i = 1; i < store.Count; i++)
@@ -69,7 +75,18 @@ public static class EntryStoreSearch
                 if (!hasPattern) { onMatch(i); continue; }
 
                 bool match;
-                if (o.IncludePath)
+                if (entryChars is not null)
+                {
+                    entryChars.Reset(i);
+                    match = everything.Matches(entryChars, o.IncludePath);
+                }
+                else if (everything is not null)
+                {
+                    match = everything.Matches(readsPath
+                        ? WritePath(store, i, ref pathBuffer)
+                        : FullNameSpan(store, i, ref nameBuffer));
+                }
+                else if (o.IncludePath)
                 {
                     var path = WritePath(store, i, ref pathBuffer);
                     match = regex is not null
@@ -100,6 +117,39 @@ public static class EntryStoreSearch
     /// there is no extension, otherwise the two parts joined in the rented <paramref name="buffer"/>
     /// (grown if needed). Avoids the string a rejoin would allocate.
     /// </summary>
+    // One entry's name and (built only when asked for) full path, for an Everything query. It owns its two rented
+    // buffers for a whole Find (Dispose returns them); Reset moves it to the next entry.
+    private sealed class EntryChars(EntryStore store) : IEntryChars, IDisposable
+    {
+        private char[] _nameBuffer = ArrayPool<char>.Shared.Rent(256);
+        private char[] _pathBuffer = ArrayPool<char>.Shared.Rent(512);
+        private int _index;
+        private int _pathLength = -1;
+
+        public void Reset(int index)
+        {
+            _index = index;
+            _pathLength = -1;
+        }
+
+        public ReadOnlySpan<char> Name => FullNameSpan(store, _index, ref _nameBuffer);
+
+        public ReadOnlySpan<char> Path
+        {
+            get
+            {
+                if (_pathLength < 0) _pathLength = WritePath(store, _index, ref _pathBuffer).Length;
+                return _pathBuffer.AsSpan(0, _pathLength);
+            }
+        }
+
+        public void Dispose()
+        {
+            ArrayPool<char>.Shared.Return(_nameBuffer);
+            ArrayPool<char>.Shared.Return(_pathBuffer);
+        }
+    }
+
     private static ReadOnlySpan<char> FullNameSpan(EntryStore store, int i, ref char[] buffer)
     {
         var name = store.Name[i];

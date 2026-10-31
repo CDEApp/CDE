@@ -63,6 +63,41 @@ found, progress SHALL be reported during the search, and cancellation SHALL stop
   result limit, and size/date/hour/not-older-than filters is supplied
 - **THEN** the service applies exactly those filters, equivalent to the current WinForms search
 
+### Requirement: Everything-style search mode
+`SearchQuery` SHALL carry an `EverythingMode` flag. When it is set, `Pattern` SHALL be parsed as an
+Everything-style (voidtools) query and `RegexMode` SHALL be ignored. Iteration 1 supports only: space (AND),
+`|` (OR), `!` (NOT, applying to the next term, group or phrase), `< >` (grouping) and `"..."` (a literal phrase;
+operators inside quotes are plain text). Precedence from tightest is `!`, groups, space, `|`. Each term is a
+case-insensitive substring of the entry name, or of the full path when `IncludePath` is set. An empty or
+whitespace-only query matches everything. Backslash is an ordinary character. Wildcards, functions such as
+`ext:` and regex are out of scope. The `path:` and `no-path:` modifiers are supported (below). Groups SHALL nest no deeper than 32 levels. The columnar and in-memory stores
+SHALL return the same rows, and the plain and regex paths SHALL be unchanged when the flag is off.
+
+#### Scenario: Space is AND
+- **WHEN** the query is `do win` in Everything mode
+- **THEN** `Windows` matches, because it contains both `do` and `win`
+
+#### Scenario: Precedence
+- **WHEN** the query is `a b | c`
+- **THEN** it means `(a AND b) OR c`
+
+#### Scenario: path: and no-path: modifiers
+- **WHEN** a word, phrase or group is directly preceded (no space) by `path:`
+- **THEN** its terms match the full path, including the name; `no-path:` makes them match the name only
+- **AND** a term with no modifier matches the name, or the full path when `IncludePath` is set
+- **AND** the modifier applies to that one word, phrase or group, the innermost modifier wins inside a group,
+  `!` goes in front of the modifier (`!path:foo`), and modifier names are case-insensitive
+- **AND** the full path is built for an entry only when evaluation reaches a term that needs it
+- **AND** `"path:x"` in quotes is the literal text; the `\:` alias and the global `?path:` form are rejected as
+  not supported yet
+
+#### Scenario: Malformed query is rejected with a position
+- **WHEN** the query has an unbalanced `<` or `"`, a dangling `|`, a lone `!`, an empty `<>`, adjacent operators
+  (`a || b`, `!!a`), an empty phrase, a modifier not directly followed by a word, phrase or group (`path:`,
+  `path: a`, `path:!a`), or nesting deeper than 32
+- **THEN** `SearchFilterValidator` reports `SearchFilterField.Everything` with a message ending in
+  `(at position N)` and the 0-based `Position`
+
 ### Requirement: Narrow shell-action abstraction
 `cdeAppCore` SHALL expose `IShellActions` covering the fixed OS shell verbs `Open`, `Explore`, and
 `ShowProperties` (each taking a resolved local filesystem path), plus a custom-command facility: the

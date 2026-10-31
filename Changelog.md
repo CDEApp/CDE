@@ -1,5 +1,20 @@
 # Changelog
 
+## Unreleased
+
+### Search
+
+- feature (cdeWin, cde-tauri): New **Everything** checkbox next to Regex turns on Everything-style search syntax
+  (https://www.voidtools.com/support/everything/search_syntax/). Iteration 1 supports the operators only: space is
+  AND, `|` is OR, `!` is NOT, `<>` groups and `"..."` is a literal phrase. For example `do win` matches `Windows`.
+  Terms are case-insensitive substrings of the name (or the full path with Include path). It turns Regex off while
+  ticked, is off by default and is remembered. A malformed query keeps the old results and shows a message with the
+  position. Wildcards and functions such as `ext:` are not supported yet. (#148)
+- feature (cdeWin, cde-tauri): The Everything mode understands the `path:` and `no-path:` modifiers. `path:system32
+  hosts` matches `hosts` in a folder path containing `system32`; `no-path:` matches the name only even when Include
+  path is on. A modifier goes directly in front of one word, phrase or group (`path:<a | b>`), and `!path:foo` negates
+  it. The `\:` alias and the global `?path:` form are not supported yet. (#148)
+
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 
 First release from the new pipeline: one zip, `cde-2.1.0-beta.1-win-x64.zip`, with `cde`, `cdewin` and the new

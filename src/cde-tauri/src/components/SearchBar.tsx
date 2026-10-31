@@ -2,6 +2,7 @@ import { useState } from "react";
 import { SearchQuery } from "../api/types";
 import { AGE_UNITS, notOlderThanCutoff, parseAge, parseSize, toLocalIsoString, type AgeUnit } from "../format";
 import { PatternCombo } from "./PatternCombo";
+import { EVERYTHING_SYNTAX_HINT } from "../everythingSearch";
 
 interface Props {
   busy: boolean;
@@ -22,6 +23,7 @@ export function SearchBar({
 }: Props) {
   const [pattern, setPattern] = useState("");
   const [regexMode, setRegexMode] = useState(defaults.regexMode ?? false);
+  const [everythingMode, setEverythingMode] = useState(defaults.everythingMode ?? false);
   const [includePath, setIncludePath] = useState(defaults.includePath ?? false);
   const [includeFiles, setIncludeFiles] = useState(defaults.includeFiles ?? true);
   const [includeFolders, setIncludeFolders] = useState(defaults.includeFolders ?? true);
@@ -61,6 +63,7 @@ export function SearchBar({
     onSearch({
       pattern,
       regexMode,
+      everythingMode,
       includePath,
       includeFiles,
       includeFolders,
@@ -106,7 +109,12 @@ export function SearchBar({
       </div>
 
       <div className="searchbar-row toggles">
-        <label><input type="checkbox" checked={regexMode} onChange={(e) => setRegexMode(e.target.checked)} /> Regex</label>
+        <label title={everythingMode ? "Regex is off while Everything is on" : ""}>
+          <input type="checkbox" checked={regexMode && !everythingMode} disabled={everythingMode} onChange={(e) => setRegexMode(e.target.checked)} /> Regex
+        </label>
+        <label title={EVERYTHING_SYNTAX_HINT}>
+          <input type="checkbox" checked={everythingMode} onChange={(e) => setEverythingMode(e.target.checked)} /> Everything
+        </label>
         <label><input type="checkbox" checked={includePath} onChange={(e) => setIncludePath(e.target.checked)} /> Include path</label>
         <label><input type="checkbox" checked={includeFiles} onChange={(e) => setIncludeFiles(e.target.checked)} /> Files</label>
         <label><input type="checkbox" checked={includeFolders} onChange={(e) => setIncludeFolders(e.target.checked)} /> Folders</label>

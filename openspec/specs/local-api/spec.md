@@ -36,6 +36,10 @@ process start and provided to the launching host; requests without the valid tok
 - **THEN** it receives `result` events as rows are found and `progress` events during the search
 - **AND** a terminal `done` event when the search completes
 
+#### Scenario: Malformed Everything query is refused
+- **WHEN** a search request has `everythingMode` set and a malformed `pattern`
+- **THEN** the API responds `400` with the validation message (ending `(at position N)`) and streams nothing
+
 #### Scenario: Disconnect cancels the search
 - **WHEN** the client closes the SSE connection mid-search
 - **THEN** the server cancels the `CancellationToken` and the underlying traversal stops

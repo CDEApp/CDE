@@ -6,6 +6,7 @@ export interface UiState {
   includeFiles?: boolean;
   includeFolders?: boolean;
   regexMode?: boolean;
+  everythingMode?: boolean;
   limitResultCount?: number;
   lastView?: string;
   catalogDir?: string;

@@ -12,6 +12,9 @@ public sealed class SearchQuery
 {
     public string Pattern { get; set; } = "";
     public bool RegexMode { get; set; }
+
+    /// <summary>Treat <see cref="Pattern"/> as an Everything-style query (space, |, !, &lt;&gt;, "..."). Overrides <see cref="RegexMode"/>.</summary>
+    public bool EverythingMode { get; set; }
     public bool IncludePath { get; set; }
     public bool IncludeFiles { get; set; } = true;
     public bool IncludeFolders { get; set; } = true;

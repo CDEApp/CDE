@@ -63,6 +63,7 @@ import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
 import { createRequestGuard } from "./requestGuard";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
+import { searchErrorMessage } from "./everythingSearch";
 
 type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
 
@@ -373,6 +374,7 @@ export default function App() {
     uiRef.current?.pushSearchHistory(query.pattern);
     uiRef.current?.update({
       regexMode: query.regexMode,
+      everythingMode: query.everythingMode,
       includePath: query.includePath,
       includeFiles: query.includeFiles,
       includeFolders: query.includeFolders,
@@ -380,8 +382,6 @@ export default function App() {
     });
 
     setView("results");
-    setResults([]);
-    setRescannedSinceSearch(new Set()); // fresh results are not stale
     setBusy(true);
     setTiming("Searching…");
 
@@ -389,6 +389,15 @@ export default function App() {
     searchAbort.current = abort;
     const start = performance.now();
     const buffer: SearchResultRow[] = [];
+    // The previous results stay until the search really starts: a refused query (a 400, such as a malformed
+    // Everything query) leaves them alone and only shows the message.
+    let started = false;
+    const begin = () => {
+      if (started) return;
+      started = true;
+      setResults([]);
+      setRescannedSinceSearch(new Set()); // fresh results are not stale
+    };
     let flush: ReturnType<typeof setTimeout> | null = null;
     const scheduleFlush = () => {
       if (flush) return;
@@ -402,21 +411,25 @@ export default function App() {
       await client.search(query, {
         signal: abort.signal,
         onResult: (row) => {
+          begin();
           buffer.push(row);
           scheduleFlush();
         },
-        onProgress: (p) =>
-          setTiming(`${p.total > 0 ? Math.round((100 * p.count) / p.total) : 0}%`),
+        onProgress: (p) => {
+          begin();
+          setTiming(`${p.total > 0 ? Math.round((100 * p.count) / p.total) : 0}%`);
+        },
         onDone: (count) => {
+          begin();
           setResults([...buffer]);
           setTiming(`${count.toLocaleString()} results in ${Math.round(performance.now() - start)} ms`);
         },
       });
     } catch (e) {
-      setTiming(`Error: ${(e as Error).message}`);
+      setTiming(searchErrorMessage(e));
     } finally {
       if (flush) clearTimeout(flush);
-      setResults([...buffer]);
+      if (started) setResults([...buffer]);
       setBusy(false);
       searchAbort.current = null;
     }

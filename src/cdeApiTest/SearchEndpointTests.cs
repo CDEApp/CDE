@@ -40,6 +40,31 @@ public class SearchEndpointTests
     }
 
     [Test]
+    public async Task Malformed_everything_query_is_400_with_a_position()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "a || b", EverythingMode = true }, new SearchService(_catalog.Session));
+
+        Assert.That(ctx.Response.StatusCode, Is.EqualTo(400));
+        Assert.That(TestCatalog.Text(body), Does.Contain("position 3"));
+    }
+
+    [Test]
+    public async Task Everything_query_streams_matches()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "<a|b> txt !sub", EverythingMode = true, IncludeFolders = false },
+            new SearchService(_catalog.Session));
+
+        var results = TestCatalog.Events(TestCatalog.Text(body)).Where(e => e.Event == "result").ToList();
+        Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "a.txt", "b.txt" }));
+    }
+
+    [Test]
     public async Task Valid_query_streams_each_match_then_done_with_the_count()
     {
         var (ctx, body) = TestCatalog.NewContext();

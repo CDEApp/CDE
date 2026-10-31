@@ -1,4 +1,5 @@
 using System;
+using cdeLib;
 using cdeLib.Infrastructure;
 
 namespace cdeAppCore.Validation;
@@ -10,6 +11,7 @@ public enum SearchFilterField
 {
     None = 0,
     Regex,
+    Everything,
     Size,
     Date,
     Hour
@@ -19,12 +21,13 @@ public enum SearchFilterField
 /// The outcome of validating a search query: either valid, or a failure carrying a human-readable
 /// message and the offending field. Pure data — no UI dependency.
 /// </summary>
-public readonly record struct SearchValidationResult(bool IsValid, SearchFilterField Field, string Message)
+public readonly record struct SearchValidationResult(
+    bool IsValid, SearchFilterField Field, string Message, int? Position = null)
 {
     public static SearchValidationResult Valid { get; } = new(true, SearchFilterField.None, null);
 
-    public static SearchValidationResult Invalid(SearchFilterField field, string message)
-        => new(false, field, message);
+    public static SearchValidationResult Invalid(SearchFilterField field, string message, int? position = null)
+        => new(false, field, message, position);
 }
 
 /// <summary>
@@ -51,6 +54,24 @@ public static class SearchFilterValidator
         return string.IsNullOrEmpty(regexError)
             ? SearchValidationResult.Valid
             : SearchValidationResult.Invalid(SearchFilterField.Regex, regexError);
+    }
+
+    /// <summary>
+    /// Invalid only when Everything mode is on and the query text is malformed; the failure carries the 0-based
+    /// character position. An empty query is valid (it matches everything).
+    /// </summary>
+    public static SearchValidationResult ValidateEverything(bool everythingMode, string pattern)
+    {
+        if (!everythingMode) return SearchValidationResult.Valid;
+        try
+        {
+            EverythingQuery.Parse(pattern ?? string.Empty);
+            return SearchValidationResult.Valid;
+        }
+        catch (EverythingQueryException ex)
+        {
+            return SearchValidationResult.Invalid(SearchFilterField.Everything, ex.Message, ex.Position);
+        }
     }
 
     /// <summary>Invalid only when both ends are enabled and From-size exceeds To-size.</summary>
@@ -86,9 +107,14 @@ public static class SearchFilterValidator
         bool regexMode, string pattern,
         bool fromSizeEnabled, long fromSize, bool toSizeEnabled, long toSize,
         bool fromDateEnabled, DateTime fromDate, bool toDateEnabled, DateTime toDate,
-        bool fromHourEnabled, TimeSpan fromHour, bool toHourEnabled, TimeSpan toHour)
+        bool fromHourEnabled, TimeSpan fromHour, bool toHourEnabled, TimeSpan toHour,
+        bool everythingMode = false)
     {
-        var regex = ValidateRegex(regexMode, pattern);
+        // Everything mode overrides regex mode, so a regex that would not compile is not an error then.
+        var everything = ValidateEverything(everythingMode, pattern);
+        if (!everything.IsValid) return everything;
+
+        var regex = ValidateRegex(regexMode && !everythingMode, pattern);
         if (!regex.IsValid) return regex;
 
         var size = ValidateSize(fromSizeEnabled, fromSize, toSizeEnabled, toSize);

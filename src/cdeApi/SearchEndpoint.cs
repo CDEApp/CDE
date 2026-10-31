@@ -18,7 +18,8 @@ public static class SearchEndpoint
             query.RegexMode, query.Pattern,
             query.FromSizeEnable, query.FromSize, query.ToSizeEnable, query.ToSize,
             query.FromDateEnable, query.FromDate, query.ToDateEnable, query.ToDate,
-            query.FromHourEnable, query.FromHour, query.ToHourEnable, query.ToHour);
+            query.FromHourEnable, query.FromHour, query.ToHourEnable, query.ToHour,
+            query.EverythingMode);
         if (!v.IsValid)
         {
             ctx.Response.StatusCode = StatusCodes.Status400BadRequest;
