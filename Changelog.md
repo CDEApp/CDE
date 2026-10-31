@@ -21,6 +21,11 @@
   out too in this mode: use `path:` to match the path, otherwise a term matches the name. (#150)
 - feature (cdeWin, cde-tauri): The About menu is now **Help** (in cdeWin About moved out of File). **Help > Search Syntax**
   shows the Everything-search operators, modifiers and filters with examples. (#150)
+- feature (cde): New `cde everything "<query>"` command runs the same Everything-style query as the GUIs: space is
+  AND, `|` is OR, `!` is NOT, `<>` groups, `"..."` is a phrase, `path:` and `no-path:` choose the path or the name, and
+  `file:` and `folder:` choose the kind. It takes `--template` and `--filter` and nothing else. A malformed query
+  prints `error: ... (at position N)` and exits 1 before any catalog is read. Quote the query, since `<`, `>`, `|` and
+  `!` mean something to a shell. `find`, `findpath`, `grep` and `greppath` are unchanged. (#152)
 
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 

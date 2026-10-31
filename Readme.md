@@ -22,6 +22,7 @@
   - [Examples](#examples)
   - [cde scan Path](#cde-scan-path)
   - [cde find String](#cde-find-string)
+  - [cde everything Query](#cde-everything-query)
   - [cde hash](#cde-hash)
   - [cde dupes](#cde-dupes)
   - [cde dump](#cde-dump)
@@ -318,6 +319,39 @@ Put the filter in quotes, because `<` and `>` mean redirection in a shell. Repea
 | Value | A number, with decimals if you want (`1.5KB`), then an optional unit of `B`, `KB`, `MB`, `GB` or `TB`. With no unit it is bytes. Units are not case-sensitive and a space before the unit is allowed. |
 
 Each step of the units is 1024, the same as `{size:KB}` in `--template`. The size filter in cdeWin uses 1000 per step, so a limit such as 10 KB is slightly different there. A folder is compared by the total size of what is in it. An unknown filter, an unknown unit or text that is not a filter stops the command with an error before any catalog is read. Matches that are filtered out are not counted in the "Total found" figure.
+
+### cde everything Query
+
+#### Valid Options for this mode
+
+`--template` and `--filter`, as for `find`. Nothing else: the query itself decides everything below.
+
+`cde everything` searches your catalogs with the same Everything-style query as the Everything checkbox in cdeWin and cde-tauri (see [voidtools' search syntax](https://www.voidtools.com/support/everything/search_syntax/)). `find`, `findpath`, `grep` and `greppath` do not change.
+
+```batch
+cde everything "do win"
+cde everything "folder:music <flac | mp3>"
+cde everything "file: .mp3 !tmp"
+cde everything "path:system32 hosts" --template "{catalog} {fullpath}"
+cde everything "file: .iso" --filter "{size:>4GB}"
+```
+
+| Syntax | Meaning |
+|---|---|
+| `a b` | A space is AND: the name has both `a` and `b`. `do win` matches `Windows`. |
+| `a \| b` | OR (a space binds tighter than `\|`). |
+| `!a` | NOT. |
+| `<a \| b> c` | A group. |
+| `"a b"` | A literal phrase. Operators inside the quotes are plain text. |
+| `path:term` | Match the full path. It goes directly in front of one word, phrase or group, with no space. |
+| `no-path:term` | Match the name only. |
+| `file:` / `folder:` | Files only or folders only. They are tests on the entry, so `folder:music` means "a folder, and `music`". The default is both. |
+
+A plain term matches the name, as a case-insensitive substring. Only `path:` reaches the path. There are no regex, path, files or folders options for this command: use `path:`, `file:` and `folder:` in the query.
+
+Put the query in quotes, because `<`, `>`, `|` and `!` mean something to a shell. The query matches first, then `--filter` keeps the matches that pass, then `--template` writes each line.
+
+A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the command with `error: ... (at position N)` and exit code 1 before any catalog is read, and prints no results. An empty query matches every entry. Wildcards and Everything functions such as `ext:` are not supported yet.
 
 ### cde hash
 

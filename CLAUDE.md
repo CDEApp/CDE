@@ -17,7 +17,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 - **cde** - Command-line interface (CLI) application
   - Target: .NET 10
   - Cross-platform: win-x64, linux-x64, osx-x64
-  - Entry point for scan, find, hash, dupes, dump commands
+  - Entry point for scan, find, everything (Everything-style query), hash, dupes, dump commands
   - Dependencies: Autofac, SlimMessageBus, CommandLineParser, Spectre.Console
 
 - **cdeLib** - Core library containing business logic

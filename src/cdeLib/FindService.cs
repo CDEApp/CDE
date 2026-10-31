@@ -31,6 +31,14 @@ public interface IFindService
 
     /// <summary>Drops matches that do not pass it; null keeps every match.</summary>
     MatchFilter Filter { get; set; }
+
+    /// <summary>
+    /// Reads the pattern as an Everything-style query (see <see cref="EverythingQuery"/>): the query text alone chooses
+    /// the path (<c>path:</c>) and files or folders (<c>file:</c>, <c>folder:</c>), so the param, <see cref="IncludeFiles"/>
+    /// and <see cref="IncludeFolders"/> do not apply. A malformed query throws <see cref="EverythingQueryException"/>
+    /// before anything is written.
+    /// </summary>
+    bool EverythingMode { get; set; }
 }
 
 public class FindService : IFindService
@@ -54,6 +62,8 @@ public class FindService : IFindService
 
     public MatchFilter Filter { get; set; }
 
+    public bool EverythingMode { get; set; }
+
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
         var regexMode = param is ParamGrep or ParamGrepPath;
@@ -68,6 +78,7 @@ public class FindService : IFindService
         // (42 vs 129 bytes/entry; see src/cdeBenchmarks/baseline/soa-prototype.md), and the
         // index-based scan is cache friendly. The CLI find applies only pattern + name/path +
         // file/folder filtering, all of which EntryStoreSearch supports.
+        if (EverythingMode) EverythingQuery.Parse(pattern ?? string.Empty); // fail before the catalogs are converted
         var stores = new List<EntryStore>(rootEntries.Count);
         for (var i = 0; i < rootEntries.Count; i++)
         {
@@ -79,13 +90,17 @@ public class FindService : IFindService
         var timer = Stopwatch.StartNew();
         foreach (var store in stores)
         {
-            EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
-                idx =>
-                {
-                    if (Filter != null && !Filter.Matches(store.SizeOf(idx))) return;
-                    ++totalFound;
-                    WriteMatch(store, idx);
-                });
+            void OnMatch(int idx)
+            {
+                if (Filter != null && !Filter.Matches(store.SizeOf(idx))) return;
+                ++totalFound;
+                WriteMatch(store, idx);
+            }
+
+            if (EverythingMode)
+                EntryStoreSearch.Find(store, new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true }, OnMatch);
+            else
+                EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }
 
         timer.Stop();
@@ -99,17 +114,25 @@ public class FindService : IFindService
         var regexMode = param is ParamGrep or ParamGrepPath;
         var includePath = param is ParamGrepPath or ParamFindPath;
 
+        if (EverythingMode) EverythingQuery.Parse(pattern ?? string.Empty); // fail before any catalog is searched
+
         var totalFound = 0L;
         var timer = Stopwatch.StartNew();
         foreach (var reader in readers)
         {
-            reader?.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
-                idx =>
-                {
-                    if (Filter != null && !Filter.Matches(reader.SizeOf(idx))) return;
-                    ++totalFound;
-                    WriteMatch(reader, idx);
-                });
+            if (reader == null) continue;
+
+            void OnMatch(int idx)
+            {
+                if (Filter != null && !Filter.Matches(reader.SizeOf(idx))) return;
+                ++totalFound;
+                WriteMatch(reader, idx);
+            }
+
+            if (EverythingMode)
+                reader.Find(new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true }, OnMatch);
+            else
+                reader.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }
 
         timer.Stop();

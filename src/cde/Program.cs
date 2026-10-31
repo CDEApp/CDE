@@ -37,26 +37,32 @@ public static class Program
     public static void CreateCache(ScanOptions opts) => _app.CreateCacheAsync(opts).GetAwaiter().GetResult();
     public static void HashCatalog() => _app.HashCatalogAsync().GetAwaiter().GetResult();
 
+    // The generic ParseArguments<T1..T16> overloads stop at 16 verbs, so the verbs are listed as an array instead.
+    private static readonly Type[] VerbTypes =
+    [
+        typeof(ScanOptions),
+        typeof(FindOptions),
+        typeof(EverythingOptions),
+        typeof(GrepOptions),
+        typeof(GrepPathOptions),
+        typeof(ReplGrepPathOptions),
+        typeof(ReplGrepOptions),
+        typeof(ReplFindOptions),
+        typeof(MigrateOptions),
+        typeof(HashOptions),
+        typeof(DupesOptions),
+        typeof(TreeDumpOptions),
+        typeof(LoadWaitOptions),
+        typeof(ReplOptions),
+        typeof(PopulousFoldersOptions),
+        typeof(FindPathOptions),
+        typeof(UpdateOptions),
+    ];
+
     private static ParserResult<object> GetParserResult(IEnumerable<string> args)
     {
         var parser = CommandLineParserBuilder.Build();
-        return parser.ParseArguments<
-            ScanOptions,
-            FindOptions,
-            GrepOptions,
-            GrepPathOptions,
-            ReplGrepPathOptions,
-            ReplGrepOptions,
-            ReplFindOptions,
-            MigrateOptions,
-            HashOptions,
-            DupesOptions,
-            TreeDumpOptions,
-            LoadWaitOptions,
-            ReplOptions,
-            PopulousFoldersOptions,
-            FindPathOptions,
-            UpdateOptions>(args);
+        return parser.ParseArguments(args, VerbTypes);
     }
 
     private static async Task<int> Main(string[] args)
@@ -109,6 +115,7 @@ public static class Program
         ScanOptions o => _app.CreateCacheAsync(o),
         FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template, o.Filter)),
         FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template, o.Filter)),
+        EverythingOptions o => RunSync(() => _app.RunFind(o.Value, FindService.ParamFind, o.Template, o.Filter, everything: true)),
         GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template, o.Filter)),
         GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template, o.Filter)),
         ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
