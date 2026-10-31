@@ -513,4 +513,128 @@ public class FindServiceTests
 
         Assert.That(Matches(), Is.EqualTo(new[] { "report-2024.txt" }));
     }
+
+    // ---- Everything mode (cde everything) ----
+
+    [Test]
+    public void FindColumnar_everything_mode_reads_the_query_syntax()
+    {
+        using var reader = Columnar();
+
+        // Plain find would match nothing for "rep 2024"; in Everything mode a space is AND.
+        new FindService { EverythingMode = true }.FindColumnar("rep 2024", FindService.ParamFind, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "report-2024.txt" }));
+    }
+
+    [Test]
+    public void FindColumnar_everything_mode_reaches_the_path_only_with_path()
+    {
+        using var reader = Columnar();
+
+        // "docs" is only in the path of report-2024.txt; plain terms match the name.
+        new FindService { EverythingMode = true }.FindColumnar("docs report", FindService.ParamFind, [reader]);
+        Assert.That(Matches(), Is.Empty);
+
+        _captured.GetStringBuilder().Clear();
+        new FindService { EverythingMode = true }.FindColumnar("path:docs report", FindService.ParamFind, [reader]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "report-2024.txt" }));
+    }
+
+    [Test]
+    public void FindColumnar_everything_mode_file_and_folder_choose_the_kind()
+    {
+        using var reader = Columnar();
+        var service = new FindService { EverythingMode = true };
+
+        service.FindColumnar("file: report", FindService.ParamFind, [reader]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "report-2024.txt", "report.txt" }));
+
+        _captured.GetStringBuilder().Clear();
+        service.FindColumnar("folder:report", FindService.ParamFind, [reader]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "reports" }));
+    }
+
+    [Test]
+    public void Everything_mode_ignores_the_files_and_folders_flags_and_the_param()
+    {
+        using var reader = Columnar();
+
+        // The flags say "no folders" and the param says regex on paths, yet only the query decides.
+        new FindService { EverythingMode = true, IncludeFiles = false, IncludeFolders = false }
+            .FindColumnar("folder:report", FindService.ParamGrepPath, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "reports" }));
+    }
+
+    [Test]
+    public void Find_everything_mode_works_on_the_tree_path_too()
+    {
+        new FindService { EverythingMode = true }.Find("rep 2024", FindService.ParamFind, [Scan()]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "report-2024.txt" }));
+
+        _captured.GetStringBuilder().Clear();
+        new FindService { EverythingMode = true }.Find("folder: report", FindService.ParamFind, [Scan()]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "reports" }));
+
+        _captured.GetStringBuilder().Clear();
+        new FindService { EverythingMode = true }.Find("path:docs report", FindService.ParamFind, [Scan()]);
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "report-2024.txt" }));
+    }
+
+    [Test]
+    public void Everything_mode_composes_with_filter_then_template()
+    {
+        using var reader = ColumnarSized();
+
+        // The query picks the .txt files, --filter keeps the ones over 1KB, --template formats each line.
+        new FindService
+        {
+            EverythingMode = true,
+            Filter = MatchFilter.Parse(["{size:>1KB}"]),
+            Template = MatchTemplate.Parse("{filename}={size:B}"),
+        }.FindColumnar("file: .txt", FindService.ParamFind, [reader]);
+
+        Assert.That(Matches(), Is.EqualTo(new[] { "big.txt=5000 B", "medium.txt=2000 B" }));
+    }
+
+    [TestCase("a ||", 3)]
+    [TestCase("<a", 0)]
+    [TestCase("path:", 0)]
+    [TestCase("a path:file:", 2)]
+    public void A_malformed_everything_query_throws_with_a_position_and_writes_nothing(string query, int position)
+    {
+        using var first = Columnar("one.cdex");
+        using var second = Columnar("two.cdex");
+        var service = new FindService { EverythingMode = true };
+
+        var onColumnar = Assert.Throws<EverythingQueryException>(
+            () => service.FindColumnar(query, FindService.ParamFind, [first, second]));
+        var onTree = Assert.Throws<EverythingQueryException>(
+            () => service.Find(query, FindService.ParamFind, [Scan()]));
+
+        Assert.That(onColumnar.Position, Is.EqualTo(position), onColumnar.Message);
+        Assert.That(onTree.Position, Is.EqualTo(position), onTree.Message);
+        Assert.That(_captured.ToString(), Is.Empty);
+    }
+
+    [Test]
+    public void An_empty_everything_query_matches_every_entry()
+    {
+        using var reader = Columnar();
+
+        new FindService { EverythingMode = true }.FindColumnar("  ", FindService.ParamFind, [reader]);
+
+        Assert.That(Names(Matches()), Is.EqualTo(new[] { "docs", "inner.txt", "notes.md", "report-2024.txt", "report.txt", "reports" }));
+    }
+
+    [Test]
+    public void Without_everything_mode_the_pattern_is_still_a_plain_substring()
+    {
+        using var reader = Columnar();
+
+        new FindService().FindColumnar("rep 2024", FindService.ParamFind, [reader]);
+
+        Assert.That(Matches(), Is.Empty);
+    }
 }
