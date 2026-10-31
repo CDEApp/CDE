@@ -1,6 +1,7 @@
 name: Release
 
-# Builds cde, cdewin and cde-tauri from a tag, zips them, and publishes the GitHub Release.
+# Builds cde, cdewin and cde-tauri from a tag for Windows, and cde and cde-tauri for Linux, packs them, and
+# publishes the GitHub Release.
 #
 # The tag is bare (2.1.0, no "v"), or a pre-release (2.1.0-beta.1; alpha, beta or rc). A
 # pre-release is published as a GitHub pre-release and is never "latest". The glob requires a digit
@@ -8,10 +9,21 @@ name: Release
 # it. Run Publish Release (release-publish.yml) to tag and release in one go; pushing a tag by hand
 # also works.
 #
-# The zip, cde-<version>-win-x64.zip, holds:
+# Jobs, in order:
+#   check          validates the tag and works out the tags the notes need.
+#   build-windows  builds the Windows zip.   (in parallel with build-linux)
+#   build-linux    builds the Linux tar.gz.  (in parallel with build-windows)
+#   publish        needs both builds. Creates or updates the draft, attaches every archive, and publishes last.
+# A build that fails therefore leaves at most a draft, never a public release missing an archive.
+#
+# The Windows zip, cde-<version>-win-x64.zip, holds:
 #   cde/        cde.exe (self-contained, single file) + appsettings.json
 #   cdewin/     cdewin.exe (self-contained, single file) + appsettings.json
 #   cde-tauri/  cde-tauri.exe + cdeApi.exe (the sidecar)
+#
+# The Linux archive, cde-<version>-linux-x64.tar.gz, holds (there is no cdewin: it is a Windows Forms app):
+#   cde/        cde (self-contained, single file) + appsettings.json
+#   cde-tauri/  cde-tauri + cdeApi (the sidecar)
 on:
   push:
     tags: ['[0-9]*']
@@ -40,41 +52,36 @@ concurrency:
   group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
-jobs:
-  release:
-    runs-on: windows-latest
-    timeout-minutes: 60
-    # contents: write to publish the release and upload the assets; pull-requests: read for
-    # Release Drafter to list the merged pull requests.
-    permissions:
-      contents: write
-      pull-requests: read
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
 
+jobs:
+  # ---- Check the tag ----
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
     env:
-      TAG: ${{ inputs.tag || github.ref_name }}
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    outputs:
+      prerelease: ${{ steps.kind.outputs.prerelease }}
+      stable_tag: ${{ steps.stable.outputs.tag }}
+      previous_tag: ${{ steps.previous.outputs.tag }}
 
     steps:
-      # MinVer needs the full history and the tags to version the build from the tag.
+      # The full history and the tags, to list the existing tags and to check the tag is on develop.
       - uses: actions/checkout@v7
         with:
           ref: refs/tags/${{ env.TAG }}
           fetch-depth: 0
           fetch-tags: true
 
-      # Takes the pnpm version from packageManager in package.json.
-      - name: Setup pnpm
-        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
-        with:
-          package_json_file: src/cde-tauri/package.json
-
-      # Node runs the version rules below as well as the cde-tauri build.
+      # Node runs the version rules below.
       - name: Setup Node
         uses: actions/setup-node@v7
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
 
       # A stable tag (2.1.0) or a pre-release tag (2.1.0-beta.1); the rules live in the tested
       # release-version module. A pre-release is published as a GitHub pre-release, from its own
@@ -125,6 +132,35 @@ jobs:
                    --limit 20 --json tagName --jq '[.[] | select(.tagName | test("^[0-9]"))] | .[0].tagName // ""')
           echo "tag=$prev" >> "$GITHUB_OUTPUT"
           echo "Previous release tag: ${prev:-<none>}"
+
+  # ---- Build the Windows zip ----
+  build-windows:
+    needs: check
+    runs-on: windows-latest
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    steps:
+      # MinVer needs the full history and the tags to version the build from the tag.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      # Takes the pnpm version from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: src/cde-tauri/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v6
@@ -179,18 +215,174 @@ jobs:
       - name: Zip and checksum
         run: ./.github/scripts/stage-release.ps1 -Version "$env:TAG" -Phase Zip
 
+      - name: Upload the Windows archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-win-x64
+          path: |
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip
+            artifacts/release/cde-${{ env.TAG }}-win-x64.zip.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---- Build the Linux tar.gz ----
+  #
+  # Built on the oldest Ubuntu we support (22.04): a Linux binary needs a glibc at least as new as the one it was
+  # linked against, so building on the newest runner would leave older distributions out.
+  build-linux:
+    needs: check
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    permissions:
+      contents: read
+
+    steps:
+      # MinVer needs the full history and the tags to version the build from the tag.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+          fetch-depth: 0
+          fetch-tags: true
+
+      # What the Tauri shell needs to build on Linux (the webview and its tray and icon libraries).
+      - name: Install Tauri system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev build-essential curl wget file libxdo-dev libssl-dev \
+            libayatana-appindicator3-dev librsvg2-dev
+
+      # Takes the pnpm version from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: src/cde-tauri/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: src/cde-tauri/pnpm-lock.yaml
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          # 9.0.x runs the FlatSharp schema compiler (its newest build targets net9.0).
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src/cde-tauri/src-tauri -> target
+
+      # The same Fallout target as Windows, for linux-x64: it publishes cde and cdeApi, and leaves out cdewin.
+      - name: Publish cde
+        run: ./build.sh PublishRelease --self-contained true --runtime linux-x64
+
+      - name: Install cde-tauri dependencies
+        working-directory: src/cde-tauri
+        run: pnpm install --frozen-lockfile
+
+      # Publishes cdeApi and stages it as src-tauri/binaries/cdeApi-<target triple>.
+      - name: Bundle sidecar
+        working-directory: src/cde-tauri
+        run: pnpm bundle-sidecar
+
+      - name: Stamp cde-tauri version
+        working-directory: src/cde-tauri
+        run: node scripts/stamp-version.mjs "$TAG"
+
+      # --no-bundle builds the binary only (no .deb, .AppImage or .rpm). tauri-build also copies the
+      # sidecar next to it as target/release/cdeApi, the name the app spawns.
+      - name: Build cde-tauri
+        working-directory: src/cde-tauri
+        run: pnpm tauri build --no-bundle
+
+      - name: Stage release folder, archive and checksum
+        run: bash ./.github/scripts/stage-release-linux.sh --version "$TAG"
+
+      # Fails the run if MinVer did not see the tag or the Tauri version was not stamped.
+      - name: Verify versions match the tag
+        run: bash ./.github/scripts/verify-release-versions-linux.sh --version "$TAG" --root "artifacts/release/cde-$TAG-linux-x64"
+
+      - name: Upload the Linux archive
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-linux-x64
+          path: |
+            artifacts/release/cde-${{ env.TAG }}-linux-x64.tar.gz
+            artifacts/release/cde-${{ env.TAG }}-linux-x64.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 7
+
+  # ---- Publish ----
+  #
+  # Runs only when both builds succeeded. The release stays a draft until the very last step, so a
+  # failure before that leaves a draft to fix and re-run, never a public release missing an archive.
+  publish:
+    needs: [check, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    # contents: write to publish the release and upload the assets; pull-requests: read for
+    # Release Drafter to list the merged pull requests.
+    permissions:
+      contents: write
+      pull-requests: read
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      PRERELEASE: ${{ needs.check.outputs.prerelease }}
+      STABLE_TAG: ${{ needs.check.outputs.stable_tag }}
+      PREVIOUS_TAG: ${{ needs.check.outputs.previous_tag }}
+
+    steps:
+      # The tag's own checkout: the version module and the Release Drafter config are read from it.
+      - uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.TAG }}
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+
+      # Both archives and their checksums, from the two builds, into artifacts/release.
+      - name: Download the archives
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-*
+          merge-multiple: true
+          path: artifacts/release
+
+      - name: List the archives
+        shell: bash
+        run: |
+          ls -l artifacts/release
+          for f in "artifacts/release/cde-$TAG-win-x64.zip" "artifacts/release/cde-$TAG-win-x64.zip.sha256" \
+                   "artifacts/release/cde-$TAG-linux-x64.tar.gz" "artifacts/release/cde-$TAG-linux-x64.tar.gz.sha256"; do
+            if [ ! -f "$f" ]; then
+              echo "::error::Missing archive: $f"
+              exit 1
+            fi
+          done
+
       # ---- Pre-release (alpha, beta, rc) ----
       #
       # The Release Drafter draft is for the next stable release and is left alone. A draft GitHub
-      # release is created for the tag with the zip and checksum already attached, notes generated
+      # release is created for the tag with the archives and checksums already attached, notes generated
       # since the latest stable tag, flagged as a pre-release and not "latest"; it is published as
       # the very last step.
       - name: Create pre-release draft
-        if: ${{ steps.kind.outputs.prerelease == 'true' }}
+        if: ${{ env.PRERELEASE == 'true' }}
         id: pre
         shell: bash
-        env:
-          STABLE_TAG: ${{ steps.stable.outputs.tag }}
         run: |
           # A draft left by an earlier failed run for this tag is replaced. A published release for
           # the tag makes `gh release create` fail below, which is right.
@@ -206,7 +398,9 @@ jobs:
           if [ -n "$STABLE_TAG" ]; then args+=(--notes-start-tag "$STABLE_TAG"); fi
           gh release create "$TAG" "${args[@]}" \
             "artifacts/release/cde-$TAG-win-x64.zip" \
-            "artifacts/release/cde-$TAG-win-x64.zip.sha256"
+            "artifacts/release/cde-$TAG-win-x64.zip.sha256" \
+            "artifacts/release/cde-$TAG-linux-x64.tar.gz" \
+            "artifacts/release/cde-$TAG-linux-x64.tar.gz.sha256"
 
           gh api --paginate "repos/$GITHUB_REPOSITORY/releases" > "$RUNNER_TEMP/releases.json"
           id=$(node "$cli" draft-for-tag --tag "$TAG" --releases-file "$RUNNER_TEMP/releases.json" | head -n1)
@@ -216,7 +410,7 @@ jobs:
       # Last step: everything is attached, so make the pre-release public. It stays a pre-release
       # and is not marked "latest".
       - name: Publish pre-release
-        if: ${{ steps.kind.outputs.prerelease == 'true' }}
+        if: ${{ env.PRERELEASE == 'true' }}
         shell: bash
         env:
           RELEASE_ID: ${{ steps.pre.outputs.id }}
@@ -229,17 +423,16 @@ jobs:
       #
       # The release stays a draft until the very last step: the notes are brought up to date, the
       # assets are attached, and only then is it published. A failure before that leaves a draft to
-      # fix and re-run, never a public release with no zip (which an immutable release would not
+      # fix and re-run, never a public release with no archive (which an immutable release would not
       # let us fix).
       #
       # Brings the rolling draft that Release Drafter has been accumulating from merged PRs up to
       # date for this tag, so any manual edits made to it are kept.
       #
-      # config-name uses file: (read from the checkout) because on a Windows runner the action builds
-      # the repo path with the OS separator (.github\release-drafter.yml), which the GitHub contents
-      # API answers with a 404. The checkout is the tag, so this is the same file a remote fetch reads.
+      # config-name uses file: (read from the checkout), the same file a remote fetch reads, because
+      # the checkout is the tag.
       - name: Update draft release
-        if: ${{ steps.kind.outputs.prerelease == 'false' }}
+        if: ${{ env.PRERELEASE == 'false' }}
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
         with:
           config-name: file:release-drafter.yml
@@ -250,7 +443,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Find draft release
-        if: ${{ steps.kind.outputs.prerelease == 'false' }}
+        if: ${{ env.PRERELEASE == 'false' }}
         id: draft
         shell: bash
         run: |
@@ -265,7 +458,7 @@ jobs:
 
       # draft: true keeps the release a draft; the action would otherwise publish it.
       - name: Upload release assets
-        if: ${{ steps.kind.outputs.prerelease == 'false' }}
+        if: ${{ env.PRERELEASE == 'false' }}
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           tag_name: ${{ env.TAG }}
@@ -273,17 +466,18 @@ jobs:
           files: |
             artifacts/release/cde-${{ env.TAG }}-win-x64.zip
             artifacts/release/cde-${{ env.TAG }}-win-x64.zip.sha256
+            artifacts/release/cde-${{ env.TAG }}-linux-x64.tar.gz
+            artifacts/release/cde-${{ env.TAG }}-linux-x64.tar.gz.sha256
           fail_on_unmatched_files: true
 
       # Release Drafter has no first-time-contributor detection, so borrow GitHub's own and append
       # its "New Contributors" section to the notes. Nice to have: a failure here must not stop the
       # release.
       - name: Append new contributors
-        if: ${{ steps.kind.outputs.prerelease == 'false' }}
+        if: ${{ env.PRERELEASE == 'false' }}
         continue-on-error: true
         shell: bash
         env:
-          PREVIOUS_TAG: ${{ steps.previous.outputs.tag }}
           RELEASE_ID: ${{ steps.draft.outputs.id }}
         run: |
           if [ -n "$PREVIOUS_TAG" ]; then
@@ -315,7 +509,7 @@ jobs:
 
       # Last step: everything is attached, so make the release public.
       - name: Publish release
-        if: ${{ steps.kind.outputs.prerelease == 'false' }}
+        if: ${{ env.PRERELEASE == 'false' }}
         shell: bash
         env:
           RELEASE_ID: ${{ steps.draft.outputs.id }}

@@ -16,6 +16,7 @@
     - [Custom Shell Commands](#custom-shell-commands)
   - [cde-tauri](#cde-tauri)
     - [cde-tauri configuration](#cde-tauri-configuration)
+  - [Linux](#linux)
 - [Using cde](#using-cde)
   - [Catalog files](#catalog-files)
   - [cde Operation](#cde-operation)
@@ -150,6 +151,24 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 - `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
 - Catalog files are not kept in the configuration folder. cde-tauri loads the catalogs in its catalog folder and one level below. To choose the catalog folder, use **File ▸ Open Folder…**; cde-tauri remembers it (`catalogDir` in `ui-state.json`) and opens it again next time. Until you choose one, the catalog folder is the current directory: when you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe.
 - cde-tauri does not load legacy `.cde` catalogs: they load slowly and use a lot of memory. When the catalog folder has `.cde` files with no `.cdex` beside them, cde-tauri offers to convert them, in the same way as [cde migrate](#cde-migrate). If you choose **Not now**, it doesn't ask again for that folder (`legacyMigrateDismissed` in `ui-state.json`), but the status bar keeps a **Migrate…** button.
+
+### Linux
+
+A release also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`), for 64-bit Linux. It holds `cde/` (the `cde` command line program and its `appsettings.json`) and `cde-tauri/` (the `cde-tauri` app and its `cdeApi` sidecar). There is no `cdewin`, because it is a Windows Forms app. There are no installers: extract the archive and run the programs.
+
+```bash
+sha256sum -c cde-2.1.0-linux-x64.tar.gz.sha256
+tar -xzf cde-2.1.0-linux-x64.tar.gz
+cd cde-2.1.0-linux-x64/cde
+./cde --help
+```
+
+- `cde` reads `appsettings.json` from the current directory, so run it from the folder that holds it.
+- `cde-tauri` needs the system libraries for its web view. On Debian and Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1`. Other distributions have packages with similar names (WebKitGTK 4.1).
+- The archive is built on Ubuntu 22.04, so it needs a glibc at least as new as that one has.
+- The Linux builds are new, and some things do not work yet:
+  - **`cde scan` fails on Linux.** The catalog file name is built from a drive letter and a volume label, which a Linux path does not have. Searching a catalog that was scanned on Windows works.
+  - In `cde-tauri` on Linux, **Open, Explore and Properties do nothing**, and so do custom shell commands.
 
 ## Using cde
 
