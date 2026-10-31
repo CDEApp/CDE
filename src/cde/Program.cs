@@ -115,7 +115,7 @@ public static class Program
         ScanOptions o => _app.CreateCacheAsync(o),
         FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template, o.Filter)),
         FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template, o.Filter)),
-        EverythingOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template, o.Filter, everything: true)),
+        EverythingOptions o => RunSync(() => _app.RunFind(o.Value, FindService.ParamFind, o.Template, o.Filter, everything: true)),
         GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template, o.Filter)),
         GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template, o.Filter)),
         ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
