@@ -70,6 +70,7 @@ public interface ICDEWinForm : IView
 
     string Pattern { get; set; }
     bool RegexMode { get; set; }
+    bool EverythingMode { get; set; }
     bool IncludeFiles { get; }
     bool IncludeFolders { get; }
     int FindEntryFilter { get; set; }

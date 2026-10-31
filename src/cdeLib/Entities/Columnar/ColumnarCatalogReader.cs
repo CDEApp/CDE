@@ -209,19 +209,25 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         ArgumentNullException.ThrowIfNull(onMatch);
         if (!o.IncludeFiles && !o.IncludeFolders) return;
 
-        var hasPattern = !string.IsNullOrEmpty(o.Pattern);
-        var regex = o.RegexMode && hasPattern
+        // An Everything-style query is parsed once here; it overrides regex mode.
+        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty) : null;
+        var regexMode = o.RegexMode && everything is null;
+        var hasPattern = everything is null ? !string.IsNullOrEmpty(o.Pattern) : !everything.IsEmpty;
+        var regex = regexMode && hasPattern
             ? new BoundedRegex(o.Pattern) // timeout per entry = no match; repeated timeouts end the scan
             : null;
-        var matcher = hasPattern && !o.RegexMode ? new Utf8Matcher(o.Pattern) : default;
+        var matcher = hasPattern && !regexMode && everything is null ? new Utf8Matcher(o.Pattern) : default;
 
         var size = Size;
         var bits = BitFields;
         var offs = NameOffsets;
         var blob = NameBlob;
-        var pathBuf = o.IncludePath ? new byte[1024] : null;
-        var chain = o.IncludePath ? new int[64] : null;
-        var chars = o.RegexMode ? new char[512] : null; // reused decode buffer for span regex matching
+        var texts = everything?.TextsRead(o.IncludePath) ?? EverythingTexts.Name;
+        var entryText = texts == EverythingTexts.Both ? new EntryText(this) : null;
+        var needPathBuf = everything is null ? o.IncludePath : texts == EverythingTexts.Path;
+        var pathBuf = needPathBuf ? new byte[1024] : null;
+        var chain = needPathBuf ? new int[64] : null;
+        var chars = regexMode ? new char[512] : null; // reused decode buffer for span regex matching
 
         for (var i = 1; i < Count; i++) // index 0 is the root, never a result
         {
@@ -252,7 +258,25 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             if (!hasPattern) { onMatch(i); continue; }
 
             bool match;
-            if (regex is not null)
+            if (everything is not null)
+            {
+                switch (texts)
+                {
+                    case EverythingTexts.Name:
+                        match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])));
+                        break;
+                    case EverythingTexts.Path:
+                        var n = BuildPathBytes(ref pathBuf, ref chain, i);
+                        match = everything.Matches(pathBuf.AsSpan(0, n));
+                        break;
+                    default:
+                        // Terms for both texts: the path is built only if a term reaches one that needs it.
+                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]));
+                        match = everything.Matches(entryText, o.IncludePath);
+                        break;
+                }
+            }
+            else if (regex is not null)
             {
                 ReadOnlySpan<byte> utf8;
                 if (o.IncludePath)
@@ -295,6 +319,37 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     // Build entry i's full-path UTF-8 bytes into buf (grown as needed); returns the byte length.
     // buf/chain may be null on entry (allocated on first use) and are reused across calls by the
     // scan loops, so steady state allocates nothing.
+    // One entry's name and (built only when asked for) full path, for an Everything query. One instance serves a
+    // whole Find; Reset moves it to the next entry.
+    private sealed class EntryText(ColumnarCatalogReader reader) : IEntryText
+    {
+        private byte[] _pathBuf;
+        private int[] _chain;
+        private int _index;
+        private int _nameStart;
+        private int _nameLength;
+        private int _pathLength = -1;
+
+        public void Reset(int index, int nameStart, int nameLength)
+        {
+            _index = index;
+            _nameStart = nameStart;
+            _nameLength = nameLength;
+            _pathLength = -1;
+        }
+
+        public ReadOnlySpan<byte> Name => reader.NameBlob.Slice(_nameStart, _nameLength);
+
+        public ReadOnlySpan<byte> Path
+        {
+            get
+            {
+                if (_pathLength < 0) _pathLength = reader.BuildPathBytes(ref _pathBuf, ref _chain, _index);
+                return _pathBuf.AsSpan(0, _pathLength);
+            }
+        }
+    }
+
     private int BuildPathBytes(ref byte[] buf, ref int[] chain, int i)
     {
         var depth = CollectChain(i, ref chain);

@@ -21,14 +21,14 @@ public class ScanOptions
 }
 
 [Verb("find", HelpText = "Uses all cache files available searches for <string>")]
-public class FindOptions : TemplateOptions
+public class FindOptions : MatchOptions
 {
     [Value(0, Required = true, HelpText = "Value to search for")]
     public string Value { get; [UsedImplicitly] set; }
 }
 
 [Verb("grep", HelpText = "uses all cache files available searches for <regex> as regex match on file name.")]
-public class GrepOptions : TemplateOptions
+public class GrepOptions : MatchOptions
 {
     [Value(0, Required = true, HelpText = "string to search for")]
     public string Value { get; [UsedImplicitly] set; }
@@ -36,7 +36,7 @@ public class GrepOptions : TemplateOptions
 
 [Verb("greppath",
     HelpText = "uses all cache files available searches for <regex> as regex match on full path to file name.")]
-public class GrepPathOptions : TemplateOptions
+public class GrepPathOptions : MatchOptions
 {
     [Value(0, Required = true, HelpText = "string to search for")]
     public string Value { get; [UsedImplicitly] set; }
@@ -44,7 +44,7 @@ public class GrepPathOptions : TemplateOptions
 
 [Verb("findpath",
     HelpText = "uses all cache files available searches for <string> as regex match on full path to file name.")]
-public class FindPathOptions : TemplateOptions
+public class FindPathOptions : MatchOptions
 {
     [Value(0, Required = true, HelpText = "string to search for")]
     public string Value { get; [UsedImplicitly] set; }

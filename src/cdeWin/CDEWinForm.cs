@@ -184,6 +184,9 @@ public partial class CDEWinForm : Form, ICDEWinForm
             "Using reload catalogs will use more memory than quitting and starting again.");
 
         SetToolTip(regexCheckbox, "Disabling Regex makes search faster");
+        SetToolTip(everythingCheckbox,
+            "Everything-style search: space=AND  |=OR  !=NOT  <>=group  \"phrase\"  path:term  no-path:term. Turns Regex off.");
+        everythingCheckbox.CheckedChanged += (_, _) => regexCheckbox.Enabled = !everythingCheckbox.Checked;
         whatToSearchComboBox.Items.AddRange("Include Path in Search", "Exclude Path from Search");
         whatToSearchComboBox.SelectedIndex = 0; // default Include
         whatToSearchComboBox.DropDownStyle = ComboBoxStyle.DropDownList;
@@ -476,6 +479,13 @@ public partial class CDEWinForm : Form, ICDEWinForm
     {
         get => patternComboBox.Text;
         set => patternComboBox.Text = value;
+    }
+
+    [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]
+    public bool EverythingMode
+    {
+        get => everythingCheckbox.Checked;
+        set => everythingCheckbox.Checked = value;
     }
 
     [DesignerSerializationVisibility(DesignerSerializationVisibility.Hidden)]

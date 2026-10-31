@@ -148,12 +148,89 @@ public class MatchTemplateTests
     private static string RenderWith(string template, long size = 0, DateTime modified = default) =>
         MatchTemplate.Parse(template).Render(Catalog, @"C:\a.txt", size, modified);
 
+    [TestCase(0L, "0 B")]
+    [TestCase(1234567L, "1234567 B")]
+    [TestCase(long.MaxValue, "9223372036854775807 B")]
+    public void Size_B_is_the_exact_size_in_bytes_with_its_unit(long size, string expected)
+    {
+        Assert.That(RenderWith("{size:B}", size), Is.EqualTo(expected));
+    }
+
     [TestCase(0L, "0")]
-    [TestCase(1234567L, "1234567")]
-    [TestCase(long.MaxValue, "9223372036854775807")]
-    public void Size_placeholder_is_the_size_in_bytes(long size, string expected)
+    [TestCase(1L, "1 B")]
+    [TestCase(531L, "531 B")]
+    [TestCase(1023L, "1023 B")]
+    [TestCase(1024L, "1 KB")]
+    [TestCase(1587L, "1.5 KB")]
+    [TestCase(1280L, "1.3 KB")] // 1.25 rounds half away from zero
+    [TestCase(1048575L, "1 MB")] // 1023.999 KB rounds up to the next unit
+    [TestCase(1048576L, "1 MB")]
+    [TestCase(1310720L, "1.3 MB")]
+    [TestCase(1073741824L, "1 GB")]
+    [TestCase(5637144576L, "5.3 GB")]
+    [TestCase(3298534883328L, "3 TB")]
+    [TestCase(1125899906842624L, "1 PB")]
+    public void Size_without_a_format_picks_the_most_suitable_unit(long size, string expected)
     {
         Assert.That(RenderWith("{size}", size), Is.EqualTo(expected));
+        Assert.That(RenderWith("{size:auto}", size), Is.EqualTo(expected));
+    }
+
+    [TestCase("KB", 1536L, "1.5 KB")]
+    [TestCase("KB", 1024L, "1 KB")]
+    [TestCase("KB", 0L, "0 KB")]
+    [TestCase("KB", 1280L, "1.3 KB")]
+    [TestCase("KB", 1048576L, "1024 KB")]
+    [TestCase("MB", 1572864L, "1.5 MB")]
+    [TestCase("MB", 1000L, "0 MB")]
+    [TestCase("MB", 1048576L, "1 MB")]
+    [TestCase("GB", 5637144576L, "5.3 GB")]
+    [TestCase("GB", 1073741824L, "1 GB")]
+    [TestCase("TB", 3298534883328L, "3 TB")]
+    [TestCase("TB", 1649267441664L, "1.5 TB")]
+    public void Size_with_a_fixed_unit_is_the_number_in_that_unit_followed_by_its_name(string unit, long size, string expected)
+    {
+        Assert.That(RenderWith("{size:" + unit + "}", size), Is.EqualTo(expected));
+    }
+
+    [Test]
+    public void Size_units_are_not_case_sensitive()
+    {
+        Assert.That(RenderWith("{size:kb}", 1536), Is.EqualTo("1.5 KB"));
+        Assert.That(RenderWith("{SIZE:Mb}", 1572864), Is.EqualTo("1.5 MB"));
+        Assert.That(RenderWith("{size:AUTO}", 1536), Is.EqualTo("1.5 KB"));
+        Assert.That(RenderWith("{size:b}", 1536), Is.EqualTo("1536 B"));
+    }
+
+    [Test]
+    public void Size_is_written_the_same_in_every_culture()
+    {
+        var original = System.Threading.Thread.CurrentThread.CurrentCulture;
+        try
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.GetCultureInfo("de-DE");
+
+            Assert.That(RenderWith("{size}", 1587), Is.EqualTo("1.5 KB"));
+            Assert.That(RenderWith("{size:MB}", 1572864), Is.EqualTo("1.5 MB"));
+            Assert.That(RenderWith("{size:B}", 1234567), Is.EqualTo("1234567 B"));
+        }
+        finally
+        {
+            System.Threading.Thread.CurrentThread.CurrentCulture = original;
+        }
+    }
+
+    [TestCase("{size:XB}")]
+    [TestCase("{size:}")]
+    [TestCase("{size:KB }")]
+    [TestCase("{size:yyyy}")]
+    public void An_unknown_size_format_throws_and_lists_the_valid_ones(string template)
+    {
+        var ex = Assert.Throws<FormatException>(() => MatchTemplate.Parse(template));
+
+        Assert.That(ex!.Message, Does.Contain("size format"));
+        Assert.That(ex.Message, Does.Contain("auto"));
+        Assert.That(ex.Message, Does.Contain("KB"));
     }
 
     [Test]
@@ -197,7 +274,7 @@ public class MatchTemplateTests
     [Test]
     public void Modified_name_and_format_can_be_mixed_with_other_placeholders()
     {
-        Assert.That(RenderWith("{filename} {size} {modified:yyyy-MM-dd}", 42, Stamp), Is.EqualTo("a.txt 42 2024-03-07"));
+        Assert.That(RenderWith("{filename} {size} {modified:yyyy-MM-dd}", 42, Stamp), Is.EqualTo("a.txt 42 B 2024-03-07"));
     }
 
     [Test]
@@ -206,8 +283,9 @@ public class MatchTemplateTests
         Assert.That(RenderWith("{MODIFIED:yyyy-MM-dd}", modified: Stamp), Is.EqualTo("2024-03-07"));
     }
 
-    [TestCase("{size:N0}")]
     [TestCase("{fullpath:x}")]
+    [TestCase("{filename:x}")]
+    [TestCase("{directory:x}")]
     [TestCase("{catalog:x}")]
     public void A_format_on_a_placeholder_that_takes_none_throws(string template)
     {
@@ -229,6 +307,16 @@ public class MatchTemplateTests
     public void Unbalanced_or_empty_braces_throw(string template)
     {
         Assert.Throws<FormatException>(() => MatchTemplate.Parse(template));
+    }
+
+    [Test]
+    public void A_syntax_error_says_where_it_is()
+    {
+        var stray = Assert.Throws<FormatException>(() => MatchTemplate.Parse("{filename} } {fullpath}"));
+        var unclosed = Assert.Throws<FormatException>(() => MatchTemplate.Parse("{filename} {fullpath"));
+
+        Assert.That(stray!.Message, Does.Contain("column 12"));
+        Assert.That(unclosed!.Message, Does.Contain("end of input"));
     }
 
     [Test]

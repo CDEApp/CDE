@@ -397,7 +397,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     {
         LimitResultCount = _clientForm.LimitResultHelper.SelectedValue,
         Pattern = OptimiseRegexPattern(_clientForm.Pattern),
-        RegexMode = _clientForm.RegexMode,
+        RegexMode = _clientForm.RegexMode && !_clientForm.EverythingMode,
+        EverythingMode = _clientForm.EverythingMode,
         IncludePath = _clientForm.IncludePathInSearch,
         IncludeFiles = _clientForm.IncludeFiles,
         IncludeFolders = _clientForm.IncludeFolders,
@@ -491,7 +492,8 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
             _clientForm.FromDate.Checked, _clientForm.FromDateValue.Date,
             _clientForm.ToDate.Checked, _clientForm.ToDateValue.Date,
             _clientForm.FromHour.Checked, _clientForm.FromHourValue.TimeOfDay,
-            _clientForm.ToHour.Checked, _clientForm.ToHourValue.TimeOfDay);
+            _clientForm.ToHour.Checked, _clientForm.ToHourValue.TimeOfDay,
+            _clientForm.EverythingMode);
 
         if (result.IsValid) return true;
         _clientForm.MessageBox(result.Message);
@@ -522,7 +524,7 @@ public class CDEWinFormPresenter : Presenter<ICDEWinForm>, ICDEWinFormPresenter
     // As search is a substring match, remove leading and trailing wildcards.
     protected string OptimiseRegexPattern(string pattern)
     {
-        if (!_clientForm.RegexMode || string.IsNullOrEmpty(pattern))
+        if (!_clientForm.RegexMode || _clientForm.EverythingMode || string.IsNullOrEmpty(pattern))
         {
             return pattern;
         }

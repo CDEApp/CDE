@@ -106,6 +106,21 @@ public class TestCDEWinPresenter_OptimiseRegexPattern_Regex : TestCDEWinPresente
     }
 }
 
+[TestFixture]
+public class TestCDEWinPresenter_OptimiseRegexPattern_Everything : TestCDEWinPresenterBase
+{
+    [Test]
+    public void OptimiseRegexPattern_EverythingMode_LeavesThePatternAlone_EvenIfRegexIsTicked()
+    {
+        base.RunBeforeEveryTest();
+        _mockForm.RegexMode = true;
+        _mockForm.EverythingMode = true;
+        var presenter = new TestOptimise(_mockForm, _stubConfig);
+
+        Assert.That(presenter.TestOptimiseRegexPattern(".*a | b.*"), Is.EqualTo(".*a | b.*"));
+    }
+}
+
 public class TestOptimise : CDEWinFormPresenter
 {
     public TestOptimise(ICDEWinForm form, IConfig config) : base(form, config)

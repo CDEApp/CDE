@@ -39,6 +39,66 @@ public class SearchServiceTests
     }
 
     [Test]
+    public async Task Everything_mode_and_not_or_and_phrase_over_names()
+    {
+        var and = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "alp txt", EverythingMode = true }));
+        Assert.That(and.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.txt" }));
+
+        var not = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "alpha !md", EverythingMode = true }));
+        Assert.That(not.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.txt" }));
+
+        var or = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "<alpha.md | root_file> !docs", EverythingMode = true }));
+        Assert.That(or.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md", "root_file.txt" }));
+
+        var phrase = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "\"alpha.txt\"", EverythingMode = true }));
+        Assert.That(phrase.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.txt" }));
+    }
+
+    [Test]
+    public async Task Everything_path_and_no_path_modifiers()
+    {
+        // 'docs' is only in the path of alpha.md; 'alpha' is in both alpha names.
+        var viaPath = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "path:docs alpha", EverythingMode = true }));
+        Assert.That(viaPath.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md" }));
+
+        var notPath = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "!path:docs alpha", EverythingMode = true }));
+        Assert.That(notPath.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.txt" }));
+
+        // With Include Path on, no-path: pulls one term back to the name: 'docs' is not in any name.
+        var forced = await Drain(_search.SearchAsync(
+            new SearchQuery { Pattern = "alpha no-path:docs", EverythingMode = true, IncludePath = true }));
+        Assert.That(forced, Is.Empty);
+    }
+
+    [Test]
+    public async Task Everything_mode_overrides_regex_mode_and_honours_include_path()
+    {
+        // 'docs' only appears in a path, not in any name; with RegexMode also set it must still be a plain term.
+        var byName = await Drain(_search.SearchAsync(
+            new SearchQuery { Pattern = "docs alpha", EverythingMode = true, RegexMode = true }));
+        Assert.That(byName, Is.Empty);
+
+        var byPath = await Drain(_search.SearchAsync(
+            new SearchQuery { Pattern = "docs alpha", EverythingMode = true, RegexMode = true, IncludePath = true }));
+        Assert.That(byPath.ConvertAll(r => r.Name), Does.Contain("alpha.md"));
+        Assert.That(byPath.ConvertAll(r => r.Name), Does.Not.Contain("alpha.txt"));
+    }
+
+    [Test]
+    public async Task Empty_everything_query_matches_everything_and_other_filters_still_apply()
+    {
+        var all = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "  ", EverythingMode = true }));
+        var plain = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "" }));
+        Assert.That(all, Has.Count.EqualTo(plain.Count));
+
+        var big = await Drain(_search.SearchAsync(new SearchQuery
+        {
+            Pattern = "alpha", EverythingMode = true, FromSizeEnable = true, FromSize = 150, IncludeFolders = false
+        }));
+        Assert.That(big.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md" }));
+    }
+
+    [Test]
     public async Task Search_StreamsMatchingRows()
     {
         var rows = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "alpha" }));

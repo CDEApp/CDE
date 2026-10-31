@@ -270,8 +270,18 @@ This is the mode for finding files in your catalogs using assorted filter criter
 | `{fullpath}` | The full path of the match |
 | `{filename}` | The last part of the path, with its extension |
 | `{directory}` | The folder that holds the match, with no trailing separator |
-| `{size}` | The size in bytes, with no thousands separators |
+| `{size}` | The size, in the unit that suits it (for example `1.5 MB`) unless you give a format |
 | `{modified}` | The last modified time, as `yyyy-MM-dd HH:mm:ss` unless you give a format |
+
+`{size}` takes a format after a colon, for example `{size:MB}`. Sizes use 1024 for each step and one decimal place, the same as the sizes in cdeWin and the Tauri app.
+
+| Format | Value |
+|---|---|
+| `auto` | The default. The most suitable unit, with its name: `531 B`, `1.5 KB`, `5.3 GB`. A size of 0 is written as `0`. |
+| `B` | The exact number of bytes, with no thousands separators: `1234567 B` |
+| `KB`, `MB`, `GB`, `TB` | The size in that unit, followed by the unit name: `4096 KB`, `1.5 MB`. A size too small for the unit is written as `0 MB`. |
+
+The format names are not case-sensitive.
 
 `{modified}` takes a format after a colon, for example `{modified:yyyy-MM-dd}`. These parts of the format are replaced, and every other character is copied as it is. They are case-sensitive: `MM` is the month and `mm` is the minutes.
 
@@ -290,7 +300,24 @@ Placeholder names are not case-sensitive. Write `{{` and `}}` for a literal brac
 cde grep "\.log$" --template "{catalog} {fullpath}"
 cde greppath report --template "{filename}\t{directory}"
 cde find .log --template "{modified:yyyy-MM-dd} {size} {fullpath}"
+cde find .iso --template "{size:GB}\t{filename}"
 ```
+
+`find`, `findpath`, `grep` and `greppath` also take `--filter` to keep only some of the matches. For now the only filter is `{size:...}`.
+
+```batch
+cde grep "\.iso$" --filter "{size:>4GB}"
+cde find .log --filter "{size:>10KB}" --filter "{size:<4MB}"
+```
+
+Put the filter in quotes, because `<` and `>` mean redirection in a shell. Repeat `--filter` to require all of them, which is how you set a range. There is no "or".
+
+| Part | Value |
+|---|---|
+| Operator | `<`, `<=`, `>`, `>=`, `=` or `!=`. A value with no operator, such as `{size:4MB}`, means `=`. |
+| Value | A number, with decimals if you want (`1.5KB`), then an optional unit of `B`, `KB`, `MB`, `GB` or `TB`. With no unit it is bytes. Units are not case-sensitive and a space before the unit is allowed. |
+
+Each step of the units is 1024, the same as `{size:KB}` in `--template`. The size filter in cdeWin uses 1000 per step, so a limit such as 10 KB is slightly different there. A folder is compared by the total size of what is in it. An unknown filter, an unknown unit or text that is not a filter stops the command with an error before any catalog is read. Matches that are filtered out are not counted in the "Total found" figure.
 
 ### cde hash
 

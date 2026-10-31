@@ -186,6 +186,7 @@ public sealed class SearchService : ISearchService
     {
         Pattern = q.Pattern,
         RegexMode = q.RegexMode,
+        EverythingMode = q.EverythingMode,
         IncludePath = q.IncludePath,
         IncludeFiles = q.IncludeFiles,
         IncludeFolders = q.IncludeFolders,

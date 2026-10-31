@@ -341,3 +341,4 @@ Standard .NET test runners (tests use NUnit, xUnit)
 - **CommandLineParser** - CLI argument parsing
 - **Spectre.Console** - Rich console output
 - **MurmurHash.Net** - Fast hashing
+- **Superpower** - Parser combinators; parses the `--template` text in `MatchTemplate` and the `--filter` text in `MatchFilter`

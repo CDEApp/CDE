@@ -73,6 +73,7 @@ public class Config : IConfig
         DirectoryPaneSplitterRatio = -1f,
         Pattern = string.Empty,
         RegexMode = false,
+        EverythingMode = false,
         IsAdvancedSearchMode = false,
         LimitResultCountIndex = -1, // the initial default value is set by win forms configuration code
         FromSizeDropDownIndex = -1, // the initial default value is set by win forms configuration code
@@ -151,6 +152,7 @@ public class Config : IConfig
         Active.DirectoryPaneSplitterRatio = form.DirectoryPanelSplitterRatio;
         Active.Pattern = form.Pattern;
         Active.RegexMode = form.RegexMode;
+        Active.EverythingMode = form.EverythingMode;
         Active.IncludePath = form.IncludePathInSearch;
         Active.FindEntryFilter = form.FindEntryFilter;
         Active.IsAdvancedSearchMode = form.IsAdvancedSearchMode;
@@ -190,6 +192,7 @@ public class Config : IConfig
         form.DirectoryPanelSplitterRatio = Active.DirectoryPaneSplitterRatio;
         form.Pattern = Active.Pattern;
         form.RegexMode = Active.RegexMode;
+        form.EverythingMode = Active.EverythingMode;
         form.IncludePathInSearch = Active.IncludePath;
         form.FindEntryFilter = Active.FindEntryFilter;
         form.IsAdvancedSearchMode = Active.IsAdvancedSearchMode;

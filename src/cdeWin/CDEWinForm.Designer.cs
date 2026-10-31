@@ -49,6 +49,7 @@ namespace cdeWin
             this.patternComboBox = new System.Windows.Forms.ComboBox();
             this.whatToSearchComboBox = new System.Windows.Forms.ComboBox();
             this.regexCheckbox = new System.Windows.Forms.CheckBox();
+            this.everythingCheckbox = new System.Windows.Forms.CheckBox();
             this.searchLabel = new System.Windows.Forms.Label();
             this.searchControlAdvancedPanel = new System.Windows.Forms.Panel();
             this.fromDateCheckbox = new System.Windows.Forms.CheckBox();
@@ -230,6 +231,7 @@ namespace cdeWin
             this.searchControlUpperPanel.Controls.Add(this.findComboBox);
             this.searchControlUpperPanel.Controls.Add(this.patternComboBox);
             this.searchControlUpperPanel.Controls.Add(this.whatToSearchComboBox);
+            this.searchControlUpperPanel.Controls.Add(this.everythingCheckbox);
             this.searchControlUpperPanel.Controls.Add(this.regexCheckbox);
             this.searchControlUpperPanel.Controls.Add(this.searchLabel);
             this.searchControlUpperPanel.Location = new System.Drawing.Point(5, 4);
@@ -317,6 +319,17 @@ namespace cdeWin
             this.regexCheckbox.TabIndex = 2;
             this.regexCheckbox.Text = "Rege&x";
             this.regexCheckbox.UseVisualStyleBackColor = true;
+            // 
+            // everythingCheckbox
+            // 
+            this.everythingCheckbox.AutoSize = true;
+            this.everythingCheckbox.Location = new System.Drawing.Point(756, 7);
+            this.everythingCheckbox.Margin = new System.Windows.Forms.Padding(5, 4, 5, 4);
+            this.everythingCheckbox.Name = "everythingCheckbox";
+            this.everythingCheckbox.Size = new System.Drawing.Size(107, 24);
+            this.everythingCheckbox.TabIndex = 3;
+            this.everythingCheckbox.Text = "E&verything";
+            this.everythingCheckbox.UseVisualStyleBackColor = true;
             // 
             // searchLabel
             // 
@@ -872,6 +885,7 @@ namespace cdeWin
         private System.Windows.Forms.Panel catalogResultPanel;
         private System.Windows.Forms.Panel catalogControlPanel;
         private System.Windows.Forms.CheckBox regexCheckbox;
+        private System.Windows.Forms.CheckBox everythingCheckbox;
         private DoubleBufferListView searchResultListView;
         private DoubleBufferListView catalogResultListView;
         private System.Windows.Forms.StatusStrip mainStatusStrip;

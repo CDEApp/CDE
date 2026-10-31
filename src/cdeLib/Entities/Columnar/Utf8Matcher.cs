@@ -40,7 +40,7 @@ public readonly ref struct Utf8Matcher
         return Encoding.UTF8.GetString(nameUtf8).Contains(_pattern, StringComparison.OrdinalIgnoreCase);
     }
 
-    private static bool AsciiContainsFolded(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needleLower)
+    internal static bool AsciiContainsFolded(ReadOnlySpan<byte> haystack, ReadOnlySpan<byte> needleLower)
     {
         if (haystack.Length < needleLower.Length) return false;
         var last = haystack.Length - needleLower.Length;
@@ -56,5 +56,5 @@ public readonly ref struct Utf8Matcher
         return false;
     }
 
-    private static byte ToLower(byte b) => b is >= (byte)'A' and <= (byte)'Z' ? (byte)(b + 32) : b;
+    internal static byte ToLower(byte b) => b is >= (byte)'A' and <= (byte)'Z' ? (byte)(b + 32) : b;
 }

@@ -28,6 +28,9 @@ public interface IFindService
 
     /// <summary>How each match line is written; null writes the default, a leading space then the full path.</summary>
     MatchTemplate Template { get; set; }
+
+    /// <summary>Drops matches that do not pass it; null keeps every match.</summary>
+    MatchFilter Filter { get; set; }
 }
 
 public class FindService : IFindService
@@ -48,6 +51,8 @@ public class FindService : IFindService
     public bool IncludeFolders { get; set; }
 
     public MatchTemplate Template { get; set; }
+
+    public MatchFilter Filter { get; set; }
 
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
@@ -77,6 +82,7 @@ public class FindService : IFindService
             EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
                 idx =>
                 {
+                    if (Filter != null && !Filter.Matches(store.SizeOf(idx))) return;
                     ++totalFound;
                     WriteMatch(store, idx);
                 });
@@ -100,6 +106,7 @@ public class FindService : IFindService
             reader?.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders,
                 idx =>
                 {
+                    if (Filter != null && !Filter.Matches(reader.SizeOf(idx))) return;
                     ++totalFound;
                     WriteMatch(reader, idx);
                 });

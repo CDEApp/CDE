@@ -58,4 +58,6 @@ public class Configuration
     public DateTime ToHourValue;
     [ProtoMember(25)]
     public int PatternHistoryMaximum;
+    [ProtoMember(26)]
+    public bool EverythingMode;
 }
