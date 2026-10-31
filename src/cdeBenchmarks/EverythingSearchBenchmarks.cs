@@ -58,6 +58,12 @@ public class EverythingSearchBenchmarks
     [Benchmark(Description = "everything, '<.txt | .log> !tmp', name, common hits")]
     public int EverythingGroupCommon() => Run("<.txt | .log> !tmp", everything: true, includePath: false);
 
+    [Benchmark(Description = "everything, 'file: term', name, no match (kind test first)")]
+    public int EverythingFileFilterNoMatch() => Run("file: zzzznomatchzzzz", everything: true, includePath: false);
+
+    [Benchmark(Description = "everything, 'folder:' alone, name, folders are hits")]
+    public int EverythingFolderFilterOnly() => Run("folder:", everything: true, includePath: false);
+
     [Benchmark(Description = "plain substring, path, no match")]
     public int PlainPathNoMatch() => Run("zzzznomatchzzzz", everything: false, includePath: true);
 

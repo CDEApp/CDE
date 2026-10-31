@@ -84,7 +84,7 @@ public static class EntryStoreSearch
                 {
                     match = everything.Matches(readsPath
                         ? WritePath(store, i, ref pathBuffer)
-                        : FullNameSpan(store, i, ref nameBuffer));
+                        : FullNameSpan(store, i, ref nameBuffer), isDir);
                 }
                 else if (o.IncludePath)
                 {
@@ -133,6 +133,8 @@ public static class EntryStoreSearch
         }
 
         public ReadOnlySpan<char> Name => FullNameSpan(store, _index, ref _nameBuffer);
+
+        public bool IsFolder => store.IsDirectory(_index);
 
         public ReadOnlySpan<char> Path
         {

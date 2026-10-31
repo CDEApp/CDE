@@ -7,6 +7,7 @@ interface Props {
   onReload: () => void;
   onExit: () => void;
   onAbout: () => void;
+  onSearchSyntax: () => void;
   /** When set, Open Folder and Reload are disabled and this is their tooltip (e.g. a rescan is running). */
   loadDisabledReason?: string | null;
 }
@@ -22,11 +23,11 @@ interface MenuDef {
 }
 
 /**
- * A lightweight native-style menu bar: a list of menus (File, About), one open at a time. Escape or an
+ * A lightweight native-style menu bar: a list of menus (File, Help), one open at a time. Escape or an
  * outside click closes; hovering another title while one is open switches to it; Left/Right move between
  * menus. "File ▸ New Catalog…" scans a folder into a new catalog; "Open Folder…" picks a catalog directory.
  */
-export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout, loadDisabledReason }: Props) {
+export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout, onSearchSyntax, loadDisabledReason }: Props) {
   const [state, setState] = useState<MenuState>(closeMenus());
   const ref = useRef<HTMLDivElement>(null);
   const loadBlocked = !!loadDisabledReason;
@@ -47,12 +48,16 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
         ],
       },
       {
-        id: "about",
-        title: "About",
-        entries: [{ kind: "item", label: "About CDE…", action: onAbout }],
+        id: "help",
+        title: "Help",
+        entries: [
+          { kind: "item", label: "Search Syntax…", action: onSearchSyntax, title: "Operators, modifiers and filters for Everything search" },
+          { kind: "separator" },
+          { kind: "item", label: "About CDE…", action: onAbout },
+        ],
       },
     ],
-    [onNewCatalog, onOpenFolder, onReload, onExit, onAbout, loadBlocked, loadTitle],
+    [onNewCatalog, onOpenFolder, onReload, onExit, onAbout, onSearchSyntax, loadBlocked, loadTitle],
   );
   // Latest ids live in a ref so the window listeners below subscribe only when a menu opens or closes,
   // not on every App render (inline handler props change identity each render).

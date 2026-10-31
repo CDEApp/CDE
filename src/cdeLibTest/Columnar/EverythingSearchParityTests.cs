@@ -133,6 +133,94 @@ public class EverythingSearchParityTests
         finally { File.Delete(file); }
     }
 
+    // The folders of BuildTree, listed by hand so the oracle does not read the same flag the code under test reads.
+    private static readonly HashSet<string> FolderNames = new(StringComparer.Ordinal)
+        { "Windows", "café", "日本語", "a|b" };
+
+    // Oracle over (name, path, isFolder, includePath).
+    public static IEnumerable<TestCaseData> FilterCases()
+    {
+        yield return new TestCaseData("file:",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => !dir));
+        yield return new TestCaseData("folder:",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => dir));
+        yield return new TestCaseData("file: txt",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => !dir && Has(ip ? p : n, "txt")));
+        yield return new TestCaseData("folder:win",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => dir && Has(ip ? p : n, "win")));
+        yield return new TestCaseData("!file:",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => dir));
+        yield return new TestCaseData("file: folder:",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => false));
+        yield return new TestCaseData("<file: txt> | <folder: café>",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) =>
+                (!dir && Has(ip ? p : n, "txt")) || (dir && Has(ip ? p : n, "café"))));
+        yield return new TestCaseData("file: path:windows",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => !dir && Has(p, "windows")));
+        yield return new TestCaseData("folder: path:windows no-path:win",
+            (Func<string, string, bool, bool, bool>)((n, p, dir, ip) => dir && Has(p, "windows") && Has(n, "win")));
+    }
+
+    [TestCaseSource(nameof(FilterCases))]
+    public void FileAndFolderFilters_ReaderAndStore_MatchTheOracle(
+        string query, Func<string, string, bool, bool, bool> oracle)
+    {
+        var store = EntryStore.Build(BuildTree());
+        var file = Path.Combine(Path.GetTempPath(), $"cdetest-evk-{Guid.NewGuid():N}.cdex");
+        ColumnarFormat.Write(store, file);
+        try
+        {
+            using var reader = new ColumnarCatalogReader(file);
+            foreach (var includePath in new[] { false, true })
+            {
+                var expected = new List<int>();
+                for (var i = 1; i < store.Count; i++)
+                {
+                    var name = store.FullName(i);
+                    if (oracle(name, store.FullPath(i), FolderNames.Contains(name), includePath)) expected.Add(i);
+                }
+
+                var options = new EntryStoreFindOptions { Pattern = query, EverythingMode = true, IncludePath = includePath };
+                var fromReader = new List<int>();
+                reader.Find(options, fromReader.Add);
+                var fromStore = new List<int>();
+                EntryStoreSearch.Find(store, options, fromStore.Add);
+
+                Assert.That(fromReader, Is.EqualTo(expected), $"reader '{query}' path={includePath}");
+                Assert.That(fromStore, Is.EqualTo(expected), $"store '{query}' path={includePath}");
+            }
+        }
+        finally { File.Delete(file); }
+    }
+
+    [Test]
+    public void FileFilters_MatchNamesNotParentFolders_ForReaderAndStore()
+    {
+        // A file whose name has "doc" in a folder whose name has "obsid": the folder name must not satisfy the term.
+        var root = new RootEntry { Path = @"C:\\", VolumeName = "VOL", DefaultFileName = "t.cde", DriveLetterHint = "C" };
+        var obsidian = new DirEntry(true) { Path = "obsidian" };
+        obsidian.AddChild(new DirEntry(false) { Path = "doc.md", Size = 1 });
+        obsidian.AddChild(new DirEntry(false) { Path = "obsid doc.md", Size = 1 });
+        root.AddChild(obsidian);
+        root.SetInMemoryFields();
+        var store = EntryStore.Build(root);
+        var file = Path.Combine(Path.GetTempPath(), $"cdetest-evf-{Guid.NewGuid():N}.cdex");
+        ColumnarFormat.Write(store, file);
+        try
+        {
+            using var reader = new ColumnarCatalogReader(file);
+            var options = new EntryStoreFindOptions { Pattern = "file:doc file:obsid", EverythingMode = true };
+            var fromReader = new List<string>();
+            reader.Find(options, i => fromReader.Add(store.FullName(i)));
+            var fromStore = new List<string>();
+            EntryStoreSearch.Find(store, options, i => fromStore.Add(store.FullName(i)));
+
+            Assert.That(fromReader, Is.EqualTo(new[] { "obsid doc.md" }));
+            Assert.That(fromStore, Is.EqualTo(new[] { "obsid doc.md" }));
+        }
+        finally { File.Delete(file); }
+    }
+
     [Test]
     public void EverythingMode_OverridesRegexMode()
     {

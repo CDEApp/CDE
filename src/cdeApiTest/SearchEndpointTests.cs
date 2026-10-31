@@ -57,11 +57,54 @@ public class SearchEndpointTests
         var (ctx, body) = TestCatalog.NewContext();
 
         await SearchEndpoint.HandleAsync(
-            ctx, new SearchQuery { Pattern = "<a|b> txt !sub", EverythingMode = true, IncludeFolders = false },
+            ctx, new SearchQuery { Pattern = "<a|b> txt !sub", EverythingMode = true },
             new SearchService(_catalog.Session));
 
         var results = TestCatalog.Events(TestCatalog.Text(body)).Where(e => e.Event == "result").ToList();
         Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "a.txt", "b.txt" }));
+    }
+
+    [Test]
+    public async Task Everything_folder_filter_streams_folders_whatever_the_flags_say()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "folder:", EverythingMode = true, IncludeFiles = false, IncludeFolders = false },
+            new SearchService(_catalog.Session));
+
+        var results = TestCatalog.Events(TestCatalog.Text(body)).Where(e => e.Event == "result").ToList();
+        Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "sub" }));
+    }
+
+    [Test]
+    public async Task Everything_ignores_include_path_and_path_modifier_reaches_the_path()
+    {
+        // 'sub' is only in the path of b.txt.
+        var (ctx, body) = TestCatalog.NewContext();
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "sub txt", EverythingMode = true, IncludePath = true },
+            new SearchService(_catalog.Session));
+        Assert.That(TestCatalog.Events(TestCatalog.Text(body)).Where(e => e.Event == "result"), Is.Empty);
+
+        var (ctx2, body2) = TestCatalog.NewContext();
+        await SearchEndpoint.HandleAsync(
+            ctx2, new SearchQuery { Pattern = "path:sub txt", EverythingMode = true, IncludePath = true },
+            new SearchService(_catalog.Session));
+        var results = TestCatalog.Events(TestCatalog.Text(body2)).Where(e => e.Event == "result").ToList();
+        Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "b.txt" }));
+    }
+
+    [Test]
+    public async Task Path_modifier_in_front_of_a_filter_is_400_with_a_position()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "a path:file:", EverythingMode = true }, new SearchService(_catalog.Session));
+
+        Assert.That(ctx.Response.StatusCode, Is.EqualTo(400));
+        Assert.That(TestCatalog.Text(body), Does.Contain("position 2"));
     }
 
     [Test]

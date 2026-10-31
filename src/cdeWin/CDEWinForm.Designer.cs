@@ -33,6 +33,9 @@ namespace cdeWin
             this.directoryTreeView = new System.Windows.Forms.TreeView();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.fileToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.searchSyntaxToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.helpToolStripSeparator = new System.Windows.Forms.ToolStripSeparator();
             this.aboutToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.exitToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.mainTabControl = new System.Windows.Forms.TabControl();
@@ -131,7 +134,8 @@ namespace cdeWin
             // 
             this.menuStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.fileToolStripMenuItem});
+            this.fileToolStripMenuItem,
+            this.helpToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Padding = new System.Windows.Forms.Padding(8, 3, 0, 3);
@@ -142,11 +146,31 @@ namespace cdeWin
             // fileToolStripMenuItem
             // 
             this.fileToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.aboutToolStripMenuItem,
             this.exitToolStripMenuItem});
             this.fileToolStripMenuItem.Name = "fileToolStripMenuItem";
             this.fileToolStripMenuItem.Size = new System.Drawing.Size(46, 24);
             this.fileToolStripMenuItem.Text = "File";
+            // 
+            // helpToolStripMenuItem
+            // 
+            this.helpToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.searchSyntaxToolStripMenuItem,
+            this.helpToolStripSeparator,
+            this.aboutToolStripMenuItem});
+            this.helpToolStripMenuItem.Name = "helpToolStripMenuItem";
+            this.helpToolStripMenuItem.Size = new System.Drawing.Size(55, 24);
+            this.helpToolStripMenuItem.Text = "Help";
+            // 
+            // searchSyntaxToolStripMenuItem
+            // 
+            this.searchSyntaxToolStripMenuItem.Name = "searchSyntaxToolStripMenuItem";
+            this.searchSyntaxToolStripMenuItem.Size = new System.Drawing.Size(180, 26);
+            this.searchSyntaxToolStripMenuItem.Text = "Search Syntax...";
+            // 
+            // helpToolStripSeparator
+            // 
+            this.helpToolStripSeparator.Name = "helpToolStripSeparator";
+            this.helpToolStripSeparator.Size = new System.Drawing.Size(177, 6);
             // 
             // aboutToolStripMenuItem
             // 
@@ -918,6 +942,9 @@ namespace cdeWin
         private System.Windows.Forms.NumericUpDown notOlderThanUpDown;
         private System.Windows.Forms.CheckBox notOlderThanCheckbox;
         private System.Windows.Forms.ToolStripMenuItem aboutToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem helpToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem searchSyntaxToolStripMenuItem;
+        private System.Windows.Forms.ToolStripSeparator helpToolStripSeparator;
         private System.Windows.Forms.CheckBox fromSizeCheckbox;
         private System.Windows.Forms.CheckBox toSizeCheckbox;
         private System.Windows.Forms.ComboBox toSizeDropDown;
