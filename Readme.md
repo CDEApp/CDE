@@ -166,9 +166,8 @@ cd cde-2.1.0-linux-x64/cde
 - `cde` reads `appsettings.json` from the current directory, so run it from the folder that holds it.
 - `cde-tauri` needs the system libraries for its web view. On Debian and Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1`. Other distributions have packages with similar names (WebKitGTK 4.1).
 - The archive is built on Ubuntu 22.04, so it needs a glibc at least as new as that one has.
-- The Linux builds are new, and some things do not work yet:
-  - **`cde scan` fails on Linux.** The catalog file name is built from a drive letter and a volume label, which a Linux path does not have. Searching a catalog that was scanned on Windows works.
-  - In `cde-tauri` on Linux, **Open, Explore and Properties do nothing**, and so do custom shell commands.
+- Catalog files on Linux are named after the scan path, for example `cde scan /mnt/data` makes `mnt_data.cdex` (see [Catalog files](#catalog-files)).
+- The Linux builds are new, and one thing does not work yet: in `cde-tauri` on Linux, **Open, Explore and Properties do nothing**, and so do custom shell commands.
 
 ## Using cde
 
@@ -177,7 +176,7 @@ cd cde-2.1.0-linux-x64/cde
 - cde creates a separate catalog file for each file system it scans.
 
 - each catalog file ends with extension ".cdex". Catalogs made by older versions end with ".cde"; `cde migrate` converts them (see [cde migrate](#cde-migrate)).
-- each catalog file created has a file name derived from the drive letter, volume name and path or UNC path to the file system.
+- each catalog file created has a file name derived from where it was scanned. On Windows that is the drive letter, volume name and path or UNC path to the file system. On Linux and macOS it is the scan path alone (see below).
   - These canonical names are not enforced, but are used when cde updates hashes on a file system that has an old catalog file available.
   - Renaming files is not a problem if you are not using hashes or don't care about hashes.
   - Duplicating a catalog to a different name will cause cde to load both original and duplicate as it does not check for duplicates catalog file contents.
@@ -194,6 +193,19 @@ cd cde-2.1.0-linux-x64/cde
   ```
 
   Produces a cde file name of `UNC-toothless_c__users_.cdex` on my home network.
+
+- On Linux and macOS there is no drive letter, volume label or UNC share, so the name comes from the scan path: the path without its leading `/`, with every `/` replaced by `_`. The path `/` is `root`. Characters that are invalid in a file name (`\`, `:`, `$`, `*`, `?`, `"`, `<`, `>`, `|` and control characters) also become `_`. Spaces are kept, and so is the case, because paths are case-sensitive.
+
+  | Scan path | Catalog |
+  |---|---|
+  | `/` | `root.cdex` |
+  | `/home` | `home.cdex` |
+  | `/mnt/data` | `mnt_data.cdex` |
+  | `/mnt/nas/share` | `mnt_nas_share.cdex` |
+  | `/media/jason/USB1` | `media_jason_USB1.cdex` |
+  | `/var/log` | `var_log.cdex` |
+
+  There is no mount-point detection. A rescan of the same path replaces its own catalog. One limit: `/mnt/data_x` and `/mnt/data/x` both give `mnt_data_x`, because `/` and `_` cannot be told apart; that is rare, and you can give the second one another name by renaming its catalog file. Windows names do not change.
 
 - All catalog files in the current directory, or one directory below current directory will be loaded by cde or cdeWin when they are started.
 

@@ -122,12 +122,10 @@ jobs:
           path: artifacts/
 
   # A Linux smoke test, so a Linux break shows on the pull request and not on release day. It publishes
-  # cde and cdeApi for linux-x64 with the same Fallout target the release uses, checks that they start, and
-  # packs the cde tar.gz with the release staging script.
+  # cde and cdeApi for linux-x64 with the same Fallout target the release uses, checks that they start, scans and
+  # searches a small folder with cde, and packs the cde tar.gz with the release staging script.
   #
   # It does not build the Tauri shell (slow, the release does) and does not run the .NET tests on Linux.
-  # `cde scan` is not exercised yet: it fails on Linux because the catalog file name is built from a drive
-  # letter and a volume label. Add a scan and an `everything` search here once it works.
   linux:
 
     runs-on: ubuntu-22.04
@@ -156,6 +154,36 @@ jobs:
           chmod +x cde
           ./cde --version | sed -n 1p
           ./cde --help | grep -E '^  everything '
+      # A real scan and search, as a user would run them. cde reads appsettings.json from the current directory, so
+      # the catalog lands in artifacts/cde too. On Linux the catalog is named after the scanned path (#155): the path
+      # without its leading "/", with every "/" replaced by "_".
+      - name: cde scans and searches a folder
+        working-directory: artifacts/cde
+        run: |
+          data="$RUNNER_TEMP/cde smoke data"
+          mkdir -p "$data/reports" "$data/docs"
+          echo a > "$data/report.txt"
+          echo b > "$data/docs/report-2024.txt"
+
+          ./cde scan "$data"
+          expected="$(printf '%s' "${data#/}" | tr '/' '_').cdex"
+          ls -l ./*.cdex
+          test "$(ls ./*.cdex | wc -l)" -eq 1
+          test -f "./$expected"
+
+          folders="$(./cde everything "folder:report")"
+          echo "$folders"
+          test "$folders" = " $data/reports"
+          ./cde everything "rep 2024" | grep -F "$data/docs/report-2024.txt"
+          ./cde find report | grep -F "$data/report.txt"
+
+          # A malformed query exits 1 with its position and prints no results.
+          if ./cde everything "a ||" > "$RUNNER_TEMP/bad.out" 2> "$RUNNER_TEMP/bad.err"; then
+            echo "::error::A malformed query must exit with 1."
+            exit 1
+          fi
+          grep -F "(at position 3)" "$RUNNER_TEMP/bad.err"
+          test ! -s "$RUNNER_TEMP/bad.out"
       # The sidecar prints {"url", "token"} on its first stdout line once it is listening.
       - name: cdeApi starts and prints its handshake
         working-directory: artifacts/cdeApi

@@ -157,6 +157,13 @@ public sealed class RootEntry : object, ICommonEntry
         const string ext = ".cde";
         string fileName;
         volumeRoot = GetDirectoryRoot(scanPath);
+        if (!_fileSystemAdapter.IsWindows)
+        {
+            // Linux and macOS: no drive letter, volume label or UNC share, so the name comes from the path alone.
+            hint = NonWindowsName(scanPath);
+            return hint + ext;
+        }
+
         var volumeName = GetVolumeName(volumeRoot);
         hint = GetDriverLetterHint(scanPath, volumeRoot);
         var filenameSafePath = SafeFileName(scanPath);
@@ -186,6 +193,29 @@ public sealed class RootEntry : object, ICommonEntry
     private string GetFullPath(string path)
     {
         return _fileSystemAdapter.GetFullPath(path);
+    }
+
+    // Every character that is invalid in a file name on Windows as well as on Linux, so a catalog name is valid on
+    // either, plus '$' as on Windows. Fixed, not Path.GetInvalidFileNameChars(), so the result does not depend on the host.
+    private static readonly char[] NonWindowsReplaced = ['\\', '/', ':', '$', '*', '?', '"', '<', '>', '|'];
+
+    /// <summary>
+    /// The catalog name, without extension, for a scan path on Linux or macOS (#155): the path without its leading
+    /// '/', with every '/' and every character that is invalid in a file name replaced by '_'. The path '/' is
+    /// "root". Case is kept (paths are case-sensitive) and spaces are kept. No mount-point detection.
+    /// </summary>
+    private static string NonWindowsName(string scanPath)
+    {
+        var trimmed = scanPath.Trim('/');
+        if (trimmed.Length == 0) return "root";
+
+        var chars = trimmed.ToCharArray();
+        for (var i = 0; i < chars.Length; i++)
+        {
+            if (chars[i] < ' ' || Array.IndexOf(NonWindowsReplaced, chars[i]) >= 0) chars[i] = '_';
+        }
+
+        return new string(chars);
     }
 
     private bool IsUnc(string path)

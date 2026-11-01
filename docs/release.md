@@ -125,11 +125,12 @@ cde-<version>-linux-x64/
   the version of the `cdeApi` sidecar, as the Windows check does: a Linux binary has no version resource, and
   `cdeApi` is published by the same build as `cde`, so MinVer versions them together.
 - **Pull requests** get a Linux smoke job (`linux` in `build.yml`): it publishes `cde` and `cdeApi` for
-  `linux-x64`, checks that they start, and packs the cde archive with the staging script. It does not build the
+  `linux-x64`, checks that they start, scans a small folder with `cde` and searches it (`everything` and `find`,
+  and a malformed query that must exit 1), and packs the cde archive with the staging script. It does not build the
   Tauri shell and does not run the .NET tests on Linux.
-- **Known limits on Linux:** `cde scan` fails (the catalog file name is built from a drive letter and a volume
-  label), and Open, Explore, Properties and custom commands do nothing in `cde-tauri` (it uses
-  `NoopShellActions`). Both are in the README.
+- **Known limit on Linux:** Open, Explore, Properties and custom commands do nothing in `cde-tauri` (it uses
+  `NoopShellActions`). It is in the README. `cde scan` works on Linux and names the catalog after the scan path
+  (see "Catalog files" in the README).
 
 ## Decisions
 

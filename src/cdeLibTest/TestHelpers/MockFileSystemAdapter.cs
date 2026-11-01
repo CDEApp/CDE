@@ -14,13 +14,17 @@ public class MockFileSystemAdapter : IFileSystemAdapter
     public MockFileSystemAdapter(
         string root = @"C:\",
         bool isUnc = false,
-        string fullPath = @"C:\"
+        string fullPath = @"C:\",
+        bool isWindows = true
     )
     {
         _root = root;
         _isUnc = isUnc;
         _fullPath = fullPath;
+        IsWindows = isWindows;
     }
+
+    public bool IsWindows { get; }
 
     public string GetFullPath(string path)
     {
