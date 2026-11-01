@@ -8,6 +8,8 @@ fn main() {
         .plugin(tauri_plugin_shell::init())
         // Native file/folder picker for "File > Open Folder…".
         .plugin(tauri_plugin_dialog::init())
+        // Writes the "Export results" CSV; the save dialog adds the chosen path to the fs scope.
+        .plugin(tauri_plugin_fs::init())
         // Window geometry is Tauri-native (D14): persisted/restored by the window-state plugin,
         // not round-tripped through the C# /ui-state endpoint.
         .plugin(tauri_plugin_window_state::Builder::default().build())
