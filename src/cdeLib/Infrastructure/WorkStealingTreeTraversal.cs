@@ -146,43 +146,38 @@ public class WorkStealingTreeTraversal
     private async Task ProcessWorkItem(TraversalWorkItem workItem,
         Func<ICommonEntry, ICommonEntry, Task<bool>> processor)
     {
-        try
+        // A processor failure is not swallowed: it faults this worker and TraverseAsync rethrows it, so a find
+        // never reports partial results as complete.
+        // Match TraverseTreePair exactly: process this directory's children
+        // Empty directories may not have Children initialized - skip them like TraverseTreePair does
+        if (workItem.Entry.Children == null)
         {
-            // Match TraverseTreePair exactly: process this directory's children
-            // Empty directories may not have Children initialized - skip them like TraverseTreePair does
-            if (workItem.Entry.Children == null)
-            {
-                return;
-            }
-
-            // Process all children of this directory (matching TraverseTreePair behavior)
-            foreach (var dirEntry in workItem.Entry.Children)
-            {
-                // Call processor for this child (parent=workItem.Entry, child=dirEntry)
-                var shouldContinue = await processor(workItem.Entry, dirEntry);
-                Interlocked.Increment(ref _totalEntriesProcessed);
-
-                if (!shouldContinue)
-                {
-                    break; // Stop processing if processor returns false (matches TraverseTreePair)
-                }
-
-                // If this child is a directory, add it to work queue for processing its children
-                // This matches the stack.Push(dirEntry) in TraverseTreePair
-                // The directory becomes the new "root" to process (parent=null), not a parent-child pair
-                if (dirEntry.IsDirectory)
-                {
-                    var childWorkItem = new TraversalWorkItem(null, dirEntry, workItem.Depth + 1);
-                    _workQueue.AddWork(childWorkItem);
-
-                    logger.Verbose("Added directory to work queue: {DirectoryPath} (Depth: {Depth})",
-                        dirEntry.Path, workItem.Depth + 1);
-                }
-            }
+            return;
         }
-        catch (Exception ex)
+
+        // Process all children of this directory (matching TraverseTreePair behavior)
+        foreach (var dirEntry in workItem.Entry.Children)
         {
-            logger.Warning(ex, "Error processing work item for entry: {EntryPath}", workItem.Entry?.Path ?? "null");
+            // Call processor for this child (parent=workItem.Entry, child=dirEntry)
+            var shouldContinue = await processor(workItem.Entry, dirEntry);
+            Interlocked.Increment(ref _totalEntriesProcessed);
+
+            if (!shouldContinue)
+            {
+                break; // Stop processing if processor returns false (matches TraverseTreePair)
+            }
+
+            // If this child is a directory, add it to work queue for processing its children
+            // This matches the stack.Push(dirEntry) in TraverseTreePair
+            // The directory becomes the new "root" to process (parent=null), not a parent-child pair
+            if (dirEntry.IsDirectory)
+            {
+                var childWorkItem = new TraversalWorkItem(null, dirEntry, workItem.Depth + 1);
+                _workQueue.AddWork(childWorkItem);
+
+                logger.Verbose("Added directory to work queue: {DirectoryPath} (Depth: {Depth})",
+                    dirEntry.Path, workItem.Depth + 1);
+            }
         }
     }
 }
