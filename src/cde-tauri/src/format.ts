@@ -141,3 +141,16 @@ export function toLocalIsoString(d: Date): string {
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
 }
+
+/**
+ * End-of-scan skipped-folder line (#170), worded like `cde scan` (ScanSkipSummary). Null when nothing
+ * was skipped; the counts are optional because an older sidecar does not send them.
+ */
+export function skipSummary(excluded?: number, accessDenied?: number, locale?: string): string | null {
+  const ex = excluded ?? 0;
+  const ad = accessDenied ?? 0;
+  const total = ex + ad;
+  if (total === 0) return null;
+  const n = (v: number) => v.toLocaleString(locale);
+  return `skipped ${n(total)} ${total === 1 ? "folder" : "folders"}: ${n(ex)} excluded, ${n(ad)} access denied`;
+}

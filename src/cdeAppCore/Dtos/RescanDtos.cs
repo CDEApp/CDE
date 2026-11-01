@@ -14,6 +14,12 @@ public sealed class RescanResult
 
     /// <summary>The file the new catalog was saved to (a <c>.cdex</c>; differs from the old path for a legacy <c>.cde</c>).</summary>
     public string SavedPath { get; set; }
+
+    /// <summary>Folders skipped by the scan's exclude patterns (#170). Scan-time only: not stored in the catalog.</summary>
+    public int ExcludedFolderCount { get; set; }
+
+    /// <summary>Folders the scan could not read (access denied) (#170). Scan-time only: not stored in the catalog.</summary>
+    public int AccessDeniedFolderCount { get; set; }
 }
 
 /// <summary>The SSE <c>error</c> payload. <see cref="Code"/> is a stable machine-readable reason.</summary>

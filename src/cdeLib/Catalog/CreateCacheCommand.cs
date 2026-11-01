@@ -18,6 +18,9 @@ public record CreateCacheCommand : IRequest
     /// </summary>
     public bool FollowJunctions { get; set; }
 
+    /// <summary>Extra exclude patterns for this scan only (--exclude); they add to the configured and default excludes.</summary>
+    public System.Collections.Generic.IReadOnlyList<string> ExcludePaths { get; set; }
+
     /// <summary>When true, the scan summary also lists the access-denied folders.</summary>
     public bool Verbose { get; set; }
 }
