@@ -113,6 +113,20 @@ public class CatalogSessionRescanTests
     }
 
     [Test]
+    public async Task Rescan_reports_the_excluded_and_access_denied_folder_counts()
+    {
+        var data = MakeDataWithSkipDir();
+        var skip = Path.Combine(data, "skip");
+        var s = LoadCdexWithScanConfig(ScanToCdex(data, "one.cdex"),
+            () => new ScanSection { ExcludePaths = [skip], UseDefaultExcludes = false });
+
+        var result = await s.RescanAsync(0);
+
+        Assert.That(result.ExcludedFolderCount, Is.EqualTo(1));
+        Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+    }
+
+    [Test]
     public async Task Rescan_uses_the_provider_result_current_at_each_rescan()
     {
         var data = MakeDataWithSkipDir();

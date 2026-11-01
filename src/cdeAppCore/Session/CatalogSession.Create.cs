@@ -271,7 +271,9 @@ public sealed partial class CatalogSession
                 CatalogId = catalogId,
                 RootPath = tree.Path,
                 Entries = (long)tree.FileEntryCount + tree.DirEntryCount,
-                SavedPath = target
+                SavedPath = target,
+                ExcludedFolderCount = tree.ExcludedFolderCount,
+                AccessDeniedFolderCount = tree.AccessDeniedFolderCount
             };
         }
         finally

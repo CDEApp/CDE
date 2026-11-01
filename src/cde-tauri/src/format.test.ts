@@ -8,6 +8,7 @@ import {
   parseSize,
   sizeCell,
   sizeTitle,
+  skipSummary,
   toHRString,
   toLocalIsoString,
 } from "./format";
@@ -151,5 +152,25 @@ describe("catalogName", () => {
     expect(catalogName("")).toBe("");
     expect(catalogName(null)).toBe("");
     expect(catalogName(undefined)).toBe("");
+  });
+});
+
+describe("skipSummary", () => {
+  it("is null when nothing was skipped (including counts missing from an older sidecar)", () => {
+    expect(skipSummary(0, 0)).toBeNull();
+    expect(skipSummary(undefined, undefined)).toBeNull();
+  });
+
+  it("matches the cde scan wording", () => {
+    expect(skipSummary(9, 5)).toBe("skipped 14 folders: 9 excluded, 5 access denied");
+  });
+
+  it("singularises a single skipped folder", () => {
+    expect(skipSummary(1, 0)).toBe("skipped 1 folder: 1 excluded, 0 access denied");
+    expect(skipSummary(0, 1)).toBe("skipped 1 folder: 0 excluded, 1 access denied");
+  });
+
+  it("digit-groups large counts", () => {
+    expect(skipSummary(1500, 0, "en-US")).toBe("skipped 1,500 folders: 1,500 excluded, 0 access denied");
   });
 });
