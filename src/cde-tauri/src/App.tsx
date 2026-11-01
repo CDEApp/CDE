@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import { open } from "@tauri-apps/plugin-dialog";
+import { open, save } from "@tauri-apps/plugin-dialog";
+import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, CreateFailure, RescanFailure } from "./api/client";
 import {
@@ -65,6 +66,7 @@ import { viewPaneClass } from "./viewPane";
 import { createRequestGuard } from "./requestGuard";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
 import { searchErrorMessage } from "./everythingSearch";
+import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
 
 type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
 
@@ -569,6 +571,30 @@ export default function App() {
     return picked;
   }, []);
 
+  // Export results: every streamed row (all held in `results`) as UTF-8 CSV, columns in the list's current order.
+  const exportResults = useCallback(async () => {
+    try {
+      const path = await save({
+        title: "Export search results",
+        defaultPath: exportFileName(new Date()),
+        filters: [{ name: "CSV", extensions: ["csv"] }],
+      });
+      if (!path) return; // cancelled: do nothing
+      await writeFile(path, encodeCsv(resultsToCsv(results, uiRef.current?.get().searchResultColumnOrder)));
+      notifications.show({
+        color: "green",
+        title: "Results exported",
+        message: `${results.length.toLocaleString()} rows written to ${path}`,
+      });
+    } catch (e) {
+      notifications.show({
+        color: "red",
+        title: "Export failed",
+        message: e instanceof Error ? e.message : String(e),
+      });
+    }
+  }, [results]);
+
   // Start (File menu / Catalogs tab) and "Change…" in the dialog: both just (re)pick the root.
   const pickNewRoot = useCallback(async () => {
     const picked = await pickNewCatalogRoot();
@@ -910,6 +936,15 @@ export default function App() {
                 </button>
               </div>
             )}
+            <div className="results-toolbar">
+              <button
+                disabled={busy || results.length === 0}
+                title={busy ? "Wait for the search to finish" : results.length === 0 ? "No results to export" : undefined}
+                onClick={() => void exportResults()}
+              >
+                Export results…
+              </button>
+            </div>
             <div className="results-fill">
               <ResultsList
                 rows={results}
