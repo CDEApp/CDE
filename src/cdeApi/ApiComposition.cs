@@ -6,6 +6,7 @@ using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using cdeAppCore.Shell;
 using cdeAppCore.Treemap;
+using ScanSection = cdeLib.Infrastructure.Config.ScanSection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
 using Microsoft.Extensions.Configuration;
@@ -39,7 +40,10 @@ public static class ApiComposition
         services.AddSingleton<ILoadCatalogService>(_ => new LoadCatalogService(logger, includeCurrentDirectory: false));
         // Legacy .cde catalogs are listed, not loaded (slow and memory-heavy); the UI offers to migrate them.
         services.AddSingleton<ICatalogSession>(sp =>
-            new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger) { LoadLegacyCatalogs = false });
+            new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger,
+                // Read on every scan, not snapshotted: appsettings reloads at runtime and a rescan uses the current excludes.
+                scanConfig: () => sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Scan").Get<ScanSection>())
+            { LoadLegacyCatalogs = false });
         services.AddSingleton<ISearchService>(sp =>
             new SearchService(sp.GetRequiredService<ICatalogSession>()));
         services.AddSingleton<ITreemapService>(sp =>

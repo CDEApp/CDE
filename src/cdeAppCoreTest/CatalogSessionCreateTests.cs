@@ -9,6 +9,7 @@ using cdeAppCore.Dtos;
 using cdeAppCore.Session;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
@@ -95,6 +96,43 @@ public class CatalogSessionCreateTests
             lock (Reports) Reports.Add(value);
             OnReport?.Invoke(value);
         }
+    }
+
+    private CatalogSession LoadWithScanConfig(Func<ScanSection> scanConfig)
+    {
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(_ => Directory.GetFiles(_cat, "*.cdex").ToList());
+        _session = new CatalogSession(loader, Substitute.For<ILogger>(), scanConfig: scanConfig);
+        _session.LoadAsync(_cat).GetAwaiter().GetResult();
+        return _session;
+    }
+
+    [Test]
+    public async Task Create_skips_configured_exclude_paths_but_records_the_folder_as_an_empty_entry()
+    {
+        var data = MakeData("d1", "keep.txt");
+        var skip = Path.Combine(data, "skip");
+        Directory.CreateDirectory(skip);
+        File.WriteAllText(Path.Combine(skip, "inner.txt"), "x");
+        var s = LoadWithScanConfig(() => new ScanSection { ExcludePaths = [skip], UseDefaultExcludes = false });
+
+        var result = await s.CreateCatalogAsync(Req(data));
+
+        Assert.That(RootNames(s, result.CatalogId), Is.EqualTo(new[] { "keep.txt", "skip" }));
+        Assert.That(result.Entries, Is.EqualTo(2)); // skip dir + keep.txt, inner.txt not scanned
+    }
+
+    [Test]
+    public async Task Create_without_a_scan_config_provider_excludes_nothing()
+    {
+        var data = MakeData("d1", "keep.txt");
+        Directory.CreateDirectory(Path.Combine(data, "skip"));
+        File.WriteAllText(Path.Combine(data, "skip", "inner.txt"), "x");
+        var s = LoadFiles();
+
+        var result = await s.CreateCatalogAsync(Req(data));
+
+        Assert.That(result.Entries, Is.EqualTo(3));
     }
 
     [Test]
