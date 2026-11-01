@@ -1,0 +1,153 @@
+name: Performance
+
+# Measures cde on a deterministic synthetic fixture and records the numbers per release (#189):
+# scan time and .cdex size, cold and warm search latency, and peak RSS on the mmap path.
+#
+# Runs on release tags and by hand. No schedule, no per-push runs. Ubuntu only, so the numbers are
+# comparable from release to release.
+#
+#   1. builds cde and cdeMemProbe, then runs `cdeMemProbe --report <size>` (see src/cdeBenchmarks/README.md)
+#   2. downloads the previous release's perf.json and shows the deltas in the job summary
+#   3. uploads perf.json and perf.md as an artifact and attaches them to the GitHub Release
+#   4. opens a PR against develop that refreshes the table in the Readme (CI never pushes to a protected branch)
+#   5. fails the job only if the .cdex size grew more than 2% against the baseline; RSS growth over 15%
+#      is a warning, and timings never gate
+#
+# The 1M fixture is a real directory tree scanned by `cde scan`. The 10M fixture is too big to
+# materialise, so its .cdex is written directly and the scan time is n/a.
+on:
+  push:
+    tags: ['[0-9]*']
+  workflow_dispatch:
+    inputs:
+      size:
+        description: 'Fixture size in entries (1000000 scans a real tree; 10000000 writes the .cdex directly)'
+        required: false
+        default: '1000000'
+        type: choice
+        options:
+          - '1000000'
+          - '10000000'
+      open-readme-pr:
+        description: 'Open a PR that refreshes the Readme table'
+        required: false
+        default: false
+        type: boolean
+
+permissions: {}
+
+concurrency:
+  group: perf-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  perf:
+    name: Measure performance
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write        # attach to the release, push the Readme branch
+      pull-requests: write   # open the Readme PR
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      SIZE: ${{ inputs.size || '1000000' }}
+      # A tag run always refreshes the Readme; a manual run only when asked.
+      OPEN_PR: ${{ github.event_name == 'push' || inputs.open-readme-pr }}
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          # 9.0.x runs the FlatSharp schema compiler (its newest build targets net9.0).
+          dotnet-version: |
+            9.0.x
+            10.0.x
+
+      - name: Build cde and cdeMemProbe
+        run: |
+          dotnet build src/cde/cde.csproj -c Release
+          dotnet build src/cdeMemProbe/cdeMemProbe.csproj -c Release
+
+      - name: Run the report
+        run: |
+          dotnet src/cdeMemProbe/bin/Release/net10.0/cdeMemProbe.dll --report "$SIZE" \
+            --cde "$PWD/src/cde/bin/Release/net10.0/cde" \
+            --work "$RUNNER_TEMP/cde-perf" --out perf.json
+
+      - name: Download the previous release's perf.json
+        run: |
+          # The newest published release other than this one that carries a perf.json.
+          for tag in $(gh release list --exclude-drafts --limit 20 --json tagName --jq '.[].tagName'); do
+            [ "$tag" = "$GITHUB_REF_NAME" ] && continue
+            if gh release download "$tag" --pattern perf.json --output baseline.json 2>/dev/null; then
+              echo "Baseline: $tag"
+              exit 0
+            fi
+          done
+          echo "No previous perf.json found; this run reports absolute numbers only."
+
+      - name: Compare with the baseline
+        id: compare
+        run: |
+          args=(--compare --current perf.json --markdown perf.md)
+          [ -f baseline.json ] && args+=(--baseline baseline.json)
+          set +e
+          dotnet src/cdeMemProbe/bin/Release/net10.0/cdeMemProbe.dll "${args[@]}" > /dev/null
+          code=$?
+          set -e
+          cat perf.md >> "$GITHUB_STEP_SUMMARY"
+          echo "failed=$([ "$code" -ne 0 ] && echo true || echo false)" >> "$GITHUB_OUTPUT"
+
+      - name: Upload perf.json and perf.md
+        uses: actions/upload-artifact@v7
+        with:
+          name: perf
+          path: |
+            perf.json
+            perf.md
+
+      - name: Attach to the GitHub Release
+        if: github.event_name == 'push'
+        run: |
+          # release.yml builds in parallel and publishes last, so wait for the release to exist.
+          for i in $(seq 1 60); do
+            if gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
+              gh release upload "$GITHUB_REF_NAME" perf.json perf.md --clobber
+              exit 0
+            fi
+            sleep 60
+          done
+          echo "::warning::Release $GITHUB_REF_NAME did not appear within 60 minutes; perf.json is only in the workflow artifact."
+
+      - name: Open a PR that refreshes the Readme table
+        if: env.OPEN_PR == 'true'
+        run: |
+          branch="perf/readme-${GITHUB_REF_NAME//\//-}-${GITHUB_RUN_ID}"
+          git fetch origin develop
+          git checkout -B "$branch" origin/develop
+          dotnet src/cdeMemProbe/bin/Release/net10.0/cdeMemProbe.dll --readme --current perf.json --file Readme.md
+          if git diff --quiet; then
+            echo "Readme table is already current."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "docs: refresh the Readme performance table (${GITHUB_REF_NAME})"
+          git push origin "$branch"
+          {
+            echo "Refreshes the performance table in the Readme from \`perf.json\` of run ${GITHUB_RUN_ID} (${GITHUB_REF_NAME}), measured on a GitHub ubuntu runner."
+            echo
+            cat perf.md
+          } > pr-body.md
+          gh pr create --base develop --head "$branch" \
+            --title "docs: refresh the Readme performance table (${GITHUB_REF_NAME})" --body-file pr-body.md
+
+      - name: Fail on a .cdex size regression
+        if: steps.compare.outputs.failed == 'true'
+        run: |
+          echo "::error::The .cdex size grew more than 2% against the baseline. See the job summary."
+          exit 1

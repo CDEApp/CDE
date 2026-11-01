@@ -22,6 +22,13 @@ namespace cdeMemProbe;
 ///   cdeMemProbe --generate &lt;N&gt; [--hashes] [--out &lt;path.cde&gt;] [--seed N]
 ///       Generate a synthetic catalog of ~N entries and save it. Prints the path. No measurement.
 ///
+///   cdeMemProbe --report &lt;N&gt; [--out perf.json] [--cde path/to/cde] [--work dir] [--seed N] [--direct]
+///       Release performance report (perf.json); see src/cdeBenchmarks/README.md.
+///   cdeMemProbe --compare --current perf.json [--baseline old.json] [--markdown out.md]
+///       Show deltas vs the baseline; exit 1 only when the .cdex size grew more than 2%.
+///   cdeMemProbe --readme --current perf.json --file Readme.md
+///       Regenerate the performance table between the perf-table markers.
+///
 ///   cdeMemProbe &lt;path.cde&gt; [--no-header]
 ///       Load the catalog, settle the GC, and emit one CSV row of footprint metrics.
 ///
@@ -46,6 +53,31 @@ public static class Program
 
         // Silent Serilog logger (no sinks) so CatalogRepository stays quiet and out of the CSV.
         var logger = new LoggerConfiguration().CreateLogger();
+
+        if (HasFlag(args, "--search-child", out var childFile) && !string.IsNullOrEmpty(childFile))
+        {
+            return ReportRunner.RunSearchChildMode(childFile);
+        }
+
+        if (HasFlag(args, "--report", out var reportSize))
+        {
+            if (!long.TryParse(reportSize, NumberStyles.Integer, CultureInfo.InvariantCulture, out var size) || size <= 0)
+            {
+                await Console.Error.WriteLineAsync("--report requires a positive entry count, e.g. --report 1000000");
+                return 1;
+            }
+            return ReportRunner.Run(args, size, name => HasFlag(args, name, out var v) ? v : null);
+        }
+
+        if (HasFlag(args, "--compare", out _))
+        {
+            return PerfCommands.Compare(name => HasFlag(args, name, out var v) ? v : null);
+        }
+
+        if (HasFlag(args, "--readme", out _))
+        {
+            return PerfCommands.Readme(name => HasFlag(args, name, out var v) ? v : null);
+        }
 
         if (HasFlag(args, "--soa", out _))
         {
