@@ -121,7 +121,9 @@ cde-<version>-linux-x64/
   `verify-release-versions-linux.sh`, with tests in `src/cde-tauri/scripts/linux-release-scripts.test.mjs`. The
   Windows PowerShell scripts are untouched. The version check runs `cde --version` (from its own folder, because
   `cde` reads `appsettings.json` from the current directory) and reads the stamped `tauri.conf.json` and
-  `Cargo.toml`, because the app cannot be run without a display on the runner.
+  `Cargo.toml`, because the app cannot be run without a display on the runner. The Linux check does not read
+  the version of the `cdeApi` sidecar, as the Windows check does: a Linux binary has no version resource, and
+  `cdeApi` is published by the same build as `cde`, so MinVer versions them together.
 - **Pull requests** get a Linux smoke job (`linux` in `build.yml`): it publishes `cde` and `cdeApi` for
   `linux-x64`, checks that they start, and packs the cde archive with the staging script. It does not build the
   Tauri shell and does not run the .NET tests on Linux.

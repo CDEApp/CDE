@@ -18,11 +18,20 @@ version=""
 root=""
 tauri_src="src/cde-tauri/src-tauri"
 
+# An option that takes a value must have one: "$@" here is the option and what follows it. This script does not
+# run with `set -e`, so without the check a failed `shift 2` would leave the loop below spinning for ever.
+need_value() {
+  if [ $# -lt 2 ]; then
+    echo "error: $1 needs a value." >&2
+    exit 2
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
-    --version) version="${2-}"; shift 2 ;;
-    --root) root="${2-}"; shift 2 ;;
-    --tauri-src) tauri_src="${2-}"; shift 2 ;;
+    --version) need_value "$@"; version="$2"; shift 2 ;;
+    --root) need_value "$@"; root="$2"; shift 2 ;;
+    --tauri-src) need_value "$@"; tauri_src="$2"; shift 2 ;;
     *) echo "error: unknown argument '$1'" >&2; exit 2 ;;
   esac
 done

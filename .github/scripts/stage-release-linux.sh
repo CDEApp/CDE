@@ -26,12 +26,20 @@ out="artifacts/release"
 tauri_dir="src/cde-tauri/src-tauri/target/release"
 with_tauri=true
 
+# An option that takes a value must have one: "$@" here is the option and what follows it.
+need_value() {
+  if [ $# -lt 2 ]; then
+    echo "error: $1 needs a value." >&2
+    exit 2
+  fi
+}
+
 while [ $# -gt 0 ]; do
   case "$1" in
-    --version) version="${2-}"; shift 2 ;;
-    --artifacts) artifacts="${2-}"; shift 2 ;;
-    --out) out="${2-}"; shift 2 ;;
-    --tauri-release-dir) tauri_dir="${2-}"; shift 2 ;;
+    --version) need_value "$@"; version="$2"; shift 2 ;;
+    --artifacts) need_value "$@"; artifacts="$2"; shift 2 ;;
+    --out) need_value "$@"; out="$2"; shift 2 ;;
+    --tauri-release-dir) need_value "$@"; tauri_dir="$2"; shift 2 ;;
     --no-tauri) with_tauri=false; shift ;;
     *) echo "error: unknown argument '$1'" >&2; exit 2 ;;
   esac

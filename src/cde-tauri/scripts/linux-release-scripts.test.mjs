@@ -150,6 +150,18 @@ describe("stage-release-linux.sh", () => {
     expect(r.stderr).toMatch(/version/i);
   });
 
+  it.each([["--version"], ["--artifacts"], ["--out"], ["--tauri-release-dir"]])(
+    "says which option has no value when %s is last",
+    (option) => {
+      fakePublish();
+      fakeTauri();
+      const r = bash("stage-release-linux.sh", [option], work);
+      expect(r.status).not.toBe(0);
+      expect(r.stderr).toContain(option);
+      expect(r.stderr).toMatch(/needs a value/);
+    },
+  );
+
   it("replaces an earlier archive for the same version", () => {
     fakePublish();
     fakeTauri();
@@ -226,6 +238,13 @@ describe("verify-release-versions-linux.sh", () => {
     const r = verify(stagedRoot("cde 2.1.0-beta.1+abc"), tauriFiles("2.1.0-beta.1", "0.1.0"));
     expect(r.status).not.toBe(0);
     expect(r.stdout).toContain("Cargo.toml");
+  });
+
+  it.each([["--version"], ["--root"], ["--tauri-src"]])("says which option has no value when %s is last", (option) => {
+    const r = bash("verify-release-versions-linux.sh", [option], work);
+    expect(r.status).not.toBe(0);
+    expect(r.stderr).toContain(option);
+    expect(r.stderr).toMatch(/needs a value/);
   });
 
   it("fails when a staged file is missing", () => {
