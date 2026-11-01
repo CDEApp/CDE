@@ -1,0 +1,9 @@
+/node_modules
+/build
+.docusaurus
+.cache-loader
+.DS_Store
+.env.local
+npm-debug.log*
+.pnpm-debug.log*
+.pnpm-store

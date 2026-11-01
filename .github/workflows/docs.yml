@@ -1,0 +1,87 @@
+name: Docs
+
+# Builds the documentation website in docs-website/ and publishes it to GitHub Pages.
+#
+# A pull request builds the site when the pages change, which catches broken links and anchors
+# (the build fails on both). A push to develop or main deploys it.
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'docs-website/**'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs-website/**'
+      - '.github/workflows/docs.yml'
+  workflow_dispatch:
+
+# Nothing in the build job writes anything. The deploy job asks for what Pages needs on its own.
+permissions:
+  contents: read
+
+# Allow one deployment at a time; don't cancel an in-progress production deploy.
+concurrency:
+  group: pages-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+defaults:
+  run:
+    working-directory: docs-website
+
+jobs:
+  build:
+    name: Build site
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Must precede setup-node: `cache: pnpm` needs the pnpm binary on PATH to resolve the store
+      # path. The version comes from packageManager in package.json.
+      - name: Setup pnpm
+        uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          # There is no root package.json: the field lives in the docs project.
+          package_json_file: docs-website/package.json
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: docs-website/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Type check
+        run: pnpm run typecheck
+
+      - name: Build
+        run: pnpm run build
+
+      - name: Upload Pages artifact
+        # Only the production deploy needs the artifact; PRs just verify the build.
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs-website/build
+
+  deploy:
+    name: Deploy to GitHub Pages
+    if: github.event_name != 'pull_request'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Configure Pages
+        uses: actions/configure-pages@v6
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v5
