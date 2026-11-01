@@ -3,7 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
-import { CdeApiClient, CreateFailure } from "./api/client";
+import { CdeApiClient, CreateFailure, ShellError } from "./api/client";
 import { rescanMenuItem } from "./rescan";
 import {
   anyJobRunning,
@@ -483,8 +483,12 @@ export default function App() {
   const runShell = useCallback(async (ref: EntryRef, action: ShellAction, commandId?: number) => {
     try {
       await clientRef.current!.shell({ ref: refToString(ref), action, commandId });
-    } catch {
-      // Mirrors cdeWin: shell actions are no-ops when the entry isn't on this filesystem.
+    } catch (e) {
+      // 501/422 carry the reason the OS action did not happen; anything else mirrors cdeWin, where
+      // shell actions are silent no-ops when the entry isn't on this filesystem.
+      if (e instanceof ShellError && (e.status === 501 || e.status === 422)) {
+        notifications.show({ color: "red", title: "Could not run the action", message: e.message });
+      }
     }
   }, []);
 

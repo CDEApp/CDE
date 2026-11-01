@@ -76,6 +76,28 @@ public class ShellEndpointsTests
         Assert.That(_shell.Calls, Is.EqualTo(new[] { $"{expectedCall} {Path.Combine(_catalog.Data, "a.txt")}" }));
     }
 
+    [Test]
+    public void Unsupported_action_is_501_with_the_reason()
+    {
+        _shell.Result = ShellResult.Unsupported("not here");
+
+        var result = Run(_catalog.RefOf("a.txt"), "open");
+
+        Assert.That(Status(result), Is.EqualTo(501));
+        Assert.That(Value(result), Is.EqualTo("not here"));
+    }
+
+    [Test]
+    public void Failed_action_is_422_with_the_reason()
+    {
+        _shell.Result = ShellResult.Failed("no file manager");
+
+        var result = Run(_catalog.RefOf("a.txt"), "properties");
+
+        Assert.That(Status(result), Is.EqualTo(422));
+        Assert.That(Value(result), Is.EqualTo("no file manager"));
+    }
+
     [TestCase(1, 1)]
     [TestCase(null, -1)]
     public void Custom_action_runs_the_command_by_id(int? commandId, int expectedIndex)
@@ -109,6 +131,7 @@ public class ShellEndpointsTests
     private sealed class RecordingShell : IShellActions
     {
         public List<string> Calls { get; } = [];
+        public ShellResult Result { get; set; } = ShellResult.Ok;
 
         public IReadOnlyList<CustomCommandOptions> CustomCommands { get; } =
         [
@@ -116,10 +139,10 @@ public class ShellEndpointsTests
             new() { Label = "Hasher", Command = "hash.exe" },
         ];
 
-        public void Open(string fullPath) => Calls.Add($"Open {fullPath}");
-        public void Explore(string fullPath) => Calls.Add($"Explore {fullPath}");
-        public void ShowProperties(string fullPath) => Calls.Add($"ShowProperties {fullPath}");
-        public void RunCustomCommand(int commandIndex, string fullPath) => Calls.Add($"Custom {commandIndex} {fullPath}");
-        public void RunCustomCommand(CustomCommandOptions command, string fullPath) => Calls.Add($"Custom {command.Label} {fullPath}");
+        public ShellResult Open(string fullPath) { Calls.Add($"Open {fullPath}"); return Result; }
+        public ShellResult Explore(string fullPath) { Calls.Add($"Explore {fullPath}"); return Result; }
+        public ShellResult ShowProperties(string fullPath) { Calls.Add($"ShowProperties {fullPath}"); return Result; }
+        public ShellResult RunCustomCommand(int commandIndex, string fullPath) { Calls.Add($"Custom {commandIndex} {fullPath}"); return Result; }
+        public ShellResult RunCustomCommand(CustomCommandOptions command, string fullPath) { Calls.Add($"Custom {command.Label} {fullPath}"); return Result; }
     }
 }

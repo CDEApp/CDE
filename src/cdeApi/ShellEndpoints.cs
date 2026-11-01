@@ -29,16 +29,23 @@ public static class ShellEndpoints
             return Results.BadRequest("entry not present on this filesystem");
 
         var path = session.ResolveFullPath(entryRef);
+        ShellResult result;
         switch (req.Action)
         {
-            case "open": shell.Open(path); break;
-            case "explore": shell.Explore(path); break;
-            case "properties": shell.ShowProperties(path); break;
-            case "custom": shell.RunCustomCommand(req.CommandId ?? -1, path); break;
+            case "open": result = shell.Open(path); break;
+            case "explore": result = shell.Explore(path); break;
+            case "properties": result = shell.ShowProperties(path); break;
+            case "custom": result = shell.RunCustomCommand(req.CommandId ?? -1, path); break;
             default: return Results.BadRequest("unknown action");
         }
 
-        return Results.Ok();
+        // 501 when this host cannot do it at all, 422 when it tried and failed; the reason is the body.
+        return result.Status switch
+        {
+            ShellStatus.Ok => Results.Ok(),
+            ShellStatus.Unsupported => Results.Json(result.Message, statusCode: StatusCodes.Status501NotImplemented),
+            _ => Results.Json(result.Message, statusCode: StatusCodes.Status422UnprocessableEntity),
+        };
     }
 
     /// <summary><c>GET /shell/commands</c>: the configured custom commands a frontend renders as menu items (D10).</summary>
