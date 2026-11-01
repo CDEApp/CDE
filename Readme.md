@@ -588,10 +588,11 @@ There are 5 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Scan.ExcludePaths` which defaults to empty.
 
-  - A list of absolute folder paths that a scan records but does not go into. The folder is kept as an empty entry; nothing under it is scanned, and an excluded folder is not reported as an error.
+  - A list of absolute folder paths, or bare folder names, that a scan records but does not go into. The folder is kept as an empty entry; nothing under it is scanned, and an excluded folder is not reported as an error.
   - A path covers that folder and everything under it. `*` matches inside one path segment (`/home/*/.cache`); there is no `**`.
+  - A bare name with no path separator, such as `node_modules` or `.git`, excludes a folder of that name at any depth below the scan root (`*` works inside the name). It never excludes the scan root itself, even when the root has that name.
   - A trailing `/*` excludes what is inside a folder but not the folder itself: `/tmp/*` skips the children of `/tmp`, while `/tmp` is still recorded and entered.
-  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Entries that are blank or not absolute are logged and ignored.
+  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Entries that are blank, or relative with a separator, are logged and ignored.
   - The folder you scan, and any folder above it, is never excluded: `cde scan /tmp/work` still scans `/tmp/work` when `/tmp` is excluded. Paths below the scan root still apply.
   - It applies to `cde scan`, and to creating and rescanning catalogs in cde-tauri. Nothing is stored in the catalog, and a rescan uses the settings at the time of the rescan, so edit the file and rescan to change what is skipped.
 

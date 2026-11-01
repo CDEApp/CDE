@@ -86,7 +86,7 @@ public class ScanExcludeMatcherTests
     [Test]
     public void Constructor_BlankAndNonAbsolutePatterns_AreSkipped()
     {
-        var m = Linux("", "   ", null, "tmp", "cache/x", "*", "./rel");
+        var m = Linux("", "   ", null, "cache/x", "*", "**", ".", "..", "./rel");
         Assert.That(m.IsEmpty, Is.True);
         Assert.That(m.IsExcluded("/tmp"), Is.False);
     }
@@ -148,6 +148,79 @@ public class ScanExcludeMatcherTests
         var dir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "cdeexcl", "t"));
         var m = ForHost(dir).ForScanRoot(dir + Path.DirectorySeparatorChar);
         Assert.That(m.IsExcluded(Path.Combine(dir, "x")), Is.False);
+    }
+
+    [Test]
+    public void BareName_MatchesAtAnyDepth_AndEverythingUnderIt()
+    {
+        var m = Linux("node_modules");
+        Assert.That(m.IsExcluded("/src/node_modules"), Is.True);
+        Assert.That(m.IsExcluded("/src/a/b/node_modules"), Is.True);
+        Assert.That(m.IsExcluded("/src/a/node_modules/pkg/lib"), Is.True);
+        Assert.That(m.IsExcluded("/src/a/b"), Is.False);
+    }
+
+    [Test]
+    public void BareName_MatchesWholeSegmentOnly()
+    {
+        var m = Linux(".git");
+        Assert.That(m.IsExcluded("/src/.github"), Is.False);
+        Assert.That(m.IsExcluded("/src/my.git"), Is.False);
+        Assert.That(m.IsExcluded("/src/.git"), Is.True);
+    }
+
+    [Test]
+    public void BareName_StarMatchesWithinTheName()
+    {
+        var m = Linux("*.tmp");
+        Assert.That(m.IsExcluded("/src/a/build.tmp"), Is.True);
+        Assert.That(m.IsExcluded("/src/a/build.tmpx"), Is.False);
+    }
+
+    [Test]
+    public void BareName_CaseRulesFollowTheOs()
+    {
+        Assert.That(Linux("node_modules").IsExcluded("/src/Node_Modules"), Is.False);
+        Assert.That(Windows("node_modules").IsExcluded(@"C:\src\Node_Modules\x"), Is.True);
+    }
+
+    [Test]
+    public void BareName_Windows_SeparatorAgnostic()
+    {
+        Assert.That(Windows(".git").IsExcluded(@"C:\src\a/.git\objects"), Is.True);
+    }
+
+    [Test]
+    public void BareName_IsNotEmpty_AndCoexistsWithAbsolutePatterns()
+    {
+        var m = Linux("node_modules", "/tmp");
+        Assert.That(m.IsEmpty, Is.False);
+        Assert.That(Linux("node_modules").IsEmpty, Is.False);
+        Assert.That(m.IsExcluded("/tmp/x"), Is.True);
+        Assert.That(m.IsExcluded("/a/node_modules"), Is.True);
+    }
+
+    [Test]
+    public void BareName_ScanRootWithThatName_IsNeverExcluded_ButItsDescendantsOfThatNameAre()
+    {
+        var m = Linux("node_modules").ForScanRoot("/work/node_modules");
+        Assert.That(m.IsExcluded("/work/node_modules"), Is.False);
+        Assert.That(m.IsExcluded("/work/node_modules/src"), Is.False);
+        Assert.That(m.IsExcluded("/work/node_modules/src/node_modules"), Is.True);
+    }
+
+    [Test]
+    public void BareName_AncestorOfRootWithThatName_DoesNotExcludeTheScan()
+    {
+        var m = Linux("node_modules").ForScanRoot("/work/node_modules/pkg/");
+        Assert.That(m.IsExcluded("/work/node_modules/pkg/lib"), Is.False);
+        Assert.That(m.IsExcluded("/work/node_modules/pkg/lib/node_modules"), Is.True);
+    }
+
+    [Test]
+    public void BareName_PatternWithSeparatorInsideRelativePath_StillIgnored()
+    {
+        Assert.That(Linux("a/node_modules").IsExcluded("/x/a/node_modules"), Is.False);
     }
 
     [Test]

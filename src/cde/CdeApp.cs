@@ -33,7 +33,7 @@ public sealed class CdeApp(
 
     public Task CreateCacheAsync(ScanOptions opts) =>
         messageBus.Send(new CreateCacheCommand(opts.Path)
-        { Description = opts.Description, FollowJunctions = opts.FollowJunctions, ExcludePaths = opts.Exclude?.ToList() }, cancellationToken: cancellation.Token);
+        { Description = opts.Description, FollowJunctions = opts.FollowJunctions, ExcludePaths = opts.Exclude?.ToList(), Verbose = opts.Verbose }, cancellationToken: cancellation.Token);
 
     /// <param name="catalogPath">The one .cdex catalog to hash, or null for every catalog found.</param>
     public Task HashCatalogAsync(string catalogPath = null) =>
