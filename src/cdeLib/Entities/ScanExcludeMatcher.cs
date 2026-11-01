@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using cdeLib.Infrastructure.Config;
 using Serilog;
 
@@ -77,10 +78,16 @@ public sealed class ScanExcludeMatcher
         return new ScanExcludeMatcher(all, isWindows);
     }
 
-    /// <summary>The matcher for the running OS from the Scan config; a null section means no user excludes, defaults on.</summary>
-    public static ScanExcludeMatcher ForScanConfig(ScanSection scan)
+    /// <summary>
+    /// The matcher for the running OS from the Scan config; a null section means no user excludes, defaults on.
+    /// <paramref name="extraPatterns"/> (the per-run <c>--exclude</c> option) add to the configured patterns.
+    /// </summary>
+    public static ScanExcludeMatcher ForScanConfig(ScanSection scan, IEnumerable<string> extraPatterns = null)
     {
-        return Create(scan?.ExcludePaths, scan?.UseDefaultExcludes ?? true,
+        var user = extraPatterns == null
+            ? scan?.ExcludePaths
+            : (scan?.ExcludePaths ?? Enumerable.Empty<string>()).Concat(extraPatterns);
+        return Create(user, scan?.UseDefaultExcludes ?? true,
             OperatingSystem.IsWindows(), OperatingSystem.IsLinux());
     }
 

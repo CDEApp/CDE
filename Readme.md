@@ -266,6 +266,7 @@ cde find system.dll
 [`-maxTime`](#parameter-options)
 [`--desc`](#parameter-options)
 [`--follow-junctions`](#parameter-options)
+[`--exclude`](#parameter-options)
 
 This is the mode of operation that creates and updates catalog files.
 
@@ -277,6 +278,12 @@ By default cde records directory junctions and symbolic links (reparse points) i
 
 ```
   cde scan C:\ --follow-junctions
+```
+
+Pass `--exclude <path>` to skip a folder for this scan only. Repeat it for several folders. These add to `AppConfig.Scan.ExcludePaths` and the default excludes and follow the same rules (see `AppConfig.Scan.ExcludePaths` below). Nothing is saved in the catalog or the config.
+
+```
+  cde scan /data --exclude /data/cache --exclude "/data/*/tmp"
 ```
 
 ### cde find String
@@ -499,6 +506,7 @@ For each file converted cde prints the source and destination file names, their 
 |     | `-include {Regex}`                                                                                              | A filter to include only entries that match these Regexes for processing.                                                                                                                                                                                                                                     |
 |     | `--desc {Text}`                                                                                                 | (scan) Description text to store in the catalog file.                                                                                                                                                                                                                                                          |
 |     | `--follow-junctions`                                                                                            | (scan) Descend into directory junctions and symbolic links (reparse points). Off by default; reparse points are recorded but not followed, avoiding scan cycles and duplicated content.                                                                                                                        |
+|     | `--exclude {Path}`                                                                                              | (scan) Folder to skip for this scan only. Repeatable. Adds to `AppConfig.Scan.ExcludePaths` and the default excludes; same pattern rules.                                                                                                                                                                       |
 
 ##### Date Time Format for parameters
 
