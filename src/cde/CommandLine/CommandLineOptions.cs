@@ -18,6 +18,11 @@ public class ScanOptions
         Default = false,
         HelpText = "[DANGER NOT EXTENSIVELY TESTED] Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
     public bool FollowJunctions { get; [UsedImplicitly] set; }
+
+    [Option('v', "verbose",
+        Default = false,
+        HelpText = "List the folders that could not be read (access denied) after the scan.")]
+    public bool Verbose { get; [UsedImplicitly] set; }
 }
 
 [Verb("find",

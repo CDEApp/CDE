@@ -17,4 +17,7 @@ public record CreateCacheCommand : IRequest
     /// in the catalog but not descended into, avoiding cycles and duplicate content.
     /// </summary>
     public bool FollowJunctions { get; set; }
+
+    /// <summary>When true, the scan summary also lists the access-denied folders.</summary>
+    public bool Verbose { get; set; }
 }

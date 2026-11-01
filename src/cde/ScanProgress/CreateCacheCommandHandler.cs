@@ -75,6 +75,11 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             ScanProgressConsole.EnqueueMessage($"Saved to {cdexName}");
 
             ReportScanSummary(re, cdexName, sw);
+            foreach (var line in ScanSkipSummary.Lines(re.ExcludedFolderCount, re.AccessDeniedFolderCount,
+                         re.PathsWithUnauthorisedExceptions, request.Verbose))
+            {
+                ScanProgressConsole.EnqueueMessage(line);
+            }
         }
         catch (ArgumentException ex)
         {
