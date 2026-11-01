@@ -69,7 +69,11 @@ public class RootEntryNonWindowsNamingTests
     {
         var (fileName, _, _) = Name("/mnt/we ird: \\ $ * ? \" < > | \u0001 name");
 
-        Assert.That(fileName.IndexOfAny(Path.GetInvalidFileNameChars()), Is.EqualTo(-1), fileName);
+        // The characters that are invalid in a file name on Windows, which include those on Linux and macOS: a fixed
+        // list, so the test proves the same thing on every host.
+        char[] invalidAnywhere = ['\\', '/', ':', '*', '?', '"', '<', '>', '|', '\0', '\u0001', '\t', '\n'];
+        Assert.That(fileName.IndexOfAny(invalidAnywhere), Is.EqualTo(-1), fileName);
+        Assert.That(fileName, Does.Contain("we ird"), "spaces are kept");
     }
 
     [Test]
@@ -103,6 +107,13 @@ public class RootEntryNonWindowsNamingTests
     public void Known_limitation_an_underscore_and_a_slash_give_the_same_name()
     {
         Assert.That(Name("/mnt/data_x").FileName, Is.EqualTo(Name("/mnt/data/x").FileName));
+    }
+
+    // Also accepted in #155: the path "/" is named "root" as the issue specifies, so it shares a name with "/root".
+    [Test]
+    public void Known_limitation_the_root_path_and_a_folder_called_root_give_the_same_name()
+    {
+        Assert.That(Name("/").FileName, Is.EqualTo(Name("/root").FileName));
     }
 
     [Test]

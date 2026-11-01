@@ -205,7 +205,7 @@ cd cde-2.1.0-linux-x64/cde
   | `/media/jason/USB1` | `media_jason_USB1.cdex` |
   | `/var/log` | `var_log.cdex` |
 
-  There is no mount-point detection. A rescan of the same path replaces its own catalog. One limit: `/mnt/data_x` and `/mnt/data/x` both give `mnt_data_x`, because `/` and `_` cannot be told apart; that is rare, and you can give the second one another name by renaming its catalog file. Windows names do not change.
+  There is no mount-point detection. A rescan of the same path replaces its own catalog. Two limits: `/mnt/data_x` and `/mnt/data/x` both give `mnt_data_x`, because `/` and `_` cannot be told apart, and scanning `/` and then `/root` both give `root.cdex`. Both are rare; the later scan replaces the earlier catalog, so rename the earlier catalog file first if you want to keep both. Windows names do not change.
 
 - All catalog files in the current directory, or one directory below current directory will be loaded by cde or cdeWin when they are started.
 
