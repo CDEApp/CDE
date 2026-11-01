@@ -9,4 +9,7 @@ public class HashCatalogCommand : IRequest
     /// (see <see cref="HashCatalogTargets"/>).
     /// </summary>
     public string CatalogPath { get; init; }
+
+    /// <summary>Where each file hashed goes as a record (<c>--json</c> / <c>--csv</c>); null writes nothing.</summary>
+    public Output.IRecordWriter Output { get; init; }
 }

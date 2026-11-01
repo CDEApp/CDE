@@ -4,6 +4,7 @@ using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
 using cdeLib.Infrastructure;
+using cdeLib.Output;
 
 namespace cdeLib.Duplicates;
 
@@ -115,13 +116,24 @@ public sealed class ColumnarDuplicateFinder
         return moreThanOne;
     }
 
-    public void FindDuplicates(IReadOnlyList<ColumnarCatalogReader> readers)
+    /// <param name="readers">The catalogs to search.</param>
+    /// <param name="output">Where the files of each set go as records, numbered from 1 by set (#173); null writes
+    /// their paths to the console.</param>
+    public void FindDuplicates(IReadOnlyList<ColumnarCatalogReader> readers, IRecordWriter output = null)
     {
+        var group = 0L;
         foreach (var dupe in GetDuplicateSets(readers))
         {
             _logger.LogInfo("-------------------------------------- {0}", dupe.Size);
+            group++;
             foreach (var e in dupe.Entries)
-                Console.WriteLine("{0}", readers[e.Catalog].FullPath(e.Index));
+            {
+                var reader = readers[e.Catalog];
+                if (output == null) Console.WriteLine("{0}", reader.FullPath(e.Index));
+                else EntryRecords.WriteDuplicate(output, group, reader.FilePath, reader, e.Index);
+            }
         }
+
+        output?.Flush();
     }
 }

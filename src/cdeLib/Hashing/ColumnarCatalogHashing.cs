@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using cdeLib.Duplicates;
+using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Output;
 
 namespace cdeLib.Hashing;
 
@@ -18,7 +20,10 @@ public static class ColumnarCatalogHashing
     /// <param name="duplication">The hashing engine (its progress and status callbacks are used as set).</param>
     /// <param name="cdexFiles">The catalogs to hash; each is replaced by its hashed copy.</param>
     /// <param name="onSaving">Called with each catalog's path just before it is saved.</param>
-    public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving)
+    /// <param name="output">Receives a record for each file hashed in this run, with its new hash, before the catalogs are
+    /// saved (#173); null writes none. Files whose usable hash was already in the catalog are not repeated.</param>
+    public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
+        IRecordWriter output = null)
     {
         ArgumentNullException.ThrowIfNull(duplication);
         ArgumentNullException.ThrowIfNull(cdexFiles);
@@ -32,6 +37,7 @@ public static class ColumnarCatalogHashing
             }
 
             var updates = await duplication.ApplyHash(readers).ConfigureAwait(false);
+            if (output != null) WriteHashed(output, cdexFiles, readers, updates);
 
             // A catalog that fails to save does not stop the others: their hashes are expensive to redo.
             List<Exception> failures = null;
@@ -67,6 +73,23 @@ public static class ColumnarCatalogHashing
                 reader.Dispose();
             }
         }
+    }
+
+    // Streams one record per newly hashed file, straight from the updates, so nothing is collected in memory.
+    private static void WriteHashed(IRecordWriter output, IList<string> cdexFiles,
+        List<ColumnarCatalogReader> readers, ColumnarHashUpdates updates)
+    {
+        for (var c = 0; c < readers.Count; c++)
+        {
+            foreach (var update in updates.For(c))
+            {
+                if (!update.Flags.IsHashUsable()) continue;
+                EntryRecords.WriteHashed(output, cdexFiles[c], readers[c], update.Index, update.Hash,
+                    (update.Flags & Flags.PartialHash) == Flags.PartialHash);
+            }
+        }
+
+        output.Flush();
     }
 
     private static void TryDelete(string path)

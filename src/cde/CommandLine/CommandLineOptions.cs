@@ -107,7 +107,7 @@ public class MigrateOptions
 }
 
 [Verb("hash", HelpText = "Hash all catalogs in current directory, or one catalog")]
-public class HashOptions
+public class HashOptions : MachineOutputOptions
 {
     [Value(0, Required = false,
         HelpText = "Specific .cdex catalog to hash. If omitted, hashes every catalog in the current directory " +
@@ -116,7 +116,7 @@ public class HashOptions
 }
 
 [Verb("dupes", HelpText = "List all duplicate files (that already have hash computed")]
-public class DupesOptions;
+public class DupesOptions : MachineOutputOptions;
 
 [Verb("treedump1")]
 public class TreeDumpOptions;

@@ -675,10 +675,12 @@ public partial class Duplication
     /// <summary>
     /// Index-based equivalent of <see cref="FindDuplicates(IEnumerable{RootEntry})"/> that works directly
     /// over memory-mapped columnar readers without rebuilding a pointer tree. Output is identical.
+    /// With an <paramref name="output"/> the files of each set go to it as records instead of to the console (#173).
     /// </summary>
-    public void FindDuplicates(IReadOnlyList<Entities.Columnar.ColumnarCatalogReader> readers)
+    public void FindDuplicates(IReadOnlyList<Entities.Columnar.ColumnarCatalogReader> readers,
+        Output.IRecordWriter output = null)
     {
-        new ColumnarDuplicateFinder(_logger).FindDuplicates(readers);
+        new ColumnarDuplicateFinder(_logger).FindDuplicates(readers, output);
     }
 
     public List<KeyValuePair<ICommonEntry, List<PairDirEntry>>> GetDupePairs(IEnumerable<RootEntry> rootEntries)

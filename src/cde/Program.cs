@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
 using cdeLib;
+using cdeLib.Output;
 using CommandLine;
 using Serilog;
 using SerilogTimings;
@@ -67,6 +68,8 @@ public static class Program
 
     private static async Task<int> Main(string[] args)
     {
+        // With --json or --csv, standard output is for the data alone: send the rest of the console output to standard error.
+        if (MachineOutput.IsRequested(args)) MachineOutput.Redirect();
         if (!InitProgram(args))
         {
             return 1; // Exit with error code if initialization failed
@@ -113,17 +116,17 @@ public static class Program
     private static Task DispatchAsync(object options) => options switch
     {
         ScanOptions o => _app.CreateCacheAsync(o),
-        FindOptions o => RunSync(() => _app.RunFind(o.Value, "--find", o.Template, o.Filter)),
-        FindPathOptions o => RunSync(() => _app.RunFind(o.Value, "--findpath", o.Template, o.Filter)),
-        EverythingOptions o => RunSync(() => _app.RunFind(o.Value, FindService.ParamFind, o.Template, o.Filter, everything: true)),
-        GrepOptions o => RunSync(() => _app.RunFind(o.Value, "--grep", o.Template, o.Filter)),
-        GrepPathOptions o => RunSync(() => _app.RunFind(o.Value, "--greppath", o.Template, o.Filter)),
+        FindOptions o => RunFind(o, o.Value, "--find"),
+        FindPathOptions o => RunFind(o, o.Value, "--findpath"),
+        EverythingOptions o => RunFind(o, o.Value, FindService.ParamFind, everything: true),
+        GrepOptions o => RunFind(o, o.Value, "--grep"),
+        GrepPathOptions o => RunFind(o, o.Value, "--greppath"),
         ReplGrepPathOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrepPath, o.Value)),
         ReplGrepOptions o => RunSync(() => _app.FindRepl(FindService.ParamGrep, o.Value)),
         ReplFindOptions o => RunSync(() => _app.FindRepl(FindService.ParamFind, o.Value)),
         MigrateOptions o => RunSync(() => _app.Migrate(o)),
-        HashOptions o => _app.HashCatalogAsync(o.Path),
-        DupesOptions => _app.FindDupesAsync(),
+        HashOptions o => HashAsync(o),
+        DupesOptions o => DupesAsync(o),
         TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
         LoadWaitOptions => RunSync(_app.LoadWait),
         ReplOptions => RunSync(CdeApp.InvokeRepl),
@@ -131,6 +134,25 @@ public static class Program
         UpdateOptions o => _app.UpdateAsync(o),
         _ => Task.CompletedTask,
     };
+
+    // The format is resolved first, so a bad combination of options fails before anything is written.
+    private static Task RunFind(MatchOptions o, string value, string param, bool everything = false) => RunSync(() =>
+    {
+        using var output = MachineOutput.Open(o.ResolveFormat(), EntryRecords.FindColumns);
+        _app.RunFind(value, param, o.Template, o.Filter, everything, output?.Writer);
+    });
+
+    private static async Task HashAsync(HashOptions o)
+    {
+        using var output = MachineOutput.Open(o.ResolveFormat(), EntryRecords.HashColumns);
+        await _app.HashCatalogAsync(o.Path, output?.Writer).ConfigureAwait(false);
+    }
+
+    private static async Task DupesAsync(DupesOptions o)
+    {
+        using var output = MachineOutput.Open(o.ResolveFormat(), EntryRecords.DupesColumns);
+        await _app.FindDupesAsync(output?.Writer).ConfigureAwait(false);
+    }
 
     private static Task RunSync(Action action)
     {
