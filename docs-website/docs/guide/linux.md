@@ -31,7 +31,7 @@ cd cde-2.1.0-linux-x64/cde
   Other distributions have packages with similar names (WebKitGTK 4.1).
 - The archive is built on Ubuntu 22.04, so you need a glibc at least as new as that one.
 - Catalog files are named after the scan path. `cde scan /mnt/data` makes `mnt_data.cdex`. See [Catalog files](catalog-files.md).
-- `cde scan` skips some system folders by default. See [Configuration](../reference/configuration.md#default-excludes-on-linux).
+- `cde scan` skips some system folders by default. See [Configuration](../reference/configuration.md#default-excludes-on-linux-and-macos).
 
 :::caution Known limit
 In `cde-tauri` on Linux, **Open, Explore and Properties do nothing**, and neither do custom shell commands.
