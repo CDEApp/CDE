@@ -20,20 +20,20 @@ public interface IShellActions
     IReadOnlyList<CustomCommandOptions> CustomCommands { get; }
 
     /// <summary>Open a file/folder with its default shell association (<c>UseShellExecute</c>).</summary>
-    void Open(string fullPath);
+    ShellResult Open(string fullPath);
 
     /// <summary>Reveal an entry in the OS file explorer (selecting it).</summary>
-    void Explore(string fullPath);
+    ShellResult Explore(string fullPath);
 
     /// <summary>Show the OS "properties" dialog for an entry.</summary>
-    void ShowProperties(string fullPath);
+    ShellResult ShowProperties(string fullPath);
 
     /// <summary>
     /// Run a configured custom command (addressed by its index in <see cref="CustomCommands"/>)
     /// against a resolved local path, substituting the path tokens in its arguments template.
     /// </summary>
-    void RunCustomCommand(int commandIndex, string fullPath);
+    ShellResult RunCustomCommand(int commandIndex, string fullPath);
 
     /// <summary>Run an explicit custom command against a resolved local path (in-process callers).</summary>
-    void RunCustomCommand(CustomCommandOptions command, string fullPath);
+    ShellResult RunCustomCommand(CustomCommandOptions command, string fullPath);
 }

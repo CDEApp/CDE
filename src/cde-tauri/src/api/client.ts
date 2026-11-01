@@ -62,6 +62,28 @@ export class ApiError extends Error {
   }
 }
 
+/** A shell action the sidecar refused (501, unsupported here) or could not carry out (422); `message` is the reason. */
+export class ShellError extends Error {
+  constructor(
+    readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ShellError";
+  }
+}
+
+/** The reason in a failed /shell response: a JSON string, or the raw text when it is not JSON. */
+async function shellReason(r: Response): Promise<string> {
+  const text = await r.text();
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return typeof parsed === "string" ? parsed : text;
+  } catch {
+    return text;
+  }
+}
+
 /** A rescan that did not complete: refused up front, or failed mid-way. The catalog is unchanged. */
 export class RescanFailure extends Error {
   constructor(readonly error: RescanErrorBody) {
@@ -241,7 +263,7 @@ export class CdeApiClient {
       headers: this.headers({ "Content-Type": "application/json" }),
       body: JSON.stringify(req),
     });
-    if (!r.ok) throw new Error(`shell: ${r.status} ${await r.text()}`);
+    if (!r.ok) throw new ShellError(r.status, await shellReason(r));
   }
 
   async getUiState(): Promise<Record<string, unknown>> {

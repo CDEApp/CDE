@@ -31,9 +31,12 @@ public static class ApiComposition
             // Custom command list: config-sourced and injected; core never reads config itself.
             var customCommands = sp.GetRequiredService<IConfiguration>().GetSection("CustomCommands")
                 .Get<List<CustomCommandOptions>>() ?? [];
-            return OperatingSystem.IsWindows()
-                ? new WindowsShellActions(customCommands, logger)
-                : new NoopShellActions(customCommands, logger);
+            var overrides = sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Shell")
+                .Get<ShellCommandOverrides>() ?? new ShellCommandOverrides();
+            if (OperatingSystem.IsWindows()) return (IShellActions)new WindowsShellActions(customCommands, logger);
+            if (OperatingSystem.IsLinux()) return new LinuxShellActions(customCommands, overrides: overrides, logger: logger);
+            if (OperatingSystem.IsMacOS()) return new MacShellActions(customCommands, overrides: overrides, logger: logger);
+            return new NoopShellActions(customCommands, logger);
         });
 
         // Only the requested folder: the sidecar's current directory is wherever cde-tauri was launched.

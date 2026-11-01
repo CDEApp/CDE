@@ -29,18 +29,20 @@ public sealed class WindowsShellActions : IShellActions
 
     public IReadOnlyList<CustomCommandOptions> CustomCommands { get; }
 
-    public void Open(string fullPath)
+    public ShellResult Open(string fullPath) => Launch("Open", () =>
     {
-        var p = new Process { StartInfo = new ProcessStartInfo(fullPath) { UseShellExecute = true } };
+        using var p = new Process { StartInfo = new ProcessStartInfo(fullPath) { UseShellExecute = true } };
         p.Start();
-    }
+        return true;
+    });
 
-    public void Explore(string fullPath)
+    public ShellResult Explore(string fullPath) => Launch("Explore", () =>
     {
         Process.Start(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe"), "/select,\"" + fullPath + "\"");
-    }
+        return true;
+    });
 
-    public void ShowProperties(string fullPath)
+    public ShellResult ShowProperties(string fullPath) => Launch("Properties", () =>
     {
         var info = new SHELLEXECUTEINFO();
         info.cbSize = Marshal.SizeOf(info);
@@ -48,27 +50,45 @@ public sealed class WindowsShellActions : IShellActions
         info.lpFile = fullPath;
         info.nShow = SW_SHOW;
         info.fMask = SEE_MASK_INVOKEIDLIST;
-        ShellExecuteEx(ref info);
+        return ShellExecuteEx(ref info);
+    });
+
+    public ShellResult RunCustomCommand(int commandIndex, string fullPath)
+    {
+        if (commandIndex < 0 || commandIndex >= CustomCommands.Count)
+        {
+            return ShellResult.Failed($"no custom command {commandIndex}");
+        }
+
+        return RunCustomCommand(CustomCommands[commandIndex], fullPath);
     }
 
-    public void RunCustomCommand(int commandIndex, string fullPath)
+    public ShellResult RunCustomCommand(CustomCommandOptions command, string fullPath)
     {
-        if (commandIndex < 0 || commandIndex >= CustomCommands.Count) return;
-        RunCustomCommand(CustomCommands[commandIndex], fullPath);
-    }
+        if (command == null || string.IsNullOrEmpty(command.Command))
+        {
+            return ShellResult.Failed("the custom command has no program set");
+        }
 
-    public void RunCustomCommand(CustomCommandOptions command, string fullPath)
-    {
-        if (command == null || string.IsNullOrEmpty(command.Command)) return;
         var args = CommandTokens.Substitute(command.Arguments ?? "", fullPath);
-        try
+        return Launch(command.Command, () =>
         {
             Process.Start(command.Command, args);
-        }
-        catch (Win32Exception ex)
+            return true;
+        });
+    }
+
+    // A misconfigured command or a failed launch is reported, not thrown: it must not crash the host.
+    private ShellResult Launch(string what, Func<bool> start)
+    {
+        try
         {
-            // Log and continue — a misconfigured custom command must not crash the host.
-            _logger?.Warning("RunCustomCommand failed for {Command}: {Exception}", command.Command, ex.Message);
+            return start() ? ShellResult.Ok : ShellResult.Failed($"{what} failed");
+        }
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or ArgumentException)
+        {
+            _logger?.Warning("{Action} failed: {Exception}", what, ex.Message);
+            return ShellResult.Failed($"{what} failed: {ex.Message}");
         }
     }
 

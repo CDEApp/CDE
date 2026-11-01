@@ -125,6 +125,32 @@ Notes:
 - Each configured command appears as its own item in the context menus.
 - Earlier versions of cdeWin had a single fixed "Explore Alt" command configured under an `ExplorerAlt` section. If that setting is still present and no `CustomCommands` are configured, it is migrated automatically into a single custom command labelled "Explore Alt", so an existing tool is not lost.
 
+##### Linux and macOS (cde-tauri)
+
+On Linux and macOS cde-tauri runs custom commands without a shell: the `Arguments` template is split on whitespace (single or double quotes group words), then the tokens are replaced inside each argument, so a path with spaces or quotes always reaches the program as one argument.
+
+The Open, Explore and Properties items use these programs:
+
+| Verb       | Linux                                                                                  | macOS                                          |
+| ---------- | -------------------------------------------------------------------------------------- | ---------------------------------------------- |
+| Open       | `xdg-open <path>`                                                                      | `open <path>`                                  |
+| Explore    | file manager D-Bus `ShowItems` (selects the file); falls back to `xdg-open <folder>`   | `open -R <path>` (selects the file in Finder)  |
+| Properties | file manager D-Bus `ShowItemProperties`; no fallback                                   | Finder "information window" through `osascript` |
+
+When a verb cannot run, cde-tauri shows the reason in a toast. To use your own program for a verb, set it in `appsettings.json`; an empty `Command` keeps the built-in behaviour, and a failing override is reported without falling back:
+
+```json
+{
+  "AppConfig": {
+    "Shell": {
+      "OpenCommand": { "Command": "my-opener", "Arguments": "\"{path}\"" },
+      "ExploreCommand": { "Command": "thunar", "Arguments": "\"{dir}\"" },
+      "PropertiesCommand": { "Command": "", "Arguments": "{path}" }
+    }
+  }
+}
+```
+
 ### cde-tauri
 
 A second desktop frontend built with Tauri (a Rust shell) hosting a React/TypeScript WebView. It

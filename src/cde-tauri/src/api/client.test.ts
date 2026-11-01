@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildApiUrl, CdeApiClient, idSegment, MigrateFailure, refSegment } from "./client";
+import { buildApiUrl, CdeApiClient, idSegment, MigrateFailure, refSegment, ShellError } from "./client";
 import { refToString, type MigrateProgress } from "./types";
 
 describe("buildApiUrl", () => {
@@ -101,5 +101,30 @@ describe("migrateLegacy", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sse(["progress", { current: 1, total: 9, path: "a.cde" }])));
 
     expect(await client.migrateLegacy({})).toBeNull();
+  });
+});
+
+describe("shell", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+  const req = { ref: "1-2", action: "properties" as const };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("throws a ShellError carrying the status and the JSON reason", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("no file manager"), { status: 422 })));
+
+    await expect(client.shell(req)).rejects.toMatchObject({ name: "ShellError", status: 422, message: "no file manager" });
+  });
+
+  it("keeps a non-JSON body as the reason", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("plain", { status: 501 })));
+
+    await expect(client.shell(req)).rejects.toBeInstanceOf(ShellError);
+  });
+
+  it("resolves on 200", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 200 })));
+
+    await expect(client.shell(req)).resolves.toBeUndefined();
   });
 });
