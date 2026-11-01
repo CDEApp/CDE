@@ -15,6 +15,7 @@ using Serilog.Events;
 using SlimMessageBus;
 using SlimMessageBus.Host;
 using SlimMessageBus.Host.Memory;
+using AppSettingsLocator = cdeLib.Infrastructure.Config.AppSettingsLocator;
 
 namespace cde;
 
@@ -24,23 +25,17 @@ namespace cde;
 public static class AppContainerBuilder
 {
     /// <summary>
-    /// Builds the DI container. Returns false (and leaves <paramref name="container"/> null)
-    /// if appsettings.json is missing; otherwise returns true with the built container.
+    /// Builds the DI container and returns true. The settings come from the file <see cref="AppSettingsLocator"/> finds,
+    /// or from the built-in defaults, so a missing appsettings.json is no longer a reason to stop (#158).
     /// </summary>
     public static bool TryBuildContainer(string[] args, out IContainer container)
     {
-        container = null;
         ConfigureBootstrapLogger();
 
-        // Check for appsettings.json before attempting to build
-        if (!ConfigBuilder.AppSettingsExists())
-        {
-            WarnMissingConfig();
-            return false;
-        }
-
-        var config = ConfigBuilder.Build(args);
+        var config = ConfigBuilder.Build(args, new AppSettingsLocator(), out var location);
         ConfigureLogger(config);
+        // Said once the configured logger is up, so it shows only when logging is turned up (the default is Warning).
+        Log.Logger.Information("{ConfigurationInUse}", location.Describe());
 
         var services = new ServiceCollection();
         ConfigureMessageBus(services);
@@ -97,16 +92,6 @@ public static class AppContainerBuilder
         builder.RegisterType<CdeApp>();
         // Handlers are registered by SlimMessageBus AutoDeclareFrom (addServicesFromAssembly: true)
         // and surfaced into Autofac via builder.Populate(services) — no explicit handler registration needed.
-    }
-
-    private static void WarnMissingConfig()
-    {
-        var currentDir = Directory.GetCurrentDirectory();
-        Log.Logger.Warning(
-            "Configuration file '{FileName}' not found in '{Directory}'",
-            ConfigBuilder.AppSettingsFileName, currentDir);
-        Log.Logger.Warning(
-            "Please ensure appsettings.json is in the same directory as the executable");
     }
 
     private static void ConfigureBootstrapLogger()

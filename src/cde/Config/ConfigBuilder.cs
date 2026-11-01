@@ -1,24 +1,24 @@
-﻿using System.IO;
+﻿using cdeLib.Infrastructure.Config;
 using Microsoft.Extensions.Configuration;
 
 namespace cde.Config;
 
 public static class ConfigBuilder
 {
-    public const string AppSettingsFileName = "appsettings.json";
+    public const string AppSettingsFileName = AppSettingsLocator.FileName;
 
-    public static bool AppSettingsExists()
-    {
-        var path = Path.Combine(Directory.GetCurrentDirectory(), AppSettingsFileName);
-        return File.Exists(path);
-    }
+    public static IConfigurationRoot Build(string[] args) => Build(args, new AppSettingsLocator(), out _);
 
-    public static IConfigurationRoot Build(string[] args)
+    /// <summary>
+    /// The settings from the file the locator finds (the config folder, then the current directory, then the
+    /// executable's folder; the default is written when there is none), with the command line on top. When the default
+    /// cannot be written the built-in defaults are used, so a missing file is never an error (#158).
+    /// </summary>
+    public static IConfigurationRoot Build(string[] args, AppSettingsLocator locator, out ConfigLocation location)
     {
+        location = locator.Locate();
         return new ConfigurationBuilder()
-            .SetBasePath(Directory
-                .GetCurrentDirectory()) // required for a single file application, or it goes hunting in the temp folder when it extracts.
-            .AddJsonFile(AppSettingsFileName, optional: true, reloadOnChange: true)
+            .Add(AppSettingsLocator.CreateSource(location, reloadOnChange: true)) // an absolute file, so no base path is needed
             .AddCommandLine(args)
             .Build();
     }

@@ -176,7 +176,8 @@ describe("stage-release-linux.sh", () => {
 });
 
 // A staged folder with a fake cde that prints its version the way the real one does ("cde <version>+<commit>").
-// Like the real cde, it reads appsettings.json from the current directory and exits without it, even for --version.
+// A stand-in for cde that needs appsettings.json in its working directory, as older builds did: the script runs cde from
+// its own folder, which keeps the check independent of the runner's own config folder.
 const stagedRoot = (cdeVersionLine) => {
   put("root/cde/appsettings.json", "{}");
   put(

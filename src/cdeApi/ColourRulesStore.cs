@@ -5,7 +5,7 @@ namespace cdeApi;
 
 /// <summary>
 /// Persists the user's directory-entry colour rules as plain text in a single user-scoped file
-/// (<c>%APPDATA%\cde\colour-rules.txt</c>, next to <c>ui-state.json</c>). The text is stored exactly as
+/// (<c>colour-rules.txt</c> in the config folder, next to <c>ui-state.json</c>). The text is stored exactly as
 /// typed (invalid lines included — the frontend skips them when styling). This class is also the single
 /// source of the default rules text: <see cref="Read"/> creates the file from it when missing, and
 /// <c>GET /colour-rules/defaults</c> serves it to the frontend's "Reset to defaults".
@@ -16,8 +16,7 @@ public sealed class ColourRulesStore
     private readonly object _gate = new();
 
     public ColourRulesStore()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "cde", "colour-rules.txt"))
+        : this(Path.Combine(ApiConfiguration.ConfigFolder(), "colour-rules.txt"))
     {
     }
 

@@ -147,16 +147,16 @@ jobs:
             10.0.x
       - name: Publish cde and cdeApi for linux-x64
         run: ./build.sh PublishRelease --self-contained true --runtime linux-x64
-      # cde reads appsettings.json from the current directory and exits without it, even for --version.
+      # cde finds its appsettings.json itself; the one beside it is the last place it looks.
       - name: cde starts
         working-directory: artifacts/cde
         run: |
           chmod +x cde
           ./cde --version | sed -n 1p
           ./cde --help | grep -E '^  everything '
-      # A real scan and search, as a user would run them. cde reads appsettings.json from the current directory, so
-      # the catalog lands in artifacts/cde too. On Linux the catalog is named after the scanned path (#155): the path
-      # without its leading "/", with every "/" replaced by "_".
+      # A real scan and search, as a user would run them. The scan writes its catalog into the current directory,
+      # artifacts/cde. On Linux the catalog is named after the scanned path (#155): the path without its leading "/",
+      # with every "/" replaced by "_".
       - name: cde scans and searches a folder
         working-directory: artifacts/cde
         run: |
@@ -184,9 +184,46 @@ jobs:
           fi
           grep -F "(at position 3)" "$RUNNER_TEMP/bad.err"
           test ! -s "$RUNNER_TEMP/bad.out"
+      # With no appsettings.json anywhere, cde starts from any directory on its built-in defaults and writes the default
+      # into the config folder (#158). The single-file cde is copied on its own, so there is no file beside it either,
+      # and CDE_CONFIG_DIR keeps the runner's home folder out of it.
+      - name: cde writes its default settings when there are none
+        run: |
+          bin="$RUNNER_TEMP/cde-alone"
+          mkdir -p "$bin" "$RUNNER_TEMP/elsewhere"
+          cp artifacts/cde/cde "$bin/cde"
+          export CDE_CONFIG_DIR="$RUNNER_TEMP/cde-config"
+          cd "$RUNNER_TEMP/elsewhere"
+
+          "$bin/cde" --version | sed -n 1p
+          test -f "$CDE_CONFIG_DIR/appsettings.json"
+          grep -F '"FirstPassSizeInBytes": 65536' "$CDE_CONFIG_DIR/appsettings.json"
+          if grep -qF '"Seq"' "$CDE_CONFIG_DIR/appsettings.json"; then
+            echo "::error::The default settings must not have a Seq sink."
+            exit 1
+          fi
+
+          # A second run reads the file and does not write it again.
+          before="$(stat -c %Y "$CDE_CONFIG_DIR/appsettings.json")"
+          "$bin/cde" --version > /dev/null
+          test "$(stat -c %Y "$CDE_CONFIG_DIR/appsettings.json")" = "$before"
+
+          # Without CDE_CONFIG_DIR the config folder is ~/.config/cde (or $XDG_CONFIG_HOME/cde), and it need not exist
+          # yet: a new account or a bare container has no ~/.config, and the default is still written.
+          fresh="$RUNNER_TEMP/fresh-home"
+          mkdir -p "$fresh"
+          unset CDE_CONFIG_DIR XDG_CONFIG_HOME
+          HOME="$fresh" "$bin/cde" --version | sed -n 1p
+          test -f "$fresh/.config/cde/appsettings.json"
+          xdg="$RUNNER_TEMP/xdg-home"
+          mkdir -p "$xdg"
+          XDG_CONFIG_HOME="$xdg" HOME="$RUNNER_TEMP/other-home" "$bin/cde" --version | sed -n 1p
+          test -f "$xdg/cde/appsettings.json"
       # The sidecar prints {"url", "token"} on its first stdout line once it is listening.
       - name: cdeApi starts and prints its handshake
         working-directory: artifacts/cdeApi
+        env:
+          CDE_CONFIG_DIR: ${{ runner.temp }}/cdeapi-config
         run: |
           chmod +x cdeApi
           ./cdeApi > "$RUNNER_TEMP/api.out" 2> "$RUNNER_TEMP/api.err" &

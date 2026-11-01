@@ -169,7 +169,7 @@ Entry (base class)
 
 ### Configuration
 
-- **appsettings.json** - Application configuration
+- **appsettings.json** - Application configuration, shared by `cde` and `cdeApi`. Looked up in the config folder (`~/.config/cde`, `%APPDATA%\cde`, or `$CDE_CONFIG_DIR`), then the current directory, then the executable's folder; the first file found is used alone. A default is written to the config folder when none exists (`AppSettingsLocator`, #158)
   - `AppConfig.Display.ProgressUpdateInterval` - Progress reporting frequency (default: 5000 entries)
   - `AppConfig.Hashing.FirstPassSizeInBytes` - Partial hash size (default: 65536 bytes)
   - `AppConfig.Hashing.DegreesOfParallelism` - Parallel hashing threads per file system (default: 2)
