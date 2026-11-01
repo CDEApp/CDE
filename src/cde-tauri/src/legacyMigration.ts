@@ -7,7 +7,9 @@ import { mb } from "./format";
 
 // Windows paths: compare case-insensitively, ignoring separators style and a trailing separator.
 function folderKey(path: string): string {
-  return path.replace(/\//g, "\\").replace(/\\+$/, "").toLowerCase();
+  let key = path.replace(/\//g, "\\");
+  while (key.endsWith("\\")) key = key.slice(0, -1);
+  return key.toLowerCase();
 }
 
 export function sameFolder(a: string, b: string): boolean {

@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Collections.Generic;
 
 namespace cde.ScanProgress;
@@ -22,11 +23,11 @@ public static class ScanSkipSummary
         }
 
         var parts = new List<string>(3);
-        if (excluded > 0) parts.Add($"{excluded} excluded");
-        if (accessDenied > 0) parts.Add($"{accessDenied} access denied");
-        if (unreadable > 0) parts.Add($"{unreadable} unreadable");
+        if (excluded > 0) parts.Add($"{excluded.ToString(CultureInfo.InvariantCulture)} excluded");
+        if (accessDenied > 0) parts.Add($"{accessDenied.ToString(CultureInfo.InvariantCulture)} access denied");
+        if (unreadable > 0) parts.Add($"{unreadable.ToString(CultureInfo.InvariantCulture)} unreadable");
 
-        lines.Add($"skipped {total} {(total == 1 ? "folder" : "folders")}: {string.Join(", ", parts)}");
+        lines.Add($"skipped {total.ToString(CultureInfo.InvariantCulture)} {(total == 1 ? "folder" : "folders")}: {string.Join(", ", parts)}");
         if (verbose && unreadablePaths != null)
         {
             foreach (var path in unreadablePaths)
