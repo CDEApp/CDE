@@ -17,6 +17,12 @@ public sealed class ScanExcludeMatcher
     private readonly string[][] _patterns;
     private readonly bool _isWindows;
 
+    private ScanExcludeMatcher(string[][] patterns, bool isWindows)
+    {
+        _patterns = patterns;
+        _isWindows = isWindows;
+    }
+
     /// <param name="patterns">Absolute path patterns; blank entries are skipped, non-absolute ones are logged and skipped.</param>
     /// <param name="isWindows">Selects the case and separator rules; injectable so every OS's rules can be tested anywhere.</param>
     public ScanExcludeMatcher(IEnumerable<string> patterns, bool isWindows)
@@ -51,6 +57,30 @@ public sealed class ScanExcludeMatcher
     public static ScanExcludeMatcher ForCurrentOs(IEnumerable<string> patterns)
     {
         return new ScanExcludeMatcher(patterns, OperatingSystem.IsWindows());
+    }
+
+    /// <summary>
+    /// The matcher to use for one scan: patterns that match the scan root or an ancestor of it are dropped,
+    /// because the explicitly named root is the user's intent. Patterns strictly below the root still apply.
+    /// Done once per scan so the per-directory check stays allocation-free.
+    /// </summary>
+    public ScanExcludeMatcher ForScanRoot(string scanRoot)
+    {
+        if (_patterns.Length == 0 || string.IsNullOrEmpty(scanRoot))
+        {
+            return this;
+        }
+
+        var kept = new List<string[]>(_patterns.Length);
+        foreach (var pattern in _patterns)
+        {
+            if (!MatchesPrefix(scanRoot.AsSpan(), pattern))
+            {
+                kept.Add(pattern);
+            }
+        }
+
+        return kept.Count == _patterns.Length ? this : new ScanExcludeMatcher(kept.ToArray(), _isWindows);
     }
 
     public bool IsEmpty => _patterns.Length == 0;

@@ -98,6 +98,36 @@ public class ScanExcludeMatcherTests
     }
 
     [Test]
+    public void ForScanRoot_PatternEqualToRoot_IsDropped()
+    {
+        var m = Linux("/tmp").ForScanRoot("/tmp");
+        Assert.That(m.IsExcluded("/tmp/projects"), Is.False);
+    }
+
+    [Test]
+    public void ForScanRoot_PatternAboveRoot_IsDropped_ButDeeperPatternsStay()
+    {
+        var m = Linux("/tmp", "/tmp/projects/cache", "/tmp/other").ForScanRoot("/tmp/projects");
+        Assert.That(m.IsExcluded("/tmp/projects/src"), Is.False);
+        Assert.That(m.IsExcluded("/tmp/projects/cache"), Is.True);
+        Assert.That(m.IsExcluded("/tmp/projects/cache/x"), Is.True);
+    }
+
+    [Test]
+    public void ForScanRoot_StarPatternMatchingRoot_IsDropped()
+    {
+        var m = Linux("/home/*").ForScanRoot("/home/jason");
+        Assert.That(m.IsExcluded("/home/jason/docs"), Is.False);
+    }
+
+    [Test]
+    public void ForScanRoot_UnrelatedPatterns_AreKept()
+    {
+        var m = Linux("/proc").ForScanRoot("/tmp");
+        Assert.That(m.IsExcluded("/proc"), Is.True);
+    }
+
+    [Test]
     public void None_ExcludesNothing()
     {
         Assert.That(ScanExcludeMatcher.None.IsExcluded("/tmp"), Is.False);

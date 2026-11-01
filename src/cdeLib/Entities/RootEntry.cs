@@ -308,13 +308,13 @@ public sealed class RootEntry : object, ICommonEntry
 
     /// <summary>
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
-    /// Folders matched by <paramref name="excludes"/> are recorded but not descended into; the start path is never checked.
+    /// Folders matched by <paramref name="excludes"/> are recorded but not descended into; the start path, and any pattern covering it or its ancestors, never applies.
     /// </summary>
     public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default,
         ScanExcludeMatcher excludes = null)
     {
         FollowJunctions = followJunctions;
-        excludes ??= ScanExcludeMatcher.None;
+        excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));

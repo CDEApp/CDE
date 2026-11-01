@@ -271,15 +271,26 @@ public class ScanPipelineScanTests
     }
 
     [Test]
-    public void Scan_ExcludeMatchingTheScanRoot_StillScansTheRoot()
+    public void Scan_ExcludeMatchingTheScanRoot_ScansTheWholeTree()
     {
         BuildExcludeTree();
         var rels = Flatten(Scan(_root, excludes: Excluding(_root))).Select(f => f.Rel).ToList();
 
-        // The root is listed; its subfolders are found while descending, match the pattern, and stay empty.
         Assert.That(rels, Does.Contain("r.txt"));
-        Assert.That(rels, Does.Contain("skip"));
-        Assert.That(rels, Does.Not.Contain("keep/k.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+        Assert.That(rels, Does.Contain("skip/s.txt"));
+    }
+
+    [Test]
+    public void Scan_RootBelowExcludedPattern_StillScansButDeeperPatternApplies()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(Path.Combine(_root, "skip"),
+            excludes: Excluding(_root, Path.Combine(_root, "skip", "inner")))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("s.txt"));
+        Assert.That(rels, Does.Contain("inner"));
+        Assert.That(rels, Does.Not.Contain("inner/i.txt"));
     }
 
     [Test]
