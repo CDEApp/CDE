@@ -96,7 +96,8 @@ public partial class Duplication
         }
         catch (Exception ex)
         {
-            _logger.LogException(ex, "Error in {0}", nameof(ApplyHash));
+            RecordUnexpectedFailure(ex, nameof(ApplyHash));
+            ReportFileErrors();
             return Updates(readers, candidates);
         }
 
@@ -111,6 +112,7 @@ public partial class Duplication
 
         timer.Stop();
         ReportHashingDone(timer);
+        ReportFileErrors();
         return Updates(readers, candidates);
     }
 
@@ -352,7 +354,7 @@ public partial class Duplication
         }
         catch (Exception ex)
         {
-            _logger.LogException(ex, "Error in {0}", nameof(CompleteFullHashesAsync));
+            RecordUnexpectedFailure(ex, nameof(CompleteFullHashesAsync));
         }
     }
 

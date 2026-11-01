@@ -28,7 +28,7 @@ public class HashHelper
     /// bytesToHash is zero or negative. A zero-length partial hash would be the hash of empty input for every
     /// file (all colliding), so a bad first-pass size fails fast instead of producing meaningless hashes.
     /// </exception>
-    public async ValueTask<HashResponse> GetHashResponseFromFile(string filename, int? bytesToHash)
+    public virtual async ValueTask<HashResponse> GetHashResponseFromFile(string filename, int? bytesToHash)
     {
         if (bytesToHash <= 0)
         {

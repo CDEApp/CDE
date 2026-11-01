@@ -237,7 +237,8 @@ public class HashColumnarEquivalenceTests
         File.SetAttributes(files[0], FileAttributes.ReadOnly);
         try
         {
-            await Assert.ThrowsAsync<IOException>(() => ColumnarCatalogHashing.HashAndSave(NewDuplication(), files, null));
+            var ex = await Assert.ThrowsAsync<HashFailedException>(() => ColumnarCatalogHashing.HashAndSave(NewDuplication(), files, null));
+            Assert.That(ex.Message, Does.StartWith("Hash FAILED: ").And.Contain("failed to save a hashed catalog"));
 
             Assert.That(File.ReadAllBytes(files[0]), Is.EqualTo(original), "the unsaved catalog is left as it was");
             Assert.That(File.Exists(files[0] + ".tmp"), Is.False);
