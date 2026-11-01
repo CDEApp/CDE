@@ -597,7 +597,7 @@ There are 5 values in `AppConfig` that can be modified to change cde behaviour.
   - It applies to `cde scan`, and to creating and rescanning catalogs in cde-tauri. Nothing is stored in the catalog, and a rescan uses the settings at the time of the rescan, so edit the file and rescan to change what is skipped.
 
 - `AppConfig.Scan.UseDefaultExcludes` which defaults to true.
-  - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/lost+found` and `/home/*/.cache`. `ExcludePaths` adds to this list.
+  - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/var/spool`, `/var/lock`, `/lost+found` and `/home/*/.cache`. Note `/var/spool` can hold user mail; scan it explicitly if you want it. `ExcludePaths` adds to this list.
   - Set it to false to scan those folders. It has no effect on Windows and macOS, which have no built-in list.
 
 ### Catalog file sizes and memory usage
