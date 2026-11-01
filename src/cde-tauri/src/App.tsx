@@ -497,7 +497,7 @@ export default function App() {
           });
           finished = result !== null;
           entries = result?.entries ?? 0;
-          skipped = skipSummary(result?.excludedFolderCount, result?.accessDeniedFolderCount);
+          skipped = skipSummary(result?.excludedFolderCount, result?.accessDeniedFolderCount, result?.unreadableFolderCount);
           if (!finished) {
             // Cancelled. If the cancel lost the race with the swap the catalog did change: detect that.
             try {
@@ -654,7 +654,7 @@ export default function App() {
 
         // Phase 2: the catalog exists. Refresh the lists only: ids, tree state and the Directory tab stay as they are.
         const done = result;
-        const skipped = skipSummary(done.excludedFolderCount, done.accessDeniedFolderCount);
+        const skipped = skipSummary(done.excludedFolderCount, done.accessDeniedFolderCount, done.unreadableFolderCount);
         const toastId = `new-catalog-${done.catalogId}-${id}`;
         let refreshed = true;
         try {

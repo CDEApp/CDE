@@ -162,15 +162,22 @@ describe("skipSummary", () => {
   });
 
   it("matches the cde scan wording", () => {
-    expect(skipSummary(9, 5)).toBe("skipped 14 folders: 9 excluded, 5 access denied");
+    expect(skipSummary(9, 3, 2)).toBe("skipped 14 folders: 9 excluded, 3 access denied, 2 unreadable");
+  });
+
+  it("omits zero parts", () => {
+    expect(skipSummary(9, 0, 0)).toBe("skipped 9 folders: 9 excluded");
+    expect(skipSummary(0, 4, 0)).toBe("skipped 4 folders: 4 access denied");
+    expect(skipSummary(5, 0, 1)).toBe("skipped 6 folders: 5 excluded, 1 unreadable");
   });
 
   it("singularises a single skipped folder", () => {
-    expect(skipSummary(1, 0)).toBe("skipped 1 folder: 1 excluded, 0 access denied");
-    expect(skipSummary(0, 1)).toBe("skipped 1 folder: 0 excluded, 1 access denied");
+    expect(skipSummary(1, 0, 0)).toBe("skipped 1 folder: 1 excluded");
+    expect(skipSummary(0, 1, 0)).toBe("skipped 1 folder: 1 access denied");
+    expect(skipSummary(0, 0, 1)).toBe("skipped 1 folder: 1 unreadable");
   });
 
   it("digit-groups large counts", () => {
-    expect(skipSummary(1500, 0, "en-US")).toBe("skipped 1,500 folders: 1,500 excluded, 0 access denied");
+    expect(skipSummary(1500, 0, 0, "en-US")).toBe("skipped 1,500 folders: 1,500 excluded");
   });
 });

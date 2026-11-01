@@ -43,4 +43,33 @@ public class WorkStealingTreeTraversalTests
 
         Assert.That(visited, Is.EqualTo(5));
     }
+
+    [Test]
+    public async Task TraverseAsync_ProcessorThrows_StopsOtherWorkersPromptly()
+    {
+        const int dirs = 100, filesPerDir = 200;
+        var root = new RootEntry { Children = new List<DirEntry>() };
+        for (var d = 0; d < dirs; d++)
+        {
+            var dir = new DirEntry(true) { Path = "d" + d, Children = new List<DirEntry>() };
+            for (var f = 0; f < filesPerDir; f++) dir.Children.Add(new DirEntry(false) { Path = "f" + f });
+            root.Children.Add(dir);
+        }
+
+        var traversal = new WorkStealingTreeTraversal(4);
+        var calls = 0;
+
+        async Task<bool> Process(ICommonEntry parent, ICommonEntry child)
+        {
+            var n = System.Threading.Interlocked.Increment(ref calls);
+            await Task.Yield();
+            System.Threading.Thread.SpinWait(5000);
+            if (n == 500) throw new InvalidOperationException("boom");
+            return true;
+        }
+
+        await Assert.ThatAsync(() => traversal.TraverseAsync([root], Process),
+            Throws.InvalidOperationException.With.Message.EqualTo("boom"));
+        Assert.That(calls, Is.LessThan(dirs * filesPerDir / 2), "other workers kept traversing after the failure");
+    }
 }

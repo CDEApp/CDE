@@ -46,9 +46,13 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public int ExcludedFolderCount { get; private set; }
 
-    /// <summary>Folders the last scan could not read (access denied or an IO error), listed in <see cref="PathsWithUnauthorisedExceptions"/> (#169). Scan-time only; never persisted.</summary>
+    /// <summary>Folders the last scan could not read because access was denied, listed in <see cref="PathsWithUnauthorisedExceptions"/> (#169). Scan-time only; never persisted.</summary>
     [IgnoreMember]
     public int AccessDeniedFolderCount { get; private set; }
+
+    /// <summary>Folders the last scan could not read for another reason (IO error, folder vanished, path too long), also listed in <see cref="PathsWithUnauthorisedExceptions"/>. Scan-time only; never persisted.</summary>
+    [IgnoreMember]
+    public int UnreadableFolderCount { get; private set; }
 
     [ProtoMember(4, IsRequired = true)]
     [Key(4)]
@@ -325,6 +329,7 @@ public sealed class RootEntry : object, ICommonEntry
         excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
         ExcludedFolderCount = 0;
         AccessDeniedFolderCount = 0;
+        UnreadableFolderCount = 0;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -477,7 +482,14 @@ public sealed class RootEntry : object, ICommonEntry
 
         Log.Logger.Warning(logMessage, directory, ex.Message);
         AddPathsWithUnauthorisedExceptions(directory);
-        AccessDeniedFolderCount++;
+        if (ex is UnauthorizedAccessException)
+        {
+            AccessDeniedFolderCount++;
+        }
+        else
+        {
+            UnreadableFolderCount++;
+        }
     }
 
     /// <summary>

@@ -134,6 +134,7 @@ public class CatalogSessionCreateTests
 
         Assert.That(result.ExcludedFolderCount, Is.EqualTo(1));
         Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(result.UnreadableFolderCount, Is.Zero);
     }
 
     [Test]
@@ -145,6 +146,7 @@ public class CatalogSessionCreateTests
 
         Assert.That(result.ExcludedFolderCount, Is.Zero);
         Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(result.UnreadableFolderCount, Is.Zero);
     }
 
     [Test]

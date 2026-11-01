@@ -243,6 +243,7 @@ public class ScanPipelineScanTests
         Assert.That(rels, Does.Not.Contain("denied/secret.txt"));
         Assert.That(re.PathsWithUnauthorisedExceptions, Is.EqualTo(new[] { denied }));
         Assert.That(re.AccessDeniedFolderCount, Is.EqualTo(1));
+        Assert.That(re.UnreadableFolderCount, Is.Zero);
         Assert.That(re.ExcludedFolderCount, Is.Zero);
     }
 
@@ -254,6 +255,7 @@ public class ScanPipelineScanTests
 
         Assert.That(re.ExcludedFolderCount, Is.EqualTo(2));
         Assert.That(re.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(re.UnreadableFolderCount, Is.Zero);
     }
 
     [Test]

@@ -25,7 +25,7 @@ public class ScanOptions
 
     [Option('v', "verbose",
         Default = false,
-        HelpText = "List the folders that could not be read (access denied) after the scan.")]
+        HelpText = "List the folders that could not be read (access denied or an IO error) after the scan.")]
     public bool Verbose { get; [UsedImplicitly] set; }
 }
 

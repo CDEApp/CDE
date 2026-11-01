@@ -18,6 +18,7 @@ public class WorkStealingTreeTraversal
     private readonly CancellationToken _cancellationToken;
     private Serilog.ILogger logger;
     private volatile int _totalEntriesProcessed;
+    private volatile Exception _fault;
 
     public WorkStealingTreeTraversal(int maxConcurrency = 0, CancellationToken cancellationToken = default)
     {
@@ -47,23 +48,34 @@ public class WorkStealingTreeTraversal
 
         logger.Debug("Added {InitialWorkCount} initial work items to queue", rootCount);
 
+        // Workers run on the linked token: the caller's token, the timeout, or a failing worker cancels the rest.
+        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(30)); // 30 minute timeout
+        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken, timeoutCts.Token);
+        _fault = null;
+
         // Create worker tasks
         var workers = new Task[_maxConcurrency];
         for (int i = 0; i < _maxConcurrency; i++)
         {
-            workers[i] = CreateWorkerTask(asyncProcessor);
+            workers[i] = CreateWorkerTask(asyncProcessor, combinedCts);
         }
 
         logger.Debug("Created {WorkerCount} worker tasks", _maxConcurrency);
 
-        // Wait for all workers to complete with timeout to prevent hanging
-        using var timeoutCts = new CancellationTokenSource(TimeSpan.FromMinutes(30)); // 30 minute timeout
-        using var combinedCts = CancellationTokenSource.CreateLinkedTokenSource(_cancellationToken, timeoutCts.Token);
-
         try
         {
             await Task.WhenAll(workers);
+            if (timeoutCts.IsCancellationRequested)
+            {
+                throw new OperationCanceledException(timeoutCts.Token); // workers stop quietly on the timeout; do not report partial results
+            }
             logger.Debug("All workers completed successfully. Traversal finished. Total entries processed: {TotalEntriesProcessed}", _totalEntriesProcessed);
+        }
+        catch (Exception) when (_fault != null)
+        {
+            // The first processor failure is the cause; the other workers only saw the cancellation it triggered.
+            System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(_fault).Throw();
+            throw; // unreachable
         }
         catch (OperationCanceledException) when (timeoutCts.Token.IsCancellationRequested)
         {
@@ -77,20 +89,22 @@ public class WorkStealingTreeTraversal
         }
     }
 
-    private async Task CreateWorkerTask(Func<ICommonEntry, ICommonEntry, Task<bool>> processor)
+    private async Task CreateWorkerTask(Func<ICommonEntry, ICommonEntry, Task<bool>> processor,
+        CancellationTokenSource workersCts)
     {
+        var token = workersCts.Token;
         _workQueue.RegisterWorker();
         var idleCount = 0;
         const int maxIdleIterations = 100; // Maximum idle iterations before giving up
 
         try
         {
-            while (!_cancellationToken.IsCancellationRequested)
+            while (!token.IsCancellationRequested)
             {
                 if (_workQueue.TryGetWork(out var workItem))
                 {
                     idleCount = 0; // Reset idle counter when work is found
-                    await ProcessWorkItem(workItem, processor);
+                    await ProcessWorkItem(workItem, processor, token);
                 }
                 else
                 {
@@ -101,14 +115,14 @@ public class WorkStealingTreeTraversal
                     {
                         // There's still work in the system, but we couldn't get any
                         // Wait briefly and try again
-                        await Task.Delay(1, _cancellationToken);
+                        await Task.Delay(1, token);
                         idleCount = Math.Max(0, idleCount - 1); // Reduce idle count since there's still work
                     }
                     else if (_workQueue.ActiveWorkers == 1)
                     {
                         // We're the last worker and there's no work - double check and wait a bit
                         // Increase wait time to ensure all async work completion is detected
-                        await Task.Delay(100, _cancellationToken); // Give more time for any pending work to be added
+                        await Task.Delay(100, token); // Give more time for any pending work to be added
                         if (!_workQueue.HasWork && _workQueue.ActiveWorkers == 1)
                         {
                             logger.Debug("Last worker ({ActiveWorkers}) found no work after final check, terminating", _workQueue.ActiveWorkers);
@@ -131,20 +145,28 @@ public class WorkStealingTreeTraversal
                     {
                         // Wait and try again
                         var delayMs = Math.Min(10, idleCount / 10 + 1); // Adaptive delay
-                        await Task.Delay(delayMs, _cancellationToken);
+                        await Task.Delay(delayMs, token);
                     }
                 }
             }
         }
+        catch (Exception ex) when (ex is not OperationCanceledException)
+        {
+            // Keep the first failure, then stop the other workers so it surfaces promptly.
+            Interlocked.CompareExchange(ref _fault, ex, null);
+            workersCts.Cancel();
+            throw;
+        }
         finally
         {
+            // Always unregistered, even when faulted, so idle/active termination detection never waits on a dead worker.
             _workQueue.UnregisterWorker();
             logger.Debug("Worker unregistered. Remaining active workers: {ActiveWorkers}", _workQueue.ActiveWorkers);
         }
     }
 
     private async Task ProcessWorkItem(TraversalWorkItem workItem,
-        Func<ICommonEntry, ICommonEntry, Task<bool>> processor)
+        Func<ICommonEntry, ICommonEntry, Task<bool>> processor, CancellationToken token)
     {
         // A processor failure is not swallowed: it faults this worker and TraverseAsync rethrows it, so a find
         // never reports partial results as complete.
@@ -158,6 +180,11 @@ public class WorkStealingTreeTraversal
         // Process all children of this directory (matching TraverseTreePair behavior)
         foreach (var dirEntry in workItem.Entry.Children)
         {
+            if (token.IsCancellationRequested)
+            {
+                return; // another worker failed (or the caller cancelled)
+            }
+
             // Call processor for this child (parent=workItem.Entry, child=dirEntry)
             var shouldContinue = await processor(workItem.Entry, dirEntry);
             Interlocked.Increment(ref _totalEntriesProcessed);

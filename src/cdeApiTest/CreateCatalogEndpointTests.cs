@@ -129,6 +129,7 @@ public class CreateCatalogEndpointTests
         Assert.That(done.GetProperty("entries").GetInt64(), Is.EqualTo(2));
         Assert.That(done.GetProperty("excludedFolderCount").GetInt32(), Is.Zero);
         Assert.That(done.GetProperty("accessDeniedFolderCount").GetInt32(), Is.Zero);
+        Assert.That(done.GetProperty("unreadableFolderCount").GetInt32(), Is.Zero);
         Assert.That(done.GetProperty("savedPath").GetString(), Is.EqualTo(Path.Combine(Path.GetFullPath(_cat), "new.cdex")).IgnoreCase);
         Assert.That(events.First(e => e.Event == "progress").Data.GetProperty("phase").GetString(), Is.EqualTo("scanning"));
         Assert.That(_session.CatalogCount, Is.EqualTo(2));

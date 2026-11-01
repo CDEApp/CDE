@@ -50,6 +50,11 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 FireAndForget.Observe(_messageBus.Publish(new ScanCompletedEvent(), cancellationToken: cancellationToken), nameof(ScanCompletedEvent));
             re.ExceptionEvent = PrintException;
 
+            foreach (var warning in ScanExcludeWarnings.Lines(request.ExcludePaths, OperatingSystem.IsWindows()))
+            {
+                ScanProgressConsole.EnqueueMessage(warning);
+            }
+
             re.PopulateRoot(request.Path, request.FollowJunctions, _cancellation.Token,
                 ScanExcludeMatcher.ForScanConfig(_configuration.Config?.Scan, request.ExcludePaths));
             if (_cancellation.IsCancellationRequested)
@@ -76,6 +81,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
             ReportScanSummary(re, cdexName, sw);
             foreach (var line in ScanSkipSummary.Lines(re.ExcludedFolderCount, re.AccessDeniedFolderCount,
+                         re.UnreadableFolderCount,
                          re.PathsWithUnauthorisedExceptions, request.Verbose))
             {
                 ScanProgressConsole.EnqueueMessage(line);

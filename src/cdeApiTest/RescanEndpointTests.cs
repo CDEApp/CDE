@@ -93,6 +93,7 @@ public class RescanEndpointTests
         Assert.That(done.GetProperty("entries").GetInt64(), Is.EqualTo(2));
         Assert.That(done.GetProperty("excludedFolderCount").GetInt32(), Is.Zero);
         Assert.That(done.GetProperty("accessDeniedFolderCount").GetInt32(), Is.Zero);
+        Assert.That(done.GetProperty("unreadableFolderCount").GetInt32(), Is.Zero);
         Assert.That(_session.TotalEntryCount, Is.EqualTo(2));
         Assert.That(events.First(e => e.Event == "progress").Data.GetProperty("phase").GetString(), Is.EqualTo("scanning"));
     }

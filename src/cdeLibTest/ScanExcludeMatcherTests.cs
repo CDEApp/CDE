@@ -151,12 +151,12 @@ public class ScanExcludeMatcherTests
     }
 
     [Test]
-    public void BareName_MatchesAtAnyDepth_AndEverythingUnderIt()
+    public void BareName_MatchesTheEntrysOwnNameAtAnyDepth()
     {
         var m = Linux("node_modules");
         Assert.That(m.IsExcluded("/src/node_modules"), Is.True);
         Assert.That(m.IsExcluded("/src/a/b/node_modules"), Is.True);
-        Assert.That(m.IsExcluded("/src/a/node_modules/pkg/lib"), Is.True);
+        Assert.That(m.IsExcluded("/src/a/node_modules/pkg/lib"), Is.False); // an excluded parent is never descended into: only the entry's own name is checked
         Assert.That(m.IsExcluded("/src/a/b"), Is.False);
     }
 
@@ -181,13 +181,13 @@ public class ScanExcludeMatcherTests
     public void BareName_CaseRulesFollowTheOs()
     {
         Assert.That(Linux("node_modules").IsExcluded("/src/Node_Modules"), Is.False);
-        Assert.That(Windows("node_modules").IsExcluded(@"C:\src\Node_Modules\x"), Is.True);
+        Assert.That(Windows("node_modules").IsExcluded(@"C:\src\Node_Modules"), Is.True);
     }
 
     [Test]
     public void BareName_Windows_SeparatorAgnostic()
     {
-        Assert.That(Windows(".git").IsExcluded(@"C:\src\a/.git\objects"), Is.True);
+        Assert.That(Windows(".git").IsExcluded(@"C:\src\a/.git"), Is.True);
     }
 
     [Test]

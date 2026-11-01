@@ -175,7 +175,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     catch (Exception ex)
                     {
                         // if cant list folders don't care, but leave a trace of why a catalog is missing.
-                        Log.Logger.Verbose(ex, "Cannot list {Folder} for .cde files", childPath);
+                        Log.Logger.Warning("Cannot list {Folder} for .cde files, any catalogs there are not loaded: {Message}", childPath, ex.Message);
                     }
                 }
             }
@@ -210,7 +210,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                 catch (Exception ex)
                 {
                     // if cant list folders don't care, but leave a trace of why a catalog is missing.
-                    Log.Logger.Verbose(ex, "Cannot list {Folder} for .cdex files", childPath);
+                    Log.Logger.Warning("Cannot list {Folder} for .cdex files, any catalogs there are not loaded: {Message}", childPath, ex.Message);
                 }
             }
         }

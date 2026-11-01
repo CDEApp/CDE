@@ -124,6 +124,7 @@ public class CatalogSessionRescanTests
 
         Assert.That(result.ExcludedFolderCount, Is.EqualTo(1));
         Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(result.UnreadableFolderCount, Is.Zero);
     }
 
     [Test]

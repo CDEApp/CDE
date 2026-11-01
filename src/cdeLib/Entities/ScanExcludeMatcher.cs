@@ -10,7 +10,7 @@ namespace cdeLib.Entities;
 /// <summary>
 /// Decides whether a directory found during a scan is user-excluded. A pattern is either an absolute path, or a bare
 /// name with no path separator (such as "node_modules") that matches a folder of that name at any depth below the scan
-/// root; a match covers that folder and everything under it. '*' matches within a single path segment (no **).
+/// root; a match covers that folder and everything under it (the scan never descends into it, so only an entry's own name is checked). '*' matches within a single path segment (no **).
 /// Case-sensitive except on Windows, where '/' and '\' are also interchangeable. Matching is done on
 /// segments in place, so checking a path allocates nothing.
 /// </summary>
@@ -67,6 +67,24 @@ public sealed class ScanExcludeMatcher
 
         _patterns = list.ToArray();
         _bareNames = bare.ToArray();
+    }
+
+    /// <summary>
+    /// The non-blank patterns that are neither an absolute path nor a bare folder name, so the matcher ignores them.
+    /// </summary>
+    public static IReadOnlyList<string> InvalidPatterns(IEnumerable<string> patterns, bool isWindows)
+    {
+        var invalid = new List<string>();
+        foreach (var raw in patterns ?? Array.Empty<string>())
+        {
+            var pattern = raw?.Trim();
+            if (!string.IsNullOrEmpty(pattern) && !IsBareName(pattern, isWindows) && !IsAbsolute(pattern, isWindows))
+            {
+                invalid.Add(pattern);
+            }
+        }
+
+        return invalid;
     }
 
     /// <summary>Linux-only built-in excludes: pseudo and volatile folders that are never worth cataloguing.</summary>
@@ -141,6 +159,11 @@ public sealed class ScanExcludeMatcher
             }
         }
 
+        if (kept.Count == _patterns.Length && _bareNames.Length == 0)
+        {
+            return this; // nothing dropped and no bare names need the root offset
+        }
+
         return new ScanExcludeMatcher(kept.ToArray(), _bareNames, bareStart, _isWindows);
     }
 
@@ -165,30 +188,34 @@ public sealed class ScanExcludeMatcher
         return _bareNames.Length > 0 && MatchesAnyBareName(fullPath.AsSpan());
     }
 
-    // True when any segment after the scan root matches a bare name.
+    // True when the path's own (last) segment, if below the scan root, matches a bare name. An excluded parent is
+    // never descended into, so ancestors need no check; a path that is the root itself has no segment below it.
     private bool MatchesAnyBareName(ReadOnlySpan<char> path)
     {
-        var start = _bareStart;
-        for (var i = _bareStart; i <= path.Length; i++)
+        var end = path.Length;
+        while (end > 0 && IsSeparator(path[end - 1], _isWindows))
         {
-            if (i < path.Length && !IsSeparator(path[i], _isWindows))
-            {
-                continue;
-            }
+            end--;
+        }
 
-            if (i > start)
-            {
-                var segment = path.Slice(start, i - start);
-                foreach (var name in _bareNames)
-                {
-                    if (SegmentMatches(segment, name))
-                    {
-                        return true;
-                    }
-                }
-            }
+        var start = end;
+        while (start > 0 && !IsSeparator(path[start - 1], _isWindows))
+        {
+            start--;
+        }
 
-            start = i + 1;
+        if (end <= start || start < _bareStart)
+        {
+            return false;
+        }
+
+        var segment = path.Slice(start, end - start);
+        foreach (var name in _bareNames)
+        {
+            if (SegmentMatches(segment, name))
+            {
+                return true;
+            }
         }
 
         return false;
