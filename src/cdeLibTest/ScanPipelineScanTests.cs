@@ -242,6 +242,30 @@ public class ScanPipelineScanTests
         Assert.That(rels, Does.Contain("ok.txt"));
         Assert.That(rels, Does.Not.Contain("denied/secret.txt"));
         Assert.That(re.PathsWithUnauthorisedExceptions, Is.EqualTo(new[] { denied }));
+        Assert.That(re.AccessDeniedFolderCount, Is.EqualTo(1));
+        Assert.That(re.UnreadableFolderCount, Is.Zero);
+        Assert.That(re.ExcludedFolderCount, Is.Zero);
+    }
+
+    [Test]
+    public void Scan_ExcludedFolders_AreCountedSeparatelyFromAccessDenied()
+    {
+        BuildExcludeTree();
+        var re = Scan(_root, excludes: Excluding(Path.Combine(_root, "skip"), Path.Combine(_root, "keep", "skip")));
+
+        Assert.That(re.ExcludedFolderCount, Is.EqualTo(2));
+        Assert.That(re.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(re.UnreadableFolderCount, Is.Zero);
+    }
+
+    [Test]
+    public void Scan_NothingSkipped_CountsAreZero()
+    {
+        BuildExcludeTree();
+        var re = Scan(_root);
+
+        Assert.That(re.ExcludedFolderCount, Is.Zero);
+        Assert.That(re.AccessDeniedFolderCount, Is.Zero);
     }
 
     [Test]
@@ -268,6 +292,29 @@ public class ScanPipelineScanTests
         Assert.That(rels, Does.Contain("keep/skip"));
         Assert.That(rels, Does.Not.Contain("keep/skip/deep.txt"));
         Assert.That(rels, Does.Contain("skip/s.txt"), "star matches one segment only");
+    }
+
+    [Test]
+    public void Scan_BareNameExclude_MatchesAtAnyDepthAndRecordsEmptyEntry()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding("skip"))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("skip"));
+        Assert.That(rels, Does.Contain("keep/skip"));
+        Assert.That(rels, Does.Not.Contain("skip/s.txt"));
+        Assert.That(rels, Does.Not.Contain("keep/skip/deep.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+    }
+
+    [Test]
+    public void Scan_BareNameEqualToScanRootName_StillScansTheRoot()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding(Path.GetFileName(_root)))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("r.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
     }
 
     [Test]

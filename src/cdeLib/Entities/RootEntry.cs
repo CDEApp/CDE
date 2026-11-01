@@ -42,6 +42,18 @@ public sealed class RootEntry : object, ICommonEntry
     [Key(3)]
     public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
+    /// <summary>Folders the last scan recorded but did not descend into because they matched an exclude pattern (#169). Scan-time only; never persisted.</summary>
+    [IgnoreMember]
+    public int ExcludedFolderCount { get; private set; }
+
+    /// <summary>Folders the last scan could not read because access was denied, listed in <see cref="PathsWithUnauthorisedExceptions"/> (#169). Scan-time only; never persisted.</summary>
+    [IgnoreMember]
+    public int AccessDeniedFolderCount { get; private set; }
+
+    /// <summary>Folders the last scan could not read for another reason (IO error, folder vanished, path too long), also listed in <see cref="PathsWithUnauthorisedExceptions"/>. Scan-time only; never persisted.</summary>
+    [IgnoreMember]
+    public int UnreadableFolderCount { get; private set; }
+
     [ProtoMember(4, IsRequired = true)]
     [Key(4)]
     public string DefaultFileName { get; set; }
@@ -315,6 +327,9 @@ public sealed class RootEntry : object, ICommonEntry
     {
         FollowJunctions = followJunctions;
         excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
+        ExcludedFolderCount = 0;
+        AccessDeniedFolderCount = 0;
+        UnreadableFolderCount = 0;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -362,6 +377,10 @@ public sealed class RootEntry : object, ICommonEntry
             {
                 var dirEntry = enumerator.Current;
                 parent.AddChild(dirEntry);
+                if (enumerator.WasExcluded)
+                {
+                    ExcludedFolderCount++;
+                }
 
                 // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
                 // would otherwise be descended into. By default we record them but do not follow them,
@@ -410,6 +429,9 @@ public sealed class RootEntry : object, ICommonEntry
         /// <summary>Full path of the current entry when it is a directory to descend into, else null.</summary>
         public string DescendPath { get; private set; }
 
+        /// <summary>True when the current entry is a folder skipped by an exclude pattern.</summary>
+        public bool WasExcluded { get; private set; }
+
         public ScanEnumerator(string directory, ScanNamePool namePool, bool followJunctions,
             ScanExcludeMatcher excludes)
             : base(directory, ScanOptions)
@@ -428,7 +450,8 @@ public sealed class RootEntry : object, ICommonEntry
 
             // An excluded folder stays recorded (added by the caller) but is not descended into, exactly like
             // a non-followed junction. It wins over FollowJunctions and is not an access error.
-            if (DescendPath != null && _excludes.IsExcluded(DescendPath))
+            WasExcluded = DescendPath != null && _excludes.IsExcluded(DescendPath);
+            if (WasExcluded)
             {
                 DescendPath = null;
             }
@@ -459,6 +482,14 @@ public sealed class RootEntry : object, ICommonEntry
 
         Log.Logger.Warning(logMessage, directory, ex.Message);
         AddPathsWithUnauthorisedExceptions(directory);
+        if (ex is UnauthorizedAccessException)
+        {
+            AccessDeniedFolderCount++;
+        }
+        else
+        {
+            UnreadableFolderCount++;
+        }
     }
 
     /// <summary>

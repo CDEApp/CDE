@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib;
@@ -65,6 +66,21 @@ public class FindAsyncTests
 
         Assert.That(hits, Has.Count.EqualTo(5 * (FileCount / 5 / 250)));
         Assert.That(hits, Has.All.StartsWith("needle"));
+    }
+
+    [Test]
+    public async Task FindAsync_VisitorThrows_StillReportsFinalProgressAndRethrows()
+    {
+        var ends = new ConcurrentBag<(int Count, int End)>();
+        var options = Options([]);
+        options.VisitorFunc = (_, _) => throw new InvalidOperationException("boom");
+        options.ProgressModifier = 1000;
+        options.ProgressFunc = (count, end) => ends.Add((count, end));
+
+        await Assert.ThatAsync(() => options.FindAsync([BuildRoot()]),
+            Throws.InvalidOperationException.With.Message.EqualTo("boom"));
+
+        Assert.That(ends.Any(e => e.Count == e.End && e.End > 0), Is.True, "final 100% progress report was skipped");
     }
 
     [Test]

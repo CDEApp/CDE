@@ -31,6 +31,15 @@ public sealed class CreateCatalogResult
 
     /// <summary>Full path of the written <c>.cdex</c>.</summary>
     public string SavedPath { get; set; }
+
+    /// <summary>Folders skipped by the scan's exclude patterns (#170). Scan-time only: not stored in the catalog.</summary>
+    public int ExcludedFolderCount { get; set; }
+
+    /// <summary>Folders the scan could not read (access denied) (#170). Scan-time only: not stored in the catalog.</summary>
+    public int AccessDeniedFolderCount { get; set; }
+
+    /// <summary>Folders the scan could not read for another reason, e.g. an IO error (#170). Scan-time only: not stored in the catalog.</summary>
+    public int UnreadableFolderCount { get; set; }
 }
 
 /// <summary>The SSE <c>error</c> payload, or the JSON body of a refusal. <see cref="Code"/> is a stable reason.</summary>

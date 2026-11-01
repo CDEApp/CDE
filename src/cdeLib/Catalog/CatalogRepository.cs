@@ -172,10 +172,11 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     {
                         cacheFilePaths.AddRange(GetCdeFiles(childPath));
                     }
-                    // ReSharper disable once EmptyGeneralCatchClause
-                    catch
+                    catch (Exception ex)
                     {
-                    } // if cant list folders don't care.
+                        // if cant list folders don't care, but leave a trace of why a catalog is missing.
+                        Log.Logger.Warning("Cannot list {Folder} for .cde files, any catalogs there are not loaded: {Message}", childPath, ex.Message);
+                    }
                 }
             }
 
@@ -206,10 +207,11 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                 {
                     result.AddRange(FileSystemHelper.GetFilesWithExtension(childPath, "cdex"));
                 }
-                // ReSharper disable once EmptyGeneralCatchClause
-                catch
+                catch (Exception ex)
                 {
-                } // if cant list folders don't care.
+                    // if cant list folders don't care, but leave a trace of why a catalog is missing.
+                    Log.Logger.Warning("Cannot list {Folder} for .cdex files, any catalogs there are not loaded: {Message}", childPath, ex.Message);
+                }
             }
         }
 

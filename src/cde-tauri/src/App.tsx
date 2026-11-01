@@ -47,7 +47,7 @@ import {
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
-import { catalogName } from "./format";
+import { catalogName, skipSummary } from "./format";
 import type { TreeRoot } from "./components/CatalogTree";
 import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
 import { DirectoryPane } from "./components/DirectoryPane";
@@ -488,6 +488,7 @@ export default function App() {
         // Phase 1: the rescan's own outcome decides the success / failure toast.
         let finished = false;
         let entries = 0;
+        let skipped: string | null = null;
         try {
           const result = await client.rescan(catalogId, {
             signal: abort.signal,
@@ -496,6 +497,7 @@ export default function App() {
           });
           finished = result !== null;
           entries = result?.entries ?? 0;
+          skipped = skipSummary(result?.excludedFolderCount, result?.accessDeniedFolderCount, result?.unreadableFolderCount);
           if (!finished) {
             // Cancelled. If the cancel lost the race with the swap the catalog did change: detect that.
             try {
@@ -532,7 +534,7 @@ export default function App() {
           notifications.show({
             color: "green",
             title: "Rescan complete",
-            message: `Rescanned ${label} — ${entries.toLocaleString()} entries`,
+            message: `Rescanned ${label} — ${entries.toLocaleString()} entries${skipped ? `; ${skipped}` : ""}`,
           });
         } catch (e) {
           notifications.show({
@@ -652,6 +654,7 @@ export default function App() {
 
         // Phase 2: the catalog exists. Refresh the lists only: ids, tree state and the Directory tab stay as they are.
         const done = result;
+        const skipped = skipSummary(done.excludedFolderCount, done.accessDeniedFolderCount, done.unreadableFolderCount);
         const toastId = `new-catalog-${done.catalogId}-${id}`;
         let refreshed = true;
         try {
@@ -667,7 +670,7 @@ export default function App() {
           message: (
             <span>
               {refreshed
-                ? `Created ${form.fileName}.cdex — ${done.entries.toLocaleString()} entries. `
+                ? `Created ${form.fileName}.cdex — ${done.entries.toLocaleString()} entries${skipped ? `; ${skipped}` : ""}. `
                 : `Created ${form.fileName}.cdex, but refreshing the view failed — use Reload. `}
               {refreshed && (
                 <button

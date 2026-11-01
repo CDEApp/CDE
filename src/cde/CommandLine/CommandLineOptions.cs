@@ -18,6 +18,15 @@ public class ScanOptions
         Default = false,
         HelpText = "[DANGER NOT EXTENSIVELY TESTED] Descend into directory junctions / symbolic links. Off by default to avoid cycles and duplicate content.")]
     public bool FollowJunctions { get; [UsedImplicitly] set; }
+
+    [Option("exclude",
+        HelpText = "Folder path to skip for this scan only; repeat for several. Adds to the config and default excludes. A trailing /* skips the contents but keeps the folder.")]
+    public System.Collections.Generic.IEnumerable<string> Exclude { get; [UsedImplicitly] set; }
+
+    [Option('v', "verbose",
+        Default = false,
+        HelpText = "List the folders that could not be read (access denied or an IO error) after the scan.")]
+    public bool Verbose { get; [UsedImplicitly] set; }
 }
 
 [Verb("find",

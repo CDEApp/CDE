@@ -178,6 +178,12 @@ export interface RescanResult {
   /** Files + directories in the new catalog (root excluded, as in the status bar total). */
   entries: number;
   savedPath: string;
+  /** Folders skipped by exclude patterns (#170); absent from an older sidecar. */
+  excludedFolderCount?: number;
+  /** Folders the scan could not read (#170); absent from an older sidecar. */
+  accessDeniedFolderCount?: number;
+  /** Folders the scan could not read for another reason, e.g. an IO error; absent from an older sidecar. */
+  unreadableFolderCount?: number;
 }
 
 /** Wire shape of a refusal (JSON, status 404/409/422) or an in-stream `error` event. */
@@ -239,6 +245,12 @@ export interface CreateResult {
   rootPath: string;
   entries: number;
   savedPath: string;
+  /** Folders skipped by exclude patterns (#170); absent from an older sidecar. */
+  excludedFolderCount?: number;
+  /** Folders the scan could not read (#170); absent from an older sidecar. */
+  accessDeniedFolderCount?: number;
+  /** Folders the scan could not read for another reason, e.g. an IO error; absent from an older sidecar. */
+  unreadableFolderCount?: number;
 }
 
 /** Wire shape of a create refusal (JSON, 400/409/422) or an in-stream `error` event. */

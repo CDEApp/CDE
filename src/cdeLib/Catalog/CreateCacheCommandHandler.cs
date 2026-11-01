@@ -35,7 +35,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
             re.ExceptionEvent = PrintExceptions;
 
             re.PopulateRoot(request.Path, request.FollowJunctions, _cancellation.Token,
-                ScanExcludeMatcher.ForScanConfig(_configuration.Config?.Scan));
+                ScanExcludeMatcher.ForScanConfig(_configuration.Config?.Scan, request.ExcludePaths));
             if (_cancellation.IsCancellationRequested)
             {
                 Console.WriteLine(" * Break key detected incomplete scan will not be saved.");

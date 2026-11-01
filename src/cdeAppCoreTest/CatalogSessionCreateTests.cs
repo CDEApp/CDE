@@ -123,6 +123,33 @@ public class CatalogSessionCreateTests
     }
 
     [Test]
+    public async Task Create_reports_the_excluded_and_access_denied_folder_counts()
+    {
+        var data = MakeData("d1", "keep.txt");
+        var skip = Path.Combine(data, "skip");
+        Directory.CreateDirectory(skip);
+        var s = LoadWithScanConfig(() => new ScanSection { ExcludePaths = [skip], UseDefaultExcludes = false });
+
+        var result = await s.CreateCatalogAsync(Req(data));
+
+        Assert.That(result.ExcludedFolderCount, Is.EqualTo(1));
+        Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(result.UnreadableFolderCount, Is.Zero);
+    }
+
+    [Test]
+    public async Task Create_with_nothing_skipped_reports_zero_counts()
+    {
+        var s = LoadFiles();
+
+        var result = await s.CreateCatalogAsync(Req(MakeData("d1", "a.txt")));
+
+        Assert.That(result.ExcludedFolderCount, Is.Zero);
+        Assert.That(result.AccessDeniedFolderCount, Is.Zero);
+        Assert.That(result.UnreadableFolderCount, Is.Zero);
+    }
+
+    [Test]
     public async Task Create_without_a_scan_config_provider_excludes_nothing()
     {
         var data = MakeData("d1", "keep.txt");

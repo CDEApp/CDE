@@ -202,11 +202,14 @@ public class FindOptions
         {
             // Handle cancellation gracefully
         }
-
-        ReportRegexExhausted();
-        ProgressFunc(ProgressEnd, ProgressEnd); // Always report 100%
-        watch.Stop();
-        Debug.WriteLine($"Async Execution Time: {watch.ElapsedMilliseconds} ms");
+        finally
+        {
+            // Also on a processor failure: the exception still propagates, but progress is closed out.
+            ReportRegexExhausted();
+            ProgressFunc(ProgressEnd, ProgressEnd); // Always report 100%
+            watch.Stop();
+            Debug.WriteLine($"Async Execution Time: {watch.ElapsedMilliseconds} ms");
+        }
     }
 
     /// <summary>
