@@ -26,6 +26,7 @@
   - [cde scan Path](#cde-scan-path)
   - [cde find String](#cde-find-string)
   - [cde everything Query](#cde-everything-query)
+  - [Machine-readable output](#machine-readable-output---json-and---csv)
   - [cde hash](#cde-hash)
   - [cde dupes](#cde-dupes)
   - [cde dump](#cde-dump)
@@ -394,6 +395,45 @@ A plain term matches the name, as a case-insensitive substring. Only `path:` rea
 Put the query in quotes, because `<`, `>`, `|` and `!` mean something to a shell. The query matches first, then `--filter` keeps the matches that pass, then `--template` writes each line.
 
 A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the command with `error: ... (at position N)` and exit code 1 before any catalog is read, and prints no results. An empty query matches every entry. Wildcards and Everything functions such as `ext:` are not supported yet.
+
+### Machine-readable output: --json and --csv
+
+`find`, `findpath`, `grep`, `greppath`, `everything`, `hash` and `dupes` take `--json` or `--csv` to write their results for another program instead of for a person. Use one, not both: `--json --csv` stops the command with an error before anything is written.
+
+```batch
+cde find .iso --json
+cde dupes --csv > dupes.csv
+cde hash --json | jq .path
+```
+
+- `--json` writes one JSON object per line ([JSON Lines](https://jsonlines.org/)). `--csv` writes a header row, then one row per result, as RFC 4180 CSV: a field with a comma, a quote or a line break is in quotes, and a quote inside it is doubled. Both are UTF-8 without a byte order mark, and a line ends in a line feed (LF).
+- Standard output holds only the results. Progress displays, status lines, warnings and log messages go to standard error. A search with no matches writes nothing for `--json`, and only the header row for `--csv`.
+- The two formats use the same field names, in the same order, with the same values. Names with commas, quotes, line breaks and non-ASCII characters are written as they are in the catalog, and read back exactly.
+- Results are written as they are found, so a very large result does not have to fit in memory.
+- The CSV is exact, for scripts, and is not escaped against spreadsheet formulas: a name that starts with `=`, `+`, `-` or `@` can run as a formula if you open the file in a spreadsheet, so sanitise it first. A `modified` time that the catalog does not hold, or that is before 1601, is an empty CSV field and `null` in JSON.
+- `--template` sets the text lines, so it cannot be used with `--json` or `--csv`. `--filter` can.
+
+| Field | Value |
+|---|---|
+| `catalog` | The catalog file the entry is in |
+| `path` | The full path |
+| `name` | The last part of the path |
+| `size` | Size in bytes. For a folder, the total of what is in it |
+| `modified` | Last modified time in UTC, like `2024-03-05T06:07:08Z` |
+| `directory` | `true` for a folder, otherwise `false` |
+| `group` | The number of a set of duplicate files, from 1. Files with the same number are copies of each other |
+| `hash` | The hash as 32 lower-case hex digits |
+| `partial` | `true` when only the start of the file was hashed, otherwise `false` |
+
+Each command writes these fields, in this order:
+
+| Command | Fields |
+|---|---|
+| `find` (and `findpath`, `grep`, `greppath`, `everything`) | `catalog`, `path`, `name`, `size`, `modified`, `directory` |
+| `dupes` | `group`, `catalog`, `path`, `name`, `size`, `modified`, `hash` |
+| `hash` | `catalog`, `path`, `name`, `size`, `hash`, `partial` |
+
+`hash` writes a record for each file it hashed in that run, with the hash that is saved in the catalog. A file whose hash was already in the catalog is not repeated; `dupes` lists those. A hash made from only the start of a file shows `partial` as `true`.
 
 ### cde hash
 

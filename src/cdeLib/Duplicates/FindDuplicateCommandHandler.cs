@@ -59,7 +59,7 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
                 return Task.CompletedTask;
             }
 
-            _duplication.FindDuplicates(readers);
+            _duplication.FindDuplicates(readers, request.Output);
         }
         finally
         {
