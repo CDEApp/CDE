@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using cdeLib.Infrastructure.Config;
 using Serilog;
 
@@ -54,12 +55,6 @@ public sealed class ScanExcludeMatcher
         _patterns = list.ToArray();
     }
 
-    /// <summary>Builds a matcher for the running OS.</summary>
-    public static ScanExcludeMatcher ForCurrentOs(IEnumerable<string> patterns)
-    {
-        return new ScanExcludeMatcher(patterns, OperatingSystem.IsWindows());
-    }
-
     /// <summary>Linux-only built-in excludes: pseudo and volatile folders that are never worth cataloguing.</summary>
     private static readonly string[] LinuxDefaultExcludes =
     [
@@ -92,6 +87,8 @@ public sealed class ScanExcludeMatcher
     /// <summary>
     /// The matcher to use for one scan: patterns that match the scan root or an ancestor of it are dropped,
     /// because the explicitly named root is the user's intent. Patterns strictly below the root still apply.
+    /// The root is normalised first (full path, trailing separator trimmed except for a volume root), so a relative
+    /// path or one containing ".." cannot defeat the ancestor check.
     /// Done once per scan so the per-directory check stays allocation-free.
     /// </summary>
     public ScanExcludeMatcher ForScanRoot(string scanRoot)
@@ -99,6 +96,12 @@ public sealed class ScanExcludeMatcher
         if (_patterns.Length == 0 || string.IsNullOrEmpty(scanRoot))
         {
             return this;
+        }
+
+        // Host path APIs only apply when this matcher follows the host's rules (always true outside tests).
+        if (_isWindows == OperatingSystem.IsWindows())
+        {
+            scanRoot = Path.TrimEndingDirectorySeparator(Path.GetFullPath(scanRoot));
         }
 
         var kept = new List<string[]>(_patterns.Length);

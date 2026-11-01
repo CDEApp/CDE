@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using cdeLib.Entities;
 using NUnit.Framework;
 
@@ -118,6 +120,43 @@ public class ScanExcludeMatcherTests
     {
         var m = Linux("/home/*").ForScanRoot("/home/jason");
         Assert.That(m.IsExcluded("/home/jason/docs"), Is.False);
+    }
+
+    private static ScanExcludeMatcher ForHost(params string[] patterns) =>
+        new(patterns, OperatingSystem.IsWindows());
+
+    [Test]
+    public void ForScanRoot_RootWithDotDot_IsNormalisedBeforeTheAncestorCheck()
+    {
+        var baseDir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "cdeexcl"));
+        var target = Path.Combine(baseDir, "b");
+        var m = ForHost(target).ForScanRoot(Path.Combine(baseDir, "a", "..", "b"));
+        Assert.That(m.IsExcluded(Path.Combine(target, "x")), Is.False);
+    }
+
+    [Test]
+    public void ForScanRoot_RelativeRoot_IsResolvedAgainstTheCurrentDirectory()
+    {
+        var cwd = Path.GetFullPath(".");
+        var m = ForHost(cwd).ForScanRoot(".");
+        Assert.That(m.IsExcluded(Path.Combine(cwd, "x")), Is.False);
+    }
+
+    [Test]
+    public void ForScanRoot_RootWithTrailingSeparator_StillDropsTheMatchingPattern()
+    {
+        var dir = Path.GetFullPath(Path.Combine(Path.GetTempPath(), "cdeexcl", "t"));
+        var m = ForHost(dir).ForScanRoot(dir + Path.DirectorySeparatorChar);
+        Assert.That(m.IsExcluded(Path.Combine(dir, "x")), Is.False);
+    }
+
+    [Test]
+    public void TrailingStar_ExcludesChildrenButNotTheFolderItself()
+    {
+        var m = Linux("/tmp/*");
+        Assert.That(m.IsExcluded("/tmp"), Is.False);
+        Assert.That(m.IsExcluded("/tmp/a"), Is.True);
+        Assert.That(m.IsExcluded("/tmp/a/b"), Is.True);
     }
 
     [Test]

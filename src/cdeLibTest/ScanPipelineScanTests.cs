@@ -110,7 +110,7 @@ public class ScanPipelineScanTests
     }
 
     private static ScanExcludeMatcher Excluding(params string[] patterns) =>
-        ScanExcludeMatcher.ForCurrentOs(patterns);
+        new(patterns, OperatingSystem.IsWindows());
 
     private void BuildExcludeTree()
     {
