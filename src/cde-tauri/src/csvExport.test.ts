@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SearchResultRow } from "./api/types";
-import { CSV_COLUMN_IDS, csvField, encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
+import { CSV_COLUMN_IDS, csvField, neutraliseFormula, encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
 
 function row(over: Partial<SearchResultRow> = {}): SearchResultRow {
   return {
@@ -74,6 +74,31 @@ describe("resultsToCsv", () => {
 
   it("exposes the column ids the results list uses", () => {
     expect(CSV_COLUMN_IDS).toEqual(DEFAULT);
+  });
+});
+
+describe("formula injection", () => {
+  it.each(["=1+1", "+1", "-1", "@SUM(A1)", "\tx", "\rx"])("prefixes an apostrophe when text starts with %j", (t) => {
+    expect(neutraliseFormula(t)).toBe("'" + t);
+  });
+
+  it("leaves other text alone", () => {
+    expect(neutraliseFormula("C:\\dir")).toBe("C:\\dir");
+    expect(neutraliseFormula("")).toBe("");
+    expect(neutraliseFormula("a=b")).toBe("a=b");
+  });
+
+  it("neutralises the text columns (name, path, catalog) but not size or the timestamp", () => {
+    const csv = resultsToCsv(
+      [row({ name: "=cmd|' /C calc'!A0", parentPath: "@x", catalogName: "+y", size: -5 })],
+      ["name", "size", "modified", "catalog", "path"],
+    );
+    expect(csv.split("\r\n")[1]).toBe("'=cmd|' /C calc'!A0,-5,2024-03-05T10:20:30,'+y,'@x");
+  });
+
+  it("applies the apostrophe inside the quotes when the field also needs quoting", () => {
+    const csv = resultsToCsv([row({ name: "=a,b" })], ["name"]);
+    expect(csv.split("\r\n")[1].startsWith("\"'=a,b\",")).toBe(true);
   });
 });
 

@@ -24,9 +24,27 @@ public sealed class MachineOutput : IDisposable
 
     public IRecordWriter Writer { get; }
 
-    /// <summary>True when the command line asks for a machine format, so the console must be redirected before anything is written.</summary>
-    public static bool IsRequested(string[] args) =>
-        args.Any(a => a.Equals("--json", StringComparison.OrdinalIgnoreCase) || a.Equals("--csv", StringComparison.OrdinalIgnoreCase));
+    // The verbs that take --json / --csv.
+    private static readonly string[] Verbs = ["find", "findpath", "grep", "greppath", "everything", "dupes", "hash"];
+
+    /// <summary>
+    /// True when the command line asks for a machine format, so the console must be redirected before anything is written:
+    /// the first argument that is not an option is a verb that supports it, and <c>--json</c> / <c>--csv</c> is among the
+    /// arguments before any <c>--</c> terminator (what follows is data, not options).
+    /// </summary>
+    public static bool IsRequested(string[] args)
+    {
+        string verb = null;
+        var flag = false;
+        foreach (var a in args)
+        {
+            if (a == "--") break;
+            if (a.Equals("--json", StringComparison.OrdinalIgnoreCase) || a.Equals("--csv", StringComparison.OrdinalIgnoreCase)) flag = true;
+            else if (verb == null && !a.StartsWith('-')) verb = a;
+        }
+
+        return flag && verb != null && Verbs.Contains(verb, StringComparer.OrdinalIgnoreCase);
+    }
 
     /// <summary>Sends <see cref="Console.Out"/> to standard error. Call before anything else writes to the console.</summary>
     public static void Redirect() => Console.SetOut(Console.Error);

@@ -408,6 +408,7 @@ cde hash --json | jq .path
 - Standard output holds only the results. Progress displays, status lines, warnings and log messages go to standard error. A search with no matches writes nothing for `--json`, and only the header row for `--csv`.
 - The two formats use the same field names, in the same order, with the same values. Names with commas, quotes, line breaks and non-ASCII characters are written as they are in the catalog, and read back exactly.
 - Results are written as they are found, so a very large result does not have to fit in memory.
+- The CSV is exact, for scripts, and is not escaped against spreadsheet formulas: a name that starts with `=`, `+`, `-` or `@` can run as a formula if you open the file in a spreadsheet, so sanitise it first. A `modified` time that the catalog does not hold, or that is before 1601, is an empty CSV field and `null` in JSON.
 - `--template` sets the text lines, so it cannot be used with `--json` or `--csv`. `--filter` can.
 
 | Field | Value |

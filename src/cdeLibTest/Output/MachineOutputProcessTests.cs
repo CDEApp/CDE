@@ -264,6 +264,29 @@ public class MachineOutputProcessTests
         Assert.That(rows.Skip(1).Select(r => r[6]), Is.EqualTo(json.Select(o => o.GetProperty("hash").GetString())));
     }
 
+    [Test]
+    public void Text_after_the_double_dash_terminator_is_not_a_format_flag()
+    {
+        WriteCdex();
+
+        var result = Run("find", "--", "--csv");
+
+        // The parser's own usage text (it wants a value before the terminator) stays on stdout, as it does without any flag.
+        Assert.That(result.Out, Is.EqualTo(Run("find").Out));
+        Assert.That(result.Out, Is.Not.Empty);
+    }
+
+    [Test]
+    public void A_format_flag_that_is_an_option_value_of_another_verb_keeps_normal_output_on_stdout()
+    {
+        var result = Run("scan", "--exclude", "--json");
+
+        // Whatever the parser does with the arguments, it is not machine output: nothing was redirected to stderr
+        // on the strength of "--json", so the usage or error text is not all on stderr.
+        Assert.That(result.Out + result.Err, Is.Not.Empty);
+        Assert.That(result.Out, Is.Not.Empty, "console output stayed on stdout");
+    }
+
     [TestCase("find", "x")]
     [TestCase("dupes")]
     [TestCase("hash")]

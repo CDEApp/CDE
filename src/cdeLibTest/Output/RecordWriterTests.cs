@@ -145,6 +145,53 @@ public class RecordWriterTests
         Assert.That(fromCsv, Is.EqualTo(fromJson));
     }
 
+    private static DateTime[] BadTimes() =>
+    [
+        default,
+        new DateTime(0, DateTimeKind.Utc),
+        new DateTime(1600, 12, 31, 23, 59, 59, DateTimeKind.Utc),
+        new DateTime(1, 1, 1, 0, 0, 0, DateTimeKind.Unspecified),
+    ];
+
+    [TestCaseSource(nameof(BadTimes))]
+    public void A_sentinel_or_out_of_range_time_is_null_in_json(DateTime bad)
+    {
+        var text = new StringWriter();
+        var writer = RecordWriter.Create(OutputFormat.Json, text, ["name", "modified"]);
+        writer.BeginRecord();
+        writer.Field("name", "x");
+        writer.Field("modified", bad);
+        writer.EndRecord();
+
+        Assert.That(text.ToString(), Is.EqualTo("{\"name\":\"x\",\"modified\":null}\n"));
+    }
+
+    [TestCaseSource(nameof(BadTimes))]
+    public void A_sentinel_or_out_of_range_time_is_an_empty_csv_field(DateTime bad)
+    {
+        var text = new StringWriter();
+        var writer = RecordWriter.Create(OutputFormat.Csv, text, ["name", "modified", "size"]);
+        writer.BeginRecord();
+        writer.Field("name", "x");
+        writer.Field("modified", bad);
+        writer.Field("size", 5);
+        writer.EndRecord();
+
+        Assert.That(text.ToString(), Is.EqualTo("name,modified,size\nx,,5\n"));
+    }
+
+    [Test]
+    public void The_first_valid_time_is_still_written()
+    {
+        var text = new StringWriter();
+        var writer = RecordWriter.Create(OutputFormat.Csv, text, ["modified"]);
+        writer.BeginRecord();
+        writer.Field("modified", new DateTime(1601, 1, 1, 0, 0, 0, DateTimeKind.Utc));
+        writer.EndRecord();
+
+        Assert.That(text.ToString(), Is.EqualTo("modified\n1601-01-01T00:00:00Z\n"));
+    }
+
     [Test]
     public void A_local_time_is_written_as_utc()
     {

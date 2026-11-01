@@ -4,19 +4,31 @@ import { normalizeColumnOrder } from "./columnOrder";
 interface CsvColumn {
   header: string;
   value: (r: SearchResultRow) => string;
+  /** Free text from the file system (name, path, catalog): guarded against spreadsheet formulas. */
+  text?: boolean;
 }
 
 // Ids match the search results list columns. Values are machine-readable rather than the display
 // text: Size is exact bytes and Modified is the ISO timestamp (empty when the date is bad).
 const COLUMNS: Record<string, CsvColumn> = {
-  name: { header: "Name", value: (r) => r.name },
+  name: { text: true, header: "Name", value: (r) => r.name },
   size: { header: "Size", value: (r) => String(r.size) },
   modified: { header: "Modified", value: (r) => (r.isModifiedBad ? "" : r.modified) },
-  catalog: { header: "Catalog", value: (r) => r.catalogName },
-  path: { header: "Path", value: (r) => r.parentPath },
+  catalog: { text: true, header: "Catalog", value: (r) => r.catalogName },
+  path: { text: true, header: "Path", value: (r) => r.parentPath },
 };
 
 export const CSV_COLUMN_IDS: readonly string[] = Object.keys(COLUMNS);
+
+/**
+ * Spreadsheet formula injection guard (CSV export only; the CLI CSV stays exact for scripts). A cell whose first
+ * character is =, +, -, @, tab or CR is evaluated as a formula by Excel/Sheets, and file names are attacker
+ * controlled. The OWASP-recommended fix is a leading single quote, which spreadsheets show as a text marker. It is
+ * applied to the text columns only: Size is a number and Modified an ISO timestamp, and both must stay parseable.
+ */
+export function neutraliseFormula(text: string): string {
+  return /^[=+\-@\t\r]/.test(text) ? `'${text}` : text;
+}
 
 /** RFC 4180 field: quoted only when it holds a comma, quote or line break; quotes are doubled. */
 export function csvField(text: string): string {
@@ -30,7 +42,7 @@ export function csvField(text: string): string {
 export function resultsToCsv(rows: readonly SearchResultRow[], columnOrder: unknown): string {
   const cols = normalizeColumnOrder(columnOrder, CSV_COLUMN_IDS).map((id) => COLUMNS[id]);
   const lines = [cols.map((c) => csvField(c.header)).join(",")];
-  for (const r of rows) lines.push(cols.map((c) => csvField(c.value(r))).join(","));
+  for (const r of rows) lines.push(cols.map((c) => csvField(c.text ? neutraliseFormula(c.value(r)) : c.value(r))).join(","));
   return lines.join("\r\n") + "\r\n";
 }
 

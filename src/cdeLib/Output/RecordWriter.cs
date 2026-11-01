@@ -65,9 +65,12 @@ public static class RecordWriter
     internal const string TimeFormat = "yyyy-MM-dd'T'HH:mm:ss'Z'";
 
     // Utc as is; Local converted; Unspecified is how the catalog stores a time with no kind, taken to be UTC.
+    // Returns 0 for a time that is not a real modified time (default/zero ticks or before 1601, the Windows file time
+    // epoch, which is what a catalog holds for a missing or bad date): the writers leave the field empty / null.
     internal static int FormatTime(DateTime value, Span<char> buffer)
     {
         if (value.Kind == DateTimeKind.Local) value = value.ToUniversalTime();
+        if (value.Ticks == 0 || value.Year < 1601) return 0;
         return value.TryFormat(buffer, out var written, TimeFormat, CultureInfo.InvariantCulture) ? written : 0;
     }
 
@@ -115,8 +118,15 @@ internal sealed class JsonLinesWriter(TextWriter output) : IRecordWriter
     {
         Key(name);
         Span<char> buffer = stackalloc char[24];
+        var length = RecordWriter.FormatTime(value, buffer);
+        if (length == 0)
+        {
+            output.Write("null");
+            return;
+        }
+
         output.Write('"');
-        output.Write(buffer[..RecordWriter.FormatTime(value, buffer)]);
+        output.Write(buffer[..length]);
         output.Write('"');
     }
 
@@ -231,7 +241,7 @@ internal sealed class CsvWriter : IRecordWriter
     {
         Separate();
         Span<char> buffer = stackalloc char[24];
-        _output.Write(buffer[..RecordWriter.FormatTime(value, buffer)]);
+        _output.Write(buffer[..RecordWriter.FormatTime(value, buffer)]); // empty for a bad time
     }
 
     public void EndRecord() => _output.Write('\n');
