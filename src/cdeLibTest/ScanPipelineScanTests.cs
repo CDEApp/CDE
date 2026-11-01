@@ -271,6 +271,29 @@ public class ScanPipelineScanTests
     }
 
     [Test]
+    public void Scan_BareNameExclude_MatchesAtAnyDepthAndRecordsEmptyEntry()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding("skip"))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("skip"));
+        Assert.That(rels, Does.Contain("keep/skip"));
+        Assert.That(rels, Does.Not.Contain("skip/s.txt"));
+        Assert.That(rels, Does.Not.Contain("keep/skip/deep.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+    }
+
+    [Test]
+    public void Scan_BareNameEqualToScanRootName_StillScansTheRoot()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding(Path.GetFileName(_root)))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("r.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+    }
+
+    [Test]
     public void Scan_ExcludeMatchingTheScanRoot_ScansTheWholeTree()
     {
         BuildExcludeTree();
