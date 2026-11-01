@@ -21,6 +21,40 @@ dotnet run -c Release --filter *Hash16Benchmarks.CreateFromByteArray*
 
 This project targets .NET 10.0. BenchmarkDotNet 0.14.0 doesn't officially support .NET 10 yet, but it works by using `[SimpleJob]` without specifying a RuntimeMoniker, which allows BenchmarkDotNet to auto-detect the runtime. The generated boilerplate code will target the current runtime (.NET 10.0.3).
 
+## Release performance report
+
+The `Performance` workflow (`.github/workflows/perf.yml`) measures cde on a fixed synthetic fixture for every
+release tag, and by hand from the Actions tab. It uses `cdeMemProbe`, not BenchmarkDotNet. It records:
+
+- scan time (the real `cde scan`) and `.cdex` size
+- cold and warm latency of three fixed queries: name substring, regex and `-path`
+- peak RSS of the process that memory-maps the `.cdex` and runs the searches
+
+Run the same report locally:
+
+```bash
+dotnet build src/cde -c Release
+dotnet run --project src/cdeMemProbe -c Release -- --report 1000000     --cde src/cde/bin/Release/net10.0/cde --out perf.json
+```
+
+- `--report <N>` is the fixture size in entries. Up to 1M, the probe creates a real tree of empty files and times
+  `cde scan` over it. From 5M (or with `--direct`) it writes the `.cdex` straight from the synthetic tree, and the scan time is `null` (n/a).
+- Optional: `--work <dir>` (default: a `cde-perf` folder in the temp folder), `--seed <n>` (default 42), `--commit <sha>`.
+- Cold is the first run in a fresh process, after the Linux page cache is dropped (`echo 3 > /proc/sys/vm/drop_caches`,
+  directly or with `sudo -n`). Elsewhere the cache is not dropped, and `coldCacheDropped` in `perf.json` is `false`.
+  Warm is the median of 10 repeats in the same process.
+- `perf.json` is versioned (`schemaVersion`). The query text is in the file.
+
+Compare against an earlier report, and refresh the table in the Readme:
+
+```bash
+dotnet run --project src/cdeMemProbe -c Release -- --compare --current perf.json --baseline old-perf.json --markdown perf.md
+dotnet run --project src/cdeMemProbe -c Release -- --readme --current perf.json --file Readme.md
+```
+
+`--compare` exits with 3 only when the `.cdex` size grew more than 2%. Peak RSS growth over 15% prints a warning.
+Timings never gate. With no baseline it reports absolute numbers and exits with 0.
+
 ## Benchmark Classes
 
 ### 1. Hash16Benchmarks

@@ -137,3 +137,16 @@ jobs:
     permissions:
       contents: write
       pull-requests: read
+
+  # Measures performance of the new release in parallel with the build (perf.yml attaches perf.json to
+  # the release once release.yml has created it, and opens a PR that refreshes the Readme table).
+  perf:
+    name: Performance
+    needs: prepare
+    if: ${{ !inputs.dry-run }}
+    uses: ./.github/workflows/perf.yml
+    with:
+      tag: ${{ needs.prepare.outputs.tag }}
+    permissions:
+      contents: write
+      pull-requests: write

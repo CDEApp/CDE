@@ -59,6 +59,8 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Window geometry via the Tauri window-state plugin; app UI state via `/ui-state`
   - Not a .NET project: built with `pnpm`/`vite` + `cargo` (see `src/cde-tauri/README.md`)
 
+- **cdeMemProbe** / **cdeBenchmarks** - Footprint probe and BenchmarkDotNet micro-benchmarks. `cdeMemProbe --report <N>` writes a versioned `perf.json` (scan time, `.cdex` size, cold/warm search, peak RSS on the mmap path); `--compare` gates only on `.cdex` size growth over 2% (exit 3), and `--readme` regenerates the table between the `perf-table` markers in `Readme.md`. The `Performance` workflow (`.github/workflows/perf.yml`) runs it per release tag, attaches `perf.json` to the release and opens a Readme PR. See `src/cdeBenchmarks/README.md`.
+
 ### Test Projects
 
 - **cdeLibTest** - Unit tests for cdeLib
@@ -250,7 +252,7 @@ Identifies duplicate files based on hashes. Very fast (operates on catalogs, not
 
 ## Performance Characteristics
 
-### Memory Usage (from README)
+### Memory Usage (legacy `.cde` figures; the Readme table is now generated per release)
 
 | File/Folder Count | Architecture | Memory Usage | File Size |
 |-------------------|--------------|--------------|-----------|
