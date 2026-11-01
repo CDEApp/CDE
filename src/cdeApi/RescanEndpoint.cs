@@ -5,6 +5,7 @@ using cdeAppCore.Dtos;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
+using ILogger = Serilog.ILogger;
 
 namespace cdeApi;
 
@@ -25,7 +26,7 @@ public static class RescanEndpoint
     public const string RootNotAccessible = "root-not-accessible";
     public const string Failed = "rescan-failed";
 
-    public static async Task HandleAsync(HttpContext ctx, int id, ICatalogSession session)
+    public static async Task HandleAsync(HttpContext ctx, int id, ICatalogSession session, ILogger logger = null)
     {
         var preflight = session.PreflightRescan(id);
         if (preflight != RescanPreflight.Ready)
@@ -62,6 +63,7 @@ public static class RescanEndpoint
                 }
                 catch (Exception ex)
                 {
+                    logger?.Error(ex, "Rescan of catalog {CatalogId} failed", id);
                     await queue.WriteAsync(new RescanError { Code = Failed, Message = ex.Message }, ct);
                 }
             },

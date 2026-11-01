@@ -287,9 +287,10 @@ public sealed partial class CatalogSession
         }
     }
 
-    private static void TryMove(string from, string to)
+    // Best effort, but a failure here leaves the old catalog file missing, so it is logged.
+    private void TryMove(string from, string to)
     {
         try { File.Move(from, to); }
-        catch (Exception) { /* best effort */ }
+        catch (Exception ex) { _logger?.Error(ex, "Could not restore {From} to {To} after a failed swap", from, to); }
     }
 }
