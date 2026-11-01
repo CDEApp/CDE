@@ -1,8 +1,8 @@
 # Releasing CDE
 
-A release is one zip, `cde-<version>-win-x64.zip`, attached to a GitHub Release, with a
-`.sha256` file beside it. Installers (MSI/NSIS), code signing and non-Windows builds are not part
-of it.
+A release is two archives attached to a GitHub Release, each with a `.sha256` file beside it:
+`cde-<version>-win-x64.zip` and `cde-<version>-linux-x64.tar.gz`. Installers (MSI/NSIS, `.deb`,
+`.AppImage`), code signing, arm64 and macOS builds are not part of it.
 
 ## Cut a release
 
@@ -26,9 +26,11 @@ workflows, re-run) against the other existing tags: a stable tag must be higher 
 stable tag, and a pre-release's base must be higher than the latest stable tag. So a hand-pushed
 `1.9.0` after `2.0.0` is refused, and a stable release is always marked "latest".
 
-`release.yml` keeps the release a draft until its last step: it builds, zips, updates the draft,
-attaches the zip and checksum, appends new contributors (optional; a failure there is ignored), and
-only then publishes. So a failed run never leaves a public release without its zip.
+`release.yml` keeps the release a draft until its last step. It runs in stages: `check` (the tag),
+then `build-windows` and `build-linux` in parallel, then `publish`, which needs both builds. `publish`
+updates the draft, attaches both archives and their checksums, appends new contributors (optional; a
+failure there is ignored), and only then publishes. So a failed build, on either platform, never
+leaves a public release without its archives.
 
 ### If a release run fails
 
@@ -67,9 +69,9 @@ tag, and the tag must be new. Going backwards in channel (an `alpha` after an `r
 base) is allowed, with a warning in the log. Order is SemVer: `2.1.0-alpha.1` < `2.1.0-beta.1` <
 `2.1.0-rc.1` < `2.1.0`.
 
-**What it publishes.** `release.yml` builds and zips exactly as for a stable release, named
-`cde-2.1.0-beta.1-win-x64.zip` with its `.sha256`. It then creates a draft GitHub release with the
-zip attached, generated notes (changes since the latest stable tag), marked as a pre-release and
+**What it publishes.** `release.yml` builds and packs exactly as for a stable release, named
+`cde-2.1.0-beta.1-win-x64.zip` and `cde-2.1.0-beta.1-linux-x64.tar.gz`, each with its `.sha256`. It then
+creates a draft GitHub release with both archives attached, generated notes (changes since the latest stable tag), marked as a pre-release and
 not "latest", and publishes it as the last step. The .NET exes get the version from MinVer, and the
 Tauri app is stamped with the full pre-release version. The version check compares each exe's
 ProductVersion with the tag (see "Versions in the exes" below).
@@ -98,14 +100,46 @@ A Windows file version is numeric only, so MinVer drops the label there; Tauri w
 string as is. `verify-release-versions.ps1` checks ProductVersion (without the `+commit`) against
 the tag, and FileVersion against `X.Y.Z.0` for the MinVer exes and the tag for the Tauri exe.
 
+## The Linux archive
+
+`cde-<version>-linux-x64.tar.gz` unpacks to `cde-<version>-linux-x64/`, with the same layout as the
+Windows zip minus `cdewin` (a Windows Forms app):
+
+```text
+cde-<version>-linux-x64/
+  cde/        cde (self-contained, single file) + appsettings.json
+  cde-tauri/  cde-tauri + cdeApi (the sidecar)
+```
+
+- **Why tar.gz:** a zip loses the executable bit.
+- **Built on Ubuntu 22.04** (`build-linux`), the oldest we support: a Linux binary needs a glibc at least as
+  new as the one it was linked against. The system libraries `cde-tauri` needs at run time
+  (`libwebkit2gtk-4.1` and friends) are listed in the README, not bundled.
+- **Built by the same Fallout target as Windows:** `./build.sh PublishRelease --self-contained true --runtime
+  linux-x64`. `--runtime` defaults to `win-x64`, and any runtime that is not a Windows one skips `cdewin`.
+- **Staged and checked by two bash scripts**, `.github/scripts/stage-release-linux.sh` and
+  `verify-release-versions-linux.sh`, with tests in `src/cde-tauri/scripts/linux-release-scripts.test.mjs`. The
+  Windows PowerShell scripts are untouched. The version check runs `cde --version` (from its own folder, because
+  `cde` reads `appsettings.json` from the current directory) and reads the stamped `tauri.conf.json` and
+  `Cargo.toml`, because the app cannot be run without a display on the runner. The Linux check does not read
+  the version of the `cdeApi` sidecar, as the Windows check does: a Linux binary has no version resource, and
+  `cdeApi` is published by the same build as `cde`, so MinVer versions them together.
+- **Pull requests** get a Linux smoke job (`linux` in `build.yml`): it publishes `cde` and `cdeApi` for
+  `linux-x64`, checks that they start, and packs the cde archive with the staging script. It does not build the
+  Tauri shell and does not run the .NET tests on Linux.
+- **Known limits on Linux:** `cde scan` fails (the catalog file name is built from a drive letter and a volume
+  label), and Open, Explore, Properties and custom commands do nothing in `cde-tauri` (it uses
+  `NoopShellActions`). Both are in the README.
+
 ## Decisions
 
 - **Tag format:** bare, no `v` prefix (`2.1.0`), like the existing `1.7.1` and `2.0.0`. MinVer keeps
   its default (no tag prefix). The tag trigger glob is `[0-9]*`.
 - **Release branch:** `develop`. `release-publish.yml` refuses any other branch, and `release.yml`
   refuses a tag that is not on `develop`.
-- **Runtime:** `cde.exe` and `cdewin.exe` are self-contained single files (win-x64), like `cdeApi`.
-  Nothing needs installing, apart from WebView2 for `cde-tauri` (see below).
+- **Runtime:** `cde.exe` and `cdewin.exe` are self-contained single files (win-x64), like `cdeApi`, and `cde`
+  is the same for linux-x64. Nothing needs installing, apart from WebView2 for `cde-tauri` on Windows and
+  WebKitGTK for `cde-tauri` on Linux (see above).
 - **Release notes:** Release Drafter and PR labels, as in PdfPinata.
 - **Publish settings:** `release.yml` calls the Fallout target `PublishRelease` with
   `--self-contained true`, the same target the CI build uses, so the settings live in one place

@@ -120,6 +120,10 @@
           ],
           "description": "Configuration to build - Default is 'Debug' (local) or 'Release' (server)"
         },
+        "Runtime": {
+          "type": "string",
+          "description": "Runtime identifier to publish for - Default is 'win-x64'. 'linux-x64' skips cdewin, which is a Windows Forms app. Used by the release workflow"
+        },
         "SelfContained": {
           "type": "boolean",
           "description": "Publish cde and cdewin self-contained (bundle the .NET runtime) - Default is false. Used by the release workflow"

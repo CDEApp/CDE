@@ -121,6 +121,72 @@ jobs:
           name: app
           path: artifacts/
 
+  # A Linux smoke test, so a Linux break shows on the pull request and not on release day. It publishes
+  # cde and cdeApi for linux-x64 with the same Fallout target the release uses, checks that they start, and
+  # packs the cde tar.gz with the release staging script.
+  #
+  # It does not build the Tauri shell (slow, the release does) and does not run the .NET tests on Linux.
+  # `cde scan` is not exercised yet: it fails on Linux because the catalog file name is built from a drive
+  # letter and a volume label. Add a scan and an `everything` search here once it works.
+  linux:
+
+    runs-on: ubuntu-22.04
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+      # The staging script asks the tested release-version module to check the version.
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          # 9.0.x runs the FlatSharp schema compiler (its newest build targets net9.0).
+          dotnet-version: |
+            9.0.x
+            10.0.x
+      - name: Publish cde and cdeApi for linux-x64
+        run: ./build.sh PublishRelease --self-contained true --runtime linux-x64
+      # cde reads appsettings.json from the current directory and exits without it, even for --version.
+      - name: cde starts
+        working-directory: artifacts/cde
+        run: |
+          chmod +x cde
+          ./cde --version | sed -n 1p
+          ./cde --help | grep -E '^  everything '
+      # The sidecar prints {"url", "token"} on its first stdout line once it is listening.
+      - name: cdeApi starts and prints its handshake
+        working-directory: artifacts/cdeApi
+        run: |
+          chmod +x cdeApi
+          ./cdeApi > "$RUNNER_TEMP/api.out" 2> "$RUNNER_TEMP/api.err" &
+          pid=$!
+          for _ in $(seq 1 60); do [ -s "$RUNNER_TEMP/api.out" ] && break; sleep 0.5; done
+          kill "$pid" 2>/dev/null || true
+          cat "$RUNNER_TEMP/api.err"
+          head -n1 "$RUNNER_TEMP/api.out"
+          head -n1 "$RUNNER_TEMP/api.out" | grep -E '^\{"url":"http://127\.0\.0\.1:[0-9]+","token":"[0-9A-Fa-f]+"\}$'
+      # The release's own staging script, without the Tauri parts: the archive holds cde with its executable
+      # bit set, the checksum matches, and the extracted cde runs.
+      - name: Stage the cde archive
+        run: bash ./.github/scripts/stage-release-linux.sh --version 0.0.0 --no-tauri
+      - name: Check the archive
+        working-directory: artifacts/release
+        run: |
+          name=cde-0.0.0-linux-x64
+          sha256sum -c "$name.tar.gz.sha256"
+          tar -tvzf "$name.tar.gz" | grep -E -- "^-rwx[^ ]* .* $name/cde/cde$"
+          if tar -tzf "$name.tar.gz" | grep -E 'cdewin|\.pdb$'; then
+            echo "::error::The archive must not hold cdewin or debug symbols."
+            exit 1
+          fi
+          mkdir extracted
+          tar -xzf "$name.tar.gz" -C extracted
+          cd "extracted/$name/cde"
+          ./cde --version | sed -n 1p
+
   # The Tauri webview frontend: typecheck and unit tests. The Rust shell and the sidecar bundle are
   # not built here.
   cde-tauri:

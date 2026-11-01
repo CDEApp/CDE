@@ -1,0 +1,3 @@
+# The release scripts that bash runs must keep LF line endings, also in a Windows checkout with autocrlf on
+# (bash fails on a carriage return at the end of a line).
+.github/scripts/*.sh text eol=lf

@@ -27,6 +27,14 @@
   prints `error: ... (at position N)` and exits 1 before any catalog is read. Quote the query, since `<`, `>`, `|` and
   `!` mean something to a shell. `find`, `findpath`, `grep` and `greppath` are unchanged. (#152)
 
+### Release
+
+- feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the
+  Windows zip. It holds `cde` and `cde-tauri` with its `cdeApi` sidecar, built on Ubuntu 22.04, with no
+  installers and no `cdewin`. The release is published only when both builds succeed. **Known limits on Linux:**
+  `cde scan` fails there, and Open, Explore and Properties do nothing in `cde-tauri`. A Linux smoke job now runs
+  on every pull request. (#154)
+
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 
 First release from the new pipeline: one zip, `cde-2.1.0-beta.1-win-x64.zip`, with `cde`, `cdewin` and the new

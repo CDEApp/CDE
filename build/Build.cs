@@ -47,7 +47,10 @@ class Build : FalloutBuild
 
     AbsolutePath ArtifactsDirectory => RootDirectory / "artifacts";
 
-    readonly string RunTime = "win-x64";
+    [Parameter("Runtime identifier to publish for - Default is 'win-x64'. 'linux-x64' skips cdewin, which is a Windows Forms app. Used by the release workflow.")]
+    readonly string Runtime = "win-x64";
+
+    bool IsWindowsRuntime => Runtime.StartsWith("win", StringComparison.OrdinalIgnoreCase);
 
 
     [UsedImplicitly]
@@ -101,7 +104,10 @@ class Build : FalloutBuild
     void PublishApps(Configuration configuration, bool selfContained)
     {
         PublishApp("src/cde/cde.csproj", "cde", configuration, selfContained);
-        PublishApp("src/cdewin/cdewin.csproj", "cdewin", configuration, selfContained);
+
+        // cdewin is Windows Forms, so only a Windows runtime publishes it.
+        if (IsWindowsRuntime)
+            PublishApp("src/cdewin/cdewin.csproj", "cdewin", configuration, selfContained);
 
         // cdeApi ships as a self-contained single-file binary so the Tauri frontend can bundle it
         // as a sidecar on machines without the .NET runtime installed.
@@ -114,7 +120,7 @@ class Build : FalloutBuild
             .SetProject(project)
             .SetConfiguration(configuration)
             .SetOutput($"{ArtifactsDirectory}/{name}")
-            .SetRuntime(RunTime)
+            .SetRuntime(Runtime)
             .EnablePublishSingleFile()
             .SetSelfContained(selfContained)
         );
