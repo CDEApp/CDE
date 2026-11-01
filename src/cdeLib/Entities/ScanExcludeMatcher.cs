@@ -90,7 +90,7 @@ public sealed class ScanExcludeMatcher
     /// <summary>Linux-only built-in excludes: pseudo and volatile folders that are never worth cataloguing.</summary>
     private static readonly string[] LinuxDefaultExcludes =
     [
-        "/proc", "/sys", "/dev", "/run", "/tmp", "/var/tmp", "/var/cache", "/lost+found", "/home/*/.cache"
+        "/proc", "/sys", "/dev", "/run", "/tmp", "/var/tmp", "/var/cache", "/var/spool", "/var/lock", "/lost+found", "/home/*/.cache"
     ];
 
     /// <summary>
