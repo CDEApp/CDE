@@ -37,7 +37,7 @@ on:
           - '1000000'
           - '10000000'
       open-readme-pr:
-        description: 'Open a PR that refreshes the Readme table'
+        description: 'Open a PR that refreshes the Readme table (1000000 only; a 10000000 run never updates the Readme)'
         required: false
         default: false
         type: boolean
@@ -61,8 +61,9 @@ jobs:
       SIZE: ${{ inputs.size || '1000000' }}
       # The release tag: from the call input, else the pushed tag. Empty on a manual run.
       TAG: ${{ inputs.tag || (github.event_name == 'push' && github.ref_name) || '' }}
-      # A release run always refreshes the Readme; a manual run only when asked.
-      OPEN_PR: ${{ inputs.tag != '' || github.event_name == 'push' || inputs.open-readme-pr }}
+      # A release run refreshes the Readme; a manual run only when asked. Only the 1M fixture does: it is
+      # the one with a real scan time, and the Readme table holds a single fixture.
+      OPEN_PR: ${{ (inputs.tag != '' || github.event_name == 'push' || inputs.open-readme-pr) && (inputs.size || '1000000') == '1000000' }}
 
     steps:
       - uses: actions/checkout@v7
