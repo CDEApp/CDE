@@ -255,6 +255,10 @@ public class ScanExcludeMatcherTests
     [TestCase("/tmp")]
     [TestCase("/var/tmp")]
     [TestCase("/var/cache/apt")]
+    [TestCase("/var/spool")]
+    [TestCase("/var/spool/mail/alice")]
+    [TestCase("/var/lock")]
+    [TestCase("/var/lock/subsys")]
     [TestCase("/lost+found")]
     [TestCase("/home/alice/.cache")]
     [TestCase("/home/bob/.cache/thumbnails")]
@@ -268,6 +272,8 @@ public class ScanExcludeMatcherTests
     [TestCase("/home/alice")]
     [TestCase("/home/alice/.config")]
     [TestCase("/var/log")]
+    [TestCase("/var/spoolx")]
+    [TestCase("/var/locks")]
     [TestCase("/mnt/data/tmp")]
     public void Create_OnLinuxWithDefaults_DoesNotExcludeOtherPaths(string path)
     {
@@ -282,6 +288,8 @@ public class ScanExcludeMatcherTests
         var matcher = Create([], useDefaults: false, isWindows: false, isLinux: true);
 
         Assert.That(matcher.IsExcluded("/proc"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/spool"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/lock"), Is.False);
         Assert.That(matcher.IsEmpty, Is.True);
     }
 
@@ -310,6 +318,8 @@ public class ScanExcludeMatcherTests
 
         Assert.That(matcher.IsEmpty, Is.True);
         Assert.That(matcher.IsExcluded("/tmp"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/spool"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/lock"), Is.False);
     }
 
     [Test]
@@ -318,7 +328,18 @@ public class ScanExcludeMatcherTests
         var matcher = Create(["/data/skip"], useDefaults: true, isWindows: false, isLinux: false);
 
         Assert.That(matcher.IsExcluded("/tmp"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/spool"), Is.False);
+        Assert.That(matcher.IsExcluded("/var/lock"), Is.False);
         Assert.That(matcher.IsExcluded("/data/skip"), Is.True);
+    }
+
+    [TestCase("/var/spool")]
+    [TestCase("/var/lock")]
+    public void Create_ScanningDefaultExcludedPathItself_StillWorks(string root)
+    {
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: true).ForScanRoot(root);
+
+        Assert.That(matcher.IsExcluded(root + "/a"), Is.False);
     }
 
     [Test]

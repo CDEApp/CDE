@@ -38,9 +38,16 @@ public partial class Duplication
 
     public Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics,
         OperationCancellation cancellation)
+        : this(logger, configuration, applicationDiagnostics, cancellation, new HashHelper(logger))
+    {
+    }
+
+    // The hash helper is a seam so tests can make hashing fail in ways real files do not.
+    internal Duplication(ILogger logger, IConfiguration configuration, IApplicationDiagnostics applicationDiagnostics,
+        OperationCancellation cancellation, HashHelper hashHelper)
     {
         _logger = logger;
-        _hashHelper = new HashHelper(logger);
+        _hashHelper = hashHelper;
         _configuration = configuration;
         _applicationDiagnostics = applicationDiagnostics;
         _cancellation = cancellation;
@@ -75,6 +82,35 @@ public partial class Duplication
     private void ReportBreakOnce(ref int reported, string message)
     {
         if (Interlocked.Exchange(ref reported, 1) == 0) ReportStatus(message);
+    }
+
+    private Exception _unexpectedFailure;
+
+    /// <summary>
+    /// The first unexpected exception that stopped a hash phase (not a per-file read error, which is only counted
+    /// in <see cref="FilesFailed"/>), or null. Hashes completed before it are kept; the caller must surface it.
+    /// </summary>
+    public Exception UnexpectedFailure => Volatile.Read(ref _unexpectedFailure);
+
+    /// <summary>Files hashed so far (first-pass plus full hashes).</summary>
+    public long FilesHashed => _duplicationStatistics.PartialHashes + _duplicationStatistics.FullHashes;
+
+    /// <summary>Files that could not be read and hashed (locked, vanished, access denied).</summary>
+    public long FilesFailed => _duplicationStatistics.FailedToHash;
+
+    private void RecordUnexpectedFailure(Exception ex, string phase)
+    {
+        _logger.LogException(ex, "Error in {0}", phase);
+        Interlocked.CompareExchange(ref _unexpectedFailure, ex, null);
+        ReportStatus($"ERROR: hashing stopped early by an unexpected error in {phase}: {ex.Message}");
+    }
+
+    // Per-file read errors never stop the run, but are always reported.
+    private void ReportFileErrors()
+    {
+        var failed = FilesFailed;
+        if (failed > 0)
+            ReportStatus($"Hashing finished with {failed} {(failed == 1 ? "error" : "errors")}: files that could not be read were not hashed.");
     }
 
     private void ReportStatus(string message)
@@ -207,8 +243,8 @@ public partial class Duplication
         }
         catch (Exception ex)
         {
-            // parallel cancellation. will be OperationCancelled or Aggregate Exception
-            _logger.LogException(ex, "Error in {0}", nameof(ApplyHash));
+            RecordUnexpectedFailure(ex, nameof(ApplyHash));
+            ReportFileErrors();
             return;
         }
 
@@ -223,6 +259,7 @@ public partial class Duplication
 
         timer.Stop();
         ReportHashingDone(timer);
+        ReportFileErrors();
         await Task.CompletedTask;
     }
 
@@ -505,7 +542,7 @@ public partial class Duplication
         }
         catch (Exception ex)
         {
-            _logger.LogException(ex, "Error in {0}", nameof(ProcessFullHashAsync));
+            RecordUnexpectedFailure(ex, nameof(ProcessFullHashAsync));
         }
     }
 

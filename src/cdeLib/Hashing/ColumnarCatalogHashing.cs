@@ -63,11 +63,23 @@ public static class ColumnarCatalogHashing
                 if (saved && output != null) WriteHashed(output, file, updates.For(c));
             }
 
-            if (failures != null)
+            // The completed hashes are saved above even when a phase failed; now surface the failure.
+            var phaseFailure = duplication.UnexpectedFailure;
+            if (failures != null || phaseFailure != null)
             {
-                throw failures.Count == 1
-                    ? new IOException($"Failed to save a hashed catalog: {failures[0].Message}", failures[0])
-                    : new AggregateException("Failed to save some hashed catalogs.", failures);
+                var reasons = new List<string>();
+                if (phaseFailure != null) reasons.Add($"unexpected error: {phaseFailure.Message}");
+                if (failures != null)
+                    reasons.Add(failures.Count == 1
+                        ? $"failed to save a hashed catalog: {failures[0].Message}"
+                        : $"failed to save {failures.Count} hashed catalogs");
+                var all = new List<Exception>();
+                if (phaseFailure != null) all.Add(phaseFailure);
+                if (failures != null) all.AddRange(failures);
+                throw new HashFailedException(
+                    HashFailedException.Summarize(duplication.FilesHashed, duplication.FilesFailed,
+                        string.Join("; ", reasons)),
+                    all.Count == 1 ? all[0] : new AggregateException(all));
             }
         }
         finally

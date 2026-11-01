@@ -1,0 +1,44 @@
+# pnpm 10+ reads these settings from here rather than from package.json. An "overrides" block under
+# "pnpm" in package.json is silently ignored, so this file has to be committed for the pins below to
+# reach CI.
+
+# core-js's install script only prints a funding banner. CI already installs with --ignore-scripts,
+# so declining it here just makes local installs match.
+allowBuilds:
+  core-js: false
+
+# Security overrides for transitive dependencies.
+#
+# Each of these reaches us through @docusaurus/core and has no direct dependent in this project, so
+# pinning them as devDependencies does nothing — that only adds a second, unused copy alongside the
+# vulnerable one the dependency tree actually resolves. Overrides rewrite the version every
+# dependent gets, which is what the advisories need.
+#
+# Drop an entry once the upstream dependent has moved past it on its own:
+#   serialize-javascript  @docusaurus/bundler > copy-webpack-plugin   GHSA-5c6j-r48x-rmvq, GHSA-qj8w-gfj5-8c6v
+#   brace-expansion       serve-handler > minimatch                   GHSA-mh99-v99m-4gvg, GHSA-rgw5-rvv9-x895
+#   uuid                  webpack-dev-server > sockjs                 GHSA-w5hq-g745-h8pq
+#   fast-uri              webpack > schema-utils > ajv                GHSA-7p8r-x3mc-p8w7
+#   js-yaml               @docusaurus/utils, cosmiconfig, and 3 more  GHSA-5p4m-2wfm-xmqj
+#   nanoid                postcss                                     GHSA-2v37-7h3g-55p8
+#
+# Each override is capped below the next major, because an uncapped floor resolves to the newest
+# release rather than the oldest fixed one and would cross a major that no dependent here claims to
+# support. fast-uri is held below 4 because ajv declares ^3.0.1 and uses it to resolve schema $refs;
+# the advisory is fixed in 3.1.5. js-yaml is held below 5 because all five of its dependents declare
+# ^4.1.0, and nanoid below 4 because postcss declares ^3.3.16. Uncapped, those two would resolve to
+# js-yaml 5.2.3 and nanoid 6.0.1.
+#
+# image-size, reached through @docusaurus/mdx-loader, has two open high-severity advisories with no
+# fix available -- GHSA-w3rx-r6r6-pgpr (ICNS parser) and GHSA-5p2g-fcmc-qvqq (JXL and HEIF parsers),
+# both infinite loops on malformed input. Every published version including the latest, 2.0.2, is in
+# the vulnerable range, so there is no version to pin to and no entry below. Both are denial of
+# service through a crafted image, and the only images this site measures are the ones committed to
+# this repository, so nothing untrusted reaches those parsers. Add a pin here once a fix ships.
+overrides:
+  serialize-javascript: '>=7.0.5'
+  brace-expansion: '>=5.0.9'
+  uuid: '>=11.1.1'
+  fast-uri: '>=3.1.5 <4'
+  js-yaml: '>=4.3.1 <5'
+  nanoid: '>=3.3.17 <4'

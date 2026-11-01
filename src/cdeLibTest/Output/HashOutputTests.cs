@@ -87,13 +87,13 @@ public class HashOutputTests
         Directory.CreateDirectory(one + ".tmp"); // the save of "one" can't create its temp file
         var text = new StringWriter();
 
-        IOException failure = null;
+        HashFailedException failure = null;
         try
         {
             await ColumnarCatalogHashing.HashAndSave(NewDuplication(), [one, two], null,
                 RecordWriter.Create(OutputFormat.Json, text, EntryRecords.HashColumns));
         }
-        catch (IOException ex)
+        catch (HashFailedException ex)
         {
             failure = ex;
         }

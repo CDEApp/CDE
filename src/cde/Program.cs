@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Autofac;
 using cde.CommandLine;
 using cdeLib;
+using cdeLib.Hashing;
 using cdeLib.Output;
 using CommandLine;
 using Serilog;
@@ -97,6 +98,12 @@ public static class Program
             await Console.Error.WriteLineAsync($"error: {ex.Message}").ConfigureAwait(false);
             return 1;
         }
+        catch (Exception ex) when (FindHashFailure(ex) is { } hashFailure)
+        {
+            // a hash run that did not complete (the hashes computed so far were saved): summary line, exit 1
+            await Console.Error.WriteLineAsync(hashFailure.Message).ConfigureAwait(false);
+            return 1;
+        }
         catch (OperationCanceledException)
         {
             // Ctrl-C stops long operations cooperatively; one that ends with this exception has still stopped cleanly.
@@ -107,6 +114,24 @@ public static class Program
         {
             await Log.CloseAndFlushAsync().ConfigureAwait(false);
         }
+    }
+
+    // The message bus or Task plumbing may wrap the exception, so look through the inner exceptions.
+    private static HashFailedException FindHashFailure(Exception ex)
+    {
+        for (var e = ex; e != null; e = e.InnerException)
+        {
+            if (e is HashFailedException h) return h;
+            if (e is AggregateException agg)
+            {
+                foreach (var inner in agg.InnerExceptions)
+                {
+                    if (FindHashFailure(inner) is { } found) return found;
+                }
+            }
+        }
+
+        return null;
     }
 
     /// <summary>
