@@ -25,7 +25,7 @@ namespace cdeMemProbe;
 ///   cdeMemProbe --report &lt;N&gt; [--out perf.json] [--cde path/to/cde] [--work dir] [--seed N] [--direct]
 ///       Release performance report (perf.json); see src/cdeBenchmarks/README.md.
 ///   cdeMemProbe --compare --current perf.json [--baseline old.json] [--markdown out.md]
-///       Show deltas vs the baseline; exit 1 only when the .cdex size grew more than 2%.
+///       Show deltas vs the baseline; exit 3 only when the .cdex size grew more than 2%.
 ///   cdeMemProbe --readme --current perf.json --file Readme.md
 ///       Regenerate the performance table between the perf-table markers.
 ///

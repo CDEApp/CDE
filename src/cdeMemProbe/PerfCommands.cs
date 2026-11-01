@@ -6,6 +6,9 @@ namespace cdeMemProbe;
 /// <summary>The <c>--compare</c> and <c>--readme</c> modes, which post-process a perf.json.</summary>
 public static class PerfCommands
 {
+    /// <summary>Exit code of <c>--compare</c> when the .cdex size gate fails; 1 is a usage error.</summary>
+    public const int GateFailedExitCode = 3;
+
     public static int Compare(Func<string, string?> flag)
     {
         var currentPath = flag("--current");
@@ -36,7 +39,7 @@ public static class PerfCommands
                 Console.Error.WriteLine($"::warning::{d.Metric} grew {d.PercentChange:0.0}% (warn above {PerfComparison.RssWarnGrowthPercent}%)");
         }
 
-        return result.Failed ? 1 : 0;
+        return result.Failed ? GateFailedExitCode : 0;
     }
 
     public static int Readme(Func<string, string?> flag)

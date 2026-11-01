@@ -52,7 +52,7 @@ dotnet run --project src/cdeMemProbe -c Release -- --compare --current perf.json
 dotnet run --project src/cdeMemProbe -c Release -- --readme --current perf.json --file Readme.md
 ```
 
-`--compare` exits with 1 only when the `.cdex` size grew more than 2%. Peak RSS growth over 15% prints a warning.
+`--compare` exits with 3 only when the `.cdex` size grew more than 2%. Peak RSS growth over 15% prints a warning.
 Timings never gate. With no baseline it reports absolute numbers and exits with 0.
 
 ## Benchmark Classes
