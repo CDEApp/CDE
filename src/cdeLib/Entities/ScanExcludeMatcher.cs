@@ -67,6 +67,38 @@ public sealed class ScanExcludeMatcher
 
         _patterns = list.ToArray();
         _bareNames = bare.ToArray();
+
+        foreach (var pattern in NeverMatchingPatterns(patterns, isWindows))
+        {
+            Log.Warning("Scan exclude path can never match on this OS, it is kept but has no effect: {Pattern}", pattern);
+        }
+    }
+
+    /// <summary>
+    /// Non-blank patterns written for another OS's paths, so they can never match here: a rooted "/..." path on
+    /// Windows (a "//" UNC path is fine), or a "C:\..." drive or "\\" UNC path on Linux and macOS.
+    /// </summary>
+    public static IReadOnlyList<string> NeverMatchingPatterns(IEnumerable<string> patterns, bool isWindows)
+    {
+        var never = new List<string>();
+        foreach (var raw in patterns ?? Array.Empty<string>())
+        {
+            var pattern = raw?.Trim();
+            if (string.IsNullOrEmpty(pattern))
+            {
+                continue;
+            }
+
+            var unixRooted = pattern[0] == '/' && !pattern.StartsWith("//", StringComparison.Ordinal);
+            var windowsStyle = (pattern.Length >= 3 && char.IsAsciiLetter(pattern[0]) && pattern[1] == ':' && (pattern[2] == '\\' || pattern[2] == '/'))
+                               || pattern.StartsWith(@"\\", StringComparison.Ordinal);
+            if (isWindows ? unixRooted : windowsStyle)
+            {
+                never.Add(pattern);
+            }
+        }
+
+        return never;
     }
 
     /// <summary>
@@ -94,16 +126,27 @@ public sealed class ScanExcludeMatcher
     ];
 
     /// <summary>
-    /// User patterns plus, on Linux with <paramref name="useDefaultExcludes"/>, the built-in list.
+    /// macOS-only built-in excludes: the device tree, and the per-volume Spotlight index and FSEvents store at a volume root.
+    /// /dev is in Apple's File System Programming Guide; the two dot folders are described in Eclectic Light's APFS notes.
+    /// The swap/VM paths (/private/var/vm, /System/Volumes/VM) are left out: only forum posts confirm them.
+    /// </summary>
+    private static readonly string[] MacOsDefaultExcludes = ["/dev", "/.Spotlight-V100", "/.fseventsd"];
+
+    /// <summary>
+    /// User patterns plus, on Linux or macOS with <paramref name="useDefaultExcludes"/>, that OS's built-in list.
     /// The OS is injected so the on/off/additive rules can be tested on any host.
     /// </summary>
     public static ScanExcludeMatcher Create(IEnumerable<string> userPatterns, bool useDefaultExcludes,
-        bool isWindows, bool isLinux)
+        bool isWindows, bool isLinux, bool isMacOs = false)
     {
         var all = new List<string>(userPatterns ?? Array.Empty<string>());
         if (useDefaultExcludes && isLinux)
         {
             all.AddRange(LinuxDefaultExcludes);
+        }
+        else if (useDefaultExcludes && isMacOs)
+        {
+            all.AddRange(MacOsDefaultExcludes);
         }
 
         return new ScanExcludeMatcher(all, isWindows);
@@ -119,7 +162,7 @@ public sealed class ScanExcludeMatcher
             ? scan?.ExcludePaths
             : (scan?.ExcludePaths ?? Enumerable.Empty<string>()).Concat(extraPatterns);
         return Create(user, scan?.UseDefaultExcludes ?? true,
-            OperatingSystem.IsWindows(), OperatingSystem.IsLinux());
+            OperatingSystem.IsWindows(), OperatingSystem.IsLinux(), OperatingSystem.IsMacOS());
     }
 
     /// <summary>

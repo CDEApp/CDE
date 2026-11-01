@@ -245,8 +245,8 @@ public class ScanExcludeMatcherTests
         Assert.That(ScanExcludeMatcher.None.IsExcluded("/tmp"), Is.False);
     }
 
-    private static ScanExcludeMatcher Create(string[] user, bool useDefaults, bool isWindows, bool isLinux) =>
-        ScanExcludeMatcher.Create(user, useDefaults, isWindows, isLinux);
+    private static ScanExcludeMatcher Create(string[] user, bool useDefaults, bool isWindows, bool isLinux, bool isMacOs = false) =>
+        ScanExcludeMatcher.Create(user, useDefaults, isWindows, isLinux, isMacOs);
 
     [TestCase("/proc")]
     [TestCase("/sys/kernel")]
@@ -331,6 +331,76 @@ public class ScanExcludeMatcherTests
         Assert.That(matcher.IsExcluded("/var/spool"), Is.False);
         Assert.That(matcher.IsExcluded("/var/lock"), Is.False);
         Assert.That(matcher.IsExcluded("/data/skip"), Is.True);
+    }
+
+    [TestCase("/dev")]
+    [TestCase("/dev/disk0")]
+    [TestCase("/.Spotlight-V100")]
+    [TestCase("/.fseventsd/x")]
+    public void Create_OnMacOsWithDefaults_ExcludesBuiltInPaths(string path)
+    {
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: false, isMacOs: true);
+
+        Assert.That(matcher.IsExcluded(path), Is.True);
+    }
+
+    [TestCase("/tmp")]
+    [TestCase("/proc")]
+    [TestCase("/Users/alice")]
+    [TestCase("/Volumes/Backup/.fseventsd")]
+    public void Create_OnMacOsWithDefaults_DoesNotExcludeOtherPaths(string path)
+    {
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: false, isMacOs: true);
+
+        Assert.That(matcher.IsExcluded(path), Is.False);
+    }
+
+    [Test]
+    public void Create_OnMacOsDefaultsOff_NoBuiltInPathsAndUserPathsApply()
+    {
+        var matcher = Create(["/data/skip"], useDefaults: false, isWindows: false, isLinux: false, isMacOs: true);
+
+        Assert.That(matcher.IsExcluded("/dev"), Is.False);
+        Assert.That(matcher.IsExcluded("/.Spotlight-V100"), Is.False);
+        Assert.That(matcher.IsExcluded("/data/skip"), Is.True);
+    }
+
+    [Test]
+    public void Create_OnLinuxAndWindows_HaveNoMacOsPaths()
+    {
+        Assert.That(Create([], true, isWindows: false, isLinux: true).IsExcluded("/.fseventsd"), Is.False);
+        Assert.That(Create([], true, isWindows: true, isLinux: false).IsExcluded("/.fseventsd"), Is.False);
+    }
+
+    [TestCase("/tmp")]
+    [TestCase("/home/*/.cache")]
+    public void NeverMatchingPatterns_OnWindows_FlagsRootedUnixPaths(string pattern)
+    {
+        Assert.That(ScanExcludeMatcher.NeverMatchingPatterns([pattern], isWindows: true), Is.EqualTo(new[] { pattern }));
+    }
+
+    [TestCase(@"C:\temp")]
+    [TestCase("c:/temp")]
+    [TestCase(@"\\server\share")]
+    public void NeverMatchingPatterns_OnLinuxAndMac_FlagsDriveAndUncPaths(string pattern)
+    {
+        Assert.That(ScanExcludeMatcher.NeverMatchingPatterns([pattern], isWindows: false), Is.EqualTo(new[] { pattern }));
+    }
+
+    [Test]
+    public void NeverMatchingPatterns_MatchingOrBarePatterns_AreNotFlagged()
+    {
+        Assert.That(ScanExcludeMatcher.NeverMatchingPatterns(["/tmp", "node_modules", "  ", null], isWindows: false), Is.Empty);
+        Assert.That(ScanExcludeMatcher.NeverMatchingPatterns([@"C:\temp", @"\\server\share", "node_modules", "//server/share"], isWindows: true), Is.Empty);
+    }
+
+    [Test]
+    public void NeverMatchingPattern_DoesNotChangeScanResults()
+    {
+        var matcher = Windows("/tmp", @"C:\skip");
+
+        Assert.That(matcher.IsExcluded(@"C:\skip\a"), Is.True);
+        Assert.That(matcher.IsExcluded(@"C:\tmp"), Is.False);
     }
 
     [TestCase("/var/spool")]

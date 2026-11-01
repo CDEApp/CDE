@@ -61,7 +61,7 @@ The file that ships beside the executable also has a Seq sink for a log server o
 | `AppConfig.Hashing.FirstPassSizeInBytes` | `65536` | How many bytes at the start of a file the first hashing pass reads. |
 | `AppConfig.Hashing.DegreesOfParallelism` | `2` | How many hashers run at once on one file system. Different file systems are always hashed in parallel. |
 | `AppConfig.Scan.ExcludePaths` | `[]` | Folders that a scan records but does not go into. See below. |
-| `AppConfig.Scan.UseDefaultExcludes` | `true` | Skip the built-in list of system folders on Linux. See below. |
+| `AppConfig.Scan.UseDefaultExcludes` | `true` | Skip the built-in list of system folders on Linux and macOS. See below. |
 
 :::caution
 If you change `FirstPassSizeInBytes` after you made catalogs with hashes, delete those catalogs, scan again and hash again.
@@ -81,13 +81,15 @@ If you change `FirstPassSizeInBytes` after you made catalogs with hashes, delete
 
 Use `cde scan --exclude <path>` to add folders for one scan only.
 
-### Default excludes on Linux
+### Default excludes on Linux and macOS
 
 When `AppConfig.Scan.UseDefaultExcludes` is `true`, a scan on Linux also skips:
 
 `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/var/spool`, `/var/lock`, `/lost+found` and `/home/*/.cache`.
 
-`/var/spool` can hold user mail. Scan it on purpose if you want it. `ExcludePaths` adds to this list. Set the option to `false` to scan these folders. It has no effect on Windows and macOS, which have no built-in list.
+`/var/spool` can hold user mail. Scan it on purpose if you want it. `ExcludePaths` adds to this list. Set the option to `false` to scan these folders.
+
+On macOS the option skips `/dev`, `/.Spotlight-V100` and `/.fseventsd` instead (the last two are the per-volume Spotlight index and file system events store at a volume root). It has no effect on Windows, which has no built-in list.
 
 ## Logging
 
