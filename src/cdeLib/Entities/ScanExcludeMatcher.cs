@@ -11,7 +11,7 @@ namespace cdeLib.Entities;
 /// Decides whether a directory found during a scan is user-excluded. A pattern is either an absolute path, or a bare
 /// name with no path separator (such as "node_modules") that matches a folder of that name at any depth below the scan
 /// root; a match covers that folder and everything under it (the scan never descends into it, so only an entry's own name is checked). '*' matches within a single path segment (no **).
-/// Case-sensitive except on Windows, where '/' and '\' are also interchangeable. Matching is done on
+/// Case-sensitive except on Windows, where '/' and '\' are also interchangeable (default macOS volumes are case-insensitive, so write patterns there in the folder's real case). Matching is done on
 /// segments in place, so checking a path allocates nothing.
 /// </summary>
 public sealed class ScanExcludeMatcher
@@ -38,12 +38,18 @@ public sealed class ScanExcludeMatcher
         _isWindows = isWindows;
         var list = new List<string[]>();
         var bare = new List<string>();
+        var never = new List<string>();
         foreach (var raw in patterns ?? Array.Empty<string>())
         {
             var pattern = raw?.Trim();
             if (string.IsNullOrEmpty(pattern))
             {
                 continue;
+            }
+
+            if (IsNeverMatching(pattern, isWindows))
+            {
+                never.Add(pattern);
             }
 
             if (IsBareName(pattern, isWindows))
@@ -68,7 +74,7 @@ public sealed class ScanExcludeMatcher
         _patterns = list.ToArray();
         _bareNames = bare.ToArray();
 
-        foreach (var pattern in NeverMatchingPatterns(patterns, isWindows))
+        foreach (var pattern in never)
         {
             Log.Warning("Scan exclude path can never match on this OS, it is kept but has no effect: {Pattern}", pattern);
         }
@@ -89,16 +95,22 @@ public sealed class ScanExcludeMatcher
                 continue;
             }
 
-            var unixRooted = pattern[0] == '/' && !pattern.StartsWith("//", StringComparison.Ordinal);
-            var windowsStyle = (pattern.Length >= 3 && char.IsAsciiLetter(pattern[0]) && pattern[1] == ':' && (pattern[2] == '\\' || pattern[2] == '/'))
-                               || pattern.StartsWith(@"\\", StringComparison.Ordinal);
-            if (isWindows ? unixRooted : windowsStyle)
+            if (IsNeverMatching(pattern, isWindows))
             {
                 never.Add(pattern);
             }
         }
 
         return never;
+    }
+
+    // Shared by the constructor and NeverMatchingPatterns so the two cannot drift. Expects a trimmed, non-blank pattern.
+    private static bool IsNeverMatching(string pattern, bool isWindows)
+    {
+        var unixRooted = pattern[0] == '/' && !pattern.StartsWith("//", StringComparison.Ordinal);
+        var windowsStyle = (pattern.Length >= 3 && char.IsAsciiLetter(pattern[0]) && pattern[1] == ':' && (pattern[2] == '\\' || pattern[2] == '/'))
+                           || pattern.StartsWith(@"\\", StringComparison.Ordinal);
+        return isWindows ? unixRooted : windowsStyle;
     }
 
     /// <summary>
@@ -127,6 +139,8 @@ public sealed class ScanExcludeMatcher
 
     /// <summary>
     /// macOS-only built-in excludes: the device tree, and the per-volume Spotlight index and FSEvents store at a volume root.
+    /// The two dot folders are anchored at "/", so they only match when scanning from "/"; scanning another volume
+    /// (such as /Volumes/External) needs its own pattern, for example /Volumes/External/.Spotlight-V100.
     /// /dev is in Apple's File System Programming Guide; the two dot folders are described in Eclectic Light's APFS notes.
     /// The swap/VM paths (/private/var/vm, /System/Volumes/VM) are left out: only forum posts confirm them.
     /// </summary>

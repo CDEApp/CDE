@@ -8,8 +8,9 @@ public class ScanSection
     public string[] ExcludePaths { get; set; } = [];
 
     /// <summary>
-    /// On Linux, also skip the built-in pseudo/volatile folders (/proc, /sys, /tmp, ...). ExcludePaths add to
-    /// them. Ignored on Windows and macOS, which have no built-in defaults. The list lives in code.
+    /// On Linux and macOS, also skip that OS's built-in pseudo/volatile folders (Linux: /proc, /sys, /tmp, ...;
+    /// macOS: /dev, /.Spotlight-V100, /.fseventsd). ExcludePaths add to them. Ignored on Windows, which has no
+    /// built-in defaults. The list lives in code.
     /// </summary>
     public bool UseDefaultExcludes { get; set; } = true;
 }

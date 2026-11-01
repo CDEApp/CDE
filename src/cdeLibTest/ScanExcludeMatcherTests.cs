@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using System;
 using System.IO;
 using cdeLib.Entities;
@@ -401,6 +403,39 @@ public class ScanExcludeMatcherTests
 
         Assert.That(matcher.IsExcluded(@"C:\skip\a"), Is.True);
         Assert.That(matcher.IsExcluded(@"C:\tmp"), Is.False);
+    }
+
+    private static IEnumerable<string> OneShot(params string[] items)
+    {
+        foreach (var item in items)
+        {
+            yield return item;
+        }
+    }
+
+    [Test]
+    public void NeverMatchingPattern_OneShotSequence_WarnsOnceAndKeepsScanResults()
+    {
+        var events = new List<Serilog.Events.LogEvent>();
+        var previous = Serilog.Log.Logger;
+        Serilog.Log.Logger = new Serilog.LoggerConfiguration().WriteTo.Sink(new CapturingSink(events)).CreateLogger();
+        try
+        {
+            var matcher = new ScanExcludeMatcher(OneShot("/tmp", @"C:\skip"), isWindows: true);
+
+            Assert.That(events.Count(e => e.RenderMessage().Contains("can never match")), Is.EqualTo(1));
+            Assert.That(matcher.IsExcluded(@"C:\skip\a"), Is.True);
+            Assert.That(matcher.IsExcluded(@"C:\tmp"), Is.False);
+        }
+        finally
+        {
+            Serilog.Log.Logger = previous;
+        }
+    }
+
+    private sealed class CapturingSink(List<Serilog.Events.LogEvent> events) : Serilog.Core.ILogEventSink
+    {
+        public void Emit(Serilog.Events.LogEvent logEvent) => events.Add(logEvent);
     }
 
     [TestCase("/var/spool")]

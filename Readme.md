@@ -596,13 +596,13 @@ There are 5 values in `AppConfig` that can be modified to change cde behaviour.
   - A path covers that folder and everything under it. `*` matches inside one path segment (`/home/*/.cache`); there is no `**`.
   - A bare name with no path separator, such as `node_modules` or `.git`, excludes a folder of that name at any depth below the scan root (`*` works inside the name). It never excludes the scan root itself, even when the root has that name.
   - A trailing `/*` excludes what is inside a folder but not the folder itself: `/tmp/*` skips the children of `/tmp`, while `/tmp` is still recorded and entered.
-  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Entries that are blank, or relative with a separator, are logged and ignored. A pattern written for another OS (a `/tmp`-style path on Windows, a `C:\...` path on Linux or macOS) can never match, so a warning is logged and it has no effect.
+  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Default macOS volumes (APFS and HFS+) are case-insensitive, so on macOS write patterns with the folder's real case. Entries that are blank, or relative with a separator, are logged and ignored. A pattern written for another OS (a `/tmp`-style path on Windows, a `C:\...` path on Linux or macOS) can never match, so a warning is logged and it has no effect.
   - The folder you scan, and any folder above it, is never excluded: `cde scan /tmp/work` still scans `/tmp/work` when `/tmp` is excluded. Paths below the scan root still apply.
   - It applies to `cde scan`, and to creating and rescanning catalogs in cde-tauri. Nothing is stored in the catalog, and a rescan uses the settings at the time of the rescan, so edit the file and rescan to change what is skipped.
 
 - `AppConfig.Scan.UseDefaultExcludes` which defaults to true.
   - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/var/spool`, `/var/lock`, `/lost+found` and `/home/*/.cache`. Note `/var/spool` can hold user mail; scan it explicitly if you want it. `ExcludePaths` adds to this list.
-  - On macOS, also skips `/dev`, `/.Spotlight-V100` and `/.fseventsd` (the last two are the per-volume Spotlight index and file system events store at a volume root). `ExcludePaths` adds to this list.
+  - On macOS, also skips `/dev`, `/.Spotlight-V100` and `/.fseventsd` (the last two are the per-volume Spotlight index and file system events store at a volume root). The two dot folders are anchored at `/`, so they apply when you scan from `/`; to exclude them on another volume add a pattern such as `/Volumes/<name>/.Spotlight-V100`. `ExcludePaths` adds to this list.
   - Set it to false to scan those folders. It has no effect on Windows, which has no built-in list.
 
 ### Catalog file sizes and memory usage
