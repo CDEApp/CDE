@@ -46,7 +46,7 @@ public abstract class UnixShellActions : IShellActions
             return ShellResult.Failed("the custom command has no program set");
         }
 
-        var arguments = CommandTokens.SplitAndSubstitute(command.Arguments, fullPath);
+        var arguments = CommandTokens.SplitAndSubstitute(command.Arguments ?? "{path}", fullPath);
         return Report(command.Command, Runner.Run(command.Command, arguments, wait: false));
     }
 

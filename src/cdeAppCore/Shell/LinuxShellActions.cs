@@ -32,8 +32,13 @@ public sealed class LinuxShellActions : UnixShellActions
         }
 
         var slash = fullPath.LastIndexOf('/');
-        var parent = slash > 0 ? fullPath[..slash] : null;
-        return string.IsNullOrEmpty(parent) ? shown : Run("xdg-open", [parent], wait: false);
+        if (slash < 0)
+        {
+            return shown;
+        }
+
+        var parent = slash == 0 ? "/" : fullPath[..slash];
+        return Run("xdg-open", [parent], wait: false);
     }
 
     protected override ShellResult DefaultProperties(string fullPath)

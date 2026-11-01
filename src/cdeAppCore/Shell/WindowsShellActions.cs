@@ -85,7 +85,7 @@ public sealed class WindowsShellActions : IShellActions
         {
             return start() ? ShellResult.Ok : ShellResult.Failed($"{what} failed");
         }
-        catch (Win32Exception ex)
+        catch (Exception ex) when (ex is Win32Exception or InvalidOperationException or ArgumentException)
         {
             _logger?.Warning("{Action} failed: {Exception}", what, ex.Message);
             return ShellResult.Failed($"{what} failed: {ex.Message}");
