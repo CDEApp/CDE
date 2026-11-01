@@ -36,7 +36,7 @@ describe("useRescan", () => {
       running = r.current.rescanCatalog(1);
     });
     expect(r.current.rescans.has(1)).toBe(true);
-    expect(r.current.rescansRef.current.has(1)).toBe(true);
+    expect(r.current.getRescans().has(1)).toBe(true);
 
     await act(async () => {
       finish(result);
@@ -44,6 +44,7 @@ describe("useRescan", () => {
     });
     expect(afterSwap).toHaveBeenCalledOnce();
     expect(r.current.rescans.has(1)).toBe(false);
+    expect(r.current.getRescans().has(1)).toBe(false);
 
     act(() => r.current.cancelRescan(1)); // the handle is gone: nothing to abort
     expect(signal?.aborted).toBe(false);

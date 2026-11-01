@@ -41,8 +41,10 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
       setBusy(true);
       setTiming("Searching…");
 
+      searchAbort.current?.abort(); // a newer search supersedes a running one
       const abort = new AbortController();
       searchAbort.current = abort;
+      const isLatest = () => searchAbort.current === abort; // a superseded search must not touch the state
       const start = performance.now();
       const buffer: SearchResultRow[] = [];
       // The previous results stay until the search really starts: a refused query (a 400, such as a malformed
@@ -59,7 +61,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
         if (flush) return;
         flush = setTimeout(() => {
           flush = null;
-          setResults([...buffer]);
+          if (isLatest()) setResults([...buffer]);
         }, 100);
       };
 
@@ -67,27 +69,32 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
         await client.search(query, {
           signal: abort.signal,
           onResult: (row) => {
+            if (!isLatest()) return;
             begin();
             buffer.push(row);
             scheduleFlush();
           },
           onProgress: (p) => {
+            if (!isLatest()) return;
             begin();
             setTiming(`${p.total > 0 ? Math.round((100 * p.count) / p.total) : 0}%`);
           },
           onDone: (count) => {
+            if (!isLatest()) return;
             begin();
             setResults([...buffer]);
             setTiming(`${count.toLocaleString()} results in ${Math.round(performance.now() - start)} ms`);
           },
         });
       } catch (e) {
-        setTiming(searchErrorMessage(e));
+        if (isLatest()) setTiming(searchErrorMessage(e));
       } finally {
         if (flush) clearTimeout(flush);
-        if (started) setResults([...buffer]);
-        setBusy(false);
-        searchAbort.current = null;
+        if (isLatest()) {
+          if (started) setResults([...buffer]);
+          setBusy(false);
+          searchAbort.current = null;
+        }
       }
     },
     [getClient, getUi, onStart],

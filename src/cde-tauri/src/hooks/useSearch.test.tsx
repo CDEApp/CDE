@@ -69,6 +69,46 @@ describe("useSearch", () => {
     fail = true;
     await act(() => result.current.runSearch(query));
     expect(result.current.results).toHaveLength(1);
+    expect(result.current.timing).toBe("Error: bad query");
+    expect(result.current.busy).toBe(false);
+  });
+
+  it("aborts a running search when a new one starts, and the older one no longer touches the state", async () => {
+    const signals: AbortSignal[] = [];
+    const finishers: (() => void)[] = [];
+    const handlers: SearchHandlers[] = [];
+    const { result } = setup((_q, h) => {
+      signals.push(h.signal!);
+      handlers.push(h);
+      return new Promise<void>((resolve) => finishers.push(resolve));
+    });
+    let first!: Promise<void>;
+    let second!: Promise<void>;
+    act(() => {
+      first = result.current.runSearch(query);
+    });
+    act(() => {
+      second = result.current.runSearch(query);
+    });
+    expect(signals[0].aborted).toBe(true);
+    expect(signals[1].aborted).toBe(false);
+
+    // The older search finishes late with a result of its own: it must neither show it nor clear busy.
+    await act(async () => {
+      handlers[0].onResult(row(9));
+      finishers[0]();
+      await first;
+    });
+    expect(result.current.busy).toBe(true);
+    expect(result.current.results).toHaveLength(0);
+
+    // Cancel still reaches the newer search.
+    act(() => result.current.cancelSearch());
+    expect(signals[1].aborted).toBe(true);
+    await act(async () => {
+      finishers[1]();
+      await second;
+    });
     expect(result.current.busy).toBe(false);
   });
 
