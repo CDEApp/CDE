@@ -251,7 +251,8 @@ tbody tr:hover { background: var(--row-hover); }
 .nc-form { display: flex; flex-direction: column; gap: 4px; }
 .nc-label { margin-top: 8px; font-size: 12px; opacity: .8; }
 .nc-row { display: flex; align-items: center; gap: 8px; }
-.nc-input { flex: 1; min-width: 0; padding: 4px 6px; }
+/* line-height and bottom padding keep the underscore of a name like bin_x11 from being clipped (WebKitGTK) */
+.nc-input { flex: 1; min-width: 0; padding: 4px 6px 6px; line-height: 1.4; }
 .nc-input[readonly] { opacity: .75; }
 .nc-ext { opacity: .8; }
 .nc-check { display: flex; align-items: center; gap: 6px; margin-top: 10px; }
