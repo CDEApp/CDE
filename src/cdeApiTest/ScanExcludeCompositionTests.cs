@@ -62,10 +62,12 @@ public class ScanExcludeCompositionTests
 
         var created = await session.CreateCatalogAsync(new CreateCatalogRequest { RootPath = _data, FileName = "x" });
         Assert.That(created.Entries, Is.EqualTo(2)); // skip dir + keep.txt; inner.txt not scanned
+        Assert.That(created.ExcludedFolderCount, Is.EqualTo(1));
 
         config["AppConfig:Scan:ExcludePaths:0"] = null;
         var rescanned = await session.RescanAsync(created.CatalogId);
         Assert.That(rescanned.Entries, Is.EqualTo(3));
+        Assert.That(rescanned.ExcludedFolderCount, Is.Zero);
     }
 
     private static ILogger Substitute() => new LoggerConfiguration().CreateLogger();
