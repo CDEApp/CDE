@@ -10,7 +10,6 @@ using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Serialization;
 using MessagePack;
-using ProtoBuf;
 using Serilog;
 using SerilogTimings;
 using ILogger = Serilog.ILogger;
@@ -38,8 +37,6 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
 
             switch (_serializerProtocol)
             {
-                case SerializerProtocol.Protobuf:
-                    return Serializer.Deserialize<RootEntry>(input);
                 case SerializerProtocol.Flatbuffers:
                     byte[] bytes;
                     using (Operation.Time("ReadStream"))
@@ -74,11 +71,6 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         {
             switch (_serializerProtocol)
             {
-                case SerializerProtocol.Protobuf:
-                    await using (var input = _fileStreamManager.CreateReadStream(file))
-                    {
-                        return Serializer.Deserialize<RootEntry>(input);
-                    }
                 case SerializerProtocol.Flatbuffers:
                     var bytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
                     using (Operation.Time("Deserialize"))
@@ -259,13 +251,6 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         var fileName = rootEntry.ActualFileName ?? rootEntry.DefaultFileName;
         switch (_serializerProtocol)
         {
-            case SerializerProtocol.Protobuf:
-                await using (var newFs = _fileStreamManager.CreateWriteStream(fileName))
-                {
-                    Serializer.Serialize(newFs, rootEntry);
-                }
-
-                break;
             case SerializerProtocol.Flatbuffers:
                 await _fileStreamManager.WriteAllBytesOptimizedAsync(fileName,
                     FlatBufferCatalogSerializer.Serialize(rootEntry));

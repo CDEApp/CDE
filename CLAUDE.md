@@ -24,7 +24,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10
   - Contains all catalog operations, hashing, duplicate detection
   - Uses CQRS pattern with SlimMessageBus
-  - Serialization: columnar `.cdex` (zero-copy, memory-mapped), plus MessagePack/FlatSharp/protobuf-net for the legacy `.cde` tree format
+  - Serialization: columnar `.cdex` (zero-copy, memory-mapped), plus MessagePack/FlatSharp for the legacy `.cde` tree format
   - Key dependencies: Autofac, SlimMessageBus, Serilog
 
 - **cdeAppCore** - Frontend-agnostic application core
@@ -116,7 +116,7 @@ Two on-disk catalog formats:
 - **Columnar `.cdex`** (`Entities/Columnar/ColumnarFormat.cs`) - **Current/primary format.** A struct-of-arrays layout designed for *zero-copy reads over a memory-mapped file*: "loading" a catalog is mmap-ing it, so no managed object graph is materialised and the working set is only the file pages a query touches (reclaimable OS page cache, not GC heap). Custom binary layout with a `"CDEX"` magic header and dense, homogeneous columns (names, sizes, timestamps, hashes, tree links) — a name-only search scans just the name columns and never pages in the rest. Written directly by `scan`; read via `ColumnarCatalogReader`.
 - **Legacy `.cde` tree format** - The original materialised directory-tree format, serialized via a pluggable `SerializerProtocol` in `Catalog/CatalogRepository.cs`:
   - **MessagePack** - default protocol for `.cde` (`MessagePackConfig.Options`, custom `Hash16Formatter`/resolver)
-  - **FlatSharp** (FlatBuffers) and **protobuf-net** - alternative protocols selectable via `SerializerProtocol`
+  - **FlatSharp** (FlatBuffers) - alternative protocol selectable via `SerializerProtocol`
   - FlatSharp 7 has no runtime code generation: the FlatBuffers layout is `Catalog/FlatBuffers/Catalog.fbs`, compiled at build time into `Fb*` types that `FlatBufferCatalogSerializer` maps to/from `RootEntry`/`DirEntry`. Field ids are positional and match the old FlatSharp 6 attribute indexes (the `deprecated` fields fill the gaps), so add new fields at the end of a table. The schema compiler runs on the .NET 9 runtime, which CI installs alongside 10.
 
 ### Hashing
@@ -213,7 +213,7 @@ Located in `cdeLib/Infrastructure/`:
 - **Format**:
   - `.cdex` - custom columnar binary, memory-mapped for zero-copy loads (not compressed)
   - `.cdex` header flags (int32 at offset 12): bit0 = hasHashes, bit1 = followJunctions (issue #66, the scan option, exposed as `ColumnarCatalogReader.FollowJunctions` / `CatalogInfoDto.FollowJunctions`). Absent bit = false, so older catalogs load unchanged. Version stays 1; older builds ignore the unknown bit. `.cde` cannot carry it (reads as false).
-  - `.cde` - MessagePack binary serialization by default (not compressed); protobuf/FlatBuffers selectable in code
+  - `.cde` - MessagePack binary serialization by default (not compressed); FlatBuffers selectable in code
 
 ## Common Operations
 
@@ -336,7 +336,7 @@ Standard .NET test runners (tests use NUnit, xUnit)
 - **SlimMessageBus** - Command/query and pub/sub messaging (in-memory)
 - **MessagePack** - Serialization for the legacy `.cde` tree format (current `.cdex` format uses a custom columnar layout)
 - **FlatSharp** - FlatBuffers serialization (alternative `.cde` protocol)
-- **protobuf-net** - Protobuf serialization (alternative `.cde` protocol)
+- **protobuf-net** - cdeWin user config file only (no longer a `.cde` protocol)
 - **Serilog** - Structured logging
 - **CommandLineParser** - CLI argument parsing
 - **Spectre.Console** - Rich console output

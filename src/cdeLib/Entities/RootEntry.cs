@@ -10,13 +10,11 @@ using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.IO;
 using MessagePack;
-using ProtoBuf;
 using Serilog;
 
 namespace cdeLib.Entities;
 
 [DebuggerDisplay("Path = {Path}, Count = {Children.Count}")]
-[ProtoContract]
 [MessagePackObject]
 public sealed class RootEntry : object, ICommonEntry
 {
@@ -31,14 +29,12 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public bool FollowJunctions { get; set; }
 
-    [ProtoMember(2, IsRequired = true)]
     [Key(2)]
     public string Description { get; set; } // user entered description ?
 
     /// <summary>
     /// There are a standard set on C: drive in win7 do we care about them? Filter em out ? or hold internal filter to filter em out ojn display optionally.
     /// </summary>
-    [ProtoMember(3, IsRequired = true)]
     [Key(3)]
     public IList<string> PathsWithUnauthorisedExceptions { get; set; }
 
@@ -54,19 +50,15 @@ public sealed class RootEntry : object, ICommonEntry
     [IgnoreMember]
     public int UnreadableFolderCount { get; private set; }
 
-    [ProtoMember(4, IsRequired = true)]
     [Key(4)]
     public string DefaultFileName { get; set; }
 
-    [ProtoMember(5, IsRequired = true)]
     [Key(5)]
     public string DriveLetterHint { get; set; }
 
-    [ProtoMember(6, IsRequired = true)]
     [Key(6)]
     public long AvailSpace { get; set; }
 
-    [ProtoMember(7, IsRequired = true)]
     [Key(7)]
     public long TotalSpace { get; set; }
 
@@ -77,7 +69,6 @@ public sealed class RootEntry : object, ICommonEntry
         set => ScanStartUtcTicks = value.Ticks;
     }
 
-    [ProtoMember(8, IsRequired = true)]
     [Key(8)]
     public long ScanStartUtcTicks { get; set; }
 
@@ -88,18 +79,14 @@ public sealed class RootEntry : object, ICommonEntry
         set => ScanEndUtcTicks = value.Ticks;
     }
 
-    [ProtoMember(9, IsRequired = true)]
     [Key(9)]
     public long ScanEndUtcTicks { get; set; }
 
-    // [ProtoMember(10, IsRequired = true)] // need to save for new data model.
     // public virtual int RootIndex { get; set; } // hack with Entry and EntryStore
 
-    [ProtoMember(11, IsRequired = true)] // hack to not load old files ?
     [Key(11)]
     public int Version { get; set; } = 3;
 
-    [ProtoMember(18, IsRequired = false)]
     [Key(18)]
     public string VolumeName { get; set; }
 
@@ -157,7 +144,7 @@ public sealed class RootEntry : object, ICommonEntry
 
     public void SetInMemoryFields()
     {
-        // Protobuf does not retain DateKind. So just handle it here
+        // Serialized ticks do not retain DateKind. So just handle it here
         ScanStartUtc = new DateTime(ScanStartUtc.Ticks, DateTimeKind.Utc);
         ScanEndUtc = new DateTime(ScanEndUtc.Ticks, DateTimeKind.Utc);
         FullPath = Path;
@@ -613,16 +600,13 @@ public sealed class RootEntry : object, ICommonEntry
         set => ModifiedTicks = value.Ticks;
     }
 
-    [ProtoMember(12, IsRequired = false)]
     [Key(12)]
     public Flags BitFields { get; set; }
 
-    [ProtoMember(13, IsRequired = false)]
     [MessagePackFormatter(typeof(Infrastructure.Serialization.Hash16Formatter))]
     [Key(13)]
     public Hash16 Hash { get; set; }
 
-    [ProtoMember(14, IsRequired = true)]
     [Key(14)]
     public long ModifiedTicks { get; set; }
 
@@ -897,7 +881,6 @@ public sealed class RootEntry : object, ICommonEntry
         return this;
     }
 
-    [ProtoMember(15, IsRequired = false)]
     [Key(15)]
     public IList<DirEntry> Children { get; set; }
 
@@ -910,14 +893,12 @@ public sealed class RootEntry : object, ICommonEntry
         Children.Add(child);
     }
 
-    [ProtoMember(16, IsRequired = true)]
     [Key(16)]
     public long Size { get; set; }
 
     /// <summary>
     /// RootEntry this is the root path, DirEntry this is the entry name.
     /// </summary>
-    [ProtoMember(17, IsRequired = true)]
     [Key(17)]
     public string Path { get; set; }
 
