@@ -368,4 +368,28 @@ public class AppSettingsLocatorTests
 
         Assert.That(configuration.HashFirstPassSize, Is.EqualTo(65536));
     }
+
+    [Test]
+    public void The_default_text_excludes_no_scan_paths()
+    {
+        var configuration = new Configuration(Parse(AppSettingsLocator.DefaultJson));
+
+        Assert.That(configuration.Config.Scan.ExcludePaths, Is.Empty);
+    }
+
+    [Test]
+    public void Scan_exclude_paths_are_read_from_the_file()
+    {
+        var configuration = new Configuration(Parse("""{ "AppConfig": { "Scan": { "ExcludePaths": ["/proc", "/home/*/.cache"] } } }"""));
+
+        Assert.That(configuration.Config.Scan.ExcludePaths, Is.EqualTo(new[] { "/proc", "/home/*/.cache" }));
+    }
+
+    [Test]
+    public void A_file_with_no_scan_section_excludes_nothing()
+    {
+        var configuration = new Configuration(Parse("""{ "AppConfig": { "Display": { "ProgressUpdateInterval": 5000 } } }"""));
+
+        Assert.That(configuration.Config.Scan.ExcludePaths, Is.Empty);
+    }
 }

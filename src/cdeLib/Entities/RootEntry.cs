@@ -112,11 +112,12 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
-    public void PopulateRoot(string startPath, bool followJunctions = false, CancellationToken token = default)
+    public void PopulateRoot(string startPath, bool followJunctions = false, CancellationToken token = default,
+        ScanExcludeMatcher excludes = null)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath, followJunctions, token);
+        RecurseTree(startPath, followJunctions, token, excludes);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -307,10 +308,13 @@ public sealed class RootEntry : object, ICommonEntry
 
     /// <summary>
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
+    /// Folders matched by <paramref name="excludes"/> are recorded but not descended into; the start path is never checked.
     /// </summary>
-    public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default)
+    public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default,
+        ScanExcludeMatcher excludes = null)
     {
         FollowJunctions = followJunctions;
+        excludes ??= ScanExcludeMatcher.None;
         var entryCount = 0;
         var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
         stack.Push((this, startPath));
@@ -322,7 +326,7 @@ public sealed class RootEntry : object, ICommonEntry
         {
             var (parent, directory) = stack.Pop();
 
-            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, namePool, token))
+            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, namePool, excludes, token))
             {
                 continue;
             }
@@ -347,12 +351,13 @@ public sealed class RootEntry : object, ICommonEntry
         ref int entryCount,
         ScanProgressTracker progressTracker,
         ScanNamePool namePool,
+        ScanExcludeMatcher excludes,
         CancellationToken token)
     {
         try
         {
             // Raw directory records: no FileInfo/DirectoryInfo (and no per-entry path strings) are created.
-            using var enumerator = new ScanEnumerator(directory, namePool, FollowJunctions);
+            using var enumerator = new ScanEnumerator(directory, namePool, FollowJunctions, excludes);
             while (enumerator.MoveNext())
             {
                 var dirEntry = enumerator.Current;
@@ -400,15 +405,18 @@ public sealed class RootEntry : object, ICommonEntry
 
         private readonly ScanNamePool _namePool;
         private readonly bool _followJunctions;
+        private readonly ScanExcludeMatcher _excludes;
 
         /// <summary>Full path of the current entry when it is a directory to descend into, else null.</summary>
         public string DescendPath { get; private set; }
 
-        public ScanEnumerator(string directory, ScanNamePool namePool, bool followJunctions)
+        public ScanEnumerator(string directory, ScanNamePool namePool, bool followJunctions,
+            ScanExcludeMatcher excludes)
             : base(directory, ScanOptions)
         {
             _namePool = namePool;
             _followJunctions = followJunctions;
+            _excludes = excludes;
         }
 
         protected override DirEntry TransformEntry(ref FileSystemEntry entry)
@@ -417,6 +425,14 @@ public sealed class RootEntry : object, ICommonEntry
             DescendPath = dirEntry.IsDirectory && (_followJunctions || !dirEntry.IsReparsePoint)
                 ? entry.ToFullPath()
                 : null;
+
+            // An excluded folder stays recorded (added by the caller) but is not descended into, exactly like
+            // a non-followed junction. It wins over FollowJunctions and is not an access error.
+            if (DescendPath != null && _excludes.IsExcluded(DescendPath))
+            {
+                DescendPath = null;
+            }
+
             return dirEntry;
         }
     }
