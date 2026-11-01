@@ -5,6 +5,7 @@ using cdeAppCore.Dtos;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
+using ILogger = Serilog.ILogger;
 
 namespace cdeApi;
 
@@ -22,7 +23,7 @@ public static class MigrateEndpoint
     public const string NothingToMigrate = "nothing-to-migrate";
     public const string Failed = "migrate-failed";
 
-    public static async Task HandleAsync(HttpContext ctx, ICatalogSession session)
+    public static async Task HandleAsync(HttpContext ctx, ICatalogSession session, ILogger logger = null)
     {
         var refusal = Refuse(session);
         if (refusal is var (status, error))
@@ -52,6 +53,7 @@ public static class MigrateEndpoint
                 }
                 catch (Exception ex)
                 {
+                    logger?.Error(ex, "Migrating legacy catalogs failed");
                     await queue.WriteAsync(new MigrateError { Code = Failed, Message = ex.Message }, ct);
                 }
             },

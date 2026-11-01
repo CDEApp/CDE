@@ -4,6 +4,7 @@ using cdeAppCore.Dtos;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
+using ILogger = Serilog.ILogger;
 
 namespace cdeApi;
 
@@ -33,7 +34,8 @@ public static class CreateCatalogEndpoint
             AppCoreJsonContext.Default.CreatePreflightResult, cancellationToken: ctx.RequestAborted);
     }
 
-    public static async Task HandleAsync(HttpContext ctx, CreateCatalogRequest request, ICatalogSession session)
+    public static async Task HandleAsync(HttpContext ctx, CreateCatalogRequest request, ICatalogSession session,
+        ILogger logger = null)
     {
         request ??= new CreateCatalogRequest();
         var refusal = Refuse(session.PreflightCreate(
@@ -60,7 +62,9 @@ public static class CreateCatalogEndpoint
                 }
                 catch (Exception ex)
                 {
-                    await queue.WriteAsync(ToError(ex, request), ct);
+                    var error = ToError(ex, request);
+                    if (error.Code == Failed) logger?.Error(ex, "Creating a catalog from {RootPath} failed", request.RootPath);
+                    await queue.WriteAsync(error, ct);
                 }
             },
             (sse, _) =>

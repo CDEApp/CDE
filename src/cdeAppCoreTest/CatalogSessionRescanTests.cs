@@ -309,6 +309,36 @@ public class CatalogSessionRescanTests
     }
 
     [Test]
+    public async Task A_failed_restore_of_the_previous_file_after_a_failed_swap_is_logged()
+    {
+        var data = MakeData("d1", "a.txt");
+        var path = ScanToCdex(data, "one.cdex");
+        File.WriteAllText(Path.Combine(data, "b.txt"), "new");
+        var logger = Substitute.For<ILogger>();
+        var opens = 0;
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns([path]);
+        _session = new CatalogSession(loader, logger, p =>
+        {
+            // The first open is the load. The second is the swap opening the new file: remove the moved-aside
+            // previous file (so the restore has nothing to move back) and fail the swap.
+            if (++opens == 2)
+            {
+                File.Delete(p + ".old");
+                throw new InvalidDataException("bad new file");
+            }
+
+            return new ColumnarCatalogReader(p);
+        });
+        await _session.LoadAsync("config");
+
+        await Assert.ThatAsync(() => _session.RescanAsync(0), Throws.TypeOf<InvalidDataException>());
+
+        logger.Received().Error(Arg.Any<Exception>(), Arg.Is<string>(m => m.Contains("restore")),
+            Arg.Any<string>(), Arg.Any<string>());
+    }
+
+    [Test]
     [Platform("Win")]
     public async Task Failure_during_the_swap_restores_the_old_catalog_and_removes_the_tmp()
     {
