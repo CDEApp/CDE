@@ -50,9 +50,10 @@ for f in cde/cde cde-tauri/cde-tauri cde-tauri/cdeApi; do
   if [ ! -f "$root/$f" ]; then fail "$f: file not found"; fi
 done
 
-# cde --version, e.g. "cde 2.1.0-beta.1+abc1234": the version up to a "+" must be the tag exactly. cde reads
-# appsettings.json from the current directory and exits without it, so it runs from its own folder. Its first
-# line is the version (the help follows); sed reads it all, so cde is never cut off by a closed pipe.
+# cde --version, e.g. "cde 2.1.0-beta.1+abc1234": the version up to a "+" must be the tag exactly. It runs from its
+# own folder, so the appsettings.json shipped beside it is the file it reads and nothing is written into the runner's
+# own config folder. Its first line is the version (the help follows); sed reads it all, so cde is never cut off by
+# a closed pipe.
 if [ -f "$root/cde/cde" ]; then
   reported="$(cd "$root/cde" && ./cde --version 2>/dev/null | sed -n 1p | grep -Eo '[0-9][0-9A-Za-z.+-]*' | head -n1 || true)"
   if [ "${reported%%+*}" = "$version" ]; then

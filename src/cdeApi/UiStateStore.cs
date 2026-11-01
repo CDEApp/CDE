@@ -7,7 +7,7 @@ namespace cdeApi;
 
 /// <summary>
 /// Persists the frontend's UI-state document to a single user-scoped file
-/// (<c>%APPDATA%\cde\ui-state.json</c>). <see cref="GetMergedJson"/> returns the user's overrides
+/// (<c>ui-state.json</c> in the config folder: <c>%APPDATA%\cde</c>, <c>~/.config/cde</c>, or <c>$CDE_CONFIG_DIR</c>). <see cref="GetMergedJson"/> returns the user's overrides
 /// merged over the core defaults; <see cref="Save"/> persists the raw document. Window geometry is
 /// deliberately excluded — that is Tauri-native (D14); this store is a mostly-opaque per-frontend blob.
 /// </summary>
@@ -17,8 +17,7 @@ public sealed class UiStateStore
     private readonly object _gate = new();
 
     public UiStateStore()
-        : this(Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "cde", "ui-state.json"))
+        : this(Path.Combine(ApiConfiguration.ConfigFolder(), "ui-state.json"))
     {
     }
 

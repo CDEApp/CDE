@@ -38,6 +38,18 @@
   path without its leading `/`, with every `/` replaced by `_` (`/mnt/data` makes `mnt_data.cdex`, `/` makes
   `root.cdex`). Windows names do not change, and existing catalogs keep their names. (#155)
 
+### Configuration
+
+- feature (cde, cde-tauri): `cde` and the `cdeApi` sidecar now find `appsettings.json` themselves. They look in the config
+  folder first (`~/.config/cde` or `$XDG_CONFIG_HOME/cde` on Linux and macOS, `%APPDATA%\cde` on Windows, or the folder in
+  the new `CDE_CONFIG_DIR` variable), then the current directory, then the folder that holds the executable, and use the
+  first file they find on its own. When there is none, a default is written to the config folder, so `cde` runs from any
+  folder with no setup; before, it stopped with an error without the file in the current directory. If the folder cannot
+  be written the built-in defaults are used. The default has no Seq sink, and `HashingSection.FirstPassSizeInBytes` now
+  defaults to 65536 like the shipped file (it was 1024 for a file that left the setting out; set `Hashing.FirstPassSizeInBytes`
+  explicitly to keep a different size, because catalogs do not record the size their partial hashes used). `ui-state.json`, `colour-rules.txt` and `shell.json` follow `CDE_CONFIG_DIR` too.
+  The Windows zip and the Linux archive still ship `appsettings.json` beside the executable. (#158)
+
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 
 First release from the new pipeline: one zip, `cde-2.1.0-beta.1-win-x64.zip`, with `cde`, `cdewin` and the new

@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using cdeApi;
+using cdeLib.Infrastructure.Config;
 using Microsoft.AspNetCore.Hosting.Server;
 using Microsoft.AspNetCore.Hosting.Server.Features;
 using Serilog;
@@ -10,10 +11,11 @@ using ILogger = Serilog.ILogger;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// --- configuration: appsettings.json + the shared user-scoped shell.json (custom commands) ---
-var shellJson = Path.Combine(
-    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "cde", "shell.json");
-builder.Configuration.AddJsonFile(shellJson, optional: true, reloadOnChange: false);
+// --- configuration: appsettings.json (found as cde finds it, and written as a default when there is none)
+// + the shared user-scoped shell.json (custom commands), both in the config folder (#158) ---
+var settingsLocator = new AppSettingsLocator();
+var settingsInUse = ApiConfiguration.UseAppSettings(builder.Configuration, settingsLocator);
+ApiConfiguration.AddShellJson(builder.Configuration, settingsLocator);
 
 // Loopback only, ephemeral port. The real port is reported on stdout after start (handshake).
 builder.WebHost.UseUrls("http://127.0.0.1:0");
@@ -26,6 +28,7 @@ ILogger logger = new LoggerConfiguration()
     .WriteTo.Console(standardErrorFromLevel: Serilog.Events.LogEventLevel.Verbose)
     .CreateLogger();
 Log.Logger = logger;
+logger.Information("{ConfigurationInUse}", settingsInUse.Describe());
 
 builder.Services.AddCdeApi(logger);
 

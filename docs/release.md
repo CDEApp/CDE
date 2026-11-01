@@ -119,8 +119,8 @@ cde-<version>-linux-x64/
   linux-x64`. `--runtime` defaults to `win-x64`, and any runtime that is not a Windows one skips `cdewin`.
 - **Staged and checked by two bash scripts**, `.github/scripts/stage-release-linux.sh` and
   `verify-release-versions-linux.sh`, with tests in `src/cde-tauri/scripts/linux-release-scripts.test.mjs`. The
-  Windows PowerShell scripts are untouched. The version check runs `cde --version` (from its own folder, because
-  `cde` reads `appsettings.json` from the current directory) and reads the stamped `tauri.conf.json` and
+  Windows PowerShell scripts are untouched. The version check runs `cde --version` (from its own folder, so
+  the result does not depend on the runner's own config folder) and reads the stamped `tauri.conf.json` and
   `Cargo.toml`, because the app cannot be run without a display on the runner. The Linux check does not read
   the version of the `cdeApi` sidecar, as the Windows check does: a Linux binary has no version resource, and
   `cdeApi` is published by the same build as `cde`, so MinVer versions them together.
@@ -188,8 +188,7 @@ must stay next to `cde-tauri.exe`. `pnpm tauri build --no-bundle` copies it ther
 target triple from `binaries/cdeApi-<triple>.exe`), and the staging script copies it from there.
 Debug symbols (`.pdb`) are not shipped.
 
-`cde.exe` reads `appsettings.json` from the current directory, so run it from its own folder (or
-copy the file to where you run it).
+`cde.exe` finds its `appsettings.json` itself (see "appsettings.json" in the README). The file beside it is the last place it looks, after the config folder (`%APPDATA%\cde`, or `CDE_CONFIG_DIR`) and the current directory, and when there is none anywhere it writes a default to the config folder.
 
 ## Requirements
 

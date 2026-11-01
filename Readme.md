@@ -64,7 +64,7 @@ This application will continue to evolve driven by my own and a few friends desi
 
 This is a command line utility to scan, find, hash, and perform duplicate file identification.
 
-The executable `cde.exe` can be copied around by it self. The `appsettings.json` file has some customizations to operation (see [appsettings.json](#appsettingsjson)).
+The executable `cde.exe` can be copied around by itself. It reads its settings from an `appsettings.json` file, which it finds for you and creates when there is none (see [appsettings.json](#appsettingsjson)).
 
 ### cdeWin
 
@@ -145,8 +145,10 @@ cde-tauri keeps its settings in the Roaming Application Data folder of the curre
 | `%APPDATA%\cde\ui-state.json` | UI state: panel layout, sort order, columns and other view settings | the app, when you change the view |
 | `%APPDATA%\cde\colour-rules.txt` | The colour rules, stored exactly as you entered them | the app, when you save the rules |
 | `%APPDATA%\cde\shell.json` | Custom shell commands (optional) | you, by hand |
+| `%APPDATA%\cde\appsettings.json` | `Cde.ConfigPath` (the catalog folder) and `CustomCommands`; cde reads the same file (see [appsettings.json](#appsettingsjson)) | created with defaults on the first run when there is none anywhere, then you, by hand |
 | `%APPDATA%\com.cde.tauri\.window-state.json` | Window size and position | the Tauri window-state plugin |
 
+- On Linux and macOS these files are in `~/.config/cde/` (or `$XDG_CONFIG_HOME/cde/`) instead of `%APPDATA%\cde\`. Set the `CDE_CONFIG_DIR` environment variable to use another folder on any system.
 - To reset the view or the colour rules, close the app and delete `ui-state.json` or `colour-rules.txt`.
 - `shell.json` uses the same `CustomCommands` array as cdeWin (see [Custom Shell Commands](#custom-shell-commands)), but cdeWin does not read this file. cde-tauri reads it only at startup, so restart the app after you change it.
 - Catalog files are not kept in the configuration folder. cde-tauri loads the catalogs in its catalog folder and one level below. To choose the catalog folder, use **File ▸ Open Folder…**; cde-tauri remembers it (`catalogDir` in `ui-state.json`) and opens it again next time. Until you choose one, the catalog folder is the current directory: when you start `cde-tauri.exe` from Explorer, this is normally the folder that contains the exe.
@@ -163,7 +165,7 @@ cd cde-2.1.0-linux-x64/cde
 ./cde --help
 ```
 
-- `cde` reads `appsettings.json` from the current directory, so run it from the folder that holds it.
+- `cde` finds its settings itself, so you can run it from any folder. On the first run it writes a default `appsettings.json` to `~/.config/cde/` (or `$XDG_CONFIG_HOME/cde/`); set `CDE_CONFIG_DIR` to use another folder (see [appsettings.json](#appsettingsjson)).
 - `cde-tauri` needs the system libraries for its web view. On Debian and Ubuntu: `sudo apt install libwebkit2gtk-4.1-0 libayatana-appindicator3-1`. Other distributions have packages with similar names (WebKitGTK 4.1).
 - The archive is built on Ubuntu 22.04, so it needs a glibc at least as new as that one has.
 - Catalog files on Linux are named after the scan path, for example `cde scan /mnt/data` makes `mnt_data.cdex` (see [Catalog files](#catalog-files)).
@@ -548,7 +550,21 @@ Suffixes must follow number with no spaces.
 
 ### appsettings.json
 
-cde reads its settings from the `appsettings.json` file in the same folder as `cde.exe`. There are 3 values that can be modified to change cde behaviour.
+cde and cde-tauri read their settings from one `appsettings.json` file. They look for it in this order and use the first one they find, on its own (the files are not merged):
+
+1. the config folder: `~/.config/cde/` (or `$XDG_CONFIG_HOME/cde/`) on Linux and macOS, `%APPDATA%\cde\` on Windows, or the folder in the `CDE_CONFIG_DIR` environment variable when that is set;
+2. the current directory;
+3. the folder that holds the executable (the file shipped beside `cde.exe` and `cde` is found here).
+
+If there is none, the program writes a default `appsettings.json` into the config folder (creating the folder) and uses it, so a first run needs no setup. A file that already exists is never overwritten. If the folder cannot be written (a read-only home folder, for example) the program carries on with the same defaults built in. To change a setting, edit the file in the config folder, or copy the one shipped beside the executable there.
+
+cde logs which settings it uses at Information level, so it is quiet by default. To see `Using configuration from <path>`, set `Serilog.MinimumLevel` to `Information` in the file, or pass `--Serilog:MinimumLevel=Information`.
+
+The file shipped beside the executables has a Seq sink for a log server on `localhost:5341`; delete that entry from `Serilog.WriteTo` if you do not run one. The default that cde writes has no Seq sink.
+
+cde reads `AppConfig` and `Serilog`. The cde-tauri sidecar reads `Cde.ConfigPath` (the folder catalogs load from, default `.`) and `CustomCommands`, and `shell.json` in the same config folder is layered over it. cdeWin is unchanged: it reads the `appsettings.json` beside `cdeWin.exe`.
+
+There are 3 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Display.ProgressUpdateInterval` which defaults to 5000.
 
