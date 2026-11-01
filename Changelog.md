@@ -38,6 +38,10 @@
   path without its leading `/`, with every `/` replaced by `_` (`/mnt/data` makes `mnt_data.cdex`, `/` makes
   `root.cdex`). Windows names do not change, and existing catalogs keep their names. (#155)
 
+### CLI
+
+- chore (cde): Removed the `loadwait` verb. It loaded the legacy `.cde` catalogs and waited for Enter, only to measure load time by hand; use `cdeBenchmarks` or `cdeMemProbe` instead. `treedump1` and `PopulousFolders` stay for now. (part of #190)
+
 ### Configuration
 
 - feature (cde, cde-tauri): `cde` and the `cdeApi` sidecar now find `appsettings.json` themselves. They look in the config

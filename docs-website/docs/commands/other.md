@@ -69,10 +69,3 @@ cde treedump1
 
 Prints the full tree of entries in every loaded catalog as text. A `#` marks an entry that has a hash and a `!` marks an entry with a path problem. It is a diagnostic tool and can print a lot.
 
-## loadwait
-
-```text
-cde loadwait
-```
-
-Loads the catalogs, then waits for you to press Enter. It is a diagnostic tool.
