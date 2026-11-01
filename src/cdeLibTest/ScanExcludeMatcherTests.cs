@@ -338,6 +338,35 @@ public class ScanExcludeMatcherTests
     }
 
     [Test]
+    public void ForScanConfig_ExtraPatterns_AddToConfiguredPatterns()
+    {
+        var scan = new cdeLib.Infrastructure.Config.ScanSection { ExcludePaths = ["/cfg"], UseDefaultExcludes = false };
+
+        var matcher = ScanExcludeMatcher.ForScanConfig(scan, ["/cli"]);
+
+        Assert.That(matcher.IsExcluded("/cfg/a"), Is.True);
+        Assert.That(matcher.IsExcluded("/cli/a"), Is.True);
+        Assert.That(matcher.IsExcluded("/other"), Is.False);
+    }
+
+    [Test]
+    public void ForScanConfig_ExtraPatterns_WorkWithNullSection()
+    {
+        Assert.That(ScanExcludeMatcher.ForScanConfig(null, ["/cli"]).IsExcluded("/cli/a"), Is.True);
+    }
+
+    [Test]
+    public void ScanOptions_ExcludeIsRepeatable()
+    {
+        var result = cde.CommandLine.CommandLineParserBuilder.Build().ParseArguments<cde.CommandLine.ScanOptions>(
+            ["scan", "/data", "--exclude", "/a", "--exclude", "/b/*"]);
+
+        Assert.That(result, Is.InstanceOf<CommandLine.Parsed<cde.CommandLine.ScanOptions>>());
+        Assert.That(((CommandLine.Parsed<cde.CommandLine.ScanOptions>)result).Value.Exclude,
+            Is.EqualTo(new[] { "/a", "/b/*" }));
+    }
+
+    [Test]
     public void ScanSection_UseDefaultExcludesDefaultsToTrue()
     {
         Assert.That(new cdeLib.Infrastructure.Config.ScanSection().UseDefaultExcludes, Is.True);
