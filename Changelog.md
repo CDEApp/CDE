@@ -31,9 +31,12 @@
 
 - feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the
   Windows zip. It holds `cde` and `cde-tauri` with its `cdeApi` sidecar, built on Ubuntu 22.04, with no
-  installers and no `cdewin`. The release is published only when both builds succeed. **Known limits on Linux:**
-  `cde scan` fails there, and Open, Explore and Properties do nothing in `cde-tauri`. A Linux smoke job now runs
-  on every pull request. (#154)
+  installers and no `cdewin`. The release is published only when both builds succeed. **Known limit on Linux:**
+  Open, Explore and Properties do nothing in `cde-tauri`. A Linux smoke job now runs on every pull request. (#154)
+- fix (cde): `cde scan` now works on Linux and macOS. It used to fail there, because the catalog file name was
+  built from a drive letter and a volume label. On those systems the catalog is named after the scan path: the
+  path without its leading `/`, with every `/` replaced by `_` (`/mnt/data` makes `mnt_data.cdex`, `/` makes
+  `root.cdex`). Windows names do not change, and existing catalogs keep their names. (#155)
 
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 

@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 
 namespace cdeLib.Infrastructure;
@@ -21,4 +22,6 @@ public class FileSystemAdapter : IFileSystemAdapter
     {
         return Directory.GetDirectoryRoot(path);
     }
+
+    public bool IsWindows => OperatingSystem.IsWindows();
 }
