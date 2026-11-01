@@ -21,13 +21,13 @@ tauri_src="src/cde-tauri/src-tauri"
 # An option that takes a value must have one: "$@" here is the option and what follows it. This script does not
 # run with `set -e`, so without the check a failed `shift 2` would leave the loop below spinning for ever.
 need_value() {
-  if [ $# -lt 2 ]; then
+  if [[ $# -lt 2 ]]; then
     echo "error: $1 needs a value." >&2
     exit 2
   fi
 }
 
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) need_value "$@"; version="$2"; shift 2 ;;
     --root) need_value "$@"; root="$2"; shift 2 ;;
@@ -36,7 +36,7 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-if [ -z "$version" ] || [ -z "$root" ]; then
+if [[ -z "$version" ]] || [[ -z "$root" ]]; then
   echo "error: --version and --root are required." >&2
   exit 2
 fi
@@ -47,16 +47,16 @@ fail() { echo "FAIL  $1"; failed=true; }
 
 # Every file a release holds must be there.
 for f in cde/cde cde-tauri/cde-tauri cde-tauri/cdeApi; do
-  if [ ! -f "$root/$f" ]; then fail "$f: file not found"; fi
+  if [[ ! -f "$root/$f" ]]; then fail "$f: file not found"; fi
 done
 
 # cde --version, e.g. "cde 2.1.0-beta.1+abc1234": the version up to a "+" must be the tag exactly. It runs from its
 # own folder, so the appsettings.json shipped beside it is the file it reads and nothing is written into the runner's
 # own config folder. Its first line is the version (the help follows); sed reads it all, so cde is never cut off by
 # a closed pipe.
-if [ -f "$root/cde/cde" ]; then
+if [[ -f "$root/cde/cde" ]]; then
   reported="$(cd "$root/cde" && ./cde --version 2>/dev/null | sed -n 1p | grep -Eo '[0-9][0-9A-Za-z.+-]*' | head -n1 || true)"
-  if [ "${reported%%+*}" = "$version" ]; then
+  if [[ "${reported%%+*}" = "$version" ]]; then
     ok "cde --version: $reported (expected $version)"
   else
     fail "cde --version: '$reported' (expected $version)"
@@ -65,20 +65,20 @@ fi
 
 # Both stamped files, read with node so a nested "version" key or a dependency's version is not taken.
 conf_version="$(node -e 'try{process.stdout.write(String(JSON.parse(require("fs").readFileSync(process.argv[1],"utf8")).version))}catch{}' "$tauri_src/tauri.conf.json")"
-if [ "$conf_version" = "$version" ]; then
+if [[ "$conf_version" = "$version" ]]; then
   ok "tauri.conf.json: version=$conf_version (expected $version)"
 else
   fail "tauri.conf.json: version='$conf_version' (expected $version)"
 fi
 
 cargo_version="$(awk '/^\[package\]/{p=1;next} /^\[/{p=0} p && /^version[[:space:]]*=/{gsub(/.*=[[:space:]]*"/,""); gsub(/".*/,""); print; exit}' "$tauri_src/Cargo.toml" 2>/dev/null)"
-if [ "$cargo_version" = "$version" ]; then
+if [[ "$cargo_version" = "$version" ]]; then
   ok "Cargo.toml: version=$cargo_version (expected $version)"
 else
   fail "Cargo.toml: version='$cargo_version' (expected $version)"
 fi
 
-if [ "$failed" = true ]; then
+if [[ "$failed" = true ]]; then
   echo "Version check failed: not every check reports $version."
   exit 1
 fi

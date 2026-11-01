@@ -38,7 +38,7 @@ public sealed class MachineOutput : IDisposable
         var flag = false;
         foreach (var a in args)
         {
-            if (a == "--") break;
+            if (string.Equals(a, "--", StringComparison.Ordinal)) break;
             if (a.Equals("--json", StringComparison.OrdinalIgnoreCase) || a.Equals("--csv", StringComparison.OrdinalIgnoreCase)) flag = true;
             else if (verb == null && !a.StartsWith('-')) verb = a;
         }
@@ -53,7 +53,7 @@ public sealed class MachineOutput : IDisposable
     public static MachineOutput Open(OutputFormat format, string[] columns, Stream stdout = null)
     {
         if (format == OutputFormat.Text) return null;
-        var text = new StreamWriter(stdout ?? Console.OpenStandardOutput(), new UTF8Encoding(false), 64 * 1024) { NewLine = "\n" };
+        var text = new StreamWriter(stdout ?? Console.OpenStandardOutput(), new UTF8Encoding(encoderShouldEmitUTF8Identifier: false), 64 * 1024) { NewLine = "\n" };
         return new MachineOutput(text, RecordWriter.Create(format, text, columns));
     }
 
