@@ -219,7 +219,7 @@ public partial class Duplication
         var skipFullHashing = _cancellation.BreakCount > 1;
         _cancellation.Reset();
         if (skipFullHashing) ReportStatus(FullPhaseSkippedMessage);
-        else CheckDupesAndCompleteFullHash(rootEntries);
+        else await CheckDupesAndCompleteFullHash(rootEntries);
 
         timer.Stop();
         ReportHashingDone(timer);
@@ -399,7 +399,7 @@ public partial class Duplication
         await CalculateHash(pair.FullPath, de, true);
     }
 
-    private void CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
+    private async Task CheckDupesAndCompleteFullHash(IEnumerable<RootEntry> rootEntries)
     {
         _logger.LogDebug(string.Empty);
         _logger.LogDebug("Checking duplicates and completing full hash.");
@@ -439,7 +439,7 @@ public partial class Duplication
         }
 
         // Process full hashing using async pattern (same as partial hash phase)
-        ProcessFullHashAsync(foundDupes).GetAwaiter().GetResult();
+        await ProcessFullHashAsync(foundDupes);
     }
 
     /// <summary>
