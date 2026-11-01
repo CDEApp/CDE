@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import type { CdeApiClient } from "../api/client";
 import { refToString, type DirectoryNode, type EntryRef } from "../api/types";
@@ -39,7 +39,7 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
   const [dirPath, setDirPath] = useState("");
   const [dirNodes, setDirNodes] = useState<DirectoryNode[]>([]);
   // Last-navigation-wins: drops a children/path response that a newer selection or a reload overtook.
-  const navGuard = useMemo(() => createRequestGuard(), []);
+  const [navGuard] = useState(createRequestGuard); // useState, not useMemo: the guard's token state must never be discarded
   // Latest values for handlers with a stable identity and for async completions.
   const selectedKeyRef = useRef(selectedKey);
   selectedKeyRef.current = selectedKey;

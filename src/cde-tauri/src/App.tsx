@@ -216,7 +216,7 @@ export default function App() {
 
   const selection = useCatalogSelection({ getClient, showDirectory });
   const search = useSearch({ getClient, getUi, onStart: showResults });
-  const { selectNode, viewInTree } = selection;
+  const { selectNode, viewInTree, openRoot, resetForReload } = selection;
 
   // After the sidecar swapped the catalog in: refresh the lists, remount that catalog's tree root,
   // mark results into it stale, and put the selection back (nearest surviving parent if it is gone).
@@ -252,7 +252,7 @@ export default function App() {
       // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
       // already have dropped the old catalogs): refs and expansion from the old load are not
       // trusted, and in-flight navigation responses must not land after this.
-      selection.resetForReload();
+      resetForReload();
       reloadEpochRef.current += 1;
       setTreemapRequest(null); // its ref belongs to the old catalog set
       setView((v) => (v === "treemap" ? "directory" : v));
@@ -270,7 +270,7 @@ export default function App() {
         }
       }
     },
-    [refreshCatalogs, promptForLegacy, selection.resetForReload, rescansRef],
+    [refreshCatalogs, promptForLegacy, resetForReload, rescansRef],
   );
 
   // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
@@ -352,8 +352,8 @@ export default function App() {
 
   // The toast's [Open]: jump to the new root in the Directory tab (only now, never automatically).
   const openNewRoot = useCallback(
-    (result: CreateResult) => selection.openRoot({ catalogId: result.catalogId, entryIndex: 0 }, result.rootPath),
-    [selection.openRoot],
+    (result: CreateResult) => openRoot({ catalogId: result.catalogId, entryIndex: 0 }, result.rootPath),
+    [openRoot],
   );
 
   const createCatalog = useCallback(
