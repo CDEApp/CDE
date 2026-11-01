@@ -55,11 +55,22 @@ public static class PerfComparison
         return new ComparisonResult(deltas, null);
     }
 
-    private static List<MetricDelta> Absolute(PerfReport r) =>
-    [
-        new(".cdex size (bytes)", null, r.CdexBytes, null, DeltaSeverity.Info),
-        new("Peak RSS (bytes)", null, r.PeakRssBytes, null, DeltaSeverity.Info),
-    ];
+    private static List<MetricDelta> Absolute(PerfReport r)
+    {
+        var list = new List<MetricDelta>
+        {
+            new(".cdex size (bytes)", null, r.CdexBytes, null, DeltaSeverity.Info),
+            new("Peak RSS (bytes)", null, r.PeakRssBytes, null, DeltaSeverity.Info),
+        };
+        if (r.ScanMs is { } scan) list.Add(new("Scan time (ms)", null, scan, null, DeltaSeverity.Info));
+        foreach (var q in r.Queries)
+        {
+            list.Add(new($"{q.Name} cold (ms)", null, q.ColdMs, null, DeltaSeverity.Info));
+            list.Add(new($"{q.Name} warm (ms)", null, q.WarmMedianMs, null, DeltaSeverity.Info));
+        }
+
+        return list;
+    }
 
     private static MetricDelta Delta(string metric, double baseline, double current, double? limitPercent,
         DeltaSeverity overLimit)
