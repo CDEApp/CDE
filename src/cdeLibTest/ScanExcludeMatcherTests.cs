@@ -132,4 +132,102 @@ public class ScanExcludeMatcherTests
     {
         Assert.That(ScanExcludeMatcher.None.IsExcluded("/tmp"), Is.False);
     }
+
+    private static ScanExcludeMatcher Create(string[] user, bool useDefaults, bool isWindows, bool isLinux) =>
+        ScanExcludeMatcher.Create(user, useDefaults, isWindows, isLinux);
+
+    [TestCase("/proc")]
+    [TestCase("/sys/kernel")]
+    [TestCase("/dev")]
+    [TestCase("/run/user/1000")]
+    [TestCase("/tmp")]
+    [TestCase("/var/tmp")]
+    [TestCase("/var/cache/apt")]
+    [TestCase("/lost+found")]
+    [TestCase("/home/alice/.cache")]
+    [TestCase("/home/bob/.cache/thumbnails")]
+    public void Create_OnLinuxWithDefaults_ExcludesBuiltInPaths(string path)
+    {
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: true);
+
+        Assert.That(matcher.IsExcluded(path), Is.True);
+    }
+
+    [TestCase("/home/alice")]
+    [TestCase("/home/alice/.config")]
+    [TestCase("/var/log")]
+    [TestCase("/mnt/data/tmp")]
+    public void Create_OnLinuxWithDefaults_DoesNotExcludeOtherPaths(string path)
+    {
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: true);
+
+        Assert.That(matcher.IsExcluded(path), Is.False);
+    }
+
+    [Test]
+    public void Create_OnLinuxDefaultsOff_NoBuiltInPaths()
+    {
+        var matcher = Create([], useDefaults: false, isWindows: false, isLinux: true);
+
+        Assert.That(matcher.IsExcluded("/proc"), Is.False);
+        Assert.That(matcher.IsEmpty, Is.True);
+    }
+
+    [Test]
+    public void Create_OnLinuxDefaultsOff_UserPathsStillApply()
+    {
+        var matcher = Create(["/data/skip"], useDefaults: false, isWindows: false, isLinux: true);
+
+        Assert.That(matcher.IsExcluded("/data/skip/x"), Is.True);
+        Assert.That(matcher.IsExcluded("/tmp"), Is.False);
+    }
+
+    [Test]
+    public void Create_OnLinuxDefaultsOn_UserPathsAreAdditive()
+    {
+        var matcher = Create(["/data/skip"], useDefaults: true, isWindows: false, isLinux: true);
+
+        Assert.That(matcher.IsExcluded("/data/skip"), Is.True);
+        Assert.That(matcher.IsExcluded("/tmp"), Is.True);
+    }
+
+    [Test]
+    public void Create_OnWindows_HasNoBuiltInPathsEvenWhenDefaultsOn()
+    {
+        var matcher = Create([], useDefaults: true, isWindows: true, isLinux: false);
+
+        Assert.That(matcher.IsEmpty, Is.True);
+        Assert.That(matcher.IsExcluded("/tmp"), Is.False);
+    }
+
+    [Test]
+    public void Create_OnMacOs_HasNoBuiltInPathsEvenWhenDefaultsOn()
+    {
+        var matcher = Create(["/data/skip"], useDefaults: true, isWindows: false, isLinux: false);
+
+        Assert.That(matcher.IsExcluded("/tmp"), Is.False);
+        Assert.That(matcher.IsExcluded("/data/skip"), Is.True);
+    }
+
+    [Test]
+    public void Create_DefaultsAreSubjectToForScanRoot()
+    {
+        // Scanning /tmp explicitly is the user's intent, so the default for it is dropped for that scan.
+        var matcher = Create([], useDefaults: true, isWindows: false, isLinux: true).ForScanRoot("/tmp");
+
+        Assert.That(matcher.IsExcluded("/tmp/a"), Is.False);
+        Assert.That(matcher.IsExcluded("/proc"), Is.True);
+    }
+
+    [Test]
+    public void ForScanConfig_NullSection_IsSafe()
+    {
+        Assert.That(ScanExcludeMatcher.ForScanConfig(null).IsExcluded("/nowhere"), Is.False);
+    }
+
+    [Test]
+    public void ScanSection_UseDefaultExcludesDefaultsToTrue()
+    {
+        Assert.That(new cdeLib.Infrastructure.Config.ScanSection().UseDefaultExcludes, Is.True);
+    }
 }

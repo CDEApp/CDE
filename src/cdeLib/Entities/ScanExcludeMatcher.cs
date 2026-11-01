@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using cdeLib.Infrastructure.Config;
 using Serilog;
 
 namespace cdeLib.Entities;
@@ -57,6 +58,35 @@ public sealed class ScanExcludeMatcher
     public static ScanExcludeMatcher ForCurrentOs(IEnumerable<string> patterns)
     {
         return new ScanExcludeMatcher(patterns, OperatingSystem.IsWindows());
+    }
+
+    /// <summary>Linux-only built-in excludes: pseudo and volatile folders that are never worth cataloguing.</summary>
+    private static readonly string[] LinuxDefaultExcludes =
+    [
+        "/proc", "/sys", "/dev", "/run", "/tmp", "/var/tmp", "/var/cache", "/lost+found", "/home/*/.cache"
+    ];
+
+    /// <summary>
+    /// User patterns plus, on Linux with <paramref name="useDefaultExcludes"/>, the built-in list.
+    /// The OS is injected so the on/off/additive rules can be tested on any host.
+    /// </summary>
+    public static ScanExcludeMatcher Create(IEnumerable<string> userPatterns, bool useDefaultExcludes,
+        bool isWindows, bool isLinux)
+    {
+        var all = new List<string>(userPatterns ?? Array.Empty<string>());
+        if (useDefaultExcludes && isLinux)
+        {
+            all.AddRange(LinuxDefaultExcludes);
+        }
+
+        return new ScanExcludeMatcher(all, isWindows);
+    }
+
+    /// <summary>The matcher for the running OS from the Scan config; a null section means no user excludes, defaults on.</summary>
+    public static ScanExcludeMatcher ForScanConfig(ScanSection scan)
+    {
+        return Create(scan?.ExcludePaths, scan?.UseDefaultExcludes ?? true,
+            OperatingSystem.IsWindows(), OperatingSystem.IsLinux());
     }
 
     /// <summary>
