@@ -34,7 +34,6 @@ Command names and option names are not case-sensitive. `cde --help` lists all co
 | [`PopulousFolders`](other.md#populousfolders) | List folders with many entries. |
 | [`repl`, `replfind`, `replgrep`, `replgreppath`](other.md#interactive-commands) | Interactive modes. |
 | [`treedump1`](other.md#treedump1) | Print the full tree of every catalog. |
-| [`loadwait`](other.md#loadwait) | Load the catalogs and wait. |
 
 ## Options at a glance
 

@@ -121,9 +121,6 @@ public class DupesOptions : MachineOutputOptions;
 [Verb("treedump1")]
 public class TreeDumpOptions;
 
-[Verb("loadwait")]
-public class LoadWaitOptions;
-
 [Verb("repl", HelpText = "Start repl console. Enter readline mode")]
 public class ReplOptions;
 

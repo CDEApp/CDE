@@ -11,7 +11,6 @@ using System.Diagnostics.CodeAnalysis;
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.FindPathOptions")]
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.GrepOptions")]
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.GrepPathOptions")]
-[assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.LoadWaitOptions")]
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.MigrateOptions")]
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.PopulousFoldersOptions")]
 [assembly: SuppressMessage("Design", "MA0048:File name must match type name", Justification = "<Pending>", Scope = "type", Target = "~T:cde.CommandLine.ReplFindOptions")]

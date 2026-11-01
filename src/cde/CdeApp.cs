@@ -266,12 +266,6 @@ public sealed class CdeApp(
         Console.WriteLine("  A-Backspace - delete word backward");
     }
 
-    public void LoadWait()
-    {
-        repository.LoadCurrentDirCache();
-        Console.ReadLine();
-    }
-
     public void PrintPathsHaveHash()
     {
         var rootEntries = repository.LoadCurrentDirCache();
