@@ -78,6 +78,9 @@ public sealed class AppSettingsLocator
             "Hashing": {
               "FirstPassSizeInBytes": 65536,
               "DegreesOfParallelism": 2
+            },
+            "Scan": {
+              "ExcludePaths": []
             }
           },
           "Serilog": {

@@ -9,6 +9,7 @@ using cdeAppCore.Dtos;
 using cdeAppCore.Session;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Infrastructure.Config;
 using NSubstitute;
 using NUnit.Framework;
 using Serilog;
@@ -78,6 +79,57 @@ public class CatalogSessionRescanTests
 
     private static string[] RootNames(CatalogSession s, int catalogId) =>
         s.GetChildren(new EntryRefDto(catalogId, 0)).Select(c => c.Name).OrderBy(n => n).ToArray();
+
+    private CatalogSession LoadCdexWithScanConfig(string cdex, Func<ScanSection> scanConfig)
+    {
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns([cdex]);
+        _session = new CatalogSession(loader, Substitute.For<ILogger>(), scanConfig: scanConfig);
+        _session.LoadAsync("config").GetAwaiter().GetResult();
+        return _session;
+    }
+
+    private string MakeDataWithSkipDir()
+    {
+        var data = MakeData("d1", "keep.txt");
+        var skip = Path.Combine(data, "skip");
+        Directory.CreateDirectory(skip);
+        File.WriteAllText(Path.Combine(skip, "inner.txt"), "x");
+        return data;
+    }
+
+    [Test]
+    public async Task Rescan_applies_configured_exclude_paths()
+    {
+        var data = MakeDataWithSkipDir();
+        var skip = Path.Combine(data, "skip");
+        var s = LoadCdexWithScanConfig(ScanToCdex(data, "one.cdex"),
+            () => new ScanSection { ExcludePaths = [skip], UseDefaultExcludes = false });
+
+        var result = await s.RescanAsync(0);
+
+        Assert.That(RootNames(s, 0), Is.EqualTo(new[] { "keep.txt", "skip" }));
+        Assert.That(result.Entries, Is.EqualTo(2)); // inner.txt not scanned
+    }
+
+    [Test]
+    public async Task Rescan_uses_the_provider_result_current_at_each_rescan()
+    {
+        var data = MakeDataWithSkipDir();
+        var skip = Path.Combine(data, "skip");
+        var current = new ScanSection { UseDefaultExcludes = false };
+        var s = LoadCdexWithScanConfig(ScanToCdex(data, "one.cdex"), () => current);
+
+        var first = await s.RescanAsync(0);
+        current = new ScanSection { ExcludePaths = [skip], UseDefaultExcludes = false };
+        var second = await s.RescanAsync(0);
+        current = new ScanSection { UseDefaultExcludes = false };
+        var third = await s.RescanAsync(0);
+
+        Assert.That(first.Entries, Is.EqualTo(3));
+        Assert.That(second.Entries, Is.EqualTo(2));
+        Assert.That(third.Entries, Is.EqualTo(3));
+    }
 
     [Test]
     public async Task Rescan_picks_up_new_files_and_keeps_the_catalog_id()

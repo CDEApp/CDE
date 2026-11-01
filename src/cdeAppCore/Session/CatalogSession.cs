@@ -6,6 +6,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeAppCore.Dtos;
 using cdeLib.Entities;
+using cdeLib.Infrastructure.Config;
 using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
 using Serilog;
@@ -32,15 +33,22 @@ public sealed partial class CatalogSession : ICatalogSession
     private readonly object _gate = new();
     private bool _loading;
     private readonly Func<string, ColumnarCatalogReader> _openReader;
+    private readonly Func<ScanSection> _scanConfig;
 
     /// <param name="openReader">Opens a .cdex; defaults to mapping it. A seam for failure-injection tests.</param>
+    /// <param name="scanConfig">Supplies the CURRENT scan exclude config; called at the start of every create and
+    /// rescan so a reloaded config applies without restart. Null means no user excludes and defaults on.</param>
     public CatalogSession(ILoadCatalogService loadCatalogService, ILogger logger,
-        Func<string, ColumnarCatalogReader> openReader = null)
+        Func<string, ColumnarCatalogReader> openReader = null, Func<ScanSection> scanConfig = null)
     {
+        _scanConfig = scanConfig;
         _loadCatalogService = loadCatalogService;
         _logger = logger;
         _openReader = openReader ?? (path => new ColumnarCatalogReader(path));
     }
+
+    // Read per scan, never cached: appsettings reloads at runtime and a rescan must see the current excludes.
+    private ScanExcludeMatcher CurrentExcludes() => ScanExcludeMatcher.ForScanConfig(_scanConfig?.Invoke());
 
     public int CatalogCount => _slots.Count;
 

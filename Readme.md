@@ -564,7 +564,7 @@ The file shipped beside the executables has a Seq sink for a log server on `loca
 
 cde reads `AppConfig` and `Serilog`. The cde-tauri sidecar reads `Cde.ConfigPath` (the folder catalogs load from, default `.`) and `CustomCommands`, and `shell.json` in the same config folder is layered over it. cdeWin is unchanged: it reads the `appsettings.json` beside `cdeWin.exe`.
 
-There are 3 values in `AppConfig` that can be modified to change cde behaviour.
+There are 5 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Display.ProgressUpdateInterval` which defaults to 5000.
 
@@ -577,6 +577,19 @@ There are 3 values in `AppConfig` that can be modified to change cde behaviour.
 - `AppConfig.Hashing.DegreesOfParallelism` which defaults to 2.
   - hashing will automatically try to do hashing on different file systems in parallel.
   - This setting defines how many concurrent processes will be hashing files on one file system.
+
+- `AppConfig.Scan.ExcludePaths` which defaults to empty.
+
+  - A list of absolute folder paths that a scan records but does not go into. The folder is kept as an empty entry; nothing under it is scanned, and an excluded folder is not reported as an error.
+  - A path covers that folder and everything under it. `*` matches inside one path segment (`/home/*/.cache`); there is no `**`.
+  - A trailing `/*` excludes what is inside a folder but not the folder itself: `/tmp/*` skips the children of `/tmp`, while `/tmp` is still recorded and entered.
+  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Entries that are blank or not absolute are logged and ignored.
+  - The folder you scan, and any folder above it, is never excluded: `cde scan /tmp/work` still scans `/tmp/work` when `/tmp` is excluded. Paths below the scan root still apply.
+  - It applies to `cde scan`, and to creating and rescanning catalogs in cde-tauri. Nothing is stored in the catalog, and a rescan uses the settings at the time of the rescan, so edit the file and rescan to change what is skipped.
+
+- `AppConfig.Scan.UseDefaultExcludes` which defaults to true.
+  - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/lost+found` and `/home/*/.cache`. `ExcludePaths` adds to this list.
+  - Set it to false to scan those folders. It has no effect on Windows and macOS, which have no built-in list.
 
 ### Catalog file sizes and memory usage
 

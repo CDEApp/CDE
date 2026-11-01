@@ -102,11 +102,26 @@ public class ScanPipelineScanTests
         return res.OrderBy(x => x.Item1, StringComparer.Ordinal).ToList();
     }
 
-    private static RootEntry Scan(string path, bool follow = false)
+    private static RootEntry Scan(string path, bool follow = false, ScanExcludeMatcher excludes = null)
     {
         var re = new RootEntry();
-        re.PopulateRoot(path, follow);
+        re.PopulateRoot(path, follow, excludes: excludes);
         return re;
+    }
+
+    private static ScanExcludeMatcher Excluding(params string[] patterns) =>
+        new(patterns, OperatingSystem.IsWindows());
+
+    private void BuildExcludeTree()
+    {
+        Directory.CreateDirectory(Path.Combine(_root, "keep"));
+        Directory.CreateDirectory(Path.Combine(_root, "skip", "inner"));
+        Directory.CreateDirectory(Path.Combine(_root, "keep", "skip"));
+        File.WriteAllText(Path.Combine(_root, "keep", "k.txt"), "k");
+        File.WriteAllText(Path.Combine(_root, "keep", "skip", "deep.txt"), "d");
+        File.WriteAllText(Path.Combine(_root, "r.txt"), "r");
+        File.WriteAllText(Path.Combine(_root, "skip", "s.txt"), "s");
+        File.WriteAllText(Path.Combine(_root, "skip", "inner", "i.txt"), "i");
     }
 
     [Test]
@@ -227,5 +242,86 @@ public class ScanPipelineScanTests
         Assert.That(rels, Does.Contain("ok.txt"));
         Assert.That(rels, Does.Not.Contain("denied/secret.txt"));
         Assert.That(re.PathsWithUnauthorisedExceptions, Is.EqualTo(new[] { denied }));
+    }
+
+    [Test]
+    public void Scan_ExcludedFolder_RecordedAsEmptyEntryAndNotEnumerated()
+    {
+        BuildExcludeTree();
+        var re = Scan(_root, excludes: Excluding(Path.Combine(_root, "skip")));
+        var rels = Flatten(re).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("skip"));
+        Assert.That(rels, Does.Not.Contain("skip/s.txt"));
+        Assert.That(rels, Does.Not.Contain("skip/inner"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+        Assert.That(rels, Does.Contain("keep/skip/deep.txt"), "same name at a different depth is not excluded");
+        Assert.That(re.PathsWithUnauthorisedExceptions ?? new List<string>(), Is.Empty, "an excluded folder is not an error");
+    }
+
+    [Test]
+    public void Scan_ExcludeWithStar_MatchesPerSegment()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding(Path.Combine(_root, "*", "skip")))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("keep/skip"));
+        Assert.That(rels, Does.Not.Contain("keep/skip/deep.txt"));
+        Assert.That(rels, Does.Contain("skip/s.txt"), "star matches one segment only");
+    }
+
+    [Test]
+    public void Scan_ExcludeMatchingTheScanRoot_ScansTheWholeTree()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding(_root))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("r.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+        Assert.That(rels, Does.Contain("skip/s.txt"));
+    }
+
+    [Test]
+    public void Scan_RootBelowExcludedPattern_StillScansButDeeperPatternApplies()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(Path.Combine(_root, "skip"),
+            excludes: Excluding(_root, Path.Combine(_root, "skip", "inner")))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("s.txt"));
+        Assert.That(rels, Does.Contain("inner"));
+        Assert.That(rels, Does.Not.Contain("inner/i.txt"));
+    }
+
+    [Test]
+    public void Scan_ExcludeWithTrailingSlashAndBadEntries_StillExcludes()
+    {
+        BuildExcludeTree();
+        var rels = Flatten(Scan(_root, excludes: Excluding("", "relative/skip", Path.Combine(_root, "skip") + Path.DirectorySeparatorChar)))
+            .Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Not.Contain("skip/s.txt"));
+        Assert.That(rels, Does.Contain("keep/k.txt"));
+    }
+
+    [Test]
+    public void Scan_ExcludedJunction_NotFollowedEvenWhenFollowJunctionsIsOn()
+    {
+        if (!OperatingSystem.IsWindows()) Assert.Ignore("junctions are Windows-only");
+        var target = Path.Combine(_root, "target");
+        Directory.CreateDirectory(target);
+        File.WriteAllText(Path.Combine(target, "inside.txt"), "hi");
+        var scanRoot = Path.Combine(_root, "scan");
+        Directory.CreateDirectory(scanRoot);
+        var link = Path.Combine(scanRoot, "link");
+        var psi = new ProcessStartInfo("cmd.exe", $"/c mklink /J \"{link}\" \"{target}\"")
+        { CreateNoWindow = true, RedirectStandardOutput = true, UseShellExecute = false };
+        using (var p = Process.Start(psi)) { p!.WaitForExit(); }
+        if (!Directory.Exists(link)) Assert.Ignore("could not create junction");
+
+        var rels = Flatten(Scan(scanRoot, follow: true, excludes: Excluding(link))).Select(f => f.Rel).ToList();
+
+        Assert.That(rels, Does.Contain("link"));
+        Assert.That(rels, Does.Not.Contain("link/inside.txt"));
     }
 }
