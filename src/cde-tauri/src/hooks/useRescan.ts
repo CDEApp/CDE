@@ -17,9 +17,14 @@ export function useRescan({ getClient, getCatalogs, afterSwap }: UseRescanOption
   const [rescans, setRescans] = useState<RescanState>(emptyRescanState);
   const rescanAborts = useRef(new Map<number, AbortController>());
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
-  // Latest rescans for async completions; also updated synchronously so a second click in the same tick sees it.
+  // The ref is the source of truth, so a second click in the same tick sees a rescan as running; the state mirrors it
+  // for rendering. Only written from handlers, never during render.
   const rescansRef = useRef(rescans);
-  rescansRef.current = rescans;
+  const update = useCallback((change: (s: RescanState) => RescanState) => {
+    rescansRef.current = change(rescansRef.current);
+    setRescans(rescansRef.current);
+  }, []);
+  const getRescans = useCallback(() => rescansRef.current, []);
 
   const rescanCatalog = useCallback(
     async (catalogId: number) => {
@@ -29,8 +34,7 @@ export function useRescan({ getClient, getCatalogs, afterSwap }: UseRescanOption
       const label = before?.rootPath ?? `catalog ${catalogId}`;
       const abort = new AbortController();
       rescanAborts.current.set(catalogId, abort);
-      rescansRef.current = beginRescan(rescansRef.current, catalogId, label);
-      setRescans((s) => beginRescan(s, catalogId, label));
+      update((s) => beginRescan(s, catalogId, label));
       try {
         // Phase 1: the rescan's own outcome decides the success / failure toast.
         let finished = false;
@@ -40,7 +44,7 @@ export function useRescan({ getClient, getCatalogs, afterSwap }: UseRescanOption
           const result = await client.rescan(catalogId, {
             signal: abort.signal,
             onProgress: (p) =>
-              setRescans((s) => updateRescan(s, catalogId, { phase: p.phase, entriesScanned: p.entriesScanned })),
+              update((s) => updateRescan(s, catalogId, { phase: p.phase, entriesScanned: p.entriesScanned })),
           });
           finished = result !== null;
           entries = result?.entries ?? 0;
@@ -94,11 +98,10 @@ export function useRescan({ getClient, getCatalogs, afterSwap }: UseRescanOption
         }
       } finally {
         rescanAborts.current.delete(catalogId);
-        rescansRef.current = endRescan(rescansRef.current, catalogId);
-        setRescans((s) => endRescan(s, catalogId));
+        update((s) => endRescan(s, catalogId));
       }
     },
-    [getClient, getCatalogs, afterSwap],
+    [getClient, getCatalogs, afterSwap, update],
   );
 
   const cancelRescan = useCallback((catalogId: number) => {
@@ -107,5 +110,5 @@ export function useRescan({ getClient, getCatalogs, afterSwap }: UseRescanOption
 
   const clearUnreachable = useCallback(() => setUnreachableRoot(null), []);
 
-  return { rescans, rescansRef, unreachableRoot, clearUnreachable, rescanCatalog, cancelRescan };
+  return { rescans, getRescans, unreachableRoot, clearUnreachable, rescanCatalog, cancelRescan };
 }
