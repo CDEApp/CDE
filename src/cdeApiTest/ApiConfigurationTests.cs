@@ -109,6 +109,8 @@ public class ApiConfigurationTests
 
         Assert.That(location.Source, Is.EqualTo(ConfigSource.BuiltIn));
         Assert.That(builder.Configuration["Cde:ConfigPath"], Is.EqualTo("."));
+        ((Microsoft.Extensions.Configuration.IConfigurationRoot)builder.Configuration).Reload();
+        Assert.That(builder.Configuration["Cde:ConfigPath"], Is.EqualTo("."), "the defaults survive a reload");
     }
 
     [Test]

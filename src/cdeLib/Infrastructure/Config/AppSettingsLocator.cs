@@ -1,9 +1,12 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security;
 using System.Text;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Configuration.Json;
+using Microsoft.Extensions.Configuration.Memory;
 using Microsoft.Extensions.FileProviders;
 
 namespace cdeLib.Infrastructure.Config;
@@ -98,6 +101,15 @@ public sealed class AppSettingsLocator
         }
         """;
 
+    private static readonly Lazy<Dictionary<string, string>> BuiltInValues = new(() =>
+    {
+        var parsed = new ConfigurationBuilder()
+            .AddJsonStream(new MemoryStream(Encoding.UTF8.GetBytes(DefaultJson))).Build();
+        return parsed.AsEnumerable()
+            .Where(pair => pair.Value != null)
+            .ToDictionary(pair => pair.Key, pair => pair.Value, StringComparer.OrdinalIgnoreCase);
+    });
+
     private readonly string _currentDirectory;
     private readonly string _executableFolder;
 
@@ -118,10 +130,25 @@ public sealed class AppSettingsLocator
         _currentDirectory = currentDirectory ?? Directory.GetCurrentDirectory();
         _executableFolder = executableFolder ?? AppContext.BaseDirectory;
 
-        var overridden = getEnvironmentVariable(ConfigDirVariable);
-        ConfigFolder = !string.IsNullOrWhiteSpace(overridden) ? overridden
-            : string.IsNullOrEmpty(appDataFolder) ? null // no home folder (HOME unset): there is no user config folder
-            : Path.Combine(appDataFolder, "cde");
+        var overridden = AbsoluteOrNull(getEnvironmentVariable(ConfigDirVariable));
+        ConfigFolder = overridden
+            ?? (string.IsNullOrEmpty(appDataFolder) ? null // no home folder (HOME unset): there is no user config folder
+                : Path.Combine(appDataFolder, "cde"));
+    }
+
+    // A relative CDE_CONFIG_DIR (./cfg) means relative to the current directory; the file provider needs a full path.
+    // A value that is not a usable path is ignored, so the default folder is used and cde still starts.
+    private static string AbsoluteOrNull(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) return null;
+        try
+        {
+            return Path.GetFullPath(path);
+        }
+        catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+        {
+            return null;
+        }
     }
 
     /// <summary>The user config folder; null when there is none (no override, and no application data folder).</summary>
@@ -193,8 +220,10 @@ public sealed class AppSettingsLocator
     public static IConfigurationSource CreateSource(ConfigLocation location, bool reloadOnChange = false)
     {
         ArgumentNullException.ThrowIfNull(location);
+        // The built-in defaults are plain values, not a stream: a stream can be read once, and a configuration that is
+        // rebuilt or reloaded would find it empty.
         if (location.Path == null)
-            return new JsonStreamConfigurationSource { Stream = new MemoryStream(Encoding.UTF8.GetBytes(DefaultJson)) };
+            return new MemoryConfigurationSource { InitialData = BuiltInValues.Value };
 
         return new JsonConfigurationSource
         {

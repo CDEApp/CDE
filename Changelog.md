@@ -46,7 +46,8 @@
   first file they find on its own. When there is none, a default is written to the config folder, so `cde` runs from any
   folder with no setup; before, it stopped with an error without the file in the current directory. If the folder cannot
   be written the built-in defaults are used. The default has no Seq sink, and `HashingSection.FirstPassSizeInBytes` now
-  defaults to 65536 like the shipped file. `ui-state.json`, `colour-rules.txt` and `shell.json` follow `CDE_CONFIG_DIR` too.
+  defaults to 65536 like the shipped file (it was 1024 for a file that left the setting out; set `Hashing.FirstPassSizeInBytes`
+  explicitly to keep a different size, because catalogs do not record the size their partial hashes used). `ui-state.json`, `colour-rules.txt` and `shell.json` follow `CDE_CONFIG_DIR` too.
   The Windows zip and the Linux archive still ship `appsettings.json` beside the executable. (#158)
 
 ## 2026/10/27 2.1.0-beta.1 (pre-release)

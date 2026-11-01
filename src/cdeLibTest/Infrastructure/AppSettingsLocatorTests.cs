@@ -108,6 +108,49 @@ public class AppSettingsLocatorTests
         Assert.That(found.Error, Does.Contain("no user config folder"));
     }
 
+    // PhysicalFileProvider needs an absolute root, so a relative override (CDE_CONFIG_DIR=./cfg) must be made absolute.
+    [Test]
+    [NonParallelizable]
+    public void A_relative_CDE_CONFIG_DIR_is_made_absolute_and_works()
+    {
+        var before = Directory.GetCurrentDirectory();
+        Directory.SetCurrentDirectory(_root);
+        try
+        {
+            _env["CDE_CONFIG_DIR"] = Path.Combine("rel", "cfg");
+
+            var locator = Locator();
+            var found = locator.Locate();
+            var config = new ConfigurationBuilder().Add(AppSettingsLocator.CreateSource(found)).Build();
+
+            Assert.That(Path.IsPathRooted(locator.ConfigFolder), Is.True, locator.ConfigFolder);
+            Assert.That(locator.ConfigFolder, Is.EqualTo(Path.GetFullPath(Path.Combine("rel", "cfg"))));
+            Assert.That(found.Source, Is.EqualTo(ConfigSource.Created));
+            Assert.That(config["Cde:ConfigPath"], Is.EqualTo("."));
+        }
+        finally
+        {
+            Directory.SetCurrentDirectory(before);
+        }
+    }
+
+    [Test]
+    public void The_built_in_defaults_can_be_built_and_reloaded_more_than_once()
+    {
+        // The defaults used to come from a stream that could be read once; a reload or a second build found it empty.
+        var source = AppSettingsLocator.CreateSource(new ConfigLocation(ConfigSource.BuiltIn, null));
+
+        var first = new ConfigurationBuilder().Add(source).Build();
+        var second = new ConfigurationBuilder().Add(source).Build();
+        first.Reload();
+        second.Reload();
+
+        Assert.That(first["Cde:ConfigPath"], Is.EqualTo("."));
+        Assert.That(second["Cde:ConfigPath"], Is.EqualTo("."));
+        Assert.That(first["AppConfig:Hashing:FirstPassSizeInBytes"], Is.EqualTo("65536"));
+        Assert.That(first["Serilog:WriteTo:0:Name"], Is.EqualTo("Console"));
+    }
+
     // ---- the lookup order ----
 
     [Test]
