@@ -417,6 +417,8 @@ This mode exists to provide file hashes to the Dupes mode.
 
   Hashing compares file sizes only within the catalogs being hashed. So a file whose only same-size match is in another catalog is not hashed this way: run `cde hash` with no argument to find duplicates across catalogs. A legacy `.cde` catalog can't be hashed; convert it first with [cde migrate](#cde-migrate).
 
+  Failures: a file that cannot be read (locked, removed, access denied) is skipped, counted, and reported at the end as `Hashing finished with N errors`; the run still exits 0. An unexpected error that stops a hashing phase does not discard the work: the hashes completed so far are saved, then `cde hash` prints one summary line (`Hash FAILED: N files hashed, M files could not be read; ...`) and exits 1. A catalog that cannot be saved also exits 1.
+
 Before hashing, cde checks that each catalog's drive or share can be reached, and skips the catalogs that can't (a disconnected drive, an offline share or a moved folder), with a warning for each one. Each check has 10 seconds to answer, and the checks run in parallel, so offline network shares add at most about 10 seconds instead of a network timeout for every file.
 
 It hashes files on different file systems in parallel. File systems are determined in a naïve manner by a simple grouping of the root Volume or Share Name.
