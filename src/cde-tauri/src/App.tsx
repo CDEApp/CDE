@@ -208,20 +208,27 @@ export default function App() {
   }, []);
 
   // Stable accessors so the hooks' callbacks keep a stable identity.
-  const getClient = useCallback(() => clientRef.current!, []);
+  const getClient = useCallback(() => {
+    const client = clientRef.current;
+    if (!client) throw new Error("The catalog service is not ready yet.");
+    return client;
+  }, []);
   const getUi = useCallback(() => uiRef.current, []);
   const getCatalogs = useCallback(() => latest.current.catalogs, []);
   const showDirectory = useCallback(() => setView("directory"), []);
   const showResults = useCallback(() => setView("results"), []);
 
   const selection = useCatalogSelection({ getClient, showDirectory });
-  const search = useSearch({ getClient, getUi, onStart: showResults });
-  const { selectNode, viewInTree, openRoot, resetForReload } = selection;
+  const { results, busy, timing, runSearch, cancelSearch, searchAgain, markRescanned, staleBanner: staleBannerFor } = useSearch({
+    getClient,
+    getUi,
+    onStart: showResults,
+  });
+  const { selectNode, viewInTree, openRoot, resetForReload, selectedKeyRef, selectFromTree, activateDir } = selection;
 
   // After the sidecar swapped the catalog in: refresh the lists, remount that catalog's tree root,
   // mark results into it stale, and put the selection back (nearest surviving parent if it is gone).
   const { snapshot, restoreAfterRescan } = selection;
-  const { markRescanned } = search;
   const afterRescan = useCallback(
     async (client: CdeApiClient, catalogId: number) => {
       const before = snapshot();
@@ -238,7 +245,7 @@ export default function App() {
     },
     [refreshCatalogs, snapshot, restoreAfterRescan, markRescanned],
   );
-  const { rescans, rescansRef, unreachableRoot, clearUnreachable, rescanCatalog, cancelRescan } = useRescan({
+  const { rescans, getRescans, unreachableRoot, clearUnreachable, rescanCatalog, cancelRescan } = useRescan({
     getClient,
     getCatalogs,
     afterSwap: afterRescan,
@@ -246,7 +253,7 @@ export default function App() {
 
   const reloadCatalogs = useCallback(
     async (dir?: string | null) => {
-      if (anyJobRunning(rescansRef.current, latest.current.creates)) return; // the menus are disabled too; belt and braces
+      if (anyJobRunning(getRescans(), latest.current.creates)) return; // the menus are disabled too; belt and braces
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
       // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
@@ -270,7 +277,7 @@ export default function App() {
         }
       }
     },
-    [refreshCatalogs, promptForLegacy, resetForReload, rescansRef],
+    [refreshCatalogs, promptForLegacy, resetForReload, getRescans],
   );
 
   // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
@@ -296,14 +303,14 @@ export default function App() {
 
   // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
   const openFolder = useCallback(async () => {
-    if (anyJobRunning(rescansRef.current, latest.current.creates)) return;
+    if (anyJobRunning(getRescans(), latest.current.creates)) return;
     const picked = await open({ directory: true, multiple: false, title: "Select catalog folder" });
     if (typeof picked !== "string") return; // cancelled
     setCatalogDir(picked);
     uiRef.current?.update({ catalogDir: picked });
     await reloadCatalogs(picked);
     setView("catalogs");
-  }, [reloadCatalogs, rescansRef]);
+  }, [reloadCatalogs, getRescans]);
 
   // --- new catalog ---
   // Native folder picker starting at the last root used for a new catalog (saved in UI state).
@@ -329,11 +336,11 @@ export default function App() {
         filters: [{ name: "CSV", extensions: ["csv"] }],
       });
       if (!path) return; // cancelled: do nothing
-      await writeFile(path, encodeCsv(resultsToCsv(search.results, uiRef.current?.get().searchResultColumnOrder)));
+      await writeFile(path, encodeCsv(resultsToCsv(results, uiRef.current?.get().searchResultColumnOrder)));
       notifications.show({
         color: "green",
         title: "Results exported",
-        message: `${search.results.length.toLocaleString()} rows written to ${path}`,
+        message: `${results.length.toLocaleString()} rows written to ${path}`,
       });
     } catch (e) {
       notifications.show({
@@ -342,7 +349,7 @@ export default function App() {
         message: e instanceof Error ? e.message : String(e),
       });
     }
-  }, [search.results]);
+  }, [results]);
 
   // Start (File menu / Catalogs tab) and "Change…" in the dialog: both just (re)pick the root.
   const pickNewRoot = useCallback(async () => {
@@ -531,7 +538,6 @@ export default function App() {
   // buildMenu / selection through refs at event time instead of closing over them.
   const buildMenuRef = useRef(buildMenu);
   buildMenuRef.current = buildMenu;
-  const selectedKeyRef = selection.selectedKeyRef;
 
   const treeBackgroundMenu = useCallback(
     (x: number, y: number) => {
@@ -571,10 +577,9 @@ export default function App() {
     return <div className="boot">{status || "Loading…"}</div>;
   }
 
-  const { results, busy, timing } = search;
   const { selectedKey, revealKey, revealNonce, expandTo, dirPath, dirNodes } = selection;
   const loadBlockedReasonText = loadBlockedReason(rescans, creates);
-  const staleBanner = search.staleBanner((id) => {
+  const staleBanner = staleBannerFor((id) => {
     const c = catalogs?.catalogs.find((x) => x.catalogId === id);
     return c ? c.rootPath : `#${id}`;
   });
@@ -597,8 +602,8 @@ export default function App() {
         defaults={uiRef.current?.get() ?? {}}
         filtersExpanded={uiRef.current?.get().filtersExpanded ?? true}
         onFiltersExpandedChange={(filtersExpanded) => uiRef.current?.update({ filtersExpanded })}
-        onSearch={search.runSearch}
-        onCancel={search.cancelSearch}
+        onSearch={runSearch}
+        onCancel={cancelSearch}
       />
 
       <div className="tabs">
@@ -649,11 +654,11 @@ export default function App() {
             resolveTreeStyle={resolveTreeStyle}
             resolveStyle={resolveStyle}
             onResizeEnd={onTreePaneResize}
-            onSelect={selection.selectFromTree}
+            onSelect={selectFromTree}
             onTreeContextMenu={onTreeContextMenu}
             onBackgroundContextMenu={treeBackgroundMenu}
             onSort={onDirSort}
-            onActivate={selection.activateDir}
+            onActivate={activateDir}
             onListContextMenu={onListContextMenu}
           />
         </div>
@@ -665,7 +670,7 @@ export default function App() {
                 <span>{staleBanner}</span>
                 <button
                   disabled={busy}
-                  onClick={() => void search.searchAgain()}
+                  onClick={() => void searchAgain()}
                 >
                   Search again
                 </button>

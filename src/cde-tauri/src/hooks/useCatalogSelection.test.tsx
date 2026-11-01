@@ -86,6 +86,32 @@ describe("useCatalogSelection", () => {
     expect(result.current.dirPath).toBe("/r/a");
   });
 
+  it("does not override a folder the user clicked while the restore was still working", async () => {
+    const { result, client } = setup({ 0: [a], 1: [b] });
+    await act(() => result.current.selectNode(b.ref, b.fullPath));
+    const snapshot = result.current.snapshot();
+
+    // Hold the restore at its first await, then let the user click the root before it resumes.
+    let release!: () => void;
+    (client.catalogs as ReturnType<typeof vi.fn>).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          release = () => resolve({ catalogs: [{ catalogId: 1, rootPath: "/r" }] });
+        }),
+    );
+    let restoring!: Promise<void>;
+    act(() => {
+      restoring = result.current.restoreAfterRescan(client, 1, snapshot);
+    });
+    await act(() => result.current.selectNode(root.ref, root.fullPath));
+    await act(async () => {
+      release();
+      await restoring;
+    });
+    expect(result.current.selectedKey).toBe("1-0");
+    expect(result.current.dirPath).toBe("/r");
+  });
+
   it("keeps the exact folder when it survives the rescan", async () => {
     const { result, client } = setup({ 0: [a], 1: [b], 2: [] });
     await act(() => result.current.selectNode(b.ref, b.fullPath));

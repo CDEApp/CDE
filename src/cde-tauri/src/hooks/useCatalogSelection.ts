@@ -153,6 +153,8 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
     async (client: CdeApiClient, catalogId: number, before: SelectionSnapshot) => {
       const selected = before.selectedKey ? parseRef(before.selectedKey) : null;
       if (selected?.catalogId !== catalogId) return;
+      // A click made while this restore is awaiting begins a newer token, which makes the restore stand down.
+      const token = navGuard.begin();
       const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
       if (!info) return;
       const found = await resolveSurvivingFolder(
@@ -161,10 +163,12 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
         before.dirPath,
         (ref) => client.children(ref, { foldersOnly: true, sort: "name" }),
       );
-      setExpandTo(await refsToPath(client, found.ref));
+      const expand = await refsToPath(client, found.ref);
+      if (!navGuard.isCurrent(token)) return;
+      setExpandTo(expand);
       await selectNode(found.ref, found.fullPath);
     },
-    [selectNode],
+    [selectNode, navGuard],
   );
 
   return {
