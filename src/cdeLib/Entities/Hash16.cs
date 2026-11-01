@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using cdeLib.Infrastructure;
 using MessagePack;
-using ProtoBuf;
 
 namespace cdeLib.Entities;
 
@@ -12,15 +11,12 @@ namespace cdeLib.Entities;
 /// Uses readonly record struct for immutability, value semantics, and zero defensive copies.
 /// </summary>
 [DebuggerDisplay("HashA = {HashA}, HashB = {HashB}")]
-[ProtoContract]
 [MessagePackObject]
 public readonly record struct Hash16
 {
-    [ProtoMember(1, IsRequired = true)]
     [Key(0)]
     public ulong HashA { get; init; } // first 8 bytes
 
-    [ProtoMember(2, IsRequired = true)]
     [Key(1)]
     public ulong HashB { get; init; } // last 8 bytes
 

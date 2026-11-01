@@ -1,6 +1,5 @@
 ﻿using System;
 using System.ComponentModel;
-using ProtoBuf;
 
 namespace cdeLib.Entities;
 
@@ -23,25 +22,16 @@ namespace cdeLib.Entities;
 //
 //
 // a million at an array does not seem bad.
-[ProtoContract]
 public sealed class Entry : object
 {
-    [ProtoMember(1, IsRequired = true)]
     public ulong Size { get; set; }
-    [ProtoMember(2, IsRequired = true)]
     public DateTime Modified { get; set; }
-    [ProtoMember(3, IsRequired = true)]
     public string Name { get; set; }
-    [ProtoMember(4, IsRequired = true)]
     public string FullPath { get; set; }
-    [ProtoMember(5, IsRequired = true)]
     public Hash16 Hash { get; set; } // waste 8 bytes with pointer if we dont store it here. this is 16bytes.
 
-    [ProtoMember(6, IsRequired = true)]
     public int Child { get; set; }
-    [ProtoMember(7, IsRequired = true)]
     public int Sibling { get; set; }
-    [ProtoMember(8, IsRequired = true)]
     public int Parent { get; set; }
 
     [Flags]
@@ -63,7 +53,6 @@ public sealed class Entry : object
         PartialHash = 1 << 5
     }
 
-    [ProtoMember(9, IsRequired = true)]
     public Flags BitFields { get; set; }
     #region BitFields based properties
     public bool IsDirectory

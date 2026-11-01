@@ -2,11 +2,11 @@
 using System.IO;
 using System.Linq;
 using NUnit.Framework;
-using ProtoBuf;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
+using cdeLib.Infrastructure.Serialization;
 using NSubstitute;
 
 namespace cdeLibTest;
@@ -34,33 +34,15 @@ internal class SerializeDataModelTest
         _config.ProgressUpdateInterval.Returns(5000);
     }
 
-    [Test]
-    [Ignore("Targeted at Protobuf only")]
-    public void Serialize_RootEntry()
-    {
-        re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
-
-        var ms = new MemoryStream();
-        Serializer.Serialize(ms, re1);
-        var b = ms.ToArray();
-
-        Console.WriteLine($"b.Length {b.Length}");
-        Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
-        Assert.That(b.Length, Is.EqualTo(118));
-    }
-
     // just a sanity check - shouldn't ever fail and only checking rootpath and name field.
     [Test]
     public void Serialize_Deserialize_RootEntryMatches()
     {
         re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
-        var ms = new MemoryStream();
-        Serializer.Serialize(ms, re1);
-        var b = ms.ToArray();
+        var b = MessagePack.MessagePackSerializer.Serialize(re1, MessagePackConfig.Options);
 
-        var newMS = new MemoryStream(b);
-        var re2 = Serializer.Deserialize<RootEntry>(newMS);
+        var re2 = MessagePack.MessagePackSerializer.Deserialize<RootEntry>(b, MessagePackConfig.Options);
 
         var same = re1.SameTree(re2);
         Assert.That(same, Is.True, TreeDuplicate.LastMessage);
@@ -71,12 +53,9 @@ internal class SerializeDataModelTest
     {
         re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
 
-        var ms = new MemoryStream();
-        Serializer.Serialize(ms, re1);
-        var b = ms.ToArray();
+        var b = MessagePack.MessagePackSerializer.Serialize(re1, MessagePackConfig.Options);
 
-        var newMS = new MemoryStream(b);
-        var re2 = Serializer.Deserialize<RootEntry>(newMS);
+        var re2 = MessagePack.MessagePackSerializer.Deserialize<RootEntry>(b, MessagePackConfig.Options);
 
         re2.Path = "moo";
         var same = re1.SameTree(re2);
@@ -151,40 +130,6 @@ internal class SerializeDataModelTest
         Assert.That(file.Children, Is.Null);
     }
 
-    [Ignore("Cant do this as dir tree is part of root entry bending test to toy with protobuf-net a bit")]
-    [Test]
-    public void DeSerialize_JustRootEntryThatHasTree()
-    {
-        re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
-
-        var ms = new MemoryStream();
-
-        Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
-        Serializer.SerializeWithLengthPrefix(ms, re1, PrefixStyle.Base128, 1);
-
-        var b = ms.ToArray();
-        Console.WriteLine($"b.Length {b.Length}");
-        Console.WriteLine($"b {ByteArrayHelper.ByteArrayToString(b)}");
-
-        var newMS = new MemoryStream(b);
-
-        var iter = Serializer.DeserializeItems<RootEntry>(newMS, PrefixStyle.Base128, 1);
-        var rootEntries = iter.ToList();
-        var first = rootEntries.FirstOrDefault();
-        if (first != null) Console.WriteLine("first.RootPath " + first.Path);
-
-        var second = rootEntries.FirstOrDefault();
-        if (second != null) Console.WriteLine("second.RootPath " + second.Path);
-        var third = rootEntries.FirstOrDefault();
-        if (third != null)
-        {
-            Console.WriteLine("third.RootPath " + third.Path);
-        }
-        else
-        {
-            Console.WriteLine("third.RootPath doesn't exist.");
-        }
-    }
     // ReSharper restore InconsistentNaming
 }
 
@@ -218,4 +163,4 @@ public static class TreeDuplicate
         var bothTreesComplete = !e1.MoveNext() && !e2.MoveNext();
         return !differenceFound && bothTreesComplete;
     }
-}
+}
