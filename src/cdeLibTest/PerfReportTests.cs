@@ -35,6 +35,20 @@ public class PerfReportTests
     }
 
     [Test]
+    public void NoBaseline_ListsEveryMetricIncludingScanAndQueryTimings()
+    {
+        var metrics = PerfComparison.Compare(null, Report()).Deltas.Select(d => d.Metric).ToList();
+
+        metrics.Should().Contain(["Scan time (ms)", "name substring cold (ms)", "name substring warm (ms)"]);
+    }
+
+    [Test]
+    public void NoBaseline_OmitsScanTimeWhenWrittenDirectly()
+    {
+        PerfComparison.Compare(null, Report(scanMs: null)).Deltas.Should().NotContain(d => d.Metric == "Scan time (ms)");
+    }
+
+    [Test]
     public void CdexSizeGrowthOverTwoPercent_Fails()
     {
         var result = PerfComparison.Compare(Report(cdexBytes: 1_000_000), Report(cdexBytes: 1_021_000));
