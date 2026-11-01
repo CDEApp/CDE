@@ -9,6 +9,7 @@ using cdeLib.Catalog;
 using cdeLib.Duplicates;
 using cdeLib.Hashing;
 using cdeLib.Infrastructure;
+using cdeLib.Output;
 using JetBrains.Annotations;
 using SlimMessageBus;
 
@@ -57,13 +58,13 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         // The token is the Ctrl-C break signal. For hashing a break ends the current phase (handled inside Duplication),
         // then the hashes so far are saved, so nothing here may stop on it: not the work, the display, or the
         // in-process notifications. The token stays cancelled after the first break, so passing it on would fail them.
-        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles), CancellationToken.None);
+        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles, request.Output), CancellationToken.None);
         var console = new HashProgressConsole();
         console.Start(mainLoopTask);
         await mainLoopTask.ConfigureAwait(false);
     }
 
-    private async Task MainLoop(IList<string> cdexFiles)
+    private async Task MainLoop(IList<string> cdexFiles, IRecordWriter output)
     {
         _logger.Information("Memory pre-hash: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
@@ -78,7 +79,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         try
         {
             await ColumnarCatalogHashing.HashAndSave(_duplication, cdexFiles,
-                file => HashProgressConsole.EnqueueMessage($"Saving catalog {file}")).ConfigureAwait(false);
+                file => HashProgressConsole.EnqueueMessage($"Saving catalog {file}"), output).ConfigureAwait(false);
 
             var ts = stopwatch.Elapsed;
             var elapsedTime = string.Create(CultureInfo.InvariantCulture,

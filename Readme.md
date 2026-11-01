@@ -26,6 +26,7 @@
   - [cde scan Path](#cde-scan-path)
   - [cde find String](#cde-find-string)
   - [cde everything Query](#cde-everything-query)
+  - [Machine-readable output](#machine-readable-output---json-and---csv)
   - [cde hash](#cde-hash)
   - [cde dupes](#cde-dupes)
   - [cde dump](#cde-dump)
@@ -395,6 +396,45 @@ Put the query in quotes, because `<`, `>`, `|` and `!` mean something to a shell
 
 A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the command with `error: ... (at position N)` and exit code 1 before any catalog is read, and prints no results. An empty query matches every entry. Wildcards and Everything functions such as `ext:` are not supported yet.
 
+### Machine-readable output: --json and --csv
+
+`find`, `findpath`, `grep`, `greppath`, `everything`, `hash` and `dupes` take `--json` or `--csv` to write their results for another program instead of for a person. Use one, not both: `--json --csv` stops the command with an error before anything is written.
+
+```batch
+cde find .iso --json
+cde dupes --csv > dupes.csv
+cde hash --json | jq .path
+```
+
+- `--json` writes one JSON object per line ([JSON Lines](https://jsonlines.org/)). `--csv` writes a header row, then one row per result, as RFC 4180 CSV: a field with a comma, a quote or a line break is in quotes, and a quote inside it is doubled. Both are UTF-8 without a byte order mark, and a line ends in a line feed (LF).
+- Standard output holds only the results. Progress displays, status lines, warnings and log messages go to standard error. A search with no matches writes nothing for `--json`, and only the header row for `--csv`.
+- The two formats use the same field names, in the same order, with the same values. Names with commas, quotes, line breaks and non-ASCII characters are written as they are in the catalog, and read back exactly.
+- Results are written as they are found, so a very large result does not have to fit in memory.
+- The CSV is exact, for scripts, and is not escaped against spreadsheet formulas: a name that starts with `=`, `+`, `-` or `@` can run as a formula if you open the file in a spreadsheet, so sanitise it first. A `modified` time that the catalog does not hold, or that is before 1601, is an empty CSV field and `null` in JSON.
+- `--template` sets the text lines, so it cannot be used with `--json` or `--csv`. `--filter` can.
+
+| Field | Value |
+|---|---|
+| `catalog` | The catalog file the entry is in |
+| `path` | The full path |
+| `name` | The last part of the path |
+| `size` | Size in bytes. For a folder, the total of what is in it |
+| `modified` | Last modified time in UTC, like `2024-03-05T06:07:08Z` |
+| `directory` | `true` for a folder, otherwise `false` |
+| `group` | The number of a set of duplicate files, from 1. Files with the same number are copies of each other |
+| `hash` | The hash as 32 lower-case hex digits |
+| `partial` | `true` when only the start of the file was hashed, otherwise `false` |
+
+Each command writes these fields, in this order:
+
+| Command | Fields |
+|---|---|
+| `find` (and `findpath`, `grep`, `greppath`, `everything`) | `catalog`, `path`, `name`, `size`, `modified`, `directory` |
+| `dupes` | `group`, `catalog`, `path`, `name`, `size`, `modified`, `hash` |
+| `hash` | `catalog`, `path`, `name`, `size`, `hash`, `partial` |
+
+`hash` writes a record for each file it hashed in that run, with the hash that is saved in the catalog. A file whose hash was already in the catalog is not repeated; `dupes` lists those. A hash made from only the start of a file shows `partial` as `true`.
+
 ### cde hash
 
 #### Valid Options for this mode
@@ -596,13 +636,14 @@ There are 5 values in `AppConfig` that can be modified to change cde behaviour.
   - A path covers that folder and everything under it. `*` matches inside one path segment (`/home/*/.cache`); there is no `**`.
   - A bare name with no path separator, such as `node_modules` or `.git`, excludes a folder of that name at any depth below the scan root (`*` works inside the name). It never excludes the scan root itself, even when the root has that name.
   - A trailing `/*` excludes what is inside a folder but not the folder itself: `/tmp/*` skips the children of `/tmp`, while `/tmp` is still recorded and entered.
-  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Entries that are blank, or relative with a separator, are logged and ignored.
+  - Matching is case-sensitive, except on Windows where it ignores case and `/` and `\` are the same. Default macOS volumes (APFS and HFS+) are case-insensitive, so on macOS write patterns with the folder's real case. Entries that are blank, or relative with a separator, are logged and ignored. A pattern written for another OS (a `/tmp`-style path on Windows, a `C:\...` path on Linux or macOS) can never match, so a warning is logged and it has no effect.
   - The folder you scan, and any folder above it, is never excluded: `cde scan /tmp/work` still scans `/tmp/work` when `/tmp` is excluded. Paths below the scan root still apply.
   - It applies to `cde scan`, and to creating and rescanning catalogs in cde-tauri. Nothing is stored in the catalog, and a rescan uses the settings at the time of the rescan, so edit the file and rescan to change what is skipped.
 
 - `AppConfig.Scan.UseDefaultExcludes` which defaults to true.
   - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/var/spool`, `/var/lock`, `/lost+found` and `/home/*/.cache`. Note `/var/spool` can hold user mail; scan it explicitly if you want it. `ExcludePaths` adds to this list.
-  - Set it to false to scan those folders. It has no effect on Windows and macOS, which have no built-in list.
+  - On macOS, also skips `/dev`, `/.Spotlight-V100` and `/.fseventsd` (the last two are the per-volume Spotlight index and file system events store at a volume root). The two dot folders are anchored at `/`, so they apply when you scan from `/`; to exclude them on another volume add a pattern such as `/Volumes/<name>/.Spotlight-V100`. `ExcludePaths` adds to this list.
+  - Set it to false to scan those folders. It has no effect on Windows, which has no built-in list.
 
 ### Catalog file sizes and memory usage
 

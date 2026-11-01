@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using cdeLib;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Output;
 using NUnit.Framework;
 
 namespace cdeLibTest;
@@ -636,5 +637,41 @@ public class FindServiceTests
         new FindService().FindColumnar("rep 2024", FindService.ParamFind, [reader]);
 
         Assert.That(Matches(), Is.Empty);
+    }
+
+    // ---- record output (--json / --csv, #173) ----
+
+    private (string Path, string Name, bool Directory)[] Records(string json) =>
+        json.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+            .Select(l => System.Text.Json.JsonDocument.Parse(l).RootElement)
+            .Select(o => (o.GetProperty("path").GetString(), o.GetProperty("name").GetString(), o.GetProperty("directory").GetBoolean()))
+            .OrderBy(r => r.Item1, StringComparer.Ordinal).ToArray();
+
+    [Test]
+    public void Find_with_an_output_writes_records_not_console_lines_on_the_columnar_path()
+    {
+        using var reader = Columnar();
+        var records = new StringWriter();
+
+        new FindService { Output = RecordWriter.Create(OutputFormat.Json, records, EntryRecords.FindColumns) }
+            .FindColumnar("report", FindService.ParamFind, [reader]);
+
+        Assert.That(_captured.ToString(), Is.Empty);
+        var found = Records(records.ToString());
+        Assert.That(found.Select(r => r.Name), Is.EqualTo(new[] { "report-2024.txt", "report.txt", "reports" }));
+        Assert.That(found.Select(r => r.Directory), Is.EqualTo(new[] { false, false, true }));
+        Assert.That(found.Select(r => r.Path), Has.All.StartsWith(Path.Combine(_dir, "data")));
+    }
+
+    [Test]
+    public void Find_with_an_output_writes_the_same_records_on_the_loaded_tree_path()
+    {
+        var records = new StringWriter();
+
+        new FindService { Output = RecordWriter.Create(OutputFormat.Json, records, EntryRecords.FindColumns) }
+            .Find("report", FindService.ParamFind, [Scan()]);
+
+        Assert.That(_captured.ToString(), Is.Empty);
+        Assert.That(Records(records.ToString()).Select(r => r.Name), Is.EqualTo(new[] { "report-2024.txt", "report.txt", "reports" }));
     }
 }

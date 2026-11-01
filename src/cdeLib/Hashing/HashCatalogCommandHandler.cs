@@ -44,7 +44,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
         var stopwatch = Stopwatch.StartNew();
         await ColumnarCatalogHashing.HashAndSave(_duplication, cdexFiles,
-            file => _logger.Information("Saving catalog {Filename}", file)).ConfigureAwait(false);
+            file => _logger.Information("Saving catalog {Filename}", file), request.Output).ConfigureAwait(false);
 
         var ts = stopwatch.Elapsed;
         var elapsedTime = $"{ts.Hours:00}:{ts.Minutes:00}:{ts.Seconds:00}.{ts.Milliseconds / 10:00}";

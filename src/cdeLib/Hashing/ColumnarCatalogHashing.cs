@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
 using cdeLib.Duplicates;
+using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Output;
 
 namespace cdeLib.Hashing;
 
@@ -18,7 +20,10 @@ public static class ColumnarCatalogHashing
     /// <param name="duplication">The hashing engine (its progress and status callbacks are used as set).</param>
     /// <param name="cdexFiles">The catalogs to hash; each is replaced by its hashed copy.</param>
     /// <param name="onSaving">Called with each catalog's path just before it is saved.</param>
-    public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving)
+    /// <param name="output">Receives a record for each file hashed in this run, with its new hash, once the catalog it is in
+    /// has saved (#173); a catalog that fails to save writes none. Null writes none. Files whose usable hash was already in the catalog are not repeated.</param>
+    public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
+        IRecordWriter output = null)
     {
         ArgumentNullException.ThrowIfNull(duplication);
         ArgumentNullException.ThrowIfNull(cdexFiles);
@@ -40,17 +45,22 @@ public static class ColumnarCatalogHashing
                 var file = cdexFiles[c];
                 onSaving?.Invoke(file);
                 var tempPath = file + ".tmp";
+                var saved = false;
                 try
                 {
                     ColumnarFormat.WriteWithHashes(readers[c], updates.For(c), file, tempPath);
                     readers[c].Dispose(); // release the mapping so the file can be replaced
                     File.Move(tempPath, file, overwrite: true);
+                    saved = true;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
                     TryDelete(tempPath);
                     (failures ??= []).Add(ex);
                 }
+
+                // Only a catalog that saved has its records written: a record says a hash is in the catalog.
+                if (saved && output != null) WriteHashed(output, file, updates.For(c));
             }
 
             // The completed hashes are saved above even when a phase failed; now surface the failure.
@@ -79,6 +89,21 @@ public static class ColumnarCatalogHashing
                 reader.Dispose();
             }
         }
+    }
+
+    // Streams one record per newly hashed file of a saved catalog, straight from the updates, so nothing is collected in
+    // memory. The saved catalog has the same entries in the same order, so the update indexes address it too.
+    private static void WriteHashed(IRecordWriter output, string file, ReadOnlySpan<EntryHashUpdate> updates)
+    {
+        using var saved = new ColumnarCatalogReader(file);
+        foreach (var update in updates)
+        {
+            if (!update.Flags.IsHashUsable()) continue;
+            EntryRecords.WriteHashed(output, file, saved, update.Index, update.Hash,
+                (update.Flags & Flags.PartialHash) == Flags.PartialHash);
+        }
+
+        output.Flush();
     }
 
     private static void TryDelete(string path)

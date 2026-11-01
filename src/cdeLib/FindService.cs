@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
+using cdeLib.Output;
 using Serilog;
 
 namespace cdeLib;
@@ -39,6 +40,12 @@ public interface IFindService
     /// before anything is written.
     /// </summary>
     bool EverythingMode { get; set; }
+
+    /// <summary>
+    /// Where each match goes as a record (<c>--json</c> / <c>--csv</c>, see <see cref="EntryRecords.FindColumns"/>); null
+    /// writes the console lines. Takes the place of <see cref="Template"/>, which a caller must not set with it.
+    /// </summary>
+    IRecordWriter Output { get; set; }
 }
 
 public class FindService : IFindService
@@ -63,6 +70,8 @@ public class FindService : IFindService
     public MatchFilter Filter { get; set; }
 
     public bool EverythingMode { get; set; }
+
+    public IRecordWriter Output { get; set; }
 
     public void Find(string pattern, string param, IList<RootEntry> rootEntries)
     {
@@ -103,6 +112,7 @@ public class FindService : IFindService
                 EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }
 
+        Output?.Flush();
         timer.Stop();
         Log.Logger.Information(
             "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
@@ -135,6 +145,7 @@ public class FindService : IFindService
                 reader.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }
 
+        Output?.Flush();
         timer.Stop();
         Log.Logger.Information(
             "Search Execution Time: {ExecutionTime}, Matching pattern {Pattern}, Total found {TotalFound}",
@@ -144,7 +155,9 @@ public class FindService : IFindService
     // Size and modified are read only when a template is set, so the default output pays nothing for them.
     private void WriteMatch(EntryStore store, int idx)
     {
-        if (Template == null)
+        if (Output != null)
+            EntryRecords.WriteFind(Output, store.ActualFileName ?? store.DefaultFileName, store, idx);
+        else if (Template == null)
             Console.WriteLine(" {0}", store.FullPath(idx));
         else
             Console.WriteLine(Template.Render(store.ActualFileName ?? store.DefaultFileName, store.FullPath(idx),
@@ -153,7 +166,9 @@ public class FindService : IFindService
 
     private void WriteMatch(ColumnarCatalogReader reader, int idx)
     {
-        if (Template == null)
+        if (Output != null)
+            EntryRecords.WriteFind(Output, reader.FilePath, reader, idx);
+        else if (Template == null)
             Console.WriteLine(" {0}", reader.FullPath(idx));
         else
             Console.WriteLine(Template.Render(reader.FilePath, reader.FullPath(idx),

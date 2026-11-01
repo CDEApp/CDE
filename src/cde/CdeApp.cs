@@ -11,6 +11,7 @@ using cdeLib.Duplicates;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 using cdeLib.Hashing;
+using cdeLib.Output;
 using cdeLib.Upgrade;
 using Mono.Terminal;
 using Serilog;
@@ -36,11 +37,13 @@ public sealed class CdeApp(
         { Description = opts.Description, FollowJunctions = opts.FollowJunctions, ExcludePaths = opts.Exclude?.ToList(), Verbose = opts.Verbose }, cancellationToken: cancellation.Token);
 
     /// <param name="catalogPath">The one .cdex catalog to hash, or null for every catalog found.</param>
-    public Task HashCatalogAsync(string catalogPath = null) =>
-        messageBus.Send(new HashCatalogCommand { CatalogPath = catalogPath }, cancellationToken: cancellation.Token);
+    /// <param name="output">Receives a record per file hashed (<c>--json</c> / <c>--csv</c>), or null.</param>
+    public Task HashCatalogAsync(string catalogPath = null, IRecordWriter output = null) =>
+        messageBus.Send(new HashCatalogCommand { CatalogPath = catalogPath, Output = output }, cancellationToken: cancellation.Token);
 
-    public Task FindDupesAsync() =>
-        messageBus.Send(new FindDuplicatesCommand(), cancellationToken: cancellation.Token);
+    /// <param name="output">Receives a record per duplicate file (<c>--json</c> / <c>--csv</c>); null prints their paths.</param>
+    public Task FindDupesAsync(IRecordWriter output = null) =>
+        messageBus.Send(new FindDuplicatesCommand { Output = output }, cancellationToken: cancellation.Token);
 
     public Task UpdateAsync(UpdateOptions opts) =>
         messageBus.Send(new UpdateCommand { FileName = opts.FileName, Description = opts.Description }, cancellationToken: cancellation.Token);
@@ -54,10 +57,12 @@ public sealed class CdeApp(
     /// (see <see cref="MatchTemplate"/>) and any <paramref name="filters"/> (see <see cref="MatchFilter"/>) are
     /// parsed first, so a bad one fails before any catalog is opened. With <paramref name="everything"/> the
     /// <paramref name="value"/> is an Everything-style query (see <see cref="EverythingQuery"/>), parsed first too.
+    /// With an <paramref name="output"/> each match goes to it as a record (<c>--json</c> / <c>--csv</c>) instead of a console line.
     /// </summary>
     public void RunFind(string value, string param, string template = null, IEnumerable<string> filters = null,
-        bool everything = false)
+        bool everything = false, IRecordWriter output = null)
     {
+        findService.Output = output;
         var filterList = filters?.ToList();
         findService.Template = template == null ? null : MatchTemplate.Parse(template);
         findService.Filter = filterList is { Count: > 0 } ? MatchFilter.Parse(filterList) : null;
