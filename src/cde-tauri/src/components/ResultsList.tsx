@@ -281,6 +281,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
           <div
             key={`${r.ref.catalogId}-${r.ref.entryIndex}-${i}`}
             role="row"
+            tabIndex={-1}
             aria-rowindex={i + 2}
             className={`vlist-row${r.isDirectory ? " dir" : ""}`}
             style={{ ...style, ...rowStyle, gridTemplateColumns }}

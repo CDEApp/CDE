@@ -28,13 +28,13 @@ with_tauri=true
 
 # An option that takes a value must have one: "$@" here is the option and what follows it.
 need_value() {
-  if [ $# -lt 2 ]; then
+  if [[ $# -lt 2 ]]; then
     echo "error: $1 needs a value." >&2
     exit 2
   fi
 }
 
-while [ $# -gt 0 ]; do
+while [[ $# -gt 0 ]]; do
   case "$1" in
     --version) need_value "$@"; version="$2"; shift 2 ;;
     --artifacts) need_value "$@"; artifacts="$2"; shift 2 ;;
@@ -48,7 +48,7 @@ done
 # The version rules live in release-version.mjs (tested); ask it, so there is one pattern. It exits
 # non-zero for anything that is not X.Y.Z or X.Y.Z-(alpha|beta|rc).N.
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -z "$version" ] || ! node "$here/../../src/cde-tauri/scripts/release-version.mjs" tag-kind --tag "$version" >/dev/null 2>&1; then
+if [[ -z "$version" ]] || ! node "$here/../../src/cde-tauri/scripts/release-version.mjs" tag-kind --tag "$version" >/dev/null 2>&1; then
   echo "error: version '$version' is not MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-(alpha|beta|rc).N (no 'v' prefix)." >&2
   exit 1
 fi
@@ -57,7 +57,7 @@ name="cde-$version-linux-x64"
 stage="$out/$name"
 
 require() {
-  if [ ! -f "$1" ]; then
+  if [[ ! -f "$1" ]]; then
     echo "error: Missing build output: $1" >&2
     exit 1
   fi
@@ -65,7 +65,7 @@ require() {
 
 # Check everything first, so a missing file never leaves a half-staged folder or an archive.
 require "$artifacts/cde/cde"
-if [ "$with_tauri" = true ]; then
+if [[ "$with_tauri" = true ]]; then
   require "$tauri_dir/cde-tauri"
   require "$tauri_dir/cdeApi"
 fi
@@ -78,7 +78,7 @@ cp -R "$artifacts/cde/." "$stage/cde/"
 find "$stage/cde" -type f -name '*.pdb' -delete
 chmod +x "$stage/cde/cde"
 
-if [ "$with_tauri" = true ]; then
+if [[ "$with_tauri" = true ]]; then
   mkdir -p "$stage/cde-tauri"
   cp "$tauri_dir/cde-tauri" "$tauri_dir/cdeApi" "$stage/cde-tauri/"
   chmod +x "$stage/cde-tauri/cde-tauri" "$stage/cde-tauri/cdeApi"

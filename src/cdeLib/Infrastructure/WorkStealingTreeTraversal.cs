@@ -154,7 +154,7 @@ public class WorkStealingTreeTraversal
         {
             // Keep the first failure, then stop the other workers so it surfaces promptly.
             Interlocked.CompareExchange(ref _fault, ex, null);
-            workersCts.Cancel();
+            await workersCts.CancelAsync();
             throw;
         }
         finally
