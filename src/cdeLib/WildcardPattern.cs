@@ -20,11 +20,13 @@ public sealed class WildcardPattern
     private readonly record struct Token(Kind Kind, char Folded);
 
     private readonly Token[] _tokens;
+    private readonly bool _ignoreCase;
     private readonly int _minLength; // characters every match must contain at least
 
-    private WildcardPattern(Token[] tokens)
+    private WildcardPattern(Token[] tokens, bool ignoreCase)
     {
         _tokens = tokens;
+        _ignoreCase = ignoreCase;
         foreach (var t in tokens)
             if (t.Kind is Kind.Literal or Kind.AnyChar) _minLength++;
     }
@@ -32,8 +34,11 @@ public sealed class WildcardPattern
     /// <summary>True if <paramref name="term"/> has a <c>*</c> or <c>?</c>, so it is a wildcard rather than a plain substring.</summary>
     public static bool IsWildcard(string term) => term.AsSpan().IndexOfAny('*', '?') >= 0;
 
-    /// <summary>Parse a pattern. Any text is valid: every character that is not <c>*</c> or <c>?</c> is a literal.</summary>
-    public static WildcardPattern Parse(string pattern)
+    /// <summary>
+    /// Parse a pattern. Any text is valid: every character that is not <c>*</c> or <c>?</c> is a literal. Literals
+    /// are compared ignoring case unless <paramref name="ignoreCase"/> is false.
+    /// </summary>
+    public static WildcardPattern Parse(string pattern, bool ignoreCase = true)
     {
         ArgumentNullException.ThrowIfNull(pattern);
         var tokens = new Token[pattern.Length];
@@ -52,12 +57,12 @@ public sealed class WildcardPattern
                     i += run - 1;
                     break;
                 default:
-                    tokens[count++] = new Token(Kind.Literal, Fold(pattern[i]));
+                    tokens[count++] = new Token(Kind.Literal, ignoreCase ? Fold(pattern[i]) : pattern[i]);
                     break;
             }
         }
 
-        return new WildcardPattern(tokens.AsSpan(0, count).ToArray());
+        return new WildcardPattern(tokens.AsSpan(0, count).ToArray(), ignoreCase);
     }
 
     private static char Fold(char c) => char.ToUpperInvariant(c);
@@ -90,7 +95,7 @@ public sealed class WildcardPattern
     }
 
     // row[j] says "the tokens so far match text[0..j)". Moves it forward by one token in place; false if no prefix survives.
-    private static bool Step(Token token, ReadOnlySpan<char> text, Span<bool> row)
+    private bool Step(Token token, ReadOnlySpan<char> text, Span<bool> row)
     {
         var n = text.Length;
         var any = false;
@@ -99,7 +104,7 @@ public sealed class WildcardPattern
             case Kind.Literal:
                 for (var j = n; j >= 1; j--)
                 {
-                    row[j] = row[j - 1] && Fold(text[j - 1]) == token.Folded;
+                    row[j] = row[j - 1] && (_ignoreCase ? Fold(text[j - 1]) : text[j - 1]) == token.Folded;
                     any |= row[j];
                 }
 

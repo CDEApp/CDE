@@ -33,6 +33,8 @@ cde everything "file: .iso" --filter "{size:>4GB}"
 | `path:term` | Match the full path. It goes directly in front of one word, phrase or group, with no space. |
 | `no-path:term` | Match the name only. |
 | `regex:term` | The term is a regular expression, matched anywhere in the text, ignoring case. Quote one that has a space or `\|`. Modifiers chain: `path:regex:^C:`. |
+| `case:term` | Match case. Plain terms, wildcards and `regex:` ignore case unless `case:` is in front. It chains: `case:path:Docs`. |
+| `diacritics:term` | Accepted so Everything queries can be pasted. Diacritics always count here (`e` and `é` are different), so it changes nothing. |
 | `file:` / `folder:` | Files only or folders only. They are tests on the entry, so `folder:music` means "a folder, and `music`". The default is both. |
 
 A plain term matches the **name**, as a case-insensitive substring. Only `path:` reaches the path.
@@ -93,9 +95,38 @@ The catalog stores the time in local time, and the value is read in local time t
 
 `size:` and `dm:` work together with the size and date controls of the GUIs: an entry has to pass both. `size:unknown` is not supported.
 
+### ext:
+
+`ext:mp3;flac` matches files whose whole extension is one of those. A semicolon separates extensions, a leading `.`, `*` or `*.` is ignored, and `*` and `?` work (`ext:mp*`, `ext:*.txt;*.doc*`). `ext:` with no value matches files with no extension. Folders have no extension, so `ext:mp3 | folder:` means mp3 files or folders. The extension is the text after the last dot, so `a.tar.gz` is `gz`, `.gitignore` has none and `a.` has an empty one. `case:ext:JPG` matches case.
+
+### empty:, child-count:, descendant-count:
+
+| Function | Matches folders with |
+|---|---|
+| `empty:` | No files and no subfolders. Same as `child-count:0`. |
+| `child-count:`, `child-file-count:`, `child-folder-count:` | That many files and folders (or files only, or folders only) directly inside. |
+| `descendant-count:`, `descendant-file-count:`, `descendant-folder-count:` | That many at any depth. |
+
+The value takes the same forms as `size:`: `child-count:10`, `child-count:20..30`, `descendant-count:>1000`, `child-file-count:1 child-folder-count:0`. The counts come from the catalog, not from the disk. They test folders only, so `!empty:` also matches files: write `folder: !empty:` for non-empty folders.
+
+### dupe:
+
+`dupe:` matches entries that share a property with another entry in **any of the loaded catalogs**, so the same file on two drives is a duplicate. A semicolon combines properties: `dupe:size;name` needs both to be equal. With no property it compares the name.
+
+| Property | Compares |
+|---|---|
+| `name` | The name (default). |
+| `path` | The full path. |
+| `ext` | The extension. |
+| `size` | The size in bytes. |
+| `date-modified` or `dm` | The modified time. |
+| `hash` | The hash stored in the catalog. |
+
+Text is compared ignoring case; `case:dupe:name` matches case. `dupe:hash` uses the hash that `cde hash` already stored and never reads a file. A file with no full hash (not hashed yet, or only a partial hash) is left out of `dupe:hash`, so run `cde hash` first. The other properties do not need hashes: `dupe:size` also finds files that were never hashed. The counting pass reads every loaded catalog before any result appears, and it keeps one small entry per distinct value in memory.
+
 ## Not supported yet
 
-Everything functions such as `ext:`.
+Other Everything functions, `size:unknown`, and anything that reads the disk, such as `child-count-from-disk:`.
 
 ## Quote the query
 

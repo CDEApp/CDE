@@ -25,8 +25,9 @@ public sealed class BoundedRegex
     public const int MaxTimeouts = 3;
 
     private const RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.Singleline | RegexOptions.Compiled;
+    private const RegexOptions CaseSensitiveOptions = RegexOptions.Singleline | RegexOptions.Compiled;
     private const int MaxCacheSize = 100; // prevent unbounded growth
-    private static readonly ConcurrentDictionary<string, Regex> Cache = new();
+    private static readonly ConcurrentDictionary<(string Pattern, RegexOptions Options), Regex> Cache = new();
 
     private readonly Regex _regex;
     private int _timeouts;
@@ -35,6 +36,12 @@ public sealed class BoundedRegex
     /// <summary>Search regex for <paramref name="pattern"/> using the shared compiled-regex cache.</summary>
     public BoundedRegex(string pattern)
         : this(GetCached(pattern))
+    {
+    }
+
+    /// <summary>Search regex for <paramref name="pattern"/>, matching case exactly unless <paramref name="ignoreCase"/>.</summary>
+    public BoundedRegex(string pattern, bool ignoreCase)
+        : this(GetCached(pattern, ignoreCase ? Options : CaseSensitiveOptions))
     {
     }
 
@@ -99,9 +106,12 @@ public sealed class BoundedRegex
         }
     }
 
-    private static Regex GetCached(string pattern)
+    private static Regex GetCached(string pattern) => GetCached(pattern, Options);
+
+    private static Regex GetCached(string pattern, RegexOptions options)
     {
-        if (Cache.TryGetValue(pattern, out var hit)) return hit;
+        var cacheKey = (pattern, options);
+        if (Cache.TryGetValue(cacheKey, out var hit)) return hit;
 
         if (Cache.Count > MaxCacheSize)
         {
@@ -109,6 +119,6 @@ public sealed class BoundedRegex
             foreach (var key in Cache.Keys.Take(MaxCacheSize / 5).ToArray())
                 Cache.TryRemove(key, out _);
         }
-        return Cache.GetOrAdd(pattern, p => new Regex(p, Options, MatchTimeout));
+        return Cache.GetOrAdd(cacheKey, _ => new Regex(pattern, options, MatchTimeout));
     }
 }

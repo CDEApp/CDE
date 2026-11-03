@@ -19,6 +19,12 @@ public sealed class EntryStoreFindOptions
     /// </summary>
     public bool EverythingMode { get; set; }
 
+    /// <summary>
+    /// The duplicate counts for the dupe: functions of an Everything query, counted over every catalog of the search
+    /// (see <see cref="DuplicateIndex"/>). Null counts duplicates within the one catalog being searched.
+    /// </summary>
+    public DuplicateIndex Duplicates { get; set; }
+
     /// <summary>The clock for <c>today</c> and spans such as <c>3days</c> in an Everything query. Null is the system clock.</summary>
     public TimeProvider Clock { get; set; }
     public bool IncludePath { get; set; }

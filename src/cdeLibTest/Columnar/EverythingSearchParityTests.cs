@@ -120,6 +120,18 @@ public class EverythingSearchParityTests
         yield return new TestCaseData("no-path:*.txt path:**\\caf\u00e9\\**",
             (Func<string, string, bool, bool>)((n, p, ip) =>
                 n.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) && p.Contains("\\caf\u00e9\\", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData("case:Windows",
+            (Func<string, string, bool, bool>)((n, p, ip) => (ip ? p : n).Contains("Windows", StringComparison.Ordinal)));
+        yield return new TestCaseData("case:windows",
+            (Func<string, string, bool, bool>)((n, p, ip) => (ip ? p : n).Contains("windows", StringComparison.Ordinal)));
+        yield return new TestCaseData("no-path:case:*.TXT",
+            (Func<string, string, bool, bool>)((n, p, ip) => n.EndsWith(".TXT", StringComparison.Ordinal)));
+        yield return new TestCaseData("case:\"NaÏve\"",
+            (Func<string, string, bool, bool>)((n, p, ip) => (ip ? p : n).Contains("NaÏve", StringComparison.Ordinal)));
+        yield return new TestCaseData("no-path:case:regex:\"^NaÏve\\.TXT$\"",
+            (Func<string, string, bool, bool>)((n, p, ip) => n == "NaÏve.TXT"));
+        yield return new TestCaseData("case:txt !case:TXT",
+            (Func<string, string, bool, bool>)((n, p, ip) => (ip ? p : n).Contains("txt", StringComparison.Ordinal) && !(ip ? p : n).Contains("TXT", StringComparison.Ordinal)));
         yield return new TestCaseData("path:\"a|b\" no-path:\"x y\"",
             (Func<string, string, bool, bool>)((n, p, ip) => Has(p, "a|b") && Has(n, "x y")));
     }

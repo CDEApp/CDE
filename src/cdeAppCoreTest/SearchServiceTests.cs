@@ -1,12 +1,19 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using cdeAppCore;
 using cdeAppCore.Dtos;
 using cdeAppCore.Search;
+using cdeAppCore.Session;
 using cdeLib;
 using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
+using cdeLib.Entities.Soa;
+using NSubstitute;
+using Serilog;
 using NUnit.Framework;
 
 namespace cdeAppCoreTest;
@@ -87,6 +94,65 @@ public class SearchServiceTests
         var viaModifier = await Drain(_search.SearchAsync(
             new SearchQuery { Pattern = "path:docs alpha", EverythingMode = true, IncludePath = true }));
         Assert.That(viaModifier.ConvertAll(r => r.Name), Is.EquivalentTo(new[] { "alpha.md" }));
+    }
+
+    [Test]
+    public async Task Dupe_finds_the_same_file_across_two_loaded_catalogs_and_dupe_size_ignores_hashes()
+    {
+        static RootEntry Tree(string path, string volume, params (string Name, long Size, byte? Hash)[] files)
+        {
+            var root = new RootEntry { Path = path, VolumeName = volume, DefaultFileName = volume + ".cde", DriveLetterHint = path[..1] };
+            foreach (var (name, size, hash) in files)
+            {
+                var file = new DirEntry(false) { Path = name, Size = size };
+                if (hash is { } h) file.SetHash(Enumerable.Repeat(h, 16).ToArray());
+                root.AddChild(file);
+            }
+
+            root.SetInMemoryFields();
+            return root;
+        }
+
+        var paths = new List<string>();
+        foreach (var tree in new[]
+                 {
+                     Tree(@"C:\one", "ONE", ("same.bin", 50, (byte?)7), ("only-one.txt", 51, null), ("unhashed.dat", 60, null)),
+                     Tree(@"D:\two", "TWO", ("same.bin", 50, (byte?)7), ("copy.bin", 50, (byte?)8), ("other.dat", 60, null)),
+                 })
+        {
+            var file = Path.Combine(Path.GetTempPath(), $"cdeappcoretest-dupe-{Guid.NewGuid():N}.cdex");
+            ColumnarFormat.Write(EntryStore.Build(tree), file);
+            paths.Add(file);
+        }
+
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(paths);
+        using var session = new CatalogSession(loader, Substitute.For<ILogger>());
+        try
+        {
+            await session.LoadAsync("config");
+            var search = new SearchService(session);
+
+            var byHash = await Drain(search.SearchAsync(new SearchQuery { Pattern = "dupe:hash", EverythingMode = true }));
+            Assert.That(byHash.ConvertAll(r => (r.Ref.CatalogId, r.Name)),
+                Is.EquivalentTo(new[] { (0, "same.bin"), (1, "same.bin") }));
+
+            // dupe:size does not need a hash: unhashed.dat and other.dat share a size, and the three size-50 files too.
+            var bySize = await Drain(search.SearchAsync(new SearchQuery { Pattern = "dupe:size", EverythingMode = true }));
+            Assert.That(bySize.ConvertAll(r => (r.Ref.CatalogId, r.Name)), Is.EquivalentTo(new[]
+            {
+                (0, "same.bin"), (1, "same.bin"), (1, "copy.bin"), (0, "unhashed.dat"), (1, "other.dat"),
+            }));
+        }
+        finally
+        {
+            session.Dispose();
+            foreach (var f in paths)
+            {
+                try { File.Delete(f); }
+                catch { /* best effort */ }
+            }
+        }
     }
 
     [Test]
