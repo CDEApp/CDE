@@ -229,7 +229,7 @@ public static class ReportRunner
     {
         try
         {
-            var psi = new ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardOutput = true };
+            var psi = new ProcessStartInfo("git") { UseShellExecute = false, RedirectStandardOutput = true }; // NOSONAR S4036: dev tool run from a checkout; git is resolved from PATH like any other build tool
             psi.ArgumentList.Add("rev-parse");
             psi.ArgumentList.Add("HEAD");
             using var p = Process.Start(psi);
