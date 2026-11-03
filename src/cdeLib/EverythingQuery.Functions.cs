@@ -19,6 +19,7 @@ public sealed partial class EverythingQuery
         DescendantCount,
         DescendantFileCount,
         DescendantFolderCount,
+        Dupe,
     }
 
     /// <summary>Names are matched with the dashes removed, so <c>date-modified</c> and <c>datemodified</c> are the same.</summary>
@@ -46,12 +47,13 @@ public sealed partial class EverythingQuery
             case "descendantcount": function = Function.DescendantCount; return true;
             case "descendantfilecount": function = Function.DescendantFileCount; return true;
             case "descendantfoldercount": function = Function.DescendantFolderCount; return true;
+            case "dupe": function = Function.Dupe; return true;
             default: return false;
         }
     }
 
     // The functions that can follow case: and diacritics:, which are not modifiers of a term but of the whole test.
-    private static bool SupportsCase(Function function) => function is Function.Ext;
+    private static bool SupportsCase(Function function) => function is Function.Ext or Function.Dupe;
 
     private static Node CreateFunction(string token, int position)
     {
@@ -63,6 +65,8 @@ public sealed partial class EverythingQuery
         {
             case Function.Ext:
                 return new ExtFilter(value, position);
+            case Function.Dupe:
+                return new DupeFilter(value, position);
             case Function.Empty:
                 if (value.Length != 0) throw new EverythingQueryException("'empty:' takes no value", position);
                 return new CountFilter(CountKind.Children, "0", position);
@@ -175,6 +179,57 @@ public sealed partial class EverythingQuery
         public override Use Uses() => Use.None;
 
         public override Node Apply(Modifier modifier) => this;
+    }
+
+    // dupe:. True for an entry that shares its key (the properties named) with another entry of any loaded catalog.
+    // The scan loops count the keys first (DuplicateIndex) and hand each entry its answer in the DuplicateMask.
+    private sealed class DupeFilter(string value, int position) : Node
+    {
+        private bool _matchCase;
+        private int _index;
+
+        public override void Bind(Binder binder)
+        {
+            var properties = DupeProperties.None;
+            foreach (var raw in value.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+            {
+                properties |= raw.Replace("-", string.Empty).ToLowerInvariant() switch
+                {
+                    "name" => DupeProperties.Name,
+                    "path" => DupeProperties.Path,
+                    "ext" or "extension" => DupeProperties.Extension,
+                    "size" => DupeProperties.Size,
+                    "datemodified" or "dm" => DupeProperties.DateModified,
+                    "hash" => DupeProperties.Hash,
+                    _ => throw new EverythingQueryException(
+                        $"'{raw}' is not a dupe: property; use name, path, ext, size, date-modified or hash", position),
+                };
+            }
+
+            if (properties == DupeProperties.None) properties = DupeProperties.Name;
+            // Case only matters for text, so size:/dm:/hash: functions with and without case: are the same function.
+            var comparesText = (properties & (DupeProperties.Name | DupeProperties.Path | DupeProperties.Extension)) != 0;
+            _index = binder.AddDupe(new DupeSpec(properties, _matchCase && comparesText), position);
+        }
+
+        public override bool Eval(in Context c)
+        {
+            var mask = c.Source switch
+            {
+                Kind.SingleBytes or Kind.SingleChars => c.Duplicates,
+                Kind.Utf8Entry => c.Utf8Entry.Duplicates,
+                _ => c.CharEntry.Duplicates,
+            };
+            return (mask >> _index & 1UL) != 0;
+        }
+
+        public override Use Uses() => Use.None;
+
+        public override Node Apply(Modifier modifier)
+        {
+            _matchCase |= modifier.Case;
+            return this;
+        }
     }
 
     // ext:. Whole extension of a file name: the text after the last dot, when that dot is not the first character

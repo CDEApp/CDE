@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Buffers;
 using cdeLib.Infrastructure;
 
@@ -44,8 +45,15 @@ public static class EntryStoreSearch
         var nameBuffer = readsPath ? null : ArrayPool<char>.Shared.Rent(256);
         using var entryChars = texts == EverythingTexts.Both ? new EntryChars(store) : null;
         var readsProperties = everything is { UsesProperties: true };
+        var dupeSpecs = everything?.DuplicateSpecs;
+        var dupes = dupeSpecs is { Count: > 0 } ? o.Duplicates ?? DuplicateIndex.Build(dupeSpecs, [store]) : null;
         var counts = everything is { UsesCounts: true } ? EntryCountTable.Build(store, everything.UsesDescendantCounts) : null;
-        if (entryChars is not null) entryChars.Counts = counts;
+        if (entryChars is not null)
+        {
+            entryChars.Counts = counts;
+            entryChars.Dupes = dupes;
+            entryChars.DupeSpecs = dupeSpecs;
+        }
         try
         {
             for (var i = 1; i < store.Count; i++)
@@ -90,7 +98,8 @@ public static class EntryStoreSearch
                         isDir,
                         readsProperties ? size : 0,
                         readsProperties ? store.Modified(i).Ticks : 0,
-                        counts?.Of(i) ?? default);
+                        counts?.Of(i) ?? default,
+                        dupes?.MaskOf(store, i, dupeSpecs) ?? 0UL);
                 }
                 else if (o.IncludePath)
                 {
@@ -150,6 +159,12 @@ public static class EntryStoreSearch
         public EntryCountTable Counts { get; set; }
 
         EntryCounts IEntryChars.Counts => Counts?.Of(_index) ?? default;
+
+        public DuplicateIndex Dupes { get; set; }
+
+        public IReadOnlyList<DupeSpec> DupeSpecs { get; set; }
+
+        ulong IEntryChars.Duplicates => Dupes?.MaskOf(store, _index, DupeSpecs) ?? 0UL;
 
         public ReadOnlySpan<char> Path
         {

@@ -47,6 +47,7 @@ public sealed partial class EverythingQuery
     {
         _root = root;
         _regexes = binder?.Regexes.ToArray() ?? [];
+        DuplicateSpecs = binder?.DupeSpecs.ToArray() ?? [];
         var needs = root?.Needs ?? Needs.None;
         UsesProperties = (needs & Needs.Properties) != 0;
         UsesCounts = (needs & (Needs.ChildCounts | Needs.DescendantCounts)) != 0;
@@ -64,6 +65,13 @@ public sealed partial class EverythingQuery
     /// entry's <see cref="EntryCounts"/> (build them once per catalog with <see cref="EntryCountTable"/>).
     /// </summary>
     public bool UsesCounts { get; }
+
+    /// <summary>
+    /// The dupe: functions of the query, equal ones once. If there are any, count their keys over all the catalogs
+    /// (<see cref="DuplicateIndex"/>) before scanning, and pass each entry's <see cref="DuplicateIndex.MaskOf"/> to
+    /// <c>Matches</c>; bit k answers <c>DuplicateSpecs[k]</c>.
+    /// </summary>
+    public IReadOnlyList<DupeSpec> DuplicateSpecs { get; }
 
     /// <summary>True if the counts must include <see cref="EntryCounts.DescendantFiles"/> and the descendant folders.</summary>
     public bool UsesDescendantCounts { get; }
@@ -106,37 +114,37 @@ public sealed partial class EverythingQuery
     /// Allocation-free when the text and every term are ASCII.
     /// </summary>
     public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default)
+        EntryCounts counts = default, ulong duplicates = 0)
     {
         if (_root is null) return true;
-        var context = new Context(utf8, isFolder, size, modifiedTicks, counts);
+        var context = new Context(utf8, isFolder, size, modifiedTicks, counts, duplicates);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path; identical to the UTF-8 overload.</summary>
     public bool Matches(ReadOnlySpan<char> text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default)
+        EntryCounts counts = default, ulong duplicates = 0)
     {
         if (_root is null) return true;
-        var context = new Context(text, isFolder, size, modifiedTicks, counts);
+        var context = new Context(text, isFolder, size, modifiedTicks, counts, duplicates);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path.</summary>
     public bool Matches(string text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default)
+        EntryCounts counts = default, ulong duplicates = 0)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return Matches(text.AsSpan(), isFolder, size, modifiedTicks, counts);
+        return Matches(text.AsSpan(), isFolder, size, modifiedTicks, counts, duplicates);
     }
 
     /// <summary>Test an entry's name and full path. Unmarked terms use the path if <paramref name="defaultMatchesPath"/>.</summary>
     public bool Matches(string name, string fullPath, bool defaultMatchesPath, bool isFolder = false,
-        long size = 0, long modifiedTicks = 0, EntryCounts counts = default)
+        long size = 0, long modifiedTicks = 0, EntryCounts counts = default, ulong duplicates = 0)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fullPath);
-        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks, counts), defaultMatchesPath);
+        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks, counts, duplicates), defaultMatchesPath);
     }
 
     /// <summary>

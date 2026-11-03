@@ -19,6 +19,18 @@ public sealed partial class EverythingQuery
     {
         public DateTime Now { get; } = now;
         public List<BoundedRegex> Regexes { get; } = [];
+        public List<DupeSpec> DupeSpecs { get; } = [];
+
+        // Equal dupe: functions share one count table and one bit.
+        public int AddDupe(DupeSpec spec, int position)
+        {
+            var index = DupeSpecs.IndexOf(spec);
+            if (index >= 0) return index;
+            if (DupeSpecs.Count == DuplicateIndex.MaxSpecs)
+                throw new EverythingQueryException($"More than {DuplicateIndex.MaxSpecs} different dupe: functions", position);
+            DupeSpecs.Add(spec);
+            return DupeSpecs.Count - 1;
+        }
     }
 
     [Flags]

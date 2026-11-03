@@ -95,6 +95,7 @@ public class FindService : IFindService
             rootEntries[i] = null; // drop the tree so it can be collected while we search the stores
         }
 
+        var duplicates = EverythingMode ? DuplicateIndex.ForPattern(pattern, null, stores) : null;
         var totalFound = 0L;
         var timer = Stopwatch.StartNew();
         foreach (var store in stores)
@@ -107,7 +108,7 @@ public class FindService : IFindService
             }
 
             if (EverythingMode)
-                EntryStoreSearch.Find(store, new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true }, OnMatch);
+                EntryStoreSearch.Find(store, new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true, Duplicates = duplicates }, OnMatch);
             else
                 EntryStoreSearch.Find(store, pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }
@@ -126,6 +127,7 @@ public class FindService : IFindService
 
         if (EverythingMode) EverythingQuery.Parse(pattern ?? string.Empty); // fail before any catalog is searched
 
+        var duplicates = EverythingMode ? DuplicateIndex.ForPattern(pattern, null, readers) : null;
         var totalFound = 0L;
         var timer = Stopwatch.StartNew();
         foreach (var reader in readers)
@@ -140,7 +142,7 @@ public class FindService : IFindService
             }
 
             if (EverythingMode)
-                reader.Find(new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true }, OnMatch);
+                reader.Find(new EntryStoreFindOptions { Pattern = pattern, EverythingMode = true, Duplicates = duplicates }, OnMatch);
             else
                 reader.Find(pattern, regexMode, includePath, IncludeFiles, IncludeFolders, OnMatch);
         }

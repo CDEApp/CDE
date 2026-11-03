@@ -32,6 +32,9 @@ public interface IEntryText
 
     /// <summary>The child and descendant counts. Only read when the query has a count function or empty:.</summary>
     EntryCounts Counts => default;
+
+    /// <summary>Bit k is set when the entry is a duplicate under the query's k-th dupe: function (see <see cref="DuplicateIndex"/>).</summary>
+    ulong Duplicates => 0;
 }
 
 /// <summary>Same as <see cref="IEntryText"/> but as characters.</summary>
@@ -49,6 +52,9 @@ public interface IEntryChars
 
     /// <summary>See <see cref="IEntryText.Counts"/>.</summary>
     EntryCounts Counts => default;
+
+    /// <summary>See <see cref="IEntryText.Duplicates"/>.</summary>
+    ulong Duplicates => 0;
 }
 
 /// <summary>Which of an entry's texts an <see cref="EverythingQuery"/> reads.</summary>

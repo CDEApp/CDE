@@ -21,25 +21,30 @@ public sealed partial class EverythingQuery
         public readonly long Size; // likewise
         public readonly long ModifiedTicks; // likewise
         public readonly EntryCounts Counts; // likewise
+        public readonly ulong Duplicates; // likewise
         public readonly Kind Source;
 
-        public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
+        public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks, EntryCounts counts,
+            ulong duplicates)
         {
             Bytes = bytes;
             IsFolder = isFolder;
             Size = size;
             ModifiedTicks = modifiedTicks;
             Counts = counts;
+            Duplicates = duplicates;
             Source = Kind.SingleBytes;
         }
 
-        public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
+        public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks, EntryCounts counts,
+            ulong duplicates)
         {
             Chars = chars;
             IsFolder = isFolder;
             Size = size;
             ModifiedTicks = modifiedTicks;
             Counts = counts;
+            Duplicates = duplicates;
             Source = Kind.SingleChars;
         }
 
@@ -60,7 +65,8 @@ public sealed partial class EverythingQuery
 
     private enum Kind { SingleBytes, SingleChars, Utf8Entry, CharEntry }
 
-    private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
+    private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks,
+        EntryCounts counts, ulong duplicates)
         : IEntryChars
     {
         public ReadOnlySpan<char> Name => name;
@@ -69,5 +75,6 @@ public sealed partial class EverythingQuery
         public long Size => size;
         public long ModifiedTicks => modifiedTicks;
         public EntryCounts Counts => counts;
+        public ulong Duplicates => duplicates;
     }
 }

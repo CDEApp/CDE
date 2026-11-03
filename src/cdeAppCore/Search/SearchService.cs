@@ -96,6 +96,7 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress, CancellationToken ct)
     {
         var opts = ToFindOptions(query);
+        opts.Duplicates = CountDuplicates(opts);
         var limit = query.LimitResultCount;
 
         var grandTotal = 0;
@@ -145,6 +146,26 @@ public sealed class SearchService : ISearchService
             if (now - lastReport < reportTicks) return;
             lastReport = now;
             progress.Report(new SearchProgress(scanned, grandTotal, Stopwatch.GetElapsedTime(started)));
+        }
+    }
+
+    // A dupe: function compares entries across ALL the catalogs, so its keys are counted over every catalog before the
+    // first one is scanned. Null when the query has no dupe: function.
+    private DuplicateIndex CountDuplicates(EntryStoreFindOptions opts)
+    {
+        if (!opts.EverythingMode) return null;
+        var query = EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System);
+        if (query.DuplicateSpecs.Count == 0) return null;
+
+        var leases = new List<CatalogReadLease>(_session.CatalogCount);
+        try
+        {
+            for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
+            return DuplicateIndex.Build(query.DuplicateSpecs, leases.ConvertAll(l => l.Source));
+        }
+        finally
+        {
+            foreach (var lease in leases) lease.Dispose();
         }
     }
 

@@ -225,6 +225,8 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var texts = everything?.TextsRead(o.IncludePath) ?? EverythingTexts.Name;
         var entryText = texts == EverythingTexts.Both ? new EntryText(this) : null;
         var readsProperties = everything is { UsesProperties: true };
+        var dupeSpecs = everything?.DuplicateSpecs;
+        var dupes = dupeSpecs is { Count: > 0 } ? o.Duplicates ?? DuplicateIndex.Build(dupeSpecs, [this]) : null;
         var counts = everything is { UsesCounts: true } ? EntryCountTable.Build(this, everything.UsesDescendantCounts) : null;
         var needPathBuf = everything is null ? o.IncludePath : texts == EverythingTexts.Path;
         var pathBuf = needPathBuf ? new byte[1024] : null;
@@ -265,19 +267,20 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 var entrySize = readsProperties ? size[i] : 0;
                 var entryModified = readsProperties ? ModifiedOf(i).Ticks : 0;
                 var entryCounts = counts?.Of(i) ?? default;
+                var entryDupes = dupes?.MaskOf(this, i, dupeSpecs) ?? 0UL;
                 switch (texts)
                 {
                     case EverythingTexts.Name:
                         match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])), isDir,
-                            entrySize, entryModified, entryCounts);
+                            entrySize, entryModified, entryCounts, entryDupes);
                         break;
                     case EverythingTexts.Path:
                         var n = BuildPathBytes(ref pathBuf, ref chain, i);
-                        match = everything.Matches(pathBuf.AsSpan(0, n), isDir, entrySize, entryModified, entryCounts);
+                        match = everything.Matches(pathBuf.AsSpan(0, n), isDir, entrySize, entryModified, entryCounts, entryDupes);
                         break;
                     default:
                         // Terms for both texts: the path is built only if a term reaches one that needs it.
-                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]), isDir, entrySize, entryModified, entryCounts);
+                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]), isDir, entrySize, entryModified, entryCounts, entryDupes);
                         match = everything.Matches(entryText, o.IncludePath);
                         break;
                 }
@@ -341,11 +344,13 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         public long Size { get; private set; }
         public long ModifiedTicks { get; private set; }
         public EntryCounts Counts { get; private set; }
+        public ulong Duplicates { get; private set; }
 
         public void Reset(int index, int nameStart, int nameLength, bool isFolder, long size, long modifiedTicks,
-            EntryCounts counts)
+            EntryCounts counts, ulong duplicates)
         {
             Counts = counts;
+            Duplicates = duplicates;
             IsFolder = isFolder;
             Size = size;
             ModifiedTicks = modifiedTicks;
