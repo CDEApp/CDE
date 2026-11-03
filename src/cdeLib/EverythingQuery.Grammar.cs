@@ -11,7 +11,7 @@ namespace cdeLib;
 // The text of a query to its syntax tree: the tokens, the lexer and the grammar.
 public sealed partial class EverythingQuery
 {
-    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, RegexModifier, CaseModifier, DiacriticsModifier, FileFilter, FolderFilter, Function, Unsupported }
+    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, RegexModifier, CatalogModifier, CaseModifier, DiacriticsModifier, FileFilter, FolderFilter, Function, Unsupported }
 
 
     private static readonly TextParser<Unit> PhraseText =
@@ -28,6 +28,7 @@ public sealed partial class EverythingQuery
     private static readonly TextParser<Unit> NoPathText = Span.EqualToIgnoreCase("no-path:").Value(Unit.Value);
     private static readonly TextParser<Unit> PathText = Span.EqualToIgnoreCase("path:").Value(Unit.Value);
     private static readonly TextParser<Unit> RegexText = Span.EqualToIgnoreCase("regex:").Value(Unit.Value);
+    private static readonly TextParser<Unit> CatalogText = Span.EqualToIgnoreCase("catalog:").Value(Unit.Value);
     private static readonly TextParser<Unit> CaseText = Span.EqualToIgnoreCase("case:").Value(Unit.Value);
     private static readonly TextParser<Unit> DiacriticsText = Span.EqualToIgnoreCase("diacritics:").Value(Unit.Value);
     private static readonly TextParser<Unit> FileText = Span.EqualToIgnoreCase("file:").Value(Unit.Value);
@@ -58,6 +59,7 @@ public sealed partial class EverythingQuery
             if (!(name.Equals("path", StringComparison.OrdinalIgnoreCase)
                   || name.Equals("no-path", StringComparison.OrdinalIgnoreCase)
                   || name.Equals("regex", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("catalog", StringComparison.OrdinalIgnoreCase)
                   || name.Equals("case", StringComparison.OrdinalIgnoreCase)
                   || name.Equals("diacritics", StringComparison.OrdinalIgnoreCase)))
                 return false;
@@ -95,6 +97,7 @@ public sealed partial class EverythingQuery
         .Match(NoPathText, Tok.NoPathModifier)
         .Match(PathText, Tok.PathModifier)
         .Match(RegexText, Tok.RegexModifier)
+        .Match(CatalogText, Tok.CatalogModifier)
         .Match(CaseText, Tok.CaseModifier)
         .Match(DiacriticsText, Tok.DiacriticsModifier)
         .Match(FileText, Tok.FileFilter)
@@ -122,6 +125,7 @@ public sealed partial class EverythingQuery
         Token.EqualTo(Tok.PathModifier).Value(new Modifier(Target.Path, false))
             .Or(Token.EqualTo(Tok.NoPathModifier).Value(new Modifier(Target.Name, false)))
             .Or(Token.EqualTo(Tok.RegexModifier).Value(new Modifier(Target.Default, true)))
+            .Or(Token.EqualTo(Tok.CatalogModifier).Value(new Modifier(Target.Catalog, false)))
             .Or(Token.EqualTo(Tok.CaseModifier).Value(new Modifier(Target.Default, false, Case: true)))
             .Or(Token.EqualTo(Tok.DiacriticsModifier).Value(new Modifier(Target.Default, false)));
 

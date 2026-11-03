@@ -211,6 +211,8 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
         // An Everything-style query is parsed once here; it overrides regex mode.
         var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty, o.Clock ?? TimeProvider.System) : null;
+        everything?.ForCatalog(o.CatalogName ?? CatalogNames.FileName(FilePath, DefaultFileName));
+        if (everything is { MatchesNothing: true }) return; // a catalog: term rules out the whole catalog
         var regexMode = o.RegexMode && everything is null;
         var hasPattern = everything is null ? !string.IsNullOrEmpty(o.Pattern) : !everything.IsEmpty;
         var regex = regexMode && hasPattern

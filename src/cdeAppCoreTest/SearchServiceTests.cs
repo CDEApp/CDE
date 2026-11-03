@@ -156,6 +156,64 @@ public class SearchServiceTests
     }
 
     [Test]
+    public async Task Catalog_modifier_tests_the_file_name_on_disk_not_the_stored_name()
+    {
+        static RootEntry Tree(string path, string stored, params string[] names)
+        {
+            var root = new RootEntry { Path = path, VolumeName = "V", DefaultFileName = stored, DriveLetterHint = path[..1] };
+            foreach (var name in names) root.AddChild(new DirEntry(false) { Path = name, Size = 5 });
+            root.SetInMemoryFields();
+            return root;
+        }
+
+        var dir = Directory.CreateTempSubdirectory("cdeappcoretest-catalog-").FullName;
+        var paths = new List<string>();
+        foreach (var (name, tree) in new[]
+                 {
+                     ("photos.cdex", Tree(@"C:\one", "stale.cde", "a.txt", "b.mp3")),
+                     ("backup.cdex", Tree(@"D:\two", "stale.cde", "a.txt", "c.mp3")),
+                 })
+        {
+            var file = Path.Combine(dir, name);
+            ColumnarFormat.Write(EntryStore.Build(tree), file);
+            paths.Add(file);
+        }
+
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(paths);
+        using var session = new CatalogSession(loader, Substitute.For<ILogger>());
+        try
+        {
+            await session.LoadAsync("config");
+            var search = new SearchService(session);
+
+            var photos = await Drain(search.SearchAsync(new SearchQuery { Pattern = "catalog:photos", EverythingMode = true }));
+            Assert.That(photos.ConvertAll(r => (r.Ref.CatalogId, r.Name, r.CatalogName)),
+                Is.EquivalentTo(new[] { (0, "a.txt", "photos.cdex"), (0, "b.mp3", "photos.cdex") }));
+
+            var stored = await Drain(search.SearchAsync(new SearchQuery { Pattern = "catalog:stale", EverythingMode = true }));
+            Assert.That(stored, Is.Empty);
+
+            var mp3InBackup = await Drain(search.SearchAsync(new SearchQuery { Pattern = "catalog:backup ext:mp3", EverythingMode = true }));
+            Assert.That(mp3InBackup.ConvertAll(r => (r.Ref.CatalogId, r.Name)), Is.EquivalentTo(new[] { (1, "c.mp3") }));
+
+            // dupe: counts over both catalogs, catalog: only narrows what is listed.
+            var dupes = await Drain(search.SearchAsync(new SearchQuery { Pattern = "catalog:photos dupe:name", EverythingMode = true }));
+            Assert.That(dupes.ConvertAll(r => (r.Ref.CatalogId, r.Name)), Is.EquivalentTo(new[] { (0, "a.txt") }));
+
+            var regex = await Drain(search.SearchAsync(new SearchQuery { Pattern = "regex:catalog:^b", EverythingMode = true }));
+            Assert.That(regex.ConvertAll(r => r.Ref.CatalogId), Is.All.EqualTo(1));
+            Assert.That(regex, Has.Count.EqualTo(2));
+        }
+        finally
+        {
+            session.Dispose();
+            try { Directory.Delete(dir, recursive: true); }
+            catch { /* best effort */ }
+        }
+    }
+
+    [Test]
     public async Task Plain_search_still_honours_include_path()
     {
         var byPath = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "docs", IncludePath = true }));

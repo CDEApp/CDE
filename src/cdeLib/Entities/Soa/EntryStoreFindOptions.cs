@@ -25,6 +25,12 @@ public sealed class EntryStoreFindOptions
     /// </summary>
     public DuplicateIndex Duplicates { get; set; }
 
+    /// <summary>
+    /// The file name of the catalog being searched, for <c>catalog:</c> in an Everything query. Null uses the catalog's
+    /// own file name (see <see cref="CatalogNames.FileName"/>).
+    /// </summary>
+    public string CatalogName { get; set; }
+
     /// <summary>The clock for <c>today</c> and spans such as <c>3days</c> in an Everything query. Null is the system clock.</summary>
     public TimeProvider Clock { get; set; }
     public bool IncludePath { get; set; }

@@ -122,6 +122,7 @@ public sealed class SearchService : ISearchService
             var baseScanned = scannedBase;
             var localCatalogId = catalogId;
             var catalogName = CatalogFileName(lease.SourcePath, source);
+            opts.CatalogName = catalogName; // for catalog: in an Everything query
 
             source.Find(opts,
                 onMatch: idx =>
@@ -186,7 +187,7 @@ public sealed class SearchService : ISearchService
     // The catalog's file name on disk, not the name stored inside it (DefaultFileName), which goes stale
     // when the file is renamed or moved. The stored name is only the fallback when the path is unknown.
     private static string CatalogFileName(string sourcePath, IEntrySource source) =>
-        string.IsNullOrEmpty(sourcePath) ? source.DefaultFileName : Path.GetFileName(sourcePath);
+        CatalogNames.FileName(sourcePath, source.DefaultFileName);
 
     private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx)
     {
