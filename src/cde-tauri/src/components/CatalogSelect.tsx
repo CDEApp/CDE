@@ -96,7 +96,7 @@ export function CatalogSelect({ label, catalogs, value, onChange }: Props) {
   };
 
   return (
-    <div className="catalog-select" ref={root} onKeyDown={onKeyDown}>
+    <div className="catalog-select" ref={root}>
       <button
         type="button"
         ref={button}
@@ -106,6 +106,7 @@ export function CatalogSelect({ label, catalogs, value, onChange }: Props) {
         aria-expanded={open}
         aria-controls={open ? listId : undefined}
         onClick={() => (open ? close() : openList())}
+        onKeyDown={onKeyDown}
       >
         <span className="catalog-select-value">{selected ? summary(selected) : PLACEHOLDER}</span>
         <span className="catalog-select-caret" aria-hidden="true">▾</span>

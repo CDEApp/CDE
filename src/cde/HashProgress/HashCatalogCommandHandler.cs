@@ -59,8 +59,7 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         // then the hashes so far are saved, so nothing here may stop on it: not the work, the display, or the
         // in-process notifications. The token stays cancelled after the first break, so passing it on would fail them.
         var mainLoopTask = Task.Run(() => MainLoop(cdexFiles, request.Output), CancellationToken.None);
-        var console = new HashProgressConsole();
-        console.Start(mainLoopTask);
+        HashProgressConsole.Start(mainLoopTask);
         await mainLoopTask.ConfigureAwait(false);
     }
 

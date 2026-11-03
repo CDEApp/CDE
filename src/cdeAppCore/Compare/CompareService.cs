@@ -144,8 +144,6 @@ public sealed class CompareService : ICompareService
         private readonly List<int> _rights = [];
         private readonly List<string> _leftNames = [];
         private readonly List<string> _rightNames = [];
-        private readonly List<string> _leftFolded = [];
-        private readonly List<string> _rightFolded = [];
         private readonly Dictionary<string, int> _groupOf = new(StringComparer.Ordinal);
         private int[] _leftGroup = [];
         private int[] _rightGroup = [];
@@ -247,7 +245,7 @@ public sealed class CompareService : ICompareService
             {
                 var ln = _l.FullName(_lefts[0]);
                 var rn = _r.FullName(_rights[0]);
-                if (ln.ToLowerInvariant() == rn.ToLowerInvariant()) Pair(_lefts[0], _rights[0]);
+                if (Fold(ln) == Fold(rn)) Pair(_lefts[0], _rights[0]);
                 else
                 {
                     MarkDifference();
@@ -266,8 +264,6 @@ public sealed class CompareService : ICompareService
             _groupOf.Clear();
             _leftNames.Clear();
             _rightNames.Clear();
-            _leftFolded.Clear();
-            _rightFolded.Clear();
             Size(ref _leftGroup, _lefts.Count);
             Size(ref _rightGroup, _rights.Count);
             Size(ref _leftOrder, _lefts.Count);
@@ -281,7 +277,7 @@ public sealed class CompareService : ICompareService
             {
                 var name = _l.FullName(_lefts[i]);
                 _leftNames.Add(name);
-                _leftGroup[i] = GroupId(name.ToLowerInvariant());
+                _leftGroup[i] = GroupId(Fold(name));
                 Tick(1);
             }
 
@@ -289,7 +285,7 @@ public sealed class CompareService : ICompareService
             {
                 var name = _r.FullName(_rights[i]);
                 _rightNames.Add(name);
-                _rightGroup[i] = GroupId(name.ToLowerInvariant());
+                _rightGroup[i] = GroupId(Fold(name));
                 Tick(1);
             }
 
@@ -303,6 +299,8 @@ public sealed class CompareService : ICompareService
 
             for (var g = 0; g < groups; g++) PairGroup(_leftStart[g], _leftStart[g + 1], _rightStart[g], _rightStart[g + 1]);
         }
+
+        private static string Fold(string name) => name.ToLowerInvariant();
 
         private int GroupId(string folded)
         {

@@ -16,8 +16,23 @@ namespace cdeLibTest.Columnar;
 /// full paths, including non-ASCII text.
 /// </summary>
 [TestFixture]
-public class EverythingSearchParityTests
+public partial class EverythingSearchParityTests
 {
+    [GeneratedRegex(@"^[^\\]*\\[^\\]*\\[^\\]*\.txt$", RegexOptions.IgnoreCase)]
+    private static partial Regex TwoFoldersDeepTxt();
+
+    [GeneratedRegex(@"^.:\\win[^\\]*\\[^\\]*$", RegexOptions.IgnoreCase)]
+    private static partial Regex ChildOfDriveWinFolder();
+
+    [GeneratedRegex(@"^\d{4}-")]
+    private static partial Regex FourDigitsDash();
+
+    [GeneratedRegex(@"^(today|empty)\.", RegexOptions.IgnoreCase)]
+    private static partial Regex TodayOrEmptyDot();
+
+    [GeneratedRegex("na\u00efve\\.txt$", RegexOptions.IgnoreCase)]
+    private static partial Regex NaiveTxtEnd();
+
     private static RootEntry BuildTree()
     {
         var root = new RootEntry { Path = @"C:\", VolumeName = "VOL", DefaultFileName = "t.cde", DriveLetterHint = "C" };
@@ -112,11 +127,11 @@ public class EverythingSearchParityTests
             (s.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
             && !s.StartsWith("do", StringComparison.OrdinalIgnoreCase)));
         yield return new TestCaseData(@"path:*\*\*.txt",
-            (Func<string, string, bool, bool>)((n, p, ip) => Regex.IsMatch(p, @"^[^\\]*\\[^\\]*\\[^\\]*\.txt$", RegexOptions.IgnoreCase)));
+            (Func<string, string, bool, bool>)((n, p, ip) => TwoFoldersDeepTxt().IsMatch(p)));
         yield return new TestCaseData(@"path:**\*.txt",
             (Func<string, string, bool, bool>)((n, p, ip) => p.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
         yield return new TestCaseData(@"path:?:\win*\*",
-            (Func<string, string, bool, bool>)((n, p, ip) => Regex.IsMatch(p, @"^.:\\win[^\\]*\\[^\\]*$", RegexOptions.IgnoreCase)));
+            (Func<string, string, bool, bool>)((n, p, ip) => ChildOfDriveWinFolder().IsMatch(p)));
         yield return new TestCaseData("no-path:*.txt path:**\\caf\u00e9\\**",
             (Func<string, string, bool, bool>)((n, p, ip) =>
                 n.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) && p.Contains("\\caf\u00e9\\", StringComparison.OrdinalIgnoreCase)));
@@ -312,13 +327,13 @@ public class EverythingSearchParityTests
         yield return new TestCaseData("file: dm:2026-07",
             (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => n.Contains('.') && m.Year == 2026 && m.Month == 7));
         yield return new TestCaseData("regex:^\\d{4}-",
-            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(ip ? p : n, @"^\d{4}-")));
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => FourDigitsDash().IsMatch(ip ? p : n)));
         yield return new TestCaseData("no-path:regex:\"^(today|empty)\\.\"",
-            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(n, @"^(today|empty)\.", RegexOptions.IgnoreCase)));
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => TodayOrEmptyDot().IsMatch(n)));
         yield return new TestCaseData("path:regex:\"^c:\\\\caf\u00e9\\\\\" size:>1kb",
             (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => p.StartsWith("C:\\caf\u00e9\\", StringComparison.OrdinalIgnoreCase) && size > 1024));
         yield return new TestCaseData("regex:\"na\u00cfve\\.txt$\"",
-            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(ip ? p : n, "na\u00efve\\.txt$", RegexOptions.IgnoreCase)));
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => NaiveTxtEnd().IsMatch(ip ? p : n)));
     }
 
     [TestCaseSource(nameof(FunctionCases))]

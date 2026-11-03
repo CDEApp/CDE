@@ -393,7 +393,7 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
             </div>
           }
           renderRow={(row, _i, style) => (
-            <div
+            <div // NOSONAR S6852: double-click is a mouse shortcut; keyboard users toggle the row with the expander button in each Half
               key={row.key}
               className={`vlist-row diff-row ${row.status}`}
               role="row"

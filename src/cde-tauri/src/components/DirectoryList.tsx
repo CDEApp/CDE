@@ -125,7 +125,7 @@ export function DirectoryList({
                     aria-label={`Resize ${label} column`}
                     aria-valuenow={widthOf(widths, column)}
                     aria-valuemin={DIR_MIN_WIDTH[column]}
-                    tabIndex={0}
+                    tabIndex={0} // NOSONAR S6845: a focusable separator with aria-valuenow is the WAI-ARIA window splitter widget, resized with the arrow keys
                     title="Drag or use the arrow keys to resize, double-click or Home to reset"
                     onMouseDown={(e) => startResize(e, column)}
                     onKeyDown={(e) => {

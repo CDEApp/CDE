@@ -1,9 +1,8 @@
 using System;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using cdeLib.Infrastructure.Config;
 using NUnit.Framework;
-
-// In the global namespace, so it covers every test in this assembly.
 
 /// <summary>
 /// cdeApi reads appsettings.json from the user config folder first, and writes a default there when it finds none
@@ -11,6 +10,8 @@ using NUnit.Framework;
 /// from reading or writing the real <c>~/.config/cde</c> or <c>%APPDATA%\cde</c>.
 /// </summary>
 [SetUpFixture]
+[SuppressMessage("Design", "CA1050:Declare types in namespaces",
+    Justification = "A SetUpFixture covers only its own namespace; the global namespace covers every test in this assembly.")]
 public class ConfigFolderIsolation
 {
     private string _previous;

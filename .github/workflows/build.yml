@@ -232,7 +232,7 @@ jobs:
           kill "$pid" 2>/dev/null || true
           cat "$RUNNER_TEMP/api.err"
           head -n1 "$RUNNER_TEMP/api.out"
-          head -n1 "$RUNNER_TEMP/api.out" | grep -E '^\{"url":"http://127\.0\.0\.1:[0-9]+","token":"[0-9A-Fa-f]+"\}$'
+          head -n1 "$RUNNER_TEMP/api.out" | grep -E '^\{"url":"http://127.0.0.1:[0-9]+","token":"[0-9A-Fa-f]+"\}$'
       # The release's own staging script, without the Tauri parts: the archive holds cde with its executable
       # bit set, the checksum matches, and the extracted cde runs.
       - name: Stage the cde archive
