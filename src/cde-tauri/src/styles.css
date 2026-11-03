@@ -282,9 +282,10 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-toolbar button.active { background: var(--accent); color: #fff; }
 .diff-sides, .diff-row, .diff-cols .vlist-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .diff-sides { border-bottom: 1px solid var(--border); }
-.diff-side { display: flex; flex-direction: column; gap: 3px; padding: 4px 8px; min-width: 0; }
+.diff-side { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 3px 8px; padding: 4px 8px; min-width: 0; }
+.diff-field-label { color: #9a9a9a; }
 .diff-side + .diff-side { border-left: 1px solid var(--border); }
-.diff-side input { padding: 3px 6px; min-width: 0; }
+.diff-side input { width: 100%; padding: 3px 6px; min-width: 0; }
 .catalog-select { position: relative; min-width: 0; }
 .catalog-select-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; text-align: left; background: #333; color: var(--fg); border: 1px solid var(--border); }
 .catalog-select-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -299,6 +300,7 @@ tbody tr:hover { background: var(--row-hover); }
 .catalog-select-name { flex: 0 0 auto; margin-left: auto; color: #9a9a9a; }
 .catalog-select-option.active .catalog-select-name { color: #fff; }
 .diff-error { color: #f48771; padding: 0 2px; }
+.diff-side .diff-error { grid-column: 2; }
 .diff-empty { padding: 1rem; color: #999; }
 .diff-half { display: grid; grid-template-columns: minmax(0, 1fr) 80px 140px; align-items: center; min-width: 0; }
 .diff-half + .diff-half { border-left: 1px solid var(--border); }
