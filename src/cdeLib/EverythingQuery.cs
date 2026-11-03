@@ -16,7 +16,8 @@ namespace cdeLib;
 /// group, <c>"..."</c> is a literal phrase (operators inside quotes are plain text), and the modifiers
 /// <c>path:</c> (match the full path), <c>no-path:</c> (match the name only) and <c>regex:</c> (the text is a
 /// regular expression, case-insensitive, matching anywhere in the text, so use a phrase for one with a space or
-/// <c>|</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
+/// <c>|</c>), <c>catalog:</c> (match the catalog's file name, set with <see cref="ForCatalog"/>, instead of the entry;
+/// not with <c>path:</c> or <c>no-path:</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
 /// <c>diacritics:</c> (accepted for Everything compatibility; diacritics always count here, so it changes nothing).
 /// The functions are <c>size:</c>, <c>date-modified:</c> (<c>dm:</c>), <c>ext:</c>, <c>empty:</c>, the child and
 /// descendant counts and <c>dupe:</c>; see <see cref="UsesProperties"/>, <see cref="UsesCounts"/> and
@@ -75,6 +76,19 @@ public sealed partial class EverythingQuery
     /// <c>Matches</c>; bit k answers <c>DuplicateSpecs[k]</c>.
     /// </summary>
     public IReadOnlyList<DupeSpec> DuplicateSpecs { get; }
+
+    /// <summary>
+    /// Say which catalog is about to be searched, by its file name on disk. Terms after <c>catalog:</c> are tested
+    /// against it, and the answer is the same for every entry, so call this once before testing the entries of that
+    /// catalog. Until it is called the file name is empty.
+    /// </summary>
+    public void ForCatalog(string fileName) => _root?.SetCatalog(fileName ?? string.Empty);
+
+    /// <summary>
+    /// True when, for the catalog set by <see cref="ForCatalog"/>, no entry can match, whatever the entry is: a
+    /// <c>catalog:</c> term that fails on the file name inside an AND. The caller can skip the catalog without scanning.
+    /// </summary>
+    public bool MatchesNothing => _root?.Constant == false;
 
     /// <summary>True if the counts must include <see cref="EntryCounts.DescendantFiles"/> and the descendant folders.</summary>
     public bool UsesDescendantCounts { get; }
@@ -277,6 +291,7 @@ public sealed partial class EverythingQuery
     {
         var list = new List<Token<Tok>>();
         foreach (var t in tokens) list.Add(t);
+        CheckModifierRuns(list);
 
         for (var i = 0; i < list.Count; i++)
         {
@@ -286,19 +301,65 @@ public sealed partial class EverythingQuery
                     "The '?' global modifier and the '\\:' alias are not supported yet; use path: or no-path: in front of a term",
                     t.Position.Absolute);
 
-            if (t.Kind is not (Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CaseModifier
-                or Tok.DiacriticsModifier)) continue;
+            if (!IsModifier(t.Kind)) continue;
 
             var attached = i + 1 < list.Count
                            && list[i + 1].Position.Absolute == t.Position.Absolute + t.Span.Length
                            && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open
-                               or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CaseModifier
-                               or Tok.DiacriticsModifier or Tok.Function;
-            if (attached && list[i + 1].Kind == Tok.Function) CheckFunctionAfterModifier(t, list[i + 1]);
+                               or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CatalogModifier
+                               or Tok.CaseModifier or Tok.DiacriticsModifier or Tok.Function;
             if (!attached)
                 throw new EverythingQueryException(
                     $"'{t.ToStringValue()}' must be directly followed by a term, phrase, group or another modifier, with no space",
                     t.Position.Absolute);
+        }
+    }
+
+    private static bool IsModifier(Tok kind) => kind is Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier
+        or Tok.CatalogModifier or Tok.CaseModifier or Tok.DiacriticsModifier;
+
+    // A term is tested against its name, its path or its catalog's file name, never two of them. So catalog: cannot
+    // share a run of attached modifiers with path: or no-path:, in either order. A run in front of a function may only
+    // hold case: and diacritics:.
+    private static void CheckModifierRuns(List<Token<Tok>> list)
+    {
+        for (var i = 0; i < list.Count; i++)
+        {
+            if (!IsModifier(list[i].Kind)) continue;
+            var first = -1;
+            var hasCatalog = false;
+            var hasPath = false;
+            var j = i;
+            while (true)
+            {
+                var kind = list[j].Kind;
+                if (kind == Tok.CatalogModifier) hasCatalog = true;
+                if (kind is Tok.PathModifier or Tok.NoPathModifier) hasPath = true;
+                if (first < 0 && (kind is Tok.CatalogModifier or Tok.PathModifier or Tok.NoPathModifier)) first = j;
+                var next = j + 1 < list.Count
+                           && list[j + 1].Position.Absolute == list[j].Position.Absolute + list[j].Span.Length
+                           && IsModifier(list[j + 1].Kind);
+                if (!next) break;
+                j++;
+            }
+
+            if (hasCatalog && hasPath)
+                throw new EverythingQueryException(
+                    "'catalog:' cannot be combined with 'path:' or 'no-path:': a term is tested against the name, the path or the catalog file name",
+                    list[first].Position.Absolute);
+
+            // A function takes no target or regex, so every modifier in front of it, not just the nearest, must be
+            // case: or diacritics:. Otherwise the others would be ignored without a word.
+            if (j + 1 < list.Count && list[j + 1].Kind == Tok.Function
+                && list[j + 1].Position.Absolute == list[j].Position.Absolute + list[j].Span.Length)
+            {
+                for (var k = i; k <= j; k++)
+                    if (list[k].Kind is not (Tok.CaseModifier or Tok.DiacriticsModifier))
+                        CheckFunctionAfterModifier(list[k], list[j + 1]);
+                CheckFunctionAfterModifier(list[j], list[j + 1]);
+            }
+
+            i = j;
         }
     }
 

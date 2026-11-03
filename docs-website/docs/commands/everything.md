@@ -33,6 +33,7 @@ cde everything "file: .iso" --filter "{size:>4GB}"
 | `path:term` | Match the full path. It goes directly in front of one word, phrase or group, with no space. |
 | `no-path:term` | Match the name only. |
 | `regex:term` | The term is a regular expression, matched anywhere in the text, ignoring case. Quote one that has a space or `\|`. Modifiers chain: `path:regex:^C:`. |
+| `catalog:term` | Match the **file name of the catalog** the entry is in, such as `photos.cdex`, instead of the entry. See [catalog:](#catalog). |
 | `case:term` | Match case. Plain terms, wildcards and `regex:` ignore case unless `case:` is in front. It chains: `case:path:Docs`. |
 | `diacritics:term` | Accepted so Everything queries can be pasted. Diacritics always count here (`e` and `é` are different), so it changes nothing. |
 | `file:` / `folder:` | Files only or folders only. They are tests on the entry, so `folder:music` means "a folder, and `music`". The default is both. |
@@ -60,6 +61,24 @@ An empty query matches every entry.
 | `?` | Exactly one character, but not a backslash. |
 
 A term with a `*` or `?` must match the whole text it is tested against, so `*.txt` is a name that ends in `.txt` and `a*b` starts with `a` and ends with `b`. A term with no wildcard is still a substring. Wildcards are case-insensitive and also work inside quotes. The backslash rule only matters for a path, for example `path:C:\**\*.txt`.
+
+## catalog:
+
+`catalog:` is a modifier like `path:`, but the text it tests is the catalog's file name, so you can limit a search to some of the loaded catalogs.
+
+```
+catalog:backup ext:mp3         mp3 files in catalogs whose file name has "backup"
+!catalog:archive folder:       folders outside the archive catalogs
+catalog:*.cdex                 only catalogs whose whole file name matches
+regex:catalog:"^(C|D)-" size:>1gb
+catalog:photos dupe:hash       files in the photos catalog that also exist in ANY loaded catalog
+```
+
+- The name is the file name **on disk**, with its extension (`C-System-C__Users_jason.cdex`), not the name stored inside the catalog, which goes stale when the file is renamed or moved. If the catalog's path is not known, the stored name is used.
+- Only the file name is tested, not the folder it is in, so a query keeps working when you move your catalogs.
+- A plain term is a case-insensitive substring. `*` and `?` make it match the whole file name. `case:catalog:` matches case and `regex:catalog:` uses a regular expression. It works in front of a group: `catalog:<a | b>`.
+- It cannot be combined with `path:` or `no-path:` in front of the same term (`path:catalog:x` is an error), because a term is tested against its name, its path or its catalog. The nearest modifier in a group still wins, as with `path:`.
+- Every entry of one catalog gets the same answer, so a catalog that cannot match is not scanned at all. `dupe:` still counts over all loaded catalogs; `catalog:` only narrows which results are listed.
 
 ## Functions
 

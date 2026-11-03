@@ -79,7 +79,8 @@ public class EverythingFolderFunctionTests
     [TestCase("path:ext:mp3", 0)]
     [TestCase("regex:ext:mp3", 0)]
     [TestCase("case:size:>1", 0)]
-    [TestCase("no-path:case:empty:", 8)]
+    [TestCase("no-path:case:empty:", 0)]
+    [TestCase("case:diacritics:empty:", 5)]
     public void A_bad_ext_or_a_modifier_that_cannot_precede_a_function_is_an_error(string query, int position)
     {
         var ex = Assert.Throws<EverythingQueryException>(() => EverythingQuery.Parse(query));

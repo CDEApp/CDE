@@ -9,7 +9,7 @@ namespace cdeLib;
 public sealed partial class EverythingQuery
 {
     /// <summary>Which text a term is tested against.</summary>
-    private enum Target { Default, Path, Name }
+    private enum Target { Default, Path, Name, Catalog }
 
     /// <summary>What one modifier asks of the terms under it; a term keeps what it already has.</summary>
     private readonly record struct Modifier(Target Target, bool Regex, bool Case = false);
@@ -54,6 +54,17 @@ public sealed partial class EverythingQuery
         /// <summary>What the tests under this node need from the entry beyond its text.</summary>
         public virtual Needs Needs => Needs.None;
 
+        /// <summary>Tell the terms in catalog target the file name of the catalog being searched.</summary>
+        public virtual void SetCatalog(string fileName)
+        {
+        }
+
+        /// <summary>
+        /// What the node answers for EVERY entry of the catalog set by <see cref="SetCatalog"/>: true or false when
+        /// that does not depend on the entry, null when it does.
+        /// </summary>
+        public virtual bool? Constant => null;
+
         /// <summary>The pass after parsing: finish the parts that need the clock, and collect the regexes.</summary>
         public virtual void Bind(Binder binder)
         {
@@ -77,6 +88,10 @@ public sealed partial class EverythingQuery
 
     private sealed class Not(Node inner) : Node
     {
+        public override void SetCatalog(string fileName) => inner.SetCatalog(fileName);
+
+        public override bool? Constant => inner.Constant is { } value ? !value : null;
+
         public override bool Eval(in Context context) => !inner.Eval(in context);
 
         public override Use Uses() => inner.Uses();
@@ -94,6 +109,27 @@ public sealed partial class EverythingQuery
 
     private sealed class And(Node[] parts) : Node
     {
+        public override void SetCatalog(string fileName)
+        {
+            foreach (var p in parts) p.SetCatalog(fileName);
+        }
+
+        public override bool? Constant
+        {
+            get
+            {
+                var all = true;
+                foreach (var p in parts)
+                {
+                    var value = p.Constant;
+                    if (value == false) return false;
+                    if (value is null) all = false;
+                }
+
+                return all ? true : null;
+            }
+        }
+
         public override Use Uses()
         {
             var uses = Use.None;
@@ -132,6 +168,27 @@ public sealed partial class EverythingQuery
 
     private sealed class Or(Node[] parts) : Node
     {
+        public override void SetCatalog(string fileName)
+        {
+            foreach (var p in parts) p.SetCatalog(fileName);
+        }
+
+        public override bool? Constant
+        {
+            get
+            {
+                var none = true;
+                foreach (var p in parts)
+                {
+                    var value = p.Constant;
+                    if (value == true) return true;
+                    if (value is null) none = false;
+                }
+
+                return none ? false : null;
+            }
+        }
+
         public override Use Uses()
         {
             var uses = Use.None;

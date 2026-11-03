@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using cdeLib.Entities.Columnar;
 using cdeLib.Infrastructure;
+using Serilog;
 
 namespace cdeLib;
 
@@ -18,6 +19,7 @@ public sealed partial class EverythingQuery
         private BoundedRegex _regex; // set by regex:, which wins over wildcards
         private bool _regexRequested;
         private bool _matchCase;
+        private bool _catalogMatch; // for a term in catalog target: whether the catalog's file name matches
         private Target _target = Target.Default;
 
         public Term(string text, int position)
@@ -28,6 +30,26 @@ public sealed partial class EverythingQuery
 
         // The modifiers are final once parsing is done, so the matcher is built here, not in the constructor.
         public override void Bind(Binder binder)
+        {
+            BuildMatcher(binder);
+            SetCatalog(string.Empty); // no catalog until the search says which one
+        }
+
+        public override void SetCatalog(string fileName)
+        {
+            if (_target != Target.Catalog) return;
+            var timeouts = _regex?.Timeouts ?? 0;
+            _catalogMatch = Contains(fileName.AsSpan());
+
+            // The name is tested once, so a timeout would exclude the catalog without the three-timeout warning.
+            if (_regex is not null && _regex.Timeouts > timeouts)
+                Log.Warning("Regex {Pattern} timed out on the catalog file name {Catalog}; that catalog is treated as not matching",
+                    _text, fileName);
+        }
+
+        public override bool? Constant => _target == Target.Catalog ? _catalogMatch : null;
+
+        private void BuildMatcher(Binder binder)
         {
             if (_regexRequested)
             {
@@ -99,13 +121,15 @@ public sealed partial class EverythingQuery
 
         private const int StackChars = 256;
 
-        public override bool Eval(in Context c) => c.Source switch
-        {
-            Kind.SingleBytes => Contains(c.Bytes),
-            Kind.SingleChars => Contains(c.Chars),
-            Kind.Utf8Entry => Contains(UsesPath(c.DefaultMatchesPath) ? c.Utf8Entry.Path : c.Utf8Entry.Name),
-            _ => Contains(UsesPath(c.DefaultMatchesPath) ? c.CharEntry.Path : c.CharEntry.Name),
-        };
+        public override bool Eval(in Context c) => _target == Target.Catalog
+            ? _catalogMatch
+            : c.Source switch
+            {
+                Kind.SingleBytes => Contains(c.Bytes),
+                Kind.SingleChars => Contains(c.Chars),
+                Kind.Utf8Entry => Contains(UsesPath(c.DefaultMatchesPath) ? c.Utf8Entry.Path : c.Utf8Entry.Name),
+                _ => Contains(UsesPath(c.DefaultMatchesPath) ? c.CharEntry.Path : c.CharEntry.Name),
+            };
 
         public override Node Apply(Modifier modifier)
         {
@@ -119,6 +143,7 @@ public sealed partial class EverythingQuery
         {
             Target.Path => Use.Path,
             Target.Name => Use.Name,
+            Target.Catalog => Use.None, // the catalog's file name, not any text of the entry
             _ => Use.Default,
         };
     }

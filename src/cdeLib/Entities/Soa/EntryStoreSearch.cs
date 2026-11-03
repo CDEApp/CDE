@@ -29,6 +29,8 @@ public static class EntryStoreSearch
         // Non-null exactly when regex mode applies; the match site tests it (not RegexMode) so the flow is
         // provably non-null. Bounded: a pathological pattern times out per entry (no match) and ends the scan.
         var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty, o.Clock ?? TimeProvider.System) : null;
+        everything?.ForCatalog(o.CatalogName ?? CatalogNames.FileName(store.ActualFileName, store.DefaultFileName));
+        if (everything is { MatchesNothing: true }) return; // a catalog: term rules out the whole catalog
         BoundedRegex regex = null;
         if (o.RegexMode && everything is null && !string.IsNullOrEmpty(o.Pattern))
             regex = new BoundedRegex(o.Pattern);
