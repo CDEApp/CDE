@@ -5,7 +5,7 @@ const syntaxes = () => EVERYTHING_HELP.flatMap((s) => s.rows.map((r) => r.syntax
 
 describe("EVERYTHING_HELP", () => {
   it("has the four sections in order", () => {
-    expect(EVERYTHING_HELP.map((s) => s.title)).toEqual(["Operators", "Modifiers", "Filters", "Examples"]);
+    expect(EVERYTHING_HELP.map((s) => s.title)).toEqual(["Operators", "Modifiers", "Filters", "Wildcards", "Examples"]);
   });
 
   it("lists every supported operator, modifier and filter", () => {
@@ -25,8 +25,13 @@ describe("EVERYTHING_HELP", () => {
     expect(all).toContain("file: .mp3");
   });
 
+  it("lists the three wildcards", () => {
+    const wildcards = EVERYTHING_HELP.find((s) => s.title === "Wildcards")!;
+    expect(wildcards.rows.map((r) => r.syntax)).toEqual(["*", "**", "?"]);
+  });
+
   it("says what is not supported yet and which controls are ignored", () => {
     const text = EVERYTHING_HELP_NOT_SUPPORTED.join(" ");
-    for (const item of ["wildcards", "ext:", "\:", "?path:", "Include path", "Files/Folders"]) expect(text).toContain(item);
+    for (const item of ["ext:", "\:", "?path:", "Include path", "Files/Folders"]) expect(text).toContain(item);
   });
 });

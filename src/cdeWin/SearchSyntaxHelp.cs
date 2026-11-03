@@ -36,6 +36,12 @@ public static class SearchSyntaxHelp
             new("!file:", "NOT a file, so folders"),
             new("<file: a> | <folder: b>", "files with a, or folders with b"),
         ]),
+        new("Wildcards",
+        [
+            new("*", "zero or more characters, but not a backslash: *.txt is a name that ends in .txt"),
+            new("**", "zero or more characters including backslashes: path:c:\\**\\*.txt"),
+            new("?", "exactly one character, but not a backslash: ?at matches cat but not chat"),
+        ]),
         new("Examples",
         [
             new("do win", "matches Windows (both do and win are in the name)"),
@@ -48,9 +54,9 @@ public static class SearchSyntaxHelp
 
     public static IReadOnlyList<string> Notes { get; } =
     [
-        "Terms are case-insensitive substrings of the name.",
+        "Terms are case-insensitive substrings of the name. A term with * or ? must match the whole name (or the whole path after path:).",
         "Include Path and the Files/Folders choice are ignored in this mode: use path:, file: and folder:.",
-        @"Not supported yet: wildcards, ext: and other functions, the \: alias and the global ?path: form.",
+        @"Not supported yet: ext: and other functions, the \: alias and the global ?path: form.",
     ];
 
     /// <summary>All sections and notes as one text for a read-only box, with the syntax column aligned.</summary>

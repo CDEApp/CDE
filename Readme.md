@@ -420,7 +420,7 @@ A plain term matches the name, as a case-insensitive substring. Only `path:` rea
 
 Put the query in quotes, because `<`, `>`, `|` and `!` mean something to a shell. The query matches first, then `--filter` keeps the matches that pass, then `--template` writes each line.
 
-A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the command with `error: ... (at position N)` and exit code 1 before any catalog is read, and prints no results. An empty query matches every entry. Wildcards and Everything functions such as `ext:` are not supported yet.
+A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the command with `error: ... (at position N)` and exit code 1 before any catalog is read, and prints no results. An empty query matches every entry. A term with `*` (any characters except `\`), `**` (any characters including `\`) or `?` (one character except `\`) must match the whole name, or the whole path after `path:`, so `*.txt` matches names that end in `.txt`. Everything functions such as `ext:` are not supported yet.
 
 ### Machine-readable output: --json and --csv
 
