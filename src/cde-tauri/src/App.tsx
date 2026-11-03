@@ -124,8 +124,8 @@ export default function App() {
   // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
   const [diffEpoch, setDiffEpoch] = useState(0);
   // Latest values for async completions (a create finishes long after the click that started it).
-  const latest = useRef({ catalogs, creates, view });
-  latest.current = { catalogs, creates, view };
+  const latest = useRef({ catalogs, creates });
+  latest.current = { catalogs, creates };
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -254,9 +254,7 @@ export default function App() {
       markRescanned(catalogId);
       setDiffEpoch((n) => n + 1);
       // Indexes belong to the old file: a TreeMap request for this catalog is no longer valid.
-      if (latest.current.view.treemap?.request.ref.catalogId === catalogId) {
-        setView(dropTreemap);
-      }
+      setView((v) => (v.treemap?.ref.catalogId === catalogId ? dropTreemap(v) : v));
       await refreshCatalogs(client);
       await restoreAfterRescan(client, catalogId, before);
     },
@@ -666,8 +664,8 @@ export default function App() {
         return (
           <TreemapView
             client={clientRef.current!}
-            request={view.treemap.request}
-            depth={view.treemap.depth ?? (uiRef.current?.get().treemapDepth as number | undefined) ?? DEFAULT_TREEMAP_DEPTH}
+            request={view.treemap}
+            depth={view.treemapDepth ?? (uiRef.current?.get().treemapDepth as number | undefined) ?? DEFAULT_TREEMAP_DEPTH}
             onDepthChange={(d) => {
               setView((v) => setTreemapDepth(v, d));
               uiRef.current?.update({ treemapDepth: d });
