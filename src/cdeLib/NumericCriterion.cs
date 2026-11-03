@@ -103,8 +103,8 @@ internal sealed partial class NumericCriterion
         if (number.Length > 18) throw new FormatException($"'{text}' is too large");
 
         var amount = decimal.Parse(number, NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture);
+        if (amount > (decimal)(MaxSize / unit)) throw new FormatException($"'{text}' is too large");
         var bytes = amount * unit;
-        if (bytes > MaxSize) throw new FormatException($"'{text}' is too large");
 
         var fractionDigits = number.Contains('.') ? number.Length - number.IndexOf('.') - 1 : 0;
         var granule = unit;

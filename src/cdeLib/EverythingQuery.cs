@@ -266,7 +266,7 @@ public sealed class EverythingQuery
         for (var i = 0; i < query.Length; i++)
         {
             // The < and > in a function value (size:>10mb) are operators, not group brackets.
-            if (char.IsLetter(query[i]) && (i == 0 || char.IsWhiteSpace(query[i - 1]) || query[i - 1] is '|' or '<' or '>' or '!' or ':'))
+            if (char.IsLetter(query[i]) && (i == 0 || char.IsWhiteSpace(query[i - 1]) || query[i - 1] is '|' or '<' or '>' or '!' || AfterModifier(query, i)))
             {
                 var length = FunctionLength(query.AsSpan(i));
                 if (length > 0)
@@ -369,9 +369,13 @@ public sealed class EverythingQuery
         Character.EqualTo('?').IgnoreThen(NoPathText.Try().Or(PathText))
             .Or(Span.EqualTo("\\:").Value(Unit.Value));
 
+    private const int MaxFunctionName = 16; // "date-modified" is the longest, dashes included
+
     private static bool IsFunction(ReadOnlySpan<char> name, out Function function)
     {
-        Span<char> folded = stackalloc char[name.Length];
+        function = Function.Size;
+        if (name.Length > MaxFunctionName) return false;
+        Span<char> folded = stackalloc char[MaxFunctionName];
         var n = 0;
         foreach (var c in name)
             if (c != '-') folded[n++] = char.ToLowerInvariant(c);
@@ -388,6 +392,26 @@ public sealed class EverythingQuery
     {
         var length = FunctionLength(input.Source.AsSpan(input.Position.Absolute, input.Length));
         return length == 0 ? Result.Empty<Unit>(input) : Result.Value(Unit.Value, input, input.Skip(length));
+    }
+
+    // True if the text before index i is one or more modifiers (path:, no-path:, regex:) that start a term, so a
+    // function after them is the mistake CheckModifiers reports. A colon inside an ordinary word does not count.
+    private static bool AfterModifier(string query, int i)
+    {
+        while (i > 0 && query[i - 1] == ':')
+        {
+            var start = i - 1;
+            while (start > 0 && (char.IsLetter(query[start - 1]) || query[start - 1] == '-')) start--;
+            var name = query.AsSpan(start, i - 1 - start);
+            if (!(name.Equals("path", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("no-path", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("regex", StringComparison.OrdinalIgnoreCase)))
+                return false;
+            if (start == 0 || char.IsWhiteSpace(query[start - 1]) || query[start - 1] is '|' or '<' or '>' or '!') return true;
+            i = start;
+        }
+
+        return false;
     }
 
     // The length of the function token at the start of text, or 0 if there is none.

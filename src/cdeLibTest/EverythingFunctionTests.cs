@@ -241,6 +241,30 @@ public class EverythingFunctionTests
         Assert.That(ex!.Position, Is.EqualTo(position), ex.Message);
     }
 
+    [Test]
+    public void A_size_too_large_for_a_number_is_a_query_error_not_a_crash()
+    {
+        var ex = Assert.Throws<EverythingQueryException>(() => Q("size:999999999999999999tb"));
+        Assert.That(ex!.Message, Does.Contain("too large"));
+        Assert.Throws<EverythingQueryException>(() => Q("size:5000000000000000000"));
+    }
+
+    [Test]
+    public void A_colon_inside_an_ordinary_word_does_not_start_a_function()
+    {
+        // The word is a:size: and the group closes at the > ; the 1 is a second term.
+        var query = Q("<a:size:>1");
+        Assert.That(query.Matches("a:size: 1"), Is.True);
+        Assert.That(query.Matches("a:size:"), Is.False);
+    }
+
+    [Test]
+    public void A_very_long_name_before_a_colon_is_just_a_word()
+    {
+        var word = new string('a', 100_000) + ":";
+        Assert.That(Q(word + "x").Matches(word + "x"), Is.True);
+    }
+
     // ---- regex: ----
 
     [TestCase("regex:^\\d{4}", "2026-report.txt", true)]
