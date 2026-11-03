@@ -1,18 +1,15 @@
 using System.Buffers;
 using System.IO.Hashing;
 using BenchmarkDotNet.Attributes;
+using cdeLib.Entities;
 using cdeLib.Infrastructure.Hashing;
 using Microsoft.Win32.SafeHandles;
 
 namespace cdeBenchmarks;
 
-/// <summary>
-/// Current MurmurHash3 x86_32 (chunked, pooled) versus XxHash128, CPU only (data already in memory).
-/// </summary>
 [MemoryDiagnoser]
 public class XxHash128InMemoryBenchmarks
 {
-    private readonly MurmurHashWrapper _murmur = new();
     private byte[] _data = null!;
 
     // 64 KB = partial hash first pass (appsettings.json); 1 MB = full-hash chunk; 64 MB = large file.
@@ -26,41 +23,20 @@ public class XxHash128InMemoryBenchmarks
         new Random(42).NextBytes(_data); // NOSONAR S2245: benchmark test data, not security
     }
 
-    /// <summary>Partial-hash path: MurmurHash.Net Hash32 over the buffer.</summary>
-    [Benchmark(Baseline = true)]
-    public ulong Murmur3_32_Library() => _murmur.Hash((ReadOnlySpan<byte>)_data);
-
-    /// <summary>Full-hash path: the in-repo incremental state, fed in 1 MB chunks like HashWholeFile.</summary>
-    [Benchmark]
-    public uint Murmur3_32_Incremental()
-    {
-        var state = new MurMurHash3.Incremental(123456U);
-        ReadOnlySpan<byte> span = _data;
-        for (var i = 0; i < span.Length; i += MurMurHash3.StreamChunkSize)
-            state.Append(span.Slice(i, Math.Min(MurMurHash3.StreamChunkSize, span.Length - i)));
-        return state.Finish();
-    }
-
     [Benchmark]
     public UInt128 XxHash128_Incremental()
     {
         var hasher = new XxHash128();
         ReadOnlySpan<byte> span = _data;
-        for (var i = 0; i < span.Length; i += MurMurHash3.StreamChunkSize)
-            hasher.Append(span.Slice(i, Math.Min(MurMurHash3.StreamChunkSize, span.Length - i)));
+        for (var i = 0; i < span.Length; i += HashHelper.FullHashChunkSize)
+            hasher.Append(span.Slice(i, Math.Min(HashHelper.FullHashChunkSize, span.Length - i)));
         return hasher.GetCurrentHashAsUInt128();
     }
 
-    [Benchmark]
+    [Benchmark(Baseline = true)]
     public UInt128 XxHash128_OneShot() => XxHash128.HashToUInt128(_data);
 }
 
-/// <summary>
-/// End-to-end full-file hash. The baseline is the real app path (HashHelper with bytesToHash null).
-/// The XxHash128 variant uses the same RandomAccess + 1 MB pooled buffer loop as HashHelper.HashWholeFile,
-/// so only the hash function differs. The file is in the OS cache after the first iteration, so this measures
-/// syscall plus hash cost, not cold-disk speed.
-/// </summary>
 [MemoryDiagnoser]
 public class XxHash128FileBenchmarks
 {
@@ -93,7 +69,7 @@ public class XxHash128FileBenchmarks
     }
 
     [Benchmark(Baseline = true)]
-    public async Task<ulong> HashHelper_FullFile() => (await _helper.GetHashResponseFromFile(_path, null)).Hash;
+    public async Task<Hash16> HashHelper_FullFile() => (await _helper.GetHashResponseFromFile(_path, null)).Hash;
 
     [Benchmark]
     public async Task<UInt128> XxHash128_RandomAccess()
@@ -101,12 +77,12 @@ public class XxHash128FileBenchmarks
         using SafeFileHandle handle = File.OpenHandle(_path, FileMode.Open, FileAccess.Read, FileShare.Read,
             FileOptions.Asynchronous | FileOptions.SequentialScan);
         var hasher = new XxHash128();
-        var buffer = ArrayPool<byte>.Shared.Rent(MurMurHash3.StreamChunkSize);
+        var buffer = ArrayPool<byte>.Shared.Rent(HashHelper.FullHashChunkSize);
         try
         {
             long position = 0;
             int read;
-            while ((read = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, MurMurHash3.StreamChunkSize), position)) > 0)
+            while ((read = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, HashHelper.FullHashChunkSize), position)) > 0)
             {
                 hasher.Append(buffer.AsSpan(0, read));
                 position += read;

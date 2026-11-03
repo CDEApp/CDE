@@ -1,23 +1,25 @@
 using System;
 using System.Buffers;
 using System.IO;
+using System.IO.Hashing;
 using System.Threading.Tasks;
+using cdeLib.Entities;
 using Microsoft.Win32.SafeHandles;
 
 namespace cdeLib.Infrastructure.Hashing;
 
+/// <summary>
+/// Hashes files with XxHash128 (seed 0, so a printed hash equals <c>xxh128sum</c> output).
+/// </summary>
 public class HashHelper
 {
+    public const int FullHashChunkSize = 1 << 20;
+
     private readonly ILogger _logger;
-    // CA1859 suppressed: deliberately the interface so the hash algorithm stays swappable (see IHashAlgorithm).
-    [System.Diagnostics.CodeAnalysis.SuppressMessage("Performance", "CA1859:Use concrete types when possible for improved performance",
-        Justification = "Hash algorithm abstraction; kept as an interface so it can be swapped or substituted.")]
-    private readonly IHashAlgorithm _hashAlgorithm;
 
     public HashHelper(ILogger logger)
     {
         _logger = logger;
-        _hashAlgorithm = new MurmurHashWrapper();
     }
 
     /// <summary>
@@ -57,8 +59,8 @@ public class HashHelper
                 // Issue #37: the old loop re-read the next block over the first one.
                 var totalBytesRead = await FillAsync(new HandleReader(handle), rentedBuffer.AsMemory(0, bufferSize));
 
-                var partialHash = _hashAlgorithm.Hash(rentedBuffer.AsSpan(0, totalBytesRead));
-                return new HashResponse(true, partialHash, fileLength > bytesToHash, totalBytesRead);
+                var hash = new Hash16(XxHash128.HashToUInt128(rentedBuffer.AsSpan(0, totalBytesRead)));
+                return new HashResponse(true, hash, fileLength > bytesToHash, totalBytesRead);
             }
             finally
             {
@@ -120,17 +122,17 @@ public class HashHelper
         return filled;
     }
 
-    private static async ValueTask<ulong> HashWholeFile(SafeFileHandle handle)
+    private static async ValueTask<Hash16> HashWholeFile(SafeFileHandle handle)
     {
-        var state = new MurMurHash3.Incremental(MurmurHashWrapper.Seed);
-        var buffer = ArrayPool<byte>.Shared.Rent(MurMurHash3.StreamChunkSize);
+        var hasher = new XxHash128();
+        var buffer = ArrayPool<byte>.Shared.Rent(FullHashChunkSize);
         try
         {
             long position = 0;
             int read;
-            while ((read = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, MurMurHash3.StreamChunkSize), position)) > 0)
+            while ((read = await RandomAccess.ReadAsync(handle, buffer.AsMemory(0, FullHashChunkSize), position)) > 0)
             {
-                state.Append(buffer.AsSpan(0, read));
+                hasher.Append(buffer.AsSpan(0, read));
                 position += read;
             }
         }
@@ -139,6 +141,6 @@ public class HashHelper
             ArrayPool<byte>.Shared.Return(buffer);
         }
 
-        return state.Finish();
+        return new Hash16(hasher.GetCurrentHashAsUInt128());
     }
 }

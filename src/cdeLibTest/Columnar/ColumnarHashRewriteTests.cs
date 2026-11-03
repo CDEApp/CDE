@@ -40,7 +40,7 @@ public class ColumnarHashRewriteTests
         var d = new DirEntry(false) { Path = name, Size = size, Modified = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc) };
         if (hash.HasValue)
         {
-            d.SetHash(hash.Value);
+            d.SetHash(new Hash16(hash.Value, 0));
             d.IsPartialHash = partial;
         }
 
@@ -75,7 +75,7 @@ public class ColumnarHashRewriteTests
     private static void SetOnTree(RootEntry tree, string name, ulong hash, bool partial)
     {
         var e = Find(tree.Children, name);
-        e.SetHash(hash);
+        e.SetHash(new Hash16(hash, 0));
         e.IsPartialHash = partial;
     }
 

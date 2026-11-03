@@ -252,10 +252,9 @@ public partial class Duplication
         }
     }
 
-    // As DirEntry.SetHash(ulong) followed by IsPartialHash = partial.
-    private static void SetHash(ref HashCandidate candidate, ulong hash, bool partial)
+    private static void SetHash(ref HashCandidate candidate, Hash16 hash, bool partial)
     {
-        candidate.Hash = new Hash16(hash, 0);
+        candidate.Hash = hash;
         var flags = candidate.Flags | Flags.HashDone;
         candidate.Flags = partial
             ? flags | Flags.PartialHash | Flags.PartialHashV2

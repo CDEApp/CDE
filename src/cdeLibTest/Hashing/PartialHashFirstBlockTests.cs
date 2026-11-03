@@ -1,7 +1,6 @@
 using System;
 using System.Threading.Tasks;
 using cdeLib.Infrastructure.Hashing;
-using MurmurHash.Net;
 using NUnit.Framework;
 
 namespace cdeLibTest.Hashing;
@@ -39,8 +38,6 @@ public class PartialHashFirstBlockTests
         var expectedLen = Math.Min(fileSize, n);
         Assert.That(filled, Is.EqualTo(expectedLen));
         Assert.That(buffer.AsSpan(0, filled).ToArray(), Is.EqualTo(data.AsSpan(0, expectedLen).ToArray()));
-        Assert.That(MurmurHash3.Hash32(buffer.AsSpan(0, filled), 123456U),
-            Is.EqualTo(MurmurHash3.Hash32(data.AsSpan(0, expectedLen), 123456U)));
     }
 
     [Test]

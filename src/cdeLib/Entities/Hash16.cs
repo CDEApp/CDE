@@ -32,12 +32,17 @@ public readonly record struct Hash16
     /// </summary>
     public static Hash16 Empty => default;
 
-    /// <summary>
-    /// Creates a Hash16 from a byte array (typically 16 bytes from MD5).
-    /// </summary>
     public Hash16(byte[] hash) : this(
         BitConverter.ToUInt64(hash, 0),
         hash.Length > 8 ? BitConverter.ToUInt64(hash, 8) : 0)
+    {
+    }
+
+    /// <summary>
+    /// The one XxHash128 to (HashA, HashB) mapping: HashA is the high 64 bits, HashB the low, so the
+    /// <c>HashA:x16 + HashB:x16</c> hex that <see cref="Output.EntryRecords"/> prints equals <c>xxh128sum</c> output.
+    /// </summary>
+    public Hash16(UInt128 hash) : this((ulong)(hash >> 64), (ulong)hash)
     {
     }
 
@@ -56,9 +61,6 @@ public readonly record struct Hash16
         HashA = hashA;
         HashB = hashB;
     }
-
-    [IgnoreMember]
-    public string HashAsString => ByteArrayHelper.Hash16ToHexString(HashA, HashB);
 
     public override string ToString() => $"A:[{HashA}] B:[{HashB}]";
 

@@ -12,7 +12,7 @@ public class RootEntryHashFlagsTests
     {
         var e = new RootEntry();
 
-        e.SetHash(42UL);
+        e.SetHash(new Hash16(42UL, 0));
 
         Assert.That(e.IsHashDone, Is.True);
         Assert.That(e.Hash, Is.EqualTo(new Hash16(42UL, 0)));
@@ -22,7 +22,7 @@ public class RootEntryHashFlagsTests
     public void IsPartialHash_SetAndClear_TogglesBothPartialBits()
     {
         var e = new RootEntry();
-        e.SetHash(1UL);
+        e.SetHash(new Hash16(1UL, 0));
 
         e.IsPartialHash = true;
         Assert.That(e.IsPartialHash, Is.True);
@@ -38,7 +38,7 @@ public class RootEntryHashFlagsTests
     public void IsHashDone_Cleared_DropsTheFlag()
     {
         var e = new RootEntry();
-        e.SetHash(1UL);
+        e.SetHash(new Hash16(1UL, 0));
 
         e.IsHashDone = false;
 
