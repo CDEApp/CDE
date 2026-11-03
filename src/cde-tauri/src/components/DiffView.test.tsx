@@ -119,8 +119,9 @@ describe("DiffView", () => {
       "different", "left-only", "right-only",
     ]);
     fireEvent.click(screen.getByRole("button", { name: "Same" }));
-    expect(dataRows()).toHaveLength(1);
-    expect(within(dataRows()[0]).getAllByText("a.txt")).toHaveLength(2);
+    expect(dataRows()).toHaveLength(2);
+    expect(rowOf("docs").className).toContain("different");
+    expect(within(rowOf("a.txt")).getAllByText("a.txt")).toHaveLength(2);
     expect(screen.getByRole("button", { name: "Same" }).getAttribute("aria-pressed")).toBe("true");
   });
 
@@ -131,7 +132,8 @@ describe("DiffView", () => {
     expect(entries).toHaveLength(10);
     expect(entries[0]).toBe("Show Differences");
     fireEvent.click(screen.getByText("Show Left Orphans"));
-    expect(dataRows()).toHaveLength(1);
+    expect(dataRows()).toHaveLength(2);
+    expect(rowOf("docs")).toBeTruthy();
     expect(rowOf("only-left.txt").className).toContain("left-only");
     const diffs = screen.getByRole("button", { name: "Diffs" });
     expect(diffs.getAttribute("aria-pressed")).toBe("true");
@@ -142,7 +144,7 @@ describe("DiffView", () => {
     expect(dataRows()).toHaveLength(4);
     expect(diffs.getAttribute("aria-pressed")).toBe("false");
     fireEvent.click(diffs);
-    expect(dataRows()).toHaveLength(1);
+    expect(dataRows()).toHaveLength(2);
   });
 
   it("expands a folder on both sides and collapses it again", async () => {

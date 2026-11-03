@@ -48,16 +48,45 @@ function bothSidesStatus(left: DirectoryNode, right: DirectoryNode): DiffStatus 
 
 const foldName = (name: string) => name.toUpperCase();
 
+const compareText = (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
+
 function compareRows(a: DiffRow, b: DiffRow): number {
   if (a.isDirectory !== b.isDirectory) return a.isDirectory ? -1 : 1;
-  const x = foldName(a.name);
-  const y = foldName(b.name);
-  return x < y ? -1 : x > y ? 1 : 0;
+  return compareText(foldName(a.name), foldName(b.name)) || compareText(a.name, b.name);
+}
+
+function groupByFoldedName(nodes: readonly DirectoryNode[]): Map<string, DirectoryNode[]> {
+  const groups = new Map<string, DirectoryNode[]>();
+  for (const n of nodes) {
+    const folded = n.name.toLowerCase();
+    const group = groups.get(folded);
+    if (group) group.push(n);
+    else groups.set(folded, [n]);
+  }
+  return groups;
+}
+
+/** Pairs left with right entries of one folded name: exact (case-sensitive) names first, then the rest in order. */
+function pairByName(lefts: readonly DirectoryNode[], rights: readonly DirectoryNode[]) {
+  const pairs: { left: DirectoryNode | null; right: DirectoryNode | null }[] = [];
+  const unmatchedRights = [...rights];
+  const unmatchedLefts: DirectoryNode[] = [];
+  for (const left of lefts) {
+    const i = unmatchedRights.findIndex((r) => r.name === left.name);
+    if (i < 0) unmatchedLefts.push(left);
+    else pairs.push({ left, right: unmatchedRights.splice(i, 1)[0] });
+  }
+  const count = Math.max(unmatchedLefts.length, unmatchedRights.length);
+  for (let i = 0; i < count; i++) {
+    pairs.push({ left: unmatchedLefts[i] ?? null, right: unmatchedRights[i] ?? null });
+  }
+  return pairs;
 }
 
 /**
  * Merge two child lists into rows by case-insensitive name: folders first, then name order (the
- * Directory view's convention). A name that is a file on one side and a folder on the other is one
+ * Directory view's convention). Two entries of the same side are never merged, so names that differ
+ * only by case stay separate rows. A name that is a file on one side and a folder on the other is one
  * non-expandable "different" row.
  */
 export function alignChildren(
@@ -66,25 +95,33 @@ export function alignChildren(
   depth: number,
   parentKey: string,
 ): DiffRow[] {
-  const rows = new Map<string, DiffRow>();
-  const keyOf = (name: string) => `${parentKey}/${name.toLowerCase()}`;
+  const leftGroups = groupByFoldedName(leftNodes);
+  const rightGroups = groupByFoldedName(rightNodes);
+  const rows: DiffRow[] = [];
+  const usedKeys = new Set<string>();
 
-  for (const left of leftNodes) {
-    const key = keyOf(left.name);
-    rows.set(key, { key, depth, name: left.name, left, right: null, status: "left-only", isDirectory: left.isDirectory });
-  }
-  for (const right of rightNodes) {
-    const key = keyOf(right.name);
-    const row = rows.get(key);
-    if (!row) {
-      rows.set(key, { key, depth, name: right.name, left: null, right, status: "right-only", isDirectory: right.isDirectory });
-      continue;
+  for (const folded of new Set([...leftGroups.keys(), ...rightGroups.keys()])) {
+    const lefts = leftGroups.get(folded) ?? [];
+    const rights = rightGroups.get(folded) ?? [];
+    const ambiguous = lefts.length > 1 || rights.length > 1;
+    for (const { left, right } of pairByName(lefts, rights)) {
+      const primary = (left ?? right)!;
+      let key = `${parentKey}/${folded}`;
+      if (ambiguous) key += `\u0000${primary.name}`;
+      for (let n = 2; usedKeys.has(key); n++) key = `${parentKey}/${folded}\u0000${primary.name}\u0000${n}`;
+      usedKeys.add(key);
+      rows.push({
+        key,
+        depth,
+        name: primary.name,
+        left,
+        right,
+        status: left && right ? bothSidesStatus(left, right) : left ? "left-only" : "right-only",
+        isDirectory: left && right ? left.isDirectory && right.isDirectory : primary.isDirectory,
+      });
     }
-    row.right = right;
-    row.status = bothSidesStatus(row.left!, right);
-    row.isDirectory = row.left!.isDirectory && right.isDirectory;
   }
-  return [...rows.values()].sort(compareRows);
+  return rows.sort(compareRows);
 }
 
 export type DiffFilterId =
@@ -159,8 +196,11 @@ export const DIFF_MENU_FILTERS: readonly DiffFilterId[] = [
 ];
 
 /**
- * The flat, ordered rows to render. A row is shown by the filter's predicate on the row itself; the children of an expanded,
- * shown folder are filtered the same way. A folder with no entry in `childrenByKey` (not loaded yet)
+ * The flat, ordered rows to render. Children load lazily, so a folder's own status (a size heuristic)
+ * cannot say whether anything below it matches the filter. A folder present on both sides is therefore a
+ * navigation container, always kept under every filter; the filter's predicate applies to files, to
+ * one-sided folders and to the entries below an expanded container. The children of an expanded shown
+ * folder are visited the same way. A folder with no entry in `childrenByKey` (not loaded yet)
  * contributes no children.
  */
 export function flattenVisible(
@@ -172,7 +212,8 @@ export function flattenVisible(
   const out: DiffRow[] = [];
   const visit = (rows: readonly DiffRow[]) => {
     for (const row of rows) {
-      if (!DIFF_FILTERS[filter].shows(row)) continue;
+      const container = row.isDirectory && row.left !== null && row.right !== null;
+      if (!container && !DIFF_FILTERS[filter].shows(row)) continue;
       out.push(row);
       const kids = row.isDirectory && expanded.has(row.key) ? childrenByKey.get(row.key) : undefined;
       if (kids) visit(alignChildren(kids.left, kids.right, row.depth + 1, row.key));

@@ -65,6 +65,39 @@ describe("alignChildren", () => {
     expect(alignChildren([dir("d", 5)], [dir("d", 6)], 0, "")[0].status).toBe("different");
   });
 
+  it("never merges two entries of the same side that differ only by case", () => {
+    const rows = alignChildren([node("Foo.txt"), node("foo.txt")], [], 0, "/p");
+    expect(rows.map((r) => [r.name, r.status])).toEqual([["Foo.txt", "left-only"], ["foo.txt", "left-only"]]);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(2);
+  });
+
+  it("keeps two right-only case-distinct entries without throwing", () => {
+    const rows = alignChildren([], [node("Foo.txt"), node("foo.txt")], 0, "/p");
+    expect(rows.map((r) => [r.name, r.status, r.left])).toEqual([
+      ["Foo.txt", "right-only", null],
+      ["foo.txt", "right-only", null],
+    ]);
+    expect(new Set(rows.map((r) => r.key)).size).toBe(2);
+  });
+
+  it("still pairs a single case-different entry on each side", () => {
+    const rows = alignChildren([node("Foo.txt")], [node("foo.txt")], 0, "/p");
+    expect(rows).toHaveLength(1);
+    expect(rows[0].key).toBe("/p/foo.txt");
+    expect(rows[0].status).toBe("same");
+  });
+
+  it("pairs case-distinct entries by exact name first", () => {
+    const rows = alignChildren([node("Foo.txt"), node("foo.txt")], [node("foo.txt")], 0, "/p");
+    const paired = rows.find((r) => r.left && r.right);
+    const orphan = rows.find((r) => !r.right);
+    expect(rows).toHaveLength(2);
+    expect(paired?.left?.name).toBe("foo.txt");
+    expect(orphan?.left?.name).toBe("Foo.txt");
+    expect(orphan?.status).toBe("left-only");
+    expect(rows[0].key).not.toBe(rows[1].key);
+  });
+
   it("makes a file-versus-folder name one non-expandable different row", () => {
     const [row] = alignChildren([node("x")], [dir("x")], 0, "");
     expect(row.status).toBe("different");
@@ -97,14 +130,33 @@ describe("flattenVisible", () => {
     expect(rows.find((r) => r.name === "a")?.depth).toBe(1);
   });
 
-  it("filters diffs, hiding same folders with their children", () => {
+  it("filters diffs, keeping both-sides folders but hiding their same children", () => {
     const rows = flattenVisible(new Set(["/diff-dir", "/same-dir"]), children, roots, "differences");
-    expect(names(rows)).toEqual(["diff-dir", "a", "b", "c", "only-left"]);
+    expect(names(rows)).toEqual(["diff-dir", "a", "b", "c", "same-dir", "only-left"]);
   });
 
-  it("filters same, hiding different folders with their children", () => {
+  it("filters same, keeping both-sides folders but hiding their different children", () => {
     const rows = flattenVisible(new Set(["/diff-dir", "/same-dir"]), children, roots, "same");
-    expect(names(rows)).toEqual(["same-dir", "k", "same-file"]);
+    expect(names(rows)).toEqual(["diff-dir", "same-dir", "k", "same-file"]);
+  });
+
+  it("keeps a both-sides folder under Left Orphans so its left-only file is reachable", () => {
+    const rows = flattenVisible(new Set(["/diff-dir"]), children, roots, "leftOrphans");
+    expect(names(rows)).toEqual(["diff-dir", "b", "same-dir", "only-left"]);
+  });
+
+  it("keeps a both-sides folder under Left Newer when the folder is not itself newer", () => {
+    const newer = new Map<string, ChildLists>([
+      ["/diff-dir", { left: [node("n", { modified: "2024-01-01T12:00:00Z" })], right: [node("n")] }],
+    ]);
+    const rows = flattenVisible(new Set(["/diff-dir"]), newer, roots, "leftNewer");
+    expect(names(rows)).toEqual(["diff-dir", "n", "same-dir"]);
+  });
+
+  it("still filters a one-sided folder by its own status", () => {
+    const r = alignChildren([dir("lonely")], [], 0, "");
+    expect(names(flattenVisible(new Set(), new Map(), r, "rightOrphans"))).toEqual([]);
+    expect(names(flattenVisible(new Set(), new Map(), r, "leftOrphans"))).toEqual(["lonely"]);
   });
 
   it("adds no children for an expanded folder that is not loaded yet", () => {
