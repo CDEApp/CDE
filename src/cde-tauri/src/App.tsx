@@ -47,6 +47,7 @@ import { MenuBar } from "./components/MenuBar";
 import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
+import { DiffView } from "./components/DiffView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
 import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
@@ -56,7 +57,7 @@ import { useRescan } from "./hooks/useRescan";
 import { useSearch } from "./hooks/useSearch";
 import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
 
-type View = "directory" | "results" | "catalogs" | "colours" | "treemap";
+type View = "directory" | "results" | "catalogs" | "colours" | "diff" | "treemap";
 
 const DEFAULT_TREEMAP_DEPTH = 3;
 
@@ -106,6 +107,8 @@ export default function App() {
   // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
   // so a reload must drop the tree's cached expansion + children itself.
   const reloadEpochRef = useRef(0);
+  // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
+  const [diffEpoch, setDiffEpoch] = useState(0);
   // Latest values for async completions (a create finishes long after the click that started it).
   const latest = useRef({ catalogs, creates, treemapRequest });
   latest.current = { catalogs, creates, treemapRequest };
@@ -235,6 +238,7 @@ export default function App() {
       // Bookkeeping first: it must happen even if the refresh below fails.
       treeGenRef.current[catalogId] = (treeGenRef.current[catalogId] ?? 0) + 1;
       markRescanned(catalogId);
+      setDiffEpoch((n) => n + 1);
       // Indexes belong to the old file: a TreeMap request for this catalog is no longer valid.
       if (latest.current.treemapRequest?.ref.catalogId === catalogId) {
         setTreemapRequest(null);
@@ -261,6 +265,7 @@ export default function App() {
       // trusted, and in-flight navigation responses must not land after this.
       resetForReload();
       reloadEpochRef.current += 1;
+      setDiffEpoch((n) => n + 1);
       setTreemapRequest(null); // its ref belongs to the old catalog set
       setView((v) => (v === "treemap" ? "directory" : v));
       try {
@@ -280,7 +285,7 @@ export default function App() {
     [refreshCatalogs, promptForLegacy, resetForReload, getRescans],
   );
 
-  // Re-read the rules file each time the Colours tab opens (picks up hand edits). Fetch first, then
+  // Re-read the rules file each time the Customize tab opens (picks up hand edits). Fetch first, then
   // switch, so the editor never shows stale text that a keystroke could then overwrite. Wait for
   // pending saves first, or a save flushed as the tab last closed could land after this read.
   const openColours = useCallback(async () => {
@@ -491,6 +496,7 @@ export default function App() {
       }
     }
   }, []);
+  const exploreEntry = useCallback((ref: EntryRef) => void runShell(ref, "explore"), [runShell]);
 
   const showTreemap = useCallback((ref: EntryRef) => {
     setTreemapRequest((prev) => ({ ref, nonce: (prev?.nonce ?? 0) + 1 }));
@@ -636,8 +642,11 @@ export default function App() {
         <button className={view === "catalogs" ? "active" : ""} onClick={() => setView("catalogs")}>
           Catalogs
         </button>
+        <button className={view === "diff" ? "active" : ""} onClick={() => setView("diff")}>
+          Compare
+        </button>
         <button className={view === "colours" ? "active" : ""} onClick={() => void openColours()}>
-          Colours
+          Customize
         </button>
         {treemapRequest && (
           <button className={view === "treemap" ? "active" : ""} onClick={() => setView("treemap")}>
@@ -724,6 +733,16 @@ export default function App() {
             </div>
           </div>
         )}
+
+        <div className={viewPaneClass<View>("diff", view)} aria-hidden={view !== "diff"}>
+          <DiffView
+            key={diffEpoch}
+            client={clientRef.current!}
+            catalogs={catalogs?.catalogs ?? []}
+            resolveStyle={resolveStyle}
+            onExplore={exploreEntry}
+          />
+        </div>
 
         {view === "catalogs" && (
           <CatalogList
