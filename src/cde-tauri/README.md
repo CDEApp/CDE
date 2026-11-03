@@ -44,6 +44,19 @@ pnpm test:watch       # Vitest in watch mode
 Tests sit next to the module they cover (`format.ts` → `format.test.ts`) and run in plain Node, so
 keep logic you want tested in React-free modules like `format.ts` and `treemapModel.ts`.
 
+## Build a runnable app from a checkout
+
+From the repo root, one command builds the sidecar and the app and stages both:
+
+```bash
+./build.ps1 PublishTauri      # Windows (or ./build.sh PublishTauri on Linux/macOS)
+```
+
+It runs `pnpm install`, `pnpm bundle-sidecar` and `pnpm tauri build --no-bundle`, then copies
+`cde-tauri` and `cdeApi` (the sidecar, which must sit beside it) into `artifacts/cde-tauri/`.
+It builds for the machine it runs on and keeps the source version (`0.1.0`); the release workflow
+stamps the real version. `PublishRelease` does not include it, because it needs Node, pnpm and Rust.
+
 ## Build a distributable
 
 ```bash

@@ -7,6 +7,7 @@ using Fallout.Common.CI;
 using Fallout.Common.Git;
 using Fallout.Common.IO;
 using Fallout.Common.ProjectModel;
+using Fallout.Common.Tooling;
 using Fallout.Common.Tools.DotNet;
 using Fallout.Common.Utilities.Collections;
 using static Fallout.Common.Tools.DotNet.DotNetTasks;
@@ -98,6 +99,32 @@ class Build : FalloutBuild
     Target PublishRelease => _ => _
         .Description("Publish in Release configuration (always); pass --self-contained to bundle the runtime in cde and cdewin")
         .Executes(() => PublishApps(Configuration.Release, SelfContained));
+
+    AbsolutePath TauriDirectory => SourceDirectory / "cde-tauri";
+
+    // Builds the Tauri desktop app for the host platform, the same steps release.yml runs, and stages
+    // cde-tauri and its cdeApi sidecar in artifacts/cde-tauri. Not part of PublishRelease: it needs
+    // Node, pnpm and Rust, and it is slow. The version stays the one in source (the release workflow
+    // stamps it from the tag), and --runtime does not apply: Tauri builds for the machine it runs on.
+    [UsedImplicitly]
+    Target PublishTauri => _ => _
+        .Description("Build the Tauri desktop app (needs Node, pnpm, Rust) into artifacts/cde-tauri")
+        .Executes(() =>
+        {
+            var pnpm = ToolResolver.GetPathTool("pnpm");
+            void Pnpm(string arguments) => pnpm(arguments, TauriDirectory);
+
+            Pnpm("install --frozen-lockfile");
+            Pnpm("bundle-sidecar");
+            Pnpm("tauri build --no-bundle");
+
+            var exe = OperatingSystem.IsWindows() ? ".exe" : "";
+            var releaseDirectory = TauriDirectory / "src-tauri" / "target" / "release";
+            var destination = ArtifactsDirectory / "cde-tauri";
+            destination.CreateOrCleanDirectory();
+            foreach (var name in new[] { "cde-tauri", "cdeApi" })
+                (releaseDirectory / (name + exe)).Copy(destination / (name + exe));
+        });
 
     // The one place the publish settings live, so the CI build, a local publish and the release
     // workflow cannot drift apart.
