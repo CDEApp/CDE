@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CdeApiClient } from "../api/client";
 import type { CatalogInfo, DirectoryNode, EntryRef } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
@@ -116,10 +116,14 @@ function sortByFileName(catalogs: CatalogInfo[]): CatalogInfo[] {
 }
 
 function SideHeader({ side, catalogs, label }: { side: Side; catalogs: CatalogInfo[]; label: string }) {
+  const pathId = useId();
   return (
     <div className="diff-side">
+      <span className="diff-field-label" aria-hidden="true">Catalog</span>
       <CatalogSelect label={label} catalogs={sortByFileName(catalogs)} value={side.catalogId} onChange={side.selectCatalog} />
+      <label className="diff-field-label" htmlFor={pathId}>Root</label>
       <input
+        id={pathId}
         aria-label={`${label} path`}
         className={side.error ? "invalid" : undefined}
         value={side.pathText}

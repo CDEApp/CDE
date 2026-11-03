@@ -81,6 +81,22 @@ describe("DiffView", () => {
     expect(screen.getByText(/Choose a catalog on each side/)).toBeTruthy();
   });
 
+  it("labels the catalog and root fields on each side", () => {
+    render(<DiffView client={client} catalogs={[catalog(1, "C:\left")]} resolveStyle={() => undefined} onExplore={onExplore} />);
+    expect(screen.getAllByText("Catalog")).toHaveLength(2);
+    const roots = screen.getAllByText("Root");
+    expect(roots).toHaveLength(2);
+    for (const root of roots) expect(root.tagName).toBe("LABEL");
+    const sides = document.querySelectorAll(".diff-side");
+    expect(sides).toHaveLength(2);
+    for (const side of sides) {
+      expect(side.querySelectorAll(".diff-field-label")).toHaveLength(2);
+      expect(side.querySelector("label")!.getAttribute("for")).toBe(side.querySelector("input")!.id);
+    }
+    expect(screen.getByLabelText("Left catalog")).toBeTruthy();
+    expect(screen.getByLabelText("Right path")).toBeTruthy();
+  });
+
   it("labels each catalog option with its root path and catalog name in brackets", () => {
     const named = { catalogId: 1, rootPath: "C:\\left", sourcePath: "E:\\cats\\C-System.cdex" } as CatalogInfo;
     render(<DiffView client={client} catalogs={[named, catalog(2, "D:\\right")]} resolveStyle={() => undefined} onExplore={onExplore} />);
