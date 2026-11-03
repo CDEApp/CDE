@@ -17,7 +17,8 @@ function node(name: string, over: Partial<DirectoryNode> = {}): DirectoryNode {
     ...over,
   };
 }
-const dir = (name: string, size = 100) => node(name, { isDirectory: true, hasChildren: true, size });
+const dir = (name: string, size = 100, modified = "2024-01-01T10:00:00Z") =>
+  node(name, { isDirectory: true, hasChildren: true, size, modified });
 
 describe("alignChildren", () => {
   it("lists folders first, then names ignoring case", () => {
@@ -180,6 +181,10 @@ describe("flattenVisible", () => {
       rightNewerFiles: 0,
       leftOnly: 0,
       rightOnly: 0,
+      sameFolders: 0,
+      differentFolders: 0,
+      leftNewerFolders: 0,
+      rightNewerFolders: 0,
       ...over,
     });
     const identical = summary({ sameFiles: 3 });
@@ -205,6 +210,15 @@ describe("flattenVisible", () => {
       expect(rows.map((r) => [r.name, r.status])).toEqual([["a", "different"]]);
     });
 
+    it("keeps a parent whose only match is a nested matching folder, and hides one with none", () => {
+      const sums = new Map([
+        ["/a", summary({ differentFiles: 1, sameFolders: 1 })],
+        ["/b", summary({ differentFiles: 1 })],
+      ]);
+      expect(names(flat(new Set(), new Map(), pair, "same", sums))).toEqual(["a"]);
+      expect(names(flat(new Set(), new Map(), pair, "noOrphans", sums))).toEqual(["a", "b"]);
+    });
+
     it("emits the effective status without mutating the input row", () => {
       const sums = new Map([["/a", summary({ leftOnly: 1 })], ["/b", identical]]);
       const rows = flat(new Set(), new Map(), pair, "all", sums);
@@ -224,22 +238,33 @@ describe("flattenVisible", () => {
 describe("DIFF_FILTERS.belowMatches", () => {
   const T0 = "2024-01-01T10:00:00Z";
   const T1 = "2024-01-01T11:00:00Z";
-  const bits = [0, 1];
+  const kinds = [
+    "same",
+    "leftNewerFiles",
+    "rightNewerFiles",
+    "otherDifferent",
+    "leftOnly",
+    "rightOnly",
+    "sameFolder",
+    "otherDifferentFolder",
+    "leftNewerFolder",
+    "rightNewerFolder",
+  ] as const;
+  type Case = Record<(typeof kinds)[number], number>;
 
-  // Every combination of "is there at least one entry of this kind below the folder".
-  const cases = bits.flatMap((same) =>
-    bits.flatMap((leftNewerFiles) =>
-      bits.flatMap((rightNewerFiles) =>
-        bits.flatMap((otherDifferent) =>
-          bits.flatMap((leftOnly) =>
-            bits.map((rightOnly) => ({ same, leftNewerFiles, rightNewerFiles, otherDifferent, leftOnly, rightOnly })),
-          ),
-        ),
-      ),
-    ),
+  // Every combination of "is there at least one entry of this kind below the folder" (2^10 of them).
+  const cases: Case[] = Array.from({ length: 1 << kinds.length }, (_, mask) =>
+    Object.fromEntries(kinds.map((k, bit) => [k, (mask >> bit) & 1])) as Case,
   );
 
-  function descendants(c: (typeof cases)[number]) {
+  // A nested both-sides folder row as flattenVisible emits it once its summary is known: identical
+  // subtree means "same", anything else "different", and its own modified times drive the newer filters.
+  function folderPair(name: string, status: "same" | "different", leftModified: string, rightModified: string) {
+    const [row] = alignChildren([dir(name, 5, leftModified)], [dir(name, 5, rightModified)], 1, "/f");
+    return { ...row, status };
+  }
+
+  function descendants(c: Case) {
     const lefts: DirectoryNode[] = [];
     const rights: DirectoryNode[] = [];
     if (c.same) { lefts.push(node("same")); rights.push(node("same")); }
@@ -248,10 +273,15 @@ describe("DIFF_FILTERS.belowMatches", () => {
     if (c.otherDifferent) { lefts.push(node("od", { size: 11 })); rights.push(node("od", { size: 12 })); }
     if (c.leftOnly) lefts.push(node("lo"));
     if (c.rightOnly) rights.push(node("ro"));
-    return alignChildren(lefts, rights, 1, "/f");
+    const rows = alignChildren(lefts, rights, 1, "/f");
+    if (c.sameFolder) rows.push(folderPair("sf", "same", T0, T0));
+    if (c.otherDifferentFolder) rows.push(folderPair("df", "different", T0, T0));
+    if (c.leftNewerFolder) rows.push(folderPair("lnf", "different", T1, T0));
+    if (c.rightNewerFolder) rows.push(folderPair("rnf", "different", T0, T1));
+    return rows;
   }
 
-  function summaryOf(c: (typeof cases)[number]): SubtreeSummary {
+  function summaryOf(c: Case): SubtreeSummary {
     return {
       sameFiles: c.same,
       differentFiles: c.leftNewerFiles + c.rightNewerFiles + c.otherDifferent,
@@ -259,6 +289,10 @@ describe("DIFF_FILTERS.belowMatches", () => {
       rightNewerFiles: c.rightNewerFiles,
       leftOnly: c.leftOnly,
       rightOnly: c.rightOnly,
+      sameFolders: c.sameFolder,
+      differentFolders: c.otherDifferentFolder + c.leftNewerFolder + c.rightNewerFolder,
+      leftNewerFolders: c.leftNewerFolder,
+      rightNewerFolders: c.rightNewerFolder,
     };
   }
 

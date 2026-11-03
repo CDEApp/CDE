@@ -252,6 +252,10 @@ describe("DiffView", () => {
       rightNewerFiles: 0,
       leftOnly: 0,
       rightOnly: 0,
+      sameFolders: 0,
+      differentFolders: 0,
+      leftNewerFolders: 0,
+      rightNewerFolders: 0,
       ...over,
     });
     type Pair = { left: EntryRef; right: EntryRef };

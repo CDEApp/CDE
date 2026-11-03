@@ -128,7 +128,18 @@ public sealed class CompareService : ICompareService
     /// </summary>
     private sealed class Walker(CancellationToken ct)
     {
-        private readonly Stack<(int Left, int Right)> _stack = new();
+        private struct Node
+        {
+            public int Parent;
+            public int Left;
+            public int Right;
+            public bool HasDifference;
+        }
+
+        private readonly Stack<(int Left, int Right, int Node)> _stack = new();
+        private Node[] _nodes = new Node[16];
+        private int _nodeCount;
+        private int _current;
         private readonly List<int> _lefts = [];
         private readonly List<int> _rights = [];
         private readonly List<string> _leftNames = [];
@@ -157,15 +168,49 @@ public sealed class CompareService : ICompareService
             _sum = new CompareSummaryDto();
             ct.ThrowIfCancellationRequested();
             _stack.Clear();
-            _stack.Push((leftRoot, rightRoot));
+            _nodeCount = 0;
+            _stack.Push((leftRoot, rightRoot, NewNode(-1, leftRoot, rightRoot)));
             while (_stack.Count > 0)
             {
-                var (l, r) = _stack.Pop();
+                var (l, r, node) = _stack.Pop();
+                _current = node;
                 Expand(l, r);
             }
 
+            TallyFolders();
             return _sum;
         }
+
+        // Nodes are created top-down, so every child has a higher index than its parent: one reverse pass has a
+        // node's own difference flag final before it is tallied and handed to its parent. Node 0 is the pair itself.
+        private void TallyFolders()
+        {
+            for (var i = _nodeCount - 1; i > 0; i--)
+            {
+                ref var node = ref _nodes[i];
+                if (node.HasDifference)
+                {
+                    _sum.DifferentFolders++;
+                    _nodes[node.Parent].HasDifference = true;
+                    var lMs = ModifiedMs(_l, node.Left);
+                    var rMs = ModifiedMs(_r, node.Right);
+                    if (!lMs.HasValue || !rMs.HasValue) continue;
+                    var delta = lMs.Value - rMs.Value;
+                    if (delta > ModifiedToleranceMs) _sum.LeftNewerFolders++;
+                    else if (-delta > ModifiedToleranceMs) _sum.RightNewerFolders++;
+                }
+                else _sum.SameFolders++;
+            }
+        }
+
+        private int NewNode(int parent, int left, int right)
+        {
+            if (_nodeCount == _nodes.Length) Array.Resize(ref _nodes, _nodes.Length * 2);
+            _nodes[_nodeCount] = new Node { Parent = parent, Left = left, Right = right };
+            return _nodeCount++;
+        }
+
+        private void MarkDifference() => _nodes[_current].HasDifference = true;
 
         private void Expand(int leftDir, int rightDir)
         {
@@ -186,12 +231,14 @@ public sealed class CompareService : ICompareService
             // One side empty: everything is one-sided, so no name is needed.
             if (_rights.Count == 0)
             {
+                if (_lefts.Count > 0) MarkDifference();
                 _sum.LeftOnly += _lefts.Count;
                 return;
             }
 
             if (_lefts.Count == 0)
             {
+                MarkDifference();
                 _sum.RightOnly += _rights.Count;
                 return;
             }
@@ -203,6 +250,7 @@ public sealed class CompareService : ICompareService
                 if (ln.ToLowerInvariant() == rn.ToLowerInvariant()) Pair(_lefts[0], _rights[0]);
                 else
                 {
+                    MarkDifference();
                     _sum.LeftOnly++;
                     _sum.RightOnly++;
                 }
@@ -306,12 +354,18 @@ public sealed class CompareService : ICompareService
                     _rightTaken[ri] = true;
                     Pair(_lefts[li], _rights[ri]);
                 }
-                else _sum.LeftOnly++;
+                else
+                {
+                    MarkDifference();
+                    _sum.LeftOnly++;
+                }
             }
 
             for (; rb < rightTo; rb++)
             {
-                if (!_rightTaken[_rightOrder[rb]]) _sum.RightOnly++;
+                if (_rightTaken[_rightOrder[rb]]) continue;
+                MarkDifference();
+                _sum.RightOnly++;
             }
         }
 
@@ -321,7 +375,7 @@ public sealed class CompareService : ICompareService
             var rDir = _r.IsDirectory(r);
             if (lDir && rDir)
             {
-                _stack.Push((l, r));
+                _stack.Push((l, r, NewNode(_current, l, r)));
                 return;
             }
 
@@ -335,6 +389,7 @@ public sealed class CompareService : ICompareService
                 return;
             }
 
+            MarkDifference();
             _sum.DifferentFiles++;
             if (!comparable) return;
             var delta = lMs.Value - rMs.Value;

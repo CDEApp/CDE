@@ -67,6 +67,8 @@ public class CompareEndpointTests
         Assert.That(s, Has.Count.EqualTo(2));
         Assert.That((s[0].SameFiles, s[0].DifferentFiles, s[0].LeftOnly, s[0].RightOnly), Is.EqualTo((2, 0, 0, 0)));
         Assert.That((s[1].SameFiles, s[1].DifferentFiles), Is.EqualTo((1, 0)));
+        Assert.That((s[0].SameFolders, s[0].DifferentFolders), Is.EqualTo((1, 0)));
+        Assert.That((s[1].SameFolders, s[1].DifferentFolders), Is.EqualTo((0, 0)));
     }
 
     [Test]
@@ -156,7 +158,7 @@ public class CompareEndpointTests
         using var ok = await http.PostAsync("/compare/summaries", Json("""{"pairs":[{"left":"0-0","right":"0-0"}]}"""));
         Assert.That(ok.StatusCode, Is.EqualTo(HttpStatusCode.OK));
         Assert.That(await ok.Content.ReadAsStringAsync(),
-            Is.EqualTo("""{"summaries":[{"sameFiles":2,"differentFiles":0,"leftNewerFiles":0,"rightNewerFiles":0,"leftOnly":0,"rightOnly":0}]}"""));
+            Is.EqualTo("""{"summaries":[{"sameFiles":2,"differentFiles":0,"leftNewerFiles":0,"rightNewerFiles":0,"leftOnly":0,"rightOnly":0,"sameFolders":1,"differentFolders":0,"leftNewerFolders":0,"rightNewerFolders":0}]}"""));
 
         using var missing = await http.PostAsync("/compare/summaries", Json("{}"));
         Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));

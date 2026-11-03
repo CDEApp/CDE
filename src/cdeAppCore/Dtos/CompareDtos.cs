@@ -17,8 +17,10 @@ public sealed class CompareSummariesRequest
 }
 
 /// <summary>
-/// What lies below one folder pair. Counts cover files and mismatched-kind pairs; a folder pair is a
-/// container and is never counted itself. A one-sided entry (file or folder) counts once and is not descended.
+/// What lies below one folder pair. The file counts cover files and mismatched-kind pairs. The folder counts
+/// cover both-sides folder pairs nested at any depth below the pair; the pair itself is never counted. A
+/// one-sided entry (file or folder) counts once in <see cref="LeftOnly"/> / <see cref="RightOnly"/> and is not descended.
+/// A nested folder pair is identical when nothing below it is a different file or a one-sided entry.
 /// </summary>
 public sealed class CompareSummaryDto
 {
@@ -34,6 +36,17 @@ public sealed class CompareSummaryDto
     public int LeftOnly { get; set; }
 
     public int RightOnly { get; set; }
+
+    /// <summary>Nested both-sides folder pairs whose own subtree is identical.</summary>
+    public int SameFolders { get; set; }
+
+    /// <summary>Nested both-sides folder pairs whose subtree is not identical.</summary>
+    public int DifferentFolders { get; set; }
+
+    /// <summary>Different folder pairs with valid modified times where the left is later than the right by more than the tolerance.</summary>
+    public int LeftNewerFolders { get; set; }
+
+    public int RightNewerFolders { get; set; }
 }
 
 /// <summary>Response of <c>POST /compare/summaries</c>: one summary per request pair, in request order.</summary>

@@ -107,7 +107,9 @@ describe("migrateLegacy", () => {
 describe("compareSummaries", () => {
   const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
   const pairs = [{ left: { catalogId: 1, entryIndex: 7 }, right: { catalogId: 2, entryIndex: 9 } }];
-  const summary = { sameFiles: 1, differentFiles: 2, leftNewerFiles: 1, rightNewerFiles: 0, leftOnly: 3, rightOnly: 4 };
+  const summary = { sameFiles: 1, differentFiles: 2, leftNewerFiles: 1, rightNewerFiles: 0, leftOnly: 3, rightOnly: 4,
+    sameFolders: 5, differentFolders: 6, leftNewerFolders: 1, rightNewerFolders: 2,
+  };
 
   afterEach(() => vi.unstubAllGlobals());
 

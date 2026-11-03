@@ -100,6 +100,97 @@ public class CompareServiceTests
             Is.EqualTo((same, different, leftNewer, rightNewer, leftOnly, rightOnly)));
     }
 
+    private static void AssertFolders(CompareSummaryDto s, int same = 0, int different = 0, int leftNewer = 0,
+        int rightNewer = 0)
+    {
+        Assert.That((s.SameFolders, s.DifferentFolders, s.LeftNewerFolders, s.RightNewerFolders),
+            Is.EqualTo((same, different, leftNewer, rightNewer)));
+    }
+
+    private static DirEntry DAt(string name, double offsetMs, params DirEntry[] children)
+    {
+        var d = D(name, children);
+        d.Modified = T0.AddMilliseconds(offsetMs);
+        return d;
+    }
+
+    [Test]
+    public void NestedFolders_AreCountedAtEveryDepth_AndTheComparedPairItselfIsNot()
+    {
+        var s = CompareRoots(
+            Root(D("a", F("x", 1), D("b", F("y", 1)), D("empty")), D("c", F("z", 1))),
+            Root(D("a", F("x", 1), D("b", F("y", 1)), D("empty")), D("c", F("z", 2))));
+        AssertCounts(s, same: 2, different: 1);
+        AssertFolders(s, same: 3, different: 1);
+    }
+
+    [Test]
+    public void ADifferenceBelowMakesEveryAncestorFolderDifferent_ButNotItsIdenticalSiblings()
+    {
+        var s = CompareRoots(
+            Root(D("a", D("b", D("c", F("f", 1))), D("quiet", F("q", 1)))),
+            Root(D("a", D("b", D("c", F("f", 2))), D("quiet", F("q", 1)))));
+        AssertFolders(s, same: 1, different: 3);
+    }
+
+    [Test]
+    public void OneSidedEntriesBelowAFolder_MakeItDifferent_WhetherFileOrFolder()
+    {
+        var s = CompareRoots(
+            Root(D("onlyFile", F("x", 1)), D("onlyFolder"), D("rightHas"), D("same")),
+            Root(D("onlyFile"), D("onlyFolder", D("extra")), D("rightHas", F("y", 1)), D("same")));
+        AssertCounts(s, leftOnly: 1, rightOnly: 2);
+        AssertFolders(s, same: 1, different: 3);
+    }
+
+    [Test]
+    public void MatchingEmptyFolderBesideAChangedFile_IsASameFolder()
+    {
+        var s = CompareRoots(Root(F("a.txt", 1), D("empty")), Root(F("a.txt", 2), D("empty")));
+        AssertCounts(s, different: 1);
+        AssertFolders(s, same: 1);
+    }
+
+    [Test]
+    public void MismatchedKinds_AreFilesNotFolders()
+    {
+        var s = CompareRoots(Root(F("thing", 5)), Root(D("thing", F("inside", 1))));
+        AssertCounts(s, different: 1);
+        AssertFolders(s);
+    }
+
+    [Test]
+    public void DifferentFolderDates_CountNewerOnlyWhenBeyondToleranceAndBothDatesAreValid()
+    {
+        var left = Root(
+            DAt("leftNew", 2001, F("f", 1)),
+            DAt("rightNew", 0, F("f", 1)),
+            DAt("withinTol", 2000, F("f", 1)),
+            DAt("sameStatus", 9000),
+            DAt("bad", 9000, F("f", 1)));
+        left.Children[4].IsModifiedBad = true;
+        var right = Root(
+            DAt("leftNew", 0, F("f", 2)),
+            DAt("rightNew", 2001, F("f", 2)),
+            DAt("withinTol", 0, F("f", 2)),
+            DAt("sameStatus", 0),
+            DAt("bad", 0, F("f", 2)));
+        var s = CompareRoots(left, right);
+        AssertFolders(s, same: 1, different: 4, leftNewer: 1, rightNewer: 1);
+    }
+
+    [Test]
+    public void SeveralPairsWalkedByOneWalker_DoNotLeakFolderCountsBetweenPairs()
+    {
+        using var c = new Catalogs(
+            Root(D("p", D("x", F("f", 1)), D("y")), D("q", D("z"))),
+            Root(D("p", D("x", F("f", 2)), D("y")), D("q", D("z"))));
+        var pairs = new[] { (c.Ref(0, "p"), c.Ref(1, "p")), (c.Ref(0, "q"), c.Ref(1, "q")) };
+        var summaries = new CompareService(c.Session).Summarize(pairs);
+        AssertFolders(summaries[0], same: 1, different: 1);
+        AssertFolders(summaries[1], same: 1);
+    }
+
     [Test]
     public void IdenticalSubtrees_OnlySameFiles()
     {

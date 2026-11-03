@@ -155,46 +155,47 @@ const rightNewer = (row: DiffRow) =>
 
 /**
  * Every row filter. `shows` is the whole-row predicate ("newer" compares both sides). `belowMatches`
- * says, from a both-sides folder's exact summary, whether some entry below it passes `shows`; the
- * test suite checks the two agree.
+ * says, from a both-sides folder's exact summary, whether some row below it passes `shows`: a file, a
+ * one-sided entry, or a nested both-sides folder row, which the summary counts as `sameFolders` or
+ * `differentFolders` (and the newer subsets). The test suite checks the two agree.
  */
 export const DIFF_FILTERS: Record<
   DiffFilterId,
   { label: string; shows: (row: DiffRow) => boolean; belowMatches: (s: SubtreeSummary) => boolean }
 > = {
   all: { label: "All", shows: () => true, belowMatches: () => true },
-  same: { label: "Same", shows: (row) => row.status === "same", belowMatches: (s) => s.sameFiles > 0 },
+  same: { label: "Same", shows: (row) => row.status === "same", belowMatches: (s) => s.sameFiles + s.sameFolders > 0 },
   differences: {
     label: "Show Differences",
     shows: (row) => row.status !== "same",
-    belowMatches: (s) => s.differentFiles + s.leftOnly + s.rightOnly > 0,
+    belowMatches: (s) => s.differentFiles + s.differentFolders + s.leftOnly + s.rightOnly > 0,
   },
   noOrphans: {
     label: "Show No Orphans",
     shows: (row) => row.status === "same" || row.status === "different",
-    belowMatches: (s) => s.sameFiles + s.differentFiles > 0,
+    belowMatches: (s) => s.sameFiles + s.differentFiles + s.sameFolders + s.differentFolders > 0,
   },
   differencesNoOrphans: {
     label: "Show Differences but No Orphans",
     shows: (row) => row.status === "different",
-    belowMatches: (s) => s.differentFiles > 0,
+    belowMatches: (s) => s.differentFiles + s.differentFolders > 0,
   },
   orphans: {
     label: "Show Orphans",
     shows: (row) => row.status === "left-only" || row.status === "right-only",
     belowMatches: (s) => s.leftOnly + s.rightOnly > 0,
   },
-  leftNewer: { label: "Show Left Newer", shows: leftNewer, belowMatches: (s) => s.leftNewerFiles > 0 },
-  rightNewer: { label: "Show Right Newer", shows: rightNewer, belowMatches: (s) => s.rightNewerFiles > 0 },
+  leftNewer: { label: "Show Left Newer", shows: leftNewer, belowMatches: (s) => s.leftNewerFiles + s.leftNewerFolders > 0 },
+  rightNewer: { label: "Show Right Newer", shows: rightNewer, belowMatches: (s) => s.rightNewerFiles + s.rightNewerFolders > 0 },
   leftNewerLeftOrphans: {
     label: "Show Left Newer and Left Orphans",
     shows: (row) => leftNewer(row) || row.status === "left-only",
-    belowMatches: (s) => s.leftNewerFiles + s.leftOnly > 0,
+    belowMatches: (s) => s.leftNewerFiles + s.leftNewerFolders + s.leftOnly > 0,
   },
   rightNewerRightOrphans: {
     label: "Show Right Newer and Right Orphans",
     shows: (row) => rightNewer(row) || row.status === "right-only",
-    belowMatches: (s) => s.rightNewerFiles + s.rightOnly > 0,
+    belowMatches: (s) => s.rightNewerFiles + s.rightNewerFolders + s.rightOnly > 0,
   },
   leftOrphans: { label: "Show Left Orphans", shows: (row) => row.status === "left-only", belowMatches: (s) => s.leftOnly > 0 },
   rightOrphans: { label: "Show Right Orphans", shows: (row) => row.status === "right-only", belowMatches: (s) => s.rightOnly > 0 },
@@ -214,7 +215,7 @@ export const DIFF_MENU_FILTERS: readonly DiffFilterId[] = [
   "rightOrphans",
 ];
 
-/** True when the summary says nothing below the folder pair differs or is one-sided. */
+/** True when the summary says nothing below the folder pair differs or is one-sided (nested folders count through their contents). */
 export const isIdentical = (s: SubtreeSummary) => s.differentFiles + s.leftOnly + s.rightOnly === 0;
 
 /**
