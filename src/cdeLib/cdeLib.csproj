@@ -18,8 +18,8 @@
     <PackageReference Include="FlatSharp.Runtime" Version="7.9.0" />
     <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
     <PackageReference Include="SlimMessageBus" Version="3.0.0" />
-    <PackageReference Include="SlimMessageBus.Host" Version="3.5.0" />
-    <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.5.0" />
+    <PackageReference Include="SlimMessageBus.Host" Version="3.6.1" />
+    <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.6.1" />
     <PackageReference Include="MessagePack" Version="3.1.12" />
     <PackageReference Include="MessagePack.Annotations" Version="3.1.12" />
     <PackageReference Include="MessagePackAnalyzer" Version="3.1.12">
