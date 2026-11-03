@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+### Hashing
+
+- feature (cde): `cde hash --filter "<query>"` hashes only the files that match an Everything-style query, for example
+  `size:>2gb` or `ext:iso;mkv`. The query has the syntax and the error messages of `cde everything`, and a malformed
+  one fails before any catalog is read. The filter narrows the files that share a size; `--include-unique-sizes` also
+  hashes files with a unique size and gives each selected file a full hash. Hashes already in the catalog are kept.
+  The filter is not saved. (#230)
+
 ### Search
 
 - feature (cdeWin, cde-tauri): New **Everything** checkbox next to Regex turns on Everything-style search syntax
