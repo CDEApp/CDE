@@ -87,6 +87,18 @@ internal sealed partial class NumericCriterion
         return dash > 0 && text.IndexOf('-', dash + 1) < 0 ? (text[..dash], text[(dash + 1)..]) : null;
     }
 
+    /// <summary>Parse a count value (<c>child-count:</c> and the like): a whole number, with the same operators and ranges.</summary>
+    public static NumericCriterion ParseCount(string text) =>
+        Parse(text, ParseCountValue, spans: false, dashRange: true);
+
+    private static Value ParseCountValue(string text)
+    {
+        text = text.Trim();
+        if (!int.TryParse(text, NumberStyles.None, CultureInfo.InvariantCulture, out var n))
+            throw new FormatException($"'{text}' is not a count; use a whole number such as 10");
+        return new Value(n, n + 1L, Relative: false);
+    }
+
     // ---- sizes ----
 
     [GeneratedRegex(@"^(\d+(?:\.\d+)?)\s*([a-z]*)$", RegexOptions.IgnoreCase)]

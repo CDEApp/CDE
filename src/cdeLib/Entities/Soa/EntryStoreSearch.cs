@@ -44,6 +44,8 @@ public static class EntryStoreSearch
         var nameBuffer = readsPath ? null : ArrayPool<char>.Shared.Rent(256);
         using var entryChars = texts == EverythingTexts.Both ? new EntryChars(store) : null;
         var readsProperties = everything is { UsesProperties: true };
+        var counts = everything is { UsesCounts: true } ? EntryCountTable.Build(store, everything.UsesDescendantCounts) : null;
+        if (entryChars is not null) entryChars.Counts = counts;
         try
         {
             for (var i = 1; i < store.Count; i++)
@@ -87,7 +89,8 @@ public static class EntryStoreSearch
                         readsPath ? WritePath(store, i, ref pathBuffer) : FullNameSpan(store, i, ref nameBuffer),
                         isDir,
                         readsProperties ? size : 0,
-                        readsProperties ? store.Modified(i).Ticks : 0);
+                        readsProperties ? store.Modified(i).Ticks : 0,
+                        counts?.Of(i) ?? default);
                 }
                 else if (o.IncludePath)
                 {
@@ -143,6 +146,10 @@ public static class EntryStoreSearch
         public long Size => store.Size[_index];
 
         public long ModifiedTicks => store.Modified(_index).Ticks;
+
+        public EntryCountTable Counts { get; set; }
+
+        EntryCounts IEntryChars.Counts => Counts?.Of(_index) ?? default;
 
         public ReadOnlySpan<char> Path
         {

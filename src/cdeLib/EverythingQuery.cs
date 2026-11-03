@@ -37,6 +37,9 @@ public interface IEntryText
 
     /// <summary>The modified time as local ticks. Only read when the query has a date-modified: term.</summary>
     long ModifiedTicks => 0;
+
+    /// <summary>The child and descendant counts. Only read when the query has a count function or empty:.</summary>
+    EntryCounts Counts => default;
 }
 
 /// <summary>Same as <see cref="IEntryText"/> but as characters.</summary>
@@ -51,6 +54,9 @@ public interface IEntryChars
 
     /// <summary>See <see cref="IEntryText.ModifiedTicks"/>.</summary>
     long ModifiedTicks => 0;
+
+    /// <summary>See <see cref="IEntryText.Counts"/>.</summary>
+    EntryCounts Counts => default;
 }
 
 /// <summary>Which of an entry's texts an <see cref="EverythingQuery"/> reads.</summary>
@@ -91,7 +97,7 @@ public enum EverythingTexts
 /// <c>?path:</c> form are not supported yet.
 /// See https://www.voidtools.com/support/everything/search_syntax/
 /// </summary>
-public sealed class EverythingQuery
+public sealed partial class EverythingQuery
 {
     /// <summary>Deepest allowed nesting of <c>&lt; &gt;</c>, so a hostile query cannot overflow the stack.</summary>
     public const int MaxDepth = 32;
@@ -103,7 +109,10 @@ public sealed class EverythingQuery
     {
         _root = root;
         _regexes = binder?.Regexes.ToArray() ?? [];
-        UsesProperties = root?.UsesProperties ?? false;
+        var needs = root?.Needs ?? Needs.None;
+        UsesProperties = (needs & Needs.Properties) != 0;
+        UsesCounts = (needs & (Needs.ChildCounts | Needs.DescendantCounts)) != 0;
+        UsesDescendantCounts = (needs & Needs.DescendantCounts) != 0;
     }
 
     /// <summary>
@@ -111,6 +120,15 @@ public sealed class EverythingQuery
     /// time to <c>Matches</c>. A caller without them can skip reading them when this is false.
     /// </summary>
     public bool UsesProperties { get; }
+
+    /// <summary>
+    /// True if the query has a child-count:, descendant-count: or empty: function, so the caller must pass the
+    /// entry's <see cref="EntryCounts"/> (build them once per catalog with <see cref="EntryCountTable"/>).
+    /// </summary>
+    public bool UsesCounts { get; }
+
+    /// <summary>True if the counts must include <see cref="EntryCounts.DescendantFiles"/> and the descendant folders.</summary>
+    public bool UsesDescendantCounts { get; }
 
     /// <summary>True once a <c>regex:</c> term has timed out too often: the caller should stop scanning.</summary>
     public bool RegexExhausted
@@ -149,35 +167,38 @@ public sealed class EverythingQuery
     /// Test one UTF-8 text that stands for both the name and the path (a caller that has only one text).
     /// Allocation-free when the text and every term are ASCII.
     /// </summary>
-    public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false, long size = 0, long modifiedTicks = 0)
+    public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false, long size = 0, long modifiedTicks = 0,
+        EntryCounts counts = default)
     {
         if (_root is null) return true;
-        var context = new Context(utf8, isFolder, size, modifiedTicks);
+        var context = new Context(utf8, isFolder, size, modifiedTicks, counts);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path; identical to the UTF-8 overload.</summary>
-    public bool Matches(ReadOnlySpan<char> text, bool isFolder = false, long size = 0, long modifiedTicks = 0)
+    public bool Matches(ReadOnlySpan<char> text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
+        EntryCounts counts = default)
     {
         if (_root is null) return true;
-        var context = new Context(text, isFolder, size, modifiedTicks);
+        var context = new Context(text, isFolder, size, modifiedTicks, counts);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path.</summary>
-    public bool Matches(string text, bool isFolder = false, long size = 0, long modifiedTicks = 0)
+    public bool Matches(string text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
+        EntryCounts counts = default)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return Matches(text.AsSpan(), isFolder, size, modifiedTicks);
+        return Matches(text.AsSpan(), isFolder, size, modifiedTicks, counts);
     }
 
     /// <summary>Test an entry's name and full path. Unmarked terms use the path if <paramref name="defaultMatchesPath"/>.</summary>
     public bool Matches(string name, string fullPath, bool defaultMatchesPath, bool isFolder = false,
-        long size = 0, long modifiedTicks = 0)
+        long size = 0, long modifiedTicks = 0, EntryCounts counts = default)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fullPath);
-        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks), defaultMatchesPath);
+        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks, counts), defaultMatchesPath);
     }
 
     /// <summary>
@@ -323,12 +344,24 @@ public sealed class EverythingQuery
                            && list[i + 1].Position.Absolute == t.Position.Absolute + t.Span.Length
                            && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open
                                or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CaseModifier
-                               or Tok.DiacriticsModifier;
+                               or Tok.DiacriticsModifier or Tok.Function;
+            if (attached && list[i + 1].Kind == Tok.Function) CheckFunctionAfterModifier(t, list[i + 1]);
             if (!attached)
                 throw new EverythingQueryException(
                     $"'{t.ToStringValue()}' must be directly followed by a term, phrase, group or another modifier, with no space",
                     t.Position.Absolute);
         }
+    }
+
+    // Only case: and diacritics: may stand in front of a function, and only one that has text to compare (ext:).
+    private static void CheckFunctionAfterModifier(Token<Tok> modifier, Token<Tok> function)
+    {
+        var token = function.ToStringValue();
+        IsFunction(token.AsSpan(0, token.IndexOf(':')), out var kind);
+        if (modifier.Kind is Tok.CaseModifier or Tok.DiacriticsModifier && SupportsCase(kind)) return;
+        throw new EverythingQueryException(
+            $"'{modifier.ToStringValue()}' cannot be used in front of '{token[..(token.IndexOf(':') + 1)]}'",
+            modifier.Position.Absolute);
     }
 
     // ---- grammar ----
@@ -347,6 +380,9 @@ public sealed class EverythingQuery
         public DateTime Now { get; } = now;
         public List<BoundedRegex> Regexes { get; } = [];
     }
+
+    [Flags]
+    private enum Needs { None = 0, Properties = 1, ChildCounts = 2, DescendantCounts = 4 }
 
     [Flags]
     private enum Use { None = 0, Default = 1, Path = 2, Name = 4 }
@@ -375,23 +411,6 @@ public sealed class EverythingQuery
         Character.EqualTo('?').IgnoreThen(NoPathText.Try().Or(PathText))
             .Or(Span.EqualTo("\\:").Value(Unit.Value));
 
-    private const int MaxFunctionName = 16; // "date-modified" is the longest, dashes included
-
-    private static bool IsFunction(ReadOnlySpan<char> name, out Function function)
-    {
-        function = Function.Size;
-        if (name.Length > MaxFunctionName) return false;
-        Span<char> folded = stackalloc char[MaxFunctionName];
-        var n = 0;
-        foreach (var c in name)
-            if (c != '-') folded[n++] = char.ToLowerInvariant(c);
-        folded = folded[..n];
-        function = Function.Size;
-        if (folded.SequenceEqual("size")) return true;
-        function = Function.DateModified;
-        return folded.SequenceEqual("datemodified") || folded.SequenceEqual("dm");
-    }
-
     // A function is one token, name and value together, because its value may start with < or >, which the
     // lexer otherwise reads as group brackets: size:>10mb. A leading run of operator characters belongs to the value.
     private static Result<Unit> FunctionToken(TextSpan input)
@@ -400,7 +419,7 @@ public sealed class EverythingQuery
         return length == 0 ? Result.Empty<Unit>(input) : Result.Value(Unit.Value, input, input.Skip(length));
     }
 
-    // True if the text before index i is one or more modifiers (path:, no-path:, regex:) that start a term, so a
+    // True if the text before index i is one or more modifiers (path:, no-path:, regex:, case:, diacritics:) that start a term, so a
     // function after them is the mistake CheckModifiers reports. A colon inside an ordinary word does not count.
     private static bool AfterModifier(string query, int i)
     {
@@ -411,7 +430,9 @@ public sealed class EverythingQuery
             var name = query.AsSpan(start, i - 1 - start);
             if (!(name.Equals("path", StringComparison.OrdinalIgnoreCase)
                   || name.Equals("no-path", StringComparison.OrdinalIgnoreCase)
-                  || name.Equals("regex", StringComparison.OrdinalIgnoreCase)))
+                  || name.Equals("regex", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("case", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("diacritics", StringComparison.OrdinalIgnoreCase)))
                 return false;
             if (start == 0 || char.IsWhiteSpace(query[start - 1]) || query[start - 1] is '|' or '<' or '>' or '!') return true;
             i = start;
@@ -479,13 +500,13 @@ public sealed class EverythingQuery
     private static readonly TokenListParser<Tok, Node> Filter =
         Token.EqualTo(Tok.FileFilter).Select(_ => (Node)new KindFilter(isFolder: false))
             .Or(Token.EqualTo(Tok.FolderFilter).Select(_ => (Node)new KindFilter(isFolder: true)))
-            .Or(Token.EqualTo(Tok.Function).Select(t => (Node)PropertyFilter.From(t.ToStringValue(), t.Position.Absolute)));
+            .Or(Token.EqualTo(Tok.Function).Select(t => CreateFunction(t.ToStringValue(), t.Position.Absolute)));
 
     // A modifier fills in the terms under it that have none yet. Inner groups are built first, so the innermost
     // modifier wins.
     private static readonly TokenListParser<Tok, Node> Modified =
         (from modifiers in ModifierToken.AtLeastOnce()
-         from operand in Operand
+         from operand in Operand.Or(Filter)
          select ApplyAll(operand, modifiers))
         .Or(Operand)
         .Or(Filter);
@@ -527,23 +548,26 @@ public sealed class EverythingQuery
         public readonly bool IsFolder; // only for the single-text sources; an entry answers for itself
         public readonly long Size; // likewise
         public readonly long ModifiedTicks; // likewise
+        public readonly EntryCounts Counts; // likewise
         public readonly Kind Source;
 
-        public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks)
+        public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
         {
             Bytes = bytes;
             IsFolder = isFolder;
             Size = size;
             ModifiedTicks = modifiedTicks;
+            Counts = counts;
             Source = Kind.SingleBytes;
         }
 
-        public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks)
+        public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
         {
             Chars = chars;
             IsFolder = isFolder;
             Size = size;
             ModifiedTicks = modifiedTicks;
+            Counts = counts;
             Source = Kind.SingleChars;
         }
 
@@ -564,13 +588,15 @@ public sealed class EverythingQuery
 
     private enum Kind { SingleBytes, SingleChars, Utf8Entry, CharEntry }
 
-    private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks) : IEntryChars
+    private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks, EntryCounts counts)
+        : IEntryChars
     {
         public ReadOnlySpan<char> Name => name;
         public ReadOnlySpan<char> Path => path;
         public bool IsFolder => isFolder;
         public long Size => size;
         public long ModifiedTicks => modifiedTicks;
+        public EntryCounts Counts => counts;
     }
 
     // ---- syntax tree ----
@@ -585,8 +611,8 @@ public sealed class EverythingQuery
         /// <summary>The kinds of target the terms under this node have.</summary>
         public abstract Use Uses();
 
-        /// <summary>True if a size: or date-modified: test is under this node.</summary>
-        public virtual bool UsesProperties => false;
+        /// <summary>What the tests under this node need from the entry beyond its text.</summary>
+        public virtual Needs Needs => Needs.None;
 
         /// <summary>The pass after parsing: finish the parts that need the clock, and collect the regexes.</summary>
         public virtual void Bind(Binder binder)
@@ -722,79 +748,13 @@ public sealed class EverythingQuery
         public override Node Apply(Modifier modifier) => this;
     }
 
-    private enum Function { Size, DateModified }
-
-    // size: or date-modified:. The value is parsed in Bind, which has the clock; From only splits the token.
-    private sealed class PropertyFilter : Node
-    {
-        private readonly Function _function;
-        private readonly string _value;
-        private readonly int _position;
-        private NumericCriterion _criterion;
-
-        private PropertyFilter(Function function, string value, int position)
-        {
-            _function = function;
-            _value = value;
-            _position = position;
-        }
-
-        public static PropertyFilter From(string token, int position)
-        {
-            var colon = token.IndexOf(':');
-            IsFunction(token.AsSpan(0, colon), out var function);
-            var value = token[(colon + 1)..];
-            if (value.Length == 0)
-                throw new EverythingQueryException($"'{token}' needs a value after the colon", position);
-            return new PropertyFilter(function, value, position);
-        }
-
-        public override void Bind(Binder binder)
-        {
-            try
-            {
-                _criterion = _function == Function.Size
-                    ? NumericCriterion.ParseSize(_value)
-                    : NumericCriterion.ParseDate(_value, binder.Now);
-            }
-            catch (FormatException ex)
-            {
-                throw new EverythingQueryException(ex.Message, _position);
-            }
-        }
-
-        public override bool UsesProperties => true;
-
-        public override bool Eval(in Context c)
-        {
-            var value = _function == Function.Size
-                ? c.Source switch
-                {
-                    Kind.SingleBytes or Kind.SingleChars => c.Size,
-                    Kind.Utf8Entry => c.Utf8Entry.Size,
-                    _ => c.CharEntry.Size,
-                }
-                : c.Source switch
-                {
-                    Kind.SingleBytes or Kind.SingleChars => c.ModifiedTicks,
-                    Kind.Utf8Entry => c.Utf8Entry.ModifiedTicks,
-                    _ => c.CharEntry.ModifiedTicks,
-                };
-            return _criterion.Matches(value);
-        }
-
-        public override Use Uses() => Use.None;
-
-        public override Node Apply(Modifier modifier) => this;
-    }
-
     private sealed class Not(Node inner) : Node
     {
         public override bool Eval(in Context context) => !inner.Eval(in context);
 
         public override Use Uses() => inner.Uses();
 
-        public override bool UsesProperties => inner.UsesProperties;
+        public override Needs Needs => inner.Needs;
 
         public override void Bind(Binder binder) => inner.Bind(binder);
 
@@ -821,13 +781,13 @@ public sealed class EverythingQuery
             return true;
         }
 
-        public override bool UsesProperties
+        public override Needs Needs
         {
             get
             {
-                foreach (var p in parts)
-                    if (p.UsesProperties) return true;
-                return false;
+                var needs = Needs.None;
+                foreach (var p in parts) needs |= p.Needs;
+                return needs;
             }
         }
 
@@ -859,13 +819,13 @@ public sealed class EverythingQuery
             return false;
         }
 
-        public override bool UsesProperties
+        public override Needs Needs
         {
             get
             {
-                foreach (var p in parts)
-                    if (p.UsesProperties) return true;
-                return false;
+                var needs = Needs.None;
+                foreach (var p in parts) needs |= p.Needs;
+                return needs;
             }
         }
 
