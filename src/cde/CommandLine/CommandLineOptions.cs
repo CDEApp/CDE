@@ -108,10 +108,3 @@ public class TreeDumpOptions;
 
 [Verb("repl", HelpText = "Start repl console. Enter readline mode")]
 public class ReplOptions;
-
-[Verb("PopulousFolders", HelpText = "Show folders with <count> number of files")]
-public class PopulousFoldersOptions
-{
-    [Value(0, Required = true, HelpText = "output folders containing more than <minimumCount> entries.")]
-    public int Count { get; [UsedImplicitly] set; }
-}

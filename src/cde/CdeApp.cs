@@ -280,21 +280,4 @@ public sealed class CdeApp(
             }
         }
     }
-
-    public void FindPopulous(int minimumCount)
-    {
-        var largeEntries = EntryHelper.GetDirEntries(repository.LoadCurrentDirCache())
-            .Where(e => e.Children is { } c && c.Count > minimumCount)
-            .OrderByDescending(e => e.Children.Count)
-            .ToList();
-
-        foreach (var e in largeEntries)
-        {
-            Console.WriteLine($"{e.FullPath} {e.Children.Count}");
-            if (cancellation.IsCancellationRequested)
-            {
-                break;
-            }
-        }
-    }
 }

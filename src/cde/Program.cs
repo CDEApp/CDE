@@ -55,7 +55,6 @@ public static class Program
         typeof(DupesOptions),
         typeof(TreeDumpOptions),
         typeof(ReplOptions),
-        typeof(PopulousFoldersOptions),
         typeof(FindPathOptions),
         typeof(UpdateOptions),
     ];
@@ -153,7 +152,6 @@ public static class Program
         DupesOptions o => DupesAsync(o),
         TreeDumpOptions => RunSync(_app.PrintPathsHaveHash),
         ReplOptions => RunSync(CdeApp.InvokeRepl),
-        PopulousFoldersOptions o => RunSync(() => _app.FindPopulous(o.Count)),
         UpdateOptions o => _app.UpdateAsync(o),
         _ => Task.CompletedTask,
     };
