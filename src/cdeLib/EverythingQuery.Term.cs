@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using cdeLib.Entities.Columnar;
 using cdeLib.Infrastructure;
+using Serilog;
 
 namespace cdeLib;
 
@@ -36,7 +37,14 @@ public sealed partial class EverythingQuery
 
         public override void SetCatalog(string fileName)
         {
-            if (_target == Target.Catalog) _catalogMatch = Contains(fileName.AsSpan());
+            if (_target != Target.Catalog) return;
+            var timeouts = _regex?.Timeouts ?? 0;
+            _catalogMatch = Contains(fileName.AsSpan());
+
+            // The name is tested once, so a timeout would exclude the catalog without the three-timeout warning.
+            if (_regex is not null && _regex.Timeouts > timeouts)
+                Log.Warning("Regex {Pattern} timed out on the catalog file name {Catalog}; that catalog is treated as not matching",
+                    _text, fileName);
         }
 
         public override bool? Constant => _target == Target.Catalog ? _catalogMatch : null;

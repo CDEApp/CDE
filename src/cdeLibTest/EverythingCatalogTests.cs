@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Text;
 using cdeLib;
 using NUnit.Framework;
@@ -120,10 +121,65 @@ public class EverythingCatalogTests
     [TestCase("catalog:|a", 0)]
     [TestCase("catalog:size:>1", 0)]
     [TestCase("catalog:ext:mp3", 0)]
+    [TestCase("catalog:case:ext:mp3", 0)]
+    [TestCase("catalog:diacritics:ext:mp3", 0)]
+    [TestCase("case:catalog:ext:mp3", 5)]
+    [TestCase("path:case:ext:mp3", 0)]
+    [TestCase("regex:case:diacritics:ext:mp3", 0)]
+    [TestCase("no-path:diacritics:dupe:size", 0)]
     public void A_catalog_modifier_that_clashes_or_is_not_attached_is_an_error(string query, int position)
     {
         var ex = Assert.Throws<EverythingQueryException>(() => EverythingQuery.Parse(query));
         Assert.That(ex!.Position, Is.EqualTo(position), ex.Message);
+    }
+
+    [Test]
+    public void Only_case_and_diacritics_may_precede_a_function()
+    {
+        Assert.DoesNotThrow(() => EverythingQuery.Parse("case:ext:mp3"));
+        Assert.DoesNotThrow(() => EverythingQuery.Parse("case:diacritics:ext:mp3"));
+        Assert.DoesNotThrow(() => EverythingQuery.Parse("diacritics:case:dupe:name"));
+        Assert.That(Q("case:diacritics:ext:MP3", "x.cdex").Matches("a.MP3"), Is.True);
+        Assert.That(Q("case:diacritics:ext:MP3", "x.cdex").Matches("a.mp3"), Is.False);
+    }
+
+    private sealed class ListSink : Serilog.Core.ILogEventSink
+    {
+        public readonly List<Serilog.Events.LogEvent> Events = [];
+
+        public void Emit(Serilog.Events.LogEvent e)
+        {
+            lock (Events) Events.Add(e);
+        }
+    }
+
+    [Test]
+    [NonParallelizable]
+    public void A_regex_that_times_out_on_the_catalog_name_is_reported_at_once()
+    {
+        var sink = new ListSink();
+        var previous = Serilog.Log.Logger;
+        Serilog.Log.Logger = new Serilog.LoggerConfiguration().WriteTo.Sink(sink).CreateLogger();
+        try
+        {
+            var query = EverythingQuery.Parse("regex:catalog:\"^(a+)+$\"");
+            sink.Events.Clear();
+            query.ForCatalog(new string('a', 40) + "!.cdex");
+
+            // One timeout is not the three that stop a scan, but the catalog is excluded, so say so now.
+            Assert.That(query.MatchesNothing, Is.True);
+            var warnings = sink.Events.FindAll(e => e.Level == Serilog.Events.LogEventLevel.Warning);
+            Assert.That(warnings, Has.Count.EqualTo(1));
+            Assert.That(warnings[0].RenderMessage(), Does.Contain("catalog file name").And.Contain("(a+)+"));
+
+            sink.Events.Clear();
+            query.ForCatalog("fine.cdex");
+            Assert.That(sink.Events, Is.Empty);
+        }
+        finally
+        {
+            Serilog.Log.Logger = previous;
+        }
     }
 
     [Test]

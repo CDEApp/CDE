@@ -291,7 +291,7 @@ public sealed partial class EverythingQuery
     {
         var list = new List<Token<Tok>>();
         foreach (var t in tokens) list.Add(t);
-        CheckTargetModifiers(list);
+        CheckModifierRuns(list);
 
         for (var i = 0; i < list.Count; i++)
         {
@@ -308,7 +308,6 @@ public sealed partial class EverythingQuery
                            && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open
                                or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CatalogModifier
                                or Tok.CaseModifier or Tok.DiacriticsModifier or Tok.Function;
-            if (attached && list[i + 1].Kind == Tok.Function) CheckFunctionAfterModifier(t, list[i + 1]);
             if (!attached)
                 throw new EverythingQueryException(
                     $"'{t.ToStringValue()}' must be directly followed by a term, phrase, group or another modifier, with no space",
@@ -320,8 +319,9 @@ public sealed partial class EverythingQuery
         or Tok.CatalogModifier or Tok.CaseModifier or Tok.DiacriticsModifier;
 
     // A term is tested against its name, its path or its catalog's file name, never two of them. So catalog: cannot
-    // share a run of attached modifiers with path: or no-path:, in either order.
-    private static void CheckTargetModifiers(List<Token<Tok>> list)
+    // share a run of attached modifiers with path: or no-path:, in either order. A run in front of a function may only
+    // hold case: and diacritics:.
+    private static void CheckModifierRuns(List<Token<Tok>> list)
     {
         for (var i = 0; i < list.Count; i++)
         {
@@ -347,6 +347,18 @@ public sealed partial class EverythingQuery
                 throw new EverythingQueryException(
                     "'catalog:' cannot be combined with 'path:' or 'no-path:': a term is tested against the name, the path or the catalog file name",
                     list[first].Position.Absolute);
+
+            // A function takes no target or regex, so every modifier in front of it, not just the nearest, must be
+            // case: or diacritics:. Otherwise the others would be ignored without a word.
+            if (j + 1 < list.Count && list[j + 1].Kind == Tok.Function
+                && list[j + 1].Position.Absolute == list[j].Position.Absolute + list[j].Span.Length)
+            {
+                for (var k = i; k <= j; k++)
+                    if (list[k].Kind is not (Tok.CaseModifier or Tok.DiacriticsModifier))
+                        CheckFunctionAfterModifier(list[k], list[j + 1]);
+                CheckFunctionAfterModifier(list[j], list[j + 1]);
+            }
+
             i = j;
         }
     }
