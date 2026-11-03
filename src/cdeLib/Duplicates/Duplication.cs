@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
+using cdeLib.Hashing;
 using cdeLib.Infrastructure;
 using cdeLib.Infrastructure.Config;
 using cdeLib.Infrastructure.Hashing;
@@ -257,6 +258,13 @@ public partial class Duplication
         ReportStatus($"Total files processed for the file size matches is {totalFiles}");
         ReportStatus($"Total files found with at least 1 other file of same length {filesInSizeSets}");
         ReportStatus($"Longest list of same sized files is {longestListLength} for size {longestListSize} ");
+    }
+
+    private void ReportSelection(HashSelection selection, int selected)
+    {
+        var filter = selection.Filter is null ? "every file" : $"files matching \"{selection.Filter}\"";
+        var sizes = selection.IncludeUniqueSizes ? "including unique sizes, each with a full hash" : "with a repeated size";
+        ReportStatus($"Selected {selected} files to hash: {filter}, {sizes}.");
     }
 
     private void ReportPartialPhaseDone(Stopwatch timer)

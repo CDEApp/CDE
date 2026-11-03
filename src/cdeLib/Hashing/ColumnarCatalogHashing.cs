@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Duplicates;
 using cdeLib.Entities;
@@ -11,8 +12,8 @@ namespace cdeLib.Hashing;
 
 /// <summary>
 /// <c>cde hash</c> over columnar catalogs (issue #40): hashes straight from the memory-mapped readers with
-/// <see cref="Duplication.ApplyHash(IReadOnlyList{ColumnarCatalogReader})"/>, then rewrites each catalog with
-/// its new hashes. No pointer tree is built. Each catalog is written beside itself and moved into place once its
+/// <see cref="Duplication.ApplyHash(IReadOnlyList{ColumnarCatalogReader}, HashSelection, CancellationToken)"/>, then
+/// rewrites each catalog with its new hashes. No pointer tree is built. Each catalog is written beside itself and moved into place once its
 /// mapping is released, so a failure part way never destroys a good catalog.
 /// </summary>
 public static class ColumnarCatalogHashing
@@ -22,8 +23,11 @@ public static class ColumnarCatalogHashing
     /// <param name="onSaving">Called with each catalog's path just before it is saved.</param>
     /// <param name="output">Receives a record for each file hashed in this run, with its new hash, once the catalog it is in
     /// has saved (#173); a catalog that fails to save writes none. Null writes none. Files whose usable hash was already in the catalog are not repeated.</param>
+    /// <param name="selection">Which files to hash; null is <see cref="HashSelection.All"/>.</param>
+    /// <param name="cancellationToken">Stops the run before any catalog is saved and throws
+    /// <see cref="OperationCanceledException"/>, so every catalog is left as it was.</param>
     public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
-        IRecordWriter output = null)
+        IRecordWriter output = null, HashSelection selection = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(duplication);
         ArgumentNullException.ThrowIfNull(cdexFiles);
@@ -36,7 +40,8 @@ public static class ColumnarCatalogHashing
                 readers.Add(new ColumnarCatalogReader(file));
             }
 
-            var updates = await duplication.ApplyHash(readers).ConfigureAwait(false);
+            var updates = await duplication.ApplyHash(readers, selection, cancellationToken).ConfigureAwait(false);
+            cancellationToken.ThrowIfCancellationRequested();
 
             // A catalog that fails to save does not stop the others: their hashes are expensive to redo.
             List<Exception> failures = null;
@@ -89,6 +94,32 @@ public static class ColumnarCatalogHashing
                 reader.Dispose();
             }
         }
+    }
+
+    /// <summary>
+    /// What a hash run with <paramref name="selection"/> would read in its first pass, without reading any file. It
+    /// selects the files exactly as <see cref="HashAndSave"/> does. The full-hash pass reads more for possible duplicates.
+    /// </summary>
+    public static HashPreview Preview(IReadOnlyList<ColumnarCatalogReader> readers, HashSelection selection,
+        CancellationToken cancellationToken = default)
+    {
+        selection ??= HashSelection.All;
+        var candidates = HashCandidateSelection.Select(readers, selection, cancellationToken).Candidates;
+        long files = 0, bytes = 0, alreadyHashed = 0;
+        foreach (var c in candidates)
+        {
+            var isFull = (c.Flags & Flags.PartialHash) == 0;
+            if (c.Flags.IsHashUsable() && (isFull || !selection.IncludeUniqueSizes))
+            {
+                alreadyHashed++;
+                continue;
+            }
+
+            files++;
+            bytes += c.Size;
+        }
+
+        return new HashPreview(files, bytes, alreadyHashed);
     }
 
     // Streams one record per newly hashed file of a saved catalog, straight from the updates, so nothing is collected in
