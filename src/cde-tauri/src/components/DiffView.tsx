@@ -121,7 +121,7 @@ function SideHeader({ side, catalogs, label }: { side: Side; catalogs: CatalogIn
     <div className="diff-side">
       <span className="diff-field-label" aria-hidden="true">Catalog</span>
       <CatalogSelect label={label} catalogs={sortByFileName(catalogs)} value={side.catalogId} onChange={side.selectCatalog} />
-      <label className="diff-field-label" htmlFor={pathId}>Root</label>
+      <label className="diff-field-label" htmlFor={pathId}>Base</label>
       <input
         id={pathId}
         aria-label={`${label} path`}
@@ -211,7 +211,7 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
   const closeMenu = useCallback(() => setMenu(null), []);
   const folderMenu = (side: Side) => (node: DirectoryNode, x: number, y: number) =>
     setMenu({ x, y, items: [
-        { label: "Set as root", onClick: () => side.setRoot(node) },
+        { label: "Set as base", onClick: () => side.setRoot(node) },
         { label: "Explore", onClick: () => onExplore(node.ref) },
       ],
     });
