@@ -22,9 +22,9 @@
       <PackageReference Include="JetBrains.Annotations" Version="2026.2.0" />
       <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="11.0.2" />
       <PackageReference Include="SlimMessageBus" Version="3.0.0" />
-      <PackageReference Include="SlimMessageBus.Host" Version="3.5.0" />
-      <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.5.0" />
-      <PackageReference Include="Meziantou.Analyzer" Version="3.0.317">
+      <PackageReference Include="SlimMessageBus.Host" Version="3.6.1" />
+      <PackageReference Include="SlimMessageBus.Host.Memory" Version="3.6.1" />
+      <PackageReference Include="Meziantou.Analyzer" Version="3.0.320">
         <PrivateAssets>all</PrivateAssets>
         <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       </PackageReference>
