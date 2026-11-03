@@ -15,6 +15,7 @@ interface Props {
   revealKey: string | null;
   revealNonce: number;
   expandTo: EntryRef[] | undefined;
+  collapseNonce: number;
   dirPath: string;
   dirNodes: DirectoryNode[];
   sort: DirectorySort;
@@ -50,6 +51,7 @@ export const DirectoryPane = memo(function DirectoryPane(p: Props) {
           revealKey={p.revealKey}
           revealNonce={p.revealNonce}
           expandTo={p.expandTo}
+          collapseNonce={p.collapseNonce}
           onSelect={p.onSelect}
           onContextMenu={p.onTreeContextMenu}
           onBackgroundContextMenu={p.onBackgroundContextMenu}

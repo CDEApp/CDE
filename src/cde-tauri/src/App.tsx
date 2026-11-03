@@ -543,6 +543,12 @@ export default function App() {
   const buildMenuRef = useRef(buildMenu);
   buildMenuRef.current = buildMenu;
 
+  const [collapseNonce, setCollapseNonce] = useState(0);
+  const collapseAllItem = useCallback(
+    (): MenuItem => ({ label: "Collapse all", onClick: () => setCollapseNonce((n) => n + 1) }),
+    [],
+  );
+
   const treeBackgroundMenu = useCallback(
     (x: number, y: number) => {
       const key = selectedKeyRef.current;
@@ -550,15 +556,18 @@ export default function App() {
       setMenu({
         x,
         y,
-        items: [{ label: "Show TreeMap", disabled: !selected, onClick: () => selected && showTreemap(selected) }],
+        items: [
+          { label: "Show TreeMap", disabled: !selected, onClick: () => selected && showTreemap(selected) },
+          collapseAllItem(),
+        ],
       });
     },
-    [showTreemap],
+    [showTreemap, collapseAllItem],
   );
   const onTreeContextMenu = useCallback(
     (ref: EntryRef, fp: string, x: number, y: number) =>
-      setMenu({ x, y, items: buildMenuRef.current(ref, fp, undefined, true) }),
-    [],
+      setMenu({ x, y, items: [...buildMenuRef.current(ref, fp, undefined, true), collapseAllItem()] }),
+    [collapseAllItem],
   );
   const onListContextMenu = useCallback(
     (n: DirectoryNode, x: number, y: number) =>
@@ -611,7 +620,14 @@ export default function App() {
       />
 
       <div className="tabs">
-        <button className={view === "directory" ? "active" : ""} onClick={() => setView("directory")}>
+        <button
+          className={view === "directory" ? "active" : ""}
+          onClick={() => setView("directory")}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMenu({ x: e.clientX, y: e.clientY, items: [collapseAllItem()] });
+          }}
+        >
           Directory
         </button>
         <button className={view === "results" ? "active" : ""} onClick={() => setView("results")}>
@@ -649,6 +665,7 @@ export default function App() {
             revealKey={revealKey}
             revealNonce={revealNonce}
             expandTo={expandTo}
+            collapseNonce={collapseNonce}
             dirPath={dirPath}
             dirNodes={dirNodes}
             sort={dirSort}
