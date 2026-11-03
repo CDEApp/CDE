@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using cdeAppCore;
+using cdeAppCore.Compare;
 using cdeAppCore.Search;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
@@ -51,6 +52,8 @@ public static class ApiComposition
             new SearchService(sp.GetRequiredService<ICatalogSession>()));
         services.AddSingleton<ITreemapService>(sp =>
             new TreemapService(sp.GetRequiredService<ICatalogSession>()));
+        services.AddSingleton<ICompareService>(sp =>
+            new CompareService(sp.GetRequiredService<ICatalogSession>()));
         services.AddSingleton<UiStateStore>();
         services.AddSingleton<ColourRulesStore>();
 
@@ -95,6 +98,9 @@ public static class ApiComposition
         app.MapPost("/catalogs/migrate", MigrateEndpoint.HandleAsync);
 
         app.MapPost("/search", SearchEndpoint.HandleAsync);
+
+        // POST /compare/summaries — exact subtree summaries for folder pairs (JSON).
+        app.MapPost("/compare/summaries", CompareEndpoint.Handle);
 
         return app;
     }

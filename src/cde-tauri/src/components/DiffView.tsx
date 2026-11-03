@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { CdeApiClient } from "../api/client";
-import type { CatalogInfo, DirectoryNode, EntryRef } from "../api/types";
+import type { CatalogInfo, DirectoryNode, EntryRef, SubtreeSummary } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import {
   alignChildren,
@@ -197,6 +197,7 @@ function Half({ node, row, expanded, onToggle, resolveStyle, onFolderMenu }: Hal
 }
 
 const EMPTY: readonly DirectoryNode[] = [];
+const SUMMARY_BATCH = 100;
 
 /**
  * Two directories side by side in ONE virtual list, so a single scroll container keeps both sides
@@ -224,16 +225,24 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
   // One token per pair of roots: expansions that finish after the roots changed are dropped.
   const guard = useRef(createRequestGuard()).current;
   const generation = useRef(0);
+  // Exact subtree summaries by row key, requested once per folder pair; aborted when the roots change.
+  const [summaries, setSummaries] = useState<ReadonlyMap<string, SubtreeSummary>>(() => new Map());
+  const requested = useRef(new Set<string>());
+  const summaryAbort = useRef<AbortController | null>(null);
 
   const leftRef = left.ref;
   const rightRef = right.ref;
   useEffect(() => {
     generation.current = guard.begin();
+    const abort = new AbortController();
+    summaryAbort.current = abort;
+    requested.current = new Set();
+    setSummaries(new Map());
     setRootRows([]);
     setChildrenByKey(new Map());
     setExpanded(new Set());
     setLoadError(null);
-    if (!leftRef || !rightRef) return;
+    if (!leftRef || !rightRef) return () => abort.abort();
     const token = generation.current;
     Promise.all([client.children(leftRef, { hasChildren: false }), client.children(rightRef, { hasChildren: false })]).then(
       ([l, r]) => {
@@ -243,7 +252,45 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
         if (guard.isCurrent(token)) setLoadError(e instanceof Error ? e.message : String(e));
       },
     );
+    return () => abort.abort();
   }, [client, guard, leftRef, rightRef]);
+
+  useEffect(() => {
+    const abort = summaryAbort.current;
+    if (!abort) return;
+    const pending: { key: string; left: EntryRef; right: EntryRef }[] = [];
+    const collect = (rows: readonly DiffRow[]) => {
+      for (const row of rows) {
+        if (!row.isDirectory || !row.left || !row.right || requested.current.has(row.key)) continue;
+        requested.current.add(row.key);
+        pending.push({ key: row.key, left: row.left.ref, right: row.right.ref });
+      }
+    };
+    collect(rootRows);
+    for (const [key, kids] of childrenByKey) collect(alignChildren(kids.left, kids.right, 0, key));
+    if (pending.length === 0) return;
+    const token = generation.current;
+    void (async () => {
+      for (let i = 0; i < pending.length; i += SUMMARY_BATCH) {
+        const batch = pending.slice(i, i + SUMMARY_BATCH);
+        try {
+          const pairs = batch.map(({ left, right }) => ({ left, right }));
+          const result = await client.compareSummaries(pairs, { signal: abort.signal });
+          if (!guard.isCurrent(token)) return;
+          setSummaries((prev) => {
+            const next = new Map(prev);
+            batch.forEach((p, n) => {
+              if (result[n]) next.set(p.key, result[n]);
+            });
+            return next;
+          });
+        } catch (e) {
+          if (!abort.signal.aborted && guard.isCurrent(token)) console.error("compare summaries failed", e);
+          return;
+        }
+      }
+    })();
+  }, [rootRows, childrenByKey, client, guard]);
 
   const toggle = useCallback(
     (row: DiffRow) => {
@@ -272,8 +319,8 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
   );
 
   const rows = useMemo(
-    () => flattenVisible(expanded, childrenByKey, rootRows, filter),
-    [expanded, childrenByKey, rootRows, filter],
+    () => flattenVisible(expanded, childrenByKey, rootRows, filter, summaries),
+    [expanded, childrenByKey, rootRows, filter, summaries],
   );
   const inDiffMenu = filter !== "all" && filter !== "same";
   const ready = leftRef !== null && rightRef !== null;

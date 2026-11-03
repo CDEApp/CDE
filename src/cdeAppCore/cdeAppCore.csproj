@@ -16,4 +16,8 @@
     <PackageReference Include="Serilog" Version="4.4.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="cdeAppCoreTest" />
+  </ItemGroup>
+
 </Project>

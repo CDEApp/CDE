@@ -6,6 +6,8 @@ import {
   SearchQuery,
   SearchResultRow,
   ShellRequest,
+  SubtreeSummary,
+  refToString,
   CatalogLoadProgress,
   RescanErrorBody,
   RescanProgress,
@@ -227,6 +229,25 @@ export class CdeApiClient {
     );
     if (!r.ok) throw new Error(`children: ${r.status}`);
     return r.json();
+  }
+
+  /**
+   * Exact tallies of everything below each both-sides folder pair, in request order. The server accepts
+   * at most 500 pairs per request.
+   */
+  async compareSummaries(
+    pairs: readonly { left: EntryRef; right: EntryRef }[],
+    opts?: { signal?: AbortSignal },
+  ): Promise<SubtreeSummary[]> {
+    const body = { pairs: pairs.map((p) => ({ left: refToString(p.left), right: refToString(p.right) })) };
+    const r = await fetch(this.url(["compare", "summaries"]), {
+      method: "POST",
+      headers: this.headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(body),
+      signal: opts?.signal,
+    });
+    if (!r.ok) throw new Error(`compare/summaries: ${r.status}`);
+    return (await r.json()).summaries;
   }
 
   async path(ref: EntryRef): Promise<DirectoryNode[]> {

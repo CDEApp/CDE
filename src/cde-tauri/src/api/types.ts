@@ -277,3 +277,25 @@ export interface ShellRequest {
   action: ShellAction;
   commandId?: number;
 }
+
+/**
+ * Exact tally of everything below one both-sides folder pair (`POST /compare/summaries`). The file
+ * counts cover files and mismatched-kind pairs; a one-sided entry counts once in `leftOnly` or
+ * `rightOnly` and is not descended. The folder counts cover both-sides folder pairs nested at any
+ * depth below the pair (the pair itself is never counted): `sameFolders` have an identical subtree,
+ * `differentFolders` do not. `leftNewerFiles` and `rightNewerFiles` are subsets of `differentFiles`;
+ * `leftNewerFolders` and `rightNewerFolders` are subsets of `differentFolders` whose own two modified
+ * times are valid and differ by more than the tolerance.
+ */
+export interface SubtreeSummary {
+  sameFiles: number;
+  differentFiles: number;
+  leftNewerFiles: number;
+  rightNewerFiles: number;
+  leftOnly: number;
+  rightOnly: number;
+  sameFolders: number;
+  differentFolders: number;
+  leftNewerFolders: number;
+  rightNewerFolders: number;
+}

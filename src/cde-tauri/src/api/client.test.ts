@@ -104,6 +104,37 @@ describe("migrateLegacy", () => {
   });
 });
 
+describe("compareSummaries", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+  const pairs = [{ left: { catalogId: 1, entryIndex: 7 }, right: { catalogId: 2, entryIndex: 9 } }];
+  const summary = { sameFiles: 1, differentFiles: 2, leftNewerFiles: 1, rightNewerFiles: 0, leftOnly: 3, rightOnly: 4,
+    sameFolders: 5, differentFolders: 6, leftNewerFolders: 1, rightNewerFolders: 2,
+  };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("posts the pairs as ref strings with the token and returns the summaries in order", async () => {
+    const fetch = vi.fn().mockResolvedValue(new Response(JSON.stringify({ summaries: [summary] })));
+    vi.stubGlobal("fetch", fetch);
+    const signal = new AbortController().signal;
+
+    await expect(client.compareSummaries(pairs, { signal })).resolves.toEqual([summary]);
+
+    const [url, init] = fetch.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:5000/compare/summaries");
+    expect(init.method).toBe("POST");
+    expect(init.headers).toMatchObject({ "X-CDE-Token": "tok", "Content-Type": "application/json" });
+    expect(JSON.parse(init.body)).toEqual({ pairs: [{ left: "1-7", right: "2-9" }] });
+    expect(init.signal).toBe(signal);
+  });
+
+  it("throws on a non-ok response", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("nope", { status: 400 })));
+
+    await expect(client.compareSummaries(pairs)).rejects.toThrow("compare/summaries: 400");
+  });
+});
+
 describe("shell", () => {
   const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
   const req = { ref: "1-2", action: "properties" as const };
