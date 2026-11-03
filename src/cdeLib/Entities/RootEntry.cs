@@ -111,12 +111,12 @@ public sealed class RootEntry : object, ICommonEntry
         }
     }
 
-    public void PopulateRoot(string startPath, bool followJunctions = false, CancellationToken token = default,
-        ScanExcludeMatcher excludes = null)
+    public void PopulateRoot(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
+        CancellationToken token = default)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath, followJunctions, token, excludes);
+        RecurseTree(startPath, followJunctions, excludes, token);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -309,8 +309,8 @@ public sealed class RootEntry : object, ICommonEntry
     /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
     /// Folders matched by <paramref name="excludes"/> are recorded but not descended into; the start path, and any pattern covering it or its ancestors, never applies.
     /// </summary>
-    public void RecurseTree(string startPath, bool followJunctions = false, CancellationToken token = default,
-        ScanExcludeMatcher excludes = null)
+    public void RecurseTree(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
+        CancellationToken token = default)
     {
         FollowJunctions = followJunctions;
         excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
@@ -1151,4 +1151,4 @@ public sealed class RootEntry : object, ICommonEntry
         // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
         return !string.IsNullOrEmpty(Path) && (Path.EndsWith(' ') || Path.EndsWith('.'));
     }
-}
+}
