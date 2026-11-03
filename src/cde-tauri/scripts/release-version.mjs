@@ -11,6 +11,8 @@
 //   node src/cde-tauri/scripts/release-version.mjs next-prerelease --base 2.1.0 --channel beta --tags-file tags.txt
 //
 //   latest-stable      --tags-file F                       print the highest stable tag (or nothing)
+//   previous-tag       --tag T --tags-file F                print where the notes of pre-release T start
+//                                                          (the previous pre-release or the latest stable tag, or nothing)
 //   next-prerelease    --base X.Y.Z --channel C --tags-file F
 //                                                          print the next free pre-release tag
 //   validate-stable    --version V --tags-file F [--from-draft]
@@ -71,6 +73,26 @@ export function latestStable(tags) {
   const stable = parsedTags(tags).filter(isStable);
   if (stable.length === 0) return null;
   return stable.reduce((best, v) => (compareVersions(v, best) > 0 ? v : best)).raw;
+}
+
+/**
+ * Where the release notes of pre-release `tag` start: the highest existing tag below it that is
+ * the latest stable tag or a pre-release of a base above the latest stable tag. A pre-release of a
+ * base that is already released (2.0.0-rc.1 after 2.0.0) is never a candidate. Falls back to the
+ * latest stable tag, then "" when there is none. The tag itself is excluded.
+ */
+export function previousTag(tag, tags) {
+  const v = parseVersion(tag);
+  if (!v) throw new Error(`'${tag}' is not a version tag`);
+  const stable = latestStable(tags);
+  const stableBase = stable === null ? null : parseVersion(stable);
+  const candidates = parsedTags(tags).filter(
+    (t) =>
+      compareVersions(t, v) < 0 &&
+      (isStable(t) ? t.raw === stable : stableBase === null || compareVersions(parseVersion(baseOf(t)), stableBase) > 0),
+  );
+  if (candidates.length === 0) return stable ?? "";
+  return candidates.reduce((best, t) => (compareVersions(t, best) > 0 ? t : best)).raw;
 }
 
 /** The next free tag for a base and channel: the highest existing N plus one, starting at 1. */
@@ -254,6 +276,9 @@ export function run(argv) {
       if (latest) console.log(latest);
       return 0;
     }
+    case "previous-tag":
+      console.log(previousTag(args.tag, readTags(args["tags-file"])));
+      return 0;
     case "next-prerelease":
       console.log(nextPrerelease(args.base, args.channel, readTags(args["tags-file"])));
       return 0;
