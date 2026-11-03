@@ -38,8 +38,14 @@ public sealed class CdeApp(
 
     /// <param name="catalogPath">The one .cdex catalog to hash, or null for every catalog found.</param>
     /// <param name="output">Receives a record per file hashed (<c>--json</c> / <c>--csv</c>), or null.</param>
-    public Task HashCatalogAsync(string catalogPath = null, IRecordWriter output = null) =>
-        messageBus.Send(new HashCatalogCommand { CatalogPath = catalogPath, Output = output }, cancellationToken: cancellation.Token);
+    /// <param name="selection">Which files to hash; null hashes every file with a repeated size.</param>
+    public Task HashCatalogAsync(string catalogPath = null, IRecordWriter output = null, HashSelection selection = null) =>
+        messageBus.Send(new HashCatalogCommand
+        {
+            CatalogPath = catalogPath,
+            Output = output,
+            Selection = selection ?? HashSelection.All,
+        }, cancellationToken: cancellation.Token);
 
     /// <param name="output">Receives a record per duplicate file (<c>--json</c> / <c>--csv</c>); null prints their paths.</param>
     public Task FindDupesAsync(IRecordWriter output = null) =>

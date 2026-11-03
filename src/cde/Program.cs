@@ -165,8 +165,9 @@ public static class Program
 
     private static async Task HashAsync(HashOptions o)
     {
+        var selection = HashSelection.Parse(o.Filter, o.IncludeUniqueSizes);
         using var output = MachineOutput.Open(o.ResolveFormat(), EntryRecords.HashColumns);
-        await _app.HashCatalogAsync(o.Path, output?.Writer).ConfigureAwait(false);
+        await _app.HashCatalogAsync(o.Path, output?.Writer, selection).ConfigureAwait(false);
     }
 
     private static async Task DupesAsync(DupesOptions o)

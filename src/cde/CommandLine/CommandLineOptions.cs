@@ -98,6 +98,16 @@ public class HashOptions : MachineOutputOptions
         HelpText = "Specific .cdex catalog to hash. If omitted, hashes every catalog in the current directory " +
                    "and one level down. Only files that share a size with another file in the same catalog are hashed.")]
     public string Path { get; [UsedImplicitly] set; }
+
+    [Option("filter",
+        HelpText = "Hash only the files that match this Everything-style query, for example \"size:>2gb\" or " +
+                   "\"ext:iso;mkv\". It uses the syntax of cde everything. The files must still share a size with " +
+                   "another file, unless you add --include-unique-sizes. The filter is not saved.")]
+    public string Filter { get; [UsedImplicitly] set; }
+
+    [Option("include-unique-sizes",
+        HelpText = "Also hash files whose size no other file has, and give each selected file a full hash.")]
+    public bool IncludeUniqueSizes { get; [UsedImplicitly] set; }
 }
 
 [Verb("dupes", HelpText = "List all duplicate files (that already have hash computed")]
