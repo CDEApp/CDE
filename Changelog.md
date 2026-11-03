@@ -53,6 +53,14 @@
 - refactor (cdeLib): `EverythingQuery` is split into smaller files for the grammar, the evaluation context, the
   syntax tree nodes, the terms and the functions. No change in behavior. (#221)
 
+- feature (cdeWin, cde-tauri, cde): The Everything mode understands the `catalog:` modifier. It tests the next term,
+  phrase or group against the file name of the catalog the entry is in (the name on disk, such as `photos.cdex`)
+  instead of the entry, so `catalog:backup ext:mp3` finds mp3 files only in catalogs with `backup` in their file name.
+  Wildcards, `case:catalog:`, `regex:catalog:` and groups work, and `!catalog:old` excludes catalogs. It cannot be
+  combined with `path:` or `no-path:` on one term. A catalog that cannot match is not scanned, and `dupe:` still counts
+  over all loaded catalogs, so `catalog:photos dupe:hash` lists files in the photos catalog that exist anywhere else.
+  Help > Search Syntax lists it. (#224)
+
 ### Release
 
 - feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the

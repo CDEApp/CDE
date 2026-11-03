@@ -16,7 +16,8 @@ namespace cdeLib;
 /// group, <c>"..."</c> is a literal phrase (operators inside quotes are plain text), and the modifiers
 /// <c>path:</c> (match the full path), <c>no-path:</c> (match the name only) and <c>regex:</c> (the text is a
 /// regular expression, case-insensitive, matching anywhere in the text, so use a phrase for one with a space or
-/// <c>|</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
+/// <c>|</c>), <c>catalog:</c> (match the catalog's file name, set with <see cref="ForCatalog"/>, instead of the entry;
+/// not with <c>path:</c> or <c>no-path:</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
 /// <c>diacritics:</c> (accepted for Everything compatibility; diacritics always count here, so it changes nothing).
 /// The functions are <c>size:</c>, <c>date-modified:</c> (<c>dm:</c>), <c>ext:</c>, <c>empty:</c>, the child and
 /// descendant counts and <c>dupe:</c>; see <see cref="UsesProperties"/>, <see cref="UsesCounts"/> and

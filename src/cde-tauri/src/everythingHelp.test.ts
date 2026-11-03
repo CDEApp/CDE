@@ -10,7 +10,7 @@ describe("EVERYTHING_HELP", () => {
 
   it("lists every supported operator, modifier and filter", () => {
     const all = syntaxes().join("\n");
-    for (const item of ["a b", "|", "!", "<", "\"", "path:", "no-path:", "regex:", "case:", "file:", "folder:"]) expect(all).toContain(item);
+    for (const item of ["a b", "|", "!", "<", "\"", "path:", "no-path:", "regex:", "catalog:", "case:", "file:", "folder:"]) expect(all).toContain(item);
     expect(EVERYTHING_HELP[0].rows[0].meaning).toContain("space is AND");
   });
 
