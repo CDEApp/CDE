@@ -7,6 +7,7 @@ import {
   nextPrerelease,
   parseReleases,
   parseVersion,
+  previousTag,
   validatePrerelease,
   validateReleaseTag,
   validateStable,
@@ -153,6 +154,28 @@ describe("latestStable", () => {
   });
   it("picks the highest, whatever the order", () => {
     expect(latestStable(["2.9.0", "2.10.0", "2.2.0"])).toBe("2.10.0");
+  });
+});
+
+describe("previousTag", () => {
+  const cases = [
+    ["first pre-release of a base starts at the latest stable tag", "2.1.0-beta.1", ["1.7.1", "2.0.0"], "2.0.0"],
+    ["beta.2 starts at beta.1", "2.1.0-beta.2", ["2.0.0", "2.1.0-beta.1"], "2.1.0-beta.1"],
+    ["rc.1 after beta.3 starts at beta.3", "2.1.0-rc.1", ["2.0.0", "2.1.0-beta.1", "2.1.0-beta.3", "2.1.0-beta.2"], "2.1.0-beta.3"],
+    ["a later base starts at the unreleased earlier base's pre-release", "2.2.0-alpha.1", ["2.0.0", "2.1.0-beta.2"], "2.1.0-beta.2"],
+    ["a pre-release of a released base is ignored", "2.1.0-beta.1", ["2.0.0", "2.0.0-rc.1"], "2.0.0"],
+    ["a pre-release below the latest stable tag is ignored", "2.2.0-beta.1", ["1.9.0-rc.1", "2.0.0", "2.1.0"], "2.1.0"],
+    ["no stable tag and no pre-release gives nothing", "1.0.0-beta.1", [], ""],
+    ["no stable tag starts at the previous pre-release", "1.0.0-beta.2", ["1.0.0-beta.1"], "1.0.0-beta.1"],
+    ["non-version tags are ignored", "2.1.0-beta.2", ["v9.0.0", "foo", "2.0.0", "2.1.0-beta.1"], "2.1.0-beta.1"],
+    ["the tag itself in the list is ignored", "2.1.0-beta.1", ["2.0.0", "2.1.0-beta.1"], "2.0.0"],
+    ["higher tags are ignored", "2.1.0-beta.1", ["2.0.0", "2.1.0-beta.2"], "2.0.0"],
+  ];
+  it.each(cases)("%s", (_name, tag, tags, expected) => {
+    expect(previousTag(tag, tags)).toBe(expected);
+  });
+  it("throws on a tag that is not a version", () => {
+    expect(() => previousTag("nope", [])).toThrow();
   });
 });
 

@@ -66,7 +66,7 @@ jobs:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     outputs:
       prerelease: ${{ steps.kind.outputs.prerelease }}
-      stable_tag: ${{ steps.stable.outputs.tag }}
+      notes_start_tag: ${{ steps.notes_start.outputs.tag }}
       previous_tag: ${{ steps.previous.outputs.tag }}
 
     steps:
@@ -110,15 +110,17 @@ jobs:
           fi
           echo "Tag $TAG is a $kind"
 
-      # The notes of a pre-release start at the latest stable tag.
-      - name: Resolve latest stable tag
-        id: stable
+      # The notes of a pre-release start at the previous pre-release of that line, or at the latest
+      # stable tag for the first one. The rules live in the tested version module.
+      - name: Resolve notes start tag
+        if: ${{ steps.kind.outputs.prerelease == 'true' }}
+        id: notes_start
         shell: bash
         run: |
           git tag --list > "$RUNNER_TEMP/tags.txt"
-          latest=$(node src/cde-tauri/scripts/release-version.mjs latest-stable --tags-file "$RUNNER_TEMP/tags.txt")
-          echo "tag=$latest" >> "$GITHUB_OUTPUT"
-          echo "Latest stable tag: ${latest:-<none>}"
+          start=$(node src/cde-tauri/scripts/release-version.mjs previous-tag --tag "$TAG" --tags-file "$RUNNER_TEMP/tags.txt")
+          echo "tag=$start" >> "$GITHUB_OUTPUT"
+          echo "Notes start tag: ${start:-<none>}"
 
       # Captured before publishing, because once this release is published it becomes "latest" and
       # can no longer serve as the previous tag. Only the stable path uses it, so a pre-release
@@ -339,7 +341,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       PRERELEASE: ${{ needs.check.outputs.prerelease }}
-      STABLE_TAG: ${{ needs.check.outputs.stable_tag }}
+      NOTES_START_TAG: ${{ needs.check.outputs.notes_start_tag }}
       PREVIOUS_TAG: ${{ needs.check.outputs.previous_tag }}
 
     steps:
@@ -377,7 +379,7 @@ jobs:
       #
       # The Release Drafter draft is for the next stable release and is left alone. A draft GitHub
       # release is created for the tag with the archives and checksums already attached, notes generated
-      # since the latest stable tag, flagged as a pre-release and not "latest"; it is published as
+      # since the previous pre-release (or the latest stable tag for the first), flagged as a pre-release and not "latest"; it is published as
       # the very last step.
       - name: Create pre-release draft
         if: ${{ env.PRERELEASE == 'true' }}
@@ -395,7 +397,7 @@ jobs:
           done
 
           args=(--draft --prerelease --generate-notes --latest=false --title "$TAG")
-          if [ -n "$STABLE_TAG" ]; then args+=(--notes-start-tag "$STABLE_TAG"); fi
+          if [ -n "$NOTES_START_TAG" ]; then args+=(--notes-start-tag "$NOTES_START_TAG"); fi
           gh release create "$TAG" "${args[@]}" \
             "artifacts/release/cde-$TAG-win-x64.zip" \
             "artifacts/release/cde-$TAG-win-x64.zip.sha256" \

@@ -71,7 +71,7 @@ base) is allowed, with a warning in the log. Order is SemVer: `2.1.0-alpha.1` < 
 
 **What it publishes.** `release.yml` builds and packs exactly as for a stable release, named
 `cde-2.1.0-beta.1-win-x64.zip` and `cde-2.1.0-beta.1-linux-x64.tar.gz`, each with its `.sha256`. It then
-creates a draft GitHub release with both archives attached, generated notes (changes since the latest stable tag), marked as a pre-release and
+creates a draft GitHub release with both archives attached, generated notes (changes since the previous pre-release of that line, or since the latest stable tag for the first one), marked as a pre-release and
 not "latest", and publishes it as the last step. The .NET exes get the version from MinVer, and the
 Tauri app is stamped with the full pre-release version. The version check compares each exe's
 ProductVersion with the tag (see "Versions in the exes" below).
