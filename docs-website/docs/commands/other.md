@@ -18,20 +18,6 @@ cde update <catalog> [--desc <text>]
 | `<catalog>` | The catalog to update. |
 | `--desc <text>` | The new description. |
 
-## PopulousFolders
-
-List folders that hold many entries.
-
-```text
-cde PopulousFolders <count>
-```
-
-`<count>` is required. cde prints the folders that hold more than `<count>` entries. It is useful for finding cache and temp folders.
-
-```batch
-cde PopulousFolders 10000
-```
-
 ## Interactive commands
 
 These load the catalogs once and let you search many times.

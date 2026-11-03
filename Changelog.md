@@ -40,7 +40,8 @@
 
 ### CLI
 
-- chore (cde): Removed the `loadwait` verb. It loaded the legacy `.cde` catalogs and waited for Enter, only to measure load time by hand; use `cdeBenchmarks` or `cdeMemProbe` instead. `treedump1` and `PopulousFolders` stay for now. (part of #190)
+- chore (cde): Removed the `PopulousFolders` verb. It listed folders with more than `<count>` entries from the legacy `.cde` catalogs; there is no direct replacement. (part of #190)
+- chore (cde): Removed the `loadwait` verb. It loaded the legacy `.cde` catalogs and waited for Enter, only to measure load time by hand; use `cdeBenchmarks` or `cdeMemProbe` instead. `treedump1` stays for now. (part of #190)
 
 ### Configuration
 

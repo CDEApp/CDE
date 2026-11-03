@@ -31,7 +31,6 @@ Command names and option names are not case-sensitive. `cde --help` lists all co
 | [`dupes`](dupes.md) | List duplicate files. |
 | [`migrate`](migrate.md) | Convert old `.cde` catalogs to `.cdex`. |
 | [`update`](other.md#update) | Change the description of a catalog. |
-| [`PopulousFolders`](other.md#populousfolders) | List folders with many entries. |
 | [`repl`, `replfind`, `replgrep`, `replgreppath`](other.md#interactive-commands) | Interactive modes. |
 | [`treedump1`](other.md#treedump1) | Print the full tree of every catalog. |
 
