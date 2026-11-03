@@ -19,16 +19,26 @@ export function flipDirection(sort: RootSort): RootSort {
 const upper = (s: string) => s.toUpperCase();
 const compareKeys = (x: string, y: string) => (x < y ? -1 : x > y ? 1 : 0);
 
+function filterRoots(roots: readonly TreeRoot[], filter: string): TreeRoot[] {
+  const needle = upper(filter.trim());
+  return needle
+    ? roots.filter((r) => [r.label, r.fullPath, r.catalogName].some((s) => upper(s).includes(needle)))
+    : [...roots];
+}
+
+/** True when the catalog has roots but the filter hides all of them. A blank filter hides nothing. */
+export function isHiddenByFilter(roots: readonly TreeRoot[], catalogId: number, filter: string): boolean {
+  const ofCatalog = roots.filter((r) => r.ref.catalogId === catalogId);
+  return ofCatalog.length > 0 && filterRoots(ofCatalog, filter).length === 0;
+}
+
 /**
  * The roots to show: those whose root label/path or catalog name contains the trimmed filter (case
  * insensitive), ordered by `sort`. Ties fall back to root label, then incoming order (stable sort).
  * Descending reverses the primary key only. Returns a new array.
  */
 export function visibleRoots(roots: readonly TreeRoot[], sort: RootSort, filter: string): TreeRoot[] {
-  const needle = upper(filter.trim());
-  const kept = needle
-    ? roots.filter((r) => [r.label, r.fullPath, r.catalogName].some((s) => upper(s).includes(needle)))
-    : [...roots];
+  const kept = filterRoots(roots, filter);
   if (!sort) return kept;
 
   const sign = sort.direction === "asc" ? 1 : -1;

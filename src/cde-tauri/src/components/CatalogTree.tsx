@@ -3,7 +3,7 @@ import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
-import { flipDirection, sortForKey, visibleRoots, type RootSort, type RootSortKey } from "../rootsView";
+import { flipDirection, isHiddenByFilter, sortForKey, visibleRoots, type RootSort, type RootSortKey } from "../rootsView";
 import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
 import { StyledName } from "./StyledName";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
@@ -170,6 +170,17 @@ export function CatalogTree({
       cancelled = true;
     };
   }, [expandTo, ensureChildren]);
+
+  // A deliberate reveal into a catalog the filter hides would select and expand a row that is never
+  // shown, so clear the filter. Keyed on the reveal only: later filter edits must not re-trigger it.
+  const filterState = useRef({ roots, rootFilter });
+  filterState.current = { roots, rootFilter };
+  useEffect(() => {
+    if (!revealKey) return;
+    const catalogId = Number(revealKey.slice(0, revealKey.indexOf("-")));
+    const state = filterState.current;
+    if (isHiddenByFilter(state.roots, catalogId, state.rootFilter)) setRootFilter("");
+  }, [revealKey, revealNonce]);
 
   // Filter and sort apply here only. `changedCatalogs` above must keep seeing every root, or a catalog
   // hidden by the filter would look gone and lose its expansion and loaded children.

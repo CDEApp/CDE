@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { flipDirection, sortForKey, visibleRoots, type RootSort } from "./rootsView";
+import { flipDirection, isHiddenByFilter, sortForKey, visibleRoots, type RootSort } from "./rootsView";
 import type { TreeRoot } from "./treeModel";
 
 const mk = (id: number, label: string, catalogName: string, size: number, fullPath = label + "\\"): TreeRoot => ({
@@ -79,4 +79,11 @@ describe("sort helpers", () => {
     expect(flipDirection({ key: "root", direction: "asc" })).toEqual({ key: "root", direction: "desc" });
     expect(flipDirection(null)).toBeNull();
   });
+});
+
+describe("isHiddenByFilter", () => {
+  it("is false for a blank filter", () => expect(isHiddenByFilter(server, 2, "  ")).toBe(false));
+  it("is true when the filter excludes the catalog's roots", () => expect(isHiddenByFilter(server, 2, "zeta")).toBe(true));
+  it("is false when the filter matches the catalog", () => expect(isHiddenByFilter(server, 2, "alpha")).toBe(false));
+  it("is false for an unknown catalog", () => expect(isHiddenByFilter(server, 99, "zeta")).toBe(false));
 });
