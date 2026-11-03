@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { CdeApiClient } from "../api/client";
-import type { CatalogInfo, DirectoryNode, EntryRef } from "../api/types";
+import type { CatalogInfo, DirectoryNode, EntryRef, SubtreeSummary } from "../api/types";
 import { DiffView } from "./DiffView";
 
 beforeAll(() => {
@@ -55,6 +55,7 @@ const listings: Record<string, DirectoryNode[]> = {
 const key = (r: EntryRef) => `${r.catalogId}-${r.entryIndex}`;
 const client = {
   children: vi.fn(async (r: EntryRef) => listings[key(r)] ?? []),
+  compareSummaries: vi.fn(async () => []),
 } as unknown as CdeApiClient;
 
 /** Opens the side's catalog dropdown and returns its option rows' text (the placeholder row first). */
@@ -241,5 +242,68 @@ describe("DiffView", () => {
     fireEvent.change(input, { target: { value: "C:\\left\\missing" } });
     fireEvent.keyDown(input, { key: "Enter" });
     expect((await screen.findByRole("alert")).textContent).toContain("missing");
+  });
+
+  describe("exact subtree summaries", () => {
+    const summary = (over: Partial<SubtreeSummary> = {}): SubtreeSummary => ({
+      sameFiles: 0,
+      differentFiles: 0,
+      leftNewerFiles: 0,
+      rightNewerFiles: 0,
+      leftOnly: 0,
+      rightOnly: 0,
+      ...over,
+    });
+    type Pair = { left: EntryRef; right: EntryRef };
+
+    // Folders a (equal size, identical inside) and b (equal size, one file differs) on both sides.
+    const folderListing = (catalogId: number, names: string[]) =>
+      names.map((n, i) => node(catalogId, i + 1, n, { isDirectory: true, size: 5 }));
+    function mount(names: string[], compareSummaries: (pairs: Pair[]) => Promise<SubtreeSummary[]>) {
+      const sub = {
+        children: vi.fn(async (r: EntryRef) => (r.entryIndex === 0 ? folderListing(r.catalogId, names) : [])),
+        compareSummaries: vi.fn(compareSummaries),
+      };
+      render(<DiffView client={sub as unknown as CdeApiClient} catalogs={[catalog(1, "C:\\left"), catalog(2, "D:\\right")]} resolveStyle={() => undefined} onExplore={onExplore} />);
+      pick("Left", 1);
+      pick("Right", 2);
+      return sub;
+    }
+    const byName = (pairs: Pair[]) => pairs.map((p) => (p.left.entryIndex === 1 ? summary({ sameFiles: 2 }) : summary({ differentFiles: 1 })));
+    const visibleNames = () => dataRows().map((r) => within(r).getAllByText(/^[ab]$/)[0].textContent);
+
+    it("hides the identical folder under Diffs once its summary arrives and shows both under All", async () => {
+      const sub = mount(["a", "b"], async (pairs) => byName(pairs));
+      await waitFor(() => expect(sub.compareSummaries).toHaveBeenCalledTimes(1));
+      expect(sub.compareSummaries.mock.calls[0][0]).toEqual([
+        { left: { catalogId: 1, entryIndex: 1 }, right: { catalogId: 2, entryIndex: 1 } },
+        { left: { catalogId: 1, entryIndex: 2 }, right: { catalogId: 2, entryIndex: 2 } },
+      ]);
+      fireEvent.click(screen.getByRole("button", { name: "Diffs" }));
+      await waitFor(() => expect(visibleNames()).toEqual(["b"]));
+      expect(rowOf("b").className).toContain("different");
+      fireEvent.click(screen.getByRole("button", { name: "All" }));
+      expect(visibleNames()).toEqual(["a", "b"]);
+      expect(rowOf("a").className).toContain("same");
+    });
+
+    it("keeps every folder visible when the summary request fails", async () => {
+      const error = vi.spyOn(console, "error").mockImplementation(() => {});
+      const sub = mount(["a", "b"], async () => {
+        throw new Error("boom");
+      });
+      await waitFor(() => expect(error).toHaveBeenCalled());
+      fireEvent.click(screen.getByRole("button", { name: "Diffs" }));
+      expect(visibleNames()).toEqual(["a", "b"]);
+      expect(sub.compareSummaries).toHaveBeenCalledTimes(1);
+      error.mockRestore();
+    });
+
+    it("requests summaries in batches of at most 100 pairs", async () => {
+      const names = Array.from({ length: 250 }, (_, i) => `f${String(i).padStart(3, "0")}`);
+      const sub = mount(names, async (pairs) => pairs.map(() => summary({ sameFiles: 1 })));
+      await waitFor(() => expect(sub.compareSummaries).toHaveBeenCalledTimes(3));
+      expect(sub.compareSummaries.mock.calls.map((c) => c[0].length)).toEqual([100, 100, 50]);
+    });
   });
 });
