@@ -53,8 +53,8 @@ public sealed class ColumnarDuplicateFinder
         public List<CatalogEntry> Entries { get; }
     }
 
-    private static bool IsCandidate(ReadOnlySpan<byte> bits, ReadOnlySpan<long> size, int i) =>
-        ColumnarSizeGrouping.IsCandidate((Flags)bits[i], size[i], SizeCandidates.FullyHashedFiles);
+    private static bool IsCandidate(EntryFlagsColumn bits, ReadOnlySpan<long> size, int i) =>
+        ColumnarSizeGrouping.IsCandidate(bits[i], size[i], SizeCandidates.FullyHashedFiles);
 
     /// <summary>
     /// Returns the duplicate sets (more than one file with the same size and full hash) sorted by
@@ -86,7 +86,7 @@ public sealed class ColumnarDuplicateFinder
                 var current = stack.Pop();
                 for (var child = r.FirstChildOf(current); child != EntryStore.None; child = r.NextSiblingOf(child))
                 {
-                    var f = (Flags)bits[child];
+                    var f = bits[child];
                     if ((f & Flags.Directory) == Flags.Directory)
                     {
                         if (r.FirstChildOf(child) != EntryStore.None) stack.Push(child);

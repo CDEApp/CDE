@@ -40,7 +40,7 @@ public static partial class ColumnarFormat
         var hasHashes = false;
         for (int i = 1, u = 0; i < count && !hasHashes; i++)
         {
-            var flags = (Flags)sourceBits[i];
+            var flags = sourceBits[i];
             while (u < updates.Length && updates[u].Index < i) u++;
             if (u < updates.Length && updates[u].Index == i) flags = updates[u].Flags;
             hasHashes = flags.IsHashUsable();
@@ -82,7 +82,7 @@ public static partial class ColumnarFormat
             for (var k = 0; k < n; k++)
             {
                 var i = start + k;
-                var flags = (Flags)sourceBits[i];
+                var flags = sourceBits[i];
                 var hash = default(Hash16);
                 if (nextUpdate < updates.Length && updates[nextUpdate].Index == i)
                 {

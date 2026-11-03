@@ -134,7 +134,7 @@ public class ColumnarHashReuseTests
         {
             var root = new RootEntry { Path = @"C:\test" };
             var f = new DirEntry(false) { Path = "a.txt", Size = size, Modified = mod };
-            if (hash) f.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+            if (hash) f.SetHash(new Hash16([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
             root.AddChild(f);
             root.SetInMemoryFields();
             return root;

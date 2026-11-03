@@ -89,6 +89,15 @@
   explicitly to keep a different size, because catalogs do not record the size their partial hashes used). `ui-state.json`, `colour-rules.txt` and `shell.json` follow `CDE_CONFIG_DIR` too.
   The Windows zip and the Linux archive still ship `appsettings.json` beside the executable. (#158)
 
+### Hashing
+
+- breaking (hashing): `cde hash` now hashes with XxHash128 instead of MurmurHash3 and stores all 128 bits. On 20 GB of
+  duplicate files the hash phase went from 10.2 s to 7.3 s and is now limited by the disk. A printed hash equals
+  `xxh128sum` output. Catalogs hashed by an older version read as "not hashed": `cde hash` recomputes them, a rescan
+  does not reuse them, `cde migrate` writes no hashes, and `cde dupes` and `dupe:hash` ignore them. `cde hash` and
+  `cde dupes` print one line for each such catalog. `cde update --description` re-saves a `.cde` without its old
+  hashes. An older build that reads a new catalog can miss duplicates, so run `cde hash` again after going back. (#222)
+
 ## 2026/10/27 2.1.0-beta.1 (pre-release)
 
 First release from the new pipeline: one zip, `cde-2.1.0-beta.1-win-x64.zip`, with `cde`, `cdewin` and the new

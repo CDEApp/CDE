@@ -105,7 +105,7 @@ public class SearchServiceTests
             foreach (var (name, size, hash) in files)
             {
                 var file = new DirEntry(false) { Path = name, Size = size };
-                if (hash is { } h) file.SetHash(Enumerable.Repeat(h, 16).ToArray());
+                if (hash is { } h) file.SetHash(new Hash16(Enumerable.Repeat(h, 16).ToArray()));
                 root.AddChild(file);
             }
 

@@ -34,6 +34,7 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
         try
         {
             using var input = File.OpenRead(file);
+            RootEntry root;
 
             switch (_serializerProtocol)
             {
@@ -49,14 +50,19 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
 
                     using (Operation.Time("Deserialize"))
                     {
-                        return FlatBufferCatalogSerializer.Deserialize(bytes);
+                        root = FlatBufferCatalogSerializer.Deserialize(bytes);
                     }
+                    break;
                 case SerializerProtocol.MessagePack:
-                    return MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
+                    root = MessagePackSerializer.Deserialize<RootEntry>(input, MessagePackConfig.Options);
+                    break;
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");
             }
+
+            root?.ForgetHashes();
+            return root;
         }
         catch (Exception ex)
         {
@@ -69,14 +75,16 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
     {
         try
         {
+            RootEntry root;
             switch (_serializerProtocol)
             {
                 case SerializerProtocol.Flatbuffers:
                     var bytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
                     using (Operation.Time("Deserialize"))
                     {
-                        return FlatBufferCatalogSerializer.Deserialize(bytes);
+                        root = FlatBufferCatalogSerializer.Deserialize(bytes);
                     }
+                    break;
                 case SerializerProtocol.MessagePack:
                     // Read file into memory first (async I/O), then deserialize on thread pool.
                     // This is faster than DeserializeAsync with a stream because:
@@ -84,12 +92,16 @@ public sealed class CatalogRepository : ICatalogRepository, IDisposable
                     // 2. MessagePack can work directly on the memory buffer without internal buffering
                     // Task.Run ensures deserialization doesn't block the UI thread.
                     var msgPackBytes = await _fileStreamManager.ReadAllBytesOptimizedAsync(file);
-                    return await Task.Run(() =>
+                    root = await Task.Run(() =>
                         MessagePackSerializer.Deserialize<RootEntry>(msgPackBytes, MessagePackConfig.Options));
+                    break;
 
                 default:
                     throw new Exception("Invalid Serializer Protocol");
             }
+
+            root?.ForgetHashes();
+            return root;
         }
         catch (Exception ex)
         {

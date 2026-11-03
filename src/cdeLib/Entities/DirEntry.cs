@@ -211,15 +211,9 @@ public sealed class DirEntry : ICommonEntry
         }
     }
 
-    public void SetHash(byte[] hash)
+    public void SetHash(Hash16 hash)
     {
-        Hash = new Hash16(hash);
-        IsHashDone = true;
-    }
-
-    public void SetHash(ulong hash)
-    {
-        Hash = new Hash16(hash, 0);
+        Hash = hash;
         IsHashDone = true;
     }
 

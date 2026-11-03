@@ -76,7 +76,7 @@ internal static class ColumnarSizeGrouping
                 var bits = r.BitFields;
                 var size = r.Size;
                 for (var i = 1; i < r.Count; i++)
-                    if (IsCandidate((Flags)bits[i], size[i], which) && (passes == 1 || PassOf(size[i], passes) == pass))
+                    if (IsCandidate(bits[i], size[i], which) && (passes == 1 || PassOf(size[i], passes) == pass))
                         sizes.Add(size[i]);
             }
 

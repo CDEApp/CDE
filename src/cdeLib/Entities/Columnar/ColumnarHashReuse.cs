@@ -33,6 +33,11 @@ public static class ColumnarHashReuse
             throw new ArgumentException("source and destination must have same root path.");
         }
 
+        if (source.Hashes != CatalogHashes.XxHash128)
+        {
+            return;
+        }
+
         var comparer = new NameComparer();
         var lookupSet = new HashSet<DirEntry>(comparer);
         var lookup = lookupSet.GetAlternateLookup<ReadOnlySpan<char>>();
@@ -130,7 +135,7 @@ public static class ColumnarHashReuse
         }
 
         destination.IsPartialHash = sourcePartial;
-        destination.Hash = source.HasHashes ? source.HashOf(index) : default;
+        destination.Hash = source.HashOf(index);
         // IsHashDone is a separate BitFields flag; without it the copied hash is ignored by
         // hashing/serialization (the reused hash would be silently lost on the next save).
         destination.IsHashDone = true;

@@ -66,7 +66,7 @@ public class HashColumnarMemoryMeasure
                 file.Size = 1_000_000 + pair;
                 if (pair % 2 == 0)
                 {
-                    file.SetHash((ulong)pair + 1);
+                    file.SetHash(new Hash16((ulong)pair + 1, 0));
                     file.IsPartialHash = true;
                 }
             }

@@ -104,7 +104,7 @@ public sealed partial class CatalogSession
             ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(rootPath)) throw new RootNotAccessibleException(rootPath); // vanished mid-scan
 
-            CarryHashesForward(slot, tree, ct);
+            CarryHashesForward(slot, tree);
             tree.SortAllChildrenByPath();
             tree.SetSummaryFields();
             tree.Description = description;
@@ -136,31 +136,11 @@ public sealed partial class CatalogSession
     }
 
     // Hash reuse reads the old catalog under a read lock (the swap cannot run while we use its mapping).
-    private static void CarryHashesForward(CatalogSlot slot, RootEntry fresh, CancellationToken ct)
+    private static void CarryHashesForward(CatalogSlot slot, RootEntry fresh)
     {
         using var lease = slot.EnterRead();
         if (!string.Equals(lease.Source.RootPath, fresh.Path, StringComparison.OrdinalIgnoreCase)) return;
-
-        if (lease.Source is ColumnarCatalogReader columnar)
-        {
-            ColumnarHashReuse.CopyHashes(columnar, fresh);
-            return;
-        }
-
-        // Legacy in-memory store: round-trip it through a temporary .cdex so the same reuse rules apply.
-        if (lease.Source is not EntryStore store) return;
-        var scratch = Path.Combine(Path.GetTempPath(), $"cde-rescan-old-{Guid.NewGuid():N}.cdex");
-        try
-        {
-            ct.ThrowIfCancellationRequested();
-            ColumnarFormat.Write(store, scratch);
-            using var old = new ColumnarCatalogReader(scratch);
-            ColumnarHashReuse.CopyHashes(old, fresh);
-        }
-        finally
-        {
-            TryDelete(scratch);
-        }
+        if (lease.Source is ColumnarCatalogReader columnar) ColumnarHashReuse.CopyHashes(columnar, fresh);
     }
 
     /// <summary>

@@ -68,7 +68,7 @@ internal class SerializeDataModelTest
     public void MessagePack_RoundTrip_PreservesTreeAndHashes()
     {
         re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
-        de2a.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        de2a.SetHash(new Hash16([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
         de2a.IsPartialHash = true;
 
         var bytes = MessagePack.MessagePackSerializer.Serialize(re1,
@@ -90,7 +90,7 @@ internal class SerializeDataModelTest
     public void FlatBuffers_RoundTrip_PreservesTreeHashesAndRootFields()
     {
         re1 = RootEntryTestBase.NewTestRootEntry(_config, out de2a, out de2b, out de2c, out de3a, out de4a);
-        de2a.SetHash([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]);
+        de2a.SetHash(new Hash16([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]));
         de2a.IsPartialHash = true;
         de2a.Size = 1234;
         de2a.ModifiedTicks = 638_000_000_000_000_000;

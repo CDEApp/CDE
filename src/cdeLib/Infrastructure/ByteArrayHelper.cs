@@ -47,16 +47,4 @@ public static class ByteArrayHelper
         BitConverter.TryWriteBytes(bytes, value);
         return ByteArrayToString(bytes);
     }
-
-    /// <summary>
-    /// Converts two ulongs to a lowercase hex string (32 chars total).
-    /// Optimized for Hash16 to avoid multiple allocations.
-    /// </summary>
-    public static string Hash16ToHexString(ulong hashA, ulong hashB)
-    {
-        Span<byte> bytes = stackalloc byte[16];
-        BitConverter.TryWriteBytes(bytes, hashA);
-        BitConverter.TryWriteBytes(bytes.Slice(8), hashB);
-        return ByteArrayToString(bytes);
-    }
 }

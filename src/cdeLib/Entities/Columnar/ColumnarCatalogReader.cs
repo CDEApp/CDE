@@ -32,11 +32,16 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     private readonly long[] _off = new long[ColumnarFormat.ColumnCount];
     private readonly long[] _len = new long[ColumnarFormat.ColumnCount];
 
+    private readonly byte _trustedFlagsMask;
+
     /// <summary>The path this catalog was opened from.</summary>
     public string FilePath { get; }
 
     public int Count { get; }
-    public bool HasHashes { get; }
+
+    public CatalogHashes Hashes { get; }
+
+    public bool HasHashes => Hashes == CatalogHashes.XxHash128;
 
     /// <summary>True if the catalog was scanned following directory junctions/reparse points (#66). False for older files.</summary>
     public bool FollowJunctions { get; }
@@ -81,7 +86,8 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
         Count = BitConverter.ToInt32(header.Slice(8, 4));
         var flags = BitConverter.ToInt32(header.Slice(12, 4));
-        HasHashes = (flags & ColumnarFormat.FlagHasHashes) != 0;
+        Hashes = ColumnarFormat.ParseHashKind(flags);
+        _trustedFlagsMask = HasHashes ? byte.MaxValue : (byte)~FlagsExtensions.HashBits;
         FollowJunctions = (flags & ColumnarFormat.FlagFollowJunctions) != 0;
 
         var p = ColumnarFormat.PreambleFixed;
@@ -120,7 +126,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
 
     public ReadOnlySpan<long> Size => As<long>(ColumnarFormat.Col.Size);
     public ReadOnlySpan<long> ModifiedTicks => As<long>(ColumnarFormat.Col.ModifiedTicks);
-    public ReadOnlySpan<byte> BitFields => Bytes(ColumnarFormat.Col.BitFields);
+    public EntryFlagsColumn BitFields => new(Bytes(ColumnarFormat.Col.BitFields), _trustedFlagsMask);
     public ReadOnlySpan<int> Parent => As<int>(ColumnarFormat.Col.Parent);
     private ReadOnlySpan<int> FirstChild => As<int>(ColumnarFormat.Col.FirstChild);
     private ReadOnlySpan<int> NextSibling => As<int>(ColumnarFormat.Col.NextSibling);
@@ -128,7 +134,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
     private ReadOnlySpan<long> NameOffsets => As<long>(ColumnarFormat.Col.NameOffsets);
     private ReadOnlySpan<byte> NameBlob => Bytes(ColumnarFormat.Col.NameBlob);
 
-    public Flags Flags(int i) => (Flags)BitFields[i];
+    public Flags Flags(int i) => BitFields[i];
     public bool IsDirectory(int i) => (Flags(i) & Entities.Flags.Directory) == Entities.Flags.Directory;
 
     // ----- IEntrySource: index-addressed accessors straight over the mapping -----
@@ -244,7 +250,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             }
             if (regex is { Exhausted: true } || everything is { RegexExhausted: true }) break; // a pattern timed out repeatedly; abandon the scan
 
-            var isDir = ((Flags)bits[i] & Entities.Flags.Directory) == Entities.Flags.Directory;
+            var isDir = (bits[i] & Entities.Flags.Directory) == Entities.Flags.Directory;
             if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
 
             if (o.FromSizeEnable && size[i] < o.FromSize) continue;
@@ -510,10 +516,10 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         return matches;
     }
 
-    private static bool Wanted(byte bitField, bool includeFiles, bool includeFolders)
+    private static bool Wanted(Flags flags, bool includeFiles, bool includeFolders)
     {
         if (includeFiles && includeFolders) return true;
-        var isDir = ((Flags)bitField & Entities.Flags.Directory) == Entities.Flags.Directory;
+        var isDir = (flags & Entities.Flags.Directory) == Entities.Flags.Directory;
         return isDir ? includeFolders : includeFiles;
     }
 

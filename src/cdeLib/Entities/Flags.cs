@@ -26,6 +26,8 @@ public enum Flags : byte
 
 public static class FlagsExtensions
 {
+    public const Flags HashBits = Flags.HashDone | Flags.PartialHash | Flags.PartialHashV2;
+
     /// <summary>
     /// True when the entry has a hash that may be trusted. A partial hash without <see cref="Flags.PartialHashV2"/>
     /// was made by the pre-#37 algorithm (it hashed the wrong block) and counts as not hashed.

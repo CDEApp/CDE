@@ -18,7 +18,7 @@ namespace cdeLib.Entities.Columnar;
 ///     [0]  magic   "CDEX" (4 bytes)
 ///     [4]  int32   version
 ///     [8]  int32   count            (entries incl. root; index 0 = root)
-///     [12] int32   flags            (bit0 = hasHashes, bit1 = followJunctions; unknown bits ignored)
+///     [12] int32   flags            (bit0 = hasHashes, bit1 = followJunctions, bit2 = hashes are XxHash128; unknown bits ignored)
 ///     [16] (int64 offset, int64 length) x <see cref="ColumnCount"/>   -- absolute, 8-aligned
 ///   column bodies (each padded to an 8-byte boundary), in <see cref="Col"/> order.
 ///
@@ -33,13 +33,24 @@ public static partial class ColumnarFormat
     public const int FlagHasHashes = 1;
     /// <summary>Header flags bit1: the catalog was scanned with FollowJunctions on (#66). Absent in older files = false.</summary>
     public const int FlagFollowJunctions = 2;
+    /// <summary>
+    /// Header flags bit2 (#222): the hash column holds XxHash128. A hash column without it was written by an
+    /// older build (MurmurHash3) and reads as unhashed. Older builds ignore the bit.
+    /// </summary>
+    public const int FlagHashXxHash128 = 4;
 
     // Readers (including older builds) ignore unknown flag bits, so a flag may only describe the
     // catalog, never change how the file must be read. A layout change needs a Version bump instead.
 
-    /// <summary>The header flags word; shared by both writers so they can't produce different headers.</summary>
+    /// <summary>The header flags word; shared by all writers so they can't produce different headers.</summary>
     internal static int ComposeFlags(bool hasHashes, bool followJunctions) =>
-        (hasHashes ? FlagHasHashes : 0) | (followJunctions ? FlagFollowJunctions : 0);
+        (hasHashes ? FlagHasHashes | FlagHashXxHash128 : 0) | (followJunctions ? FlagFollowJunctions : 0);
+
+    public static CatalogHashes ParseHashKind(int headerFlags)
+    {
+        if ((headerFlags & FlagHasHashes) == 0) return CatalogHashes.None;
+        return (headerFlags & FlagHashXxHash128) != 0 ? CatalogHashes.XxHash128 : CatalogHashes.Legacy;
+    }
 
     /// <summary>Fixed column ordering. Hash length is 0 when the catalog is un-hashed.</summary>
     public enum Col
@@ -194,4 +205,13 @@ public static partial class ColumnarFormat
         BinaryPrimitives.WriteInt64LittleEndian(b, v);
         s.Write(b);
     }
+}
+
+public enum CatalogHashes
+{
+    None,
+
+    Legacy,
+
+    XxHash128,
 }

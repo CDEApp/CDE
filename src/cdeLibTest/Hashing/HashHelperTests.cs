@@ -1,5 +1,7 @@
 using System;
 using System.IO;
+using System.Linq;
+using System.IO.Hashing;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Infrastructure.Hashing;
@@ -9,14 +11,21 @@ using ILogger = cdeLib.Infrastructure.ILogger;
 
 namespace cdeLibTest.Hashing;
 
-/// <summary>
-/// Issue #36: full hashes must not change; the legacy implementation is the oracle.
-/// Issue #37: partial hashes are now exactly the first N bytes (the legacy "second block" quirk is gone),
-/// so the partial tests assert against the first-N-bytes hash instead of the legacy oracle.
-/// </summary>
 [NonParallelizable]
 public class HashHelperTests
 {
+    private const int Chunk = HashHelper.FullHashChunkSize;
+
+    private static Hash16 Expected(ReadOnlySpan<byte> bytes) => new(XxHash128.HashToUInt128(bytes));
+
+    [Test]
+    public void Hash16_from_UInt128_puts_the_high_half_in_HashA()
+    {
+        var value = new UInt128(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL);
+
+        Assert.That(new Hash16(value), Is.EqualTo(new Hash16(0x0123456789ABCDEFUL, 0xFEDCBA9876543210UL)));
+    }
+
     // Small first-pass size so multi-block files stay tiny; 65536 is the production default.
     [TestCase(1024)]
     [TestCase(65536)]
@@ -24,23 +33,54 @@ public class HashHelperTests
     {
         foreach (var size in SizeClasses(firstPass))
         {
-            await AssertPartialIsFirstNBytes(size, firstPass);
+            await AssertHash(size, firstPass);
         }
     }
 
-    [Test]
-    public async Task Full_hash_matches_legacy_for_all_size_classes()
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(1000)]
+    public async Task Full_hash_of_a_file_within_one_chunk_is_the_hash_of_its_bytes(int size)
     {
-        foreach (var size in SizeClasses(65536))
+        await AssertHash(size, null);
+    }
+
+    [Test]
+    public async Task Full_hash_across_the_chunk_boundary_equals_the_one_shot_hash([Range(-1, 1)] int delta)
+    {
+        await AssertHash(Chunk + delta, null);
+    }
+
+    [Test]
+    public async Task Full_hash_of_several_chunks_and_a_tail_equals_the_one_shot_hash()
+    {
+        await AssertHash(3 * Chunk + 5, null);
+    }
+
+    [TestCase("", "99aa06d3014798d86001c324468d497f")]
+    [TestCase("abc", "06b05ab6733a618578af5f94892f3950")]
+    [TestCase("bytes 0..255 repeated 4097 times", "3898db5d5b4a87468b544a01c6d30e1c")]
+    public async Task Full_hash_matches_the_libxxhash_known_answer(string content, string expectedHex)
+    {
+        var bytes = content switch
         {
-            await AssertSameAsLegacy(size, null);
-        }
-    }
+            "" => [],
+            "abc" => "abc"u8.ToArray(),
+            _ => Enumerable.Range(0, 256 * 4097).Select(i => (byte)i).ToArray(),
+        };
+        var path = Path.Combine(Path.GetTempPath(), "cde-hashhelper-kat-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            await File.WriteAllBytesAsync(path, bytes);
 
-    [Test]
-    public async Task Full_hash_matches_legacy_across_chunk_boundary([Range(-3, 3)] int delta)
-    {
-        await AssertSameAsLegacy(MurMurHash3.StreamChunkSize + delta, null);
+            var response = await new HashHelper(Substitute.For<ILogger>()).GetHashResponseFromFile(path, null);
+
+            Assert.That(response.Hash.HashA.ToString("x16") + response.Hash.HashB.ToString("x16"), Is.EqualTo(expectedHex));
+        }
+        finally
+        {
+            File.Delete(path);
+        }
     }
 
     [Test]
@@ -53,25 +93,12 @@ public class HashHelperTests
         Assert.That((await helper.GetHashResponseFromFile(missing, null)).IsSuccess, Is.False);
     }
 
-    [Test]
-    public void SetHash_from_ulong_equals_SetHash_from_bytes()
-    {
-        const ulong value = 0xDEADBEEFUL;
-        var viaBytes = new DirEntry(false);
-        viaBytes.SetHash(BitConverter.GetBytes(value));
-        var viaUlong = new DirEntry(false);
-        viaUlong.SetHash(value);
-
-        Assert.That(viaUlong.Hash, Is.EqualTo(viaBytes.Hash));
-        Assert.That(viaUlong.IsHashDone, Is.True);
-    }
-
     private static int[] SizeClasses(int n) =>
     [
         0, 1, n - 1, n, n + 1, n + n / 2, 2 * n - 1, 2 * n, 2 * n + 1, 3 * n, 3 * n + 5
     ];
 
-    private static async Task AssertPartialIsFirstNBytes(int size, int n)
+    private static async Task AssertHash(int size, int? bytesToHash)
     {
         var path = Path.Combine(Path.GetTempPath(), "cde-hashhelper-" + Guid.NewGuid().ToString("N"));
         try
@@ -80,39 +107,14 @@ public class HashHelperTests
             new Random(size).NextBytes(data);
             await File.WriteAllBytesAsync(path, data);
 
-            var hashed = Math.Min(size, n);
-            var expected = (ulong)MurmurHash.Net.MurmurHash3.Hash32(data.AsSpan(0, hashed), 123456U);
-            var actual = await new HashHelper(Substitute.For<ILogger>()).GetHashResponseFromFile(path, n);
-
-            var label = $"size {size}, first pass {n}";
-            Assert.That(actual.IsSuccess, Is.True, label);
-            Assert.That(actual.Hash, Is.EqualTo(expected), label);
-            Assert.That(actual.IsPartialHash, Is.EqualTo(size > n), label);
-            Assert.That(actual.BytesHashed, Is.EqualTo(hashed), label); // N bytes read, not 2N
-        }
-        finally
-        {
-            File.Delete(path);
-        }
-    }
-
-    private static async Task AssertSameAsLegacy(int size, int? bytesToHash)
-    {
-        var path = Path.Combine(Path.GetTempPath(), "cde-hashhelper-" + Guid.NewGuid().ToString("N"));
-        try
-        {
-            var data = new byte[size];
-            new Random(size).NextBytes(data);
-            await File.WriteAllBytesAsync(path, data);
-
-            var expected = await LegacyHashHelper.GetHashResponseFromFile(path, bytesToHash);
+            var hashed = Math.Min(size, bytesToHash ?? size);
             var actual = await new HashHelper(Substitute.For<ILogger>()).GetHashResponseFromFile(path, bytesToHash);
 
             var label = $"size {size}, bytesToHash {bytesToHash?.ToString() ?? "full"}";
             Assert.That(actual.IsSuccess, Is.True, label);
-            Assert.That(actual.Hash, Is.EqualTo(BitConverter.ToUInt64(expected.Hash, 0)), label);
-            Assert.That(actual.IsPartialHash, Is.EqualTo(expected.IsPartialHash), label);
-            Assert.That(actual.BytesHashed, Is.EqualTo(expected.BytesHashed), label);
+            Assert.That(actual.Hash, Is.EqualTo(Expected(data.AsSpan(0, hashed))), label);
+            Assert.That(actual.IsPartialHash, Is.EqualTo(size > bytesToHash), label);
+            Assert.That(actual.BytesHashed, Is.EqualTo(hashed), label);
         }
         finally
         {

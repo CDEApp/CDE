@@ -17,7 +17,6 @@
   <ItemGroup>
     <PackageReference Include="FluentAssertions" Version="8.11.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
-    <PackageReference Include="MurmurHash.Net" Version="0.0.2" />
     <PackageReference Include="NSubstitute" Version="6.2.0" />
     <PackageReference Include="NUnit" Version="5.0.0" />
     <PackageReference Include="NUnit3TestAdapter" Version="6.3.1">

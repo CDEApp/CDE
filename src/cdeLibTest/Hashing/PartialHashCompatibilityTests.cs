@@ -39,7 +39,7 @@ public class PartialHashCompatibilityTests
     private static DirEntry NewStyle(string name, ulong hash, bool partial = true)
     {
         var de = new DirEntry(false) { Path = name, Size = 10 };
-        de.SetHash(hash);
+        de.SetHash(new Hash16(hash, 0));
         de.IsPartialHash = partial;
         return de;
     }

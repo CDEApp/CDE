@@ -126,7 +126,7 @@ public class ScanPipelineMeasure
                     {
                         var b = new byte[16];
                         BitConverter.TryWriteBytes(b, hashSeed++);
-                        c.SetHash(b);
+                        c.SetHash(new Hash16(b));
                     }
                 }
             }

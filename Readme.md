@@ -242,7 +242,7 @@ cd cde-2.1.0-linux-x64/cde
 
   - The main reason for loading also from one directory down is to allow for file system permission to be applied to folders in the current directory to limit what catalog files are loaded by the current useres identity.
 
-- Catalog files can contain MD5 Hashes for files as well if they have been added by using the "-hash" option.
+- Catalog files can contain XxHash128 hashes for files as well if they have been added by using the "-hash" option.
 
 - When hashing cde strives to only hash files that are of the same length as this means they could have the same content.
 
@@ -250,6 +250,7 @@ cd cde-2.1.0-linux-x64/cde
 
   - partial hashes are promoted to a hash of the entire file if another file is encountered with the same file length and a matching partial hash.
   - Compatibility note (issue #37): partial hashes made by older versions hashed the wrong block of the file. They are detected by the missing `PartialHashV2` flag, treated as not hashed, and recomputed by the next `cde hash`. Old catalogs stay readable and full hashes are unchanged. Downgrade caveat: an older build does not know the flag and may compare new partial hashes with old ones (missed duplicates), so re-run `cde hash` if you go back to an older build.
+  - Breaking change (issue #222): hashes are now XxHash128 instead of MurmurHash3. A catalog hashed by an older version has no XxHash128 flag in its header, so its hashes are treated as not hashed: `cde hash` recomputes them, a rescan does not reuse them, `cde migrate` writes a `.cdex` without hashes, and `cde dupes` ignores them. `cde hash` and `cde dupes` print one line per such catalog. `cde update --description` re-saves a `.cde` without its old hashes. Old catalogs stay readable and the `.cdex` version is unchanged. Downgrade caveat: an older build ignores the flag and may compare its own hashes with XxHash128 ones (missed duplicates), and a `cde hash` run by an older build drops the flag so the next new build recomputes everything; run `cde hash` with the new build after going back and forth.
 
 - When scanning a file system that you already have a catalog file for, cde will scan the file system and then load the old catalog file looking for any hashes in the old catalog file that still match on file paths, file names and file sizes to copy to the newly updated catalog file. So the work of hashing a file system with unchanged files should not be lost.
 

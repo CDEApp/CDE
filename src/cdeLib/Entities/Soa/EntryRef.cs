@@ -190,7 +190,6 @@ public sealed class EntryRef : ICommonEntry
     // ----- build / mutate members: not supported on a read-only source view -----
     public void AddChild(DirEntry child) => throw ReadOnly();
     public void SetSummaryFields() => throw ReadOnly();
-    public void SetHash(byte[] hashResponseHash) => throw ReadOnly();
-    public void SetHash(ulong hash) => throw ReadOnly();
+    public void SetHash(Hash16 hash) => throw ReadOnly();
     public void TraverseTreesCopyHash(ICommonEntry destination) => throw ReadOnly();
 }

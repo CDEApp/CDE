@@ -62,9 +62,7 @@ public interface ICommonEntry
     bool ExistsOnFileSystem();
 
     void SetSummaryFields();
-    void SetHash(byte[] hashResponseHash);
-    /// <summary>Set a 64-bit file hash (stored in HashA, HashB zero) without a byte[] round trip.</summary>
-    void SetHash(ulong hash);
+    void SetHash(Hash16 hash);
     int SizeCompareWithDirTo(ICommonEntry de2);
     int ModifiedCompareTo(ICommonEntry de2);
 }

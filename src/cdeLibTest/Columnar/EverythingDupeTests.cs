@@ -24,7 +24,7 @@ public class EverythingDupeTests
         var e = new DirEntry(false) { Path = name, Size = size, Modified = modified };
         if (hash is { } h)
         {
-            e.SetHash(H(h));
+            e.SetHash(new Hash16(H(h)));
             if (partial) e.IsPartialHash = true;
         }
 

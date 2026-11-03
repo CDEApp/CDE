@@ -40,7 +40,7 @@ public class ColumnarHashRewriteTests
         var d = new DirEntry(false) { Path = name, Size = size, Modified = new DateTime(2020, 1, 2, 3, 4, 5, DateTimeKind.Utc) };
         if (hash.HasValue)
         {
-            d.SetHash(hash.Value);
+            d.SetHash(new Hash16(hash.Value, 0));
             d.IsPartialHash = partial;
         }
 
@@ -75,7 +75,7 @@ public class ColumnarHashRewriteTests
     private static void SetOnTree(RootEntry tree, string name, ulong hash, bool partial)
     {
         var e = Find(tree.Children, name);
-        e.SetHash(hash);
+        e.SetHash(new Hash16(hash, 0));
         e.IsPartialHash = partial;
     }
 
@@ -102,9 +102,11 @@ public class ColumnarHashRewriteTests
         return new EntryHashUpdate(i, flags, new Hash16(hash, 0));
     }
 
-    private void AssertSameAsTreePath(bool sourceHasHashes, (string Name, ulong Hash, bool Partial)[] changes)
+    private void AssertSameAsTreePath(bool sourceHasHashes, (string Name, ulong Hash, bool Partial)[] changes,
+        bool legacySource = false)
     {
         var source = WriteCatalog(Catalog(sourceHasHashes));
+        if (legacySource) LegacyCatalog.MarkPre222(source);
 
         // expected: the pre-#40 path - rebuild the tree, mutate it, write it.
         var tree = CatalogTreeBuilder.FromColumnarFiles([source])[0];
@@ -139,6 +141,27 @@ public class ColumnarHashRewriteTests
     {
         AssertSameAsTreePath(true, []);
         AssertSameAsTreePath(false, []);
+    }
+
+    [Test]
+    public void Legacy_source_carries_no_hash_forward_identically_to_the_tree_path()
+    {
+        AssertSameAsTreePath(true, [("c.bin", 44, false), ("b.bin", 55, true)], legacySource: true);
+        AssertSameAsTreePath(true, [], legacySource: true);
+    }
+
+    [Test]
+    public void Rewrite_of_a_legacy_source_without_updates_has_no_hash_column()
+    {
+        var source = WriteCatalog(Catalog(true));
+        LegacyCatalog.MarkPre222(source);
+        var output = TempPath();
+        using (var reader = new ColumnarCatalogReader(source))
+            ColumnarFormat.WriteWithHashes(reader, [], source, output);
+
+        using var result = new ColumnarCatalogReader(output);
+        Assert.That(result.Hashes, Is.EqualTo(CatalogHashes.None));
+        Assert.That(Enumerable.Range(1, result.Count - 1).Any(result.IsHashDone), Is.False);
     }
 
     [Test]
