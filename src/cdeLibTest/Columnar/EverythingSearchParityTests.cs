@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.RegularExpressions;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 using cdeLib.Entities.Soa;
@@ -99,6 +100,26 @@ public class EverythingSearchParityTests
             (Func<string, string, bool, bool>)((n, p, ip) => !Has(p, "café") && Has(ip ? p : n, "txt")));
         yield return new TestCaseData("path:<txt | 日本> !no-path:win",
             (Func<string, string, bool, bool>)((n, p, ip) => (Has(p, "txt") || Has(p, "日本")) && !Has(n, "win")));
+        // Single * and ? stop at a backslash, so on a full path they match nothing here; on a name they match whole-name.
+        yield return new TestCaseData("*.txt", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData("na?ve.txt", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.Equals("naïve.txt", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData("CAFÉ*", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.StartsWith("café", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData("日*語", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.StartsWith('日') && s.EndsWith('語')));
+        yield return new TestCaseData("*ファ*", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.Contains("ファ")));
+        yield return new TestCaseData("\"x *.txt\"", (Func<string, string, bool, bool>)((s, p, ip) => !ip && s.StartsWith("x ", StringComparison.OrdinalIgnoreCase) && s.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData("*", (Func<string, string, bool, bool>)((s, p, ip) => !ip));
+        yield return new TestCaseData("<*.txt | *.md> !do*", (Func<string, string, bool, bool>)((s, p, ip) => !ip &&
+            (s.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) || s.EndsWith(".md", StringComparison.OrdinalIgnoreCase))
+            && !s.StartsWith("do", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData(@"path:*\*\*.txt",
+            (Func<string, string, bool, bool>)((n, p, ip) => Regex.IsMatch(p, @"^[^\\]*\\[^\\]*\\[^\\]*\.txt$", RegexOptions.IgnoreCase)));
+        yield return new TestCaseData(@"path:**\*.txt",
+            (Func<string, string, bool, bool>)((n, p, ip) => p.EndsWith(".txt", StringComparison.OrdinalIgnoreCase)));
+        yield return new TestCaseData(@"path:?:\win*\*",
+            (Func<string, string, bool, bool>)((n, p, ip) => Regex.IsMatch(p, @"^.:\\win[^\\]*\\[^\\]*$", RegexOptions.IgnoreCase)));
+        yield return new TestCaseData("no-path:*.txt path:**\\caf\u00e9\\**",
+            (Func<string, string, bool, bool>)((n, p, ip) =>
+                n.EndsWith(".txt", StringComparison.OrdinalIgnoreCase) && p.Contains("\\caf\u00e9\\", StringComparison.OrdinalIgnoreCase)));
         yield return new TestCaseData("path:\"a|b\" no-path:\"x y\"",
             (Func<string, string, bool, bool>)((n, p, ip) => Has(p, "a|b") && Has(n, "x y")));
     }

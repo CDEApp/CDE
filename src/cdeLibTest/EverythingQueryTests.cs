@@ -343,6 +343,109 @@ public class EverythingQueryTests
         Assert.That(q.Matches("a", @"C:\x\a", false, isFolder: true), Is.False);
     }
 
+    // ---- wildcards (#217) ----
+
+    private static bool MEntry(string query, string name, string path, bool defaultPath = false) =>
+        EverythingQuery.Parse(query).Matches(name, path, defaultPath);
+
+    private static bool MEntryBytes(string query, string name, string path, bool defaultPath = false) =>
+        EverythingQuery.Parse(query).Matches(new Utf8Entry(name, path), defaultPath);
+
+    [Test]
+    public void Wildcard_term_must_match_the_whole_name()
+    {
+        Assert.That(M("*.txt", "notes.txt"), Is.True);
+        Assert.That(M("*.txt", "notes.txt.bak"), Is.False);
+        Assert.That(M("a*b", "axxb"), Is.True);
+        Assert.That(M("a*b", "xaxxb"), Is.False);
+        Assert.That(M("foo*", "foobar"), Is.True);
+        Assert.That(M("foo*", "xfoo"), Is.False);
+        Assert.That(M("?at", "cat"), Is.True);
+        Assert.That(M("?at", "chat"), Is.False);
+    }
+
+    [Test]
+    public void Wildcard_is_case_insensitive_and_handles_non_ascii()
+    {
+        Assert.That(M("*.TXT", "Notes.txt"), Is.True);
+        Assert.That(M("CAF\u00c9*", "caf\u00e9 au lait"), Is.True);
+        Assert.That(MBytes("CAF\u00c9*", "caf\u00e9 au lait"), Is.True);
+        Assert.That(MBytes("*\u65e5\u672c*", "x\u65e5\u672c\u8a9e"), Is.True);
+    }
+
+    [Test]
+    public void Star_alone_matches_an_empty_text_and_anything()
+    {
+        Assert.That(M("*", ""), Is.True);
+        Assert.That(M("*", "whatever"), Is.True);
+        Assert.That(MBytes("*", ""), Is.True);
+    }
+
+    [Test]
+    public void Plain_terms_stay_substring_matches()
+    {
+        Assert.That(M("tx", "notes.txt"), Is.True);
+        Assert.That(M(".txt", "notes.txt.bak"), Is.True);
+    }
+
+    [Test]
+    public void Path_term_star_stops_at_backslash_and_double_star_crosses_it()
+    {
+        const string path = @"C:\data\sub\deep\notes.txt";
+        foreach (var match in new Func<string, bool>[]
+                 {
+                     q => MEntry(q, "notes.txt", path),
+                     q => MEntryBytes(q, "notes.txt", path),
+                 })
+        {
+            Assert.That(match(@"path:C:\data\*\notes.txt"), Is.False);
+            Assert.That(match(@"path:C:\data\**\notes.txt"), Is.True);
+            Assert.That(match(@"path:C:\*\*\*\notes.txt"), Is.True);
+            Assert.That(match(@"path:C:\*\notes.txt"), Is.False);
+            Assert.That(match(@"path:C:\**\notes.txt"), Is.True);
+            Assert.That(match(@"path:C:\data\s?b\*\notes.txt"), Is.True);
+            Assert.That(match(@"path:C:\data?sub\*"), Is.False);
+        }
+    }
+
+    [Test]
+    public void Wildcard_term_without_path_modifier_follows_the_default_text()
+    {
+        const string path = @"C:\data\notes.txt";
+        Assert.That(MEntry("notes.*", "notes.txt", path), Is.True);
+        Assert.That(MEntry("notes.*", "notes.txt", path, defaultPath: true), Is.False);
+        Assert.That(MEntry(@"**\notes.*", "notes.txt", path, defaultPath: true), Is.True);
+    }
+
+    [Test]
+    public void Wildcard_applies_inside_quotes()
+    {
+        Assert.That(M("\"my *.txt\"", "my notes.txt"), Is.True);
+        Assert.That(M("\"my *.txt\"", "your notes.txt"), Is.False);
+    }
+
+    [Test]
+    public void Wildcard_terms_combine_with_not_or_and_and()
+    {
+        Assert.That(M("!*.txt", "a.log"), Is.True);
+        Assert.That(M("!*.txt", "a.txt"), Is.False);
+        Assert.That(M("*.txt | *.log", "a.log"), Is.True);
+        Assert.That(M("*.txt | *.log", "a.md"), Is.False);
+        Assert.That(M("<*.txt | *.log> !tmp*", "tmp1.txt"), Is.False);
+        Assert.That(M("<*.txt | *.log> !tmp*", "keep.txt"), Is.True);
+        Assert.That(M("a* *z", "abz"), Is.True);
+        Assert.That(M("a* *z", "abc"), Is.False);
+    }
+
+    [Test]
+    public void Wildcard_gives_the_same_answer_for_bytes_and_chars_on_long_text()
+    {
+        var name = new string('x', 600) + ".txt";
+        Assert.That(MBytes("*.txt", name), Is.True);
+        Assert.That(M("*.txt", name), Is.True);
+        Assert.That(MBytes("x*.log", name), Is.False);
+    }
+
     private sealed class Utf8Entry(string name, string path, bool isFolder = false) : IEntryText
     {
         public bool IsFolder => isFolder;
