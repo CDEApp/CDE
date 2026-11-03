@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using cdeAppCore.Dtos;
@@ -156,7 +157,8 @@ public class SearchServiceTests
         Assert.That(row.ParentPath, Is.EqualTo(@"C:\test\docs"));
         Assert.That(row.Size, Is.EqualTo(200));
         Assert.That(row.IsDirectory, Is.False);
-        Assert.That(row.CatalogName, Is.EqualTo("test.cde"));
+        // The file on disk, not the DefaultFileName ("test.cde") stored inside the catalog.
+        Assert.That(row.CatalogName, Is.EqualTo(Path.GetFileName(_fixture.CdexPath)));
     }
 
     [Test]

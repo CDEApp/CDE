@@ -19,5 +19,8 @@ public readonly struct CatalogReadLease : IDisposable
 
     public IEntrySource Source { get; }
 
+    /// <summary>The file this catalog was loaded from; null if unknown. Stable while the lease is held (a rescan swap waits).</summary>
+    public string SourcePath => _slot?.SourcePath;
+
     public void Dispose() => _slot?.ExitRead();
 }

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Threading;
 using System.Threading.Channels;
@@ -119,12 +120,13 @@ public sealed class SearchService : ISearchService
             var source = lease.Source;
             var baseScanned = scannedBase;
             var localCatalogId = catalogId;
+            var catalogName = CatalogFileName(lease.SourcePath, source);
 
             source.Find(opts,
                 onMatch: idx =>
                 {
                     if (matched >= limit) return;
-                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, idx), ct)) matched++;
+                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx), ct)) matched++;
                 },
                 isCancelled: () => ct.IsCancellationRequested || matched >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
@@ -160,7 +162,12 @@ public sealed class SearchService : ISearchService
         return true;
     }
 
-    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, int idx)
+    // The catalog's file name on disk, not the name stored inside it (DefaultFileName), which goes stale
+    // when the file is renamed or moved. The stored name is only the fallback when the path is unknown.
+    private static string CatalogFileName(string sourcePath, IEntrySource source) =>
+        string.IsNullOrEmpty(sourcePath) ? source.DefaultFileName : Path.GetFileName(sourcePath);
+
+    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx)
     {
         // One parent-chain walk: build the parent path once, then derive the entry's full path from it
         // plus the name (same separator rule as EntryRef.MakeFullPath and the catalog path builders).
@@ -178,7 +185,7 @@ public sealed class SearchService : ISearchService
             IsReparsePoint = (flags & Flags.ReparsePoint) == Flags.ReparsePoint,
             FullPath = PathJoin.Child(parentPath, name),
             ParentPath = parentPath,
-            CatalogName = source.DefaultFileName
+            CatalogName = catalogName
         };
     }
 
