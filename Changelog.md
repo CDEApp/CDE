@@ -41,6 +41,18 @@
   `size:` and `dm:` work together with the Size and Date controls: an entry has to pass both. A `content` target
   and `size:unknown` are not supported. Help > Search Syntax lists them. (#219)
 
+- feature (cdeWin, cde-tauri, cde): The Everything mode understands `ext:`, `empty:`, the child counts, the descendant
+  counts and `dupe:`, and the `case:` and `diacritics:` modifiers. `ext:mp3;flac` and `ext:*.doc*` match the whole
+  extension of a file, `ext:` alone files with no extension. `empty:`, `child-count:20..30`,
+  `child-file-count:1 child-folder-count:0` and `descendant-count:>1000` test folders by how many files and folders
+  they hold, counted in the catalog. `dupe:` finds entries that share a property (`name` by default, or `path`,
+  `ext`, `size`, `date-modified`, `hash`, joined with `;`) with another entry in ANY loaded catalog. `dupe:hash` uses
+  the hash already stored by `cde hash` and never reads a file: a file with no full hash is left out of it, and the
+  other properties do not need hashes. `case:` makes terms, wildcards, `regex:`, `ext:` and `dupe:` match case;
+  `diacritics:` is accepted and changes nothing, since diacritics always count. Help > Search Syntax lists them. (#221)
+- refactor (cdeLib): `EverythingQuery` is split into smaller files for the grammar, the evaluation context, the
+  syntax tree nodes, the terms and the functions. No change in behavior. (#221)
+
 ### Release
 
 - feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the

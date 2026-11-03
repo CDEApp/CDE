@@ -52,7 +52,7 @@ public class SearchSyntaxHelpTests
     {
         var functions = SearchSyntaxHelp.Sections.Single(s => s.Title == "Functions");
         var all = string.Join("\n", functions.Rows.Select(r => r.Syntax));
-        foreach (var item in new[] { "size:", "date-modified:", "dm:" })
+        foreach (var item in new[] { "size:", "date-modified:", "dm:", "ext:", "empty:", "child-count:", "descendant-count:", "dupe:" })
             Assert.That(all, Does.Contain(item));
     }
 
@@ -60,7 +60,7 @@ public class SearchSyntaxHelpTests
     public void Says_what_is_not_supported_and_which_controls_are_ignored()
     {
         var notes = string.Join(" ", SearchSyntaxHelp.Notes);
-        foreach (var item in new[] { "ext:", @"\:", "?path:", "Include Path", "Files/Folders" })
+        foreach (var item in new[] { "size:unknown", @"\:", "?path:", "Include Path", "Files/Folders" })
             Assert.That(notes, Does.Contain(item));
     }
 

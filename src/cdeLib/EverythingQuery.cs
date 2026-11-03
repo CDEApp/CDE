@@ -18,6 +18,9 @@ namespace cdeLib;
 /// regular expression, case-insensitive, matching anywhere in the text, so use a phrase for one with a space or
 /// <c>|</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
 /// <c>diacritics:</c> (accepted for Everything compatibility; diacritics always count here, so it changes nothing).
+/// The functions are <c>size:</c>, <c>date-modified:</c> (<c>dm:</c>), <c>ext:</c>, <c>empty:</c>, the child and
+/// descendant counts and <c>dupe:</c>; see <see cref="UsesProperties"/>, <see cref="UsesCounts"/> and
+/// <see cref="DuplicateSpecs"/> for what a caller must hand to <c>Matches</c> for them.
 /// A modifier goes directly in front of one word, phrase or group, with no space; modifiers chain
 /// (<c>path:regex:^c:</c>); the one nearest the term wins, and inside a group the innermost modifier wins. The filters
 /// <c>file:</c> and <c>folder:</c> are stand-alone tests on the entry kind (not modifiers): they join the AND, OR, NOT
