@@ -84,6 +84,7 @@ public class ProgramTests
             "POST /catalogs/migrate",
             "POST /catalogs/preflight",
             "POST /catalogs/{id:int}/rescan",
+            "POST /compare/summaries",
             "POST /search",
             "POST /session/reload",
             "POST /shell",
