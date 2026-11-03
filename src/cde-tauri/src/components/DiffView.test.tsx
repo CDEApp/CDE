@@ -84,7 +84,7 @@ describe("DiffView", () => {
   it("labels the catalog and root fields on each side", () => {
     render(<DiffView client={client} catalogs={[catalog(1, "C:\left")]} resolveStyle={() => undefined} onExplore={onExplore} />);
     expect(screen.getAllByText("Catalog")).toHaveLength(2);
-    const roots = screen.getAllByText("Root");
+    const roots = screen.getAllByText("Base");
     expect(roots).toHaveLength(2);
     for (const root of roots) expect(root.tagName).toBe("LABEL");
     const sides = document.querySelectorAll(".diff-side");
@@ -174,9 +174,9 @@ describe("DiffView", () => {
     expect(dataRows()).toHaveLength(4);
   });
 
-  describe("Set as root", () => {
+  describe("Set as base", () => {
     const halves = (name: string) => within(rowOf(name)).getAllByText(name).map((el) => el.closest(".diff-half")!);
-    const setAsRoot = () => fireEvent.click(screen.getByText("Set as root"));
+    const setAsRoot = () => fireEvent.click(screen.getByText("Set as base"));
 
     it("makes a folder the root of the left pane only", async () => {
       await setup();
@@ -190,7 +190,7 @@ describe("DiffView", () => {
       expect(client.children).toHaveBeenCalledWith({ catalogId: 2, entryIndex: 0 }, expect.anything());
       expect(screen.queryByText("only-left.txt")).toBeNull();
       expect(screen.getByText("only-right.txt")).toBeTruthy();
-      expect(screen.queryByText("Set as root")).toBeNull();
+      expect(screen.queryByText("Set as base")).toBeNull();
     });
 
     it("makes a folder the root of the right pane only", async () => {
@@ -203,7 +203,7 @@ describe("DiffView", () => {
       expect(client.children).toHaveBeenCalledWith({ catalogId: 2, entryIndex: 1 }, expect.anything());
     });
 
-    it("keeps the path box resolvable after Set as root", async () => {
+    it("keeps the path box resolvable after Set as base", async () => {
       await setup();
       fireEvent.contextMenu(halves("docs")[0]);
       setAsRoot();
@@ -228,10 +228,10 @@ describe("DiffView", () => {
     it("opens no menu on a file or on an empty half", async () => {
       await setup();
       fireEvent.contextMenu(halves("a.txt")[0]);
-      expect(screen.queryByText("Set as root")).toBeNull();
+      expect(screen.queryByText("Set as base")).toBeNull();
       const empty = rowOf("only-left.txt").querySelector(".diff-half.empty")!;
       fireEvent.contextMenu(empty);
-      expect(screen.queryByText("Set as root")).toBeNull();
+      expect(screen.queryByText("Set as base")).toBeNull();
     });
   });
 
