@@ -12,7 +12,7 @@ public class SearchSyntaxHelpTests
     public void Has_the_four_sections_in_order()
     {
         Assert.That(SearchSyntaxHelp.Sections.Select(s => s.Title),
-            Is.EqualTo(new[] { "Operators", "Modifiers", "Filters", "Wildcards", "Examples" }));
+            Is.EqualTo(new[] { "Operators", "Modifiers", "Filters", "Wildcards", "Functions", "Examples" }));
     }
 
     [Test]
@@ -45,6 +45,15 @@ public class SearchSyntaxHelpTests
     {
         var wildcards = SearchSyntaxHelp.Sections.Single(s => s.Title == "Wildcards");
         Assert.That(wildcards.Rows.Select(r => r.Syntax), Is.EqualTo(new[] { "*", "**", "?" }));
+    }
+
+    [Test]
+    public void Lists_the_size_and_date_modified_functions()
+    {
+        var functions = SearchSyntaxHelp.Sections.Single(s => s.Title == "Functions");
+        var all = string.Join("\n", functions.Rows.Select(r => r.Syntax));
+        foreach (var item in new[] { "size:", "date-modified:", "dm:" })
+            Assert.That(all, Does.Contain(item));
     }
 
     [Test]

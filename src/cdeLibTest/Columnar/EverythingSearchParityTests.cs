@@ -242,6 +242,107 @@ public class EverythingSearchParityTests
         finally { File.Delete(file); }
     }
 
+    private sealed class FixedClock(DateTime now) : TimeProvider
+    {
+        public override TimeZoneInfo LocalTimeZone => TimeZoneInfo.Utc;
+        public override DateTimeOffset GetUtcNow() => new(now, TimeSpan.Zero);
+    }
+
+    private static readonly DateTime Now = new(2026, 7, 10, 12, 0, 0);
+
+    private static RootEntry BuildDatedTree()
+    {
+        var root = new RootEntry { Path = @"C:\", VolumeName = "VOL", DefaultFileName = "t.cde", DriveLetterHint = "C" };
+        var logs = new DirEntry(true) { Path = "logs", Modified = new DateTime(2026, 7, 10, 8, 0, 0) };
+        logs.AddChild(new DirEntry(false) { Path = "today.log", Size = 4096, Modified = new DateTime(2026, 7, 10, 11, 30, 0) });
+        logs.AddChild(new DirEntry(false) { Path = "last-week.log", Size = 100, Modified = new DateTime(2026, 7, 3, 9, 0, 0) });
+        logs.AddChild(new DirEntry(false) { Path = "2025-old.log", Size = 3 * 1024 * 1024, Modified = new DateTime(2025, 12, 31, 23, 59, 59) });
+        var caf = new DirEntry(true) { Path = "caf\u00e9", Modified = new DateTime(2026, 7, 2, 0, 0, 0) };
+        caf.AddChild(new DirEntry(false) { Path = "Na\u00cfve.TXT", Size = 2048, Modified = new DateTime(2026, 7, 2, 23, 59, 59) });
+        caf.AddChild(new DirEntry(false) { Path = "empty.txt", Size = 0, Modified = new DateTime(2026, 7, 3, 0, 0, 0) });
+        root.AddChild(logs);
+        root.AddChild(caf);
+        root.AddChild(new DirEntry(false) { Path = "readme.md", Size = 1024, Modified = new DateTime(2026, 7, 10, 12, 0, 0) });
+        root.SetInMemoryFields();
+        return root;
+    }
+
+    // Oracle over (name, path, size, modified, includePath); written without NumericCriterion.
+    public static IEnumerable<TestCaseData> FunctionCases()
+    {
+        yield return new TestCaseData("size:>1kb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => size > 1024));
+        yield return new TestCaseData("size:1kb..3mb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => size >= 1024 && size <= 3 * 1024 * 1024));
+        yield return new TestCaseData("size:0",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => size == 0));
+        yield return new TestCaseData("!size:>=1kb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => size < 1024));
+        yield return new TestCaseData("dm:today",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m.Date == Now.Date));
+        yield return new TestCaseData("dm:2026-07-02..2026-07-03",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m.Date >= new DateTime(2026, 7, 2) && m.Date <= new DateTime(2026, 7, 3)));
+        yield return new TestCaseData("dm:2025",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m.Year == 2025));
+        yield return new TestCaseData("date-modified:>2026-07-02",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m >= new DateTime(2026, 7, 3)));
+        yield return new TestCaseData("dm:1day",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m >= Now.AddDays(-1)));
+        yield return new TestCaseData("dm:2weeks size:<1mb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => m >= Now.AddDays(-14) && size < 1024 * 1024));
+        yield return new TestCaseData("log size:>1kb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Has(ip ? p : n, "log") && size > 1024));
+        yield return new TestCaseData("path:logs size:>1kb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Has(p, "logs") && size > 1024));
+        yield return new TestCaseData("<size:0 | dm:today> path:caf\u00e9 | readme",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) =>
+                ((size == 0 || m.Date == Now.Date) && Has(p, "caf\u00e9")) || Has(ip ? p : n, "readme")));
+        yield return new TestCaseData("file: dm:2026-07",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => n.Contains('.') && m.Year == 2026 && m.Month == 7));
+        yield return new TestCaseData("regex:^\\d{4}-",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(ip ? p : n, @"^\d{4}-")));
+        yield return new TestCaseData("no-path:regex:\"^(today|empty)\\.\"",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(n, @"^(today|empty)\.", RegexOptions.IgnoreCase)));
+        yield return new TestCaseData("path:regex:\"^c:\\\\caf\u00e9\\\\\" size:>1kb",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => p.StartsWith("C:\\caf\u00e9\\", StringComparison.OrdinalIgnoreCase) && size > 1024));
+        yield return new TestCaseData("regex:\"na\u00cfve\\.txt$\"",
+            (Func<string, string, long, DateTime, bool, bool>)((n, p, size, m, ip) => Regex.IsMatch(ip ? p : n, "na\u00efve\\.txt$", RegexOptions.IgnoreCase)));
+    }
+
+    [TestCaseSource(nameof(FunctionCases))]
+    public void SizeDateAndRegexFunctions_ReaderAndStore_MatchTheOracle(
+        string query, Func<string, string, long, DateTime, bool, bool> oracle)
+    {
+        var store = EntryStore.Build(BuildDatedTree());
+        var file = Path.Combine(Path.GetTempPath(), $"cdetest-evd-{Guid.NewGuid():N}.cdex");
+        ColumnarFormat.Write(store, file);
+        try
+        {
+            using var reader = new ColumnarCatalogReader(file);
+            foreach (var includePath in new[] { false, true })
+            {
+                var expected = new List<int>();
+                for (var i = 1; i < store.Count; i++)
+                {
+                    if (oracle(store.FullName(i), store.FullPath(i), store.Size[i], store.Modified(i), includePath)) expected.Add(i);
+                }
+
+                var options = new EntryStoreFindOptions
+                {
+                    Pattern = query, EverythingMode = true, IncludePath = includePath, Clock = new FixedClock(Now),
+                };
+                var fromReader = new List<int>();
+                reader.Find(options, fromReader.Add);
+                var fromStore = new List<int>();
+                EntryStoreSearch.Find(store, options, fromStore.Add);
+
+                Assert.That(fromReader, Is.EqualTo(expected), $"reader '{query}' path={includePath}");
+                Assert.That(fromStore, Is.EqualTo(expected), $"store '{query}' path={includePath}");
+            }
+        }
+        finally { File.Delete(file); }
+    }
+
     [Test]
     public void EverythingMode_OverridesRegexMode()
     {

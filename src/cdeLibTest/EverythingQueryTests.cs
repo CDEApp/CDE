@@ -226,7 +226,7 @@ public class EverythingQueryTests
     [TestCase("path: a", 0)]
     [TestCase("path:|a", 0)]
     [TestCase("path:!a", 0)]
-    [TestCase("path:no-path:a", 0)]
+    [TestCase("path:no-path:", 5)]
     [TestCase("no-path:", 0)]
     [TestCase("?path:a", 0)]
     [TestCase("a ?no-path:b", 2)]

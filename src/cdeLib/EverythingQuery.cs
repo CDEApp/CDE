@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 using cdeLib.Entities.Columnar;
+using cdeLib.Infrastructure;
 using Superpower;
 using Superpower.Model;
 using Superpower.Parsers;
@@ -30,6 +31,12 @@ public interface IEntryText
 
     /// <summary>True for a folder, false for a file. Only read when the query has a file: or folder: term.</summary>
     bool IsFolder { get; }
+
+    /// <summary>The size in bytes. Only read when the query has a size: term, so override it to support one.</summary>
+    long Size => 0;
+
+    /// <summary>The modified time as local ticks. Only read when the query has a date-modified: term.</summary>
+    long ModifiedTicks => 0;
 }
 
 /// <summary>Same as <see cref="IEntryText"/> but as characters.</summary>
@@ -38,6 +45,12 @@ public interface IEntryChars
     ReadOnlySpan<char> Name { get; }
     ReadOnlySpan<char> Path { get; }
     bool IsFolder { get; }
+
+    /// <summary>See <see cref="IEntryText.Size"/>.</summary>
+    long Size => 0;
+
+    /// <summary>See <see cref="IEntryText.ModifiedTicks"/>.</summary>
+    long ModifiedTicks => 0;
 }
 
 /// <summary>Which of an entry's texts an <see cref="EverythingQuery"/> reads.</summary>
@@ -57,10 +70,15 @@ public enum EverythingTexts
 /// An Everything-style (voidtools) search query, parsed once so testing an entry does no parsing. Supported:
 /// space is AND, <c>|</c> is OR, <c>!</c> is NOT (it applies to the next term, group or phrase), <c>&lt; &gt;</c>
 /// group, <c>"..."</c> is a literal phrase (operators inside quotes are plain text), and the modifiers
-/// <c>path:</c> (match the full path) and <c>no-path:</c> (match the name only). A modifier goes directly in front
-/// of one word, phrase or group, with no space; inside a group the innermost modifier wins. The filters
+/// <c>path:</c> (match the full path), <c>no-path:</c> (match the name only) and <c>regex:</c> (the text is a
+/// regular expression, case-insensitive, matching anywhere in the text, so use a phrase for one with a space or
+/// <c>|</c>). A modifier goes directly in front of one word, phrase or group, with no space; modifiers chain
+/// (<c>path:regex:^c:</c>); the one nearest the term wins, and inside a group the innermost modifier wins. The filters
 /// <c>file:</c> and <c>folder:</c> are stand-alone tests on the entry kind (not modifiers): they join the AND, OR, NOT
-/// and group tree like a term, and the text after the colon is its own term. With no filter, files and folders match. A term with no modifier
+/// and group tree like a term, and the text after the colon is its own term. So are the numeric functions
+/// <c>size:</c> and <c>date-modified:</c> (alias <c>dm:</c>, dashes in the name are optional), whose value is
+/// parsed by <see cref="NumericCriterion"/>. They need the entry's size and modified time:
+/// see <see cref="UsesProperties"/>. With no filter, files and folders match. A term with no modifier
 /// matches the name, or the full path when the caller says the default is the path (a caller option; the app passes
 /// false, because Everything mode uses path: instead of the Include Path toggle).
 /// Precedence from tightest: <c>!</c>, groups, space, <c>|</c>. A term is a case-insensitive substring; modifier
@@ -77,8 +95,37 @@ public sealed class EverythingQuery
     public const int MaxDepth = 32;
 
     private readonly Node _root; // null for an empty query
+    private readonly BoundedRegex[] _regexes;
 
-    private EverythingQuery(Node root) => _root = root;
+    private EverythingQuery(Node root, Binder binder)
+    {
+        _root = root;
+        _regexes = binder?.Regexes.ToArray() ?? [];
+        UsesProperties = root?.UsesProperties ?? false;
+    }
+
+    /// <summary>
+    /// True if the query has a size: or date-modified: term, so the caller must pass the entry's size and modified
+    /// time to <c>Matches</c>. A caller without them can skip reading them when this is false.
+    /// </summary>
+    public bool UsesProperties { get; }
+
+    /// <summary>True once a <c>regex:</c> term has timed out too often: the caller should stop scanning.</summary>
+    public bool RegexExhausted
+    {
+        get
+        {
+            foreach (var r in _regexes)
+                if (r.Exhausted) return true;
+            return false;
+        }
+    }
+
+    /// <summary>If a regex timed out too often, logs once that the results are incomplete. Call after the scan.</summary>
+    public void ReportRegexExhausted()
+    {
+        foreach (var r in _regexes) r.ReportIfExhausted();
+    }
 
     /// <summary>True for an empty (or all-whitespace) query, which matches everything.</summary>
     public bool IsEmpty => _root is null;
@@ -100,34 +147,35 @@ public sealed class EverythingQuery
     /// Test one UTF-8 text that stands for both the name and the path (a caller that has only one text).
     /// Allocation-free when the text and every term are ASCII.
     /// </summary>
-    public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false)
+    public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false, long size = 0, long modifiedTicks = 0)
     {
         if (_root is null) return true;
-        var context = new Context(utf8, isFolder);
+        var context = new Context(utf8, isFolder, size, modifiedTicks);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path; identical to the UTF-8 overload.</summary>
-    public bool Matches(ReadOnlySpan<char> text, bool isFolder = false)
+    public bool Matches(ReadOnlySpan<char> text, bool isFolder = false, long size = 0, long modifiedTicks = 0)
     {
         if (_root is null) return true;
-        var context = new Context(text, isFolder);
+        var context = new Context(text, isFolder, size, modifiedTicks);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path.</summary>
-    public bool Matches(string text, bool isFolder = false)
+    public bool Matches(string text, bool isFolder = false, long size = 0, long modifiedTicks = 0)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return Matches(text.AsSpan(), isFolder);
+        return Matches(text.AsSpan(), isFolder, size, modifiedTicks);
     }
 
     /// <summary>Test an entry's name and full path. Unmarked terms use the path if <paramref name="defaultMatchesPath"/>.</summary>
-    public bool Matches(string name, string fullPath, bool defaultMatchesPath, bool isFolder = false)
+    public bool Matches(string name, string fullPath, bool defaultMatchesPath, bool isFolder = false,
+        long size = 0, long modifiedTicks = 0)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fullPath);
-        return Matches(new StringEntry(name, fullPath, isFolder), defaultMatchesPath);
+        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks), defaultMatchesPath);
     }
 
     /// <summary>
@@ -152,10 +200,17 @@ public sealed class EverythingQuery
     }
 
     /// <summary>Parse a query. Throws <see cref="EverythingQueryException"/> (a <see cref="FormatException"/>) if it is malformed.</summary>
-    public static EverythingQuery Parse(string query)
+    public static EverythingQuery Parse(string query) => Parse(query, TimeProvider.System);
+
+    /// <summary>
+    /// Parse a query. <paramref name="timeProvider"/> fixes "now" for <c>today</c> and spans such as <c>3days</c>,
+    /// in its local time zone.
+    /// </summary>
+    public static EverythingQuery Parse(string query, TimeProvider timeProvider)
     {
         ArgumentNullException.ThrowIfNull(query);
-        if (string.IsNullOrWhiteSpace(query)) return new EverythingQuery(null);
+        ArgumentNullException.ThrowIfNull(timeProvider);
+        if (string.IsNullOrWhiteSpace(query)) return new EverythingQuery(null, null);
 
         CheckQuotesAndBrackets(query);
 
@@ -171,7 +226,9 @@ public sealed class EverythingQuery
             throw new EverythingQueryException(Describe(result.Remainder.IsAtEnd, query, position), position);
         }
 
-        return new EverythingQuery(result.Value);
+        var binder = new Binder(timeProvider.GetLocalNow().DateTime);
+        result.Value.Bind(binder);
+        return new EverythingQuery(result.Value, binder);
     }
 
     private static int LastTokenPosition(TokenList<Tok> tokens)
@@ -208,6 +265,17 @@ public sealed class EverythingQuery
         var opens = new Stack<int>();
         for (var i = 0; i < query.Length; i++)
         {
+            // The < and > in a function value (size:>10mb) are operators, not group brackets.
+            if (char.IsLetter(query[i]) && (i == 0 || char.IsWhiteSpace(query[i - 1]) || query[i - 1] is '|' or '<' or '>' or '!' || AfterModifier(query, i)))
+            {
+                var length = FunctionLength(query.AsSpan(i));
+                if (length > 0)
+                {
+                    i += length - 1;
+                    continue;
+                }
+            }
+
             switch (query[i])
             {
                 case '"':
@@ -246,24 +314,35 @@ public sealed class EverythingQuery
                     "The '?' global modifier and the '\\:' alias are not supported yet; use path: or no-path: in front of a term",
                     t.Position.Absolute);
 
-            if (t.Kind is not (Tok.PathModifier or Tok.NoPathModifier)) continue;
+            if (t.Kind is not (Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier)) continue;
 
             var attached = i + 1 < list.Count
                            && list[i + 1].Position.Absolute == t.Position.Absolute + t.Span.Length
-                           && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open;
+                           && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open
+                               or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier;
             if (!attached)
                 throw new EverythingQueryException(
-                    $"'{t.ToStringValue()}' must be directly followed by a term, phrase or group, with no space",
+                    $"'{t.ToStringValue()}' must be directly followed by a term, phrase, group or another modifier, with no space",
                     t.Position.Absolute);
         }
     }
 
     // ---- grammar ----
 
-    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, FileFilter, FolderFilter, Unsupported }
+    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, RegexModifier, FileFilter, FolderFilter, Function, Unsupported }
 
     /// <summary>Which text a term is tested against.</summary>
     private enum Target { Default, Path, Name }
+
+    /// <summary>What one modifier asks of the terms under it; a term keeps what it already has.</summary>
+    private readonly record struct Modifier(Target Target, bool Regex);
+
+    /// <summary>State for the pass after parsing, which needs the clock and collects the regexes.</summary>
+    private sealed class Binder(DateTime now)
+    {
+        public DateTime Now { get; } = now;
+        public List<BoundedRegex> Regexes { get; } = [];
+    }
 
     [Flags]
     private enum Use { None = 0, Default = 1, Path = 2, Name = 4 }
@@ -281,6 +360,7 @@ public sealed class EverythingQuery
 
     private static readonly TextParser<Unit> NoPathText = Span.EqualToIgnoreCase("no-path:").Value(Unit.Value);
     private static readonly TextParser<Unit> PathText = Span.EqualToIgnoreCase("path:").Value(Unit.Value);
+    private static readonly TextParser<Unit> RegexText = Span.EqualToIgnoreCase("regex:").Value(Unit.Value);
     private static readonly TextParser<Unit> FileText = Span.EqualToIgnoreCase("file:").Value(Unit.Value);
     private static readonly TextParser<Unit> FolderText = Span.EqualToIgnoreCase("folder:").Value(Unit.Value);
 
@@ -288,6 +368,64 @@ public sealed class EverythingQuery
     private static readonly TextParser<Unit> UnsupportedText =
         Character.EqualTo('?').IgnoreThen(NoPathText.Try().Or(PathText))
             .Or(Span.EqualTo("\\:").Value(Unit.Value));
+
+    private const int MaxFunctionName = 16; // "date-modified" is the longest, dashes included
+
+    private static bool IsFunction(ReadOnlySpan<char> name, out Function function)
+    {
+        function = Function.Size;
+        if (name.Length > MaxFunctionName) return false;
+        Span<char> folded = stackalloc char[MaxFunctionName];
+        var n = 0;
+        foreach (var c in name)
+            if (c != '-') folded[n++] = char.ToLowerInvariant(c);
+        folded = folded[..n];
+        function = Function.Size;
+        if (folded.SequenceEqual("size")) return true;
+        function = Function.DateModified;
+        return folded.SequenceEqual("datemodified") || folded.SequenceEqual("dm");
+    }
+
+    // A function is one token, name and value together, because its value may start with < or >, which the
+    // lexer otherwise reads as group brackets: size:>10mb. A leading run of operator characters belongs to the value.
+    private static Result<Unit> FunctionToken(TextSpan input)
+    {
+        var length = FunctionLength(input.Source.AsSpan(input.Position.Absolute, input.Length));
+        return length == 0 ? Result.Empty<Unit>(input) : Result.Value(Unit.Value, input, input.Skip(length));
+    }
+
+    // True if the text before index i is one or more modifiers (path:, no-path:, regex:) that start a term, so a
+    // function after them is the mistake CheckModifiers reports. A colon inside an ordinary word does not count.
+    private static bool AfterModifier(string query, int i)
+    {
+        while (i > 0 && query[i - 1] == ':')
+        {
+            var start = i - 1;
+            while (start > 0 && (char.IsLetter(query[start - 1]) || query[start - 1] == '-')) start--;
+            var name = query.AsSpan(start, i - 1 - start);
+            if (!(name.Equals("path", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("no-path", StringComparison.OrdinalIgnoreCase)
+                  || name.Equals("regex", StringComparison.OrdinalIgnoreCase)))
+                return false;
+            if (start == 0 || char.IsWhiteSpace(query[start - 1]) || query[start - 1] is '|' or '<' or '>' or '!') return true;
+            i = start;
+        }
+
+        return false;
+    }
+
+    // The length of the function token at the start of text, or 0 if there is none.
+    private static int FunctionLength(ReadOnlySpan<char> text)
+    {
+        var colon = 0;
+        while (colon < text.Length && (char.IsLetter(text[colon]) || text[colon] == '-')) colon++;
+        if (colon == 0 || colon >= text.Length || text[colon] != ':' || !IsFunction(text[..colon], out _)) return 0;
+
+        var end = colon + 1;
+        while (end < text.Length && text[end] is '<' or '>' or '=' or '!') end++;
+        while (end < text.Length && !char.IsWhiteSpace(text[end]) && text[end] is not ('|' or '<' or '>' or '"')) end++;
+        return end;
+    }
 
     private static readonly Tokenizer<Tok> Lexer = new TokenizerBuilder<Tok>()
         .Ignore(Span.WhiteSpace)
@@ -299,8 +437,10 @@ public sealed class EverythingQuery
         .Match(UnsupportedText, Tok.Unsupported)
         .Match(NoPathText, Tok.NoPathModifier)
         .Match(PathText, Tok.PathModifier)
+        .Match(RegexText, Tok.RegexModifier)
         .Match(FileText, Tok.FileFilter)
         .Match(FolderText, Tok.FolderFilter)
+        .Match(FunctionToken, Tok.Function)
         .Match(WordText, Tok.Word)
         .Build();
 
@@ -311,31 +451,41 @@ public sealed class EverythingQuery
         select inner;
 
     private static readonly TokenListParser<Tok, Node> Operand =
-        Token.EqualTo(Tok.Word).Select(t => (Node)new Term(t.ToStringValue()))
+        Token.EqualTo(Tok.Word).Select(t => (Node)new Term(t.ToStringValue(), t.Position.Absolute))
             .Or(Token.EqualTo(Tok.Phrase).Select(t =>
             {
                 var s = t.ToStringValue();
-                return (Node)new Term(s.Substring(1, s.Length - 2));
+                return (Node)new Term(s.Substring(1, s.Length - 2), t.Position.Absolute);
             }))
             .Or(Group);
 
-    private static readonly TokenListParser<Tok, Target> Modifier =
-        Token.EqualTo(Tok.PathModifier).Value(Target.Path)
-            .Or(Token.EqualTo(Tok.NoPathModifier).Value(Target.Name));
+    private static readonly TokenListParser<Tok, Modifier> ModifierToken =
+        Token.EqualTo(Tok.PathModifier).Value(new Modifier(Target.Path, false))
+            .Or(Token.EqualTo(Tok.NoPathModifier).Value(new Modifier(Target.Name, false)))
+            .Or(Token.EqualTo(Tok.RegexModifier).Value(new Modifier(Target.Default, true)));
 
     // file: and folder: are stand-alone tests on the entry, not modifiers: the text after them is its own term.
+    // size: and date-modified: are stand-alone tests too, with their value inside the token.
     private static readonly TokenListParser<Tok, Node> Filter =
         Token.EqualTo(Tok.FileFilter).Select(_ => (Node)new KindFilter(isFolder: false))
-            .Or(Token.EqualTo(Tok.FolderFilter).Select(_ => (Node)new KindFilter(isFolder: true)));
+            .Or(Token.EqualTo(Tok.FolderFilter).Select(_ => (Node)new KindFilter(isFolder: true)))
+            .Or(Token.EqualTo(Tok.Function).Select(t => (Node)PropertyFilter.From(t.ToStringValue(), t.Position.Absolute)));
 
     // A modifier fills in the terms under it that have none yet. Inner groups are built first, so the innermost
     // modifier wins.
     private static readonly TokenListParser<Tok, Node> Modified =
-        (from modifier in Modifier
+        (from modifiers in ModifierToken.AtLeastOnce()
          from operand in Operand
-         select operand.Apply(modifier))
+         select ApplyAll(operand, modifiers))
         .Or(Operand)
         .Or(Filter);
+
+    // The modifier nearest the term wins, so apply from the nearest outward; each only fills what is still unset.
+    private static Node ApplyAll(Node operand, Modifier[] modifiers)
+    {
+        for (var i = modifiers.Length - 1; i >= 0; i--) operand.Apply(modifiers[i]);
+        return operand;
+    }
 
     // '!' takes one operand only, so '!!a' is an error rather than a double negative. It goes in front of a modifier.
     private static readonly TokenListParser<Tok, Node> Unary =
@@ -365,19 +515,25 @@ public sealed class EverythingQuery
         public readonly IEntryChars CharEntry;
         public readonly bool DefaultMatchesPath;
         public readonly bool IsFolder; // only for the single-text sources; an entry answers for itself
+        public readonly long Size; // likewise
+        public readonly long ModifiedTicks; // likewise
         public readonly Kind Source;
 
-        public Context(ReadOnlySpan<byte> bytes, bool isFolder)
+        public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks)
         {
             Bytes = bytes;
             IsFolder = isFolder;
+            Size = size;
+            ModifiedTicks = modifiedTicks;
             Source = Kind.SingleBytes;
         }
 
-        public Context(ReadOnlySpan<char> chars, bool isFolder)
+        public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks)
         {
             Chars = chars;
             IsFolder = isFolder;
+            Size = size;
+            ModifiedTicks = modifiedTicks;
             Source = Kind.SingleChars;
         }
 
@@ -398,11 +554,13 @@ public sealed class EverythingQuery
 
     private enum Kind { SingleBytes, SingleChars, Utf8Entry, CharEntry }
 
-    private sealed class StringEntry(string name, string path, bool isFolder) : IEntryChars
+    private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks) : IEntryChars
     {
         public ReadOnlySpan<char> Name => name;
         public ReadOnlySpan<char> Path => path;
         public bool IsFolder => isFolder;
+        public long Size => size;
+        public long ModifiedTicks => modifiedTicks;
     }
 
     // ---- syntax tree ----
@@ -411,11 +569,19 @@ public sealed class EverythingQuery
     {
         public abstract bool Eval(in Context context);
 
-        /// <summary>Give every term that has no path: or no-path: yet this target. Returns this node.</summary>
-        public abstract Node Apply(Target target);
+        /// <summary>Give every term under this node what it has not been given yet by a nearer modifier. Returns this node.</summary>
+        public abstract Node Apply(Modifier modifier);
 
         /// <summary>The kinds of target the terms under this node have.</summary>
         public abstract Use Uses();
+
+        /// <summary>True if a size: or date-modified: test is under this node.</summary>
+        public virtual bool UsesProperties => false;
+
+        /// <summary>The pass after parsing: finish the parts that need the clock, and collect the regexes.</summary>
+        public virtual void Bind(Binder binder)
+        {
+        }
     }
 
     private sealed class Term : Node
@@ -423,11 +589,14 @@ public sealed class EverythingQuery
         private readonly string _text;
         private readonly byte[] _lowerAscii; // null if the term has non-ASCII text
         private readonly WildcardPattern _wildcard; // null for a plain substring term
+        private readonly int _position;
+        private BoundedRegex _regex; // set by regex:, which wins over wildcards
         private Target _target = Target.Default;
 
-        public Term(string text)
+        public Term(string text, int position)
         {
             _text = text;
+            _position = position;
             if (WildcardPattern.IsWildcard(text))
             {
                 _wildcard = WildcardPattern.Parse(text);
@@ -445,7 +614,7 @@ public sealed class EverythingQuery
 
         public bool Contains(ReadOnlySpan<byte> utf8)
         {
-            if (_wildcard is not null) return WildcardMatches(utf8);
+            if (_regex is not null || _wildcard is not null) return DecodedMatches(utf8);
             if (_lowerAscii is not null && Ascii.IsValid(utf8))
                 return Utf8Matcher.AsciiContainsFolded(utf8, _lowerAscii);
             // Rare path: non-ASCII somewhere. Same decoded compare as Utf8Matcher, so results agree.
@@ -453,23 +622,28 @@ public sealed class EverythingQuery
         }
 
         public bool Contains(ReadOnlySpan<char> text) =>
-            _wildcard is not null ? _wildcard.IsMatch(text) : text.Contains(_text, StringComparison.OrdinalIgnoreCase);
+            _regex is not null || _wildcard is not null
+                ? MatchesPattern(text)
+                : text.Contains(_text, StringComparison.OrdinalIgnoreCase);
+
+        private bool MatchesPattern(ReadOnlySpan<char> text) =>
+            _regex is not null ? _regex.IsMatch(text) : _wildcard.IsMatch(text);
 
         // Decode with the same replacement rules as Encoding.UTF8.GetString, so this agrees with the char path.
-        private bool WildcardMatches(ReadOnlySpan<byte> utf8)
+        private bool DecodedMatches(ReadOnlySpan<byte> utf8)
         {
             if (utf8.Length <= StackChars)
             {
                 Span<char> buffer = stackalloc char[StackChars];
                 var written = Encoding.UTF8.GetChars(utf8, buffer);
-                return _wildcard.IsMatch(buffer[..written]);
+                return MatchesPattern(buffer[..written]);
             }
 
             var rented = System.Buffers.ArrayPool<char>.Shared.Rent(utf8.Length); // chars <= bytes
             try
             {
                 var written = Encoding.UTF8.GetChars(utf8, rented);
-                return _wildcard.IsMatch(rented.AsSpan(0, written));
+                return MatchesPattern(rented.AsSpan(0, written));
             }
             finally { System.Buffers.ArrayPool<char>.Shared.Return(rented); }
         }
@@ -484,10 +658,24 @@ public sealed class EverythingQuery
             _ => Contains(UsesPath(c.DefaultMatchesPath) ? c.CharEntry.Path : c.CharEntry.Name),
         };
 
-        public override Node Apply(Target target)
+        public override Node Apply(Modifier modifier)
         {
-            if (_target == Target.Default) _target = target;
+            if (_target == Target.Default) _target = modifier.Target;
+            if (modifier.Regex && _regex is null)
+            {
+                try { _regex = new BoundedRegex(_text); }
+                catch (ArgumentException ex)
+                {
+                    throw new EverythingQueryException($"Not a valid regular expression: {ex.Message}", _position);
+                }
+            }
+
             return this;
+        }
+
+        public override void Bind(Binder binder)
+        {
+            if (_regex is not null) binder.Regexes.Add(_regex);
         }
 
         public override Use Uses() => _target switch
@@ -509,7 +697,73 @@ public sealed class EverythingQuery
 
         public override Use Uses() => Use.None;
 
-        public override Node Apply(Target target) => this;
+        public override Node Apply(Modifier modifier) => this;
+    }
+
+    private enum Function { Size, DateModified }
+
+    // size: or date-modified:. The value is parsed in Bind, which has the clock; From only splits the token.
+    private sealed class PropertyFilter : Node
+    {
+        private readonly Function _function;
+        private readonly string _value;
+        private readonly int _position;
+        private NumericCriterion _criterion;
+
+        private PropertyFilter(Function function, string value, int position)
+        {
+            _function = function;
+            _value = value;
+            _position = position;
+        }
+
+        public static PropertyFilter From(string token, int position)
+        {
+            var colon = token.IndexOf(':');
+            IsFunction(token.AsSpan(0, colon), out var function);
+            var value = token[(colon + 1)..];
+            if (value.Length == 0)
+                throw new EverythingQueryException($"'{token}' needs a value after the colon", position);
+            return new PropertyFilter(function, value, position);
+        }
+
+        public override void Bind(Binder binder)
+        {
+            try
+            {
+                _criterion = _function == Function.Size
+                    ? NumericCriterion.ParseSize(_value)
+                    : NumericCriterion.ParseDate(_value, binder.Now);
+            }
+            catch (FormatException ex)
+            {
+                throw new EverythingQueryException(ex.Message, _position);
+            }
+        }
+
+        public override bool UsesProperties => true;
+
+        public override bool Eval(in Context c)
+        {
+            var value = _function == Function.Size
+                ? c.Source switch
+                {
+                    Kind.SingleBytes or Kind.SingleChars => c.Size,
+                    Kind.Utf8Entry => c.Utf8Entry.Size,
+                    _ => c.CharEntry.Size,
+                }
+                : c.Source switch
+                {
+                    Kind.SingleBytes or Kind.SingleChars => c.ModifiedTicks,
+                    Kind.Utf8Entry => c.Utf8Entry.ModifiedTicks,
+                    _ => c.CharEntry.ModifiedTicks,
+                };
+            return _criterion.Matches(value);
+        }
+
+        public override Use Uses() => Use.None;
+
+        public override Node Apply(Modifier modifier) => this;
     }
 
     private sealed class Not(Node inner) : Node
@@ -518,9 +772,13 @@ public sealed class EverythingQuery
 
         public override Use Uses() => inner.Uses();
 
-        public override Node Apply(Target target)
+        public override bool UsesProperties => inner.UsesProperties;
+
+        public override void Bind(Binder binder) => inner.Bind(binder);
+
+        public override Node Apply(Modifier modifier)
         {
-            inner.Apply(target);
+            inner.Apply(modifier);
             return this;
         }
     }
@@ -541,9 +799,24 @@ public sealed class EverythingQuery
             return true;
         }
 
-        public override Node Apply(Target target)
+        public override bool UsesProperties
         {
-            foreach (var p in parts) p.Apply(target);
+            get
+            {
+                foreach (var p in parts)
+                    if (p.UsesProperties) return true;
+                return false;
+            }
+        }
+
+        public override void Bind(Binder binder)
+        {
+            foreach (var p in parts) p.Bind(binder);
+        }
+
+        public override Node Apply(Modifier modifier)
+        {
+            foreach (var p in parts) p.Apply(modifier);
             return this;
         }
     }
@@ -564,9 +837,24 @@ public sealed class EverythingQuery
             return false;
         }
 
-        public override Node Apply(Target target)
+        public override bool UsesProperties
         {
-            foreach (var p in parts) p.Apply(target);
+            get
+            {
+                foreach (var p in parts)
+                    if (p.UsesProperties) return true;
+                return false;
+            }
+        }
+
+        public override void Bind(Binder binder)
+        {
+            foreach (var p in parts) p.Bind(binder);
+        }
+
+        public override Node Apply(Modifier modifier)
+        {
+            foreach (var p in parts) p.Apply(modifier);
             return this;
         }
     }

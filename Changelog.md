@@ -33,6 +33,14 @@
   that end in `.txt` and `a*b` is anchored at both ends; a term with no wildcard is still a substring. Wildcards are
   case-insensitive and work inside quotes. Help > Search Syntax lists them. (#217)
 
+- feature (cdeWin, cde-tauri, cde): The Everything mode understands the functions `size:` and `date-modified:`
+  (short `dm:`), and the `regex:` modifier. `size:>10mb`, `size:1kb` (1024 to 2047 bytes), `size:2mb..3mb`,
+  `size:!=1kb` and the other numeric forms work; `dm:today`, `dm:2026`, `dm:2026-07-02..2026-07-03`,
+  `dm:2026-07-02T10:30` and spans such as `dm:3days` (newer than 3 days ago) work. `regex:^\d{4}` matches the name
+  with a regular expression, `path:regex:...` the full path; quote a regular expression that has a space or `|`.
+  `size:` and `dm:` work together with the Size and Date controls: an entry has to pass both. A `content` target
+  and `size:unknown` are not supported. Help > Search Syntax lists them. (#219)
+
 ### Release
 
 - feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the
