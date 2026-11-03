@@ -749,6 +749,26 @@ public sealed class RootEntry : object, ICommonEntry
         IsHashDone = true;
     }
 
+    /// <summary>A .cde has no header to say which algorithm made its hashes, so none are usable (#222).</summary>
+    public void ForgetHashes()
+    {
+        BitFields &= ~FlagsExtensions.HashBits;
+        Hash = default;
+        var stack = new Stack<IList<DirEntry>>();
+        stack.Push(Children);
+        while (stack.Count > 0)
+        {
+            var children = stack.Pop();
+            if (children == null) continue;
+            foreach (var child in children)
+            {
+                child.BitFields &= ~FlagsExtensions.HashBits;
+                child.Hash = default;
+                if (child.IsDirectory) stack.Push(child.Children);
+            }
+        }
+    }
+
     public RootEntry(FileSystemInfo fs) : this()
     {
         Path = fs.Name;

@@ -41,7 +41,7 @@ public class CatalogMigratorTests
     private string Migrated => Path.Combine(_dir, "one.cde.migrated");
 
     // data/ a.txt, sub/ b.txt  ->  one.cde
-    private async Task<RootEntry> WriteLegacyCatalogAsync()
+    private async Task<RootEntry> WriteLegacyCatalogAsync(bool withHashes = false)
     {
         var data = Path.Combine(_dir, "data");
         Directory.CreateDirectory(Path.Combine(data, "sub"));
@@ -49,9 +49,29 @@ public class CatalogMigratorTests
         File.WriteAllText(Path.Combine(data, "sub", "b.txt"), "bb");
         var re = new RootEntry();
         re.PopulateRoot(data);
+        if (withHashes)
+        {
+            foreach (var child in re.Children)
+                if (!child.IsDirectory) child.SetHash(new Hash16(1, 2));
+        }
+
         re.ActualFileName = Cde;
         await _repository.Save(re);
         return re;
+    }
+
+    [Test]
+    public async Task Migrate_writes_no_hash_column_for_a_hashed_cde()
+    {
+        await WriteLegacyCatalogAsync(withHashes: true);
+
+        var result = _migrator.Migrate(Cde);
+
+        Assert.That(result.Outcome, Is.EqualTo(MigrationOutcome.Migrated));
+        using var reader = new ColumnarCatalogReader(Cdex);
+        Assert.That(reader.Hashes, Is.EqualTo(CatalogHashes.None));
+        Assert.That(reader.ColumnBytes(ColumnarFormat.Col.Hash).Length, Is.EqualTo(0));
+        for (var i = 1; i < reader.Count; i++) Assert.That(reader.IsHashDone(i), Is.False, reader.NameOf(i));
     }
 
     private string[] LeftoverTmpFiles() => Directory.GetFiles(_dir, "*.tmp");

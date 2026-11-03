@@ -46,17 +46,11 @@ public partial class Duplication
         ReportSizeMatches(grouping.RepeatedSizes.Count, totalFiles, candidates.Length, grouping.LongestRun,
             grouping.LongestRunSize);
 
-        // Issue #37: partial hashes from older versions hashed the wrong block and read as "not hashed".
-        var legacyPartials = 0;
-        foreach (var c in candidates)
+        foreach (var r in readers)
         {
-            if (!c.Flags.IsHashUsable() && (c.Flags & (Flags.HashDone | Flags.PartialHash)) == (Flags.HashDone | Flags.PartialHash))
-            {
-                legacyPartials++;
-            }
+            if (r.Hashes == CatalogHashes.Legacy)
+                ReportStatus($"{r.FilePath} has hashes from an older cde version; they are ignored and recomputed.");
         }
-
-        ReportLegacyPartials(legacyPartials);
 
         // Largest files first, so a break part way still leaves the large files hashed; one group per
         // drive/share hashes in parallel with the others.
@@ -155,7 +149,7 @@ public partial class Duplication
             var size = r.Size;
             for (var i = 1; i < r.Count; i++)
             {
-                var flags = (Flags)bits[i];
+                var flags = bits[i];
                 if (!ColumnarSizeGrouping.IsCandidate(flags, size[i], SizeCandidates.NonEmptyFiles)
                     || !grouping.RepeatedSizes.Contains(size[i]))
                 {

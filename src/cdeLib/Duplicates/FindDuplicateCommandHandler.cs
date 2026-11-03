@@ -59,6 +59,12 @@ public class FindDuplicateCommandHandler : IRequestHandler<FindDuplicatesCommand
                 return Task.CompletedTask;
             }
 
+            foreach (var reader in readers)
+            {
+                if (reader.Hashes == CatalogHashes.Legacy)
+                    _logger.Warning("{File} has hashes from an older cde version; they are ignored. Run cde hash to recompute them.", reader.FilePath);
+            }
+
             _duplication.FindDuplicates(readers, request.Output);
         }
         finally
