@@ -171,10 +171,17 @@ public sealed class CompareService : ICompareService
         {
             _lefts.Clear();
             _rights.Clear();
-            for (var c = _l.FirstChildOf(leftDir); c != EntryStore.None; c = _l.NextSiblingOf(c)) _lefts.Add(c);
-            for (var c = _r.FirstChildOf(rightDir); c != EntryStore.None; c = _r.NextSiblingOf(c)) _rights.Add(c);
+            for (var c = _l.FirstChildOf(leftDir); c != EntryStore.None; c = _l.NextSiblingOf(c))
+            {
+                _lefts.Add(c);
+                Tick(1);
+            }
 
-            Tick(_lefts.Count + _rights.Count);
+            for (var c = _r.FirstChildOf(rightDir); c != EntryStore.None; c = _r.NextSiblingOf(c))
+            {
+                _rights.Add(c);
+                Tick(1);
+            }
 
             // One side empty: everything is one-sided, so no name is needed.
             if (_rights.Count == 0)
@@ -227,6 +234,7 @@ public sealed class CompareService : ICompareService
                 var name = _l.FullName(_lefts[i]);
                 _leftNames.Add(name);
                 _leftGroup[i] = GroupId(name.ToLowerInvariant());
+                Tick(1);
             }
 
             for (var i = 0; i < _rights.Count; i++)
@@ -234,13 +242,16 @@ public sealed class CompareService : ICompareService
                 var name = _r.FullName(_rights[i]);
                 _rightNames.Add(name);
                 _rightGroup[i] = GroupId(name.ToLowerInvariant());
+                Tick(1);
             }
 
             var groups = _groupOf.Count;
             Size(ref _leftStart, groups + 1);
             Size(ref _rightStart, groups + 1);
             BucketByGroup(_leftGroup, _lefts.Count, groups, _leftStart, _leftOrder);
+            Tick(_lefts.Count);
             BucketByGroup(_rightGroup, _rights.Count, groups, _rightStart, _rightOrder);
+            Tick(_rights.Count);
 
             for (var g = 0; g < groups; g++) PairGroup(_leftStart[g], _leftStart[g + 1], _rightStart[g], _rightStart[g + 1]);
         }
@@ -270,6 +281,7 @@ public sealed class CompareService : ICompareService
             for (var a = leftFrom; a < leftTo; a++)
             {
                 var li = _leftOrder[a];
+                Tick(rightTo - rightFrom + 1);
                 for (var b = rightFrom; b < rightTo; b++)
                 {
                     var ri = _rightOrder[b];
@@ -285,6 +297,7 @@ public sealed class CompareService : ICompareService
             for (var a = leftFrom; a < leftTo; a++)
             {
                 var li = _leftOrder[a];
+                Tick(1);
                 if (_leftTaken[li]) continue;
                 while (rb < rightTo && _rightTaken[_rightOrder[rb]]) rb++;
                 if (rb < rightTo)
@@ -336,6 +349,7 @@ public sealed class CompareService : ICompareService
             return source.ModifiedTicksOf(i) / TimeSpan.TicksPerMillisecond;
         }
 
+        // Cheap, counter-based: looks at the token once per CancelCheckInterval entries of work, wherever a loop scales with a folder's children.
         private void Tick(int entries)
         {
             _sinceCheck += entries;

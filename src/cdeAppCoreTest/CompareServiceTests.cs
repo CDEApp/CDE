@@ -337,6 +337,92 @@ public class CompareServiceTests
             Throws.InstanceOf<OperationCanceledException>());
     }
 
+    /// <summary>Forwards to a real source and cancels a token once a chosen accessor has been called enough times.</summary>
+    private sealed class CancellingSource(IEntrySource inner, CancellationTokenSource cts, string trigger, int afterCalls)
+        : IEntrySource
+    {
+        private int _nameCalls;
+        private int _siblingCalls;
+
+        public int NameCalls => _nameCalls;
+        public int SiblingCalls => _siblingCalls;
+
+        public string FullName(int i)
+        {
+            if (Interlocked.Increment(ref _nameCalls) == afterCalls && trigger == nameof(FullName)) cts.Cancel();
+            return inner.FullName(i);
+        }
+
+        public int NextSiblingOf(int i)
+        {
+            if (Interlocked.Increment(ref _siblingCalls) == afterCalls && trigger == nameof(NextSiblingOf)) cts.Cancel();
+            return inner.NextSiblingOf(i);
+        }
+
+        public int Count => inner.Count;
+        public long SizeOf(int i) => inner.SizeOf(i);
+        public DateTime ModifiedOf(int i) => inner.ModifiedOf(i);
+        public long ModifiedTicksOf(int i) => inner.ModifiedTicksOf(i);
+        public Flags FlagsOf(int i) => inner.FlagsOf(i);
+        public bool IsDirectory(int i) => inner.IsDirectory(i);
+        public bool IsHashDone(int i) => inner.IsHashDone(i);
+        public bool IsPartialHash(int i) => inner.IsPartialHash(i);
+        public bool HasHash => inner.HasHash;
+        public Hash16 HashOf(int i) => inner.HashOf(i);
+        public string NameOf(int i) => inner.NameOf(i);
+        public string FullPath(int i) => inner.FullPath(i);
+        public void AppendFullPath(System.Text.StringBuilder sb, int i) => inner.AppendFullPath(sb, i);
+        public int ParentOf(int i) => inner.ParentOf(i);
+        public int FirstChildOf(int i) => inner.FirstChildOf(i);
+        public IEnumerable<int> ChildrenOf(int i) => inner.ChildrenOf(i);
+
+        public void Find(EntryStoreFindOptions options, Action<int> onMatch, Func<bool> isCancelled = null,
+            Action<int> onScan = null) => inner.Find(options, onMatch, isCancelled, onScan);
+
+        public string RootPath => inner.RootPath;
+        public string VolumeName => inner.VolumeName;
+        public string DefaultFileName => inner.DefaultFileName;
+        public string ActualFileName => inner.ActualFileName;
+        public string DriveLetterHint => inner.DriveLetterHint;
+        public string Description => inner.Description;
+        public bool FollowJunctions => inner.FollowJunctions;
+        public long AvailSpace => inner.AvailSpace;
+        public long TotalSpace => inner.TotalSpace;
+        public long ScanStartUtcTicks => inner.ScanStartUtcTicks;
+        public long ScanEndUtcTicks => inner.ScanEndUtcTicks;
+        public long RootSize => inner.RootSize;
+        public uint RootFileEntryCount => inner.RootFileEntryCount;
+        public uint RootDirEntryCount => inner.RootDirEntryCount;
+    }
+
+    [TestCase(nameof(CancellingSource.FullName))]
+    [TestCase(nameof(CancellingSource.NextSiblingOf))]
+    public void CancelledMidWalk_StopsWithinAChunkAndReleasesTheLease(string trigger)
+    {
+        const int children = 20000;
+        const int cancelAfter = 700;
+        DirEntry Folder(string name) => D(name, Enumerable.Range(0, children).Select(i => F($"f{i}", 1)).ToArray());
+        using var c = new Catalogs(Root(Folder("a"), Folder("b")));
+        var left = c.Ref(0, "a");
+        var right = c.Ref(0, "b");
+        using var cts = new CancellationTokenSource();
+        var source = new CancellingSource(c.Session.GetSource(0), cts, trigger, cancelAfter);
+        using var slot = new CatalogSlot(source, null);
+        var session = Substitute.For<ICatalogSession>();
+        session.CatalogCount.Returns(1);
+        session.AcquireRead(0).Returns(_ => slot.EnterRead());
+
+        Assert.That(() => new CompareService(session).Summarize([(left, right)], cts.Token),
+            Throws.InstanceOf<OperationCanceledException>());
+
+        // Uncancelled, the walk makes 2 * children name reads and 2 * children sibling steps.
+        var calls = trigger == nameof(CancellingSource.FullName) ? source.NameCalls : source.SiblingCalls;
+        Assert.That(calls, Is.InRange(cancelAfter, cancelAfter + 3 * 256));
+        // A leaked read lease would make the write lock wait until this token fires, which fails the test.
+        using var guard = new CancellationTokenSource(TimeSpan.FromSeconds(5));
+        Assert.That(() => { slot.EnterWrite(guard.Token); slot.ExitWrite(); }, Throws.Nothing);
+    }
+
     [Test]
     public void LeasesAreReleased_SoARescanSwapIsNotBlockedAfterwards()
     {
