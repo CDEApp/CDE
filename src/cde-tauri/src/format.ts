@@ -30,14 +30,24 @@ export function sizeTitle(size: number, locale?: string): string {
   return `${size.toLocaleString(locale)} ${size === 1 ? "byte" : "bytes"}`;
 }
 
-/**
- * A catalog's display name: the base name of its file (`CatalogInfo.actualFileName`, which may be
- * a bare name or a full path) without a `.cdex` / `.cde` extension. Empty when there is none.
- */
-export function catalogName(fileName: string | null | undefined): string {
+/** The last segment of a file path (or a bare name), with its extension. Empty when there is none. */
+export function fileBaseName(fileName: string | null | undefined): string {
   if (!fileName) return "";
-  const base = fileName.slice(Math.max(fileName.lastIndexOf("\\"), fileName.lastIndexOf("/")) + 1);
-  return base.replace(/\.cdex?$/i, "");
+  return fileName.slice(Math.max(fileName.lastIndexOf("\\"), fileName.lastIndexOf("/")) + 1);
+}
+
+/**
+ * The file a catalog is on disk as: where it was loaded from (`sourcePath`). The name stored inside
+ * the catalog (`actualFileName`) is where it was first saved, so it goes stale when the file is
+ * renamed or moved; it is only the fallback for a catalog with no source path.
+ */
+export function catalogFile(c: { sourcePath?: string | null; actualFileName?: string | null }): string {
+  return c.sourcePath || c.actualFileName || "";
+}
+
+/** A catalog's display name: the base name of its file without a `.cdex` / `.cde` extension. */
+export function catalogName(fileName: string | null | undefined): string {
+  return fileBaseName(fileName).replace(/\.cdex?$/i, "");
 }
 
 export function formatDate(iso: string, isModifiedBad: boolean): string {
