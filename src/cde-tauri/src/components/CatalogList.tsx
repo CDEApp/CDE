@@ -1,4 +1,6 @@
+import { useMemo } from "react";
 import { CatalogInfo } from "../api/types";
+import { type CatalogSort, type CatalogSortColumn, sortCatalogs } from "../catalogSort";
 import { catalogFile, fileBaseName, toHRString } from "../format";
 
 interface Props {
@@ -9,10 +11,25 @@ interface Props {
   onContextMenu?: (catalog: CatalogInfo, x: number, y: number) => void;
   /** Catalog ids being rescanned right now (their rows are dimmed). */
   rescanningIds?: ReadonlySet<number>;
+  /** Current sort (held by App so it survives tab switches). */
+  sort: CatalogSort;
+  /** A column header was clicked. */
+  onSort: (column: CatalogSortColumn) => void;
 }
 
+const COLUMNS: { column: CatalogSortColumn; label: string; numeric?: boolean }[] = [
+  { column: "root", label: "Root" },
+  { column: "volume", label: "Volume" },
+  { column: "dirs", label: "Dirs", numeric: true },
+  { column: "files", label: "Files", numeric: true },
+  { column: "size", label: "Size", numeric: true },
+  { column: "drive", label: "Drive" },
+  { column: "catalog", label: "Catalog" },
+];
+
 /** Catalog list view. Double-click a catalog to make it the directory-tree root. */
-export function CatalogList({ catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds }: Props) {
+export function CatalogList({ catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds, sort, onSort }: Props) {
+  const rows = useMemo(() => sortCatalogs(catalogs, sort), [catalogs, sort]);
   return (
     <div className="grid cataloglist">
       {onNewCatalog && (
@@ -25,17 +42,27 @@ export function CatalogList({ catalogs, onActivate, onNewCatalog, onContextMenu,
       <table>
         <thead>
           <tr>
-            <th>Root</th>
-            <th>Volume</th>
-            <th>Dirs</th>
-            <th>Files</th>
-            <th>Size</th>
-            <th>Drive</th>
-            <th>Catalog</th>
+            {COLUMNS.map(({ column, label, numeric }) => {
+              const active = sort?.column === column;
+              return (
+                <th
+                  key={column}
+                  className={numeric ? "num" : undefined}
+                  aria-sort={!active ? "none" : sort.direction === "asc" ? "ascending" : "descending"}
+                >
+                  <button className="th-sort" onClick={() => onSort(column)}>
+                    {label}
+                    <span className="sort-arrow" aria-hidden="true">
+                      {active ? (sort.direction === "asc" ? "▲" : "▼") : ""}
+                    </span>
+                  </button>
+                </th>
+              );
+            })}
           </tr>
         </thead>
         <tbody>
-          {catalogs.map((c) => (
+          {rows.map((c) => (
             <tr
               key={c.catalogId}
               className={rescanningIds?.has(c.catalogId) ? "rescanning" : undefined}

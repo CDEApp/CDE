@@ -41,6 +41,7 @@ import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./d
 import { DirectoryPane } from "./components/DirectoryPane";
 import { ResultsList } from "./components/ResultsList";
 import { CatalogList } from "./components/CatalogList";
+import { type CatalogSort, nextCatalogSort } from "./catalogSort";
 import { SearchBar } from "./components/SearchBar";
 import { StatusBar } from "./components/StatusBar";
 import { MenuBar } from "./components/MenuBar";
@@ -85,6 +86,8 @@ export default function App() {
 
   // Directory-listing sort: session-only (deliberately not in uiState) and kept across folders.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
+  // Catalogs-tab sort: session-only too, and held here because the tab unmounts on every switch.
+  const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
 
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [catalogDir, setCatalogDir] = useState<string | null>(null);
@@ -748,6 +751,8 @@ export default function App() {
           <CatalogList
             catalogs={catalogs?.catalogs ?? []}
             rescanningIds={new Set(rescans.keys())}
+            sort={catalogSort}
+            onSort={(column) => setCatalogSort((s) => nextCatalogSort(s, column))}
             onNewCatalog={() => void pickNewRoot()}
             onContextMenu={(c, x, y) => setMenu({ x, y, items: [rescanItem(c.catalogId)] })}
             onActivate={(c: CatalogInfo) => {
