@@ -35,7 +35,7 @@ import {
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
-import { catalogName, skipSummary } from "./format";
+import { catalogFile, catalogName, skipSummary } from "./format";
 import type { TreeRoot } from "./components/CatalogTree";
 import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
 import { DirectoryPane } from "./components/DirectoryPane";
@@ -185,7 +185,7 @@ export default function App() {
         label: c.rootPath,
         fullPath: c.rootPath,
         size: c.rootSize,
-        catalogName: catalogName(c.actualFileName),
+        catalogName: catalogName(catalogFile(c)),
         generation: (treeGenRef.current[c.catalogId] ?? 0) + reloadEpochRef.current,
       })),
     );

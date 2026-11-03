@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  catalogFile,
   catalogName,
+  fileBaseName,
   formatDate,
   mb,
   notOlderThanCutoff,
@@ -152,6 +154,25 @@ describe("catalogName", () => {
     expect(catalogName("")).toBe("");
     expect(catalogName(null)).toBe("");
     expect(catalogName(undefined)).toBe("");
+  });
+});
+
+describe("catalogFile", () => {
+  it("prefers the file on disk over the name stored inside the catalog", () => {
+    expect(catalogFile({ sourcePath: "E:\\catalogs\\renamed.cdex", actualFileName: "C-original.cdex" })).toBe(
+      "E:\\catalogs\\renamed.cdex",
+    );
+  });
+
+  it("falls back to the stored name, then to empty", () => {
+    expect(catalogFile({ sourcePath: null, actualFileName: "C-original.cdex" })).toBe("C-original.cdex");
+    expect(catalogFile({ sourcePath: "", actualFileName: "" })).toBe("");
+  });
+
+  it("names the on-disk file for display", () => {
+    const c = { sourcePath: "E:\\catalogs\\renamed.cdex", actualFileName: "C-original.cdex" };
+    expect(catalogName(catalogFile(c))).toBe("renamed");
+    expect(fileBaseName(catalogFile(c))).toBe("renamed.cdex");
   });
 });
 

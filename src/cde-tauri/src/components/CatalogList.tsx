@@ -1,5 +1,5 @@
 import { CatalogInfo } from "../api/types";
-import { toHRString } from "../format";
+import { catalogFile, fileBaseName, toHRString } from "../format";
 
 interface Props {
   catalogs: CatalogInfo[];
@@ -53,7 +53,7 @@ export function CatalogList({ catalogs, onActivate, onNewCatalog, onContextMenu,
               <td className="num">{c.fileEntryCount.toLocaleString()}</td>
               <td className="num">{toHRString(c.rootSize)}</td>
               <td>{c.driveLetterHint}</td>
-              <td>{c.actualFileName}</td>
+              <td title={catalogFile(c)}>{fileBaseName(catalogFile(c))}</td>
             </tr>
           ))}
         </tbody>
