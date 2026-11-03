@@ -210,7 +210,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         if (!o.IncludeFiles && !o.IncludeFolders) return;
 
         // An Everything-style query is parsed once here; it overrides regex mode.
-        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty) : null;
+        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty, o.Clock ?? TimeProvider.System) : null;
         var regexMode = o.RegexMode && everything is null;
         var hasPattern = everything is null ? !string.IsNullOrEmpty(o.Pattern) : !everything.IsEmpty;
         var regex = regexMode && hasPattern
@@ -224,6 +224,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         var blob = NameBlob;
         var texts = everything?.TextsRead(o.IncludePath) ?? EverythingTexts.Name;
         var entryText = texts == EverythingTexts.Both ? new EntryText(this) : null;
+        var readsProperties = everything is { UsesProperties: true };
         var needPathBuf = everything is null ? o.IncludePath : texts == EverythingTexts.Path;
         var pathBuf = needPathBuf ? new byte[1024] : null;
         var chain = needPathBuf ? new int[64] : null;
@@ -236,7 +237,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
                 if (isCancelled != null && isCancelled()) return;
                 onScan?.Invoke(i);
             }
-            if (regex is { Exhausted: true }) break; // pattern timed out repeatedly; abandon the scan
+            if (regex is { Exhausted: true } || everything is { RegexExhausted: true }) break; // a pattern timed out repeatedly; abandon the scan
 
             var isDir = ((Flags)bits[i] & Entities.Flags.Directory) == Entities.Flags.Directory;
             if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
@@ -260,18 +261,21 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             bool match;
             if (everything is not null)
             {
+                var entrySize = readsProperties ? size[i] : 0;
+                var entryModified = readsProperties ? ModifiedOf(i).Ticks : 0;
                 switch (texts)
                 {
                     case EverythingTexts.Name:
-                        match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])), isDir);
+                        match = everything.Matches(blob.Slice((int)offs[i], (int)(offs[i + 1] - offs[i])), isDir,
+                            entrySize, entryModified);
                         break;
                     case EverythingTexts.Path:
                         var n = BuildPathBytes(ref pathBuf, ref chain, i);
-                        match = everything.Matches(pathBuf.AsSpan(0, n), isDir);
+                        match = everything.Matches(pathBuf.AsSpan(0, n), isDir, entrySize, entryModified);
                         break;
                     default:
                         // Terms for both texts: the path is built only if a term reaches one that needs it.
-                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]), isDir);
+                        entryText.Reset(i, (int)offs[i], (int)(offs[i + 1] - offs[i]), isDir, entrySize, entryModified);
                         match = everything.Matches(entryText, o.IncludePath);
                         break;
                 }
@@ -303,6 +307,7 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
             if (match) onMatch(i);
         }
         regex?.ReportIfExhausted(); // never truncate silently
+        everything?.ReportRegexExhausted();
     }
 
     // Decode UTF-8 into a reused char buffer (grown as needed) and return the decoded span, so regex
@@ -331,10 +336,14 @@ public sealed unsafe class ColumnarCatalogReader : IEntrySource, IDisposable
         private int _pathLength = -1;
 
         public bool IsFolder { get; private set; }
+        public long Size { get; private set; }
+        public long ModifiedTicks { get; private set; }
 
-        public void Reset(int index, int nameStart, int nameLength, bool isFolder)
+        public void Reset(int index, int nameStart, int nameLength, bool isFolder, long size, long modifiedTicks)
         {
             IsFolder = isFolder;
+            Size = size;
+            ModifiedTicks = modifiedTicks;
             _index = index;
             _nameStart = nameStart;
             _nameLength = nameLength;

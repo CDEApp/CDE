@@ -27,7 +27,7 @@ public static class EntryStoreSearch
 
         // Non-null exactly when regex mode applies; the match site tests it (not RegexMode) so the flow is
         // provably non-null. Bounded: a pathological pattern times out per entry (no match) and ends the scan.
-        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty) : null;
+        var everything = o.EverythingMode ? EverythingQuery.Parse(o.Pattern ?? string.Empty, o.Clock ?? TimeProvider.System) : null;
         BoundedRegex regex = null;
         if (o.RegexMode && everything is null && !string.IsNullOrEmpty(o.Pattern))
             regex = new BoundedRegex(o.Pattern);
@@ -43,6 +43,7 @@ public static class EntryStoreSearch
         var pathBuffer = readsPath ? ArrayPool<char>.Shared.Rent(512) : null;
         var nameBuffer = readsPath ? null : ArrayPool<char>.Shared.Rent(256);
         using var entryChars = texts == EverythingTexts.Both ? new EntryChars(store) : null;
+        var readsProperties = everything is { UsesProperties: true };
         try
         {
             for (var i = 1; i < store.Count; i++)
@@ -52,7 +53,7 @@ public static class EntryStoreSearch
                     if (isCancelled != null && isCancelled()) return;
                     onScan?.Invoke(i);
                 }
-                if (regex is { Exhausted: true }) return; // pattern timed out repeatedly; abandon the scan
+                if (regex is { Exhausted: true } || everything is { RegexExhausted: true }) return; // a pattern timed out repeatedly; abandon the scan
 
                 var isDir = store.IsDirectory(i);
                 if (isDir ? !o.IncludeFolders : !o.IncludeFiles) continue;
@@ -82,9 +83,11 @@ public static class EntryStoreSearch
                 }
                 else if (everything is not null)
                 {
-                    match = everything.Matches(readsPath
-                        ? WritePath(store, i, ref pathBuffer)
-                        : FullNameSpan(store, i, ref nameBuffer), isDir);
+                    match = everything.Matches(
+                        readsPath ? WritePath(store, i, ref pathBuffer) : FullNameSpan(store, i, ref nameBuffer),
+                        isDir,
+                        readsProperties ? size : 0,
+                        readsProperties ? store.Modified(i).Ticks : 0);
                 }
                 else if (o.IncludePath)
                 {
@@ -107,6 +110,7 @@ public static class EntryStoreSearch
         finally
         {
             regex?.ReportIfExhausted(); // never truncate silently
+            everything?.ReportRegexExhausted();
             if (pathBuffer != null) ArrayPool<char>.Shared.Return(pathBuffer);
             if (nameBuffer != null) ArrayPool<char>.Shared.Return(nameBuffer);
         }
@@ -135,6 +139,10 @@ public static class EntryStoreSearch
         public ReadOnlySpan<char> Name => FullNameSpan(store, _index, ref _nameBuffer);
 
         public bool IsFolder => store.IsDirectory(_index);
+
+        public long Size => store.Size[_index];
+
+        public long ModifiedTicks => store.Modified(_index).Ticks;
 
         public ReadOnlySpan<char> Path
         {

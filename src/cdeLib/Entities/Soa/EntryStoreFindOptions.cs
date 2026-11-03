@@ -18,6 +18,9 @@ public sealed class EntryStoreFindOptions
     /// <see cref="EverythingQuery.Parse"/> first); a malformed one throws <see cref="EverythingQueryException"/>.
     /// </summary>
     public bool EverythingMode { get; set; }
+
+    /// <summary>The clock for <c>today</c> and spans such as <c>3days</c> in an Everything query. Null is the system clock.</summary>
+    public TimeProvider Clock { get; set; }
     public bool IncludePath { get; set; }
     public bool IncludeFiles { get; set; } = true;
     public bool IncludeFolders { get; set; } = true;
