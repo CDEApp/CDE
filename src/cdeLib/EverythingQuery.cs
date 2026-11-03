@@ -72,7 +72,9 @@ public enum EverythingTexts
 /// group, <c>"..."</c> is a literal phrase (operators inside quotes are plain text), and the modifiers
 /// <c>path:</c> (match the full path), <c>no-path:</c> (match the name only) and <c>regex:</c> (the text is a
 /// regular expression, case-insensitive, matching anywhere in the text, so use a phrase for one with a space or
-/// <c>|</c>). A modifier goes directly in front of one word, phrase or group, with no space; modifiers chain
+/// <c>|</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
+/// <c>diacritics:</c> (accepted for Everything compatibility; diacritics always count here, so it changes nothing).
+/// A modifier goes directly in front of one word, phrase or group, with no space; modifiers chain
 /// (<c>path:regex:^c:</c>); the one nearest the term wins, and inside a group the innermost modifier wins. The filters
 /// <c>file:</c> and <c>folder:</c> are stand-alone tests on the entry kind (not modifiers): they join the AND, OR, NOT
 /// and group tree like a term, and the text after the colon is its own term. So are the numeric functions
@@ -314,12 +316,14 @@ public sealed class EverythingQuery
                     "The '?' global modifier and the '\\:' alias are not supported yet; use path: or no-path: in front of a term",
                     t.Position.Absolute);
 
-            if (t.Kind is not (Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier)) continue;
+            if (t.Kind is not (Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CaseModifier
+                or Tok.DiacriticsModifier)) continue;
 
             var attached = i + 1 < list.Count
                            && list[i + 1].Position.Absolute == t.Position.Absolute + t.Span.Length
                            && list[i + 1].Kind is Tok.Word or Tok.Phrase or Tok.Open
-                               or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier;
+                               or Tok.PathModifier or Tok.NoPathModifier or Tok.RegexModifier or Tok.CaseModifier
+                               or Tok.DiacriticsModifier;
             if (!attached)
                 throw new EverythingQueryException(
                     $"'{t.ToStringValue()}' must be directly followed by a term, phrase, group or another modifier, with no space",
@@ -329,13 +333,13 @@ public sealed class EverythingQuery
 
     // ---- grammar ----
 
-    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, RegexModifier, FileFilter, FolderFilter, Function, Unsupported }
+    private enum Tok { Pipe, Bang, Open, Close, Phrase, Word, PathModifier, NoPathModifier, RegexModifier, CaseModifier, DiacriticsModifier, FileFilter, FolderFilter, Function, Unsupported }
 
     /// <summary>Which text a term is tested against.</summary>
     private enum Target { Default, Path, Name }
 
     /// <summary>What one modifier asks of the terms under it; a term keeps what it already has.</summary>
-    private readonly record struct Modifier(Target Target, bool Regex);
+    private readonly record struct Modifier(Target Target, bool Regex, bool Case = false);
 
     /// <summary>State for the pass after parsing, which needs the clock and collects the regexes.</summary>
     private sealed class Binder(DateTime now)
@@ -361,6 +365,8 @@ public sealed class EverythingQuery
     private static readonly TextParser<Unit> NoPathText = Span.EqualToIgnoreCase("no-path:").Value(Unit.Value);
     private static readonly TextParser<Unit> PathText = Span.EqualToIgnoreCase("path:").Value(Unit.Value);
     private static readonly TextParser<Unit> RegexText = Span.EqualToIgnoreCase("regex:").Value(Unit.Value);
+    private static readonly TextParser<Unit> CaseText = Span.EqualToIgnoreCase("case:").Value(Unit.Value);
+    private static readonly TextParser<Unit> DiacriticsText = Span.EqualToIgnoreCase("diacritics:").Value(Unit.Value);
     private static readonly TextParser<Unit> FileText = Span.EqualToIgnoreCase("file:").Value(Unit.Value);
     private static readonly TextParser<Unit> FolderText = Span.EqualToIgnoreCase("folder:").Value(Unit.Value);
 
@@ -438,6 +444,8 @@ public sealed class EverythingQuery
         .Match(NoPathText, Tok.NoPathModifier)
         .Match(PathText, Tok.PathModifier)
         .Match(RegexText, Tok.RegexModifier)
+        .Match(CaseText, Tok.CaseModifier)
+        .Match(DiacriticsText, Tok.DiacriticsModifier)
         .Match(FileText, Tok.FileFilter)
         .Match(FolderText, Tok.FolderFilter)
         .Match(FunctionToken, Tok.Function)
@@ -462,7 +470,9 @@ public sealed class EverythingQuery
     private static readonly TokenListParser<Tok, Modifier> ModifierToken =
         Token.EqualTo(Tok.PathModifier).Value(new Modifier(Target.Path, false))
             .Or(Token.EqualTo(Tok.NoPathModifier).Value(new Modifier(Target.Name, false)))
-            .Or(Token.EqualTo(Tok.RegexModifier).Value(new Modifier(Target.Default, true)));
+            .Or(Token.EqualTo(Tok.RegexModifier).Value(new Modifier(Target.Default, true)))
+            .Or(Token.EqualTo(Tok.CaseModifier).Value(new Modifier(Target.Default, false, Case: true)))
+            .Or(Token.EqualTo(Tok.DiacriticsModifier).Value(new Modifier(Target.Default, false)));
 
     // file: and folder: are stand-alone tests on the entry, not modifiers: the text after them is its own term.
     // size: and date-modified: are stand-alone tests too, with their value inside the token.
@@ -587,26 +597,46 @@ public sealed class EverythingQuery
     private sealed class Term : Node
     {
         private readonly string _text;
-        private readonly byte[] _lowerAscii; // null if the term has non-ASCII text
-        private readonly WildcardPattern _wildcard; // null for a plain substring term
         private readonly int _position;
+        private byte[] _needle; // plain term: the ASCII bytes (lower-cased unless case:), or null if non-ASCII
+        private WildcardPattern _wildcard; // null for a plain substring term
         private BoundedRegex _regex; // set by regex:, which wins over wildcards
+        private bool _regexRequested;
+        private bool _matchCase;
         private Target _target = Target.Default;
 
         public Term(string text, int position)
         {
             _text = text;
             _position = position;
-            if (WildcardPattern.IsWildcard(text))
+        }
+
+        // The modifiers are final once parsing is done, so the matcher is built here, not in the constructor.
+        public override void Bind(Binder binder)
+        {
+            if (_regexRequested)
             {
-                _wildcard = WildcardPattern.Parse(text);
+                try { _regex = new BoundedRegex(_text, ignoreCase: !_matchCase); }
+                catch (ArgumentException ex)
+                {
+                    throw new EverythingQueryException($"Not a valid regular expression: {ex.Message}", _position);
+                }
+
+                binder.Regexes.Add(_regex);
                 return;
             }
 
-            var bytes = Encoding.UTF8.GetBytes(text);
+            if (WildcardPattern.IsWildcard(_text))
+            {
+                _wildcard = WildcardPattern.Parse(_text, ignoreCase: !_matchCase);
+                return;
+            }
+
+            var bytes = Encoding.UTF8.GetBytes(_text);
             if (!Ascii.IsValid(bytes)) return;
-            for (var i = 0; i < bytes.Length; i++) bytes[i] = Utf8Matcher.ToLower(bytes[i]);
-            _lowerAscii = bytes;
+            if (!_matchCase)
+                for (var i = 0; i < bytes.Length; i++) bytes[i] = Utf8Matcher.ToLower(bytes[i]);
+            _needle = bytes;
         }
 
         public bool UsesPath(bool defaultMatchesPath) =>
@@ -615,16 +645,20 @@ public sealed class EverythingQuery
         public bool Contains(ReadOnlySpan<byte> utf8)
         {
             if (_regex is not null || _wildcard is not null) return DecodedMatches(utf8);
-            if (_lowerAscii is not null && Ascii.IsValid(utf8))
-                return Utf8Matcher.AsciiContainsFolded(utf8, _lowerAscii);
+            var ascii = Ascii.IsValid(utf8);
+            if (_needle is not null && ascii)
+                return _matchCase ? utf8.IndexOf(_needle) >= 0 : Utf8Matcher.AsciiContainsFolded(utf8, _needle);
+            if (_matchCase && ascii) return false; // a non-ASCII term cannot be in ASCII text
             // Rare path: non-ASCII somewhere. Same decoded compare as Utf8Matcher, so results agree.
-            return Encoding.UTF8.GetString(utf8).Contains(_text, StringComparison.OrdinalIgnoreCase);
+            return Encoding.UTF8.GetString(utf8).Contains(_text, Comparison);
         }
+
+        private StringComparison Comparison => _matchCase ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
         public bool Contains(ReadOnlySpan<char> text) =>
             _regex is not null || _wildcard is not null
                 ? MatchesPattern(text)
-                : text.Contains(_text, StringComparison.OrdinalIgnoreCase);
+                : text.Contains(_text, Comparison);
 
         private bool MatchesPattern(ReadOnlySpan<char> text) =>
             _regex is not null ? _regex.IsMatch(text) : _wildcard.IsMatch(text);
@@ -661,21 +695,9 @@ public sealed class EverythingQuery
         public override Node Apply(Modifier modifier)
         {
             if (_target == Target.Default) _target = modifier.Target;
-            if (modifier.Regex && _regex is null)
-            {
-                try { _regex = new BoundedRegex(_text); }
-                catch (ArgumentException ex)
-                {
-                    throw new EverythingQueryException($"Not a valid regular expression: {ex.Message}", _position);
-                }
-            }
-
+            _regexRequested |= modifier.Regex;
+            _matchCase |= modifier.Case;
             return this;
-        }
-
-        public override void Bind(Binder binder)
-        {
-            if (_regex is not null) binder.Regexes.Add(_regex);
         }
 
         public override Use Uses() => _target switch
