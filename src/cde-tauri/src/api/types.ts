@@ -277,3 +277,17 @@ export interface ShellRequest {
   action: ShellAction;
   commandId?: number;
 }
+
+/**
+ * Exact tally of everything below one both-sides folder pair (`POST /compare/summaries`). Both-sides
+ * subfolders are containers and not counted; a one-sided entry counts once and is not descended.
+ * `leftNewerFiles` and `rightNewerFiles` are subsets of `differentFiles`.
+ */
+export interface SubtreeSummary {
+  sameFiles: number;
+  differentFiles: number;
+  leftNewerFiles: number;
+  rightNewerFiles: number;
+  leftOnly: number;
+  rightOnly: number;
+}

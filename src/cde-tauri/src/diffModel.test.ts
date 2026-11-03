@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { DirectoryNode } from "./api/types";
+import type { DirectoryNode, SubtreeSummary } from "./api/types";
 import { alignChildren, type ChildLists, DIFF_FILTERS, DIFF_MENU_FILTERS, type DiffFilterId, flattenVisible, relativeSegments } from "./diffModel";
 
 let next = 0;
@@ -117,31 +117,38 @@ describe("flattenVisible", () => {
     ["/same-dir", { left: [node("k")], right: [node("k")] }],
   ]);
   const names = (rows: { name: string }[]) => rows.map((r) => r.name);
+  const flat = (
+    expanded: Set<string>,
+    kids: Map<string, ChildLists>,
+    from: typeof roots,
+    filter: DiffFilterId,
+    summaries = new Map<string, SubtreeSummary>(),
+  ) => flattenVisible(expanded, kids, from, filter, summaries);
 
   it("shows only the roots while nothing is expanded", () => {
-    expect(names(flattenVisible(new Set(), children, roots, "all"))).toEqual([
+    expect(names(flat(new Set(), children, roots, "all"))).toEqual([
       "diff-dir", "same-dir", "only-left", "same-file",
     ]);
   });
 
   it("inserts the children of an expanded folder after it", () => {
-    const rows = flattenVisible(new Set(["/diff-dir"]), children, roots, "all");
+    const rows = flat(new Set(["/diff-dir"]), children, roots, "all");
     expect(names(rows)).toEqual(["diff-dir", "a", "b", "c", "same-dir", "only-left", "same-file"]);
     expect(rows.find((r) => r.name === "a")?.depth).toBe(1);
   });
 
   it("filters diffs, keeping both-sides folders but hiding their same children", () => {
-    const rows = flattenVisible(new Set(["/diff-dir", "/same-dir"]), children, roots, "differences");
+    const rows = flat(new Set(["/diff-dir", "/same-dir"]), children, roots, "differences");
     expect(names(rows)).toEqual(["diff-dir", "a", "b", "c", "same-dir", "only-left"]);
   });
 
   it("filters same, keeping both-sides folders but hiding their different children", () => {
-    const rows = flattenVisible(new Set(["/diff-dir", "/same-dir"]), children, roots, "same");
+    const rows = flat(new Set(["/diff-dir", "/same-dir"]), children, roots, "same");
     expect(names(rows)).toEqual(["diff-dir", "same-dir", "k", "same-file"]);
   });
 
   it("keeps a both-sides folder under Left Orphans so its left-only file is reachable", () => {
-    const rows = flattenVisible(new Set(["/diff-dir"]), children, roots, "leftOrphans");
+    const rows = flat(new Set(["/diff-dir"]), children, roots, "leftOrphans");
     expect(names(rows)).toEqual(["diff-dir", "b", "same-dir", "only-left"]);
   });
 
@@ -149,20 +156,118 @@ describe("flattenVisible", () => {
     const newer = new Map<string, ChildLists>([
       ["/diff-dir", { left: [node("n", { modified: "2024-01-01T12:00:00Z" })], right: [node("n")] }],
     ]);
-    const rows = flattenVisible(new Set(["/diff-dir"]), newer, roots, "leftNewer");
+    const rows = flat(new Set(["/diff-dir"]), newer, roots, "leftNewer");
     expect(names(rows)).toEqual(["diff-dir", "n", "same-dir"]);
   });
 
   it("still filters a one-sided folder by its own status", () => {
     const r = alignChildren([dir("lonely")], [], 0, "");
-    expect(names(flattenVisible(new Set(), new Map(), r, "rightOrphans"))).toEqual([]);
-    expect(names(flattenVisible(new Set(), new Map(), r, "leftOrphans"))).toEqual(["lonely"]);
+    expect(names(flat(new Set(), new Map(), r, "rightOrphans"))).toEqual([]);
+    expect(names(flat(new Set(), new Map(), r, "leftOrphans"))).toEqual(["lonely"]);
   });
 
   it("adds no children for an expanded folder that is not loaded yet", () => {
-    expect(names(flattenVisible(new Set(["/diff-dir"]), new Map(), roots, "all"))).toEqual([
+    expect(names(flat(new Set(["/diff-dir"]), new Map(), roots, "all"))).toEqual([
       "diff-dir", "same-dir", "only-left", "same-file",
     ]);
+  });
+
+  describe("with exact subtree summaries", () => {
+    const summary = (over: Partial<SubtreeSummary> = {}): SubtreeSummary => ({
+      sameFiles: 0,
+      differentFiles: 0,
+      leftNewerFiles: 0,
+      rightNewerFiles: 0,
+      leftOnly: 0,
+      rightOnly: 0,
+      ...over,
+    });
+    const identical = summary({ sameFiles: 3 });
+    const pair = alignChildren([dir("a", 5), dir("b", 5)], [dir("a", 5), dir("b", 5)], 0, "");
+
+    it("hides an identical folder under Diffs but shows it under All and while its summary is missing", () => {
+      const sums = new Map([["/a", identical], ["/b", summary({ differentFiles: 1 })]]);
+      expect(names(flat(new Set(), new Map(), pair, "differences", sums))).toEqual(["b"]);
+      expect(names(flat(new Set(), new Map(), pair, "all", sums))).toEqual(["a", "b"]);
+      expect(names(flat(new Set(), new Map(), pair, "differences"))).toEqual(["a", "b"]);
+      expect(names(flat(new Set(), new Map(), pair, "differences", new Map([["/b", summary({ differentFiles: 1 })]])))).toEqual(["a", "b"]);
+    });
+
+    it("keeps a folder with one-sided entries under its side's orphan filter only", () => {
+      const sums = new Map([["/a", summary({ sameFiles: 2, leftOnly: 1 })], ["/b", identical]]);
+      expect(names(flat(new Set(), new Map(), pair, "leftOrphans", sums))).toEqual(["a"]);
+      expect(names(flat(new Set(), new Map(), pair, "rightOrphans", sums))).toEqual([]);
+    });
+
+    it("treats a folder of equal size but a differing file as different and shows it under Diffs", () => {
+      const sums = new Map([["/a", summary({ sameFiles: 4, differentFiles: 1 })], ["/b", identical]]);
+      const rows = flat(new Set(), new Map(), pair, "differencesNoOrphans", sums);
+      expect(rows.map((r) => [r.name, r.status])).toEqual([["a", "different"]]);
+    });
+
+    it("emits the effective status without mutating the input row", () => {
+      const sums = new Map([["/a", summary({ leftOnly: 1 })], ["/b", identical]]);
+      const rows = flat(new Set(), new Map(), pair, "all", sums);
+      expect(rows.map((r) => r.status)).toEqual(["different", "same"]);
+      expect(pair.map((r) => r.status)).toEqual(["same", "same"]);
+      expect(rows[1]).toBe(pair[1]);
+    });
+
+    it("keeps an expanded container whose descendants match and filters its children as before", () => {
+      const sums = new Map([["/diff-dir", summary({ differentFiles: 1, leftOnly: 1 })], ["/same-dir", identical]]);
+      const rows = flat(new Set(["/diff-dir", "/same-dir"]), children, roots, "differences", sums);
+      expect(names(rows)).toEqual(["diff-dir", "a", "b", "c", "only-left"]);
+    });
+  });
+});
+
+describe("DIFF_FILTERS.belowMatches", () => {
+  const T0 = "2024-01-01T10:00:00Z";
+  const T1 = "2024-01-01T11:00:00Z";
+  const bits = [0, 1];
+
+  // Every combination of "is there at least one entry of this kind below the folder".
+  const cases = bits.flatMap((same) =>
+    bits.flatMap((leftNewerFiles) =>
+      bits.flatMap((rightNewerFiles) =>
+        bits.flatMap((otherDifferent) =>
+          bits.flatMap((leftOnly) =>
+            bits.map((rightOnly) => ({ same, leftNewerFiles, rightNewerFiles, otherDifferent, leftOnly, rightOnly })),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  function descendants(c: (typeof cases)[number]) {
+    const lefts: DirectoryNode[] = [];
+    const rights: DirectoryNode[] = [];
+    if (c.same) { lefts.push(node("same")); rights.push(node("same")); }
+    if (c.leftNewerFiles) { lefts.push(node("ln", { modified: T1 })); rights.push(node("ln", { modified: T0 })); }
+    if (c.rightNewerFiles) { lefts.push(node("rn", { modified: T0 })); rights.push(node("rn", { modified: T1 })); }
+    if (c.otherDifferent) { lefts.push(node("od", { size: 11 })); rights.push(node("od", { size: 12 })); }
+    if (c.leftOnly) lefts.push(node("lo"));
+    if (c.rightOnly) rights.push(node("ro"));
+    return alignChildren(lefts, rights, 1, "/f");
+  }
+
+  function summaryOf(c: (typeof cases)[number]): SubtreeSummary {
+    return {
+      sameFiles: c.same,
+      differentFiles: c.leftNewerFiles + c.rightNewerFiles + c.otherDifferent,
+      leftNewerFiles: c.leftNewerFiles,
+      rightNewerFiles: c.rightNewerFiles,
+      leftOnly: c.leftOnly,
+      rightOnly: c.rightOnly,
+    };
+  }
+
+  it.each(Object.keys(DIFF_FILTERS) as DiffFilterId[])("%s agrees with shows on synthesized descendants", (id) => {
+    // An empty folder has no descendant row at all; "all" keeps it anyway, so it is outside the comparison.
+    for (const c of cases.filter((k) => Object.values(k).some(Boolean))) {
+      const expected = descendants(c).some(DIFF_FILTERS[id].shows);
+      expect(DIFF_FILTERS[id].belowMatches(summaryOf(c)), JSON.stringify(c)).toBe(expected);
+    }
   });
 });
 

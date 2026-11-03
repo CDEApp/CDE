@@ -272,7 +272,7 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
   );
 
   const rows = useMemo(
-    () => flattenVisible(expanded, childrenByKey, rootRows, filter),
+    () => flattenVisible(expanded, childrenByKey, rootRows, filter, new Map()),
     [expanded, childrenByKey, rootRows, filter],
   );
   const inDiffMenu = filter !== "all" && filter !== "same";
