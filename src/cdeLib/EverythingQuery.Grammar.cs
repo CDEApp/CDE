@@ -73,10 +73,13 @@ public sealed partial class EverythingQuery
     {
         var colon = 0;
         while (colon < text.Length && (char.IsLetter(text[colon]) || text[colon] == '-')) colon++;
-        if (colon == 0 || colon >= text.Length || text[colon] != ':' || !IsFunction(text[..colon], out _)) return 0;
+        if (colon == 0 || colon >= text.Length || text[colon] != ':' || !IsFunction(text[..colon], out var function)) return 0;
 
+        // Only a function with a numeric value starts with an operator. For ext:, empty: and dupe: a following > is
+        // the end of a group: <empty:>.
         var end = colon + 1;
-        while (end < text.Length && text[end] is '<' or '>' or '=' or '!') end++;
+        if (TakesOperators(function))
+            while (end < text.Length && text[end] is '<' or '>' or '=' or '!') end++;
         while (end < text.Length && !char.IsWhiteSpace(text[end]) && text[end] is not ('|' or '<' or '>' or '"')) end++;
         return end;
     }

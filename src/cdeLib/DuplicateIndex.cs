@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Text;
+using System.Threading;
 using cdeLib.Entities;
 
 namespace cdeLib;
@@ -42,7 +44,8 @@ public sealed class DuplicateIndex
     public const int MaxSpecs = 64;
 
     /// <summary>Count the keys of <paramref name="specs"/> over every entry (not the root) of every catalog.</summary>
-    public static DuplicateIndex Build(IReadOnlyList<DupeSpec> specs, IEnumerable<IEntrySource> catalogs)
+    public static DuplicateIndex Build(IReadOnlyList<DupeSpec> specs, IEnumerable<IEntrySource> catalogs,
+        CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(specs);
         ArgumentNullException.ThrowIfNull(catalogs);
@@ -54,9 +57,11 @@ public sealed class DuplicateIndex
             if (catalog == null) continue;
             foreach (var spec in specs)
             {
+                cancellationToken.ThrowIfCancellationRequested();
                 var table = counts[spec];
                 for (var i = 1; i < catalog.Count; i++)
                 {
+                    if ((i & 4095) == 0) cancellationToken.ThrowIfCancellationRequested();
                     if (!TryKey(spec, catalog, i, out var key)) continue;
                     table[key] = table.GetValueOrDefault(key) + 1;
                 }
@@ -70,10 +75,11 @@ public sealed class DuplicateIndex
     /// The index for the dupe: functions of an Everything <paramref name="pattern"/>, counted over every catalog, or
     /// null when the pattern has none. A malformed pattern throws <see cref="EverythingQueryException"/>.
     /// </summary>
-    public static DuplicateIndex ForPattern(string pattern, TimeProvider clock, IEnumerable<IEntrySource> catalogs)
+    public static DuplicateIndex ForPattern(string pattern, TimeProvider clock, IEnumerable<IEntrySource> catalogs,
+        CancellationToken cancellationToken = default)
     {
         var query = EverythingQuery.Parse(pattern ?? string.Empty, clock ?? TimeProvider.System);
-        return query.DuplicateSpecs.Count == 0 ? null : Build(query.DuplicateSpecs, catalogs);
+        return query.DuplicateSpecs.Count == 0 ? null : Build(query.DuplicateSpecs, catalogs, cancellationToken);
     }
 
     /// <summary>
@@ -149,7 +155,8 @@ public sealed class DuplicateIndex
 
         public void Add(string text, bool matchCase)
         {
-            foreach (var c in text) Add(matchCase ? c : char.ToUpperInvariant(c));
+            // Whole characters, not UTF-16 units, so a letter stored as a surrogate pair folds too.
+            foreach (var rune in text.EnumerateRunes()) Add((ulong)(matchCase ? rune : Rune.ToUpperInvariant(rune)).Value);
             Add(ulong.MaxValue); // ends the text, so a|bc and ab|c differ
         }
     }

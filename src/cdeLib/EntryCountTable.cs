@@ -44,6 +44,7 @@ public sealed class EntryCountTable
         var n = source.Count;
         var parents = new int[n];
         var folders = new bool[n];
+        if (n > 0) parents[0] = EntryStore.None; // the root has no parent; 0 would make it its own
         for (var i = 1; i < n; i++)
         {
             parents[i] = source.ParentOf(i);
@@ -83,7 +84,7 @@ public sealed class EntryCountTable
             for (var i = n - 1; i >= 1; i--)
             {
                 var p = parents[i];
-                if (p < 0) continue;
+                if (p < 0 || p >= n) continue;
                 descendantFiles[p] += (folders[i] ? 0 : 1) + descendantFiles[i];
                 descendantFolders[p] += (folders[i] ? 1 : 0) + descendantFolders[i];
             }
@@ -95,7 +96,7 @@ public sealed class EntryCountTable
             for (var i = 1; i < n; i++)
             {
                 var steps = 0;
-                for (var p = parents[i]; p >= 0 && p < n && steps < n; p = parents[p], steps++)
+                for (var p = parents[i]; p >= 0 && p < n && steps < n; p = p == 0 ? -1 : parents[p], steps++)
                 {
                     if (folders[i]) descendantFolders[p]++;
                     else descendantFiles[p]++;

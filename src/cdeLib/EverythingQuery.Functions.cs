@@ -52,6 +52,8 @@ public sealed partial class EverythingQuery
         }
     }
 
+    private static bool TakesOperators(Function function) => function is not (Function.Ext or Function.Empty or Function.Dupe);
+
     // The functions that can follow case: and diacritics:, which are not modifiers of a term but of the whole test.
     private static bool SupportsCase(Function function) => function is Function.Ext or Function.Dupe;
 
