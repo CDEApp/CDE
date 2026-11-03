@@ -9,7 +9,7 @@ using Spectre.Console;
 
 namespace cde.HashProgress;
 
-public class HashProgressConsole
+public static class HashProgressConsole
 {
     public static long FilesProcessed { get; set; }
 
@@ -42,7 +42,7 @@ public class HashProgressConsole
     /// Renders progress until <paramref name="mainLoopTask"/> completes. It does not stop on a break: after Ctrl-C
     /// hashing moves to its next phase and then saves, and the user should see that happen.
     /// </summary>
-    public void Start(Task mainLoopTask)
+    public static void Start(Task mainLoopTask)
     {
         var sw = new Stopwatch();
         sw.Start();
