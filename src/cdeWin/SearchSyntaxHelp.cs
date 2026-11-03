@@ -26,6 +26,8 @@ public static class SearchSyntaxHelp
         [
             new("path:term", "match the full path, not just the name. Directly in front of one word, phrase or group, with no space"),
             new("no-path:term", "match the name only"),
+            new("regex:term", "the term is a regular expression, matched anywhere in the text, ignoring case. Quote one with a space or |: regex:\"^a|b$\""),
+            new("path:regex:term", "modifiers chain: a regular expression on the full path"),
             new("path:<a | b>", "a modifier can go in front of a group; the innermost modifier wins"),
             new("!path:term", "put ! in front of the modifier to negate it"),
         ]),
@@ -42,6 +44,15 @@ public static class SearchSyntaxHelp
             new("**", "zero or more characters including backslashes: path:c:\\**\\*.txt"),
             new("?", "exactly one character, but not a backslash: ?at matches cat but not chat"),
         ]),
+        new("Functions",
+        [
+            new("size:>10mb", "size is greater than 10 MB. Also <, <=, >=, == (exactly), != (not exactly), and ranges 2mb..3mb or 2mb-3mb"),
+            new("size:1kb", "a bare size matches its whole unit: 1024 to 2047 bytes. Units: b, kb, mb, gb, tb (binary, 1 kb is 1024 bytes)"),
+            new("date-modified:today", "modified today. Also yesterday, tomorrow. dm: is short for date-modified:"),
+            new("dm:2026-07-02", "modified on that day. Dates are YYYY[-MM[-DD[Thh[:mm[:ss[.sss]]]]]]: dm:2026 is the whole year"),
+            new("dm:2026-07-02..2026-07-03", "modified in a range, including the whole last day"),
+            new("dm:3days", "modified in the last 3 days. Also secs, mins, hours, weeks, months, years. dm:>3days is newer, dm:<3days is older"),
+        ]),
         new("Examples",
         [
             new("do win", "matches Windows (both do and win are in the name)"),
@@ -49,6 +60,8 @@ public static class SearchSyntaxHelp
             new("file: .mp3", "files whose name has .mp3"),
             new("path:system32 hosts", "hosts in a path that has system32"),
             new("txt | log !tmp", "names with txt, or with log but not tmp"),
+            new("file: size:>100mb dm:1week", "files over 100 MB changed in the last week"),
+            new("regex:^IMG_\\d+", "names that start with IMG_ and digits"),
         ]),
     ];
 
@@ -56,7 +69,8 @@ public static class SearchSyntaxHelp
     [
         "Terms are case-insensitive substrings of the name. A term with * or ? must match the whole name (or the whole path after path:).",
         "Include Path and the Files/Folders choice are ignored in this mode: use path:, file: and folder:.",
-        @"Not supported yet: ext: and other functions, the \: alias and the global ?path: form.",
+        "size: and date-modified: apply together with the Size and Date controls: an entry must pass both.",
+        @"Not supported yet: ext: and other functions, size:unknown, the \: alias and the global ?path: form.",
     ];
 
     /// <summary>All sections and notes as one text for a read-only box, with the syntax column aligned.</summary>

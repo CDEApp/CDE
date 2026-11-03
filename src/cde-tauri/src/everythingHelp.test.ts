@@ -5,12 +5,12 @@ const syntaxes = () => EVERYTHING_HELP.flatMap((s) => s.rows.map((r) => r.syntax
 
 describe("EVERYTHING_HELP", () => {
   it("has the four sections in order", () => {
-    expect(EVERYTHING_HELP.map((s) => s.title)).toEqual(["Operators", "Modifiers", "Filters", "Wildcards", "Examples"]);
+    expect(EVERYTHING_HELP.map((s) => s.title)).toEqual(["Operators", "Modifiers", "Filters", "Wildcards", "Functions", "Examples"]);
   });
 
   it("lists every supported operator, modifier and filter", () => {
     const all = syntaxes().join("\n");
-    for (const item of ["a b", "|", "!", "<", "\"", "path:", "no-path:", "file:", "folder:"]) expect(all).toContain(item);
+    for (const item of ["a b", "|", "!", "<", "\"", "path:", "no-path:", "regex:", "file:", "folder:"]) expect(all).toContain(item);
     expect(EVERYTHING_HELP[0].rows[0].meaning).toContain("space is AND");
   });
 
@@ -28,6 +28,12 @@ describe("EVERYTHING_HELP", () => {
   it("lists the three wildcards", () => {
     const wildcards = EVERYTHING_HELP.find((s) => s.title === "Wildcards")!;
     expect(wildcards.rows.map((r) => r.syntax)).toEqual(["*", "**", "?"]);
+  });
+
+  it("lists the size and date-modified functions", () => {
+    const functions = EVERYTHING_HELP.find((s) => s.title === "Functions")!;
+    const all = functions.rows.map((r) => r.syntax).join("\n");
+    for (const item of ["size:", "date-modified:", "dm:"]) expect(all).toContain(item);
   });
 
   it("says what is not supported yet and which controls are ignored", () => {
