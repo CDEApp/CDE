@@ -123,8 +123,8 @@ Two on-disk catalog formats:
 
 ### Hashing
 
-- **MD5Hash** - File content hashing
-- **MurmurHash3** - Fast non-cryptographic hashing
+- **XxHash128** (`System.IO.Hashing`, seed 0) - the file content hash since issue #222, for both the partial and the full hash. All 128 bits are kept in `Hash16` (`HashA` = high 64 bits, `HashB` = low 64 bits, so the `HashA:x16 + HashB:x16` hex that `EntryRecords` prints equals `xxh128sum` output). `HashHelper` is the only producer: one-shot over a single read for the partial hash, incremental over pooled 1 MB reads to end of file for the full hash.
+  - **Breaking change (issue #222)**: earlier builds hashed with MurmurHash3-32. A `.cdex` hashed by this build carries header flag bit2 (`ColumnarFormat.FlagHashXxHash128`). A hash column without that bit (`ColumnarCatalogReader.Hashes == CatalogHashes.Legacy`) and every hash in a `.cde` are never usable: the reader masks their hash flags so they read as unhashed (`BitFields` is the masked `EntryFlagsColumn`; read hash state only through the reader), `CatalogRepository.Read` clears them on load, `cde hash` recomputes them, a rescan reuses none, `cde migrate` writes no hash column, and `cde dupes` ignores them. `cde hash` and `cde dupes` log one line per such catalog. `cde update --description` re-saves a `.cde` without its old hashes. The `.cdex` version is not bumped and old catalogs stay readable. Downgrade caveat: an older build ignores the bit and may compare its MurmurHash3 values with XxHash128 ones (missed duplicates, no false ones), and a `cde hash` by an older build drops the bit, so the next new build recomputes everything; run the new build's `cde hash` after any downgrade round trip.
 - **Partial hashing strategy**: Initially hashes first 64KB, promotes to full hash when duplicates detected
   - **Breaking change (issue #37)**: before the fix the partial hash covered the wrong block (the second block, or a mix) and read 2x the data. It is now exactly the first N bytes (whole file if shorter), read once, correct under short reads. New partial hashes carry `Flags.PartialHashV2` (bit 7). A partial hash WITHOUT that bit (an old catalog) is treated as "not hashed": `IsHashDone` is false for it, it is never compared or copied on rescan, and the next `cde hash` recomputes it. The `.cdex` version is not bumped and old catalogs stay readable. Full hashes are unchanged. Downgrade caveat: an older build does not know the bit, so it reads new-style partial hashes as ordinary partials and may compare them with old-algorithm partials (missed duplicates); do not run an older build over catalogs hashed by a newer one, or run `cde hash` again afterwards.
 
@@ -190,7 +190,7 @@ Entry (base class)
 
 Located in `cdeLib/`:
 - `Catalog/CreateCacheCommandHandler.cs` - Scans file systems, writes columnar `.cdex` catalogs (reusing hashes from an existing `.cdex` when present)
-- `Hashing/HashCatalogCommandHandler.cs` - Adds MD5 hashes to catalogs
+- `Hashing/HashCatalogCommandHandler.cs` - Adds XxHash128 hashes to catalogs
 - `Duplicates/FindDuplicateCommandHandler.cs` - Identifies duplicate files
 - `FindService.cs` - File search functionality
 
@@ -210,11 +210,11 @@ Located in `cdeLib/Infrastructure/`:
   - Example: `C-V3Win7-C__users.cdex` for `C:\users\`
   - Example: `UNC-toothless_c__users_.cdex` for `\\unc\toothless\c$\users`
 - **Loading**: All catalog files in the current directory or one level down are loaded (`GetColumnarFileList` for `.cdex`, `GetCacheFileList` for `.cde`)
-- **Content**: Directory tree (or columns) with optional MD5 hashes
+- **Content**: Directory tree (or columns) with optional XxHash128 hashes
 - **Size**: Highly efficient - 500MB for 11 billion entries
 - **Format**:
   - `.cdex` - custom columnar binary, memory-mapped for zero-copy loads (not compressed)
-  - `.cdex` header flags (int32 at offset 12): bit0 = hasHashes, bit1 = followJunctions (issue #66, the scan option, exposed as `ColumnarCatalogReader.FollowJunctions` / `CatalogInfoDto.FollowJunctions`). Absent bit = false, so older catalogs load unchanged. Version stays 1; older builds ignore the unknown bit. `.cde` cannot carry it (reads as false).
+  - `.cdex` header flags (int32 at offset 12): bit0 = hasHashes, bit1 = followJunctions (issue #66, the scan option, exposed as `ColumnarCatalogReader.FollowJunctions` / `CatalogInfoDto.FollowJunctions`), bit2 = the hash column is XxHash128 (issue #222; `ColumnarFormat.ComposeFlags` sets bit0 and bit2 together, `ParseHashKind` reads them back as `CatalogHashes.None`, `Legacy` or `XxHash128`). Absent bit = false, so older catalogs load unchanged. Version stays 1; older builds ignore the unknown bits. `.cde` cannot carry them (reads as false).
   - `.cde` - MessagePack binary serialization by default (not compressed); FlatBuffers selectable in code
 
 ## Common Operations
@@ -240,7 +240,7 @@ Searches loaded catalogs. Options: `-path`, `-grep`, `-repl`, size/date filters.
 cde hash
 cde hash -minSize 1MB
 ```
-Adds MD5 hashes to catalog files. Two-phase: partial hash first, then promotes to full hash for potential duplicates.
+Adds XxHash128 hashes to catalog files. Two-phase: partial hash first, then promotes to full hash for potential duplicates.
 
 ### Duplicate Detection
 
@@ -342,5 +342,5 @@ Standard .NET test runners (tests use NUnit, xUnit)
 - **Serilog** - Structured logging
 - **CommandLineParser** - CLI argument parsing
 - **Spectre.Console** - Rich console output
-- **MurmurHash.Net** - Fast hashing
+- **System.IO.Hashing** - XxHash128 file hashing
 - **Superpower** - Parser combinators; parses the `--template` text in `MatchTemplate` and the `--filter` text in `MatchFilter`
