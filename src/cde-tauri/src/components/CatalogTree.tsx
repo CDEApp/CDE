@@ -51,6 +51,8 @@ interface Props {
   /** Bumped for each deliberate reveal, so revealing the already-selected node scrolls again. */
   revealNonce?: number;
   expandTo?: EntryRef[]; // path to auto-expand
+  /** Bumped by the "Collapse all" command: each change closes every open folder, leaving only the roots. */
+  collapseNonce?: number;
   onSelect: (ref: EntryRef, fullPath: string) => void;
   onContextMenu: (ref: EntryRef, fullPath: string, x: number, y: number) => void;
   /** Right-click on blank tree space (rows stop their own right-clicks from reaching here). */
@@ -65,7 +67,7 @@ interface Props {
  * screen. Child folders are fetched on first expand and kept for later expands.
  */
 export function CatalogTree({
-  client, roots, selectedKey, revealKey, revealNonce, expandTo, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
+  client, roots, selectedKey, revealKey, revealNonce, expandTo, collapseNonce, onSelect, onContextMenu, onBackgroundContextMenu, resolveStyle,
 }: Props) {
   const [expanded, setExpanded] = useState<ReadonlySet<string>>(() => new Set());
   const [children, setChildren] = useState<ReadonlyMap<string, DirectoryNode[]>>(() => new Map());
@@ -85,6 +87,13 @@ export function CatalogTree({
     setChildren((prev) => new Map([...prev].filter(([key]) => !stale(key))));
     setExpanded((prev) => new Set([...prev].filter((key) => !stale(key))));
   }, [roots]);
+
+  const seenCollapse = useRef(collapseNonce);
+  useEffect(() => {
+    if (seenCollapse.current === collapseNonce) return;
+    seenCollapse.current = collapseNonce;
+    setExpanded((prev) => (prev.size === 0 ? prev : new Set()));
+  }, [collapseNonce]);
 
   const ensureChildren = useCallback(
     (ref: EntryRef) => {

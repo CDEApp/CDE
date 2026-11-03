@@ -68,3 +68,16 @@ describe("CatalogTree expander keyboard support", () => {
     await waitFor(() => expect(screen.queryByRole("treeitem", { name: /Users/ })).toBeNull());
   });
 });
+
+describe("CatalogTree collapse all", () => {
+  it("closes every open folder when collapseNonce changes", async () => {
+    const client = { children: vi.fn().mockResolvedValue([child]) } as unknown as CdeApiClient;
+    const props = { client, roots: [root], selectedKey: null, onSelect: () => {}, onContextMenu: () => {}, resolveStyle: () => undefined };
+    const { rerender } = render(<CatalogTree {...props} collapseNonce={0} />);
+    fireEvent.keyDown(screen.getByRole("button", { name: "Expand" }), { key: "Enter" });
+    await screen.findByRole("treeitem", { name: /Users/ });
+    rerender(<CatalogTree {...props} collapseNonce={1} />);
+    await waitFor(() => expect(screen.queryByRole("treeitem", { name: /Users/ })).toBeNull());
+    expect(screen.getByRole("treeitem", { name: /C:/ })).toBeTruthy();
+  });
+});
