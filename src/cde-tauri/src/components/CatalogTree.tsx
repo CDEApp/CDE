@@ -3,6 +3,7 @@ import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
+import { flipDirection, isHiddenByFilter, sortForKey, visibleRoots, type RootSort, type RootSortKey } from "../rootsView";
 import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
 import { StyledName } from "./StyledName";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
@@ -12,6 +13,13 @@ export type { TreeRoot };
 const ROW_HEIGHT = 22;
 const TREE_KEYS = new Set(["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End"]);
 const rowDomId = (key: string) => `tree-row-${key}`;
+
+const SORT_OPTIONS: { value: RootSortKey | ""; label: string }[] = [
+  { value: "", label: "Default order" },
+  { value: "root", label: "Root" },
+  { value: "catalog", label: "Catalog name" },
+  { value: "size", label: "Size" },
+];
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -74,6 +82,9 @@ export function CatalogTree({
   // Fetches by node key, so a node is fetched once however often it is asked for.
   const loads = useRef(new Map<string, Promise<void>>());
   const listRef = useRef<VirtualListHandle>(null);
+  // Session-only, like the directory listing sort.
+  const [rootSort, setRootSort] = useState<RootSort>(null);
+  const [rootFilter, setRootFilter] = useState("");
 
   // A rescan, or a reload that puts a different catalog under the same id, invalidates that catalog's
   // refs: drop its expansion and loaded children (other catalogs keep theirs).
@@ -160,7 +171,21 @@ export function CatalogTree({
     };
   }, [expandTo, ensureChildren]);
 
-  const rows = useMemo(() => flattenTree(roots, expanded, children), [roots, expanded, children]);
+  // A deliberate reveal into a catalog the filter hides would select and expand a row that is never
+  // shown, so clear the filter. Keyed on the reveal only: later filter edits must not re-trigger it.
+  const filterState = useRef({ roots, rootFilter });
+  filterState.current = { roots, rootFilter };
+  useEffect(() => {
+    if (!revealKey) return;
+    const catalogId = Number(revealKey.slice(0, revealKey.indexOf("-")));
+    const state = filterState.current;
+    if (isHiddenByFilter(state.roots, catalogId, state.rootFilter)) setRootFilter("");
+  }, [revealKey, revealNonce]);
+
+  // Filter and sort apply here only. `changedCatalogs` above must keep seeing every root, or a catalog
+  // hidden by the filter would look gone and lose its expansion and loaded children.
+  const shownRoots = useMemo(() => visibleRoots(roots, rootSort, rootFilter), [roots, rootSort, rootFilter]);
+  const rows = useMemo(() => flattenTree(shownRoots, expanded, children), [shownRoots, expanded, children]);
 
   // Scroll the selected node into view once it is selected and has a row (an auto-expand may still
   // be loading its parents). A deliberate reveal (key === revealKey) centres it; a plain selection
@@ -202,7 +227,51 @@ export function CatalogTree({
     if (row) onSelect(row.ref, row.fullPath);
   };
 
+  // The bar sits outside the tree host: the host's mouse-down handler would pull focus off the input.
   return (
+    <div className="tree-pane">
+      <div className="tree-roots-bar">
+        <select
+          aria-label="Sort catalogs"
+          value={rootSort?.key ?? ""}
+          onChange={(e) => setRootSort(sortForKey((e.target.value || null) as RootSortKey | null))}
+        >
+          {SORT_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          aria-label="Sort direction"
+          title={rootSort?.direction === "desc" ? "Descending" : "Ascending"}
+          disabled={!rootSort}
+          onClick={() => setRootSort(flipDirection)}
+        >
+          {rootSort?.direction === "desc" ? "▼" : "▲"}
+        </button>
+        <span className="tree-filter">
+          <input
+            type="text"
+            aria-label="Filter catalogs"
+            placeholder="Filter catalogs…"
+            value={rootFilter}
+            onChange={(e) => setRootFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && rootFilter) {
+                e.preventDefault();
+                setRootFilter("");
+              }
+            }}
+          />
+          {rootFilter && (
+            <button type="button" className="tree-filter-clear" aria-label="Clear filter" onClick={() => setRootFilter("")}>
+              {"×"}
+            </button>
+          )}
+        </span>
+      </div>
     <div
       className="tree-host"
       role="tree"
@@ -219,6 +288,7 @@ export function CatalogTree({
         onBackgroundContextMenu(e.clientX, e.clientY);
       }}
     >
+      {rows.length === 0 && roots.length > 0 && <div className="tree-empty">No catalogs match</div>}
       <VirtualList<TreeRow>
         className="tree"
         items={rows}
@@ -289,6 +359,7 @@ export function CatalogTree({
           );
         }}
       />
+    </div>
     </div>
   );
 }

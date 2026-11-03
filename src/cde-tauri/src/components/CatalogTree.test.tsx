@@ -81,3 +81,108 @@ describe("CatalogTree collapse all", () => {
     expect(screen.getByRole("treeitem", { name: /C:/ })).toBeTruthy();
   });
 });
+
+describe("CatalogTree sort and filter of the roots", () => {
+  const roots: TreeRoot[] = [
+    root,
+    { ref: { catalogId: 2, entryIndex: 0 }, label: "D:", fullPath: "D:\\", catalogName: "backup", size: 900 },
+    { ref: { catalogId: 3, entryIndex: 0 }, label: "E:", fullPath: "E:\\", catalogName: "media", size: 500 },
+  ];
+  const labels = () => screen.getAllByRole("treeitem").map((r) => r.querySelector(".tree-label")?.textContent);
+
+  function mount() {
+    const client = { children: vi.fn().mockResolvedValue([child]) } as unknown as CdeApiClient;
+    render(
+      <CatalogTree client={client} roots={roots} selectedKey={null} onSelect={() => {}} onContextMenu={() => {}} resolveStyle={() => undefined} />,
+    );
+  }
+  const filterBox = () => screen.getByRole("textbox", { name: "Filter catalogs" });
+
+  it("filters by root or catalog name and restores the rows when cleared", () => {
+    mount();
+    expect(labels()).toEqual(["C:", "D:", "E:"]);
+    fireEvent.change(filterBox(), { target: { value: "back" } });
+    expect(labels()).toEqual(["D:"]);
+    fireEvent.change(filterBox(), { target: { value: "e:" } });
+    expect(labels()).toEqual(["E:"]);
+    fireEvent.change(filterBox(), { target: { value: "zzz" } });
+    expect(screen.getByText("No catalogs match")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Clear filter" }));
+    expect(labels()).toEqual(["C:", "D:", "E:"]);
+    expect(screen.queryByText("No catalogs match")).toBeNull();
+  });
+
+  it("Escape clears the filter", () => {
+    mount();
+    fireEvent.change(filterBox(), { target: { value: "d:" } });
+    fireEvent.keyDown(filterBox(), { key: "Escape" });
+    expect((filterBox() as HTMLInputElement).value).toBe("");
+    expect(labels()).toEqual(["C:", "D:", "E:"]);
+  });
+
+  it("sorts by size largest first, and the direction toggle flips it", () => {
+    mount();
+    const direction = screen.getByRole("button", { name: "Sort direction" }) as HTMLButtonElement;
+    expect(direction.disabled).toBe(true);
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort catalogs" }), { target: { value: "size" } });
+    expect(labels()).toEqual(["D:", "E:", "C:"]);
+    expect(direction.disabled).toBe(false);
+    fireEvent.click(direction);
+    expect(labels()).toEqual(["C:", "E:", "D:"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort catalogs" }), { target: { value: "catalog" } });
+    expect(labels()).toEqual(["D:", "C:", "E:"]);
+    fireEvent.change(screen.getByRole("combobox", { name: "Sort catalogs" }), { target: { value: "" } });
+    expect(labels()).toEqual(["C:", "D:", "E:"]);
+  });
+
+  it("keeps a catalog's expansion while the filter hides it", async () => {
+    mount();
+    fireEvent.click(screen.getAllByRole("button", { name: "Expand" })[0]);
+    await screen.findByRole("treeitem", { name: /Users/ });
+    fireEvent.change(filterBox(), { target: { value: "back" } });
+    expect(screen.queryByRole("treeitem", { name: /Users/ })).toBeNull();
+    fireEvent.change(filterBox(), { target: { value: "" } });
+    expect(screen.getByRole("treeitem", { name: /Users/ })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Collapse" })).toBeTruthy();
+  });
+
+  describe("reveal into a hidden catalog", () => {
+    const base = { roots, onSelect: () => {}, onContextMenu: () => {}, resolveStyle: () => undefined };
+    const childOf2: DirectoryNode = { ...child, ref: { catalogId: 2, entryIndex: 1 }, name: "Backups", fullPath: "D:\Backups" };
+    const reveal = { selectedKey: "2-0", revealKey: "2-0", revealNonce: 1, expandTo: [roots[1].ref] };
+    const mountWith = () => {
+      const client = {
+        children: vi.fn((ref: { catalogId: number }) => Promise.resolve([ref.catalogId === 2 ? childOf2 : child])),
+      } as unknown as CdeApiClient;
+      const props = { ...base, client };
+      const view = render(<CatalogTree {...props} selectedKey={null} />);
+      return { props, ...view };
+    };
+
+    it("clears the filter and shows the target catalog", async () => {
+      const { props, rerender } = mountWith();
+      fireEvent.change(filterBox(), { target: { value: "cat" } });
+      expect(labels()).toEqual(["C:"]);
+      rerender(<CatalogTree {...props} {...reveal} />);
+      await screen.findByRole("treeitem", { name: /Backups/ });
+      expect((filterBox() as HTMLInputElement).value).toBe("");
+      expect(labels()).toEqual(["C:", "D:", "Backups", "E:"]);
+    });
+
+    it("leaves the filter alone when the target catalog is still shown", async () => {
+      const { props, rerender } = mountWith();
+      fireEvent.change(filterBox(), { target: { value: "back" } });
+      rerender(<CatalogTree {...props} {...reveal} />);
+      await screen.findByRole("treeitem", { name: /Backups/ });
+      expect((filterBox() as HTMLInputElement).value).toBe("back");
+      expect(labels()).toEqual(["D:", "Backups"]);
+    });
+
+    it("changes nothing when no filter is set", async () => {
+      const { props, rerender } = mountWith();
+      rerender(<CatalogTree {...props} {...reveal} />);
+      await screen.findByRole("treeitem", { name: /Backups/ });
+      expect((filterBox() as HTMLInputElement).value).toBe("");
+    });
+  });
+});
