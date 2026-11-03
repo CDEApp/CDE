@@ -48,9 +48,19 @@ A query that cannot be read, such as `a ||` or an unbalanced `<`, stops the comm
 
 An empty query matches every entry.
 
+## Wildcards
+
+| Wildcard | Matches |
+|---|---|
+| `*` | Zero or more characters, but not a backslash (`\`). |
+| `**` | Zero or more characters, including backslashes. |
+| `?` | Exactly one character, but not a backslash. |
+
+A term with a `*` or `?` must match the whole text it is tested against, so `*.txt` is a name that ends in `.txt` and `a*b` starts with `a` and ends with `b`. A term with no wildcard is still a substring. Wildcards are case-insensitive and also work inside quotes. The backslash rule only matters for a path, for example `path:C:\**\*.txt`.
+
 ## Not supported yet
 
-Wildcards, and Everything functions such as `ext:`.
+Everything functions such as `ext:`.
 
 ## Quote the query
 

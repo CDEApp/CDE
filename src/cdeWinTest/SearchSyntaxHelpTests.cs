@@ -12,7 +12,7 @@ public class SearchSyntaxHelpTests
     public void Has_the_four_sections_in_order()
     {
         Assert.That(SearchSyntaxHelp.Sections.Select(s => s.Title),
-            Is.EqualTo(new[] { "Operators", "Modifiers", "Filters", "Examples" }));
+            Is.EqualTo(new[] { "Operators", "Modifiers", "Filters", "Wildcards", "Examples" }));
     }
 
     [Test]
@@ -41,10 +41,17 @@ public class SearchSyntaxHelpTests
     }
 
     [Test]
+    public void Lists_the_three_wildcards()
+    {
+        var wildcards = SearchSyntaxHelp.Sections.Single(s => s.Title == "Wildcards");
+        Assert.That(wildcards.Rows.Select(r => r.Syntax), Is.EqualTo(new[] { "*", "**", "?" }));
+    }
+
+    [Test]
     public void Says_what_is_not_supported_and_which_controls_are_ignored()
     {
         var notes = string.Join(" ", SearchSyntaxHelp.Notes);
-        foreach (var item in new[] { "wildcards", "ext:", @"\:", "?path:", "Include Path", "Files/Folders" })
+        foreach (var item in new[] { "ext:", @"\:", "?path:", "Include Path", "Files/Folders" })
             Assert.That(notes, Does.Contain(item));
     }
 

@@ -27,6 +27,12 @@
   prints `error: ... (at position N)` and exits 1 before any catalog is read. Quote the query, since `<`, `>`, `|` and
   `!` mean something to a shell. `find`, `findpath`, `grep` and `greppath` are unchanged. (#152)
 
+- feature (cdeWin, cde-tauri, cde): The Everything mode understands the voidtools wildcards. `*` matches any
+  characters except `\`, `**` matches any characters including `\`, and `?` matches exactly one character except
+  `\`. A term with a wildcard must match the whole name (or the whole path after `path:`), so `*.txt` finds names
+  that end in `.txt` and `a*b` is anchored at both ends; a term with no wildcard is still a substring. Wildcards are
+  case-insensitive and work inside quotes. Help > Search Syntax lists them. (#217)
+
 ### Release
 
 - feature (release): Each release now also has `cde-<version>-linux-x64.tar.gz` (with a `.sha256`) beside the

@@ -64,8 +64,11 @@ public enum EverythingTexts
 /// matches the name, or the full path when the caller says the default is the path (a caller option; the app passes
 /// false, because Everything mode uses path: instead of the Include Path toggle).
 /// Precedence from tightest: <c>!</c>, groups, space, <c>|</c>. A term is a case-insensitive substring; modifier
-/// names are case-insensitive. An empty query matches everything. Backslash is an ordinary character. The
-/// <c>\:</c> alias and the global <c>?path:</c> form are not supported yet.
+/// names are case-insensitive. A term with a wildcard (<c>*</c> any characters except <c>\</c>, <c>**</c> any
+/// characters including <c>\</c>, <c>?</c> one character except <c>\</c>, also inside quotes) must match the WHOLE
+/// text it targets, so <c>*.txt</c> is a suffix match (see <see cref="WildcardPattern"/>). An empty query matches
+/// everything. Backslash is an ordinary character outside wildcards. The <c>\:</c> alias and the global
+/// <c>?path:</c> form are not supported yet.
 /// See https://www.voidtools.com/support/everything/search_syntax/
 /// </summary>
 public sealed class EverythingQuery
@@ -419,11 +422,18 @@ public sealed class EverythingQuery
     {
         private readonly string _text;
         private readonly byte[] _lowerAscii; // null if the term has non-ASCII text
+        private readonly WildcardPattern _wildcard; // null for a plain substring term
         private Target _target = Target.Default;
 
         public Term(string text)
         {
             _text = text;
+            if (WildcardPattern.IsWildcard(text))
+            {
+                _wildcard = WildcardPattern.Parse(text);
+                return;
+            }
+
             var bytes = Encoding.UTF8.GetBytes(text);
             if (!Ascii.IsValid(bytes)) return;
             for (var i = 0; i < bytes.Length; i++) bytes[i] = Utf8Matcher.ToLower(bytes[i]);
@@ -435,13 +445,36 @@ public sealed class EverythingQuery
 
         public bool Contains(ReadOnlySpan<byte> utf8)
         {
+            if (_wildcard is not null) return WildcardMatches(utf8);
             if (_lowerAscii is not null && Ascii.IsValid(utf8))
                 return Utf8Matcher.AsciiContainsFolded(utf8, _lowerAscii);
             // Rare path: non-ASCII somewhere. Same decoded compare as Utf8Matcher, so results agree.
             return Encoding.UTF8.GetString(utf8).Contains(_text, StringComparison.OrdinalIgnoreCase);
         }
 
-        public bool Contains(ReadOnlySpan<char> text) => text.Contains(_text, StringComparison.OrdinalIgnoreCase);
+        public bool Contains(ReadOnlySpan<char> text) =>
+            _wildcard is not null ? _wildcard.IsMatch(text) : text.Contains(_text, StringComparison.OrdinalIgnoreCase);
+
+        // Decode with the same replacement rules as Encoding.UTF8.GetString, so this agrees with the char path.
+        private bool WildcardMatches(ReadOnlySpan<byte> utf8)
+        {
+            if (utf8.Length <= StackChars)
+            {
+                Span<char> buffer = stackalloc char[StackChars];
+                var written = Encoding.UTF8.GetChars(utf8, buffer);
+                return _wildcard.IsMatch(buffer[..written]);
+            }
+
+            var rented = System.Buffers.ArrayPool<char>.Shared.Rent(utf8.Length); // chars <= bytes
+            try
+            {
+                var written = Encoding.UTF8.GetChars(utf8, rented);
+                return _wildcard.IsMatch(rented.AsSpan(0, written));
+            }
+            finally { System.Buffers.ArrayPool<char>.Shared.Return(rented); }
+        }
+
+        private const int StackChars = 256;
 
         public override bool Eval(in Context c) => c.Source switch
         {

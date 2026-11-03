@@ -40,6 +40,14 @@ export const EVERYTHING_HELP: HelpSection[] = [
     ],
   },
   {
+    title: "Wildcards",
+    rows: [
+      { syntax: "*", meaning: "zero or more characters, but not a backslash: *.txt is a name that ends in .txt" },
+      { syntax: "**", meaning: "zero or more characters including backslashes: path:c:\\**\\*.txt" },
+      { syntax: "?", meaning: "exactly one character, but not a backslash: ?at matches cat but not chat" },
+    ],
+  },
+  {
     title: "Examples",
     rows: [
       { syntax: "do win", meaning: "matches Windows (both do and win are in the name)" },
@@ -53,7 +61,7 @@ export const EVERYTHING_HELP: HelpSection[] = [
 
 /** Closing notes for the Search Syntax help. */
 export const EVERYTHING_HELP_NOT_SUPPORTED: string[] = [
-  "Terms are case-insensitive substrings of the name.",
+  "Terms are case-insensitive substrings of the name. A term with * or ? must match the whole name (or the whole path after path:).",
   "Include path and the Files/Folders choice are ignored in this mode: use path:, file: and folder:.",
-  "Not supported yet: wildcards, ext: and other functions, the \: alias and the global ?path: form.",
+  "Not supported yet: ext: and other functions, the \: alias and the global ?path: form.",
 ];
