@@ -15,6 +15,7 @@
          (NU1608). Pin the Workspaces packages to the same 4.14.0 to align the set. -->
     <PackageReference Include="Microsoft.CodeAnalysis.CSharp.Workspaces" Version="5.9.0" />
     <PackageReference Include="Microsoft.CodeAnalysis.Workspaces.Common" Version="5.9.0" />
+    <PackageReference Include="System.IO.Hashing" Version="10.0.0" />
   </ItemGroup>
 
   <ItemGroup>
