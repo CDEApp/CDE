@@ -282,7 +282,7 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-toolbar button.active { background: var(--accent); color: #fff; }
 .diff-sides, .diff-row, .diff-cols .vlist-header { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
 .diff-sides { border-bottom: 1px solid var(--border); }
-.diff-side { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; gap: 3px 8px; padding: 4px 8px; min-width: 0; }
+.diff-side { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; align-content: start; gap: 3px 8px; padding: 4px 8px; min-width: 0; }
 .diff-field-label { color: #9a9a9a; }
 .diff-side + .diff-side { border-left: 1px solid var(--border); }
 .diff-side input { width: 100%; padding: 3px 6px; min-width: 0; }
