@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import {
   collapseAllItem,
+  editDescriptionItem,
   entryMenu,
   listMenu,
   rescanItem,
@@ -146,5 +147,15 @@ describe("rescanItem", () => {
       title: "A rescan of this catalog is already running",
     });
     expect(rescanItem(state, 4, "/other", () => {}).disabled).toBe(false);
+  });
+});
+
+describe("editDescriptionItem", () => {
+  it("is a labelled item that runs the handler", () => {
+    const onEdit = vi.fn();
+    const item = editDescriptionItem(onEdit);
+    expect(item.label).toBe("Edit Description…");
+    item.onClick();
+    expect(onEdit).toHaveBeenCalledOnce();
   });
 });

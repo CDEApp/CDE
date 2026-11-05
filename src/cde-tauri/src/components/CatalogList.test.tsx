@@ -42,7 +42,7 @@ const header = (name: string) => screen.getByRole("columnheader", { name: new Re
 describe("CatalogList sorting", () => {
   it("renders every header as a button and keeps incoming order until a click", () => {
     render(<Harness />);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(9);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(10);
     for (const th of screen.getAllByRole("columnheader")) {
       expect(within(th).getByRole("button")).toBeTruthy();
       expect(th.getAttribute("aria-sort")).toBe("none");
@@ -100,10 +100,10 @@ describe("CatalogList date column and resize", () => {
     render(<CatalogList catalogs={[withMod, noMod]} sort={null} onSort={() => {}} onActivate={() => {}} />);
     const cell = (row: number, col: number) =>
       within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[col].textContent;
-    expect(cell(0, 7)).toMatch(/^\d{4}\/\d\d\/\d\d /);
     expect(cell(0, 8)).toMatch(/^\d{4}\/\d\d\/\d\d /);
-    expect(cell(1, 7)).toMatch(/^\d{4}\/\d\d\/\d\d /);
-    expect(cell(1, 8)).toBe("");
+    expect(cell(0, 9)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 8)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 9)).toBe("");
   });
 
   it("resizes by dragging, saves on release and does not sort", () => {
@@ -161,5 +161,18 @@ describe("CatalogList filter", () => {
     expect(screen.getByText(/No catalogs match/)).toBeTruthy();
     fireEvent.keyDown(box, { key: "Escape" });
     expect(shown()).toHaveLength(2);
+  });
+});
+
+describe("CatalogList description column", () => {
+  it("shows each catalog's description, with the full text as a tooltip", () => {
+    const withText = { ...cat(1, "C:/a", 1), description: "Family photos" };
+    const without = { ...cat(2, "C:/b", 1), description: "" };
+    render(<CatalogList catalogs={[withText, without]} sort={null} onSort={() => {}} onActivate={() => {}} />);
+    const cell = (row: number) => within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[7];
+    expect(cell(0).textContent).toBe("Family photos");
+    expect(cell(0).getAttribute("title")).toBe("Family photos");
+    expect(cell(1).textContent).toBe("");
+    expect(screen.getByRole("columnheader", { name: /^Description/ })).toBeTruthy();
   });
 });

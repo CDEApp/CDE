@@ -39,6 +39,7 @@ const COLUMNS: { column: CatalogSortColumn; label: string; numeric?: boolean }[]
   { column: "size", label: "Size", numeric: true },
   { column: "drive", label: "Drive" },
   { column: "catalog", label: "Catalog" },
+  { column: "description", label: "Description" },
   { column: "created", label: "Created" },
   { column: "modified", label: "Modified" },
 ];
@@ -191,6 +192,7 @@ export function CatalogList({
                 <td className="num">{toHRString(c.rootSize)}</td>
                 <td>{c.driveLetterHint}</td>
                 <td title={catalogFile(c)}>{fileBaseName(catalogFile(c))}</td>
+                <td title={c.description || undefined}>{c.description}</td>
                 <td className="dates">{created && dateText(created)}</td>
                 <td className="dates">{modified && dateText(modified)}</td>
               </tr>

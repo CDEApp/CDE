@@ -1,4 +1,5 @@
 import {
+  CatalogInfo,
   CatalogsResponse,
   DirectoryNode,
   EntryRef,
@@ -285,6 +286,17 @@ export class CdeApiClient {
       body: JSON.stringify(req),
     });
     if (!r.ok) throw new ShellError(r.status, await shellReason(r));
+  }
+
+  /** Replace a catalog's description (empty clears it). Resolves to the updated catalog; throws an Error carrying the server's reason. */
+  async setDescription(catalogId: number, description: string): Promise<CatalogInfo> {
+    const r = await fetch(this.url(["catalogs", String(catalogId), "description"]), {
+      method: "PUT",
+      headers: this.headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify({ description }),
+    });
+    if (!r.ok) throw new Error(await shellReason(r));
+    return r.json();
   }
 
   async getUiState(): Promise<Record<string, unknown>> {

@@ -20,6 +20,7 @@ namespace cdeAppCore.Serialization;
 [JsonSerializable(typeof(CatalogInfoDto))]
 [JsonSerializable(typeof(List<CatalogInfoDto>))]
 [JsonSerializable(typeof(CatalogLoadProgress))]
+[JsonSerializable(typeof(SetDescriptionRequest))]
 [JsonSerializable(typeof(RescanProgress))]
 [JsonSerializable(typeof(RescanResult))]
 [JsonSerializable(typeof(RescanError))]

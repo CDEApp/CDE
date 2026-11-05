@@ -159,3 +159,27 @@ describe("shell", () => {
     await expect(client.shell(req)).resolves.toBeUndefined();
   });
 });
+
+describe("setDescription", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("PUTs the text to the catalog's description route and returns the updated catalog", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ catalogId: 3, description: "hi" }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(client.setDescription(3, "hi")).resolves.toMatchObject({ catalogId: 3, description: "hi" });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:5000/catalogs/3/description");
+    expect(init.method).toBe("PUT");
+    expect(JSON.parse(init.body)).toEqual({ description: "hi" });
+  });
+
+  it("throws the server's reason when refused", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("A rescan of catalog 3 is already running."), { status: 409 })));
+
+    await expect(client.setDescription(3, "x")).rejects.toThrow("A rescan of catalog 3 is already running.");
+  });
+});

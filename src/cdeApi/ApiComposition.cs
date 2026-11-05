@@ -87,6 +87,9 @@ public static class ApiComposition
         // Refusals (unknown / already running / root unreachable) are plain JSON errors before the stream starts.
         app.MapPost("/catalogs/{id:int}/rescan", RescanEndpoint.HandleAsync);
 
+        // PUT /catalogs/{id}/description — replace a catalog's description (JSON in, the updated catalog out).
+        app.MapPut("/catalogs/{id:int}/description", DescriptionEndpoint.HandleAsync);
+
         // POST /catalogs/preflight — default name, working folder, collisions for the New Catalog dialog (JSON).
         app.MapPost("/catalogs/preflight", CreateCatalogEndpoint.PreflightAsync);
 
