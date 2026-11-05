@@ -4,7 +4,6 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, CreateFailure, ShellError } from "./api/client";
-import { rescanMenuItem } from "./rescan";
 import {
   anyJobRunning,
   beginCreate,
@@ -45,7 +44,7 @@ import { type CatalogSort, nextCatalogSort } from "./catalogSort";
 import { SearchBar } from "./components/SearchBar";
 import { StatusBar } from "./components/StatusBar";
 import { MenuBar } from "./components/MenuBar";
-import { ContextMenu, MenuItem, MenuState } from "./components/ContextMenu";
+import { ContextMenu, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { DiffView } from "./components/DiffView";
@@ -58,8 +57,24 @@ import { parseRef, useCatalogSelection } from "./hooks/useCatalogSelection";
 import { useRescan } from "./hooks/useRescan";
 import { useSearch } from "./hooks/useSearch";
 import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
-
-type View = "directory" | "results" | "catalogs" | "colours" | "diff" | "treemap";
+import {
+  dropTreemap,
+  initialView,
+  selectTreemap,
+  setTreemapDepth,
+  showTreemap as showTreemapView,
+  showView,
+  type ViewKind,
+} from "./viewState";
+import {
+  collapseAllItem,
+  entryMenu,
+  listMenu,
+  rescanItem as rescanMenuEntry,
+  treeBackgroundMenu as treeBackgroundItems,
+  treeNodeMenu,
+  type EntryMenuContext,
+} from "./menus";
 
 const DEFAULT_TREEMAP_DEPTH = 3;
 
@@ -70,7 +85,7 @@ export default function App() {
 
   const [status, setStatus] = useState("Starting…");
   const [ready, setReady] = useState(false);
-  const [view, setView] = useState<View>("directory");
+  const [view, setView] = useState(initialView);
   const [catalogs, setCatalogs] = useState<CatalogsResponse | null>(null);
   const [roots, setRoots] = useState<TreeRoot[]>([]);
   // Colour rules text (file-backed via the sidecar). Parsed + compiled once per change; the
@@ -92,10 +107,6 @@ export default function App() {
 
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [catalogDir, setCatalogDir] = useState<string | null>(null);
-  // TreeMap tab: absent until the first "Show TreeMap"; each request bumps the nonce so mapping
-  // the same folder again still re-fetches.
-  const [treemapRequest, setTreemapRequest] = useState<{ ref: EntryRef; nonce: number } | null>(null);
-  const [treemapDepth, setTreemapDepth] = useState<number | null>(null);
 
   const [aboutOpen, setAboutOpen] = useState(false);
   const [syntaxOpen, setSyntaxOpen] = useState(false);
@@ -114,8 +125,8 @@ export default function App() {
   // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
   const [diffEpoch, setDiffEpoch] = useState(0);
   // Latest values for async completions (a create finishes long after the click that started it).
-  const latest = useRef({ catalogs, creates, treemapRequest });
-  latest.current = { catalogs, creates, treemapRequest };
+  const latest = useRef({ catalogs, creates });
+  latest.current = { catalogs, creates };
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -222,8 +233,8 @@ export default function App() {
   }, []);
   const getUi = useCallback(() => uiRef.current, []);
   const getCatalogs = useCallback(() => latest.current.catalogs, []);
-  const showDirectory = useCallback(() => setView("directory"), []);
-  const showResults = useCallback(() => setView("results"), []);
+  const showDirectory = useCallback(() => setView((v) => showView(v, "directory")), []);
+  const showResults = useCallback(() => setView((v) => showView(v, "results")), []);
 
   const selection = useCatalogSelection({ getClient, showDirectory });
   const { results, busy, timing, runSearch, cancelSearch, searchAgain, markRescanned, staleBanner: staleBannerFor } = useSearch({
@@ -244,10 +255,7 @@ export default function App() {
       markRescanned(catalogId);
       setDiffEpoch((n) => n + 1);
       // Indexes belong to the old file: a TreeMap request for this catalog is no longer valid.
-      if (latest.current.treemapRequest?.ref.catalogId === catalogId) {
-        setTreemapRequest(null);
-        setView((v) => (v === "treemap" ? "directory" : v));
-      }
+      setView((v) => (v.treemap?.ref.catalogId === catalogId ? dropTreemap(v) : v));
       await refreshCatalogs(client);
       await restoreAfterRescan(client, catalogId, before);
     },
@@ -270,8 +278,7 @@ export default function App() {
       resetForReload();
       reloadEpochRef.current += 1;
       setDiffEpoch((n) => n + 1);
-      setTreemapRequest(null); // its ref belongs to the old catalog set
-      setView((v) => (v === "treemap" ? "directory" : v));
+      setView(dropTreemap);
       try {
         await client.reload({}, dir ?? undefined);
         promptForLegacy(await refreshCatalogs(client));
@@ -299,7 +306,7 @@ export default function App() {
     } catch (e) {
       console.error("colour rules reload failed", e);
     }
-    setView("colours");
+    setView((v) => showView(v, "colours"));
   }, []);
 
   const onDirColumnWidthsChange = useCallback((directoryColumnWidths: ColumnWidths) => {
@@ -322,7 +329,7 @@ export default function App() {
     setCatalogDir(picked);
     uiRef.current?.update({ catalogDir: picked });
     await reloadCatalogs(picked);
-    setView("catalogs");
+    setView((v) => showView(v, "catalogs"));
   }, [reloadCatalogs, getRescans]);
 
   // --- new catalog ---
@@ -506,86 +513,53 @@ export default function App() {
   }, []);
   const exploreEntry = useCallback((ref: EntryRef) => void runShell(ref, "explore"), [runShell]);
 
-  const showTreemap = useCallback((ref: EntryRef) => {
-    setTreemapRequest((prev) => ({ ref, nonce: (prev?.nonce ?? 0) + 1 }));
-    setView("treemap");
-  }, []);
+  const showTreemap = useCallback((ref: EntryRef) => setView((v) => showTreemapView(v, ref)), []);
 
-  // The "Rescan" menu entry for a catalog: disabled (with a tooltip) while that catalog is rescanning.
   const rescanItem = useCallback(
-    (catalogId: number): MenuItem => {
-      const m = rescanMenuItem(rescans, catalogId);
-      const root = catalogs?.catalogs.find((c) => c.catalogId === catalogId)?.rootPath;
-      return {
-        label: m.label,
-        disabled: m.disabled,
-        title: m.title ?? (root ? `Rescan ${root} in the background` : undefined),
-        onClick: () => void rescanCatalog(catalogId),
-      };
-    },
+    (catalogId: number) =>
+      rescanMenuEntry(
+        rescans,
+        catalogId,
+        catalogs?.catalogs.find((c) => c.catalogId === catalogId)?.rootPath,
+        (id) => void rescanCatalog(id),
+      ),
     [rescans, catalogs, rescanCatalog],
   );
 
-  const buildMenu = useCallback(
-    (ref: EntryRef, fullPath: string, onViewInTree?: () => void, isDirectory = false): MenuItem[] => {
-      const items: MenuItem[] = [
-        { label: "Open", onClick: () => void runShell(ref, "open") },
-        { label: "Explore", onClick: () => void runShell(ref, "explore") },
-        { label: "Properties", onClick: () => void runShell(ref, "properties") },
-      ];
-      for (const c of commands) {
-        items.push({ label: c.label, onClick: () => void runShell(ref, "custom", c.id) });
-      }
-      items.push({ label: "", onClick: () => {}, separator: true });
-      if (isDirectory) items.push({ label: "Show TreeMap", onClick: () => showTreemap(ref) });
-      items.push({
-        label: "Copy Full Path",
-        onClick: () => void navigator.clipboard.writeText(fullPath),
-      });
-      if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
-      // A catalog root or any folder rescans its containing catalog.
-      if (isDirectory) items.push(rescanItem(ref.catalogId));
-      return items;
-    },
+  const menuContext = useMemo<EntryMenuContext>(
+    () => ({
+      commands,
+      runShell: (ref, action, commandId) => void runShell(ref, action, commandId),
+      showTreemap,
+      copyPath: (fullPath) => void navigator.clipboard.writeText(fullPath),
+      rescanFor: rescanItem,
+    }),
     [commands, runShell, showTreemap, rescanItem],
   );
 
-  // Right-click on blank tree space: map the current selection (greyed out when there is none).
   // Handlers for the memoised DirectoryPane must keep a stable identity, or every App render (e.g. each
   // streamed search flush) would re-render the hidden tree + listing. They read the latest
-  // buildMenu / selection through refs at event time instead of closing over them.
-  const buildMenuRef = useRef(buildMenu);
-  buildMenuRef.current = buildMenu;
+  // menu context / selection through refs at event time instead of closing over them.
+  const menuContextRef = useRef(menuContext);
+  menuContextRef.current = menuContext;
 
   const [collapseNonce, setCollapseNonce] = useState(0);
-  const collapseAllItem = useCallback(
-    (): MenuItem => ({ label: "Collapse all", onClick: () => setCollapseNonce((n) => n + 1) }),
-    [],
-  );
+  const collapseAll = useCallback(() => setCollapseNonce((n) => n + 1), []);
 
   const treeBackgroundMenu = useCallback(
     (x: number, y: number) => {
       const key = selectedKeyRef.current;
-      const selected = key ? parseRef(key) : null;
-      setMenu({
-        x,
-        y,
-        items: [
-          { label: "Show TreeMap", disabled: !selected, onClick: () => selected && showTreemap(selected) },
-          collapseAllItem(),
-        ],
-      });
+      setMenu({ x, y, items: treeBackgroundItems(key ? parseRef(key) : null, showTreemap, collapseAll) });
     },
-    [showTreemap, collapseAllItem],
+    [showTreemap, collapseAll, selectedKeyRef],
   );
   const onTreeContextMenu = useCallback(
     (ref: EntryRef, fp: string, x: number, y: number) =>
-      setMenu({ x, y, items: [...buildMenuRef.current(ref, fp, undefined, true), collapseAllItem()] }),
-    [collapseAllItem],
+      setMenu({ x, y, items: treeNodeMenu(menuContextRef.current, ref, fp, collapseAll) }),
+    [collapseAll],
   );
   const onListContextMenu = useCallback(
-    (n: DirectoryNode, x: number, y: number) =>
-      setMenu({ x, y, items: buildMenuRef.current(n.ref, n.fullPath, undefined, n.isDirectory) }),
+    (n: DirectoryNode, x: number, y: number) => setMenu({ x, y, items: listMenu(menuContextRef.current, n) }),
     [],
   );
   const onDirSort = useCallback((column: SortColumn) => setDirSort((cur) => nextSort(cur, column)), []);
@@ -595,9 +569,13 @@ export default function App() {
   const onTreemapTileMenu = useCallback(
     (row: TreemapRow, fullPath: string, x: number, y: number) => {
       const ref = row.ref!;
-      setMenu({ x, y, items: buildMenu(ref, fullPath, () => void viewInTree(ref), row.isDirectory) });
+      setMenu({
+        x,
+        y,
+        items: entryMenu(menuContext, { ref, fullPath, isDirectory: row.isDirectory, onViewInTree: () => void viewInTree(ref) }),
+      });
     },
-    [buildMenu, viewInTree],
+    [menuContext, viewInTree],
   );
 
   if (!ready) {
@@ -611,97 +589,13 @@ export default function App() {
     return c ? c.rootPath : `#${id}`;
   });
 
-  return (
-    <div className="app">
-      <MenuBar
-        onNewCatalog={() => void pickNewRoot()}
-        onOpenFolder={openFolder}
-        onReload={() => void reloadCatalogs(catalogDir)}
-        onExit={() => void getCurrentWindow().close()}
-        onAbout={() => setAboutOpen(true)}
-        onSearchSyntax={() => setSyntaxOpen(true)}
-        loadDisabledReason={loadBlockedReasonText}
-      />
-
-      <SearchBar
-        busy={busy}
-        history={(uiRef.current?.get().searchHistory as string[]) ?? []}
-        defaults={uiRef.current?.get() ?? {}}
-        filtersExpanded={uiRef.current?.get().filtersExpanded ?? true}
-        onFiltersExpandedChange={(filtersExpanded) => uiRef.current?.update({ filtersExpanded })}
-        onSearch={runSearch}
-        onCancel={cancelSearch}
-      />
-
-      <div className="tabs">
-        <button
-          className={view === "directory" ? "active" : ""}
-          onClick={() => setView("directory")}
-          onContextMenu={(e) => {
-            e.preventDefault();
-            setMenu({ x: e.clientX, y: e.clientY, items: [collapseAllItem()] });
-          }}
-        >
-          Directory
-        </button>
-        <button className={view === "results" ? "active" : ""} onClick={() => setView("results")}>
-          Search Results
-        </button>
-        <button className={view === "catalogs" ? "active" : ""} onClick={() => setView("catalogs")}>
-          Catalogs
-        </button>
-        <button className={view === "diff" ? "active" : ""} onClick={() => setView("diff")}>
-          Compare
-        </button>
-        <button className={view === "colours" ? "active" : ""} onClick={() => void openColours()}>
-          Customize
-        </button>
-        {treemapRequest && (
-          <button className={view === "treemap" ? "active" : ""} onClick={() => setView("treemap")}>
-            TreeMap
-          </button>
-        )}
-        <button
-          className="reload"
-          disabled={!!loadBlockedReasonText}
-          title={loadBlockedReasonText ?? undefined}
-          onClick={() => void reloadCatalogs(catalogDir)}
-        >
-          Reload
-        </button>
-      </div>
-
-      <div className="main">
-        {/* Stays mounted when another tab is active (#80): keeps expansion, loaded children, scroll
-            offsets, selection, listing and split width. Hidden via visibility (see viewPane.ts). */}
-        <div className={viewPaneClass<View>("directory", view)} aria-hidden={view !== "directory"}>
-          <DirectoryPane
-            client={clientRef.current!}
-            roots={roots}
-            selectedKey={selectedKey}
-            revealKey={revealKey}
-            revealNonce={revealNonce}
-            expandTo={expandTo}
-            collapseNonce={collapseNonce}
-            dirPath={dirPath}
-            dirNodes={dirNodes}
-            sort={dirSort}
-            columnWidths={uiRef.current?.get().directoryColumnWidths}
-            onColumnWidthsChange={onDirColumnWidthsChange}
-            initialLeftWidth={treePaneWidth}
-            resolveTreeStyle={resolveTreeStyle}
-            resolveStyle={resolveStyle}
-            onResizeEnd={onTreePaneResize}
-            onSelect={selectFromTree}
-            onTreeContextMenu={onTreeContextMenu}
-            onBackgroundContextMenu={treeBackgroundMenu}
-            onSort={onDirSort}
-            onActivate={activateDir}
-            onListContextMenu={onListContextMenu}
-          />
-        </div>
-
-        {view === "results" && (
+  const renderTransientPane = () => {
+    switch (view.kind) {
+      case "directory":
+      case "diff":
+        return null;
+      case "results":
+        return (
           <div className="results-pane">
             {staleBanner && (
               <div className="stale-banner" role="status">
@@ -734,25 +628,20 @@ export default function App() {
                   setMenu({
                     x,
                     y,
-                    items: buildMenu(row.ref, row.fullPath, () => void viewInTree(row.ref, row.fullPath), row.isDirectory),
+                    items: entryMenu(menuContext, {
+                      ref: row.ref,
+                      fullPath: row.fullPath,
+                      isDirectory: row.isDirectory,
+                      onViewInTree: () => void viewInTree(row.ref, row.fullPath),
+                    }),
                   })
                 }
               />
             </div>
           </div>
-        )}
-
-        <div className={viewPaneClass<View>("diff", view)} aria-hidden={view !== "diff"}>
-          <DiffView
-            key={diffEpoch}
-            client={clientRef.current!}
-            catalogs={catalogs?.catalogs ?? []}
-            resolveStyle={resolveStyle}
-            onExplore={exploreEntry}
-          />
-        </div>
-
-        {view === "catalogs" && (
+        );
+      case "catalogs":
+        return (
           <CatalogList
             catalogs={catalogs?.catalogs ?? []}
             rescanningIds={new Set(rescans.keys())}
@@ -763,13 +652,13 @@ export default function App() {
             onNewCatalog={() => void pickNewRoot()}
             onContextMenu={(c, x, y) => setMenu({ x, y, items: [rescanItem(c.catalogId)] })}
             onActivate={(c: CatalogInfo) => {
-              setView("directory"); // synchronous navigation intent before the async listing load
+              showDirectory();
               void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
             }}
           />
-        )}
-
-        {view === "colours" && (
+        );
+      case "colours":
+        return (
           <ColoursView
             text={rulesText}
             onChange={setRulesText}
@@ -777,21 +666,132 @@ export default function App() {
             saveError={rulesSaveError}
             getDefaults={() => clientRef.current!.getColourRuleDefaults()}
           />
-        )}
-
-        {view === "treemap" && treemapRequest && (
+        );
+      case "treemap":
+        return (
           <TreemapView
             client={clientRef.current!}
-            request={treemapRequest}
-            depth={treemapDepth ?? (uiRef.current?.get().treemapDepth as number | undefined) ?? DEFAULT_TREEMAP_DEPTH}
+            request={view.treemap}
+            depth={view.treemapDepth ?? (uiRef.current?.get().treemapDepth as number | undefined) ?? DEFAULT_TREEMAP_DEPTH}
             onDepthChange={(d) => {
-              setTreemapDepth(d);
+              setView((v) => setTreemapDepth(v, d));
               uiRef.current?.update({ treemapDepth: d });
             }}
             onStatus={setStatus}
             onTileMenu={onTreemapTileMenu}
           />
+        );
+      default: {
+        const unreachable: never = view;
+        return unreachable;
+      }
+    }
+  };
+
+  return (
+    <div className="app">
+      <MenuBar
+        onNewCatalog={() => void pickNewRoot()}
+        onOpenFolder={openFolder}
+        onReload={() => void reloadCatalogs(catalogDir)}
+        onExit={() => void getCurrentWindow().close()}
+        onAbout={() => setAboutOpen(true)}
+        onSearchSyntax={() => setSyntaxOpen(true)}
+        loadDisabledReason={loadBlockedReasonText}
+      />
+
+      <SearchBar
+        busy={busy}
+        history={(uiRef.current?.get().searchHistory as string[]) ?? []}
+        defaults={uiRef.current?.get() ?? {}}
+        filtersExpanded={uiRef.current?.get().filtersExpanded ?? true}
+        onFiltersExpandedChange={(filtersExpanded) => uiRef.current?.update({ filtersExpanded })}
+        onSearch={runSearch}
+        onCancel={cancelSearch}
+      />
+
+      <div className="tabs">
+        <button
+          className={view.kind === "directory" ? "active" : ""}
+          onClick={showDirectory}
+          onContextMenu={(e) => {
+            e.preventDefault();
+            setMenu({ x: e.clientX, y: e.clientY, items: [collapseAllItem(collapseAll)] });
+          }}
+        >
+          Directory
+        </button>
+        <button className={view.kind === "results" ? "active" : ""} onClick={showResults}>
+          Search Results
+        </button>
+        <button className={view.kind === "catalogs" ? "active" : ""} onClick={() => setView((v) => showView(v, "catalogs"))}>
+          Catalogs
+        </button>
+        <button className={view.kind === "diff" ? "active" : ""} onClick={() => setView((v) => showView(v, "diff"))}>
+          Compare
+        </button>
+        <button className={view.kind === "colours" ? "active" : ""} onClick={() => void openColours()}>
+          Customize
+        </button>
+        {view.treemap && (
+          <button
+            className={view.kind === "treemap" ? "active" : ""}
+            onClick={() => setView(selectTreemap)}
+          >
+            TreeMap
+          </button>
         )}
+        <button
+          className="reload"
+          disabled={!!loadBlockedReasonText}
+          title={loadBlockedReasonText ?? undefined}
+          onClick={() => void reloadCatalogs(catalogDir)}
+        >
+          Reload
+        </button>
+      </div>
+
+      <div className="main">
+        {/* Stays mounted when another tab is active (#80): keeps expansion, loaded children, scroll
+            offsets, selection, listing and split width. Hidden via visibility (see viewPane.ts). */}
+        <div className={viewPaneClass<ViewKind>("directory", view.kind)} aria-hidden={view.kind !== "directory"}>
+          <DirectoryPane
+            client={clientRef.current!}
+            roots={roots}
+            selectedKey={selectedKey}
+            revealKey={revealKey}
+            revealNonce={revealNonce}
+            expandTo={expandTo}
+            collapseNonce={collapseNonce}
+            dirPath={dirPath}
+            dirNodes={dirNodes}
+            sort={dirSort}
+            columnWidths={uiRef.current?.get().directoryColumnWidths}
+            onColumnWidthsChange={onDirColumnWidthsChange}
+            initialLeftWidth={treePaneWidth}
+            resolveTreeStyle={resolveTreeStyle}
+            resolveStyle={resolveStyle}
+            onResizeEnd={onTreePaneResize}
+            onSelect={selectFromTree}
+            onTreeContextMenu={onTreeContextMenu}
+            onBackgroundContextMenu={treeBackgroundMenu}
+            onSort={onDirSort}
+            onActivate={activateDir}
+            onListContextMenu={onListContextMenu}
+          />
+        </div>
+
+        <div className={viewPaneClass<ViewKind>("diff", view.kind)} aria-hidden={view.kind !== "diff"}>
+          <DiffView
+            key={diffEpoch}
+            client={clientRef.current!}
+            catalogs={catalogs?.catalogs ?? []}
+            resolveStyle={resolveStyle}
+            onExplore={exploreEntry}
+          />
+        </div>
+
+        {renderTransientPane()}
       </div>
 
       <StatusBar
