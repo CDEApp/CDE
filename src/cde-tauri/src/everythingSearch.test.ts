@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api/client";
-import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage } from "./everythingSearch";
+import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage, searchFromHereQuery } from "./everythingSearch";
 
 describe("searchErrorMessage", () => {
   it("shows a refused query as an invalid query with the server message", () => {
@@ -55,5 +55,22 @@ describe("includePathControl", () => {
 
   it("gives the saved choice back when Everything is switched off", () => {
     expect(includePathControl(false, true)).toEqual({ checked: true, disabled: false });
+  });
+});
+
+describe("searchFromHereQuery", () => {
+  it("scopes to the catalog and the folder's contents, ready for the search term", () => {
+    expect(searchFromHereQuery("C:/Users/jo", "D:/cats/C-Win-C__Users.cdex")).toBe("catalog:C-Win-C__Users path:C:/Users/jo/ ");
+    expect(searchFromHereQuery("C:\\Users\\jo", "C-Win.cdex")).toBe("catalog:C-Win path:C:\\Users\\jo\\ ");
+  });
+
+  it("quotes a term that holds a space or an operator character", () => {
+    expect(searchFromHereQuery("C:\\My Docs", "my cats.cdex")).toBe('catalog:"my cats" path:"C:\\My Docs\\" ');
+    expect(searchFromHereQuery("/a|b", "x.cdex")).toBe('catalog:x path:"/a|b/" ');
+  });
+
+  it("keeps a root's own separator and drops the catalog term when the catalog is unknown", () => {
+    expect(searchFromHereQuery("C:\\", "")).toBe("path:C:\\ ");
+    expect(searchFromHereQuery("/", "")).toBe("path:/ ");
   });
 });

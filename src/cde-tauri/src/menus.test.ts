@@ -18,6 +18,7 @@ function context(overrides: Partial<EntryMenuContext> = {}) {
     commands: [],
     runShell: vi.fn(),
     showTreemap: vi.fn(),
+    searchFromHere: vi.fn(),
     copyPath: vi.fn(),
     rescanFor: (catalogId) => ({ label: "Rescan", onClick: () => {}, title: `rescan ${catalogId}` }),
     ...overrides,
@@ -34,9 +35,9 @@ describe("entryMenu", () => {
     expect(items[3].separator).toBe(true);
   });
 
-  it("a folder adds Show TreeMap before the path item and Rescan last", () => {
+  it("a folder adds Show TreeMap and Search from here before the path item and Rescan last", () => {
     const items = entryMenu(context(), { ref, fullPath: "/a", isDirectory: true });
-    expect(labels(items)).toEqual(["Open", "Explore", "Properties", "", "Show TreeMap", "Copy Full Path", "Rescan"]);
+    expect(labels(items)).toEqual(["Open", "Explore", "Properties", "", "Show TreeMap", "Search from here", "Copy Full Path", "Rescan"]);
     expect(items[items.length - 1].title).toBe("rescan 3");
   });
 
@@ -59,13 +60,14 @@ describe("entryMenu", () => {
   it("items call the matching action with the entry", () => {
     const ctx = context();
     const items = entryMenu(ctx, { ref, fullPath: "/a", isDirectory: true });
-    for (const label of ["Open", "Explore", "Properties", "Show TreeMap", "Copy Full Path"]) {
+    for (const label of ["Open", "Explore", "Properties", "Show TreeMap", "Search from here", "Copy Full Path"]) {
       items.find((i) => i.label === label)!.onClick();
     }
     expect(ctx.runShell).toHaveBeenNthCalledWith(1, ref, "open");
     expect(ctx.runShell).toHaveBeenNthCalledWith(2, ref, "explore");
     expect(ctx.runShell).toHaveBeenNthCalledWith(3, ref, "properties");
     expect(ctx.showTreemap).toHaveBeenCalledWith(ref);
+    expect(ctx.searchFromHere).toHaveBeenCalledWith(ref, "/a");
     expect(ctx.copyPath).toHaveBeenCalledWith("/a");
   });
 });
@@ -75,7 +77,7 @@ describe("treeNodeMenu", () => {
     const onCollapseAll = vi.fn();
     const items = treeNodeMenu(context(), ref, "/a", onCollapseAll);
     expect(labels(items)).toEqual([
-      "Open", "Explore", "Properties", "", "Show TreeMap", "Copy Full Path", "Rescan", "Collapse all",
+      "Open", "Explore", "Properties", "", "Show TreeMap", "Search from here", "Copy Full Path", "Rescan", "Collapse all",
     ]);
     items[items.length - 1].onClick();
     expect(onCollapseAll).toHaveBeenCalledOnce();

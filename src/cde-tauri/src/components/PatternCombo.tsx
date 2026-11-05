@@ -8,6 +8,8 @@ interface Props {
   /** Previous patterns, most recent first. */
   history: string[];
   placeholder?: string;
+  /** Bump to focus the box with the caret at the end (a shortcut filled it in). */
+  focusRequest?: number;
 }
 
 /**
@@ -15,7 +17,7 @@ interface Props {
  * recent-pattern history. Down/Alt+Down opens the list, arrows move, Enter picks (without
  * searching), Escape or leaving the box closes it. Picking only fills the box; Enter then searches.
  */
-export function PatternCombo({ value, onChange, onEnter, history, placeholder }: Props) {
+export function PatternCombo({ value, onChange, onEnter, history, placeholder, focusRequest }: Props) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -35,6 +37,13 @@ export function PatternCombo({ value, onChange, onEnter, history, placeholder }:
     setOpen(false);
     inputRef.current?.focus();
   }
+
+  useEffect(() => {
+    const input = inputRef.current;
+    if (!focusRequest || !input) return;
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+  }, [focusRequest]);
 
   // Keep the highlighted item visible while arrowing through a scrolled list.
   useEffect(() => {
