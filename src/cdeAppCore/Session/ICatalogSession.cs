@@ -123,4 +123,17 @@ public interface ICatalogSession : IDisposable
     /// </summary>
     Task<RescanResult> RescanAsync(int catalogId, IProgress<RescanProgress> progress = null,
         CancellationToken cancellationToken = default);
+
+    /// <summary>Longest description <see cref="SetDescriptionAsync"/> accepts (after trimming).</summary>
+    public const int MaxDescriptionLength = 1000;
+
+    /// <summary>
+    /// Replace the catalog's description (trimmed; empty clears it). Only the metadata of the <c>.cdex</c> is
+    /// rewritten, then swapped in like a rescan, so the catalog keeps its <c>CatalogId</c> and every entry.
+    /// Throws <see cref="ArgumentOutOfRangeException"/> for an unknown catalog, <see cref="ArgumentException"/>
+    /// for a description over <see cref="MaxDescriptionLength"/>, <see cref="RescanAlreadyRunningException"/>
+    /// while a rescan or another edit of this catalog runs, <see cref="NoSourceFileException"/> when the catalog
+    /// has no file, and <see cref="NotSupportedException"/> for a legacy <c>.cde</c> (migrate it first).
+    /// </summary>
+    Task SetDescriptionAsync(int catalogId, string description, CancellationToken cancellationToken = default);
 }

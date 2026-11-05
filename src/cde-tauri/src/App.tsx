@@ -17,6 +17,7 @@ import {
 } from "./catalogJobs";
 import { findCatalogByTarget } from "./newCatalog";
 import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
+import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import { AboutModal } from "./components/AboutModal";
 import { SearchSyntaxModal } from "./components/SearchSyntaxModal";
@@ -68,6 +69,7 @@ import {
 } from "./viewState";
 import {
   collapseAllItem,
+  editDescriptionItem,
   entryMenu,
   listMenu,
   rescanItem as rescanMenuEntry,
@@ -526,6 +528,16 @@ export default function App() {
     [rescans, catalogs, rescanCatalog],
   );
 
+  const [editingDescription, setEditingDescription] = useState<CatalogInfo | null>(null);
+  const saveDescription = useCallback(
+    async (catalogId: number, description: string) => {
+      const client = clientRef.current!;
+      await client.setDescription(catalogId, description);
+      await refreshCatalogs(client);
+    },
+    [refreshCatalogs],
+  );
+
   const menuContext = useMemo<EntryMenuContext>(
     () => ({
       commands,
@@ -650,7 +662,9 @@ export default function App() {
             columnWidths={uiRef.current?.get().catalogColumnWidths}
             onColumnWidthsChange={onCatalogColumnWidthsChange}
             onNewCatalog={() => void pickNewRoot()}
-            onContextMenu={(c, x, y) => setMenu({ x, y, items: [rescanItem(c.catalogId)] })}
+            onContextMenu={(c, x, y) =>
+              setMenu({ x, y, items: [editDescriptionItem(() => setEditingDescription(c)), rescanItem(c.catalogId)] })
+            }
             onActivate={(c: CatalogInfo) => {
               showDirectory();
               void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
@@ -823,6 +837,11 @@ export default function App() {
           dismissLegacy();
           void reloadCatalogs(catalogDir);
         }}
+      />
+      <EditDescriptionDialog
+        catalog={editingDescription}
+        onSave={saveDescription}
+        onClose={() => setEditingDescription(null)}
       />
       <NewCatalogDialog
         rootPath={newCatalogRoot}

@@ -5,11 +5,11 @@ import type { CatalogSortColumn } from "./catalogSort";
 export type CatalogColumnWidths = Partial<Record<CatalogSortColumn, number>>;
 
 export const CATALOG_COLUMN_IDS: readonly CatalogSortColumn[] = [
-  "root", "volume", "dirs", "files", "size", "drive", "catalog", "created", "modified",
+  "root", "volume", "dirs", "files", "size", "drive", "catalog", "description", "created", "modified",
 ];
 
 export const CATALOG_DEFAULT_WIDTH: Record<CatalogSortColumn, number> = {
-  root: 240, volume: 140, dirs: 80, files: 90, size: 90, drive: 60, catalog: 240, created: 150, modified: 150,
+  root: 240, volume: 140, dirs: 80, files: 90, size: 90, drive: 60, catalog: 240, description: 220, created: 150, modified: 150,
 };
 
 export const CATALOG_MIN_WIDTH = 40;

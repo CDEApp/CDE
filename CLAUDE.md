@@ -48,7 +48,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
     `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE), `/catalogs/{id}/rescan` (SSE),
-    `POST /catalogs` (SSE; scans a new root into a new `.cdex` in the working folder), `POST /catalogs/preflight`, `POST /compare/summaries` (exact subtree counts for folder pairs),
+    `POST /catalogs` (SSE; scans a new root into a new `.cdex` in the working folder), `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
   - Publishes as a self-contained single-file binary for sidecar bundling
 

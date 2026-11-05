@@ -88,6 +88,7 @@ public class ProgramTests
             "POST /search",
             "POST /session/reload",
             "POST /shell",
+            "PUT /catalogs/{id:int}/description",
             "PUT /colour-rules",
             "PUT /ui-state",
         }.Order()));

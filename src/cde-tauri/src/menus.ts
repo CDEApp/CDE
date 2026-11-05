@@ -22,6 +22,10 @@ export interface MenuEntry {
   onViewInTree?: () => void;
 }
 
+export function editDescriptionItem(onEdit: () => void): MenuItem {
+  return { label: "Edit Description…", onClick: onEdit };
+}
+
 export function collapseAllItem(onCollapseAll: () => void): MenuItem {
   return { label: "Collapse all", onClick: onCollapseAll };
 }

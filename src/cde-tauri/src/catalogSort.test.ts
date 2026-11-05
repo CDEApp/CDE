@@ -41,6 +41,11 @@ describe("sortCatalogs", () => {
     expect(ids(sortCatalogs(list, { column, direction: "desc" }))).toEqual([...asc].reverse());
   });
 
+  it("sorts by description, ignoring case and treating a missing one as empty", () => {
+    const l = [cat(1, { description: "beta" }), cat(2, { description: "Alpha" }), cat(3, { description: undefined as unknown as string })];
+    expect(ids(sortCatalogs(l, { column: "description", direction: "asc" }))).toEqual([3, 2, 1]);
+  });
+
   it("falls back to actualFileName for the catalog column", () => {
     const l = [cat(1, { actualFileName: "b.cdex" }), cat(2, { actualFileName: "a.cdex" })];
     expect(ids(sortCatalogs(l, { column: "catalog", direction: "asc" }))).toEqual([2, 1]);
