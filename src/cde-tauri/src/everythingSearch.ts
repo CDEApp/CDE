@@ -1,4 +1,5 @@
 import { ApiError } from "./api/client";
+import { catalogName } from "./format";
 
 /** One-line syntax reminder for the Everything checkbox tooltip. */
 export const EVERYTHING_SYNTAX_HINT = 'Everything-style search: space=AND  |=OR  !=NOT  <>=group  "phrase"  path:term  no-path:term  file:  folder:. Turns Regex off. Include path and the Files/Folders boxes are ignored: use path:, file: or folder:.';
@@ -28,4 +29,45 @@ export function kindControls(everythingMode: boolean, includeFiles: boolean, inc
  */
 export function includePathControl(everythingMode: boolean, includePath: boolean) {
   return everythingMode ? { checked: false, disabled: true } : { checked: includePath, disabled: false };
+}
+
+/** Characters that are wildcards to the parser (also inside quotes) or cannot sit inside a quoted phrase. */
+const NEEDS_REGEX = /[*?"]/;
+
+function regexLiteral(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/"/g, "\\x22");
+}
+
+/** A word or phrase for the Everything parser. Quoted always when it has a space, an operator character or a colon, or starts with `!`. */
+function everythingTerm(text: string): string {
+  return /[\s|<>:]/.test(text) || text.startsWith("!") ? `"${text}"` : text;
+}
+
+/**
+ * `modifier:` plus the text as a literal. A name with `*`, `?` or `"` would be read as a wildcard or break a
+ * phrase, so it goes in as a regex instead (`anchored` pins it to the start of the text).
+ */
+function literalTerm(modifier: "path" | "catalog", text: string, anchored: boolean): string {
+  if (!NEEDS_REGEX.test(text)) return `${modifier}:${everythingTerm(text)}`;
+  return `${modifier}:regex:"${anchored ? "^" : ""}${regexLiteral(text)}"`;
+}
+
+/** The separator the catalog's paths use, taken from the root (a drive letter or UNC share is Windows), not from a name. */
+function separatorOf(folderPath: string): string {
+  return /^([A-Za-z]:|\\)/.test(folderPath) ? "\\" : "/";
+}
+
+/**
+ * The Everything query that scopes a search to one folder of one catalog, ending in a space so the user
+ * types the search term straight after it. The folder gets a trailing separator, so only what is inside it
+ * matches (not the folder itself or a sibling that shares its prefix). `catalogFile` is the catalog's file
+ * path or name; blank leaves the catalog out.
+ */
+export function searchFromHereQuery(folderPath: string, catalogFile: string): string {
+  const sep = separatorOf(folderPath);
+  const scoped = folderPath.endsWith(sep) ? folderPath : folderPath + sep;
+  const name = catalogName(catalogFile);
+  const parts = name ? [literalTerm("catalog", name, false)] : [];
+  parts.push(literalTerm("path", scoped, true));
+  return `${parts.join(" ")} `;
 }

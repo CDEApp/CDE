@@ -36,6 +36,7 @@ import {
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
 import { catalogFile, catalogName, skipSummary } from "./format";
+import { searchFromHereQuery } from "./everythingSearch";
 import type { TreeRoot } from "./components/CatalogTree";
 import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
 import { DirectoryPane } from "./components/DirectoryPane";
@@ -538,15 +539,28 @@ export default function App() {
     [refreshCatalogs],
   );
 
+  const [searchPrefill, setSearchPrefill] = useState<{ pattern: string; nonce: number } | null>(null);
+  const searchFromHere = useCallback(
+    (ref: EntryRef, fullPath: string) => {
+      const c = catalogs?.catalogs.find((x) => x.catalogId === ref.catalogId);
+      setSearchPrefill((p) => ({
+        pattern: searchFromHereQuery(fullPath, c ? catalogFile(c) : ""),
+        nonce: (p?.nonce ?? 0) + 1,
+      }));
+    },
+    [catalogs],
+  );
+
   const menuContext = useMemo<EntryMenuContext>(
     () => ({
       commands,
       runShell: (ref, action, commandId) => void runShell(ref, action, commandId),
       showTreemap,
+      searchFromHere,
       copyPath: (fullPath) => void navigator.clipboard.writeText(fullPath),
       rescanFor: rescanItem,
     }),
-    [commands, runShell, showTreemap, rescanItem],
+    [commands, runShell, showTreemap, searchFromHere, rescanItem],
   );
 
   // Handlers for the memoised DirectoryPane must keep a stable identity, or every App render (e.g. each
@@ -722,6 +736,7 @@ export default function App() {
         onFiltersExpandedChange={(filtersExpanded) => uiRef.current?.update({ filtersExpanded })}
         onSearch={runSearch}
         onCancel={cancelSearch}
+        prefill={searchPrefill}
       />
 
       <div className="tabs">
