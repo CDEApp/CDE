@@ -265,6 +265,7 @@ tbody tr:hover { background: var(--row-hover); }
 .results-toolbar { display: flex; justify-content: flex-end; padding: 2px 10px; border-bottom: 1px solid var(--border); }
 .cataloglist table { table-layout: fixed; }
 .cataloglist td { overflow: hidden; text-overflow: ellipsis; }
+.cataloglist .th-sort { overflow: hidden; text-overflow: ellipsis; }
 .vlist-header .resizer::after, .cataloglist th .resizer::after { content: ""; position: absolute; top: 15%; bottom: 15%; right: 2px; width: 1px; background: currentColor; opacity: .45; }
 .vlist-header .resizer:hover::after, .vlist-header .resizer.resizing::after, .cataloglist th .resizer:hover::after { opacity: 0; }
 .cataloglist td.dates { font-variant-numeric: tabular-nums; }

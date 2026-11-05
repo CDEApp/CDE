@@ -195,10 +195,12 @@ public sealed partial class CatalogSession : ICatalogSession
                 DefaultFileName = s.DefaultFileName,
                 Description = s.Description,
                 SourcePath = _slots[i].SourcePath,
-                FollowJunctions = s.FollowJunctions,
-                FileModifiedUtcTicks = FileModifiedTicks(_slots[i].SourcePath)
+                FollowJunctions = s.FollowJunctions
             });
         }
+
+        // After every read lease is released: a stat on a slow or disconnected drive must not hold a rescan's write lock.
+        foreach (var dto in list) dto.FileModifiedUtcTicks = FileModifiedTicks(dto.SourcePath);
 
         return list;
     }
