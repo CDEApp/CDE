@@ -130,3 +130,36 @@ describe("CatalogList date column and resize", () => {
     expect(onColumnWidthsChange).toHaveBeenLastCalledWith({});
   });
 });
+
+describe("CatalogList filter", () => {
+  const rich = [
+    { ...cat(1, "C:/Users", 1), volumeName: "Windows", driveLetterHint: "C", sourcePath: "D:/cat/alpha.cdex" },
+    { ...cat(2, "/mnt/data", 1), volumeName: "Backup", driveLetterHint: "", sourcePath: "D:/cat/beta.cdex" },
+  ] as CatalogInfo[];
+  const shown = () => screen.queryAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell")[0].textContent);
+
+  function setup() {
+    render(<CatalogList catalogs={rich} sort={null} onSort={() => {}} onActivate={() => {}} />);
+    return screen.getByRole("textbox", { name: "Filter catalogs" });
+  }
+
+  it("matches root, volume and catalog file case-insensitively", () => {
+    const box = setup();
+    expect(shown()).toEqual(["C:/Users", "/mnt/data"]);
+    fireEvent.change(box, { target: { value: "  users " } });
+    expect(shown()).toEqual(["C:/Users"]);
+    fireEvent.change(box, { target: { value: "BACKUP" } });
+    expect(shown()).toEqual(["/mnt/data"]);
+    fireEvent.change(box, { target: { value: "beta" } });
+    expect(shown()).toEqual(["/mnt/data"]);
+  });
+
+  it("says when nothing matches, and Escape clears the filter", () => {
+    const box = setup();
+    fireEvent.change(box, { target: { value: "zzz" } });
+    expect(shown()).toEqual([]);
+    expect(screen.getByText(/No catalogs match/)).toBeTruthy();
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(shown()).toHaveLength(2);
+  });
+});

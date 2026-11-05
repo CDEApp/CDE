@@ -10,7 +10,7 @@ import {
   clampCatalogWidth,
   normalizeCatalogWidths,
 } from "../catalogColumns";
-import { type CatalogSort, type CatalogSortColumn, sortCatalogs } from "../catalogSort";
+import { type CatalogSort, type CatalogSortColumn, filterCatalogs, sortCatalogs } from "../catalogSort";
 import { catalogFile, fileBaseName, formatDate, toHRString } from "../format";
 
 interface Props {
@@ -52,7 +52,8 @@ const dateText = (d: Date) => formatDate(d.toISOString(), false);
 export function CatalogList({
   catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds, sort, onSort, columnWidths, onColumnWidthsChange,
 }: Props) {
-  const rows = useMemo(() => sortCatalogs(catalogs, sort), [catalogs, sort]);
+  const [filter, setFilter] = useState("");
+  const rows = useMemo(() => sortCatalogs(filterCatalogs(catalogs, filter), sort), [catalogs, filter, sort]);
   const [widths, setWidths] = useState<CatalogColumnWidths>(() => normalizeCatalogWidths(columnWidths));
 
   function commit(next: CatalogColumnWidths) {
@@ -88,13 +89,33 @@ export function CatalogList({
 
   return (
     <div className="grid cataloglist">
-      {onNewCatalog && (
-        <div className="cataloglist-toolbar">
+      <div className="cataloglist-toolbar">
+        {onNewCatalog && (
           <button onClick={onNewCatalog} title="Scan a folder into a new catalog file">
             New Catalog
           </button>
-        </div>
-      )}
+        )}
+        <span className="tree-filter">
+          <input
+            type="text"
+            aria-label="Filter catalogs"
+            placeholder="Filter by root, volume, drive or catalog…"
+            value={filter}
+            onChange={(e) => setFilter(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Escape" && filter) {
+                e.preventDefault();
+                setFilter("");
+              }
+            }}
+          />
+          {filter && (
+            <button type="button" className="tree-filter-clear" aria-label="Clear filter" onClick={() => setFilter("")}>
+              {"×"}
+            </button>
+          )}
+        </span>
+      </div>
       <table style={{ width: catalogTotalWidth(widths) }}>
         <colgroup>
           {COLUMNS.map(({ column }) => (
@@ -177,6 +198,7 @@ export function CatalogList({
           })}
         </tbody>
       </table>
+      {filter.trim() && rows.length === 0 && <div className="cataloglist-empty">No catalogs match “{filter.trim()}”.</div>}
     </div>
   );
 }
