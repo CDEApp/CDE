@@ -104,6 +104,8 @@ export interface CatalogInfo {
   sourcePath: string | null;
   /** Catalog was scanned following junctions (#66); false for older catalogs. */
   followJunctions: boolean;
+  /** UTC ticks of the catalog file's last write; 0 when unknown. */
+  fileModifiedUtcTicks: number;
 }
 
 export interface CatalogsResponse {

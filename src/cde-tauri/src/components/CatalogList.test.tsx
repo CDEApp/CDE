@@ -42,7 +42,7 @@ const header = (name: string) => screen.getByRole("columnheader", { name: new Re
 describe("CatalogList sorting", () => {
   it("renders every header as a button and keeps incoming order until a click", () => {
     render(<Harness />);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(7);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(8);
     for (const th of screen.getAllByRole("columnheader")) {
       expect(within(th).getByRole("button")).toBeTruthy();
       expect(th.getAttribute("aria-sort")).toBe("none");
@@ -86,5 +86,45 @@ describe("CatalogList sorting", () => {
     fireEvent.click(within(header("Size")).getByRole("button"));
     fireEvent.doubleClick(screen.getAllByRole("row")[1]);
     expect(onActivate).toHaveBeenCalledWith(catalogs[1]);
+  });
+});
+
+describe("CatalogList date column and resize", () => {
+  const EPOCH = 621_355_968_000_000_000;
+  const ticks = (iso: string) => EPOCH + Date.parse(iso) * 10_000;
+
+  it("shows Created and, when known, Modified", () => {
+    const scan = ticks("2026-03-04T05:06:07Z");
+    const withMod = { ...cat(1, "C:\a", 1), scanEndUtcTicks: scan, scanStartUtcTicks: scan, fileModifiedUtcTicks: scan + 6_000_000_000 };
+    const noMod = { ...cat(2, "C:\b", 1), scanEndUtcTicks: scan, scanStartUtcTicks: scan, fileModifiedUtcTicks: 0 };
+    render(<CatalogList catalogs={[withMod, noMod]} sort={null} onSort={() => {}} onActivate={() => {}} />);
+    const cells = screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell")[7].textContent ?? "");
+    expect(cells[0]).toMatch(/Created \d{4}\/\d\d\/\d\d.*Modified \d{4}\/\d\d\/\d\d/);
+    expect(cells[1]).toMatch(/^Created /);
+    expect(cells[1]).not.toMatch(/Modified/);
+  });
+
+  it("resizes by dragging, saves on release and does not sort", () => {
+    const onSort = vi.fn();
+    const onColumnWidthsChange = vi.fn();
+    render(<CatalogList catalogs={catalogs} sort={null} onSort={onSort} onActivate={() => {}} onColumnWidthsChange={onColumnWidthsChange} />);
+    const resizer = screen.getAllByRole("separator")[2]; // Dirs, default 80
+    fireEvent.mouseDown(resizer, { button: 0, clientX: 100 });
+    fireEvent.mouseMove(window, { clientX: 150 });
+    expect(onColumnWidthsChange).not.toHaveBeenCalled();
+    fireEvent.mouseUp(window);
+    fireEvent.click(resizer);
+    expect(onColumnWidthsChange).toHaveBeenCalledWith({ dirs: 130 });
+    expect(onSort).not.toHaveBeenCalled();
+  });
+
+  it("resizes from the keyboard and resets with Home", () => {
+    const onColumnWidthsChange = vi.fn();
+    render(<CatalogList catalogs={catalogs} sort={null} onSort={() => {}} onActivate={() => {}} onColumnWidthsChange={onColumnWidthsChange} />);
+    const resizer = screen.getAllByRole("separator")[2];
+    fireEvent.keyDown(resizer, { key: "ArrowRight" });
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({ dirs: 90 });
+    fireEvent.keyDown(resizer, { key: "Home" });
+    expect(onColumnWidthsChange).toHaveBeenLastCalledWith({});
   });
 });

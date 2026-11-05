@@ -162,6 +162,14 @@ public sealed partial class CatalogSession : ICatalogSession
         return slots;
     }
 
+    private static long FileModifiedTicks(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return 0;
+        try { return File.Exists(path) ? File.GetLastWriteTimeUtc(path).Ticks : 0; }
+        catch (IOException) { return 0; }
+        catch (UnauthorizedAccessException) { return 0; }
+    }
+
     public IReadOnlyList<CatalogInfoDto> GetCatalogs()
     {
         var list = new List<CatalogInfoDto>(_slots.Count);
@@ -187,7 +195,8 @@ public sealed partial class CatalogSession : ICatalogSession
                 DefaultFileName = s.DefaultFileName,
                 Description = s.Description,
                 SourcePath = _slots[i].SourcePath,
-                FollowJunctions = s.FollowJunctions
+                FollowJunctions = s.FollowJunctions,
+                FileModifiedUtcTicks = FileModifiedTicks(_slots[i].SourcePath)
             });
         }
 

@@ -50,6 +50,7 @@ import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { DiffView } from "./components/DiffView";
 import { createRuleResolver, parseColourRules } from "./colourRules";
+import type { CatalogColumnWidths } from "./catalogColumns";
 import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
@@ -303,6 +304,10 @@ export default function App() {
 
   const onDirColumnWidthsChange = useCallback((directoryColumnWidths: ColumnWidths) => {
     uiRef.current?.update({ directoryColumnWidths });
+  }, []);
+
+  const onCatalogColumnWidthsChange = useCallback((catalogColumnWidths: CatalogColumnWidths) => {
+    uiRef.current?.update({ catalogColumnWidths });
   }, []);
 
   const onTreePaneResize = useCallback((width: number) => {
@@ -753,6 +758,8 @@ export default function App() {
             rescanningIds={new Set(rescans.keys())}
             sort={catalogSort}
             onSort={(column) => setCatalogSort((s) => nextCatalogSort(s, column))}
+            columnWidths={uiRef.current?.get().catalogColumnWidths}
+            onColumnWidthsChange={onCatalogColumnWidthsChange}
             onNewCatalog={() => void pickNewRoot()}
             onContextMenu={(c, x, y) => setMenu({ x, y, items: [rescanItem(c.catalogId)] })}
             onActivate={(c: CatalogInfo) => {

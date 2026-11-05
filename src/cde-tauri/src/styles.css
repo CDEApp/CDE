@@ -224,11 +224,11 @@ tbody tr:hover { background: var(--row-hover); }
 .vlist-header .sort-btn:focus-visible, .vlist-header .resizer:focus-visible { outline: 2px solid var(--accent, #4daafc); outline-offset: -2px; }
 .vlist-header > div.sorted { color: var(--accent, #4daafc); }
 /* Drag handle on the right edge of each header cell to resize the column. */
-.vlist-header .resizer {
+.vlist-header .resizer, .cataloglist th .resizer {
   position: absolute; top: 0; right: 0; height: 100%; width: 5px;
   cursor: col-resize; user-select: none; touch-action: none;
 }
-.vlist-header .resizer:hover, .vlist-header .resizer.resizing { background: var(--accent, #4daafc); }
+.vlist-header .resizer:hover, .vlist-header .resizer.resizing, .cataloglist th .resizer:hover { background: var(--accent, #4daafc); }
 .vlist-scroll { flex: 1; overflow: auto; min-height: 0; position: relative; }
 .vlist-inner { position: relative; }
 .vlist-row {
@@ -263,6 +263,11 @@ tbody tr:hover { background: var(--row-hover); }
 }
 .stale-banner button { padding: 0 8px; }
 .results-toolbar { display: flex; justify-content: flex-end; padding: 2px 10px; border-bottom: 1px solid var(--border); }
+.cataloglist table { table-layout: fixed; }
+.cataloglist td { overflow: hidden; text-overflow: ellipsis; }
+.cataloglist th .resizer::after { content: ""; position: absolute; top: 15%; bottom: 15%; right: 2px; width: 1px; background: currentColor; opacity: .45; }
+.cataloglist th .resizer:hover::after { opacity: 0; }
+.cataloglist td.dates { font-variant-numeric: tabular-nums; }
 .cataloglist tr.rescanning td { color: #8a8a8a; font-style: italic; }
 
 /* new catalog: dialog form, Catalogs-tab toolbar, toast action */

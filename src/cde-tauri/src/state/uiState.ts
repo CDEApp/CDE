@@ -20,6 +20,8 @@ export interface UiState {
   searchResultColumnOrder?: string[];
   /** Directory-listing column widths in px, keyed by column id; absent = default. */
   directoryColumnWidths?: Record<string, number>;
+  /** Catalog-list column widths in px, keyed by sort-column id; absent = default. */
+  catalogColumnWidths?: Record<string, number>;
   /** TreeMap levels shown below the mapped folder (1–5). */
   treemapDepth?: number;
   [key: string]: unknown;
