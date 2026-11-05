@@ -99,7 +99,7 @@ export function CatalogList({
           <input
             type="text"
             aria-label="Filter catalogs"
-            placeholder="Filter by root, volume, drive or catalogÖ"
+            placeholder="Filter by root, volume, drive or catalog‚Ä¶"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             onKeyDown={(e) => {
@@ -111,7 +111,7 @@ export function CatalogList({
           />
           {filter && (
             <button type="button" className="tree-filter-clear" aria-label="Clear filter" onClick={() => setFilter("")}>
-              {"◊"}
+              {"√ó"}
             </button>
           )}
         </span>
@@ -198,7 +198,7 @@ export function CatalogList({
           })}
         </tbody>
       </table>
-      {filter.trim() && rows.length === 0 && <div className="cataloglist-empty">No catalogs match ì{filter.trim()}î.</div>}
+      {filter.trim() && rows.length === 0 && <div className="cataloglist-empty">No catalogs match ‚Äú{filter.trim()}‚Äù.</div>}
     </div>
   );
 }
