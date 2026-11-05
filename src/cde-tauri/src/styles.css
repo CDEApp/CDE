@@ -228,7 +228,13 @@ tbody tr:hover { background: var(--row-hover); }
   position: absolute; top: 0; right: 0; height: 100%; width: 5px;
   cursor: col-resize; user-select: none; touch-action: none;
 }
+/* Always-visible divider so the column edge can be seen; the 5px hit area stays as is. */
+.vlist-header .resizer::after {
+  content: ""; position: absolute; top: 15%; bottom: 15%; right: 2px; width: 1px;
+  background: var(--text-muted, currentColor); opacity: 0.45;
+}
 .vlist-header .resizer:hover, .vlist-header .resizer.resizing { background: var(--accent, #4daafc); }
+.vlist-header .resizer:hover::after, .vlist-header .resizer.resizing::after { opacity: 0; }
 .vlist-scroll { flex: 1; overflow: auto; min-height: 0; position: relative; }
 .vlist-inner { position: relative; }
 .vlist-row {
