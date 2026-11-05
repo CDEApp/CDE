@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SearchQuery } from "../api/types";
 import { AGE_UNITS, notOlderThanCutoff, parseAge, parseSize, toLocalIsoString, type AgeUnit } from "../format";
 import { PatternCombo } from "./PatternCombo";
@@ -13,13 +13,15 @@ interface Props {
   /** Initial state of the ▼ Filters panel (persisted UI state). */
   filtersExpanded: boolean;
   onFiltersExpandedChange: (expanded: boolean) => void;
+  /** A shortcut ("Search from here") asking for this pattern in the box, in Everything mode. Bump `nonce` to apply again. */
+  prefill?: { pattern: string; nonce: number } | null;
 }
 
 const LIMITS = [100, 1000, 10000, 100000];
 
 /** Search box + advanced filters (size/date/hour ranges, not-older-than). */
 export function SearchBar({
-  busy, onSearch, onCancel, history, defaults, filtersExpanded, onFiltersExpandedChange,
+  busy, onSearch, onCancel, history, defaults, filtersExpanded, onFiltersExpandedChange, prefill,
 }: Props) {
   const [pattern, setPattern] = useState("");
   const [regexMode, setRegexMode] = useState(defaults.regexMode ?? false);
@@ -28,6 +30,11 @@ export function SearchBar({
   const [includeFiles, setIncludeFiles] = useState(defaults.includeFiles ?? true);
   const [includeFolders, setIncludeFolders] = useState(defaults.includeFolders ?? true);
   const [limit, setLimit] = useState(defaults.limitResultCount ?? 10000);
+  useEffect(() => {
+    if (!prefill) return;
+    setPattern(prefill.pattern);
+    setEverythingMode(true);
+  }, [prefill]);
   const [advanced, setAdvancedState] = useState(filtersExpanded);
   const setAdvanced = (expanded: boolean) => {
     setAdvancedState(expanded);
@@ -100,6 +107,7 @@ export function SearchBar({
             if (!busy) submit();
           }}
           history={history}
+          focusRequest={prefill?.nonce}
         />
         {busy ? (
           <button className="cancel" onClick={onCancel}>

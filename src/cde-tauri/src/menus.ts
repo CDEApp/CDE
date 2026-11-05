@@ -11,6 +11,8 @@ export interface EntryMenuContext {
   commands: readonly ShellCommand[];
   runShell: (ref: EntryRef, action: ShellAction, commandId?: number) => void;
   showTreemap: (ref: EntryRef) => void;
+  /** Fill the search box with an Everything query scoped to this folder and its catalog. */
+  searchFromHere: (ref: EntryRef, fullPath: string) => void;
   copyPath: (fullPath: string) => void;
   rescanFor: (catalogId: number) => MenuItem;
 }
@@ -52,6 +54,7 @@ export function entryMenu(ctx: EntryMenuContext, { ref, fullPath, isDirectory, o
   }
   items.push({ label: "", onClick: () => {}, separator: true });
   if (isDirectory) items.push({ label: "Show TreeMap", onClick: () => ctx.showTreemap(ref) });
+  if (isDirectory) items.push({ label: "Search from here", onClick: () => ctx.searchFromHere(ref, fullPath) });
   items.push({ label: "Copy Full Path", onClick: () => ctx.copyPath(fullPath) });
   if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
   if (isDirectory) items.push(ctx.rescanFor(ref.catalogId));

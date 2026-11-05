@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api/client";
-import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage } from "./everythingSearch";
+import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage, searchFromHereQuery } from "./everythingSearch";
 
 describe("searchErrorMessage", () => {
   it("shows a refused query as an invalid query with the server message", () => {
@@ -55,5 +55,36 @@ describe("includePathControl", () => {
 
   it("gives the saved choice back when Everything is switched off", () => {
     expect(includePathControl(false, true)).toEqual({ checked: true, disabled: false });
+  });
+});
+
+
+describe("searchFromHereQuery", () => {
+  it("scopes to the catalog and the folder's contents, ready for the search term", () => {
+    expect(searchFromHereQuery("/home/jo", "D:/cats/media.cdex")).toBe("catalog:media path:/home/jo/ ");
+    expect(searchFromHereQuery("C:\\Users\\jo", "C-Win.cdex")).toBe('catalog:C-Win path:"C:\\Users\\jo\\" ');
+  });
+
+  it("quotes a term that holds a space, an operator character or a colon", () => {
+    expect(searchFromHereQuery("C:\\My Docs", "my cats.cdex")).toBe('catalog:"my cats" path:"C:\\My Docs\\" ');
+    expect(searchFromHereQuery("/a|b", "x.cdex")).toBe('catalog:x path:"/a|b/" ');
+  });
+
+  it("keeps a root's own separator and drops the catalog term when the catalog is unknown", () => {
+    expect(searchFromHereQuery("C:\\", "")).toBe('path:"C:\\" ');
+    expect(searchFromHereQuery("/", "")).toBe("path:/ ");
+  });
+
+  it("takes the separator from the root, so a backslash in a Linux name stays part of the name", () => {
+    expect(searchFromHereQuery("/data/a\\b", "x.cdex")).toBe("catalog:x path:/data/a\\b/ ");
+    expect(searchFromHereQuery("\\\\srv\\share\\d", "x.cdex")).toBe("catalog:x path:\\\\srv\\share\\d\\ ");
+  });
+
+  it("matches a name with a wildcard or a quote literally, as an anchored regex", () => {
+    expect(searchFromHereQuery("/data/what?", "x.cdex")).toBe('catalog:x path:regex:"^/data/what\\?/" ');
+    expect(searchFromHereQuery("/data/a*b", "x.cdex")).toBe('catalog:x path:regex:"^/data/a\\*b/" ');
+    expect(searchFromHereQuery('/data/say"hi"', "x.cdex")).toBe('catalog:x path:regex:"^/data/say\\x22hi\\x22/" ');
+    expect(searchFromHereQuery("/data/(a)+b.c", "x.cdex")).toBe("catalog:x path:/data/(a)+b.c/ ");
+    expect(searchFromHereQuery("/d", "we?rd.cdex")).toBe('catalog:regex:"we\\?rd" path:/d/ ');
   });
 });
