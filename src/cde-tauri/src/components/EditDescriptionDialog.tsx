@@ -50,7 +50,16 @@ export function EditDescriptionDialog({ catalog, onSave, onClose }: Props) {
   }
 
   return (
-    <Modal opened={catalog !== null} onClose={onClose} title="Edit description" centered size="lg">
+    <Modal
+      opened={catalog !== null}
+      onClose={onClose}
+      title="Edit description"
+      centered
+      size="lg"
+      withCloseButton={!saving}
+      closeOnClickOutside={!saving}
+      closeOnEscape={!saving}
+    >
       <div className="nc-form">
         <label className="nc-label" htmlFor="ed-text">
           {catalog?.rootPath}

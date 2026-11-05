@@ -62,6 +62,17 @@ describe("EditDescriptionDialog", () => {
     expect(onClose).not.toHaveBeenCalled();
   });
 
+  it("cannot be dismissed with Escape while a save is in flight", async () => {
+    let finish!: () => void;
+    const { onClose, box } = open(vi.fn(() => new Promise<void>((r) => (finish = r))));
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await waitFor(() => expect((screen.getByRole("button", { name: "Cancel" }) as HTMLButtonElement).disabled).toBe(true));
+    fireEvent.keyDown(box, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+    finish();
+    await waitFor(() => expect(onClose).toHaveBeenCalledOnce());
+  });
+
   it("closes without saving on Cancel", () => {
     const { onSave, onClose } = open();
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
