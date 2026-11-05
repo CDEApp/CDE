@@ -287,7 +287,9 @@ tbody tr:hover { background: var(--row-hover); }
 .nc-error { margin-top: 4px; color: #f48771; }
 .nc-warning { margin-top: 8px; padding: 4px 8px; background: #4a3d12; color: #f1e2a8; }
 .nc-rescan { margin-top: 4px; color: var(--fg); }
-.cataloglist-toolbar { padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.cataloglist-toolbar { display: flex; align-items: center; gap: 8px; padding: 4px 8px; border-bottom: 1px solid var(--border); }
+.cataloglist-toolbar .tree-filter { max-width: 420px; }
+.cataloglist-empty { padding: 8px 10px; opacity: .7; }
 .toast-action { padding: 0 8px; margin-left: 4px; }
 
 /* context menu */
