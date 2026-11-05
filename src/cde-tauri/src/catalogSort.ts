@@ -1,7 +1,8 @@
 import type { CatalogInfo } from "./api/types";
+import { catalogCreated, catalogModified } from "./catalogColumns";
 import { catalogFile, fileBaseName } from "./format";
 
-export type CatalogSortColumn = "root" | "volume" | "dirs" | "files" | "size" | "drive" | "catalog";
+export type CatalogSortColumn = "root" | "volume" | "dirs" | "files" | "size" | "drive" | "catalog" | "created" | "modified";
 export type CatalogSortDirection = "asc" | "desc";
 /** null = the order the catalogs arrived in (the initial state). */
 export type CatalogSort = { column: CatalogSortColumn; direction: CatalogSortDirection } | null;
@@ -37,6 +38,10 @@ function keyOf(c: CatalogInfo, column: CatalogSortColumn): Key {
       return c.fileEntryCount;
     case "size":
       return c.rootSize;
+    case "created":
+      return catalogCreated(c)?.getTime() ?? 0;
+    case "modified":
+      return catalogModified(c)?.getTime() ?? 0;
   }
 }
 

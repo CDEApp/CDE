@@ -162,6 +162,14 @@ public sealed partial class CatalogSession : ICatalogSession
         return slots;
     }
 
+    private static long FileModifiedTicks(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return 0;
+        try { return File.Exists(path) ? File.GetLastWriteTimeUtc(path).Ticks : 0; }
+        catch (IOException) { return 0; }
+        catch (UnauthorizedAccessException) { return 0; }
+    }
+
     public IReadOnlyList<CatalogInfoDto> GetCatalogs()
     {
         var list = new List<CatalogInfoDto>(_slots.Count);
@@ -190,6 +198,9 @@ public sealed partial class CatalogSession : ICatalogSession
                 FollowJunctions = s.FollowJunctions
             });
         }
+
+        // After every read lease is released: a stat on a slow or disconnected drive must not hold a rescan's write lock.
+        foreach (var dto in list) dto.FileModifiedUtcTicks = FileModifiedTicks(dto.SourcePath);
 
         return list;
     }

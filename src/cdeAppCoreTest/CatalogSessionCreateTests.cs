@@ -198,6 +198,7 @@ public class CatalogSessionCreateTests
         Assert.That(Directory.GetFiles(_cat), Is.EqualTo(new[] { expected }).IgnoreCase);
         Assert.That(Directory.GetFiles(Directory.GetCurrentDirectory(), "*.cdex").Length, Is.EqualTo(cwdBefore));
         Assert.That(s.GetCatalogs().Single().SourcePath, Is.EqualTo(expected).IgnoreCase);
+        Assert.That(s.GetCatalogs().Single().FileModifiedUtcTicks, Is.EqualTo(File.GetLastWriteTimeUtc(expected).Ticks));
     }
 
     [Test]

@@ -29,4 +29,10 @@ public sealed class CatalogInfoDto
 
     /// <summary>The catalog was scanned following junctions (#66); false for older catalogs. A rescan reuses it.</summary>
     public bool FollowJunctions { get; set; }
+
+    /// <summary>
+    /// UTC ticks of the catalog file's last write (a hash run or description edit changes it without a scan);
+    /// 0 when the file is not on disk or its time cannot be read.
+    /// </summary>
+    public long FileModifiedUtcTicks { get; set; }
 }
