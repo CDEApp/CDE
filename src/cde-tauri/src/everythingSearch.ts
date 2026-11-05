@@ -31,9 +31,30 @@ export function includePathControl(everythingMode: boolean, includePath: boolean
   return everythingMode ? { checked: false, disabled: true } : { checked: includePath, disabled: false };
 }
 
-/** A term as the Everything parser reads it: a bare word unless it holds a space, an operator character or a leading `!`. */
+/** Characters that are wildcards to the parser (also inside quotes) or cannot sit inside a quoted phrase. */
+const NEEDS_REGEX = /[*?"]/;
+
+function regexLiteral(text: string): string {
+  return text.replace(/[\\^$.*+?()[\]{}|]/g, "\\$&").replace(/"/g, "\\x22");
+}
+
+/** A word or phrase for the Everything parser. Quoted always when it has a space, an operator character or a colon, or starts with `!`. */
 function everythingTerm(text: string): string {
-  return /[\s|<>]/.test(text) || text.startsWith("!") ? `"${text}"` : text;
+  return /[\s|<>:]/.test(text) || text.startsWith("!") ? `"${text}"` : text;
+}
+
+/**
+ * `modifier:` plus the text as a literal. A name with `*`, `?` or `"` would be read as a wildcard or break a
+ * phrase, so it goes in as a regex instead (`anchored` pins it to the start of the text).
+ */
+function literalTerm(modifier: "path" | "catalog", text: string, anchored: boolean): string {
+  if (!NEEDS_REGEX.test(text)) return `${modifier}:${everythingTerm(text)}`;
+  return `${modifier}:regex:"${anchored ? "^" : ""}${regexLiteral(text)}"`;
+}
+
+/** The separator the catalog's paths use, taken from the root (a drive letter or UNC share is Windows), not from a name. */
+function separatorOf(folderPath: string): string {
+  return /^([A-Za-z]:|\\)/.test(folderPath) ? "\\" : "/";
 }
 
 /**
@@ -43,10 +64,10 @@ function everythingTerm(text: string): string {
  * path or name; blank leaves the catalog out.
  */
 export function searchFromHereQuery(folderPath: string, catalogFile: string): string {
-  const sep = folderPath.includes("\\") ? "\\" : "/";
-  const scoped = folderPath.endsWith("\\") || folderPath.endsWith("/") ? folderPath : folderPath + sep;
+  const sep = separatorOf(folderPath);
+  const scoped = folderPath.endsWith(sep) ? folderPath : folderPath + sep;
   const name = catalogName(catalogFile);
-  const parts = name ? [`catalog:${everythingTerm(name)}`] : [];
-  parts.push(`path:${everythingTerm(scoped)}`);
+  const parts = name ? [literalTerm("catalog", name, false)] : [];
+  parts.push(literalTerm("path", scoped, true));
   return `${parts.join(" ")} `;
 }
