@@ -42,7 +42,7 @@ const header = (name: string) => screen.getByRole("columnheader", { name: new Re
 describe("CatalogList sorting", () => {
   it("renders every header as a button and keeps incoming order until a click", () => {
     render(<Harness />);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(8);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(9);
     for (const th of screen.getAllByRole("columnheader")) {
       expect(within(th).getByRole("button")).toBeTruthy();
       expect(th.getAttribute("aria-sort")).toBe("none");
@@ -93,15 +93,17 @@ describe("CatalogList date column and resize", () => {
   const EPOCH = 621_355_968_000_000_000;
   const ticks = (iso: string) => EPOCH + Date.parse(iso) * 10_000;
 
-  it("shows Created and, when known, Modified", () => {
+  it("shows Created and, when known, Modified in their own columns", () => {
     const scan = ticks("2026-03-04T05:06:07Z");
     const withMod = { ...cat(1, "C:\a", 1), scanEndUtcTicks: scan, scanStartUtcTicks: scan, fileModifiedUtcTicks: scan + 6_000_000_000 };
     const noMod = { ...cat(2, "C:\b", 1), scanEndUtcTicks: scan, scanStartUtcTicks: scan, fileModifiedUtcTicks: 0 };
     render(<CatalogList catalogs={[withMod, noMod]} sort={null} onSort={() => {}} onActivate={() => {}} />);
-    const cells = screen.getAllByRole("row").slice(1).map((r) => within(r).getAllByRole("cell")[7].textContent ?? "");
-    expect(cells[0]).toMatch(/Created \d{4}\/\d\d\/\d\d.*Modified \d{4}\/\d\d\/\d\d/);
-    expect(cells[1]).toMatch(/^Created /);
-    expect(cells[1]).not.toMatch(/Modified/);
+    const cell = (row: number, col: number) =>
+      within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[col].textContent;
+    expect(cell(0, 7)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(0, 8)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 7)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 8)).toBe("");
   });
 
   it("resizes by dragging, saves on release and does not sort", () => {

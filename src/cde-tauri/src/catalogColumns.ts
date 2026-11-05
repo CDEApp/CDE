@@ -5,11 +5,11 @@ import type { CatalogSortColumn } from "./catalogSort";
 export type CatalogColumnWidths = Partial<Record<CatalogSortColumn, number>>;
 
 export const CATALOG_COLUMN_IDS: readonly CatalogSortColumn[] = [
-  "root", "volume", "dirs", "files", "size", "drive", "catalog", "date",
+  "root", "volume", "dirs", "files", "size", "drive", "catalog", "created", "modified",
 ];
 
 export const CATALOG_DEFAULT_WIDTH: Record<CatalogSortColumn, number> = {
-  root: 240, volume: 140, dirs: 80, files: 90, size: 90, drive: 60, catalog: 240, date: 190,
+  root: 240, volume: 140, dirs: 80, files: 90, size: 90, drive: 60, catalog: 240, created: 150, modified: 150,
 };
 
 export const CATALOG_MIN_WIDTH = 40;
@@ -41,7 +41,6 @@ export function catalogTotalWidth(widths: CatalogColumnWidths): number {
 
 const TICKS_AT_UNIX_EPOCH = 621_355_968_000_000_000;
 const TICKS_PER_MS = 10_000;
-const TICKS_PER_MINUTE = 600_000_000;
 
 /** .NET UTC ticks to a Date; null for 0 or anything that is not a real time. */
 export function ticksToDate(ticks: number | undefined): Date | null {
@@ -55,13 +54,7 @@ export function catalogCreated(c: CatalogInfo): Date | null {
   return ticksToDate(c.scanEndUtcTicks) ?? ticksToDate(c.scanStartUtcTicks);
 }
 
-/**
- * When the catalog file was last changed after its scan (a hash run, a description edit). Null when
- * unknown or when it is just the scan itself finishing writing the file.
- */
+/** When the catalog file was last written (a scan, a hash run, a description edit); null when unknown. */
 export function catalogModified(c: CatalogInfo): Date | null {
-  const modified = c.fileModifiedUtcTicks;
-  const scanned = c.scanEndUtcTicks || c.scanStartUtcTicks || 0;
-  if (!ticksToDate(modified)) return null;
-  return modified - scanned > TICKS_PER_MINUTE ? ticksToDate(modified) : null;
+  return ticksToDate(c.fileModifiedUtcTicks);
 }

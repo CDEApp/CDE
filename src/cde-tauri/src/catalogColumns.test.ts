@@ -29,18 +29,17 @@ describe("catalog dates", () => {
     expect(catalogCreated(cat(0, 0))).toBeNull();
   });
 
-  it("modified shows only when the file changed well after the scan", () => {
+  it("modified is the file's last write; unknown when not recorded", () => {
     const scan = at("2026-01-02T03:04:05Z");
-    expect(catalogModified(cat(scan, scan + 5 * 10_000_000))).toBeNull(); // just finished writing
-    expect(catalogModified(cat(scan, 0))).toBeNull(); // unknown
+    expect(catalogModified(cat(scan, 0))).toBeNull();
     expect(catalogModified(cat(scan, scan + 30 * minute))?.getTime()).toBe(Date.parse("2026-01-02T03:34:05Z"));
   });
 });
 
 describe("catalog column widths", () => {
   it("drops invalid entries, clamps the rest and falls back to defaults", () => {
-    const w = normalizeCatalogWidths({ root: 300, size: "wide", date: 1, bogus: 5, dirs: -4 });
-    expect(w).toEqual({ root: 300, date: 40 });
+    const w = normalizeCatalogWidths({ root: 300, size: "wide", created: 1, bogus: 5, dirs: -4 });
+    expect(w).toEqual({ root: 300, created: 40 });
     expect(catalogWidthOf(w, "root")).toBe(300);
     expect(catalogWidthOf(w, "dirs")).toBe(80);
     expect(normalizeCatalogWidths(null)).toEqual({});
@@ -49,6 +48,6 @@ describe("catalog column widths", () => {
   it("clamps and sums", () => {
     expect(clampCatalogWidth(5)).toBe(40);
     expect(clampCatalogWidth(99999)).toBe(2000);
-    expect(catalogTotalWidth({})).toBe(240 + 140 + 80 + 90 + 90 + 60 + 240 + 190);
+    expect(catalogTotalWidth({})).toBe(240 + 140 + 80 + 90 + 90 + 60 + 240 + 150 + 150);
   });
 });
