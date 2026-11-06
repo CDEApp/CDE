@@ -10,6 +10,7 @@ using Fallout.Common.ProjectModel;
 using Fallout.Common.Tooling;
 using Fallout.Common.Tools.DotNet;
 using Fallout.Common.Utilities.Collections;
+using Serilog;
 using static Fallout.Common.Tools.DotNet.DotNetTasks;
 // ReSharper disable AllUnderscoreLocalParameterName
 
@@ -112,7 +113,18 @@ class Build : FalloutBuild
         .Executes(() =>
         {
             var pnpm = ToolResolver.GetPathTool("pnpm");
-            void Pnpm(string arguments) => pnpm(arguments, TauriDirectory);
+            // pnpm, tauri and vite write normal progress to stderr, which Fallout logs as ERR by default.
+            // Log it as info (or warning for vite's "(!)" lines). A non-zero exit code still fails the build.
+            void Pnpm(string arguments) => pnpm(
+                arguments,
+                TauriDirectory,
+                logger: (_, text) =>
+                {
+                    if (text.StartsWith("(!)"))
+                        Log.Warning(text);
+                    else
+                        Log.Information(text);
+                });
 
             Pnpm("install --frozen-lockfile");
             Pnpm("bundle-sidecar");
