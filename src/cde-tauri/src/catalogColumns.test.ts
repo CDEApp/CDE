@@ -48,6 +48,6 @@ describe("catalog column widths", () => {
   it("clamps and sums", () => {
     expect(clampCatalogWidth(5)).toBe(40);
     expect(clampCatalogWidth(99999)).toBe(2000);
-    expect(catalogTotalWidth({})).toBe(240 + 140 + 80 + 90 + 90 + 60 + 240 + 220 + 150 + 150);
+    expect(catalogTotalWidth({})).toBe(240 + 140 + 80 + 90 + 90 + 90 + 60 + 240 + 220 + 150 + 150);
   });
 });
