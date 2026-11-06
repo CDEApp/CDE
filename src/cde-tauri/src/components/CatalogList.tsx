@@ -37,6 +37,7 @@ const COLUMNS: { column: CatalogSortColumn; label: string; numeric?: boolean }[]
   { column: "dirs", label: "Dirs", numeric: true },
   { column: "files", label: "Files", numeric: true },
   { column: "size", label: "Size", numeric: true },
+  { column: "free", label: "Free", numeric: true },
   { column: "drive", label: "Drive" },
   { column: "catalog", label: "Catalog" },
   { column: "description", label: "Description" },
@@ -190,6 +191,12 @@ export function CatalogList({
                 <td className="num">{c.dirEntryCount.toLocaleString()}</td>
                 <td className="num">{c.fileEntryCount.toLocaleString()}</td>
                 <td className="num">{toHRString(c.rootSize)}</td>
+                <td
+                  className="num"
+                  title={c.totalSpace > 0 ? `${toHRString(c.availSpace)} free of ${toHRString(c.totalSpace)} on the whole volume` : undefined}
+                >
+                  {c.totalSpace > 0 ? toHRString(c.availSpace) : ""}
+                </td>
                 <td>{c.driveLetterHint}</td>
                 <td title={catalogFile(c)}>{fileBaseName(catalogFile(c))}</td>
                 <td title={c.description || undefined}>{c.description}</td>

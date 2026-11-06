@@ -46,6 +46,11 @@ describe("sortCatalogs", () => {
     expect(ids(sortCatalogs(l, { column: "description", direction: "asc" }))).toEqual([3, 2, 1]);
   });
 
+  it("sorts the free column numerically, treating a missing value as 0", () => {
+    const l = [cat(1, { availSpace: 500 }), cat(2, { availSpace: 9 }), cat(3, { availSpace: undefined as unknown as number })];
+    expect(ids(sortCatalogs(l, { column: "free", direction: "asc" }))).toEqual([3, 2, 1]);
+  });
+
   it("falls back to actualFileName for the catalog column", () => {
     const l = [cat(1, { actualFileName: "b.cdex" }), cat(2, { actualFileName: "a.cdex" })];
     expect(ids(sortCatalogs(l, { column: "catalog", direction: "asc" }))).toEqual([2, 1]);
