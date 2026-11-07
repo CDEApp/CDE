@@ -350,6 +350,24 @@ public class JobRegistryTests
     }
 
     [Test]
+    public async Task After_dispose_no_queued_job_starts_and_no_submit_is_accepted()
+    {
+        var gate = new TaskCompletionSource<RescanResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var session = FakeSession((id, _) => id == 0 ? gate.Task : Task.FromResult(new RescanResult()));
+        var jobs = _jobs = new JobRegistry(session, maxConcurrent: 1);
+        var running = Accepted(jobs.Submit(Rescan(0)));
+        var queued = Accepted(jobs.Submit(Rescan(1)));
+
+        jobs.Dispose();
+        gate.SetResult(new RescanResult());
+        await WaitForEnd(jobs, running.Id);
+
+        Assert.That(Current(jobs, queued.Id).StartedAtUtc, Is.Null, "the freed slot is not refilled on a disposed registry");
+        await session.DidNotReceive().RescanAsync(1, Arg.Any<IProgress<RescanProgress>>(), Arg.Any<CancellationToken>());
+        Assert.That(jobs.Submit(Rescan(1)).Refusal?.Code, Is.EqualTo(JobErrorCodes.Busy));
+    }
+
+    [Test]
     public void Submit_refusals_carry_the_preflight_reason()
     {
         var jobs = Registry();

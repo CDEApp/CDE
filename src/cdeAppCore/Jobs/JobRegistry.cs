@@ -57,6 +57,7 @@ public sealed class JobRegistry : IDisposable
     private int _running;
     private bool _exclusive;
     private long _exclusiveGeneration;
+    private bool _disposed;
 
     public JobRegistry(ICatalogSession session, int maxConcurrent = 3, ILogger logger = null)
     {
@@ -172,7 +173,7 @@ public sealed class JobRegistry : IDisposable
         {
             // Re-checked here: the preflight ran outside the lock. A reload or migration that began since may have
             // renumbered catalog ids or moved the working folder, and another submit may have taken the target.
-            if (_exclusive || generation != _exclusiveGeneration) return Busy();
+            if (_disposed || _exclusive || generation != _exclusiveGeneration) return Busy();
             if (IsActiveTargetLocked(target)) return AlreadyRunning(job.CatalogName);
 
             var entry = new Entry(target, create)
@@ -282,6 +283,7 @@ public sealed class JobRegistry : IDisposable
     // Called with the lock held.
     private void StartQueuedJobs()
     {
+        if (_disposed) return;
         foreach (var entry in _jobs)
         {
             if (_running >= MaxConcurrent) return;
@@ -428,13 +430,14 @@ public sealed class JobRegistry : IDisposable
     private static StringComparer PathComparer =>
         OperatingSystem.IsWindows() ? StringComparer.OrdinalIgnoreCase : StringComparer.Ordinal;
 
-    /// <summary>Asks running jobs to stop and ends every subscription.</summary>
+    /// <summary>Asks running jobs to stop, starts no queued job and accepts no submit, and ends every subscription.</summary>
     public void Dispose()
     {
         List<Entry> running;
         List<Channel<JobDto>> subscribers;
         lock (_lock)
         {
+            _disposed = true;
             running = _jobs.Where(e => e.Job.State == JobState.Running).ToList();
             subscribers = [.. _subscribers];
             _subscribers.Clear();
