@@ -107,6 +107,8 @@ export default function App() {
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
   // Catalogs-tab sort: session-only too, and held here because the tab unmounts on every switch.
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
+  // Catalogs-tab selected row (by catalog id), held here for the same reason.
+  const [selectedCatalogId, setSelectedCatalogId] = useState<number | null>(null);
 
   const [menu, setMenu] = useState<MenuState | null>(null);
   const [catalogDir, setCatalogDir] = useState<string | null>(null);
@@ -539,6 +541,14 @@ export default function App() {
     [refreshCatalogs],
   );
 
+  const editCatalogDescription = useCallback(
+    (catalogId: number) => {
+      const c = catalogs?.catalogs.find((x) => x.catalogId === catalogId);
+      if (c) setEditingDescription(c);
+    },
+    [catalogs],
+  );
+
   const [searchPrefill, setSearchPrefill] = useState<{ pattern: string; nonce: number } | null>(null);
   const searchFromHere = useCallback(
     (ref: EntryRef, fullPath: string) => {
@@ -559,8 +569,9 @@ export default function App() {
       searchFromHere,
       copyPath: (fullPath) => void navigator.clipboard.writeText(fullPath),
       rescanFor: rescanItem,
+      editDescription: editCatalogDescription,
     }),
-    [commands, runShell, showTreemap, searchFromHere, rescanItem],
+    [commands, runShell, showTreemap, searchFromHere, rescanItem, editCatalogDescription],
   );
 
   // Handlers for the memoised DirectoryPane must keep a stable identity, or every App render (e.g. each
@@ -672,6 +683,8 @@ export default function App() {
             catalogs={catalogs?.catalogs ?? []}
             rescanningIds={new Set(rescans.keys())}
             sort={catalogSort}
+            selectedId={selectedCatalogId}
+            onSelect={setSelectedCatalogId}
             onSort={(column) => setCatalogSort((s) => nextCatalogSort(s, column))}
             columnWidths={uiRef.current?.get().catalogColumnWidths}
             onColumnWidthsChange={onCatalogColumnWidthsChange}

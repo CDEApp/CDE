@@ -15,6 +15,8 @@ export interface EntryMenuContext {
   searchFromHere: (ref: EntryRef, fullPath: string) => void;
   copyPath: (fullPath: string) => void;
   rescanFor: (catalogId: number) => MenuItem;
+  /** Open the description editor for this catalog. */
+  editDescription: (catalogId: number) => void;
 }
 
 export interface MenuEntry {
@@ -62,6 +64,7 @@ export function entryMenu(ctx: EntryMenuContext, { ref, fullPath, isDirectory, o
   items.push({ label: "Copy Full Path", onClick: () => ctx.copyPath(fullPath) });
   if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
   if (isDirectory) items.push(ctx.rescanFor(ref.catalogId));
+  items.push(editDescriptionItem(() => ctx.editDescription(ref.catalogId)));
   return items;
 }
 

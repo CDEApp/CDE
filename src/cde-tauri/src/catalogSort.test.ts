@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { CatalogInfo } from "./api/types";
-import { type CatalogSort, type CatalogSortColumn, nextCatalogSort, sortCatalogs } from "./catalogSort";
+import { type CatalogSort, type CatalogSortColumn, filterCatalogs, nextCatalogSort, sortCatalogs } from "./catalogSort";
 
 function cat(id: number, o: Partial<CatalogInfo> = {}): CatalogInfo {
   return {
@@ -18,6 +18,13 @@ function cat(id: number, o: Partial<CatalogInfo> = {}): CatalogInfo {
 }
 
 const ids = (cs: CatalogInfo[]) => cs.map((c) => c.catalogId);
+
+describe("filterCatalogs", () => {
+  it("matches the description, case-insensitively", () => {
+    const list = [cat(1, { description: "Family Photos" }), cat(2, { description: "" }), cat(3)];
+    expect(ids(filterCatalogs(list, " photos "))).toEqual([1]);
+  });
+});
 
 describe("sortCatalogs", () => {
   const list = [

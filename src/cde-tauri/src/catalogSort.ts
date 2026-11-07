@@ -16,14 +16,14 @@ export function nextCatalogSort(current: CatalogSort, clicked: CatalogSortColumn
 }
 
 /**
- * Catalogs whose root, volume, drive or catalog file name contains the trimmed filter (case
+ * Catalogs whose root, volume, drive, catalog file name or description contains the trimmed filter (case
  * insensitive). A blank filter keeps everything. Returns a new array.
  */
 export function filterCatalogs(catalogs: readonly CatalogInfo[], filter: string): CatalogInfo[] {
   const needle = filter.trim().toUpperCase();
   if (!needle) return catalogs.slice();
   return catalogs.filter((c) =>
-    [c.rootPath, c.volumeName, c.driveLetterHint, fileBaseName(catalogFile(c))].some((s) =>
+    [c.rootPath, c.volumeName, c.driveLetterHint, fileBaseName(catalogFile(c)), c.description].some((s) =>
       (s ?? "").toUpperCase().includes(needle),
     ),
   );
