@@ -42,7 +42,7 @@ const header = (name: string) => screen.getByRole("columnheader", { name: new Re
 describe("CatalogList sorting", () => {
   it("renders every header as a button and keeps incoming order until a click", () => {
     render(<Harness />);
-    expect(screen.getAllByRole("columnheader")).toHaveLength(10);
+    expect(screen.getAllByRole("columnheader")).toHaveLength(11);
     for (const th of screen.getAllByRole("columnheader")) {
       expect(within(th).getByRole("button")).toBeTruthy();
       expect(th.getAttribute("aria-sort")).toBe("none");
@@ -74,9 +74,9 @@ describe("CatalogList sorting", () => {
     expect(header("Size").textContent).not.toMatch(/[▲▼]/);
   });
 
-  it("right-aligns only the Dirs, Files and Size headers", () => {
+  it("right-aligns only the Dirs, Files, Size and Free headers", () => {
     render(<Harness />);
-    for (const name of ["Dirs", "Files", "Size"]) expect(header(name).classList.contains("num")).toBe(true);
+    for (const name of ["Dirs", "Files", "Size", "Free"]) expect(header(name).classList.contains("num")).toBe(true);
     for (const name of ["Root", "Volume", "Drive", "Catalog"]) expect(header(name).classList.contains("num")).toBe(false);
   });
 
@@ -100,10 +100,10 @@ describe("CatalogList date column and resize", () => {
     render(<CatalogList catalogs={[withMod, noMod]} sort={null} onSort={() => {}} onActivate={() => {}} />);
     const cell = (row: number, col: number) =>
       within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[col].textContent;
-    expect(cell(0, 8)).toMatch(/^\d{4}\/\d\d\/\d\d /);
     expect(cell(0, 9)).toMatch(/^\d{4}\/\d\d\/\d\d /);
-    expect(cell(1, 8)).toMatch(/^\d{4}\/\d\d\/\d\d /);
-    expect(cell(1, 9)).toBe("");
+    expect(cell(0, 10)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 9)).toMatch(/^\d{4}\/\d\d\/\d\d /);
+    expect(cell(1, 10)).toBe("");
   });
 
   it("resizes by dragging, saves on release and does not sort", () => {
@@ -169,7 +169,7 @@ describe("CatalogList description column", () => {
     const withText = { ...cat(1, "C:/a", 1), description: "Family photos" };
     const without = { ...cat(2, "C:/b", 1), description: "" };
     render(<CatalogList catalogs={[withText, without]} sort={null} onSort={() => {}} onActivate={() => {}} />);
-    const cell = (row: number) => within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[7];
+    const cell = (row: number) => within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[8];
     expect(cell(0).textContent).toBe("Family photos");
     expect(cell(0).getAttribute("title")).toBe("Family photos");
     expect(cell(1).textContent).toBe("");
