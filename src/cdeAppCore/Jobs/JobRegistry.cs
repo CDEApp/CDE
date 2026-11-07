@@ -56,6 +56,7 @@ public sealed class JobRegistry : IDisposable
     private long _lastId;
     private int _running;
     private bool _exclusive;
+    private long _exclusiveGeneration;
 
     public JobRegistry(ICatalogSession session, int maxConcurrent = 3, ILogger logger = null)
     {
@@ -85,8 +86,14 @@ public sealed class JobRegistry : IDisposable
         _ => JobSubmission.Refused(JobErrorCodes.InvalidRequest, "kind must be \"rescan\" or \"create\".")
     };
 
+    private long ExclusiveGeneration()
+    {
+        lock (_lock) return _exclusiveGeneration;
+    }
+
     private JobSubmission SubmitRescan(int catalogId)
     {
+        var generation = ExclusiveGeneration();
         var preflight = _session.PreflightRescan(catalogId);
         if (preflight != RescanPreflight.Ready) return RefuseRescan(catalogId, preflight);
 
@@ -95,7 +102,7 @@ public sealed class JobRegistry : IDisposable
 
         // A legacy .cde is rescanned into the .cdex beside it, so that is the file this job writes.
         var target = Path.ChangeExtension(Path.GetFullPath(info.SourcePath), CatalogNaming.Extension);
-        return Enqueue(target, new JobDto
+        return Enqueue(generation, target, new JobDto
         {
             Kind = JobKind.Rescan,
             Title = $"Rescanning {info.RootPath}",
@@ -118,6 +125,7 @@ public sealed class JobRegistry : IDisposable
 
     private JobSubmission SubmitCreate(JobSubmitRequest request)
     {
+        var generation = ExclusiveGeneration();
         var pf = _session.PreflightCreate(new CreatePreflightRequest { RootPath = request.RootPath, FileName = request.FileName });
 
         // A running create's target reads as Exists in the preflight; report it as the job it is.
@@ -133,7 +141,7 @@ public sealed class JobRegistry : IDisposable
             return JobSubmission.Refused(JobErrorCodes.FileExists,
                 new CatalogFileExistsException(pf.TargetPath, pf.ExistingCatalogId).Message);
 
-        return Enqueue(pf.TargetPath, new JobDto
+        return Enqueue(generation, pf.TargetPath, new JobDto
             {
                 Kind = JobKind.Create,
                 Title = $"Creating catalog {pf.FileName}",
@@ -158,12 +166,13 @@ public sealed class JobRegistry : IDisposable
     private static JobSubmission RootNotAccessible(string rootPath) =>
         JobSubmission.Refused(JobErrorCodes.RootNotAccessible, new RootNotAccessibleException(rootPath).Message, rootPath);
 
-    private JobSubmission Enqueue(string target, JobDto job, CreateCatalogRequest create)
+    private JobSubmission Enqueue(long generation, string target, JobDto job, CreateCatalogRequest create)
     {
         lock (_lock)
         {
-            // Re-checked here: the preflight ran outside the lock and another submit may have taken the target since.
-            if (_exclusive) return Busy();
+            // Re-checked here: the preflight ran outside the lock. A reload or migration that began since may have
+            // renumbered catalog ids or moved the working folder, and another submit may have taken the target.
+            if (_exclusive || generation != _exclusiveGeneration) return Busy();
             if (IsActiveTargetLocked(target)) return AlreadyRunning(job.CatalogName);
 
             var entry = new Entry(target, create)
@@ -253,6 +262,7 @@ public sealed class JobRegistry : IDisposable
         {
             if (_exclusive || AnyActiveLocked()) return null;
             _exclusive = true;
+            _exclusiveGeneration++;
         }
 
         return new ExclusiveHold(this);

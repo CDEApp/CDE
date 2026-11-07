@@ -333,6 +333,23 @@ public class JobRegistryTests
     }
 
     [Test]
+    public void A_rescan_whose_preflight_raced_a_reload_is_refused_as_busy()
+    {
+        var session = FakeSession(_ => new RescanResult());
+        var jobs = _jobs = new JobRegistry(session);
+        session.PreflightRescan(Arg.Any<int>()).Returns(_ =>
+        {
+            // A whole reload (which renumbers catalog ids) lands between the preflight and the enqueue.
+            jobs.TryBeginExclusive().Dispose();
+            return RescanPreflight.Ready;
+        });
+
+        Assert.That(jobs.Submit(Rescan(0)).Refusal?.Code, Is.EqualTo(JobErrorCodes.Busy));
+        Assert.That(jobs.GetJobs(), Is.Empty);
+        session.DidNotReceive().RescanAsync(Arg.Any<int>(), Arg.Any<IProgress<RescanProgress>>(), Arg.Any<CancellationToken>());
+    }
+
+    [Test]
     public void Submit_refusals_carry_the_preflight_reason()
     {
         var jobs = Registry();
