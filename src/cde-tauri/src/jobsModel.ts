@@ -29,6 +29,14 @@ export function applyJob(model: JobsModel, job: JobDto): JobsModel {
   return { ...model, jobs };
 }
 
+/** Add a job only if it is not known yet: a submit response is older than any stream event for the same job. */
+export function insertJob(model: JobsModel, job: JobDto): JobsModel {
+  if (model.jobs.has(job.id)) return model;
+  const jobs = new Map(model.jobs);
+  jobs.set(job.id, job);
+  return { ...model, jobs };
+}
+
 export function removeJob(model: JobsModel, id: number): JobsModel {
   if (!model.jobs.has(id)) return model;
   const jobs = new Map(model.jobs);

@@ -165,6 +165,23 @@ describe("useJobs actions", () => {
     expect(show).not.toHaveBeenCalled();
   });
 
+  it("keeps newer streamed progress when the submit response arrives after it", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    let release!: (j: JobDto) => void;
+    t.client.submitJob.mockReturnValue(new Promise((r) => (release = r)));
+    let pending!: Promise<void>;
+    act(() => {
+      pending = t.result.current.rescanCatalog(3);
+    });
+    await t.event(job(3, { entriesScanned: 500 }));
+    await act(async () => {
+      release(job(3, { state: "queued", startedAtUtc: null, phase: "queued" }));
+      await pending;
+    });
+    expect(t.result.current.model.jobs.get(3)).toMatchObject({ state: "running", entriesScanned: 500 });
+  });
+
   it("ignores a second rescan click for the same catalog while the first request is in flight", async () => {
     const t = setup();
     let release!: (j: JobDto) => void;

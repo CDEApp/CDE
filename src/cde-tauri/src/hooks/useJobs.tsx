@@ -7,6 +7,7 @@ import {
   applyJob,
   applySnapshot,
   emptyJobs,
+  insertJob,
   isActive,
   removeFinished,
   removeJob,
@@ -206,7 +207,7 @@ export function useJobs({
         const accepted = await getClient().submitJob(req);
         submitted.current.add(accepted.id);
         finishedAtStart.current.delete(accepted.id);
-        const next = applyJob(modelRef.current, accepted);
+        const next = insertJob(modelRef.current, accepted);
         update(next);
         settle(next.jobs.get(accepted.id)!);
       } catch (e) {
