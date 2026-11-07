@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using cdeApi;
 using cdeAppCore;
 using cdeAppCore.Dtos;
+using cdeAppCore.Jobs;
 using cdeAppCore.Session;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
@@ -92,6 +93,57 @@ internal sealed class TestCatalog : IDisposable
             var lines = frame.Split('\n');
             return (lines[0]["event: ".Length..], JsonDocument.Parse(lines[1]["data: ".Length..]).RootElement.Clone());
         }).ToList();
+
+    /// <summary>
+    /// Holds a read lease on one catalog (on its own thread, as the lock requires) until disposed. A rescan of that
+    /// catalog then waits at its final swap, so its job stays running.
+    /// </summary>
+    internal sealed class CatalogHold : IDisposable
+    {
+        private readonly ManualResetEventSlim _acquired = new();
+        private readonly ManualResetEventSlim _release = new();
+        private readonly Task _holder;
+
+        public CatalogHold(ICatalogSession session, int catalogId)
+        {
+            _holder = Task.Factory.StartNew(() =>
+            {
+                using var lease = session.AcquireRead(catalogId);
+                _acquired.Set();
+                _release.Wait();
+            }, TaskCreationOptions.LongRunning);
+            _acquired.Wait();
+        }
+
+        public void Dispose()
+        {
+            _release.Set();
+            _holder.Wait();
+        }
+    }
+
+    /// <summary>Polls until the job satisfies <paramref name="condition"/>; fails after 15 seconds.</summary>
+    public static async Task<JobDto> WaitForJob(JobRegistry jobs, long id, Func<JobDto, bool> condition)
+    {
+        var deadline = DateTime.UtcNow.AddSeconds(15);
+        while (true)
+        {
+            var job = jobs.GetJobs().SingleOrDefault(j => j.Id == id);
+            if (job != null && condition(job)) return job;
+            if (DateTime.UtcNow > deadline) NUnit.Framework.Assert.Fail($"job {id} never got there; last seen {job}");
+            await Task.Delay(10);
+        }
+    }
+
+    /// <summary>Serves every .cdex directly in the requested folder.</summary>
+    internal sealed class FolderLoader : ILoadCatalogService
+    {
+        public Task<List<RootEntry>> LoadRootEntriesAsync(string configPath, Action<int, int, string> progressCallback,
+            CancellationToken cancellationToken = default) => Task.FromResult(new List<RootEntry>());
+
+        public IList<string> GetColumnarFiles(string configPath) =>
+            Directory.Exists(configPath) ? Directory.GetFiles(configPath, "*.cdex").OrderBy(f => f).ToList() : [];
+    }
 
     /// <summary>Always serves the one .cdex, and records the folder each load asked for.</summary>
     internal sealed class RecordingLoader(string cdex) : ILoadCatalogService

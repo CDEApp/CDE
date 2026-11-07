@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using cdeAppCore.Dtos;
+using cdeAppCore.Jobs;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
@@ -12,7 +13,7 @@ namespace cdeApi;
 /// <summary>
 /// <c>POST /catalogs/migrate</c>: convert the writable legacy catalogs the last load listed
 /// (<see cref="ICatalogSession.LegacyCatalogs"/>) to <c>.cdex</c>. Refusals are plain JSON <see cref="MigrateError"/>s
-/// before the SSE stream starts: 409 <c>busy</c> while another catalog job runs, 422 <c>nothing-to-migrate</c> when no
+/// before the SSE stream starts: 409 <c>busy</c> while another catalog job is queued or runs, 422 <c>nothing-to-migrate</c> when no
 /// listed catalog is in a writable folder. Once started, the stream carries one <c>progress</c> event per catalog, then
 /// exactly one of <c>done</c> (<see cref="MigrateResult"/>) or <c>error</c>. Aborting the request stops after the
 /// catalog in progress is discarded; those already converted stay converted. Nothing is loaded: reload afterwards.
@@ -23,9 +24,10 @@ public static class MigrateEndpoint
     public const string NothingToMigrate = "nothing-to-migrate";
     public const string Failed = "migrate-failed";
 
-    public static async Task HandleAsync(HttpContext ctx, ICatalogSession session, ILogger logger = null)
+    public static async Task HandleAsync(HttpContext ctx, ICatalogSession session, JobRegistry jobs, ILogger logger = null)
     {
-        var refusal = Refuse(session);
+        using var exclusive = jobs.TryBeginExclusive();
+        var refusal = Refuse(session, jobsIdle: exclusive != null);
         if (refusal is var (status, error))
         {
             ctx.Response.StatusCode = status;
@@ -65,11 +67,11 @@ public static class MigrateEndpoint
     }
 
     /// <summary>The refusal for a migration that can't start, or null when it may.</summary>
-    public static (int Status, MigrateError Error)? Refuse(ICatalogSession session)
+    private static (int Status, MigrateError Error)? Refuse(ICatalogSession session, bool jobsIdle)
     {
-        if (session.AnyCatalogJobRunning)
+        if (!jobsIdle || session.AnyCatalogJobRunning)
             return (StatusCodes.Status409Conflict,
-                new MigrateError { Code = Busy, Message = "Another catalog job is running; try again when it finishes." });
+                new MigrateError { Code = Busy, Message = "Catalog jobs are queued or running; try again when they finish." });
         if (!session.LegacyCatalogs.Any(l => l.Writable))
             return (StatusCodes.Status422UnprocessableEntity,
                 new MigrateError { Code = NothingToMigrate, Message = "There are no legacy catalogs in a writable folder to migrate." });

@@ -337,17 +337,24 @@ public sealed class JobRegistry : IDisposable
         };
     }
 
-    private static JobError ToError(JobKind kind, Exception ex) => ex switch
+    // The session's documented refusals keep their submit-time codes (a race the preflight could not see); anything
+    // else is an unexpected failure, which RunAsync logs.
+    private static JobError ToError(JobKind kind, Exception ex) => new()
     {
-        RootNotAccessibleException e => new JobError
-            { Code = JobErrorCodes.RootNotAccessible, Message = e.Message, RootPath = e.RootPath },
-        NoSourceFileException e => new JobError { Code = JobErrorCodes.NoSourceFile, Message = e.Message },
-        CatalogFileExistsException e => new JobError { Code = JobErrorCodes.FileExists, Message = e.Message },
-        _ => new JobError
+        Code = ex switch
         {
-            Code = kind == JobKind.Rescan ? JobErrorCodes.RescanFailed : JobErrorCodes.CreateFailed,
-            Message = ex.Message
-        }
+            RootNotAccessibleException => JobErrorCodes.RootNotAccessible,
+            NoSourceFileException => JobErrorCodes.NoSourceFile,
+            CatalogFileExistsException => JobErrorCodes.FileExists,
+            RescanAlreadyRunningException => JobErrorCodes.AlreadyRunning,
+            CatalogJobBusyException => JobErrorCodes.Busy,
+            InvalidCatalogFileNameException => JobErrorCodes.InvalidFileName,
+            CatalogFolderNotWritableException => JobErrorCodes.FolderNotWritable,
+            NoCatalogDirException => JobErrorCodes.NoCatalogDir,
+            _ => kind == JobKind.Rescan ? JobErrorCodes.RescanFailed : JobErrorCodes.CreateFailed
+        },
+        Message = ex.Message,
+        RootPath = (ex as RootNotAccessibleException)?.RootPath
     };
 
     // Every report updates the job; subscribers hear of it on a phase change or at most every ProgressIntervalMs.

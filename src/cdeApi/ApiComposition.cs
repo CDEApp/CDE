@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using cdeAppCore;
 using cdeAppCore.Compare;
+using cdeAppCore.Jobs;
 using cdeAppCore.Search;
 using cdeAppCore.Serialization;
 using cdeAppCore.Session;
@@ -48,6 +49,8 @@ public static class ApiComposition
                 // Read on every scan, not snapshotted: appsettings reloads at runtime and a rescan uses the current excludes.
                 scanConfig: () => sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Scan").Get<ScanSection>())
             { LoadLegacyCatalogs = false });
+        services.AddSingleton(sp => new JobRegistry(sp.GetRequiredService<ICatalogSession>(),
+            sp.GetRequiredService<IConfiguration>().GetValue("AppConfig:Jobs:MaxConcurrent", 3), logger));
         services.AddSingleton<ISearchService>(sp =>
             new SearchService(sp.GetRequiredService<ICatalogSession>()));
         services.AddSingleton<ITreemapService>(sp =>
@@ -83,19 +86,14 @@ public static class ApiComposition
         // /ui-state, /colour-rules, /colour-rules/defaults
         app.MapSettingsEndpoints();
 
-        // POST /catalogs/{id}/rescan — rescan one catalog in the background (SSE: progress..., done | error).
-        // Refusals (unknown / already running / root unreachable) are plain JSON errors before the stream starts.
-        app.MapPost("/catalogs/{id:int}/rescan", RescanEndpoint.HandleAsync);
+        // /jobs, /jobs/events, /jobs/{id}/cancel, /jobs/{id}, /jobs/finished — rescans and new catalogs as queued jobs.
+        app.MapJobsEndpoints();
 
         // PUT /catalogs/{id}/description — replace a catalog's description (JSON in, the updated catalog out).
         app.MapPut("/catalogs/{id:int}/description", DescriptionEndpoint.HandleAsync);
 
         // POST /catalogs/preflight — default name, working folder, collisions for the New Catalog dialog (JSON).
         app.MapPost("/catalogs/preflight", CreateCatalogEndpoint.PreflightAsync);
-
-        // POST /catalogs — scan a new root into a new .cdex in the working folder and add it to the session
-        // (SSE: progress..., done | error). Refusals are plain JSON errors before the stream starts.
-        app.MapPost("/catalogs", CreateCatalogEndpoint.HandleAsync);
 
         // POST /catalogs/migrate — convert the listed legacy .cde catalogs to .cdex (SSE: progress..., done | error).
         app.MapPost("/catalogs/migrate", MigrateEndpoint.HandleAsync);

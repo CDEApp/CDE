@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeApi;
 using cdeAppCore.Dtos;
+using cdeAppCore.Jobs;
 using cdeAppCore.Session;
 using NSubstitute;
 using NUnit.Framework;
@@ -13,7 +14,7 @@ using Serilog.Events;
 
 namespace cdeApiTest;
 
-/// <summary>An unexpected failure is sent to the client as an SSE error event AND written to the sidecar log (#176).</summary>
+/// <summary>An unexpected failure reaches the client (a failed job, or an SSE error event) AND the sidecar log (#176).</summary>
 [TestFixture]
 public class EndpointFailureLoggingTests
 {
@@ -41,52 +42,63 @@ public class EndpointFailureLoggingTests
         Assert.That(_sink.Events[0].Exception, Is.SameAs(_boom));
     }
 
-    [Test]
-    public async Task A_failed_rescan_is_logged_with_the_exception_and_still_sent_to_the_client()
+    private static ICatalogSession SessionWithOneCatalog()
     {
         var session = Substitute.For<ICatalogSession>();
         session.PreflightRescan(0).Returns(RescanPreflight.Ready);
-        session.RescanAsync(0, Arg.Any<IProgress<RescanProgress>>(), Arg.Any<CancellationToken>()).Returns<RescanResult>(_ => throw _boom);
-        var (ctx, body) = TestCatalog.NewContext();
-
-        await RescanEndpoint.HandleAsync(ctx, 0, session, _logger);
-
-        Assert.That(TestCatalog.Text(body), Does.Contain(RescanEndpoint.Failed));
-        AssertLoggedWithException();
-    }
-
-    [Test]
-    public async Task A_failed_create_is_logged_with_the_exception_and_still_sent_to_the_client()
-    {
-        var session = Substitute.For<ICatalogSession>();
+        session.GetCatalogs().Returns([new CatalogInfoDto { CatalogId = 0, RootPath = "r", SourcePath = "x.cdex" }]);
         session.PreflightCreate(Arg.Any<CreatePreflightRequest>()).Returns(new CreatePreflightResult
         {
             CatalogDir = "cat", Writable = true, RootAccessible = true, FileName = "x", TargetPath = "x.cdex"
         });
+        return session;
+    }
+
+    private static async Task<JobDto> RunToEnd(JobRegistry jobs, JobSubmitRequest request)
+    {
+        var job = jobs.Submit(request).Job;
+        Assert.That(job, Is.Not.Null);
+        return await TestCatalog.WaitForJob(jobs, job.Id, j => j.IsTerminal);
+    }
+
+    [Test]
+    public async Task A_failed_rescan_job_is_logged_with_the_exception_and_still_reported_as_failed()
+    {
+        var session = SessionWithOneCatalog();
+        session.RescanAsync(0, Arg.Any<IProgress<RescanProgress>>(), Arg.Any<CancellationToken>()).Returns<RescanResult>(_ => throw _boom);
+        using var jobs = new JobRegistry(session, logger: _logger);
+
+        var job = await RunToEnd(jobs, new JobSubmitRequest { Kind = JobKind.Rescan, CatalogId = 0 });
+
+        Assert.That(job.Error.Code, Is.EqualTo(JobErrorCodes.RescanFailed));
+        AssertLoggedWithException();
+    }
+
+    [Test]
+    public async Task A_failed_create_job_is_logged_with_the_exception_and_still_reported_as_failed()
+    {
+        var session = SessionWithOneCatalog();
         session.CreateCatalogAsync(Arg.Any<CreateCatalogRequest>(), Arg.Any<IProgress<CreateProgress>>(), Arg.Any<CancellationToken>())
             .Returns<CreateCatalogResult>(_ => throw _boom);
-        var (ctx, body) = TestCatalog.NewContext();
+        using var jobs = new JobRegistry(session, logger: _logger);
 
-        await CreateCatalogEndpoint.HandleAsync(ctx, new CreateCatalogRequest { RootPath = "r", FileName = "x" }, session, _logger);
+        var job = await RunToEnd(jobs, new JobSubmitRequest { Kind = JobKind.Create, RootPath = "r", FileName = "x" });
 
-        Assert.That(TestCatalog.Text(body), Does.Contain(CreateCatalogEndpoint.Failed));
+        Assert.That(job.Error.Code, Is.EqualTo(JobErrorCodes.CreateFailed));
         AssertLoggedWithException();
     }
 
     [Test]
-    public async Task An_expected_create_refusal_is_not_logged_as_an_error()
+    public async Task An_expected_refusal_during_a_create_job_is_not_logged_as_an_error()
     {
-        var session = Substitute.For<ICatalogSession>();
-        session.PreflightCreate(Arg.Any<CreatePreflightRequest>()).Returns(new CreatePreflightResult
-        {
-            CatalogDir = "cat", Writable = true, RootAccessible = true, FileName = "x", TargetPath = "x.cdex"
-        });
+        var session = SessionWithOneCatalog();
         session.CreateCatalogAsync(Arg.Any<CreateCatalogRequest>(), Arg.Any<IProgress<CreateProgress>>(), Arg.Any<CancellationToken>())
             .Returns<CreateCatalogResult>(_ => throw new CatalogJobBusyException("busy"));
-        var (ctx, _) = TestCatalog.NewContext();
+        using var jobs = new JobRegistry(session, logger: _logger);
 
-        await CreateCatalogEndpoint.HandleAsync(ctx, new CreateCatalogRequest { RootPath = "r", FileName = "x" }, session, _logger);
+        var job = await RunToEnd(jobs, new JobSubmitRequest { Kind = JobKind.Create, RootPath = "r", FileName = "x" });
 
+        Assert.That(job.Error.Code, Is.EqualTo(JobErrorCodes.Busy));
         Assert.That(_sink.Events, Is.Empty);
     }
 
@@ -99,7 +111,9 @@ public class EndpointFailureLoggingTests
             .Returns<MigrateResult>(_ => throw _boom);
         var (ctx, body) = TestCatalog.NewContext();
 
-        await MigrateEndpoint.HandleAsync(ctx, session, _logger);
+        using var jobs = new JobRegistry(session);
+
+        await MigrateEndpoint.HandleAsync(ctx, session, jobs, _logger);
 
         Assert.That(TestCatalog.Text(body), Does.Contain(MigrateEndpoint.Failed));
         AssertLoggedWithException();

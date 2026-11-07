@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
+using cdeAppCore.Jobs;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -39,18 +40,19 @@ public static class SessionEndpoints
     /// <summary>
     /// <c>POST /session/reload</c>: reload catalogs, streaming load progress over SSE then a final <c>done</c>.
     /// Optional <c>?path=&lt;dir&gt;</c> loads .cdex catalogs from that folder (and one level down); otherwise
-    /// <see cref="ApiOptions.ConfigPath"/> is used. 409 while a rescan or a new catalog is running.
+    /// <see cref="ApiOptions.ConfigPath"/> is used. 409 while any job is queued or running, or a migration runs.
     /// </summary>
-    public static async Task ReloadAsync(HttpContext ctx, ICatalogSession session, ApiOptions options)
+    public static async Task ReloadAsync(HttpContext ctx, ICatalogSession session, ApiOptions options, JobRegistry jobs)
     {
         var requested = ctx.Request.Query["path"].FirstOrDefault();
         var loadPath = string.IsNullOrWhiteSpace(requested) ? options.ConfigPath : requested;
 
-        // A reload would drop the catalog a rescan is about to swap into, or the session a create is adding to.
-        if (session.AnyCatalogJobRunning)
+        // A reload renumbers catalogs: a queued rescan would then hit another catalog, a running one loses its swap.
+        using var exclusive = jobs.TryBeginExclusive();
+        if (exclusive == null || session.AnyCatalogJobRunning)
         {
             ctx.Response.StatusCode = StatusCodes.Status409Conflict;
-            await ctx.Response.WriteAsync("a rescan or a new catalog is running", ctx.RequestAborted);
+            await ctx.Response.WriteAsync("busy: catalog jobs are queued or running", ctx.RequestAborted);
             return;
         }
 

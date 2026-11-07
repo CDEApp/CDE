@@ -5,7 +5,7 @@ namespace cdeAppCore.Dtos;
 /// <summary>Rescan progress. <see cref="Phase"/> is <c>scanning</c>, <c>writing</c> or <c>swapping</c>.</summary>
 public readonly record struct RescanProgress(int CatalogId, string Phase, int EntriesScanned, string CurrentPath);
 
-/// <summary>Final outcome of a successful rescan (the SSE <c>done</c> payload).</summary>
+/// <summary>Final outcome of a successful rescan (becomes the job's <see cref="JobResult"/>).</summary>
 public sealed class RescanResult
 {
     public int CatalogId { get; set; }
@@ -23,14 +23,6 @@ public sealed class RescanResult
 
     /// <summary>Folders the scan could not read for another reason, e.g. an IO error (#170). Scan-time only: not stored in the catalog.</summary>
     public int UnreadableFolderCount { get; set; }
-}
-
-/// <summary>The SSE <c>error</c> payload. <see cref="Code"/> is a stable machine-readable reason.</summary>
-public sealed class RescanError
-{
-    public string Code { get; set; }
-    public string Message { get; set; }
-    public string RootPath { get; set; }
 }
 
 /// <summary>Result of the cheap checks done before a rescan is started.</summary>
