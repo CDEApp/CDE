@@ -123,7 +123,8 @@ function announceCancelled(job: JobDto) {
 /**
  * The sidecar's job list, kept live over SSE. Each job that reaches a terminal state is acted on exactly once
  * (refresh + toast), including one that finished while the stream was down. Jobs already finished when the first
- * snapshot arrives belong to an earlier session of this window and are not announced.
+ * snapshot arrives belong to an earlier session of this window and are not announced, unless this window submitted
+ * them (the stream can connect after a fast job has ended, before or after its submit response arrives).
  */
 export function useJobs({
   getClient,
@@ -137,6 +138,8 @@ export function useJobs({
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
   const modelRef = useRef(model);
   const handled = useRef(new Set<number>());
+  const submitted = useRef(new Set<number>());
+  const finishedAtStart = useRef(new Set<number>());
   const gotSnapshot = useRef(false);
   const submitting = useRef(new Set<string>());
   // Latest callbacks, so the subscription is not torn down when App re-creates them.
@@ -150,7 +153,7 @@ export function useJobs({
 
   const settle = useCallback(
     (job: JobDto) => {
-      if (isActive(job.state) || handled.current.has(job.id)) return;
+      if (isActive(job.state) || handled.current.has(job.id) || finishedAtStart.current.has(job.id)) return;
       handled.current.add(job.id);
       let done: Promise<void> | undefined;
       if (job.state === "succeeded" && job.result) {
@@ -177,7 +180,7 @@ export function useJobs({
           const first = !gotSnapshot.current;
           gotSnapshot.current = true;
           for (const j of snap.jobs) {
-            if (first && !isActive(j.state)) handled.current.add(j.id);
+            if (first && !isActive(j.state) && !submitted.current.has(j.id)) finishedAtStart.current.add(j.id);
             else settle(j);
           }
         },
@@ -200,7 +203,12 @@ export function useJobs({
         submitting.current.add(guardKey);
       }
       try {
-        update(applyJob(modelRef.current, await getClient().submitJob(req)));
+        const accepted = await getClient().submitJob(req);
+        submitted.current.add(accepted.id);
+        finishedAtStart.current.delete(accepted.id);
+        const next = applyJob(modelRef.current, accepted);
+        update(next);
+        settle(next.jobs.get(accepted.id)!);
       } catch (e) {
         if (e instanceof JobRefusal && e.rootNotAccessible) {
           setUnreachableRoot(e.error.rootPath || (req.kind === "create" ? req.rootPath : null) || e.message);
@@ -211,7 +219,7 @@ export function useJobs({
         if (guardKey) submitting.current.delete(guardKey);
       }
     },
-    [getClient, update],
+    [getClient, update, settle],
   );
 
   const rescanCatalog = useCallback(

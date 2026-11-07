@@ -83,6 +83,24 @@ describe("useJobs completion handling", () => {
     expect(t.result.current.model.jobs.size).toBe(2);
   });
 
+  it("announces a job this window submitted that finished before the first snapshot arrived", async () => {
+    const t = setup();
+    t.client.submitJob.mockResolvedValue(job(3, { state: "queued" }));
+    await act(() => t.result.current.rescanCatalog(3));
+    await t.snapshot([done(3)]);
+    expect(t.afterRescan).toHaveBeenCalledOnce();
+    expect(t.afterRescan).toHaveBeenCalledWith(t.client, 3);
+  });
+
+  it("announces a submitted job the first snapshot already showed finished before the submit returned", async () => {
+    const t = setup();
+    await t.snapshot([done(3)]);
+    t.client.submitJob.mockResolvedValue(job(3, { state: "queued" }));
+    await act(() => t.result.current.rescanCatalog(3));
+    expect(t.afterRescan).toHaveBeenCalledOnce();
+    expect(t.result.current.model.jobs.get(3)?.state).toBe("succeeded");
+  });
+
   it("announces a job that finished while the stream was down, from the reconnect snapshot", async () => {
     const t = setup();
     await t.snapshot([job(1)]);
