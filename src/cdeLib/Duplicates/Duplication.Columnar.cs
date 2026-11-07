@@ -5,25 +5,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
+using cdeLib.Hashing;
 using cdeLib.Infrastructure;
 
 namespace cdeLib.Duplicates;
 
 public partial class Duplication
 {
-    /// <summary>
-    /// A file whose size occurs more than once across all catalogs, addressed by (catalog, entry index),
-    /// with the flags and hash it will be saved with.
-    /// </summary>
-    private struct HashCandidate
-    {
-        public int Catalog;
-        public int Index;
-        public long Size;
-        public Flags Flags;
-        public Hash16 Hash;
-    }
-
     /// <summary>
     /// Index-based equivalent of <see cref="ApplyHash(IList{RootEntry})"/> that hashes straight from
     /// memory-mapped catalogs without rebuilding pointer trees (issue #40). The same files are hashed with the
@@ -33,18 +21,24 @@ public partial class Duplication
     /// <see cref="ColumnarFormat.WriteWithHashes"/>. Hashes computed before a break are kept in the result.
     /// Managed memory grows with the number of files sharing a size, not with the total entry count.
     /// </summary>
-    public async Task<ColumnarHashUpdates> ApplyHash(IReadOnlyList<ColumnarCatalogReader> readers)
+    /// <param name="readers">The catalogs to hash.</param>
+    /// <param name="selection">Which files to hash; null is <see cref="HashSelection.All"/>.</param>
+    /// <param name="cancellationToken">Stops the run and throws <see cref="OperationCanceledException"/>, so no
+    /// hashes are returned. A Ctrl-C break (<see cref="OperationCancellation"/>) instead ends a phase and keeps them.</param>
+    public async Task<ColumnarHashUpdates> ApplyHash(IReadOnlyList<ColumnarCatalogReader> readers,
+        HashSelection selection = null, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(readers);
+        selection ??= HashSelection.All;
         _logger.LogDebug("PrePairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
-        var grouping = ColumnarSizeGrouping.FindRepeatedSizes(readers, SizeCandidates.NonEmptyFiles);
-        var candidates = CollectCandidates(readers, grouping);
+        var (candidates, grouping) = HashCandidateSelection.Select(readers, selection, cancellationToken);
         _logger.LogDebug("PostPairSize Memory: {0}", _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
 
         long totalFiles = 0;
         foreach (var r in readers) totalFiles += r.RootFileEntryCount;
-        ReportSizeMatches(grouping.RepeatedSizes.Count, totalFiles, candidates.Length, grouping.LongestRun,
+        ReportSizeMatches(grouping.RepeatedSizes.Count, totalFiles, grouping.RepeatedFileCount, grouping.LongestRun,
             grouping.LongestRunSize);
+        if (selection != HashSelection.All) ReportSelection(selection, candidates.Length);
 
         foreach (var r in readers)
         {
@@ -57,7 +51,7 @@ public partial class Duplication
         var groupedByDriveRoot = GroupByDriveRoot(readers, candidates);
 
         var timer = Stopwatch.StartNew();
-        using var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var token = cts.Token;
         var outerOptions = new ParallelOptions { CancellationToken = token };
         _duplicationStatistics.FilesToCheckForDuplicatesCount = candidates.Length;
@@ -85,10 +79,10 @@ public partial class Duplication
                 });
             });
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             RecordUnexpectedFailure(ex, nameof(ApplyHash));
             ReportFileErrors();
@@ -102,8 +96,9 @@ public partial class Duplication
         var skipFullHashing = _cancellation.BreakCount > 1;
         _cancellation.Reset();
         if (skipFullHashing) ReportStatus(FullPhaseSkippedMessage);
-        else await CompleteFullHashesAsync(readers, candidates);
+        else await CompleteFullHashesAsync(readers, candidates, selection.IncludeUniqueSizes, cancellationToken);
 
+        cancellationToken.ThrowIfCancellationRequested();
         timer.Stop();
         ReportHashingDone(timer);
         ReportFileErrors();
@@ -134,57 +129,6 @@ public partial class Duplication
         }
 
         return new ColumnarHashUpdates(byCatalog);
-    }
-
-    /// <summary>Every non-empty file whose size is repeated, in descending size order.</summary>
-    private static HashCandidate[] CollectCandidates(IReadOnlyList<ColumnarCatalogReader> readers,
-        ColumnarSizeGrouping.Result grouping)
-    {
-        var candidates = new HashCandidate[grouping.RepeatedFileCount];
-        var n = 0;
-        for (var c = 0; c < readers.Count; c++)
-        {
-            var r = readers[c];
-            var bits = r.BitFields;
-            var size = r.Size;
-            for (var i = 1; i < r.Count; i++)
-            {
-                var flags = bits[i];
-                if (!ColumnarSizeGrouping.IsCandidate(flags, size[i], SizeCandidates.NonEmptyFiles)
-                    || !grouping.RepeatedSizes.Contains(size[i]))
-                {
-                    continue;
-                }
-
-                if (n == candidates.Length)
-                {
-                    throw new InvalidOperationException("A catalog changed while it was being hashed.");
-                }
-
-                candidates[n++] = new HashCandidate
-                {
-                    Catalog = c,
-                    Index = i,
-                    Size = size[i],
-                    Flags = flags,
-                    Hash = flags.IsHashUsable() ? r.HashOf(i) : default,
-                };
-            }
-        }
-
-        if (n != candidates.Length)
-        {
-            throw new InvalidOperationException("A catalog changed while it was being hashed.");
-        }
-
-        Array.Sort(candidates, static (a, b) =>
-        {
-            var bySize = b.Size.CompareTo(a.Size);
-            if (bySize != 0) return bySize;
-            var byCatalog = a.Catalog.CompareTo(b.Catalog);
-            return byCatalog != 0 ? byCatalog : a.Index.CompareTo(b.Index);
-        });
-        return candidates;
     }
 
     /// <summary>
@@ -259,7 +203,8 @@ public partial class Duplication
     /// Groups the candidates with a usable hash by (size, hash) and gives every member of a set of more than
     /// one a full hash. Only candidates can be in such a set: its members share a size.
     /// </summary>
-    private async Task CompleteFullHashesAsync(IReadOnlyList<ColumnarCatalogReader> readers, HashCandidate[] candidates)
+    private async Task CompleteFullHashesAsync(IReadOnlyList<ColumnarCatalogReader> readers, HashCandidate[] candidates,
+        bool fullHashEveryCandidate, CancellationToken cancellationToken)
     {
         _logger.LogDebug(string.Empty);
         _logger.LogDebug("Checking duplicates and completing full hash.");
@@ -299,12 +244,18 @@ public partial class Duplication
         }
 
         ReportDuplicateSets(sets, entriesToHash.Count, longest);
-        if (sets == 0)
+        if (fullHashEveryCandidate)
+        {
+            entriesToHash = hashed;
+            _duplicationStatistics.FilesToCheckForDuplicatesCount = hashed.Count;
+        }
+
+        if (entriesToHash.Count == 0)
         {
             return;
         }
 
-        using var cts = new CancellationTokenSource();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var parallelOptions = new ParallelOptions
         {
             CancellationToken = cts.Token,
@@ -341,11 +292,11 @@ public partial class Duplication
                 }
             });
         }
-        catch (OperationCanceledException)
+        catch (OperationCanceledException) when (!cancellationToken.IsCancellationRequested)
         {
             _logger.LogInfo("Full hash phase cancelled.");
         }
-        catch (Exception ex)
+        catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             RecordUnexpectedFailure(ex, nameof(CompleteFullHashesAsync));
         }
@@ -356,8 +307,9 @@ public partial class Duplication
 }
 
 /// <summary>
-/// The flags and hashes <see cref="Duplication.ApplyHash(IReadOnlyList{ColumnarCatalogReader})"/> changed, per
-/// catalog in reader order, sorted by entry index for <see cref="ColumnarFormat.WriteWithHashes"/>.
+/// The flags and hashes
+/// <see cref="Duplication.ApplyHash(IReadOnlyList{ColumnarCatalogReader}, HashSelection, CancellationToken)"/> changed,
+/// per catalog in reader order, sorted by entry index for <see cref="ColumnarFormat.WriteWithHashes"/>.
 /// </summary>
 public sealed class ColumnarHashUpdates
 {

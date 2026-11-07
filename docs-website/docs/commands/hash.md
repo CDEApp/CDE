@@ -8,17 +8,31 @@ title: hash
 Hash files so that [`cde dupes`](dupes.md) can find duplicates.
 
 ```text
-cde hash [<catalog.cdex>]
+cde hash [<catalog.cdex>] [--filter "<query>"] [--include-unique-sizes]
 ```
 
 | Argument | Description |
 | -------- | ----------- |
 | `<catalog.cdex>` | Optional. One catalog to hash and save. If you leave it out, cde hashes every catalog in the current directory and one directory below. |
+| `--filter "<query>"` | Optional. Hash only the files that match this query. The query uses the syntax of [`cde everything`](everything.md). |
+| `--include-unique-sizes` | Optional. Also hash files whose size no other file has. Each selected file gets a full hash. |
 
 ```batch
 cde hash
 cde hash C-V3Win7-C__users.cdex
+cde hash --filter "size:>2gb"
+cde hash --filter "ext:iso;mkv" --include-unique-sizes
 ```
+
+## With a filter
+
+A filter makes a large catalog fast to hash when you only need some of its duplicates. For example, `--filter "size:>2gb"` hashes only files over 2 GB.
+
+- The filter narrows the usual candidates. A file must match the filter and share its size with another file. Add `--include-unique-sizes` to hash matching files whose size is unique too.
+- Hashes that the catalog already has are kept, also for files the filter does not match. A later run without a filter hashes only the files that have no hash yet.
+- The filter is for this run only. It is not saved in the catalog or the settings.
+- A malformed filter stops the command before it reads a catalog. The error is `error: ... (at position N)`, the same message as `cde everything`.
+- Quote the filter, because `<`, `>`, `|` and `!` have a meaning in the shell.
 
 ## With no argument
 

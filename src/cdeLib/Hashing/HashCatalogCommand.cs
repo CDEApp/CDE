@@ -12,4 +12,7 @@ public class HashCatalogCommand : IRequest
 
     /// <summary>Where each file hashed goes as a record (<c>--json</c> / <c>--csv</c>); null writes nothing.</summary>
     public Output.IRecordWriter Output { get; init; }
+
+    /// <summary>Which files to hash (<c>--filter</c>, <c>--include-unique-sizes</c>); not saved.</summary>
+    public HashSelection Selection { get; init; } = HashSelection.All;
 }

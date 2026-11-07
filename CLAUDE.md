@@ -238,9 +238,15 @@ Searches loaded catalogs. Options: `-path`, `-grep`, `-repl`, size/date filters.
 
 ```bash
 cde hash
-cde hash -minSize 1MB
+cde hash --filter "size:>2gb"
+cde hash --filter "ext:iso;mkv" --include-unique-sizes
 ```
 Adds XxHash128 hashes to catalog files. Two-phase: partial hash first, then promotes to full hash for potential duplicates.
+`--filter` (issue #230) takes an Everything-style query (`EverythingQuery.Parse`, the search bar's parser and error
+messages) and hashes only the repeated-size files it matches; `--include-unique-sizes` drops the repeated-size rule and
+gives every selected file a full hash. The selection is a `HashSelection` per run, never saved. A filter only adds or
+upgrades hashes; it never clears one. `ColumnarCatalogHashing.Preview` counts what a selection will read, through the
+same `HashCandidateSelection` as the run, and `HashAndSave` takes a `CancellationToken` that stops before any save.
 
 ### Duplicate Detection
 
