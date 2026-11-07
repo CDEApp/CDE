@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildApiUrl, CdeApiClient, idSegment, MigrateFailure, refSegment, ShellError } from "./client";
+import { buildApiUrl, CdeApiClient, idSegment, JobRefusal, MigrateFailure, refSegment, ShellError } from "./client";
 import { refToString, type MigrateProgress } from "./types";
 
 describe("buildApiUrl", () => {
@@ -181,5 +181,112 @@ describe("setDescription", () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify("A rescan of catalog 3 is already running."), { status: 409 })));
 
     await expect(client.setDescription(3, "x")).rejects.toThrow("A rescan of catalog 3 is already running.");
+  });
+});
+
+describe("jobs", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+  const sse = (...events: [string, unknown][]) =>
+    new Response(events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join(""), { status: 200 });
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("submitJob POSTs the request to /jobs and returns the queued job", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 7, state: "queued" }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(client.submitJob({ kind: "rescan", catalogId: 3 })).resolves.toMatchObject({ id: 7 });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:5000/jobs");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ kind: "rescan", catalogId: 3 });
+  });
+
+  it("throws a typed refusal carrying the sidecar's code, message and root", async () => {
+    const body = { code: "root-not-accessible", message: "no", rootPath: "Z:\\" };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 422 })));
+
+    const err = await client.submitJob({ kind: "create", rootPath: "Z:\\" }).catch((e) => e);
+    expect(err).toBeInstanceOf(JobRefusal);
+    expect(err.rootNotAccessible).toBe(true);
+    expect(err.error).toEqual(body);
+  });
+
+  it("turns a non-JSON refusal into a generic one", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("boom", { status: 500 })));
+
+    const err = await client.submitJob({ kind: "rescan", catalogId: 1 }).catch((e) => e);
+    expect(err).toBeInstanceOf(JobRefusal);
+    expect(err.rootNotAccessible).toBe(false);
+    expect(err.message).toBe("boom");
+  });
+
+  it("uses the right verb and route to cancel, dismiss and clear", async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response(null, { status: 204 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await client.cancelJob(4);
+    await client.dismissJob(5);
+    await client.clearFinishedJobs();
+
+    expect(fetchMock.mock.calls.map(([u, i]) => `${i.method} ${u}`)).toEqual([
+      "POST http://127.0.0.1:5000/jobs/4/cancel",
+      "DELETE http://127.0.0.1:5000/jobs/5",
+      "DELETE http://127.0.0.1:5000/jobs/finished",
+    ]);
+  });
+
+  it("dismissJob surfaces a refusal", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not finished", { status: 409 })));
+
+    await expect(client.dismissJob(5)).rejects.toThrow("409");
+  });
+
+  it("subscribeJobs delivers the snapshot then job events, and reconnects with a fresh snapshot", async () => {
+    const job = { id: 1, state: "running" };
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(sse(["snapshot", { jobs: [], maxConcurrent: 3 }], ["job", job]))
+      .mockResolvedValueOnce(sse(["snapshot", { jobs: [{ id: 1, state: "succeeded" }], maxConcurrent: 3 }]));
+    vi.stubGlobal("fetch", fetchMock);
+    const abort = new AbortController();
+    const seen: string[] = [];
+    const onDisconnect = vi.fn();
+
+    await client.subscribeJobs(
+      {
+        signal: abort.signal,
+        onSnapshot: (s) => {
+          seen.push(`snapshot:${s.jobs.length}`);
+          if (seen.filter((x) => x.startsWith("snapshot")).length === 2) abort.abort();
+        },
+        onJob: (j) => seen.push(`job:${j.id}`),
+        onDisconnect,
+      },
+      0,
+    );
+
+    expect(seen).toEqual(["snapshot:0", "job:1", "snapshot:1"]);
+    expect(onDisconnect).toHaveBeenCalledOnce();
+    expect(fetchMock.mock.calls[0][0]).toBe("http://127.0.0.1:5000/jobs/events");
+  });
+
+  it("subscribeJobs keeps retrying after a failed connection until aborted", async () => {
+    const abort = new AbortController();
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("network"))
+      .mockImplementationOnce(async () => {
+        abort.abort();
+        return sse();
+      });
+    vi.stubGlobal("fetch", fetchMock);
+    const onDisconnect = vi.fn();
+
+    await client.subscribeJobs({ signal: abort.signal, onSnapshot: () => {}, onJob: () => {}, onDisconnect }, 0);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(onDisconnect).toHaveBeenCalledOnce();
   });
 });
