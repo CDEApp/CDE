@@ -31,7 +31,8 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10 (no WinForms, no ASP.NET; references only `cdeLib`)
   - Transport-agnostic services + serializable DTOs shared by every frontend: `ICatalogSession`
     (owned, disposable catalog lifetime over mmap `.cdex`; per-catalog rescan "replace", create "add" and the
-    `CatalogDir` working folder, all under one session gate), streamed `ISearchService`
+    `CatalogDir` working folder, all under one session gate), `JobRegistry` (queued/running/finished scan jobs over
+    the session, with a concurrency cap), streamed `ISearchService`
     (`IAsyncEnumerable<SearchResultRow>` + `IProgress<SearchProgress>`), `IShellActions`
     (open/explore/properties + custom commands), and the pure formatting/sorting/validation helpers
     lifted out of the WinForms presenter
@@ -47,9 +48,11 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10 (ASP.NET / Kestrel minimal API)
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
-    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE), `/catalogs/{id}/rescan` (SSE),
-    `POST /catalogs` (SSE; scans a new root into a new `.cdex` in the working folder), `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
+    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE; 409 busy while any job is queued or running),
+    `POST /jobs` (queue a rescan of a catalog or a create of a new `.cdex` in the working folder; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
+  - Scan jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the
+    rest queued; never two queued/running jobs on one catalog file; finished jobs listed until dismissed (200 kept)
   - Publishes as a self-contained single-file binary for sidecar bundling
 
 - **cde-tauri** - Tauri (React/TypeScript) desktop frontend (`src/cde-tauri`)
