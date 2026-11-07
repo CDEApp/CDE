@@ -29,6 +29,9 @@ interface Props {
   columnWidths?: unknown;
   /** A column resize finished (or was reset): the full set of user-set widths to persist. */
   onColumnWidthsChange?: (widths: CatalogColumnWidths) => void;
+  /** Selected catalog id (held by App so it survives tab switches). */
+  selectedId?: number | null;
+  onSelect?: (catalogId: number) => void;
 }
 
 const COLUMNS: { column: CatalogSortColumn; label: string; numeric?: boolean }[] = [
@@ -53,6 +56,7 @@ const dateText = (d: Date) => formatDate(d.toISOString(), false);
 /** Catalog list view. Double-click a catalog to make it the directory-tree root. */
 export function CatalogList({
   catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds, sort, onSort, columnWidths, onColumnWidthsChange,
+  selectedId, onSelect,
 }: Props) {
   const [filter, setFilter] = useState("");
   const rows = useMemo(() => sortCatalogs(filterCatalogs(catalogs, filter), sort), [catalogs, filter, sort]);
@@ -101,7 +105,7 @@ export function CatalogList({
           <input
             type="text"
             aria-label="Filter catalogs"
-            placeholder="Filter by root, volume, drive or catalog…"
+            placeholder="Filter by root, volume, drive, catalog or description…"
             value={filter}
             onChange={(e) => setFilter(e.target.value)}
             onKeyDown={(e) => {
@@ -177,9 +181,16 @@ export function CatalogList({
             return (
               <tr
                 key={c.catalogId}
-                className={rescanningIds?.has(c.catalogId) ? "rescanning" : undefined}
+                className={
+                  [rescanningIds?.has(c.catalogId) && "rescanning", c.catalogId === selectedId && "selected"]
+                    .filter(Boolean)
+                    .join(" ") || undefined
+                }
+                aria-selected={c.catalogId === selectedId}
+                onClick={() => onSelect?.(c.catalogId)}
                 onDoubleClick={() => onActivate(c)}
                 onContextMenu={(e) => {
+                  onSelect?.(c.catalogId);
                   if (!onContextMenu) return;
                   e.preventDefault();
                   e.stopPropagation();

@@ -273,6 +273,7 @@ tbody tr:hover { background: var(--row-hover); }
 .cataloglist td { overflow: hidden; text-overflow: ellipsis; }
 .cataloglist .th-sort { overflow: hidden; text-overflow: ellipsis; }
 .cataloglist td.dates { font-variant-numeric: tabular-nums; }
+.cataloglist tbody tr.selected, .cataloglist tbody tr.selected:hover { background: var(--accent); color: #fff; }
 .cataloglist tr.rescanning td { color: #8a8a8a; font-style: italic; }
 
 /* new catalog: dialog form, Catalogs-tab toolbar, toast action */
