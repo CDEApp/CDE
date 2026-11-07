@@ -2,26 +2,10 @@ import { describe, expect, it } from "vitest";
 import type { CreatePreflightResult } from "./api/types";
 import {
   deriveDialogState,
-  findCatalogByTarget,
   isPreflightCurrent,
   normalizeFileName,
   validateFileName,
 } from "./newCatalog";
-
-describe("findCatalogByTarget", () => {
-  const cats = [{ id: 1, sourcePath: "C:\\cat\\Foo.cdex" }, { id: 2, sourcePath: "C:\\cat\\foo.cdex" }, { id: 3, sourcePath: null }];
-
-  it("matches the sidecar's exact path, never a different-case file", () => {
-    expect(findCatalogByTarget(cats, "C:\\cat\\foo.cdex")?.id).toBe(2);
-    expect(findCatalogByTarget(cats, "C:\\cat\\Foo.cdex")?.id).toBe(1);
-    expect(findCatalogByTarget(cats.slice(0, 1), "C:\\cat\\foo.cdex")).toBeUndefined();
-  });
-
-  it("finds nothing without a target", () => {
-    expect(findCatalogByTarget(cats, null)).toBeUndefined();
-    expect(findCatalogByTarget(cats, "")).toBeUndefined();
-  });
-});
 
 describe("isPreflightCurrent", () => {
   const answer = { fileName: "D-Photos" } as CreatePreflightResult;

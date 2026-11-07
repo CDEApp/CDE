@@ -166,35 +166,6 @@ export interface CatalogLoadProgress {
   message: string;
 }
 
-export interface RescanProgress {
-  catalogId: number;
-  /** "scanning" | "writing" | "swapping" */
-  phase: string;
-  entriesScanned: number;
-  currentPath: string | null;
-}
-
-export interface RescanResult {
-  catalogId: number;
-  rootPath: string;
-  /** Files + directories in the new catalog (root excluded, as in the status bar total). */
-  entries: number;
-  savedPath: string;
-  /** Folders skipped by exclude patterns (#170); absent from an older sidecar. */
-  excludedFolderCount?: number;
-  /** Folders the scan could not read (#170); absent from an older sidecar. */
-  accessDeniedFolderCount?: number;
-  /** Folders the scan could not read for another reason, e.g. an IO error; absent from an older sidecar. */
-  unreadableFolderCount?: number;
-}
-
-/** Wire shape of a refusal (JSON, status 404/409/422) or an in-stream `error` event. */
-export interface RescanErrorBody {
-  code: "unknown-catalog" | "already-running" | "root-not-accessible" | "rescan-failed" | string;
-  message: string;
-  rootPath?: string | null;
-}
-
 // ---------------------------------------------------------------- new catalog (#82)
 
 /** Body of POST /catalogs/preflight. */
@@ -225,52 +196,69 @@ export interface CreatePreflightResult {
   busy: boolean;
 }
 
-/** Body of POST /catalogs. */
-export interface CreateCatalogRequest {
-  rootPath: string;
-  /** Without extension; `.cdex` is appended by the sidecar. */
-  fileName: string;
-  description: string;
-  followJunctions: boolean;
-}
+// ---------------------------------------------------------------- jobs (sidecar job registry)
 
-export interface CreateProgress {
-  /** "scanning" | "writing" | "saving" */
-  phase: string;
-  entriesScanned: number;
-  currentPath: string | null;
-}
+export type JobKind = "rescan" | "create";
+export type JobState = "queued" | "running" | "succeeded" | "failed" | "cancelled";
 
-export interface CreateResult {
-  /** The new catalog's id; existing catalogs keep theirs. */
+export interface JobResult {
   catalogId: number;
   rootPath: string;
+  /** Files + directories in the new catalog (root excluded, as in the status bar total). */
   entries: number;
   savedPath: string;
-  /** Folders skipped by exclude patterns (#170); absent from an older sidecar. */
   excludedFolderCount?: number;
-  /** Folders the scan could not read (#170); absent from an older sidecar. */
   accessDeniedFolderCount?: number;
-  /** Folders the scan could not read for another reason, e.g. an IO error; absent from an older sidecar. */
   unreadableFolderCount?: number;
 }
 
-/** Wire shape of a create refusal (JSON, 400/409/422) or an in-stream `error` event. */
-export interface CreateErrorBody {
+/** Wire shape of a refusal (JSON, 404/409/422) or a failed job's `error`. */
+export interface JobError {
   code:
-    | "invalid-file-name"
+    | "unknown-catalog"
+    | "already-running"
     | "busy"
+    | "catalog-unavailable"
     | "file-exists"
-    | "no-catalog-dir"
     | "root-not-accessible"
-    | "folder-not-writable"
+    | "no-source-file"
+    | "invalid-file-name"
+    | "rescan-failed"
     | "create-failed"
     | string;
   message: string;
   rootPath?: string | null;
-  /** For `file-exists`: the loaded catalog backed by that file, if any. */
-  existingCatalogId?: number | null;
 }
+
+export interface JobDto {
+  id: number;
+  kind: JobKind;
+  title: string;
+  /** Rescan: the catalog. Create: null until it succeeds, then the new id. */
+  catalogId: number | null;
+  /** Catalog file name without extension. */
+  catalogName: string;
+  state: JobState;
+  queuedAtUtc: string;
+  startedAtUtc: string | null;
+  endedAtUtc: string | null;
+  /** "queued" | "scanning" | "writing" | "swapping" | "saving" */
+  phase: string;
+  entriesScanned: number;
+  note: string;
+  result: JobResult | null;
+  error: JobError | null;
+}
+
+export interface JobsSnapshot {
+  jobs: JobDto[];
+  maxConcurrent: number;
+}
+
+/** Body of POST /jobs. */
+export type SubmitJobRequest =
+  | { kind: "rescan"; catalogId: number }
+  | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean };
 
 export type ShellAction ="open" | "explore" | "properties" | "custom";
 

@@ -10,16 +10,13 @@ import {
   SubtreeSummary,
   refToString,
   CatalogLoadProgress,
-  RescanErrorBody,
-  RescanProgress,
-  RescanResult,
   TreemapResponse,
-  CreateCatalogRequest,
-  CreateErrorBody,
   CreatePreflightRequest,
   CreatePreflightResult,
-  CreateProgress,
-  CreateResult,
+  JobDto,
+  JobError,
+  JobsSnapshot,
+  SubmitJobRequest,
   MigrateErrorBody,
   MigrateProgress,
   MigrateResultBody,
@@ -38,13 +35,12 @@ export interface ReloadHandlers {
   signal?: AbortSignal;
 }
 
-export interface RescanHandlers {
-  onProgress?: (p: RescanProgress) => void;
-  signal?: AbortSignal;
-}
-
-export interface CreateHandlers {
-  onProgress?: (p: CreateProgress) => void;
+export interface JobsHandlers {
+  /** The full job list; the first event of every connection, so a reconnect replaces what the caller holds. */
+  onSnapshot: (snapshot: JobsSnapshot) => void;
+  onJob: (job: JobDto) => void;
+  /** The stream dropped or could not connect; a retry follows unless `signal` is aborted. */
+  onDisconnect?: (error: unknown) => void;
   signal?: AbortSignal;
 }
 
@@ -87,24 +83,16 @@ async function shellReason(r: Response): Promise<string> {
   }
 }
 
-/** A rescan that did not complete: refused up front, or failed mid-way. The catalog is unchanged. */
-export class RescanFailure extends Error {
-  constructor(readonly error: RescanErrorBody) {
+/** A job the sidecar refused to queue (unknown catalog, already running, busy, root unreachable, ...). */
+export class JobRefusal extends Error {
+  constructor(readonly error: JobError) {
     super(error.message);
-    this.name = "RescanFailure";
+    this.name = "JobRefusal";
   }
 
   /** The root path can't be reached: the UI shows its modal instead of a toast. */
   get rootNotAccessible(): boolean {
     return this.error.code === "root-not-accessible";
-  }
-}
-
-/** A create that did not complete: refused up front, or failed mid-way. Nothing was written or added. */
-export class CreateFailure extends Error {
-  constructor(readonly error: CreateErrorBody) {
-    super(error.message);
-    this.name = "CreateFailure";
   }
 }
 
@@ -126,24 +114,14 @@ function parseMigrateRefusal(e: ApiError): MigrateErrorBody {
   return { code: "migrate-failed", message: e.body || `migrate: ${e.status}` };
 }
 
-function parseCreateRefusal(e: ApiError): CreateErrorBody {
+function parseJobRefusal(status: number, body: string): JobError {
   try {
-    const parsed = JSON.parse(e.body);
-    if (parsed && typeof parsed.code === "string") return parsed as CreateErrorBody;
+    const parsed = JSON.parse(body);
+    if (parsed && typeof parsed.code === "string") return parsed as JobError;
   } catch {
     /* not JSON: fall through */
   }
-  return { code: "create-failed", message: e.body || `create: ${e.status}` };
-}
-
-function parseRescanRefusal(e: ApiError): RescanErrorBody {
-  try {
-    const parsed = JSON.parse(e.body);
-    if (parsed && typeof parsed.code === "string") return parsed as RescanErrorBody;
-  } catch {
-    /* not JSON: fall through */
-  }
-  return { code: "rescan-failed", message: e.body || `rescan: ${e.status}` };
+  return { code: "job-refused", message: body || `jobs: ${status}` };
 }
 
 /** Sort keys `GET /entries/{ref}/children` accepts; a leading `-` means descending. */
@@ -355,31 +333,64 @@ export class CdeApiClient {
     );
   }
 
+  /** Queue a rescan or a create. Resolves with the queued job; throws {@link JobRefusal} when the sidecar refuses it. */
+  async submitJob(req: SubmitJobRequest): Promise<JobDto> {
+    const r = await fetch(this.url(["jobs"]), {
+      method: "POST",
+      headers: this.headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(req),
+    });
+    if (!r.ok) throw new JobRefusal(parseJobRefusal(r.status, await r.text()));
+    return r.json();
+  }
+
+  async listJobs(): Promise<JobsSnapshot> {
+    const r = await fetch(this.url(["jobs"]), { headers: this.headers() });
+    if (!r.ok) throw new Error(`jobs: ${r.status} ${await r.text()}`);
+    return r.json();
+  }
+
   /**
-   * Rescan one catalog in the background. Resolves with the result on `done`, or null when aborted
-   * (the sidecar cancels the scan and leaves the catalog untouched). Throws {@link RescanFailure}
-   * for a refusal (unknown / already running / root unreachable) or an in-stream `error` event.
+   * Follow job changes: a "snapshot" event, then one "job" event per change. Reconnects after `retryDelayMs`
+   * whenever the stream ends or fails (each connection starts with a fresh snapshot), until `signal` aborts.
    */
-  async rescan(catalogId: number, handlers: RescanHandlers): Promise<RescanResult | null> {
-    // Assigned inside the SSE callback; the casts stop TS narrowing them to `null` afterwards.
-    let result = null as RescanResult | null;
-    let failure = null as RescanErrorBody | null;
-    try {
-      await this.streamSse(
-        this.url(["catalogs", idSegment(catalogId), "rescan"]),
-        { method: "POST", headers: this.headers(), signal: handlers.signal },
-        (event, data) => {
-          if (event === "progress") handlers.onProgress?.(JSON.parse(data));
-          else if (event === "done") result = JSON.parse(data);
-          else if (event === "error") failure = JSON.parse(data);
-        },
-      );
-    } catch (e) {
-      if (e instanceof ApiError) throw new RescanFailure(parseRescanRefusal(e));
-      throw e;
+  async subscribeJobs(handlers: JobsHandlers, retryDelayMs = 1000): Promise<void> {
+    const { signal } = handlers;
+    while (!signal?.aborted) {
+      try {
+        await this.streamSse(this.url(["jobs", "events"]), { headers: this.headers(), signal }, (event, data) => {
+          if (event === "snapshot") handlers.onSnapshot(JSON.parse(data));
+          else if (event === "job") handlers.onJob(JSON.parse(data));
+        });
+        if (!signal?.aborted) handlers.onDisconnect?.(new Error("job stream ended"));
+      } catch (e) {
+        if (signal?.aborted) return;
+        handlers.onDisconnect?.(e);
+      }
+      await abortableDelay(retryDelayMs, signal);
     }
-    if (failure) throw new RescanFailure(failure);
-    return result;
+  }
+
+  /** Cancel a queued or running job; a finished one is a no-op. */
+  async cancelJob(id: number): Promise<void> {
+    await this.jobCall("POST", ["jobs", idSegment(id), "cancel"]);
+  }
+
+  /** Remove one finished job from the list (the sidecar refuses a queued or running one). */
+  async dismissJob(id: number): Promise<void> {
+    await this.jobCall("DELETE", ["jobs", idSegment(id)]);
+  }
+
+  async clearFinishedJobs(): Promise<void> {
+    await this.jobCall("DELETE", ["jobs", "finished"]);
+  }
+
+  private async jobCall(method: string, path: string[]): Promise<void> {
+    const r = await fetch(this.url(path), { method, headers: this.headers() });
+    if (!r.ok) {
+      const body = await r.text();
+      throw new Error(body ? `jobs: ${r.status} ${body}` : `jobs: ${r.status}`);
+    }
   }
 
   /**
@@ -395,37 +406,6 @@ export class CdeApiClient {
     });
     if (!r.ok) throw new Error(`catalogs/preflight: ${r.status} ${await r.text()}`);
     return r.json();
-  }
-
-  /**
-   * Scan a new root into a new catalog in the working folder. Resolves with the result on `done`, or null when
-   * aborted (the sidecar cancels and leaves no file and no session change, unless the cancel lost the race with the
-   * final rename). Throws {@link CreateFailure} for a refusal or an in-stream `error` event.
-   */
-  async createCatalog(req: CreateCatalogRequest, handlers: CreateHandlers): Promise<CreateResult | null> {
-    let result = null as CreateResult | null;
-    let failure = null as CreateErrorBody | null;
-    try {
-      await this.streamSse(
-        this.url(["catalogs"]),
-        {
-          method: "POST",
-          headers: this.headers({ "Content-Type": "application/json" }),
-          body: JSON.stringify(req),
-          signal: handlers.signal,
-        },
-        (event, data) => {
-          if (event === "progress") handlers.onProgress?.(JSON.parse(data));
-          else if (event === "done") result = JSON.parse(data);
-          else if (event === "error") failure = JSON.parse(data);
-        },
-      );
-    } catch (e) {
-      if (e instanceof ApiError) throw new CreateFailure(parseCreateRefusal(e));
-      throw e;
-    }
-    if (failure) throw new CreateFailure(failure);
-    return result;
   }
 
   /**
@@ -521,4 +501,17 @@ export class CdeApiClient {
     }
     if (data) onEvent(event, data);
   }
+}
+
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve) => {
+    if (signal?.aborted) return resolve();
+    const done = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener("abort", done);
+      resolve();
+    };
+    const timer = setTimeout(done, ms);
+    signal?.addEventListener("abort", done);
+  });
 }
