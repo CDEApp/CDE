@@ -35,7 +35,7 @@ import {
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
-import { catalogFile, catalogName, skipSummary } from "./format";
+import { catalogFile, catalogName, fileBaseName, skipSummary } from "./format";
 import { searchFromHereQuery } from "./everythingSearch";
 import type { TreeRoot } from "./components/CatalogTree";
 import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
@@ -282,6 +282,7 @@ export default function App() {
       // trusted, and in-flight navigation responses must not land after this.
       resetForReload();
       reloadEpochRef.current += 1;
+      setSelectedCatalogId(null); // ids are list positions: the old one may name a different catalog now
       setDiffEpoch((n) => n + 1);
       setView(dropTreemap);
       try {
@@ -661,7 +662,10 @@ export default function App() {
                 columnOrder={uiRef.current?.get().searchResultColumnOrder}
                 onColumnOrderChange={(searchResultColumnOrder) => uiRef.current?.update({ searchResultColumnOrder })}
                 onActivate={(row) => void viewInTree(row.ref, row.fullPath)}
-                onContextMenu={(row, x, y) =>
+                onContextMenu={(row, x, y) => {
+                  // Results outlive a reload and catalog ids are reused, so confirm the row's catalog is still at that id.
+                  const current = catalogs?.catalogs.find((c) => c.catalogId === row.ref.catalogId);
+                  const sameCatalog = !!current && fileBaseName(catalogFile(current)) === row.catalogName;
                   setMenu({
                     x,
                     y,
@@ -670,9 +674,10 @@ export default function App() {
                       fullPath: row.fullPath,
                       isDirectory: row.isDirectory,
                       onViewInTree: () => void viewInTree(row.ref, row.fullPath),
+                      canEditDescription: sameCatalog,
                     }),
-                  })
-                }
+                  });
+                }}
               />
             </div>
           </div>

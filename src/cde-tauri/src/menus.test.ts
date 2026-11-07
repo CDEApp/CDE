@@ -44,6 +44,11 @@ describe("entryMenu", () => {
     expect(ctx.editDescription).toHaveBeenCalledWith(3);
   });
 
+  it("Edit Description… is disabled for an entry that may belong to a reloaded catalog", () => {
+    const items = entryMenu(context(), { ref, fullPath: "/a/b.txt", isDirectory: false, canEditDescription: false });
+    expect(items.find((i) => i.label === "Edit Description…")!.disabled).toBe(true);
+  });
+
   it("a folder adds Show TreeMap and Search from here before the path item and Rescan last", () => {
     const items = entryMenu(context(), { ref, fullPath: "/a", isDirectory: true });
     expect(labels(items)).toEqual(["Open", "Explore", "Properties", "", "Show TreeMap", "Search from here", "Copy Full Path", "Rescan", "Edit Description…"]);

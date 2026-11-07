@@ -24,6 +24,8 @@ export interface MenuEntry {
   fullPath: string;
   isDirectory: boolean;
   onViewInTree?: () => void;
+  /** False when the entry may belong to a catalog that was since reloaded away (stale search results). */
+  canEditDescription?: boolean;
 }
 
 export function editDescriptionItem(onEdit: () => void): MenuItem {
@@ -49,7 +51,10 @@ export function rescanItem(
   };
 }
 
-export function entryMenu(ctx: EntryMenuContext, { ref, fullPath, isDirectory, onViewInTree }: MenuEntry): MenuItem[] {
+export function entryMenu(
+  ctx: EntryMenuContext,
+  { ref, fullPath, isDirectory, onViewInTree, canEditDescription = true }: MenuEntry,
+): MenuItem[] {
   const items: MenuItem[] = [
     { label: "Open", onClick: () => ctx.runShell(ref, "open") },
     { label: "Explore", onClick: () => ctx.runShell(ref, "explore") },
@@ -64,7 +69,10 @@ export function entryMenu(ctx: EntryMenuContext, { ref, fullPath, isDirectory, o
   items.push({ label: "Copy Full Path", onClick: () => ctx.copyPath(fullPath) });
   if (onViewInTree) items.push({ label: "View in Tree", onClick: onViewInTree });
   if (isDirectory) items.push(ctx.rescanFor(ref.catalogId));
-  items.push(editDescriptionItem(() => ctx.editDescription(ref.catalogId)));
+  const edit = editDescriptionItem(() => ctx.editDescription(ref.catalogId));
+  items.push(
+    canEditDescription ? edit : { ...edit, disabled: true, title: "This result is from a catalog set that was reloaded. Search again." },
+  );
   return items;
 }
 
