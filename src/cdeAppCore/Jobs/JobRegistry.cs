@@ -42,6 +42,12 @@ public sealed class JobSubscription(IReadOnlyList<JobDto> snapshot, ChannelReade
 public sealed class JobRegistry : IDisposable
 {
     public const int MaxFinishedJobs = 200;
+
+    /// <summary>
+    /// Changes a subscriber may fall behind by. One that falls further is ended, so its client reconnects and starts
+    /// again from a snapshot instead of the sidecar buffering every progress event for it.
+    /// </summary>
+    public const int MaxSubscriberBacklog = 1000;
     private const long ProgressIntervalMs = 250;
 
     private readonly ICatalogSession _session;
@@ -229,7 +235,11 @@ public sealed class JobRegistry : IDisposable
 
     public JobSubscription Subscribe()
     {
-        var channel = Channel.CreateUnbounded<JobDto>(new UnboundedChannelOptions { SingleReader = true });
+        var channel = Channel.CreateBounded<JobDto>(new BoundedChannelOptions(MaxSubscriberBacklog)
+        {
+            SingleReader = true,
+            FullMode = BoundedChannelFullMode.Wait
+        });
         IReadOnlyList<JobDto> snapshot;
         lock (_lock)
         {
@@ -398,10 +408,15 @@ public sealed class JobRegistry : IDisposable
         }
     }
 
-    // Unbounded channels never refuse a write while open.
     private void PublishLocked(JobDto job)
     {
-        foreach (var subscriber in _subscribers) subscriber.Writer.TryWrite(job);
+        for (var i = _subscribers.Count - 1; i >= 0; i--)
+        {
+            var subscriber = _subscribers[i];
+            if (subscriber.Writer.TryWrite(job)) continue;
+            _subscribers.RemoveAt(i);
+            subscriber.Writer.TryComplete();
+        }
     }
 
     private bool IsActiveTarget(string target)

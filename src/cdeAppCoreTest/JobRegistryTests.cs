@@ -249,6 +249,26 @@ public class JobRegistryTests
     }
 
     [Test]
+    public async Task A_subscriber_that_stops_reading_is_ended_instead_of_buffering_without_limit()
+    {
+        var gate = new TaskCompletionSource<RescanResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var jobs = _jobs = new JobRegistry(FakeSession((id, _) => id == 0 ? gate.Task : Task.FromResult(new RescanResult())),
+            maxConcurrent: 1);
+        using var stalled = jobs.Subscribe();
+        Accepted(jobs.Submit(Rescan(0)));
+        for (var i = 0; i < JobRegistry.MaxSubscriberBacklog; i++) jobs.Cancel(Accepted(jobs.Submit(Rescan(1))).Id);
+
+        var buffered = 0;
+        using var cts = new CancellationTokenSource(Timeout);
+        await foreach (var _ in stalled.Changes.ReadAllAsync(cts.Token)) buffered++;
+        Assert.That(buffered, Is.EqualTo(JobRegistry.MaxSubscriberBacklog));
+
+        using var fresh = jobs.Subscribe();
+        Assert.That(fresh.Snapshot, Is.Not.Empty);
+        gate.SetResult(new RescanResult());
+    }
+
+    [Test]
     public async Task At_most_200_finished_jobs_are_kept_dropping_the_oldest()
     {
         var gate = new TaskCompletionSource<RescanResult>(TaskCreationOptions.RunContinuationsAsynchronously);
