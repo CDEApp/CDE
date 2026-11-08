@@ -5,6 +5,7 @@ import {
   branchColors,
   branchIdOf,
   drillTargetId,
+  folderLabel,
   fullPathOf,
   joinPath,
   labelLines,
@@ -41,6 +42,20 @@ describe("joinPath", () => {
     ["\\\\srv\\share", "d", "\\\\srv\\share\\d"],
   ])("joinPath(%j, %j) -> %j", (base, name, expected) => {
     expect(joinPath(base, name)).toBe(expected);
+  });
+});
+
+describe("folderLabel", () => {
+  it.each([
+    ["Users", true, "\\", "Users\\"],
+    ["usr", true, "/", "usr/"],
+    ["C:\\Users", true, "\\", "C:\\Users\\"],
+    ["C:\\", true, "\\", "C:\\"],
+    ["/", true, "/", "/"],
+    ["a.bin", false, "\\", "a.bin"],
+    ["(3 smaller files)", false, "/", "(3 smaller files)"],
+  ])("folderLabel(%j, isDirectory=%j, %j) -> %j", (text, isDirectory, sep, expected) => {
+    expect(folderLabel(text, isDirectory, sep)).toBe(expected);
   });
 });
 
