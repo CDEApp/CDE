@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DirectoryNode, SubtreeSummary } from "./api/types";
-import { alignChildren, type ChildLists, DIFF_FILTERS, DIFF_MENU_FILTERS, type DiffFilterId, flattenVisible, relativeSegments } from "./diffModel";
+import { alignChildren, type ChildLists, DIFF_FILTERS, DIFF_MENU_FILTERS, type DiffFilterId, flattenVisible, parentBasePath, relativeSegments } from "./diffModel";
 
 let next = 0;
 function node(name: string, over: Partial<DirectoryNode> = {}): DirectoryNode {
@@ -382,5 +382,21 @@ describe("relativeSegments", () => {
     ["C:\\data\\deep", "C:\\data", null],
   ])("%s -> %s", (root, path, expected) => {
     expect(relativeSegments(root, path)).toEqual(expected);
+  });
+});
+
+describe("parentBasePath", () => {
+  it("goes up one folder, ending at the catalog root as written", () => {
+    expect(parentBasePath("C:\\", "C:\\Users\\me")).toBe("C:\\Users");
+    expect(parentBasePath("C:\\", "C:\\Users")).toBe("C:\\");
+    expect(parentBasePath("D:\\data", "D:\\data\\a\\b\\")).toBe("D:\\data\\a");
+    expect(parentBasePath("/mnt/data", "/mnt/data/a/b")).toBe("/mnt/data/a");
+    expect(parentBasePath("/", "/home")).toBe("/");
+  });
+
+  it("is null at the catalog root or outside it", () => {
+    expect(parentBasePath("C:\\", "C:\\")).toBeNull();
+    expect(parentBasePath("D:\\data", "d:\\DATA")).toBeNull();
+    expect(parentBasePath("D:\\data", "E:\\other")).toBeNull();
   });
 });

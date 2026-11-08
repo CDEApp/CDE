@@ -312,3 +312,58 @@ describe("DiffView", () => {
     });
   });
 });
+
+describe("DiffView base navigation", () => {
+  const path = (side: string) => screen.getByLabelText(`${side} path`) as HTMLInputElement;
+  const setPath = (side: string, text: string) => {
+    fireEvent.change(path(side), { target: { value: text } });
+    fireEvent.keyDown(path(side), { key: "Enter" });
+  };
+  const button = (name: string) => screen.getByRole("button", { name }) as HTMLButtonElement;
+
+  it("Up moves a side's base to its parent folder and is disabled at the catalog root", async () => {
+    await setup();
+    expect(button("Left base up").disabled).toBe(true);
+    setPath("Left", "C:\\left\\docs");
+    await screen.findByText("inner.txt");
+    expect(button("Left base up").disabled).toBe(false);
+
+    fireEvent.click(button("Left base up"));
+    expect(path("Left").value).toBe("C:\\left");
+    await screen.findByText("only-left.txt");
+    expect(button("Left base up").disabled).toBe(true);
+  });
+
+  it("copies the base path to the other side, which keeps its own catalog", async () => {
+    render(<DiffView client={client} catalogs={[catalog(1, "C:\\data"), catalog(2, "C:\\data")]} resolveStyle={() => undefined} onExplore={onExplore} />);
+    pick("Left", 1);
+    pick("Right", 2);
+    setPath("Left", "C:\\data\\docs");
+    await waitFor(() => expect(client.children).toHaveBeenCalledWith({ catalogId: 1, entryIndex: 1 }, expect.anything()));
+
+    fireEvent.click(button("Copy left base to right"));
+    expect(path("Right").value).toBe("C:\\data\\docs");
+    await waitFor(() => expect(client.children).toHaveBeenCalledWith({ catalogId: 2, entryIndex: 1 }, expect.anything()));
+    await waitFor(() => expect(rowOf("inner.txt").className).toContain("different"));
+
+    setPath("Right", "C:\\data");
+    fireEvent.click(button("Copy right base to left"));
+    expect(path("Left").value).toBe("C:\\data");
+  });
+
+  it("copying into a side with no catalog also copies the catalog", () => {
+    render(<DiffView client={client} catalogs={[catalog(1, "C:\\left"), catalog(2, "D:\\right")]} resolveStyle={() => undefined} onExplore={onExplore} />);
+    expect(button("Copy left base to right").disabled).toBe(true);
+    pick("Left", 1);
+    fireEvent.click(button("Copy left base to right"));
+    expect(path("Right").value).toBe("C:\\left");
+    expect(path("Right").disabled).toBe(false);
+  });
+
+  it("shows the usual error when the copied path is not in the other side's catalog", async () => {
+    await setup();
+    fireEvent.click(button("Copy left base to right"));
+    expect(path("Right").value).toBe("C:\\left");
+    expect((await screen.findByRole("alert")).textContent).toBe("The path is not inside this catalog.");
+  });
+});
