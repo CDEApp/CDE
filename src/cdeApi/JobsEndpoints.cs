@@ -69,7 +69,6 @@ public static class JobsEndpoints
         }
         catch (OperationCanceledException)
         {
-            // The client went away.
         }
     }
 

@@ -36,10 +36,8 @@ export interface ReloadHandlers {
 }
 
 export interface JobsHandlers {
-  /** The full job list; the first event of every connection, so a reconnect replaces what the caller holds. */
   onSnapshot: (snapshot: JobsSnapshot) => void;
   onJob: (job: JobDto) => void;
-  /** The stream dropped or could not connect; a retry follows unless `signal` is aborted. */
   onDisconnect?: (error: unknown) => void;
   signal?: AbortSignal;
 }
@@ -83,7 +81,6 @@ async function shellReason(r: Response): Promise<string> {
   }
 }
 
-/** A job the sidecar refused to queue (unknown catalog, already running, busy, root unreachable, ...). */
 export class JobRefusal extends Error {
   constructor(readonly error: JobError) {
     super(error.message);

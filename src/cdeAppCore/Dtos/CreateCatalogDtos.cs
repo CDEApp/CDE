@@ -18,7 +18,6 @@ public sealed class CreateCatalogRequest
 /// <summary>Progress of a create. <see cref="Phase"/> is <c>scanning</c>, <c>writing</c> or <c>saving</c>.</summary>
 public readonly record struct CreateProgress(string Phase, int EntriesScanned, string CurrentPath);
 
-/// <summary>Final outcome of a successful create (becomes the job's <see cref="JobResult"/>).</summary>
 public sealed class CreateCatalogResult
 {
     /// <summary>The id of the new catalog; existing catalogs keep theirs.</summary>

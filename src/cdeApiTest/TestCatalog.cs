@@ -94,17 +94,14 @@ internal sealed class TestCatalog : IDisposable
             return (lines[0]["event: ".Length..], JsonDocument.Parse(lines[1]["data: ".Length..]).RootElement.Clone());
         }).ToList();
 
-    /// <summary>
-    /// Holds a read lease on one catalog (on its own thread, as the lock requires) until disposed. A rescan of that
-    /// catalog then waits at its final swap, so its job stays running.
-    /// </summary>
-    internal sealed class CatalogHold : IDisposable
+    /// <summary>Holds a read lease on one catalog (on its own thread, as the lock requires) until disposed.</summary>
+    internal sealed class SwapBlockingLease : IDisposable
     {
         private readonly ManualResetEventSlim _acquired = new();
         private readonly ManualResetEventSlim _release = new();
         private readonly Task _holder;
 
-        public CatalogHold(ICatalogSession session, int catalogId)
+        public SwapBlockingLease(ICatalogSession session, int catalogId)
         {
             _holder = Task.Factory.StartNew(() =>
             {
@@ -122,7 +119,6 @@ internal sealed class TestCatalog : IDisposable
         }
     }
 
-    /// <summary>Polls until the job satisfies <paramref name="condition"/>; fails after 15 seconds.</summary>
     public static async Task<JobDto> WaitForJob(JobRegistry jobs, long id, Func<JobDto, bool> condition)
     {
         var deadline = DateTime.UtcNow.AddSeconds(15);
@@ -135,7 +131,6 @@ internal sealed class TestCatalog : IDisposable
         }
     }
 
-    /// <summary>Serves every .cdex directly in the requested folder.</summary>
     internal sealed class FolderLoader : ILoadCatalogService
     {
         public Task<List<RootEntry>> LoadRootEntriesAsync(string configPath, Action<int, int, string> progressCallback,

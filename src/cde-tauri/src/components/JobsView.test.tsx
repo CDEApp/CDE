@@ -28,7 +28,7 @@ function job(id: number, over: Partial<JobDto>): JobDto {
 
 function setup(jobs: JobDto[]) {
   const h = { onCancel: vi.fn(), onDismiss: vi.fn(), onClearFinished: vi.fn() };
-  render(<JobsView jobs={jobs} {...h} />);
+  render(<JobsView sortedJobs={jobs} {...h} />);
   return h;
 }
 

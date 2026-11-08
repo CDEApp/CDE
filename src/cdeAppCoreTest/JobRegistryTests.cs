@@ -16,10 +16,6 @@ using Serilog;
 
 namespace cdeAppCoreTest;
 
-/// <summary>
-/// The job registry over a real two-catalog session in temp folders. A rescan is kept running by holding a read
-/// lease on its catalog: it then waits at its final swap (phase "swapping") until the lease is released.
-/// </summary>
 [TestFixture]
 public class JobRegistryTests
 {
@@ -53,7 +49,7 @@ public class JobRegistryTests
         _jobs?.Dispose();
         _session.Dispose();
         try { Directory.Delete(_dir, true); }
-        catch { /* best effort */ }
+        catch { }
     }
 
     private string MakeData(string name)
@@ -116,8 +112,8 @@ public class JobRegistryTests
         var jobs = Registry();
         foreach (var d in _data) File.WriteAllText(Path.Combine(d, "new.txt"), "n");
         JobDto a, b;
-        using (new CatalogHold(_session, 0))
-        using (new CatalogHold(_session, 1))
+        using (new SwapBlockingLease(_session, 0))
+        using (new SwapBlockingLease(_session, 1))
         {
             a = Accepted(jobs.Submit(Rescan(0)));
             b = Accepted(jobs.Submit(Rescan(1)));
@@ -137,7 +133,7 @@ public class JobRegistryTests
     {
         var jobs = Registry(maxConcurrent: 1);
         JobDto running, queued;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             running = Accepted(jobs.Submit(Rescan(0)));
             await WaitAtSwap(jobs, running.Id);
@@ -157,7 +153,7 @@ public class JobRegistryTests
     {
         var jobs = Registry(maxConcurrent: 1);
         JobDto first, second;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             first = Accepted(jobs.Submit(Rescan(0)));
             await WaitAtSwap(jobs, first.Id);
@@ -183,7 +179,7 @@ public class JobRegistryTests
         var bytes = File.ReadAllBytes(_cdex[1]);
         File.WriteAllText(Path.Combine(_data[1], "new.txt"), "n");
         JobDto running, queued;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             running = Accepted(jobs.Submit(Rescan(0)));
             await WaitAtSwap(jobs, running.Id);
@@ -209,7 +205,7 @@ public class JobRegistryTests
         var bytes = File.ReadAllBytes(_cdex[0]);
         File.WriteAllText(Path.Combine(_data[0], "new.txt"), "n");
         JobDto job;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             job = Accepted(jobs.Submit(Rescan(0)));
             await WaitAtSwap(jobs, job.Id);
@@ -234,7 +230,7 @@ public class JobRegistryTests
         Assert.That((await WaitForEnd(jobs, done.Id)).State, Is.EqualTo(JobState.Succeeded));
 
         JobDto active;
-        using (new CatalogHold(_session, 1))
+        using (new SwapBlockingLease(_session, 1))
         {
             active = Accepted(jobs.Submit(Rescan(1)));
             await WaitAtSwap(jobs, active.Id);
@@ -255,7 +251,6 @@ public class JobRegistryTests
     [Test]
     public async Task At_most_200_finished_jobs_are_kept_dropping_the_oldest()
     {
-        // A fake session: with a real one, every submit's catalog listing waits behind the swap the held rescan queues.
         var gate = new TaskCompletionSource<RescanResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         var jobs = _jobs = new JobRegistry(FakeSession((id, _) => id == 0 ? gate.Task : Task.FromResult(new RescanResult())),
             maxConcurrent: 1);
@@ -286,7 +281,7 @@ public class JobRegistryTests
         var jobs = Registry(maxConcurrent: 1);
         var root = MakeData("fresh-root");
         JobDto running, create;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             running = Accepted(jobs.Submit(Rescan(0)));
             await WaitAtSwap(jobs, running.Id);
@@ -319,7 +314,7 @@ public class JobRegistryTests
         }
 
         JobDto job;
-        using (new CatalogHold(_session, 0))
+        using (new SwapBlockingLease(_session, 0))
         {
             job = Accepted(jobs.Submit(Rescan(0)));
             Assert.That(jobs.AnyActive, Is.True);
@@ -339,7 +334,6 @@ public class JobRegistryTests
         var jobs = _jobs = new JobRegistry(session);
         session.PreflightRescan(Arg.Any<int>()).Returns(_ =>
         {
-            // A whole reload (which renumbers catalog ids) lands between the preflight and the enqueue.
             jobs.TryBeginExclusive().Dispose();
             return RescanPreflight.Ready;
         });
@@ -449,7 +443,6 @@ public class JobRegistryTests
     private static ICatalogSession FakeSession(Func<IProgress<RescanProgress>, RescanResult> rescan) =>
         FakeSession((_, progress) => Task.FromResult(rescan(progress)));
 
-    /// <summary>Two catalogs (0 and 1) that always pass the preflight; each rescan runs <paramref name="rescan"/>.</summary>
     private static ICatalogSession FakeSession(Func<int, IProgress<RescanProgress>, Task<RescanResult>> rescan)
     {
         var session = Substitute.For<ICatalogSession>();
@@ -486,13 +479,13 @@ public class JobRegistryTests
     }
 
     /// <summary>Holds a read lease on one catalog (on its own thread, as the lock requires) until disposed.</summary>
-    private sealed class CatalogHold : IDisposable
+    private sealed class SwapBlockingLease : IDisposable
     {
         private readonly ManualResetEventSlim _acquired = new();
         private readonly ManualResetEventSlim _release = new();
         private readonly Task _holder;
 
-        public CatalogHold(ICatalogSession session, int catalogId)
+        public SwapBlockingLease(ICatalogSession session, int catalogId)
         {
             _holder = Task.Factory.StartNew(() =>
             {

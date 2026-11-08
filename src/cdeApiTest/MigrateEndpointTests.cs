@@ -119,7 +119,7 @@ public class MigrateEndpointTests
         TestCatalog.WriteCatalog(_data, Path.Combine(_dir, "b.cdex"));
         await _session.LoadAsync(_dir);
         long id;
-        using (new TestCatalog.CatalogHold(_session, 0))
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
         {
             id = _jobs.Submit(new JobSubmitRequest { Kind = JobKind.Rescan, CatalogId = 0 }).Job.Id;
             var (ctx, body) = TestCatalog.NewContext();

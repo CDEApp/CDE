@@ -1,6 +1,3 @@
-// The webview's copy of the sidecar's job registry: a reducer over the "snapshot" / "job" events, plus the pure
-// views the Jobs tab, status bar and menus read. No React, no network: unit-tested in jobsModel.test.ts.
-
 import { skipSummary } from "./format";
 import type { JobDto, JobState, JobsSnapshot } from "./api/types";
 
@@ -15,26 +12,32 @@ export function isActive(state: JobState): boolean {
   return state === "queued" || state === "running";
 }
 
-/** A snapshot replaces everything: it is the first event of every (re)connection. */
 export function applySnapshot(snapshot: JobsSnapshot): JobsModel {
   return { jobs: new Map(snapshot.jobs.map((j) => [j.id, j])), maxConcurrent: snapshot.maxConcurrent };
 }
 
-/** Upsert one job. A terminal state is final, so a late event cannot move a finished job back to active. */
+function wouldReopenFinished(current: JobDto, next: JobDto): boolean {
+  return !isActive(current.state) && isActive(next.state);
+}
+
 export function applyJob(model: JobsModel, job: JobDto): JobsModel {
   const cur = model.jobs.get(job.id);
-  if (cur && !isActive(cur.state) && isActive(job.state)) return model;
+  if (cur && wouldReopenFinished(cur, job)) return model;
   const jobs = new Map(model.jobs);
   jobs.set(job.id, job);
   return { ...model, jobs };
 }
 
-/** Add a job only if it is not known yet: a submit response is older than any stream event for the same job. */
-export function insertJob(model: JobsModel, job: JobDto): JobsModel {
+export function addIfUnknown(model: JobsModel, job: JobDto): JobsModel {
   if (model.jobs.has(job.id)) return model;
   const jobs = new Map(model.jobs);
   jobs.set(job.id, job);
   return { ...model, jobs };
+}
+
+/** A finished job in the first snapshot, not submitted by this window: it belongs to an earlier session. */
+export function isFromEarlierSession(job: JobDto, submittedIds: ReadonlySet<number>): boolean {
+  return !isActive(job.state) && !submittedIds.has(job.id);
 }
 
 export function removeJob(model: JobsModel, id: number): JobsModel {
@@ -71,7 +74,6 @@ function endedMs(j: JobDto): number {
   return Number.isNaN(t) ? 0 : t;
 }
 
-/** Running first, then queued (each in submit order), then finished jobs, newest first. */
 export function sortedJobs(model: JobsModel): JobDto[] {
   const all = [...model.jobs.values()];
   const running = all.filter((j) => j.state === "running").sort(byId);
@@ -92,7 +94,6 @@ export function statusLabel(state: JobState): string {
   return LABELS[state];
 }
 
-/** Catalog ids with a queued or running job (a rescan holds its catalog; a create has no id yet). */
 export function activeCatalogIds(model: JobsModel): Set<number> {
   const ids = new Set<number>();
   for (const j of model.jobs.values()) if (isActive(j.state) && j.catalogId !== null) ids.add(j.catalogId);
@@ -108,25 +109,20 @@ export function rescanMenuItem(
     : { label: "Rescan", disabled: false };
 }
 
-/** Why Reload / File > Open Folder / Migrate are unavailable right now, or null when they are allowed. */
 export function loadBlockedReason(model: JobsModel): string | null {
   return anyActive(model)
     ? "Unavailable while catalog jobs are queued or running (reloading would drop the catalogs they are changing)"
     : null;
 }
 
-// ---------------------------------------------------------------- text
-
 const n = (v: number) => v.toLocaleString("en-US");
 
-/** The Started column: when the job began, or "queued" while it waits for a free slot. */
 export function startedLabel(j: JobDto): string {
   if (!j.startedAtUtc) return "queued";
   const t = new Date(j.startedAtUtc);
   return Number.isNaN(t.getTime()) ? j.startedAtUtc : t.toLocaleString();
 }
 
-/** The Progress column: phase, entries and note while active; the outcome once finished. */
 export function progressNote(j: JobDto): string {
   switch (j.state) {
     case "queued":
@@ -146,7 +142,6 @@ export function progressNote(j: JobDto): string {
   }
 }
 
-/** One status-bar line per active job. */
 export function statusLines(model: JobsModel): { id: number; text: string }[] {
   return activeJobs(model).map((j) => ({ id: j.id, text: statusText(j) }));
 }

@@ -5,7 +5,6 @@ interface Props {
   catalogs: CatalogsResponse | null;
   resultCount: number;
   searchTiming: string;
-  /** One line per queued or running background job (rescan or new catalog): its id and the progress text. */
   jobs?: { id: number; text: string }[];
   onCancelJob?: (id: number) => void;
   /** Legacy catalogs that were not loaded ("N legacy catalogs not loaded"), with a Migrate… action; null for none. */

@@ -22,10 +22,6 @@ public enum JobState
     [JsonStringEnumMemberName("cancelled")] Cancelled
 }
 
-/// <summary>
-/// One catalog job as the Jobs tab sees it. Immutable: every change is a new snapshot, and the lifecycle moves only
-/// through <see cref="Start"/>, <see cref="Succeed"/>, <see cref="Fail"/> and <see cref="Cancel"/>.
-/// </summary>
 public sealed record JobDto
 {
     public long Id { get; init; }
@@ -77,7 +73,6 @@ public sealed record JobDto
     }
 }
 
-/// <summary>What a succeeded job produced: the rescanned or new catalog.</summary>
 public sealed class JobResult
 {
     public int CatalogId { get; set; }

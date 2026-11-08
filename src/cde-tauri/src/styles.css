@@ -344,7 +344,6 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-row.left-only, .diff-row.right-only { --diff-tint: rgba(86, 156, 214, .20); }
 .diff-row:hover { background: var(--row-hover); }
 
-/* jobs tab */
 .jobs-view { height: 100%; overflow: auto; }
 .jobs-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
 .jobs-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }

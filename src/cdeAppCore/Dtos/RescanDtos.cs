@@ -5,7 +5,6 @@ namespace cdeAppCore.Dtos;
 /// <summary>Rescan progress. <see cref="Phase"/> is <c>scanning</c>, <c>writing</c> or <c>swapping</c>.</summary>
 public readonly record struct RescanProgress(int CatalogId, string Phase, int EntriesScanned, string CurrentPath);
 
-/// <summary>Final outcome of a successful rescan (becomes the job's <see cref="JobResult"/>).</summary>
 public sealed class RescanResult
 {
     public int CatalogId { get; set; }

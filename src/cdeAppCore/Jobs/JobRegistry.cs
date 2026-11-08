@@ -11,7 +11,6 @@ using Serilog;
 
 namespace cdeAppCore.Jobs;
 
-/// <summary>The outcome of <see cref="JobRegistry.Submit"/>: the accepted job, or why it was refused.</summary>
 public sealed record JobSubmission(JobDto Job, JobError Refusal)
 {
     public static JobSubmission Accepted(JobDto job) => new(job, null);
@@ -38,8 +37,7 @@ public sealed class JobSubscription(IReadOnlyList<JobDto> snapshot, ChannelReade
 /// <summary>
 /// Owns the catalog scan jobs (rescan, create) of one session. At most <see cref="MaxConcurrent"/> run at once and the
 /// rest wait in submit order. A catalog file is the target of at most one queued or running job. Finished jobs stay
-/// listed until dismissed (at most <see cref="MaxFinishedJobs"/>, oldest dropped). The work itself runs through
-/// <see cref="ICatalogSession.RescanAsync"/> and <see cref="ICatalogSession.CreateCatalogAsync"/>.
+/// listed until dismissed (at most <see cref="MaxFinishedJobs"/>, oldest dropped).
 /// </summary>
 public sealed class JobRegistry : IDisposable
 {
@@ -49,7 +47,6 @@ public sealed class JobRegistry : IDisposable
     private readonly ICatalogSession _session;
     private readonly ILogger _logger;
 
-    // Guards everything below. Never held across session calls that scan or do file IO.
     private readonly object _lock = new();
     private readonly List<Entry> _jobs = [];
     private readonly List<Channel<JobDto>> _subscribers = [];
@@ -101,7 +98,6 @@ public sealed class JobRegistry : IDisposable
         var info = _session.GetCatalogs().FirstOrDefault(c => c.CatalogId == catalogId);
         if (info == null) return RefuseRescan(catalogId, RescanPreflight.Unavailable);
 
-        // A legacy .cde is rescanned into the .cdex beside it, so that is the file this job writes.
         var target = Path.ChangeExtension(Path.GetFullPath(info.SourcePath), CatalogNaming.Extension);
         return Enqueue(generation, target, new JobDto
         {
@@ -129,7 +125,6 @@ public sealed class JobRegistry : IDisposable
         var generation = ExclusiveGeneration();
         var pf = _session.PreflightCreate(new CreatePreflightRequest { RootPath = request.RootPath, FileName = request.FileName });
 
-        // A running create's target reads as Exists in the preflight; report it as the job it is.
         if (pf.TargetPath != null && IsActiveTarget(pf.TargetPath)) return AlreadyRunning(pf.FileName);
         if (pf.Busy) return Busy();
         if (pf.FileNameError != null) return JobSubmission.Refused(JobErrorCodes.InvalidFileName, pf.FileNameError);
@@ -148,7 +143,6 @@ public sealed class JobRegistry : IDisposable
                 Title = $"Creating catalog {pf.FileName}",
                 CatalogName = pf.FileName
             },
-            // The name resolved now (typed or default) is the one the exclusion was checked against.
             new CreateCatalogRequest
             {
                 RootPath = request.RootPath,
@@ -167,13 +161,11 @@ public sealed class JobRegistry : IDisposable
     private static JobSubmission RootNotAccessible(string rootPath) =>
         JobSubmission.Refused(JobErrorCodes.RootNotAccessible, new RootNotAccessibleException(rootPath).Message, rootPath);
 
-    private JobSubmission Enqueue(long generation, string target, JobDto job, CreateCatalogRequest create)
+    private JobSubmission Enqueue(long generationAtPreflight, string target, JobDto job, CreateCatalogRequest create)
     {
         lock (_lock)
         {
-            // Re-checked here: the preflight ran outside the lock. A reload or migration that began since may have
-            // renumbered catalog ids or moved the working folder, and another submit may have taken the target.
-            if (_disposed || _exclusive || generation != _exclusiveGeneration) return Busy();
+            if (_disposed || _exclusive || generationAtPreflight != _exclusiveGeneration) return Busy();
             if (IsActiveTargetLocked(target)) return AlreadyRunning(job.CatalogName);
 
             var entry = new Entry(target, create)
@@ -187,8 +179,8 @@ public sealed class JobRegistry : IDisposable
                 }
             };
             _jobs.Add(entry);
-            Publish(entry.Job);
-            StartQueuedJobs();
+            PublishLocked(entry.Job);
+            StartQueuedJobsLocked();
             return JobSubmission.Accepted(entry.Job);
         }
     }
@@ -206,7 +198,7 @@ public sealed class JobRegistry : IDisposable
             if (entry == null) return false;
             if (entry.Job.State == JobState.Queued)
             {
-                Finish(entry, entry.Job.Cancel(DateTime.UtcNow));
+                FinishLocked(entry, entry.Job.Cancel(DateTime.UtcNow));
                 return true;
             }
 
@@ -241,7 +233,6 @@ public sealed class JobRegistry : IDisposable
         IReadOnlyList<JobDto> snapshot;
         lock (_lock)
         {
-            // Under the lock, so no change is missed between the snapshot and the first event.
             _subscribers.Add(channel);
             snapshot = _jobs.Select(e => e.Job).ToList();
         }
@@ -280,8 +271,7 @@ public sealed class JobRegistry : IDisposable
         }
     }
 
-    // Called with the lock held.
-    private void StartQueuedJobs()
+    private void StartQueuedJobsLocked()
     {
         if (_disposed) return;
         foreach (var entry in _jobs)
@@ -289,7 +279,7 @@ public sealed class JobRegistry : IDisposable
             if (_running >= MaxConcurrent) return;
             if (entry.Job.State != JobState.Queued) continue;
             _running++;
-            Update(entry, entry.Job.Start(DateTime.UtcNow));
+            UpdateLocked(entry, entry.Job.Start(DateTime.UtcNow));
             _ = Task.Run(() => RunAsync(entry));
         }
     }
@@ -308,17 +298,16 @@ public sealed class JobRegistry : IDisposable
         }
         catch (Exception ex)
         {
-            var error = ToError(entry.Job.Kind, ex);
-            if (error.Code is JobErrorCodes.RescanFailed or JobErrorCodes.CreateFailed)
-                _logger?.Error(ex, "Job {JobId} ({Title}) failed", entry.Job.Id, entry.Job.Title);
+            var (error, unexpected) = ToError(entry.Job.Kind, ex);
+            if (unexpected) _logger?.Error(ex, "Job {JobId} ({Title}) failed", entry.Job.Id, entry.Job.Title);
             end = job => job.Fail(error, DateTime.UtcNow);
         }
 
         lock (_lock)
         {
             _running--;
-            Finish(entry, end(entry.Job));
-            StartQueuedJobs();
+            FinishLocked(entry, end(entry.Job));
+            StartQueuedJobsLocked();
         }
     }
 
@@ -349,11 +338,9 @@ public sealed class JobRegistry : IDisposable
         };
     }
 
-    // The session's documented refusals keep their submit-time codes (a race the preflight could not see); anything
-    // else is an unexpected failure, which RunAsync logs.
-    private static JobError ToError(JobKind kind, Exception ex) => new()
+    private static (JobError Error, bool Unexpected) ToError(JobKind kind, Exception ex)
     {
-        Code = ex switch
+        var knownCode = ex switch
         {
             RootNotAccessibleException => JobErrorCodes.RootNotAccessible,
             NoSourceFileException => JobErrorCodes.NoSourceFile,
@@ -363,13 +350,17 @@ public sealed class JobRegistry : IDisposable
             InvalidCatalogFileNameException => JobErrorCodes.InvalidFileName,
             CatalogFolderNotWritableException => JobErrorCodes.FolderNotWritable,
             NoCatalogDirException => JobErrorCodes.NoCatalogDir,
-            _ => kind == JobKind.Rescan ? JobErrorCodes.RescanFailed : JobErrorCodes.CreateFailed
-        },
-        Message = ex.Message,
-        RootPath = (ex as RootNotAccessibleException)?.RootPath
-    };
+            _ => null
+        };
+        var error = new JobError
+        {
+            Code = knownCode ?? (kind == JobKind.Rescan ? JobErrorCodes.RescanFailed : JobErrorCodes.CreateFailed),
+            Message = ex.Message,
+            RootPath = (ex as RootNotAccessibleException)?.RootPath
+        };
+        return (error, knownCode == null);
+    }
 
-    // Every report updates the job; subscribers hear of it on a phase change or at most every ProgressIntervalMs.
     private void OnProgress(Entry entry, string phase, int entriesScanned, string note)
     {
         lock (_lock)
@@ -385,22 +376,20 @@ public sealed class JobRegistry : IDisposable
             var now = Environment.TickCount64;
             if (!phaseChanged && now - entry.LastPublishedMs < ProgressIntervalMs) return;
             entry.LastPublishedMs = now;
-            Publish(entry.Job);
+            PublishLocked(entry.Job);
         }
     }
 
-    // Called with the lock held.
-    private void Update(Entry entry, JobDto job)
+    private void UpdateLocked(Entry entry, JobDto job)
     {
         entry.Job = job;
         entry.LastPublishedMs = Environment.TickCount64;
-        Publish(job);
+        PublishLocked(job);
     }
 
-    // Called with the lock held.
-    private void Finish(Entry entry, JobDto terminal)
+    private void FinishLocked(Entry entry, JobDto terminal)
     {
-        Update(entry, terminal);
+        UpdateLocked(entry, terminal);
         var finished = _jobs.Where(e => e.Job.IsTerminal).ToList();
         foreach (var old in finished.OrderBy(e => e.Job.EndedAtUtc).ThenBy(e => e.Job.Id)
                      .Take(finished.Count - MaxFinishedJobs))
@@ -409,8 +398,8 @@ public sealed class JobRegistry : IDisposable
         }
     }
 
-    // Called with the lock held. Unbounded channels never refuse a write while open.
-    private void Publish(JobDto job)
+    // Unbounded channels never refuse a write while open.
+    private void PublishLocked(JobDto job)
     {
         foreach (var subscriber in _subscribers) subscriber.Writer.TryWrite(job);
     }
@@ -421,7 +410,7 @@ public sealed class JobRegistry : IDisposable
     }
 
     private bool IsActiveTargetLocked(string target) =>
-        _jobs.Any(e => !e.Job.IsTerminal && PathComparer.Equals(e.Target, target));
+        _jobs.Any(e => !e.Job.IsTerminal && PathComparer.Equals(e.TargetFilePath, target));
 
     private bool AnyActiveLocked() => _jobs.Any(e => !e.Job.IsTerminal);
 
@@ -449,8 +438,7 @@ public sealed class JobRegistry : IDisposable
 
     private sealed class Entry(string target, CreateCatalogRequest create)
     {
-        /// <summary>Full path of the catalog file the job writes: the exclusion key.</summary>
-        public string Target { get; } = target;
+        public string TargetFilePath { get; } = target;
 
         public CreateCatalogRequest Create { get; } = create;
         public CancellationTokenSource Cts { get; } = new();

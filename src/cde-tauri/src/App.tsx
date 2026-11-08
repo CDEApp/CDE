@@ -108,16 +108,14 @@ export default function App() {
   const [legacyOpen, setLegacyOpen] = useState(false);
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
   const treeGenRef = useRef<Record<number, number>>({});
-  // --- new catalog: the folder awaiting confirmation in the dialog ---
   const [newCatalogRoot, setNewCatalogRoot] = useState<string | null>(null);
   // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
   // so a reload must drop the tree's cached expansion + children itself.
   const reloadEpochRef = useRef(0);
   // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
   const [diffEpoch, setDiffEpoch] = useState(0);
-  // Latest values for async completions (a job finishes long after the click that started it).
-  const latest = useRef({ catalogs });
-  latest.current = { catalogs };
+  const latestCatalogs = useRef(catalogs);
+  latestCatalogs.current = catalogs;
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -210,7 +208,7 @@ export default function App() {
 
   // Remember the folder so the dialog no longer opens by itself there; the status-bar notice stays.
   const dismissLegacy = useCallback(() => {
-    const folder = latest.current.catalogs?.catalogDir;
+    const folder = latestCatalogs.current?.catalogDir;
     const ui = uiRef.current;
     if (folder && ui) ui.update({ legacyMigrateDismissed: dismissFolder(ui.get().legacyMigrateDismissed, folder) });
     setLegacyOpen(false);
@@ -251,7 +249,6 @@ export default function App() {
     },
     [refreshCatalogs, snapshot, restoreAfterRescan, markRescanned],
   );
-  // The toast's [Open]: jump to the new root in the Directory tab (only now, never automatically).
   const openNewRoot = useCallback(
     (catalogId: number, rootPath: string) => openRoot({ catalogId, entryIndex: 0 }, rootPath),
     [openRoot],
@@ -259,7 +256,7 @@ export default function App() {
   const { model: jobs, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished } =
     useJobs({
       getClient,
-      enabled: ready,
+      sidecarReady: ready,
       afterRescan,
       refreshCatalogs,
       openCatalog: openNewRoot,
@@ -269,7 +266,7 @@ export default function App() {
 
   const reloadCatalogs = useCallback(
     async (dir?: string | null) => {
-      if (anyActive(jobsRef.current)) return; // the menus are disabled too; belt and braces
+      if (anyActive(jobsRef.current)) return;
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
       // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
@@ -578,7 +575,7 @@ export default function App() {
         );
       case "jobs":
         return (
-          <JobsView jobs={sortedJobs(jobs)} onCancel={cancelJob} onDismiss={dismissJob} onClearFinished={clearFinished} />
+          <JobsView sortedJobs={sortedJobs(jobs)} onCancel={cancelJob} onDismiss={dismissJob} onClearFinished={clearFinished} />
         );
       case "colours":
         return (
@@ -762,7 +759,7 @@ export default function App() {
         catalogs={catalogs?.catalogs ?? []}
         onChangeRoot={() => void pickNewRoot()}
         onCreate={(form) => {
-          setNewCatalogRoot(null); // close the dialog: progress lives in the Jobs tab and status bar now
+          setNewCatalogRoot(null);
           void createCatalog(form);
         }}
         onRescanExisting={(catalogId) => {

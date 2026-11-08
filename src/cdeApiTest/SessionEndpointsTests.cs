@@ -76,7 +76,7 @@ public class SessionEndpointsTests
     {
         var loadsBefore = _catalog.Loader.RequestedPaths.Count;
         long id;
-        using (new TestCatalog.CatalogHold(_catalog.Session, 0))
+        using (new TestCatalog.SwapBlockingLease(_catalog.Session, 0))
         {
             id = _jobs.Submit(new JobSubmitRequest { Kind = JobKind.Rescan, CatalogId = 0 }).Job.Id;
             var (ctx, body) = TestCatalog.NewContext();
@@ -94,7 +94,6 @@ public class SessionEndpointsTests
     [Test]
     public async Task No_job_can_be_submitted_while_a_reload_runs()
     {
-        // A fake session whose preflight always passes, so only the reload's hold can refuse the submit.
         var session = Substitute.For<ICatalogSession>();
         session.PreflightRescan(0).Returns(RescanPreflight.Ready);
         session.GetCatalogs().Returns([new CatalogInfoDto { CatalogId = 0, RootPath = "r", SourcePath = _catalog.Cdex }]);

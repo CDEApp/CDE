@@ -7,6 +7,7 @@ import {
   applyJob,
   applySnapshot,
   emptyJobs,
+  isFromEarlierSession,
   loadBlockedReason,
   progressNote,
   removeFinished,
@@ -57,6 +58,13 @@ describe("reducer", () => {
   it("a terminal state is final: a late active event is ignored", () => {
     const done = applyJob(emptyJobs, job(1, { state: "succeeded" }));
     expect(applyJob(done, job(1, { state: "running" }))).toBe(done);
+  });
+
+  it("a finished job this window did not submit is from an earlier session", () => {
+    const submitted = new Set([2]);
+    expect(isFromEarlierSession(job(1, { state: "succeeded" }), submitted)).toBe(true);
+    expect(isFromEarlierSession(job(2, { state: "succeeded" }), submitted)).toBe(false);
+    expect(isFromEarlierSession(job(3, { state: "running" }), submitted)).toBe(false);
   });
 
   it("removes one job, or every finished job", () => {

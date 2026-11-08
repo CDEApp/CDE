@@ -196,10 +196,9 @@ export interface CreatePreflightResult {
   busy: boolean;
 }
 
-// ---------------------------------------------------------------- jobs (sidecar job registry)
-
 export type JobKind = "rescan" | "create";
 export type JobState = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type JobPhase = "queued" | "scanning" | "writing" | "swapping" | "saving";
 
 export interface JobResult {
   catalogId: number;
@@ -212,7 +211,6 @@ export interface JobResult {
   unreadableFolderCount?: number;
 }
 
-/** Wire shape of a refusal (JSON, 404/409/422) or a failed job's `error`. */
 export interface JobError {
   code:
     | "unknown-catalog"
@@ -242,8 +240,7 @@ export interface JobDto {
   queuedAtUtc: string;
   startedAtUtc: string | null;
   endedAtUtc: string | null;
-  /** "queued" | "scanning" | "writing" | "swapping" | "saving" */
-  phase: string;
+  phase: JobPhase;
   entriesScanned: number;
   note: string;
   result: JobResult | null;
@@ -255,7 +252,6 @@ export interface JobsSnapshot {
   maxConcurrent: number;
 }
 
-/** Body of POST /jobs. */
 export type SubmitJobRequest =
   | { kind: "rescan"; catalogId: number }
   | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean };

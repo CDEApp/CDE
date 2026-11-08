@@ -9,7 +9,6 @@ using NUnit.Framework;
 
 namespace cdeApiTest;
 
-/// <summary>Drives <see cref="CreateCatalogEndpoint"/> (the New Catalog dialog's preflight) against a real session.</summary>
 [TestFixture]
 public class CreateCatalogEndpointTests
 {

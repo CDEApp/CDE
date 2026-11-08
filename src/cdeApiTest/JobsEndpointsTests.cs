@@ -14,10 +14,6 @@ using NUnit.Framework;
 
 namespace cdeApiTest;
 
-/// <summary>
-/// Drives <see cref="JobsEndpoints"/> against a real two-catalog session (cat/a.cdex = catalog 0 over data0,
-/// cat/b.cdex = catalog 1 over data1). Results are executed into a response body so the wire JSON is checked.
-/// </summary>
 [TestFixture]
 public class JobsEndpointsTests
 {
@@ -56,7 +52,7 @@ public class JobsEndpointsTests
         _jobs.Dispose();
         _session.Dispose();
         try { Directory.Delete(_dir, true); }
-        catch { /* best effort */ }
+        catch { }
     }
 
     private static async Task<(int Status, JsonElement Body)> Run(IResult result)
@@ -136,9 +132,9 @@ public class JobsEndpointsTests
     public async Task A_second_job_for_the_same_catalog_or_file_name_is_409_already_running()
     {
         _jobs.Dispose();
-        _jobs = new JobRegistry(_session, maxConcurrent: 1); // the create stays queued behind the held rescan
+        _jobs = new JobRegistry(_session, maxConcurrent: 1);
         long createId;
-        using (new TestCatalog.CatalogHold(_session, 0))
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
         {
             var (_, first) = await Submit(Rescan(0));
             createId = (await Submit(Create("fresh"))).Body.GetProperty("id").GetInt64();
@@ -183,7 +179,7 @@ public class JobsEndpointsTests
         var bytes = File.ReadAllBytes(_cdex[0]);
         File.WriteAllText(Path.Combine(_data[0], "new.txt"), "n");
         long id;
-        using (new TestCatalog.CatalogHold(_session, 0))
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
         {
             id = (await Submit(Rescan(0))).Body.GetProperty("id").GetInt64();
             await TestCatalog.WaitForJob(_jobs, id, j => j.Phase == "swapping");
@@ -202,7 +198,7 @@ public class JobsEndpointsTests
     {
         var done = (await Submit(Rescan(1))).Body.GetProperty("id").GetInt64();
         await WaitForEnd(done);
-        using (new TestCatalog.CatalogHold(_session, 0))
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
         {
             var active = (await Submit(Rescan(0))).Body.GetProperty("id").GetInt64();
 
@@ -230,7 +226,7 @@ public class JobsEndpointsTests
 
         var id = (await Submit(Rescan(0))).Body.GetProperty("id").GetInt64();
         await WaitForEnd(id);
-        _jobs.Dispose(); // ends the subscription, so the stream completes with every event written
+        _jobs.Dispose();
         await stream.WaitAsync(TimeSpan.FromSeconds(10));
 
         var events = TestCatalog.Events(TestCatalog.Text(body));

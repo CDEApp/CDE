@@ -2,15 +2,13 @@ import type { JobDto } from "../api/types";
 import { isActive, progressNote, startedLabel, statusLabel } from "../jobsModel";
 
 interface Props {
-  /** In display order (see sortedJobs). */
-  jobs: readonly JobDto[];
+  sortedJobs: readonly JobDto[];
   onCancel: (id: number) => void;
   onDismiss: (id: number) => void;
   onClearFinished: () => void;
 }
 
-/** The Jobs tab: every queued, running and finished catalog job the sidecar still lists. */
-export function JobsView({ jobs, onCancel, onDismiss, onClearFinished }: Props) {
+export function JobsView({ sortedJobs: jobs, onCancel, onDismiss, onClearFinished }: Props) {
   const anyFinished = jobs.some((j) => !isActive(j.state));
   return (
     <div className="jobs-view">

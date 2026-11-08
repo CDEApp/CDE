@@ -14,7 +14,6 @@ using Serilog.Events;
 
 namespace cdeApiTest;
 
-/// <summary>An unexpected failure reaches the client (a failed job, or an SSE error event) AND the sidecar log (#176).</summary>
 [TestFixture]
 public class EndpointFailureLoggingTests
 {

@@ -51,7 +51,7 @@ function setup() {
   const refreshCatalogs = vi.fn(async (_c: CdeApiClient) => ({}));
   const openCatalog = vi.fn();
   const hook = renderHook(() =>
-    useJobs({ getClient: () => client as unknown as CdeApiClient, enabled: true, afterRescan, refreshCatalogs, openCatalog }),
+    useJobs({ getClient: () => client as unknown as CdeApiClient, sidecarReady: true, afterRescan, refreshCatalogs, openCatalog }),
   );
   const snapshot = (jobs: JobDto[]) => act(async () => handlers.onSnapshot({ jobs, maxConcurrent: 3 }));
   const event = (j: JobDto) => act(async () => handlers.onJob(j));

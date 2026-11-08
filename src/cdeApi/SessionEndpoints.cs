@@ -47,7 +47,6 @@ public static class SessionEndpoints
         var requested = ctx.Request.Query["path"].FirstOrDefault();
         var loadPath = string.IsNullOrWhiteSpace(requested) ? options.ConfigPath : requested;
 
-        // A reload renumbers catalogs: a queued rescan would then hit another catalog, a running one loses its swap.
         using var exclusive = jobs.TryBeginExclusive();
         if (exclusive == null || session.AnyCatalogJobRunning)
         {

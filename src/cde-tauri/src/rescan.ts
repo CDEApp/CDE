@@ -1,6 +1,3 @@
-// Pure logic around a finished rescan: which search results went stale, and where the selection lands afterwards.
-// No React, no network: everything here is unit-tested in rescan.test.ts.
-
 import type { DirectoryNode, EntryRef, SearchResultRow } from "./api/types";
 
 // ---------------------------------------------------------------- stale results

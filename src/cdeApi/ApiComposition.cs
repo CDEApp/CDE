@@ -86,7 +86,6 @@ public static class ApiComposition
         // /ui-state, /colour-rules, /colour-rules/defaults
         app.MapSettingsEndpoints();
 
-        // /jobs, /jobs/events, /jobs/{id}/cancel, /jobs/{id}, /jobs/finished — rescans and new catalogs as queued jobs.
         app.MapJobsEndpoints();
 
         // PUT /catalogs/{id}/description — replace a catalog's description (JSON in, the updated catalog out).
