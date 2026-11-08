@@ -1,4 +1,5 @@
 import type { TreemapRow } from "./api/types";
+import { pathSeparatorOf } from "./format";
 // Pure helpers for the TreeMap view: kept free of React and the chart library so they unit-test
 // in plain Node.
 
@@ -16,11 +17,11 @@ export function minFractionFor(width: number, height: number, minTilePx = MIN_TI
   return Math.min(0.5, (minTilePx * minTilePx) / area);
 }
 
-/** Join a path segment without doubling a separator after a root like "C:\". */
+/** Join a path segment with the separator `base`'s root uses, without doubling it after a root like "C:\" or "/". */
 export function joinPath(base: string, name: string): string {
   if (base === "") return name;
-  const last = base[base.length - 1];
-  return last === "\\" || last === "/" ? base + name : `${base}\\${name}`;
+  const sep = pathSeparatorOf(base);
+  return base.endsWith(sep) ? base + name : base + sep + name;
 }
 
 /** The minimal node shape these helpers need (a subset of TanStack's TreemapNode). */

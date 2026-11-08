@@ -1,4 +1,6 @@
 :root {
+  /* WebKitGTK draws a native select in light colours unless the page says it is dark. */
+  color-scheme: dark;
   --bg: #1e1e1e;
   --panel: #252526;
   --border: #333;

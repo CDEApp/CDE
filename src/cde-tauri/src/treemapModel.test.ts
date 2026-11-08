@@ -35,6 +35,10 @@ describe("joinPath", () => {
     ["C:\\", "Users", "C:\\Users"],
     ["C:\\Users", "jason", "C:\\Users\\jason"],
     ["/mnt/", "data", "/mnt/data"],
+    ["/", "usr", "/usr"],
+    ["/usr/sbin", "NetworkManager", "/usr/sbin/NetworkManager"],
+    ["/data/a\\b", "c", "/data/a\\b/c"],
+    ["\\\\srv\\share", "d", "\\\\srv\\share\\d"],
   ])("joinPath(%j, %j) -> %j", (base, name, expected) => {
     expect(joinPath(base, name)).toBe(expected);
   });
@@ -136,6 +140,7 @@ describe("fullPathOf", () => {
   it("joins row names under the mapped root path", () => {
     expect(fullPathOf("b", rows, "C:\\")).toBe("C:\\Users\\jason");
     expect(fullPathOf("a", rows, "D:\\data")).toBe("D:\\data\\Users");
+    expect(fullPathOf("b", rows, "/")).toBe("/Users/jason");
   });
 
   it("is the root path for the root itself or an unknown id", () => {

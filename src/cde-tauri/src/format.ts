@@ -30,6 +30,11 @@ export function sizeTitle(size: number, locale?: string): string {
   return `${size.toLocaleString(locale)} ${size === 1 ? "byte" : "bytes"}`;
 }
 
+/** The separator a catalog's paths use, taken from the root (a drive letter or UNC share is Windows), not from a name. */
+export function pathSeparatorOf(path: string): string {
+  return /^([A-Za-z]:|\\)/.test(path) ? "\\" : "/";
+}
+
 /** The last segment of a file path (or a bare name), with its extension. Empty when there is none. */
 export function fileBaseName(fileName: string | null | undefined): string {
   if (!fileName) return "";
