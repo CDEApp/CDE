@@ -11,7 +11,7 @@ import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import { AboutModal } from "./components/AboutModal";
 import { SearchSyntaxModal } from "./components/SearchSyntaxModal";
 import { MigrateLegacyDialog } from "./components/MigrateLegacyDialog";
-import { dismissFolder, legacyNotice, shouldPromptLegacy } from "./legacyMigration";
+import { legacyNotice } from "./legacyMigration";
 import {
   CatalogInfo,
   CatalogsResponse,
@@ -43,6 +43,8 @@ import { parseRef, useCatalogSelection } from "./hooks/useCatalogSelection";
 import { useJobs } from "./hooks/useJobs";
 import { useColourRules } from "./hooks/useColourRules";
 import { useShellActions } from "./hooks/useShellActions";
+import { useLegacyMigration } from "./hooks/useLegacyMigration";
+import { useNewCatalog } from "./hooks/useNewCatalog";
 import { JobsView } from "./components/JobsView";
 import { useSearch } from "./hooks/useSearch";
 import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
@@ -91,6 +93,9 @@ export default function App() {
   const { resolveStyle, resolveTreeStyle } = colours;
   const shell = useShellActions({ getClient });
   const { runShell, exploreEntry } = shell;
+  const legacy = useLegacyMigration({ getUi });
+  const { promptFor: promptForLegacy } = legacy;
+  const newCatalog = useNewCatalog({ getUi });
 
   // Directory-listing sort: session-only (deliberately not in uiState) and kept across folders.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
@@ -104,18 +109,13 @@ export default function App() {
 
   const [aboutOpen, setAboutOpen] = useState(false);
   const [syntaxOpen, setSyntaxOpen] = useState(false);
-  // The migrate dialog for the legacy .cde catalogs the last load listed (the sidecar does not load them).
-  const [legacyOpen, setLegacyOpen] = useState(false);
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
   const treeGenRef = useRef<Record<number, number>>({});
-  const [newCatalogRoot, setNewCatalogRoot] = useState<string | null>(null);
   // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
   // so a reload must drop the tree's cached expansion + children itself.
   const reloadEpochRef = useRef(0);
   // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
   const [diffEpoch, setDiffEpoch] = useState(0);
-  const latestCatalogs = useRef(catalogs);
-  latestCatalogs.current = catalogs;
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -192,21 +192,6 @@ export default function App() {
       })),
     );
     return cat;
-  }, []);
-
-  // After a load: open the migrate dialog when the folder has legacy catalogs, unless "Not now" was chosen for it.
-  const promptForLegacy = useCallback((cat: CatalogsResponse) => {
-    if (shouldPromptLegacy(cat.legacyCatalogs ?? [], cat.catalogDir, uiRef.current?.get().legacyMigrateDismissed)) {
-      setLegacyOpen(true);
-    }
-  }, []);
-
-  // Remember the folder so the dialog no longer opens by itself there; the status-bar notice stays.
-  const dismissLegacy = useCallback(() => {
-    const folder = latestCatalogs.current?.catalogDir;
-    const ui = uiRef.current;
-    if (folder && ui) ui.update({ legacyMigrateDismissed: dismissFolder(ui.get().legacyMigrateDismissed, folder) });
-    setLegacyOpen(false);
   }, []);
 
   const showDirectory = useCallback(() => setView((v) => showView(v, "directory")), []);
@@ -313,21 +298,6 @@ export default function App() {
     setView((v) => showView(v, "catalogs"));
   }, [reloadCatalogs]);
 
-  // --- new catalog ---
-  // Native folder picker starting at the last root used for a new catalog (saved in UI state).
-  const pickNewCatalogRoot = useCallback(async (): Promise<string | null> => {
-    const last = uiRef.current?.get().lastNewCatalogRoot;
-    const picked = await open({
-      directory: true,
-      multiple: false,
-      title: "Select the folder to catalog",
-      defaultPath: typeof last === "string" && last ? last : undefined,
-    });
-    if (typeof picked !== "string") return null; // cancelled
-    uiRef.current?.update({ lastNewCatalogRoot: picked });
-    return picked;
-  }, []);
-
   // Export results: every streamed row (all held in `results`) as UTF-8 CSV, columns in the list's current order.
   const exportResults = useCallback(async () => {
     try {
@@ -351,12 +321,6 @@ export default function App() {
       });
     }
   }, [results]);
-
-  // Start (File menu / Catalogs tab) and "Change…" in the dialog: both just (re)pick the root.
-  const pickNewRoot = useCallback(async () => {
-    const picked = await pickNewCatalogRoot();
-    if (picked) setNewCatalogRoot(picked);
-  }, [pickNewCatalogRoot]);
 
   // --- context menu ---
   const showTreemap = useCallback((ref: EntryRef) => setView((v) => showTreemapView(v, ref)), []);
@@ -533,7 +497,7 @@ export default function App() {
             onSort={(column) => setCatalogSort((s) => nextCatalogSort(s, column))}
             columnWidths={uiRef.current?.get().catalogColumnWidths}
             onColumnWidthsChange={onCatalogColumnWidthsChange}
-            onNewCatalog={() => void pickNewRoot()}
+            onNewCatalog={() => void newCatalog.pick()}
             onContextMenu={(c, x, y) =>
               setMenu({ x, y, items: catalogMenu(c.catalogId, showTreemap, () => setEditingDescription(c), rescanItem(c.catalogId)) })
             }
@@ -581,7 +545,7 @@ export default function App() {
   return (
     <div className="app">
       <MenuBar
-        onNewCatalog={() => void pickNewRoot()}
+        onNewCatalog={() => void newCatalog.pick()}
         onOpenFolder={openFolder}
         onReload={() => void reloadCatalogs(catalogDir)}
         onExit={() => void getCurrentWindow().close()}
@@ -696,14 +660,14 @@ export default function App() {
         activeJobCount={activeCount(jobs)}
         onShowJobs={() => setView((v) => showView(v, "jobs"))}
         legacyNotice={legacyNotice(catalogs?.legacyCatalogs ?? [])}
-        onMigrate={() => setLegacyOpen(true)}
+        onMigrate={legacy.show}
       />
       <ContextMenu menu={menu} onClose={() => setMenu(null)} />
       <RootUnreachableModal rootPath={unreachableRoot} onClose={clearUnreachable} />
       <AboutModal opened={aboutOpen} onClose={() => setAboutOpen(false)} />
       <SearchSyntaxModal opened={syntaxOpen} onClose={() => setSyntaxOpen(false)} />
       <MigrateLegacyDialog
-        opened={legacyOpen}
+        opened={legacy.open}
         legacy={catalogs?.legacyCatalogs ?? []}
         folder={catalogs?.catalogDir ?? ""}
         blockedReason={
@@ -712,10 +676,10 @@ export default function App() {
             : null
         }
         client={clientRef.current}
-        onNotNow={dismissLegacy}
+        onNotNow={() => legacy.dismiss(catalogs?.catalogDir)}
         onFinished={() => {
           // The report has been seen: don't open again by itself here (failures stay in the status-bar notice).
-          dismissLegacy();
+          legacy.dismiss(catalogs?.catalogDir);
           void reloadCatalogs(catalogDir);
         }}
       />
@@ -725,19 +689,19 @@ export default function App() {
         onClose={() => setEditingDescription(null)}
       />
       <NewCatalogDialog
-        rootPath={newCatalogRoot}
+        rootPath={newCatalog.root}
         client={clientRef.current}
         catalogs={catalogs?.catalogs ?? []}
-        onChangeRoot={() => void pickNewRoot()}
+        onChangeRoot={() => void newCatalog.pick()}
         onCreate={(form) => {
-          setNewCatalogRoot(null);
+          newCatalog.close();
           void createCatalog(form);
         }}
         onRescanExisting={(catalogId) => {
-          setNewCatalogRoot(null);
+          newCatalog.close();
           void rescanCatalog(catalogId);
         }}
-        onClose={() => setNewCatalogRoot(null)}
+        onClose={newCatalog.close}
       />
     </div>
   );
