@@ -17,8 +17,8 @@ public class RegexHelperTests
     [TestCase(null)]
     [TestCase("")]
     [TestCase("   ")]
-    public void NullOrBlank_ReturnsBadRegexMessage(string pattern) =>
-        Assert.That(RegexHelper.GetRegexErrorMessage(pattern), Does.StartWith("Bad Regex:"));
+    public void NullEmptyOrBlank_IsNotAnError(string pattern) =>
+        Assert.That(RegexHelper.GetRegexErrorMessage(pattern), Is.Empty);
 
     [Test]
     public void CatastrophicPattern_IsStillValidAndReturnsPromptly() =>

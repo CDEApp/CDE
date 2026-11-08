@@ -1,5 +1,5 @@
 import { ApiError } from "./api/client";
-import { catalogName } from "./format";
+import { catalogName, pathSeparatorOf } from "./format";
 
 /** One-line syntax reminder for the Everything checkbox tooltip. */
 export const EVERYTHING_SYNTAX_HINT = 'Everything-style search: space=AND  |=OR  !=NOT  <>=group  "phrase"  path:term  no-path:term  file:  folder:. Turns Regex off. Include path and the Files/Folders boxes are ignored: use path:, file: or folder:.';
@@ -52,11 +52,6 @@ function literalTerm(modifier: "path" | "catalog", text: string, anchored: boole
   return `${modifier}:regex:"${anchored ? "^" : ""}${regexLiteral(text)}"`;
 }
 
-/** The separator the catalog's paths use, taken from the root (a drive letter or UNC share is Windows), not from a name. */
-function separatorOf(folderPath: string): string {
-  return /^([A-Za-z]:|\\)/.test(folderPath) ? "\\" : "/";
-}
-
 /**
  * The Everything query that scopes a search to one folder of one catalog, ending in a space so the user
  * types the search term straight after it. The folder gets a trailing separator, so only what is inside it
@@ -64,7 +59,7 @@ function separatorOf(folderPath: string): string {
  * path or name; blank leaves the catalog out.
  */
 export function searchFromHereQuery(folderPath: string, catalogFile: string): string {
-  const sep = separatorOf(folderPath);
+  const sep = pathSeparatorOf(folderPath);
   const scoped = folderPath.endsWith(sep) ? folderPath : folderPath + sep;
   const name = catalogName(catalogFile);
   const parts = name ? [literalTerm("catalog", name, false)] : [];

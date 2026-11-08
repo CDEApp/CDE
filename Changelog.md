@@ -60,6 +60,8 @@
   combined with `path:` or `no-path:` on one term. A catalog that cannot match is not scanned, and `dupe:` still counts
   over all loaded catalogs, so `catalog:photos dupe:hash` lists files in the photos catalog that exist anywhere else.
   Help > Search Syntax lists it. (#224)
+- fix (cdeWin, cde-tauri): An empty search box with Regex ticked no longer fails with the error `Bad Regex: Pattern
+  is Null or Empty`. It searches the same as an empty box without Regex, so only the filters apply. (#250)
 
 ### Release
 

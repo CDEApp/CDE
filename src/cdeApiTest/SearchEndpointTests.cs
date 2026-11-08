@@ -52,6 +52,16 @@ public class SearchEndpointTests
     }
 
     [Test]
+    public async Task Empty_regex_pattern_streams_the_same_results_as_an_empty_plain_pattern()
+    {
+        var plain = await ResultNames(new SearchQuery { Pattern = "" });
+
+        var regex = await ResultNames(new SearchQuery { Pattern = "", RegexMode = true });
+
+        Assert.That(regex, Is.Not.Empty.And.EquivalentTo(plain));
+    }
+
+    [Test]
     public async Task Everything_query_streams_matches()
     {
         var (ctx, body) = TestCatalog.NewContext();
@@ -119,5 +129,14 @@ public class SearchEndpointTests
         Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "a.txt", "b.txt" }));
         Assert.That(events.Last().Event, Is.EqualTo("done"));
         Assert.That(events.Last().Data.GetProperty("count").GetInt32(), Is.EqualTo(2));
+    }
+
+    private async Task<string[]> ResultNames(SearchQuery query)
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+        await SearchEndpoint.HandleAsync(ctx, query, new SearchService(_catalog.Session));
+        Assert.That(ctx.Response.StatusCode, Is.Not.EqualTo(400), TestCatalog.Text(body));
+        return TestCatalog.Events(TestCatalog.Text(body))
+            .Where(e => e.Event == "result").Select(r => r.Data.GetProperty("name").GetString()).ToArray();
     }
 }
