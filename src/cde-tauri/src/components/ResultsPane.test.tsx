@@ -33,6 +33,7 @@ function setup(over: Partial<Parameters<typeof ResultsPane>[0]> = {}) {
     staleBanner: null,
     onSearchAgain: vi.fn(),
     resolveStyle: () => undefined,
+    getColumnOrder: () => undefined as string[] | undefined,
     onColumnOrderChange: vi.fn(),
     onActivate: vi.fn(),
     onContextMenu: vi.fn(),
@@ -70,6 +71,17 @@ describe("ResultsPane", () => {
     expect(h.writeFile.mock.calls[0][0]).toBe("D:\\out.csv");
     expect(new TextDecoder().decode(h.writeFile.mock.calls[0][1])).toContain("a.txt");
     await waitFor(() => expect(h.show).toHaveBeenCalledWith(expect.objectContaining({ title: "Results exported" })));
+  });
+
+  it("exports in the column order at the time of the click, after a drag that did not re-render", async () => {
+    h.save.mockResolvedValueOnce("D:\\out.csv");
+    let order = ["name", "path"];
+    setup({ getColumnOrder: () => order });
+    order = ["path", "name"];
+    fireEvent.click(exportButton());
+    await waitFor(() => expect(h.writeFile).toHaveBeenCalledOnce());
+    const header = new TextDecoder().decode(h.writeFile.mock.calls[0][1]).split(/\r?\n/)[0];
+    expect(header.indexOf("Path")).toBeLessThan(header.indexOf("Name"));
   });
 
   it("cancelling the save writes nothing; a failed write is reported", async () => {

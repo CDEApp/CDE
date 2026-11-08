@@ -73,7 +73,7 @@ export function MainLayout(p: Props) {
             staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
             onSearchAgain={() => void search.searchAgain()}
             resolveStyle={colours.resolveStyle}
-            columnOrder={ui?.get().searchResultColumnOrder}
+            getColumnOrder={() => ui?.get().searchResultColumnOrder}
             onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}
             onActivate={(row) => void selection.viewInTree(row.ref, row.fullPath)}
             onContextMenu={menus.onResultContextMenu}

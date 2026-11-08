@@ -13,16 +13,17 @@ interface Props {
   staleBanner: string | null;
   onSearchAgain: () => void;
   resolveStyle: StyleResolver;
-  /** Persisted column ids in display order; also the CSV export's column order. */
-  columnOrder?: string[];
+  /** The persisted column ids in display order, read when the list mounts and at each export. */
+  getColumnOrder: () => string[] | undefined;
   onColumnOrderChange: (order: string[]) => void;
   onActivate: (row: SearchResultRow) => void;
   onContextMenu: (row: SearchResultRow, x: number, y: number) => void;
 }
 
 /** The Search Results tab: the stale-results banner, Export results…, and the results list. */
-export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, columnOrder, ...list }: Props) {
-  // Every streamed row (all held in `rows`) as UTF-8 CSV, columns in the list's current order.
+export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnOrder, ...list }: Props) {
+  // Every streamed row (all held in `rows`) as UTF-8 CSV, columns in the list's current order: a column
+  // drag saves the order without re-rendering this pane, so it is read at click time.
   async function exportResults() {
     try {
       const path = await save({
@@ -31,7 +32,7 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, columnOrde
         filters: [{ name: "CSV", extensions: ["csv"] }],
       });
       if (!path) return;
-      await writeFile(path, encodeCsv(resultsToCsv(rows, columnOrder)));
+      await writeFile(path, encodeCsv(resultsToCsv(rows, getColumnOrder())));
       notifications.show({
         color: "green",
         title: "Results exported",
@@ -62,7 +63,7 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, columnOrde
         </button>
       </div>
       <div className="results-fill">
-        <ResultsList rows={rows} columnOrder={columnOrder} {...list} />
+        <ResultsList rows={rows} columnOrder={getColumnOrder()} {...list} />
       </div>
     </div>
   );
