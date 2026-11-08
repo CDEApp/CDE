@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { defineChart, type ChartInteractionController } from "@tanstack/charts";
 import { treemap, type TreemapNode } from "@tanstack/charts/hierarchy/treemap";
 import { Chart } from "@tanstack/charts/react";
@@ -18,6 +18,7 @@ import {
   sameTileLayout,
   sceneLeaves,
   type TileLayout,
+  type TileRect,
   MERGED_COLOR,
   minFractionFor,
   mix,
@@ -232,6 +233,11 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tileLayout, fontsVersion]);
 
+  const hoverRect = useMemo(
+    () => (hover && tileLayout?.leaves.find((l) => l.id === String(hover.id))?.rect) || null,
+    [hover, tileLayout],
+  );
+
   const up = crumbs.length > 1 ? crumbs[crumbs.length - 2].ref : null;
 
   // Backspace = up one level (ignored while typing in a field).
@@ -342,6 +348,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
               height={tileLayout.height}
               aria-hidden="true"
             >
+              {hoverRect && <HoverMark rect={hoverRect} />}
               {tileLabels.map((l) => (
                 <g key={l.id} textAnchor="middle" dominantBaseline="middle" fill={LABEL_FILL}>
                   <text x={l.cx} y={l.size ? l.cy - NAME_FONT_PX / 2 : l.cy} fontSize={NAME_FONT_PX}>
@@ -395,5 +402,45 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
         </ul>
       </div>
     </div>
+  );
+}
+
+/**
+ * The hovered (or keyboard-focused) tile: a white wash lightens it, and a blurred dark edge clipped to the tile gives
+ * it an inner shadow. Drawn under the labels, which are dark, so the lighter tile keeps its text readable.
+ */
+function HoverMark({ rect }: { rect: TileRect }) {
+  const id = useId().replace(/:/g, "");
+  const clipId = `treemap-hover-clip-${id}`;
+  const blurId = `treemap-hover-blur-${id}`;
+  const box = {
+    x: rect.x0,
+    y: rect.y0,
+    width: Math.max(0, rect.x1 - rect.x0),
+    height: Math.max(0, rect.y1 - rect.y0),
+  };
+  return (
+    <>
+      <defs>
+        <clipPath id={clipId}>
+          <rect {...box} />
+        </clipPath>
+        <filter id={blurId} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation={2.5} />
+        </filter>
+      </defs>
+      <g className="treemap-hover">
+        <rect {...box} fill="#fff" fillOpacity={0.35} />
+        <rect
+          {...box}
+          fill="none"
+          stroke="#000"
+          strokeOpacity={0.75}
+          strokeWidth={8}
+          filter={`url(#${blurId})`}
+          clipPath={`url(#${clipId})`}
+        />
+      </g>
+    </>
   );
 }
