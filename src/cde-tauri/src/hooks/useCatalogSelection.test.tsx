@@ -46,6 +46,12 @@ describe("ref helpers", () => {
     expect(await folderChain(client, b.ref, b.fullPath)).toEqual({ chain: [root, a, b], exact: true });
     expect(client.catalogs).not.toHaveBeenCalled();
   });
+
+  it("folderChain falls back to the nearest folder when a rescan replaced the folder with a file of the same name", async () => {
+    const bFile = node(1, 2, "b", "/r/a/b", false);
+    const client = fakeClient({ 0: [a], 1: [] }, { ...chains, 2: [root, a, bFile] });
+    expect(await folderChain(client, b.ref, b.fullPath)).toEqual({ chain: [root, a], exact: false });
+  });
 });
 
 describe("useCatalogSelection", () => {

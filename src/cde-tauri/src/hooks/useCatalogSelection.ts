@@ -25,9 +25,9 @@ export function parseRef(key: string): EntryRef | null {
 
 /**
  * The root-to-folder chain for the folder at `fullPath`, in the catalog as it is now. `ref` is tried
- * first, but a ref from before a rescan can name another entry or none, so the folder is then found
- * by its path: its nearest surviving parent when it is gone (`exact` false). Empty when the catalog
- * is no longer loaded.
+ * first, but a ref from before a rescan can name another entry, none, or a file that replaced the
+ * folder, so the folder is then found by its path: its nearest surviving parent when it is gone
+ * (`exact` false). Empty when the catalog is no longer loaded.
  */
 export async function folderChain(
   client: CdeApiClient,
@@ -35,7 +35,7 @@ export async function folderChain(
   fullPath: string,
 ): Promise<{ chain: DirectoryNode[]; exact: boolean }> {
   const chain = await client.path(ref).catch((): DirectoryNode[] => []);
-  if (rowStillResolves(fullPath, chain)) return { chain, exact: true };
+  if (rowStillResolves(fullPath, chain) && chain[chain.length - 1].isDirectory) return { chain, exact: true };
   const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === ref.catalogId);
   if (!info) return { chain: [], exact: false };
   const found = await resolveSurvivingFolder(
