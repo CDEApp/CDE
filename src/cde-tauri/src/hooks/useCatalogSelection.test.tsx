@@ -154,4 +154,44 @@ describe("useCatalogSelection", () => {
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Not found" }));
     expect(result.current.selectedKey).toBeNull();
   });
+
+  it("canGoUp is false with no selection and at a catalog root, true below it", async () => {
+    const { result } = setup();
+    expect(result.current.canGoUp).toBe(false);
+    await act(() => result.current.selectNode(root.ref, root.fullPath));
+    expect(result.current.canGoUp).toBe(false);
+    await act(() => result.current.selectNode(a.ref, a.fullPath));
+    expect(result.current.canGoUp).toBe(true);
+  });
+
+  it("goUp opens the parent folder and expands the tree to it", async () => {
+    const { result } = setup({ 0: [a], 1: [b], 2: [] });
+    await act(() => result.current.selectNode(b.ref, b.fullPath));
+    let navigated = false;
+    await act(async () => {
+      navigated = await result.current.goUp();
+    });
+    expect(navigated).toBe(true);
+    expect(result.current.selectedKey).toBe("1-1");
+    expect(result.current.dirPath).toBe("/r/a");
+    expect(result.current.dirNodes).toEqual([b]);
+    expect(result.current.expandTo).toEqual([root.ref, a.ref]);
+  });
+
+  it("goUp does nothing when a newer selection overtook its path lookup", async () => {
+    let release!: (n: DirectoryNode[]) => void;
+    const { result, client } = setup({ 0: [a], 1: [b], 2: [] });
+    await act(() => result.current.selectNode(b.ref, b.fullPath));
+    (client.path as ReturnType<typeof vi.fn>).mockImplementationOnce(() => new Promise((resolve) => (release = resolve)));
+    let up!: Promise<boolean>;
+    act(() => {
+      up = result.current.goUp();
+    });
+    await act(() => result.current.selectNode(root.ref, root.fullPath));
+    await act(async () => {
+      release([root, a, b]);
+      expect(await up).toBe(false);
+    });
+    expect(result.current.selectedKey).toBe("1-0");
+  });
 });

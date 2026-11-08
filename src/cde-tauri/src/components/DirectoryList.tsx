@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
@@ -31,6 +31,21 @@ interface Props {
   columnWidths?: unknown;
   /** A column resize finished (or was reset): the full set of user-set widths to persist. */
   onColumnWidthsChange: (widths: ColumnWidths) => void;
+  /** Open the parent folder; resolves true once its listing is shown. When given, a ".." row leads the listing. */
+  onGoUp?: () => Promise<boolean>;
+}
+
+const PARENT_ROW = { parent: true } as const;
+type ParentRow = typeof PARENT_ROW;
+type Row = DirectoryNode | ParentRow;
+const isParentRow = (r: Row): r is ParentRow => r === PARENT_ROW;
+
+function onEnter(run: () => void) {
+  return (e: React.KeyboardEvent) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    run();
+  };
 }
 
 const COLUMNS: { column: SortColumn; label: string }[] = [
@@ -44,13 +59,16 @@ const KEY_STEP = 10;
 const KEY_STEP_LARGE = 50;
 
 /**
- * Per-directory listing (Name / Size / Modified). Double-click a folder drills in. Virtualized: a
+ * Per-directory listing (Name / Size / Modified). Double-click or Enter on a folder drills in; the
+ * ".." row goes up. Virtualized: a
  * folder with tens of thousands of entries (e.g. C:\Windows\WinSxS) only mounts the rows on screen.
  */
 export function DirectoryList({
-  path, nodes, onActivate, onContextMenu, resolveStyle, sort, onSort, columnWidths, onColumnWidthsChange,
+  path, nodes, onActivate, onContextMenu, resolveStyle, sort, onSort, columnWidths, onColumnWidthsChange, onGoUp,
 }: Props) {
   const sorted = useMemo(() => sortDirectoryNodes(nodes, sort), [nodes, sort]);
+  const rows = useMemo<Row[]>(() => (onGoUp ? [PARENT_ROW, ...sorted] : sorted), [sorted, onGoUp]);
+  const listRef = useRef<HTMLDivElement>(null);
   const [widths, setWidths] = useState<ColumnWidths>(() => normalizeColumnWidths(columnWidths));
   const template = gridTemplate(widths);
 
@@ -92,13 +110,13 @@ export function DirectoryList({
     onColumnWidthsChange(rest);
   }
   return (
-    <div className="dirlist">
+    <div className="dirlist" ref={listRef}>
       <div className="path-bar">{path}</div>
       {/* Keyed by folder, so a newly opened folder starts at the top rather than at the last one's offset. */}
-      <VirtualList<DirectoryNode>
+      <VirtualList<Row>
         key={path}
         className="dir-cols"
-        items={sorted}
+        items={rows}
         rowHeight={ROW_HEIGHT}
         innerStyle={{ minWidth: totalWidth(widths) }}
         header={
@@ -149,13 +167,38 @@ export function DirectoryList({
           </div>
         }
         renderRow={(n, _i, style) => {
+          if (isParentRow(n)) {
+            const goUp = onGoUp!;
+            return (
+              <div
+                key="parent"
+                className="vlist-row parent-row"
+                tabIndex={-1}
+                title="Up to the parent folder"
+                style={{ ...style, gridTemplateColumns: template }}
+                onDoubleClick={() => void goUp()}
+                // Going up remounts the listing, which drops focus. Only when this go-up won (no newer
+                // navigation took over), move focus to the parent's ".." so Enter keeps going up.
+                onKeyDown={onEnter(async () => {
+                  if (await goUp()) listRef.current?.querySelector<HTMLElement>(".parent-row")?.focus();
+                })}
+                onContextMenu={(e) => e.preventDefault()}
+              >
+                <div className="cell">..</div>
+                <div className="cell" />
+                <div className="cell" />
+              </div>
+            );
+          }
           const { row, name } = splitRowAndNameStyle(resolveStyle(n.name, n.isDirectory));
           return (
             <div
               key={`${n.ref.catalogId}-${n.ref.entryIndex}`}
               className="vlist-row"
+              tabIndex={-1}
               style={{ ...style, ...row, gridTemplateColumns: template }}
               onDoubleClick={() => onActivate(n)}
+              onKeyDown={onEnter(() => onActivate(n))}
               onContextMenu={(e) => {
                 e.preventDefault();
                 e.stopPropagation();

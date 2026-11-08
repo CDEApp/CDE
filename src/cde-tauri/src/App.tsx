@@ -230,7 +230,7 @@ export default function App() {
     getUi,
     onStart: showResults,
   });
-  const { selectNode, viewInTree, openRoot, resetForReload, selectedKeyRef, selectFromTree, activateDir } = selection;
+  const { selectNode, viewInTree, openRoot, resetForReload, selectedKeyRef, selectFromTree, activateDir, canGoUp, goUp } = selection;
 
   // After the sidecar swapped the catalog in: refresh the lists, remount that catalog's tree root,
   // mark results into it stale, and put the selection back (nearest surviving parent if it is gone).
@@ -701,6 +701,7 @@ export default function App() {
             onBackgroundContextMenu={treeBackgroundMenu}
             onSort={onDirSort}
             onActivate={activateDir}
+            onGoUp={canGoUp ? goUp : undefined}
             onListContextMenu={onListContextMenu}
           />
         </div>
