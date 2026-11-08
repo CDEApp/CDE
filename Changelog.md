@@ -96,6 +96,11 @@
 
 - chore (cde): Removed the `PopulousFolders` verb. It listed folders with more than `<count>` entries from the legacy `.cde` catalogs; there is no direct replacement. (part of #190)
 - chore (cde): Removed the `loadwait` verb. It loaded the legacy `.cde` catalogs and waited for Enter, only to measure load time by hand; use `cdeBenchmarks` or `cdeMemProbe` instead. `treedump1` stays for now. (part of #190)
+- fix (cde, cde-tauri): The default name of a catalog of a Windows drive with no volume label has no stray dash any
+  more: `C:\` gives `C.cdex` (was `C-.cdex`) and `C:\Data` gives `C-C__Data.cdex` (was `C--C__Data.cdex`). The New
+  Catalog dialog suggests the new name. `cde scan` keeps writing to a catalog saved under the old name, so it still
+  reuses its hashes and does not leave a second catalog; rename that file to switch. Labelled drives, UNC paths,
+  Linux and macOS names do not change. (#251)
 
 ### Configuration
 

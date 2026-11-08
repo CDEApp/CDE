@@ -44,7 +44,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
 
             // Catalogs are stored in the zero-copy columnar .cdex format. Reuse hashes from an existing
             // .cdex (reconstructed into a tree) when one is found for this scan path.
-            var cdexName = Path.ChangeExtension(re.DefaultFileName, ".cdex");
+            var cdexName = re.ScanCatalogFileName();
             if (File.Exists(cdexName))
             {
                 Console.WriteLine($"Found cache \"{cdexName}\"");

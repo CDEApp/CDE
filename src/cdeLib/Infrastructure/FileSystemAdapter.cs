@@ -24,4 +24,10 @@ public class FileSystemAdapter : IFileSystemAdapter
     }
 
     public bool IsWindows => OperatingSystem.IsWindows();
+
+    public string GetVolumeLabel(string rootPath)
+    {
+        var pathRoot = Path.GetPathRoot(rootPath);
+        return string.IsNullOrEmpty(pathRoot) ? string.Empty : new DriveInfo(pathRoot).VolumeLabel;
+    }
 }
