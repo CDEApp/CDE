@@ -23,10 +23,28 @@ export function parseRef(key: string): EntryRef | null {
   return Number.isInteger(catalogId) && Number.isInteger(entryIndex) ? { catalogId, entryIndex } : null;
 }
 
-// Root -> entry ref chain (for tree auto-expand).
-export async function refsToPath(client: CdeApiClient, ref: EntryRef): Promise<EntryRef[]> {
-  const chain = await client.path(ref);
-  return chain.map((n) => n.ref);
+/**
+ * The root-to-folder chain for the folder at `fullPath`, in the catalog as it is now. `ref` is tried
+ * first, but a ref from before a rescan can name another entry or none, so the folder is then found
+ * by its path: its nearest surviving parent when it is gone (`exact` false). Empty when the catalog
+ * is no longer loaded.
+ */
+export async function folderChain(
+  client: CdeApiClient,
+  ref: EntryRef,
+  fullPath: string,
+): Promise<{ chain: DirectoryNode[]; exact: boolean }> {
+  const chain = await client.path(ref).catch((): DirectoryNode[] => []);
+  if (rowStillResolves(fullPath, chain)) return { chain, exact: true };
+  const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === ref.catalogId);
+  if (!info) return { chain: [], exact: false };
+  const found = await resolveSurvivingFolder(
+    { catalogId: ref.catalogId, entryIndex: 0 },
+    info.rootPath,
+    fullPath,
+    (r) => client.children(r, { foldersOnly: true, sort: "name" }),
+  );
+  return { chain: await client.path(found.ref), exact: found.exact };
 }
 
 /** The Directory view's selection: selected node, its listing, tree reveal/expand, and restoring it after a rescan. */
@@ -64,30 +82,50 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
     [getClient, navGuard],
   );
 
-  // drill into a directory row (already in the directory view)
-  const activateDir = useCallback(
-    async (node: DirectoryNode) => {
-      if (!node.isDirectory) return;
+  // Open the folder a listing row names, or its parent, and expand the tree to it. False when a
+  // newer navigation won or the sidecar call failed (reported in a toast).
+  const openFolder = useCallback(
+    async (ref: EntryRef, fullPath: string, target: "folder" | "parent"): Promise<boolean> => {
       const token = navGuard.begin();
-      const path = await refsToPath(getClient(), node.ref);
-      if (!navGuard.isCurrent(token)) return;
-      setExpandTo(path);
-      await selectNode(node.ref, node.fullPath);
+      try {
+        const { chain, exact } = await folderChain(getClient(), ref, fullPath);
+        if (!navGuard.isCurrent(token)) return false;
+        // A folder the rescan removed resolves to its nearest surviving parent, which is already "up".
+        const path = target === "parent" && exact ? chain.slice(0, -1) : chain;
+        if (path.length === 0) return false;
+        if (!exact && target === "folder") {
+          notifications.show({
+            color: "yellow",
+            title: "Not found",
+            message: `${fullPath} is no longer in the catalog (it may have been rescanned).`,
+          });
+        }
+        const folder = path[path.length - 1];
+        setExpandTo(path.map((n) => n.ref));
+        return await selectNode(folder.ref, folder.fullPath);
+      } catch (e) {
+        if (navGuard.isCurrent(token)) {
+          notifications.show({ color: "red", title: "Could not open the folder", message: (e as Error).message });
+        }
+        return false;
+      }
     },
     [getClient, selectNode, navGuard],
   );
 
-  // The listing's ".." row: open the parent of the selected folder. False when a newer navigation won.
+  // drill into a directory row (already in the directory view)
+  const activateDir = useCallback(
+    async (node: DirectoryNode) => {
+      if (node.isDirectory) await openFolder(node.ref, node.fullPath, "folder");
+    },
+    [openFolder],
+  );
+
+  // The listing's ".." row: open the parent of the folder on screen.
   const goUp = useCallback(async (): Promise<boolean> => {
     const ref = selectedKeyRef.current ? parseRef(selectedKeyRef.current) : null;
-    if (!ref) return false;
-    const token = navGuard.begin();
-    const chain = await getClient().path(ref);
-    if (!navGuard.isCurrent(token) || chain.length < 2) return false;
-    const parent = chain[chain.length - 2];
-    setExpandTo(chain.slice(0, -1).map((n) => n.ref));
-    return selectNode(parent.ref, parent.fullPath);
-  }, [getClient, selectNode, navGuard]);
+    return ref ? openFolder(ref, dirPathRef.current, "parent") : false;
+  }, [openFolder]);
 
   // view a search result in the directory tree (expand to its parent)
   const viewInTree = useCallback(
@@ -167,17 +205,10 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
       if (selected?.catalogId !== catalogId) return;
       // A click made while this restore is awaiting begins a newer token, which makes the restore stand down.
       const token = navGuard.begin();
-      const info = (await client.catalogs()).catalogs.find((c) => c.catalogId === catalogId);
-      if (!info) return;
-      const found = await resolveSurvivingFolder(
-        { catalogId, entryIndex: 0 },
-        info.rootPath,
-        before.dirPath,
-        (ref) => client.children(ref, { foldersOnly: true, sort: "name" }),
-      );
-      const expand = await refsToPath(client, found.ref);
-      if (!navGuard.isCurrent(token)) return;
-      setExpandTo(expand);
+      const { chain } = await folderChain(client, selected, before.dirPath);
+      if (!navGuard.isCurrent(token) || chain.length === 0) return;
+      const found = chain[chain.length - 1];
+      setExpandTo(chain.map((n) => n.ref));
       await selectNode(found.ref, found.fullPath);
     },
     [selectNode, navGuard],
