@@ -49,7 +49,7 @@ export function removeFinished(model: JobsModel): JobsModel {
   return jobs.size === model.jobs.size ? model : { ...model, jobs };
 }
 
-export function activeJobs(model: JobsModel): JobDto[] {
+function activeJobs(model: JobsModel): JobDto[] {
   return sortedJobs(model).filter((j) => isActive(j.state));
 }
 

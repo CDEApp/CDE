@@ -156,16 +156,14 @@ export function useJobs({
     (job: JobDto) => {
       if (isActive(job.state) || handled.current.has(job.id) || finishedAtStart.current.has(job.id)) return;
       handled.current.add(job.id);
-      let done: Promise<void> | undefined;
       if (job.state === "succeeded" && job.result) {
-        const client = getClient();
-        done = job.kind === "rescan" ? announceRescan(client, job, cb.current) : announceCreate(client, job, cb.current);
+        const announce = job.kind === "rescan" ? announceRescan : announceCreate;
+        void announce(getClient(), job, cb.current).catch((e) => console.error("job completion handling failed", e));
       } else if (job.state === "failed") {
         announceFailure(job, setUnreachableRoot);
       } else if (job.state === "cancelled") {
         announceCancelled(job);
       }
-      void Promise.resolve(done).catch((e) => console.error("job completion handling failed", e));
     },
     [getClient],
   );

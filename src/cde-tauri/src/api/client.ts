@@ -344,12 +344,6 @@ export class CdeApiClient {
     return r.json();
   }
 
-  async listJobs(): Promise<JobsSnapshot> {
-    const r = await fetch(this.url(["jobs"]), { headers: this.headers() });
-    if (!r.ok) throw new Error(`jobs: ${r.status} ${await r.text()}`);
-    return r.json();
-  }
-
   /**
    * Follow job changes: a "snapshot" event, then one "job" event per change. Reconnects after `retryDelayMs`
    * whenever the stream ends or fails (each connection starts with a fresh snapshot), until `signal` aborts.
