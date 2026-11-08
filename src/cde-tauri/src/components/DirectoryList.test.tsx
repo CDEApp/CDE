@@ -112,12 +112,22 @@ describe("DirectoryList parent row", () => {
     }) as DirectoryNode;
   const nodes = [entry(2, "sub", true, 10), entry(3, "z.txt", false, 99), entry(4, "aaa", true, 5)];
 
-  function renderList(onUp?: () => void, sort = DEFAULT_SORT) {
+  function renderList(onUp?: () => void, sort = DEFAULT_SORT, path = "/r/a") {
     const onActivate = vi.fn();
     const onContextMenu = vi.fn();
-    render(
+    return { onActivate, onContextMenu, ...render(listElement(onUp, sort, path, onActivate, onContextMenu)) };
+  }
+
+  function listElement(
+    onUp: (() => void) | undefined,
+    sort = DEFAULT_SORT,
+    path = "/r/a",
+    onActivate = vi.fn(),
+    onContextMenu = vi.fn(),
+  ) {
+    return (
       <DirectoryList
-        path="/r/a"
+        path={path}
         nodes={nodes}
         sort={sort}
         onSort={vi.fn()}
@@ -126,9 +136,8 @@ describe("DirectoryList parent row", () => {
         onUp={onUp}
         resolveStyle={() => undefined}
         onColumnWidthsChange={vi.fn()}
-      />,
+      />
     );
-    return { onActivate, onContextMenu };
   }
 
   const rowNames = () => [...document.querySelectorAll(".vlist-row")].map((r) => r.firstElementChild?.textContent);
@@ -154,6 +163,21 @@ describe("DirectoryList parent row", () => {
     act(rowNamed(".."));
     expect(onUp).toHaveBeenCalledOnce();
     expect(onActivate).not.toHaveBeenCalled();
+  });
+
+  it("Enter keeps focus on the new listing's .. row, so Enter again goes up again", () => {
+    const onUp = vi.fn();
+    const { rerender } = renderList(onUp);
+    fireEvent.keyDown(rowNamed(".."), { key: "Enter" });
+    rerender(listElement(onUp, DEFAULT_SORT, "/r"));
+    expect(document.activeElement).toBe(rowNamed(".."));
+  });
+
+  it("does not take focus when the folder changes some other way", () => {
+    const onUp = vi.fn();
+    const { rerender } = renderList(onUp);
+    rerender(listElement(onUp, DEFAULT_SORT, "/r/b"));
+    expect(document.activeElement).toBe(document.body);
   });
 
   it("has no context menu", () => {

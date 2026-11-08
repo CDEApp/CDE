@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
@@ -68,6 +68,12 @@ export function DirectoryList({
 }: Props) {
   const sorted = useMemo(() => sortDirectoryNodes(nodes, sort), [nodes, sort]);
   const rows = useMemo<Row[]>(() => (onUp ? [PARENT_ROW, ...sorted] : sorted), [sorted, onUp]);
+  // Enter on ".." remounts the listing for the parent, which drops focus. Put it on the new ".." so
+  // Enter keeps going up. Cleared after the folder changes, so no other navigation takes focus.
+  const refocusParent = useRef(false);
+  useEffect(() => {
+    refocusParent.current = false;
+  }, [path]);
   const [widths, setWidths] = useState<ColumnWidths>(() => normalizeColumnWidths(columnWidths));
   const template = gridTemplate(widths);
 
@@ -167,15 +173,22 @@ export function DirectoryList({
         }
         renderRow={(n, _i, style) => {
           if (isParentRow(n)) {
+            const up = onUp!;
             return (
               <div
                 key="parent"
+                ref={(el) => {
+                  if (el && refocusParent.current) el.focus();
+                }}
                 className="vlist-row"
                 tabIndex={-1}
                 title="Up to the parent folder"
                 style={{ ...style, gridTemplateColumns: template }}
-                onDoubleClick={onUp}
-                onKeyDown={onUp && onEnter(onUp)}
+                onDoubleClick={up}
+                onKeyDown={onEnter(() => {
+                  refocusParent.current = true;
+                  up();
+                })}
                 onContextMenu={(e) => e.preventDefault()}
               >
                 <div className="cell">..</div>
