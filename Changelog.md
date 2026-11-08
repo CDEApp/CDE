@@ -169,9 +169,6 @@ Full PR list: https://github.com/CDEApp/CDE/compare/2.0.0...2.1.0-beta.1
   rc. Release notes are drafted from PR labels. (#98, #100)
 - improvement: SonarCloud analysis and Codecov coverage in CI. Markdown-only changes skip the build. (#48, #50, #83)
 - improvement: Unit tests for the cde-tauri frontend (Vitest). (#73)
-
-## 2022- vNEXT
-
 - improvement: Reduce filesize a bit
 - improvement (CDE): Tidy up help commands
 - improvement (CDE): Better display of progress
