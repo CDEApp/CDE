@@ -329,6 +329,7 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-sides > .diff-side:last-child { padding-left: 22px; }
 .diff-copy { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 2px; z-index: 1; }
 .diff-copy button { padding: 0 5px; line-height: 1.3; }
+.diff-base button:disabled, .diff-copy button:disabled { opacity: .45; cursor: default; }
 .catalog-select { position: relative; min-width: 0; }
 .catalog-select-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; text-align: left; background: #333; color: var(--fg); border: 1px solid var(--border); }
 .catalog-select-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
