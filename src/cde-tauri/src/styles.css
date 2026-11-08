@@ -153,7 +153,9 @@ input.invalid { border-color: #a1260d; outline: 1px solid #a1260d; }
 .treemap-crumbs .crumb.current { font-weight: 600; }
 .treemap-crumbs .crumb-sep { color: #888; margin: 0 2px; }
 .treemap-note { color: #e3a857; }
-.treemap-depth select { margin-left: 6px; }
+.depth-stepper { display: inline-flex; align-items: center; gap: 4px; }
+.depth-stepper button { min-width: 22px; padding: 0 6px; }
+.depth-stepper .depth-value { min-width: 1ch; text-align: center; font-variant-numeric: tabular-nums; }
 .treemap-content { flex: 1; min-height: 0; display: grid; grid-template-columns: 1fr 260px; }
 .treemap-body { position: relative; min-width: 0; min-height: 0; overflow: hidden; cursor: pointer; }
 .treemap-labels { position: absolute; top: 0; left: 0; pointer-events: none; user-select: none; font-family: inherit; font-weight: 400; }
