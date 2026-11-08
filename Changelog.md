@@ -72,6 +72,8 @@
   picker icon also follow the dark theme. (#249)
 - feature: The TreeMap Depth control is now − / + buttons around the value instead of a dropdown, and the mouse wheel
   over it changes the depth (up is deeper). The range is still 1 to 5. (#257)
+- feature: The TreeMap lightens the tile under the mouse, or the one focused with the arrow keys, and gives it an inner
+  shadow, so it is easy to see on light and dark tiles. The small white dot is still shown. (#253)
 - feature: In Compare, the Diffs toggle shows the mode picked from its ▾ menu, such as `Diff | Left Orphans` or
   `Diff | Differences, No Orphans`, instead of always `Diffs`. The full name is still in the tooltip. (#252)
 
