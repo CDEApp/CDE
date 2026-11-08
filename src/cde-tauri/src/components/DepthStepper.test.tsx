@@ -39,7 +39,9 @@ describe("DepthStepper", () => {
   });
 
   it("ignores a wheel step past either end", () => {
-    fireEvent.wheel(stepper(5).group, { deltaY: -100 });
+    const high = stepper(5);
+    fireEvent.wheel(high.group, { deltaY: -100 });
+    expect(high.onChange).not.toHaveBeenCalled();
     cleanup();
     const low = stepper(1);
     fireEvent.wheel(low.group, { deltaY: 100 });
