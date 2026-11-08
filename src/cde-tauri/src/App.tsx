@@ -4,7 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, ShellError } from "./api/client";
-import { activeCatalogIds, activeCount, loadBlockedReason, sortedJobs, statusLines } from "./jobsModel";
+import { activeCatalogIds, activeCount, loadBlockedReason, sortedJobs } from "./jobsModel";
 import { NewCatalogDialog } from "./components/NewCatalogDialog";
 import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
@@ -722,8 +722,8 @@ export default function App() {
         catalogs={catalogs}
         resultCount={results.length}
         searchTiming={status || timing}
-        jobs={statusLines(jobs)}
-        onCancelJob={cancelJob}
+        activeJobCount={activeCount(jobs)}
+        onShowJobs={() => setView((v) => showView(v, "jobs"))}
         legacyNotice={legacyNotice(catalogs?.legacyCatalogs ?? [])}
         onMigrate={() => setLegacyOpen(true)}
       />

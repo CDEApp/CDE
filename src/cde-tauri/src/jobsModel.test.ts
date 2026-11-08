@@ -16,7 +16,6 @@ import {
   sortedJobs,
   startedLabel,
   statusLabel,
-  statusLines,
 } from "./jobsModel";
 
 function job(id: number, over: Partial<JobDto> = {}): JobDto {
@@ -143,17 +142,6 @@ describe("views", () => {
     ).toBe("1,500 entries; skipped 2 folders: 2 access denied");
     expect(progressNote(job(1, { state: "failed", error: { code: "rescan-failed", message: "disk full" } }))).toBe(
       "disk full",
-    );
-  });
-
-  it("gives one status line per active job, running first", () => {
-    const lines = statusLines(model);
-    expect(lines.map((l) => l.id)).toEqual([4, 2, 5]);
-    expect(lines[1].text).toBe("Queued: Rescanning C:\\d2");
-    const m = applyJob(emptyJobs, job(1, { state: "running", phase: "scanning", entriesScanned: 7 }));
-    expect(statusLines(m)[0].text).toBe("Rescanning C:\\d1 — 7 entries");
-    expect(statusLines(applyJob(m, job(1, { state: "running", phase: "swapping", entriesScanned: 7 })))[0].text).toBe(
-      "Finishing: Rescanning C:\\d1…",
     );
   });
 });

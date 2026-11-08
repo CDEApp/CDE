@@ -53,10 +53,6 @@ export function removeJobs(model: JobsModel, ids: Iterable<number>): JobsModel {
   return jobs.size === model.jobs.size ? model : { ...model, jobs };
 }
 
-function activeJobs(model: JobsModel): JobDto[] {
-  return sortedJobs(model).filter((j) => isActive(j.state));
-}
-
 export function anyActive(model: JobsModel): boolean {
   for (const j of model.jobs.values()) if (isActive(j.state)) return true;
   return false;
@@ -141,15 +137,4 @@ export function progressNote(j: JobDto): string {
     case "cancelled":
       return "Cancelled; nothing was changed";
   }
-}
-
-export function statusLines(model: JobsModel): { id: number; text: string }[] {
-  return activeJobs(model).map((j) => ({ id: j.id, text: statusText(j) }));
-}
-
-function statusText(j: JobDto): string {
-  if (j.state === "queued") return `Queued: ${j.title}`;
-  if (j.phase === "saving" || j.phase === "swapping") return `Finishing: ${j.title}…`;
-  if (j.phase === "writing") return `Writing: ${j.title}…`;
-  return j.entriesScanned > 0 ? `${j.title} — ${n(j.entriesScanned)} entries` : `${j.title}…`;
 }
