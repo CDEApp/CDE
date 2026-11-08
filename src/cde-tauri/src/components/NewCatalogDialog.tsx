@@ -10,8 +10,6 @@ export interface NewCatalogForm {
   fileName: string;
   description: string;
   followJunctions: boolean;
-  /** Where the preflight said it would be written. */
-  targetPath: string | null;
 }
 
 interface Props {
@@ -90,7 +88,6 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
       fileName: state.effectiveName,
       description: description.trim(),
       followJunctions,
-      targetPath: preflight?.targetPath ?? null,
     });
   };
 

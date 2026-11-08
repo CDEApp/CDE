@@ -3,20 +3,9 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
-import { CdeApiClient, CreateFailure, ShellError } from "./api/client";
-import {
-  anyJobRunning,
-  beginCreate,
-  emptyCreateJobs,
-  endCreate,
-  jobStatusLines,
-  loadBlockedReason,
-  parseJobKey,
-  updateCreate,
-  type CreateJobs,
-} from "./catalogJobs";
-import { findCatalogByTarget } from "./newCatalog";
-import { NewCatalogDialog, type NewCatalogForm } from "./components/NewCatalogDialog";
+import { CdeApiClient, ShellError } from "./api/client";
+import { activeCatalogIds, activeCount, loadBlockedReason, sortedJobs } from "./jobsModel";
+import { NewCatalogDialog } from "./components/NewCatalogDialog";
 import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
 import { AboutModal } from "./components/AboutModal";
@@ -26,7 +15,6 @@ import { dismissFolder, legacyNotice, shouldPromptLegacy } from "./legacyMigrati
 import {
   CatalogInfo,
   CatalogsResponse,
-  CreateResult,
   DirectoryNode,
   EntryRef,
   refToString,
@@ -35,7 +23,7 @@ import {
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
 import { UiStateManager } from "./state/uiState";
-import { catalogFile, catalogName, fileBaseName, skipSummary } from "./format";
+import { catalogFile, catalogName, fileBaseName } from "./format";
 import { searchFromHereQuery } from "./everythingSearch";
 import type { TreeRoot } from "./components/CatalogTree";
 import { DEFAULT_SORT, type DirectorySort, type SortColumn, nextSort } from "./directorySort";
@@ -56,7 +44,8 @@ import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
 import { createSerialSaver, SerialSaver } from "./serialSaver";
 import { parseRef, useCatalogSelection } from "./hooks/useCatalogSelection";
-import { useRescan } from "./hooks/useRescan";
+import { useJobs } from "./hooks/useJobs";
+import { JobsView } from "./components/JobsView";
 import { useSearch } from "./hooks/useSearch";
 import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
 import {
@@ -119,19 +108,14 @@ export default function App() {
   const [legacyOpen, setLegacyOpen] = useState(false);
   // Per-catalog counter that remounts a tree root after a rescan (drops its cached children).
   const treeGenRef = useRef<Record<number, number>>({});
-  // --- new catalog: the folder awaiting confirmation in the dialog, and the creates running in the background ---
   const [newCatalogRoot, setNewCatalogRoot] = useState<string | null>(null);
-  const [creates, setCreates] = useState<CreateJobs>(emptyCreateJobs);
-  const createAborts = useRef(new Map<number, AbortController>());
-  const createSeq = useRef(0);
   // Bumped on every Reload / Open Folder: the Directory view stays mounted across tab switches (#80),
   // so a reload must drop the tree's cached expansion + children itself.
   const reloadEpochRef = useRef(0);
   // Remounts the Diff view (which stays mounted across tabs) when a reload or rescan invalidates its refs.
   const [diffEpoch, setDiffEpoch] = useState(0);
-  // Latest values for async completions (a create finishes long after the click that started it).
-  const latest = useRef({ catalogs, creates });
-  latest.current = { catalogs, creates };
+  const latestCatalogs = useRef(catalogs);
+  latestCatalogs.current = catalogs;
 
   // --- bootstrap: spawn sidecar, build client, load catalogs + ui-state ---
   useEffect(() => {
@@ -224,7 +208,7 @@ export default function App() {
 
   // Remember the folder so the dialog no longer opens by itself there; the status-bar notice stays.
   const dismissLegacy = useCallback(() => {
-    const folder = latest.current.catalogs?.catalogDir;
+    const folder = latestCatalogs.current?.catalogDir;
     const ui = uiRef.current;
     if (folder && ui) ui.update({ legacyMigrateDismissed: dismissFolder(ui.get().legacyMigrateDismissed, folder) });
     setLegacyOpen(false);
@@ -237,7 +221,6 @@ export default function App() {
     return client;
   }, []);
   const getUi = useCallback(() => uiRef.current, []);
-  const getCatalogs = useCallback(() => latest.current.catalogs, []);
   const showDirectory = useCallback(() => setView((v) => showView(v, "directory")), []);
   const showResults = useCallback(() => setView((v) => showView(v, "results")), []);
 
@@ -266,15 +249,24 @@ export default function App() {
     },
     [refreshCatalogs, snapshot, restoreAfterRescan, markRescanned],
   );
-  const { rescans, getRescans, unreachableRoot, clearUnreachable, rescanCatalog, cancelRescan } = useRescan({
-    getClient,
-    getCatalogs,
-    afterSwap: afterRescan,
-  });
+  const openNewRoot = useCallback(
+    (catalogId: number, rootPath: string) => openRoot({ catalogId, entryIndex: 0 }, rootPath),
+    [openRoot],
+  );
+  const { model: jobs, busy: jobsBusy, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished } =
+    useJobs({
+      getClient,
+      sidecarReady: ready,
+      afterRescan,
+      refreshCatalogs,
+      openCatalog: openNewRoot,
+    });
+  const jobsBusyRef = useRef(jobsBusy);
+  jobsBusyRef.current = jobsBusy;
 
   const reloadCatalogs = useCallback(
     async (dir?: string | null) => {
-      if (anyJobRunning(getRescans(), latest.current.creates)) return; // the menus are disabled too; belt and braces
+      if (jobsBusyRef.current) return;
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
       // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
@@ -299,7 +291,7 @@ export default function App() {
         }
       }
     },
-    [refreshCatalogs, promptForLegacy, resetForReload, getRescans],
+    [refreshCatalogs, promptForLegacy, resetForReload],
   );
 
   // Re-read the rules file each time the Customize tab opens (picks up hand edits). Fetch first, then
@@ -329,14 +321,14 @@ export default function App() {
 
   // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
   const openFolder = useCallback(async () => {
-    if (anyJobRunning(getRescans(), latest.current.creates)) return;
+    if (jobsBusyRef.current) return;
     const picked = await open({ directory: true, multiple: false, title: "Select catalog folder" });
     if (typeof picked !== "string") return; // cancelled
     setCatalogDir(picked);
     uiRef.current?.update({ catalogDir: picked });
     await reloadCatalogs(picked);
     setView((v) => showView(v, "catalogs"));
-  }, [reloadCatalogs, getRescans]);
+  }, [reloadCatalogs]);
 
   // --- new catalog ---
   // Native folder picker starting at the last root used for a new catalog (saved in UI state).
@@ -383,128 +375,6 @@ export default function App() {
     if (picked) setNewCatalogRoot(picked);
   }, [pickNewCatalogRoot]);
 
-  // The toast's [Open]: jump to the new root in the Directory tab (only now, never automatically).
-  const openNewRoot = useCallback(
-    (result: CreateResult) => openRoot({ catalogId: result.catalogId, entryIndex: 0 }, result.rootPath),
-    [openRoot],
-  );
-
-  const createCatalog = useCallback(
-    async (form: NewCatalogForm) => {
-      const client = clientRef.current!;
-      const id = ++createSeq.current;
-      const abort = new AbortController();
-      createAborts.current.set(id, abort);
-      const job = { id, rootPath: form.rootPath, fileName: form.fileName, targetPath: form.targetPath };
-      latest.current.creates = beginCreate(latest.current.creates, job);
-      setCreates((s) => beginCreate(s, job));
-      setNewCatalogRoot(null); // close the dialog: progress lives in the status bar now
-      try {
-        // Phase 1: the create's own outcome decides the success / failure toast.
-        let result: CreateResult | null = null;
-        try {
-          result = await client.createCatalog(
-            {
-              rootPath: form.rootPath,
-              fileName: form.fileName,
-              description: form.description,
-              followJunctions: form.followJunctions,
-            },
-            {
-              signal: abort.signal,
-              onProgress: (p) =>
-                setCreates((s) => updateCreate(s, id, { phase: p.phase, entriesScanned: p.entriesScanned })),
-            },
-          );
-          if (!result && form.targetPath) {
-            // Cancelled. If the cancel lost the race with the final rename the catalog was added: detect that.
-            try {
-              // Exact match on the path the sidecar reported: no case guessing on the client.
-              const found = findCatalogByTarget((await client.catalogs()).catalogs, form.targetPath);
-              if (found) {
-                result = {
-                  catalogId: found.catalogId,
-                  rootPath: found.rootPath,
-                  entries: found.dirEntryCount + found.fileEntryCount,
-                  savedPath: found.sourcePath!,
-                };
-              }
-            } catch {
-              /* could not check: report it as cancelled */
-            }
-          }
-        } catch (e) {
-          const code = e instanceof CreateFailure ? e.error.code : "";
-          notifications.show({
-            color: "red",
-            title: "New catalog failed",
-            message:
-              `${form.rootPath}: ${e instanceof Error ? e.message : String(e)}` +
-              (code === "file-exists" ? "" : " Nothing was written."),
-          });
-          return;
-        }
-
-        if (!result) {
-          notifications.show({
-            color: "gray",
-            title: "New catalog cancelled",
-            message: `${form.rootPath} was not cataloged; nothing was written.`,
-          });
-          return;
-        }
-
-        // Phase 2: the catalog exists. Refresh the lists only: ids, tree state and the Directory tab stay as they are.
-        const done = result;
-        const skipped = skipSummary(done.excludedFolderCount, done.accessDeniedFolderCount, done.unreadableFolderCount);
-        const toastId = `new-catalog-${done.catalogId}-${id}`;
-        let refreshed = true;
-        try {
-          await refreshCatalogs(client);
-        } catch {
-          refreshed = false;
-        }
-        notifications.show({
-          id: toastId,
-          color: refreshed ? "green" : "orange",
-          title: "Catalog created",
-          autoClose: 15000,
-          message: (
-            <span>
-              {refreshed
-                ? `Created ${form.fileName}.cdex — ${done.entries.toLocaleString()} entries${skipped ? `; ${skipped}` : ""}. `
-                : `Created ${form.fileName}.cdex, but refreshing the view failed — use Reload. `}
-              {refreshed && (
-                <button
-                  className="toast-action"
-                  onClick={() => {
-                    notifications.hide(toastId);
-                    void openNewRoot(done);
-                  }}
-                >
-                  Open
-                </button>
-              )}
-            </span>
-          ),
-        });
-      } finally {
-        createAborts.current.delete(id);
-        latest.current.creates = endCreate(latest.current.creates, id);
-        setCreates((s) => endCreate(s, id));
-      }
-    },
-    [refreshCatalogs, openNewRoot],
-  );
-
-  // Status-bar Cancel for a running job: "rescan:<catalogId>" or "create:<jobId>".
-  const cancelJob = useCallback((key: string) => {
-    const job = parseJobKey(key);
-    if (!job) return;
-    if (job.kind === "rescan") cancelRescan(job.id);
-    else createAborts.current.get(job.id)?.abort();
-  }, [cancelRescan]);
-
   // --- shell actions / context menu ---
   const runShell = useCallback(async (ref: EntryRef, action: ShellAction, commandId?: number) => {
     try {
@@ -524,12 +394,12 @@ export default function App() {
   const rescanItem = useCallback(
     (catalogId: number) =>
       rescanMenuEntry(
-        rescans,
+        jobs,
         catalogId,
         catalogs?.catalogs.find((c) => c.catalogId === catalogId)?.rootPath,
         (id) => void rescanCatalog(id),
       ),
-    [rescans, catalogs, rescanCatalog],
+    [jobs, catalogs, rescanCatalog],
   );
 
   const [editingDescription, setEditingDescription] = useState<CatalogInfo | null>(null);
@@ -621,7 +491,7 @@ export default function App() {
   }
 
   const { selectedKey, revealKey, revealNonce, expandTo, dirPath, dirNodes } = selection;
-  const loadBlockedReasonText = loadBlockedReason(rescans, creates);
+  const loadBlockedReasonText = loadBlockedReason(jobsBusy);
   const staleBanner = staleBannerFor((id) => {
     const c = catalogs?.catalogs.find((x) => x.catalogId === id);
     return c ? c.rootPath : `#${id}`;
@@ -686,7 +556,7 @@ export default function App() {
         return (
           <CatalogList
             catalogs={catalogs?.catalogs ?? []}
-            rescanningIds={new Set(rescans.keys())}
+            rescanningIds={activeCatalogIds(jobs)}
             sort={catalogSort}
             selectedId={selectedCatalogId}
             onSelect={setSelectedCatalogId}
@@ -702,6 +572,10 @@ export default function App() {
               void selectNode({ catalogId: c.catalogId, entryIndex: 0 }, c.rootPath);
             }}
           />
+        );
+      case "jobs":
+        return (
+          <JobsView sortedJobs={sortedJobs(jobs)} onCancel={cancelJob} onDismiss={dismissJob} onClearFinished={clearFinished} />
         );
       case "colours":
         return (
@@ -777,6 +651,9 @@ export default function App() {
         <button className={view.kind === "diff" ? "active" : ""} onClick={() => setView((v) => showView(v, "diff"))}>
           Compare
         </button>
+        <button className={view.kind === "jobs" ? "active" : ""} onClick={() => setView((v) => showView(v, "jobs"))}>
+          {activeCount(jobs) > 0 ? `Jobs (${activeCount(jobs)})` : "Jobs"}
+        </button>
         <button className={view.kind === "colours" ? "active" : ""} onClick={() => void openColours()}>
           Customize
         </button>
@@ -845,8 +722,8 @@ export default function App() {
         catalogs={catalogs}
         resultCount={results.length}
         searchTiming={status || timing}
-        jobs={jobStatusLines(rescans, creates)}
-        onCancelJob={cancelJob}
+        activeJobCount={activeCount(jobs)}
+        onShowJobs={() => setView((v) => showView(v, "jobs"))}
         legacyNotice={legacyNotice(catalogs?.legacyCatalogs ?? [])}
         onMigrate={() => setLegacyOpen(true)}
       />
@@ -859,8 +736,8 @@ export default function App() {
         legacy={catalogs?.legacyCatalogs ?? []}
         folder={catalogs?.catalogDir ?? ""}
         blockedReason={
-          anyJobRunning(rescans, creates)
-            ? "Unavailable while a catalog is being rescanned or created; try again when that finishes."
+          jobsBusy
+            ? "Unavailable while catalog jobs are queued, running or finishing; try again when they finish."
             : null
         }
         client={clientRef.current}
@@ -881,7 +758,10 @@ export default function App() {
         client={clientRef.current}
         catalogs={catalogs?.catalogs ?? []}
         onChangeRoot={() => void pickNewRoot()}
-        onCreate={(form) => void createCatalog(form)}
+        onCreate={(form) => {
+          setNewCatalogRoot(null);
+          void createCatalog(form);
+        }}
         onRescanExisting={(catalogId) => {
           setNewCatalogRoot(null);
           void rescanCatalog(catalogId);

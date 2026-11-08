@@ -1,6 +1,6 @@
 import type { EntryRef } from "./api/types";
 
-export type PlainView = "directory" | "results" | "catalogs" | "colours" | "diff";
+export type PlainView = "directory" | "results" | "catalogs" | "colours" | "diff" | "jobs";
 
 export interface TreemapRequest {
   ref: EntryRef;

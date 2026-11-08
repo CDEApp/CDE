@@ -3,7 +3,7 @@ using System.IO;
 
 namespace cdeAppCore.Dtos;
 
-/// <summary>Body of <c>POST /catalogs</c>: scan <see cref="RootPath"/> into a new <c>&lt;FileName&gt;.cdex</c> in the working folder.</summary>
+/// <summary>A create job's request: scan <see cref="RootPath"/> into a new <c>&lt;FileName&gt;.cdex</c> in the working folder.</summary>
 public sealed class CreateCatalogRequest
 {
     public string RootPath { get; set; }
@@ -18,7 +18,6 @@ public sealed class CreateCatalogRequest
 /// <summary>Progress of a create. <see cref="Phase"/> is <c>scanning</c>, <c>writing</c> or <c>saving</c>.</summary>
 public readonly record struct CreateProgress(string Phase, int EntriesScanned, string CurrentPath);
 
-/// <summary>Final outcome of a successful create (the SSE <c>done</c> payload).</summary>
 public sealed class CreateCatalogResult
 {
     /// <summary>The id of the new catalog; existing catalogs keep theirs.</summary>
@@ -40,17 +39,6 @@ public sealed class CreateCatalogResult
 
     /// <summary>Folders the scan could not read for another reason, e.g. an IO error (#170). Scan-time only: not stored in the catalog.</summary>
     public int UnreadableFolderCount { get; set; }
-}
-
-/// <summary>The SSE <c>error</c> payload, or the JSON body of a refusal. <see cref="Code"/> is a stable reason.</summary>
-public sealed class CreateCatalogError
-{
-    public string Code { get; set; }
-    public string Message { get; set; }
-    public string RootPath { get; set; }
-
-    /// <summary>For <c>file-exists</c>: the loaded catalog backed by that file (Rescan existing), else null.</summary>
-    public int? ExistingCatalogId { get; set; }
 }
 
 /// <summary>Body of <c>POST /catalogs/preflight</c>.</summary>

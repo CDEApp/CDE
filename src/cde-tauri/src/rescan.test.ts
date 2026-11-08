@@ -1,82 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { DirectoryNode, EntryRef, SearchResultRow } from "./api/types";
 import {
-  anyRescanning,
-  beginRescan,
-  emptyRescanState,
-  endRescan,
-  isRescanning,
-  rescanMenuItem,
-  reloadDisabledReason,
   resolveSurvivingFolder,
   rowStillResolves,
   staleResultsBanner,
-  statusLines,
-  updateRescan,
 } from "./rescan";
-
-describe("rescan bookkeeping", () => {
-  it("tracks several catalogs at once, one per catalog", () => {
-    let s = emptyRescanState();
-    s = beginRescan(s, 0, "C:\\");
-    s = beginRescan(s, 2, "D:\\");
-    expect(isRescanning(s, 0)).toBe(true);
-    expect(isRescanning(s, 1)).toBe(false);
-    expect(isRescanning(s, 2)).toBe(true);
-    s = endRescan(s, 0);
-    expect(isRescanning(s, 0)).toBe(false);
-    expect(anyRescanning(s)).toBe(true);
-    s = endRescan(s, 2);
-    expect(anyRescanning(s)).toBe(false);
-  });
-
-  it("does not replace a running entry when begun again", () => {
-    let s = beginRescan(emptyRescanState(), 0, "C:\\");
-    s = updateRescan(s, 0, { phase: "scanning", entriesScanned: 5000 });
-    s = beginRescan(s, 0, "C:\\");
-    expect(statusLines(s)[0].text).toContain("5,000");
-  });
-
-  it("never mutates the previous state", () => {
-    const a = beginRescan(emptyRescanState(), 0, "C:\\");
-    const b = updateRescan(a, 0, { phase: "scanning", entriesScanned: 10 });
-    expect(statusLines(a)[0].text).not.toContain("10");
-    expect(statusLines(b)[0].text).toContain("10");
-    expect(isRescanning(endRescan(b, 0), 0)).toBe(false);
-    expect(isRescanning(b, 0)).toBe(true);
-  });
-
-  it("ignores progress for a catalog that is not rescanning", () => {
-    const s = updateRescan(emptyRescanState(), 3, { phase: "scanning", entriesScanned: 1 });
-    expect(anyRescanning(s)).toBe(false);
-  });
-
-  it("disables Rescan only for the catalog that is rescanning", () => {
-    const s = beginRescan(emptyRescanState(), 1, "D:\\");
-    expect(rescanMenuItem(s, 1)).toMatchObject({ label: "Rescan", disabled: true });
-    expect(rescanMenuItem(s, 1).title).toMatch(/already/i);
-    expect(rescanMenuItem(s, 0)).toMatchObject({ label: "Rescan", disabled: false });
-  });
-
-  it("disables reload while any rescan runs, with a reason", () => {
-    expect(reloadDisabledReason(emptyRescanState())).toBeNull();
-    const s = beginRescan(emptyRescanState(), 1, "D:\\");
-    expect(reloadDisabledReason(s)).toMatch(/rescan/i);
-    expect(reloadDisabledReason(endRescan(s, 1))).toBeNull();
-  });
-
-  it("describes each running rescan for the status bar", () => {
-    let s = beginRescan(emptyRescanState(), 0, "C:\\");
-    s = updateRescan(s, 0, { phase: "scanning", entriesScanned: 12345 });
-    s = beginRescan(s, 1, "D:\\");
-    const lines = statusLines(s);
-    expect(lines.map((l) => l.catalogId)).toEqual([0, 1]);
-    expect(lines[0].text).toBe("Rescanning C:\\ — 12,345 entries");
-    expect(lines[1].text).toBe("Rescanning D:\\…");
-    s = updateRescan(s, 1, { phase: "swapping", entriesScanned: 0 });
-    expect(statusLines(s)[1].text).toBe("Finishing rescan of D:\\…");
-  });
-});
 
 describe("stale search results", () => {
   const row = (catalogId: number): SearchResultRow =>

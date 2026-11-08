@@ -1,6 +1,6 @@
 import type { MenuItem } from "./components/ContextMenu";
 import type { DirectoryNode, EntryRef, ShellAction } from "./api/types";
-import { rescanMenuItem, type RescanState } from "./rescan";
+import { rescanMenuItem, type JobsModel } from "./jobsModel";
 
 export interface ShellCommand {
   id: number;
@@ -37,12 +37,12 @@ export function collapseAllItem(onCollapseAll: () => void): MenuItem {
 }
 
 export function rescanItem(
-  rescans: RescanState,
+  jobs: JobsModel,
   catalogId: number,
   rootPath: string | undefined,
   onRescan: (catalogId: number) => void,
 ): MenuItem {
-  const m = rescanMenuItem(rescans, catalogId);
+  const m = rescanMenuItem(jobs, catalogId);
   return {
     label: m.label,
     disabled: m.disabled,

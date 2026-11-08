@@ -78,13 +78,17 @@ public class ProgramTests
             "GET /entries/{ref}/path",
             "GET /entries/{ref}/treemap",
             "GET /health",
+            "GET /jobs",
+            "GET /jobs/events",
             "GET /shell/commands",
             "GET /ui-state",
-            "POST /catalogs",
+            "DELETE /jobs/finished",
+            "DELETE /jobs/{id:long}",
             "POST /catalogs/migrate",
             "POST /catalogs/preflight",
-            "POST /catalogs/{id:int}/rescan",
             "POST /compare/summaries",
+            "POST /jobs",
+            "POST /jobs/{id:long}/cancel",
             "POST /search",
             "POST /session/reload",
             "POST /shell",
@@ -224,6 +228,48 @@ public class ProgramTests
             Directory.SetCurrentDirectory(cwdBefore);
             Directory.Delete(cwd, recursive: true);
         }
+    }
+
+    [Test]
+    public async Task A_rescan_job_submitted_over_http_runs_to_success()
+    {
+        WriteCatalogIn(_dir);
+        using var client = AuthorisedClient();
+        await client.PostAsync("/session/reload", null);
+
+        var submit = await client.PostAsync("/jobs",
+            new StringContent("{\"kind\":\"rescan\",\"catalogId\":0}", System.Text.Encoding.UTF8, "application/json"));
+
+        Assert.That(submit.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
+        var job = JsonDocument.Parse(await submit.Content.ReadAsStringAsync()).RootElement;
+        Assert.That(job.GetProperty("kind").GetString(), Is.EqualTo("rescan"));
+        Assert.That(job.GetProperty("catalogName").GetString(), Is.EqualTo("one"));
+        var id = job.GetProperty("id").GetInt64();
+
+        JsonElement listed = default;
+        for (var i = 0; i < 500; i++)
+        {
+            var list = JsonDocument.Parse(await client.GetStringAsync("/jobs")).RootElement;
+            Assert.That(list.GetProperty("maxConcurrent").GetInt32(), Is.GreaterThan(0));
+            listed = list.GetProperty("jobs").EnumerateArray().Single(j => j.GetProperty("id").GetInt64() == id);
+            if (listed.GetProperty("state").GetString() is "succeeded" or "failed" or "cancelled") break;
+            await Task.Delay(20);
+        }
+
+        Assert.That(listed.GetProperty("state").GetString(), Is.EqualTo("succeeded"));
+        Assert.That(listed.GetProperty("result").GetProperty("entries").GetInt64(), Is.EqualTo(1));
+        Assert.That((await client.DeleteAsync($"/jobs/{id}")).StatusCode, Is.EqualTo(HttpStatusCode.NoContent));
+    }
+
+    [Test]
+    public async Task A_job_with_an_unknown_kind_is_400()
+    {
+        using var client = AuthorisedClient();
+
+        var submit = await client.PostAsync("/jobs",
+            new StringContent("{\"kind\":\"defrag\"}", System.Text.Encoding.UTF8, "application/json"));
+
+        Assert.That(submit.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
     }
 
     [Test]

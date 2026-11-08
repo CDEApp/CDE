@@ -10,7 +10,8 @@ import {
   treeNodeMenu,
   type EntryMenuContext,
 } from "./menus";
-import { beginRescan, emptyRescanState } from "./rescan";
+import { applyJob, emptyJobs } from "./jobsModel";
+import type { JobDto } from "./api/types";
 import type { DirectoryNode } from "./api/types";
 
 const ref = { catalogId: 3, entryIndex: 9 };
@@ -165,21 +166,21 @@ describe("collapseAllItem", () => {
 describe("rescanItem", () => {
   it("is enabled with a tooltip naming the root", () => {
     const onRescan = vi.fn();
-    const item = rescanItem(emptyRescanState(), 3, "/data", onRescan);
+    const item = rescanItem(emptyJobs, 3, "/data", onRescan);
     expect(item).toMatchObject({ label: "Rescan", disabled: false, title: "Rescan /data in the background" });
     item.onClick();
     expect(onRescan).toHaveBeenCalledWith(3);
   });
 
   it("has no tooltip when the root is unknown", () => {
-    expect(rescanItem(emptyRescanState(), 3, undefined, () => {}).title).toBeUndefined();
+    expect(rescanItem(emptyJobs, 3, undefined, () => {}).title).toBeUndefined();
   });
 
   it("is disabled with the running-rescan reason while that catalog rescans", () => {
-    const state = beginRescan(emptyRescanState(), 3, "/data");
+    const state = applyJob(emptyJobs, { id: 1, kind: "rescan", catalogId: 3, state: "queued" } as JobDto);
     expect(rescanItem(state, 3, "/data", () => {})).toMatchObject({
       disabled: true,
-      title: "A rescan of this catalog is already running",
+      title: "A job for this catalog is already queued or running",
     });
     expect(rescanItem(state, 4, "/other", () => {}).disabled).toBe(false);
   });

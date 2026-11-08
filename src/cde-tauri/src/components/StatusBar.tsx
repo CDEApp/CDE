@@ -5,9 +5,9 @@ interface Props {
   catalogs: CatalogsResponse | null;
   resultCount: number;
   searchTiming: string;
-  /** One line per running background job (rescan or new catalog): a stable key and the progress text. */
-  jobs?: { key: string; text: string }[];
-  onCancelJob?: (key: string) => void;
+  /** Queued and running jobs; the count links to the Jobs tab, where they can be cancelled. */
+  activeJobCount?: number;
+  onShowJobs?: () => void;
   /** Legacy catalogs that were not loaded ("N legacy catalogs not loaded"), with a Migrate… action; null for none. */
   legacyNotice?: string | null;
   onMigrate?: () => void;
@@ -18,8 +18,8 @@ export function StatusBar({
   catalogs,
   resultCount,
   searchTiming,
-  jobs = [],
-  onCancelJob,
+  activeJobCount = 0,
+  onShowJobs,
   legacyNotice = null,
   onMigrate,
 }: Props) {
@@ -38,14 +38,14 @@ export function StatusBar({
           </button>
         </span>
       )}
-      {jobs.map((j) => (
-        <span key={j.key} className="rescan-status">
-          {j.text}
-          <button onClick={() => onCancelJob?.(j.key)} title="Cancel this job; nothing is changed or left behind">
-            Cancel
+      {activeJobCount > 0 && (
+        <span className="rescan-status">
+          <span>Jobs running</span>
+          <button className="link" onClick={() => onShowJobs?.()} title="Show the Jobs tab">
+            {activeJobCount}
           </button>
         </span>
-      ))}
+      )}
     </div>
   );
 }

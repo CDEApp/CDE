@@ -345,3 +345,15 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-row.different { --diff-tint: rgba(227, 168, 87, .20); }
 .diff-row.left-only, .diff-row.right-only { --diff-tint: rgba(86, 156, 214, .20); }
 .diff-row:hover { background: var(--row-hover); }
+
+.jobs-view { height: 100%; overflow: auto; }
+.jobs-table { width: 100%; table-layout: fixed; border-collapse: collapse; }
+.jobs-table th { text-align: left; padding: 3px 8px; border-bottom: 1px solid var(--border); position: sticky; top: 0; background: var(--panel); }
+.jobs-table td { padding: 3px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.jobs-table th:nth-child(1) { width: 28%; }
+.jobs-table th:nth-child(2) { width: 170px; }
+.jobs-table th:nth-child(4) { width: 90px; }
+.jobs-table th:nth-child(5) { width: 90px; }
+.jobs-table td button { padding: 0 8px; }
+.jobs-table tr.job-failed td:nth-child(4) { color: #f48771; }
+.jobs-table tr.job-cancelled td, .jobs-table tr.job-queued td:nth-child(2) { color: #8a8a8a; }

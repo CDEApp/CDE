@@ -35,19 +35,6 @@ export function validateFileName(name: string): string | null {
 }
 
 /**
- * The catalog a create just added, found by the exact `targetPath` the sidecar reported (preflight). The sidecar
- * builds a catalog's `sourcePath` from the same string, so no case or separator rules are guessed here: on a
- * case-sensitive file system `Foo.cdex` and `foo.cdex` are different files.
- */
-export function findCatalogByTarget<T extends { sourcePath: string | null }>(
-  catalogs: readonly T[],
-  targetPath: string | null,
-): T | undefined {
-  if (!targetPath) return undefined;
-  return catalogs.find((c) => c.sourcePath === targetPath);
-}
-
-/**
  * Whether a preflight answer describes the dialog as it is now: asked for this root AND this effective name.
  * Anything else (the root was just changed, the user kept typing) is stale and must not enable Create.
  */

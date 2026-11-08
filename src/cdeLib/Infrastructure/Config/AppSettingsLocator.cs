@@ -81,6 +81,9 @@ public sealed class AppSettingsLocator
             },
             "Scan": {
               "ExcludePaths": []
+            },
+            "Jobs": {
+              "MaxConcurrent": 3
             }
           },
           "Serilog": {

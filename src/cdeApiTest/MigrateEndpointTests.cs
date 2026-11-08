@@ -6,6 +6,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using cdeApi;
 using cdeAppCore;
+using cdeAppCore.Dtos;
+using cdeAppCore.Jobs;
 using cdeAppCore.Session;
 using cdeLib.Catalog;
 using cdeLib.Entities;
@@ -21,6 +23,7 @@ public class MigrateEndpointTests
     private string _dir;
     private string _data;
     private CatalogSession _session;
+    private JobRegistry _jobs;
 
     [SetUp]
     public void SetUp()
@@ -33,11 +36,13 @@ public class MigrateEndpointTests
         {
             LoadLegacyCatalogs = false
         };
+        _jobs = new JobRegistry(_session);
     }
 
     [TearDown]
     public void TearDown()
     {
+        _jobs.Dispose();
         _session.Dispose();
         Directory.Delete(_dir, recursive: true);
     }
@@ -63,7 +68,7 @@ public class MigrateEndpointTests
         await _session.LoadAsync(_dir);
         var (ctx, body) = TestCatalog.NewContext();
 
-        await MigrateEndpoint.HandleAsync(ctx, _session);
+        await MigrateEndpoint.HandleAsync(ctx, _session, _jobs);
 
         var events = TestCatalog.Events(TestCatalog.Text(body));
         var progress = events.Where(e => e.Event == "progress").Select(e => e.Data).ToList();
@@ -86,7 +91,7 @@ public class MigrateEndpointTests
         await _session.LoadAsync(_dir);
         var (ctx, body) = TestCatalog.NewContext();
 
-        await MigrateEndpoint.HandleAsync(ctx, _session);
+        await MigrateEndpoint.HandleAsync(ctx, _session, _jobs);
 
         var done = TestCatalog.Events(TestCatalog.Text(body)).Last();
         Assert.That(done.Data.GetProperty("migrated").GetInt32(), Is.EqualTo(1));
@@ -101,44 +106,31 @@ public class MigrateEndpointTests
         await _session.LoadAsync(_dir);
         var (ctx, body) = TestCatalog.NewContext();
 
-        await MigrateEndpoint.HandleAsync(ctx, _session);
+        await MigrateEndpoint.HandleAsync(ctx, _session, _jobs);
 
         Assert.That(ctx.Response.StatusCode, Is.EqualTo(422));
         Assert.That(Code(body), Is.EqualTo(MigrateEndpoint.NothingToMigrate));
     }
 
     [Test]
-    public async Task Migration_is_refused_while_another_catalog_job_runs()
+    public async Task Migration_is_refused_while_a_job_is_running_or_queued()
     {
         await WriteLegacyAsync("a.cde");
         TestCatalog.WriteCatalog(_data, Path.Combine(_dir, "b.cdex"));
         await _session.LoadAsync(_dir);
-        // Hold a read lease so the rescan waits at its final swap, keeping it running.
-        using var acquired = new ManualResetEventSlim();
-        using var release = new ManualResetEventSlim();
-        var holder = Task.Run(() =>
+        long id;
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
         {
-            using var lease = _session.AcquireRead(0);
-            acquired.Set();
-            release.Wait();
-        });
-        acquired.Wait();
-        var rescan = _session.RescanAsync(0);
-        while (!_session.AnyCatalogJobRunning) await Task.Delay(10);
-        var (ctx, body) = TestCatalog.NewContext();
+            id = _jobs.Submit(new JobSubmitRequest { Kind = JobKind.Rescan, CatalogId = 0 }).Job.Id;
+            var (ctx, body) = TestCatalog.NewContext();
 
-        try
-        {
-            await MigrateEndpoint.HandleAsync(ctx, _session);
+            await MigrateEndpoint.HandleAsync(ctx, _session, _jobs);
 
             Assert.That(ctx.Response.StatusCode, Is.EqualTo(409));
             Assert.That(Code(body), Is.EqualTo(MigrateEndpoint.Busy));
         }
-        finally
-        {
-            release.Set();
-            await holder;
-            await rescan.WaitAsync(TimeSpan.FromSeconds(10));
-        }
+
+        await TestCatalog.WaitForJob(_jobs, id, j => j.IsTerminal);
+        Assert.That(File.Exists(Path.Combine(_dir, "a.cde")), Is.True, "nothing was migrated");
     }
 }
