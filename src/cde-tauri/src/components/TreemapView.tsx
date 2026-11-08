@@ -23,8 +23,11 @@ import {
   mix,
   tileColor,
 } from "../treemapModel";
+import { DepthStepper } from "./DepthStepper";
 
-export const TREEMAP_DEPTHS = [1, 2, 3, 4, 5];
+/** TreemapService.MinDepth / MaxDepth. */
+export const TREEMAP_MIN_DEPTH = 1;
+export const TREEMAP_MAX_DEPTH = 5;
 
 interface Props {
   client: CdeApiClient;
@@ -281,14 +284,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
             Showing the largest {rows.length.toLocaleString()} items
           </span>
         )}
-        <label className="treemap-depth">
-          Depth
-          <select value={depth} onChange={(e) => onDepthChange(Number(e.target.value))}>
-            {TREEMAP_DEPTHS.map((d) => (
-              <option key={d} value={d}>{d}</option>
-            ))}
-          </select>
-        </label>
+        <DepthStepper value={depth} min={TREEMAP_MIN_DEPTH} max={TREEMAP_MAX_DEPTH} onChange={onDepthChange} />
         <button title="Re-fetch at the current size" onClick={() => setRefreshNonce((n) => n + 1)}>
           ⟳ Refresh
         </button>

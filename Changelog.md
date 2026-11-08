@@ -70,6 +70,8 @@
 - fix: On Linux, the text in a closed dropdown such as the TreeMap Depth is readable. The page now tells the web view
   that it is dark, so WebKitGTK draws dark dropdowns instead of light ones. On Windows, scrollbars and the date
   picker icon also follow the dark theme. (#249)
+- feature: The TreeMap Depth control is now − / + buttons around the value instead of a dropdown, and the mouse wheel
+  over it changes the depth (up is deeper). The range is still 1 to 5. (#257)
 
 ### Release
 
