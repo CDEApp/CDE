@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { DirectoryNode } from "../api/types";
 import { type DirectorySort, type SortColumn, sortDirectoryNodes } from "../directorySort";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
@@ -31,8 +31,8 @@ interface Props {
   columnWidths?: unknown;
   /** A column resize finished (or was reset): the full set of user-set widths to persist. */
   onColumnWidthsChange: (widths: ColumnWidths) => void;
-  /** Open the parent folder. When given, a ".." row leads the listing. */
-  onUp?: () => void;
+  /** Open the parent folder; resolves true once its listing is shown. When given, a ".." row leads the listing. */
+  onGoUp?: () => Promise<boolean>;
 }
 
 const PARENT_ROW = { parent: true } as const;
@@ -64,16 +64,11 @@ const KEY_STEP_LARGE = 50;
  * folder with tens of thousands of entries (e.g. C:\Windows\WinSxS) only mounts the rows on screen.
  */
 export function DirectoryList({
-  path, nodes, onActivate, onContextMenu, resolveStyle, sort, onSort, columnWidths, onColumnWidthsChange, onUp,
+  path, nodes, onActivate, onContextMenu, resolveStyle, sort, onSort, columnWidths, onColumnWidthsChange, onGoUp,
 }: Props) {
   const sorted = useMemo(() => sortDirectoryNodes(nodes, sort), [nodes, sort]);
-  const rows = useMemo<Row[]>(() => (onUp ? [PARENT_ROW, ...sorted] : sorted), [sorted, onUp]);
-  // Enter on ".." remounts the listing for the parent, which drops focus. Put it on the new ".." so
-  // Enter keeps going up. Cleared after the folder changes, so no other navigation takes focus.
-  const refocusParent = useRef(false);
-  useEffect(() => {
-    refocusParent.current = false;
-  }, [path]);
+  const rows = useMemo<Row[]>(() => (onGoUp ? [PARENT_ROW, ...sorted] : sorted), [sorted, onGoUp]);
+  const listRef = useRef<HTMLDivElement>(null);
   const [widths, setWidths] = useState<ColumnWidths>(() => normalizeColumnWidths(columnWidths));
   const template = gridTemplate(widths);
 
@@ -115,7 +110,7 @@ export function DirectoryList({
     onColumnWidthsChange(rest);
   }
   return (
-    <div className="dirlist">
+    <div className="dirlist" ref={listRef}>
       <div className="path-bar">{path}</div>
       {/* Keyed by folder, so a newly opened folder starts at the top rather than at the last one's offset. */}
       <VirtualList<Row>
@@ -173,21 +168,19 @@ export function DirectoryList({
         }
         renderRow={(n, _i, style) => {
           if (isParentRow(n)) {
-            const up = onUp!;
+            const goUp = onGoUp!;
             return (
               <div
                 key="parent"
-                ref={(el) => {
-                  if (el && refocusParent.current) el.focus();
-                }}
-                className="vlist-row"
+                className="vlist-row parent-row"
                 tabIndex={-1}
                 title="Up to the parent folder"
                 style={{ ...style, gridTemplateColumns: template }}
-                onDoubleClick={up}
-                onKeyDown={onEnter(() => {
-                  refocusParent.current = true;
-                  up();
+                onDoubleClick={() => void goUp()}
+                // Going up remounts the listing, which drops focus. Only when this go-up won (no newer
+                // navigation took over), move focus to the parent's ".." so Enter keeps going up.
+                onKeyDown={onEnter(async () => {
+                  if (await goUp()) listRef.current?.querySelector<HTMLElement>(".parent-row")?.focus();
                 })}
                 onContextMenu={(e) => e.preventDefault()}
               >

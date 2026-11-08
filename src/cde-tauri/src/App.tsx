@@ -701,7 +701,7 @@ export default function App() {
             onBackgroundContextMenu={treeBackgroundMenu}
             onSort={onDirSort}
             onActivate={activateDir}
-            onUp={canGoUp ? goUp : undefined}
+            onGoUp={canGoUp ? goUp : undefined}
             onListContextMenu={onListContextMenu}
           />
         </div>

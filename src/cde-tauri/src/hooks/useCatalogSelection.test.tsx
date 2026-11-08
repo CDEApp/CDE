@@ -167,7 +167,11 @@ describe("useCatalogSelection", () => {
   it("goUp opens the parent folder and expands the tree to it", async () => {
     const { result } = setup({ 0: [a], 1: [b], 2: [] });
     await act(() => result.current.selectNode(b.ref, b.fullPath));
-    await act(() => result.current.goUp());
+    let navigated = false;
+    await act(async () => {
+      navigated = await result.current.goUp();
+    });
+    expect(navigated).toBe(true);
     expect(result.current.selectedKey).toBe("1-1");
     expect(result.current.dirPath).toBe("/r/a");
     expect(result.current.dirNodes).toEqual([b]);
@@ -179,14 +183,14 @@ describe("useCatalogSelection", () => {
     const { result, client } = setup({ 0: [a], 1: [b], 2: [] });
     await act(() => result.current.selectNode(b.ref, b.fullPath));
     (client.path as ReturnType<typeof vi.fn>).mockImplementationOnce(() => new Promise((resolve) => (release = resolve)));
-    let up!: Promise<void>;
+    let up!: Promise<boolean>;
     act(() => {
       up = result.current.goUp();
     });
     await act(() => result.current.selectNode(root.ref, root.fullPath));
     await act(async () => {
       release([root, a, b]);
-      await up;
+      expect(await up).toBe(false);
     });
     expect(result.current.selectedKey).toBe("1-0");
   });

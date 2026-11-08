@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { DirectoryNode } from "../api/types";
 import { DEFAULT_SORT } from "../directorySort";
@@ -112,14 +112,14 @@ describe("DirectoryList parent row", () => {
     }) as DirectoryNode;
   const nodes = [entry(2, "sub", true, 10), entry(3, "z.txt", false, 99), entry(4, "aaa", true, 5)];
 
-  function renderList(onUp?: () => void, sort = DEFAULT_SORT, path = "/r/a") {
+  function renderList(onUp?: () => Promise<boolean>, sort = DEFAULT_SORT, path = "/r/a") {
     const onActivate = vi.fn();
     const onContextMenu = vi.fn();
     return { onActivate, onContextMenu, ...render(listElement(onUp, sort, path, onActivate, onContextMenu)) };
   }
 
   function listElement(
-    onUp: (() => void) | undefined,
+    onUp: (() => Promise<boolean>) | undefined,
     sort = DEFAULT_SORT,
     path = "/r/a",
     onActivate = vi.fn(),
@@ -133,7 +133,7 @@ describe("DirectoryList parent row", () => {
         onSort={vi.fn()}
         onActivate={onActivate}
         onContextMenu={onContextMenu}
-        onUp={onUp}
+        onGoUp={onUp}
         resolveStyle={() => undefined}
         onColumnWidthsChange={vi.fn()}
       />
@@ -158,25 +158,30 @@ describe("DirectoryList parent row", () => {
     ["double-click", (el: HTMLElement) => fireEvent.doubleClick(el)],
     ["Enter", (el: HTMLElement) => fireEvent.keyDown(el, { key: "Enter" })],
   ])("%s goes up", (_how, act) => {
-    const onUp = vi.fn();
+    const onUp = vi.fn(async () => true);
     const { onActivate } = renderList(onUp);
     act(rowNamed(".."));
     expect(onUp).toHaveBeenCalledOnce();
     expect(onActivate).not.toHaveBeenCalled();
   });
 
-  it("Enter keeps focus on the new listing's .. row, so Enter again goes up again", () => {
-    const onUp = vi.fn();
+  // Enter on ".." starts the go-up; the parent's listing renders, then the go-up settles.
+  async function enterThenNavigate(wentUp: boolean) {
+    let settle!: (navigated: boolean) => void;
+    const onUp = vi.fn(() => new Promise<boolean>((resolve) => (settle = resolve)));
     const { rerender } = renderList(onUp);
     fireEvent.keyDown(rowNamed(".."), { key: "Enter" });
-    rerender(listElement(onUp, DEFAULT_SORT, "/r"));
+    rerender(listElement(onUp, DEFAULT_SORT, "/r/b"));
+    await act(async () => settle(wentUp));
+  }
+
+  it("Enter puts focus on the parent listing's .. row, so Enter again goes up again", async () => {
+    await enterThenNavigate(true);
     expect(document.activeElement).toBe(rowNamed(".."));
   });
 
-  it("does not take focus when the folder changes some other way", () => {
-    const onUp = vi.fn();
-    const { rerender } = renderList(onUp);
-    rerender(listElement(onUp, DEFAULT_SORT, "/r/b"));
+  it("leaves focus alone when another navigation overtook the go-up", async () => {
+    await enterThenNavigate(false);
     expect(document.activeElement).toBe(document.body);
   });
 

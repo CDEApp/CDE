@@ -77,16 +77,16 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
     [getClient, selectNode, navGuard],
   );
 
-  // The listing's ".." row: open the parent of the selected folder.
-  const goUp = useCallback(async () => {
+  // The listing's ".." row: open the parent of the selected folder. False when a newer navigation won.
+  const goUp = useCallback(async (): Promise<boolean> => {
     const ref = selectedKeyRef.current ? parseRef(selectedKeyRef.current) : null;
-    if (!ref) return;
+    if (!ref) return false;
     const token = navGuard.begin();
     const chain = await getClient().path(ref);
-    if (!navGuard.isCurrent(token) || chain.length < 2) return;
+    if (!navGuard.isCurrent(token) || chain.length < 2) return false;
     const parent = chain[chain.length - 2];
     setExpandTo(chain.slice(0, -1).map((n) => n.ref));
-    await selectNode(parent.ref, parent.fullPath);
+    return selectNode(parent.ref, parent.fullPath);
   }, [getClient, selectNode, navGuard]);
 
   // view a search result in the directory tree (expand to its parent)
