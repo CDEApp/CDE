@@ -260,12 +260,9 @@ public sealed class RootEntry : object, ICommonEntry
             return string.Empty;
         }
 
-        var pathRoot = System.IO.Path.GetPathRoot(rootPath);
-        if (string.IsNullOrEmpty(pathRoot))
-            return string.Empty;
         try
         {
-            return _fileSystemAdapter.GetVolumeLabel(pathRoot);
+            return _fileSystemAdapter.GetVolumeLabel(rootPath);
         }
         catch (ArgumentException ex)
         {
