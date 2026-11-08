@@ -3,7 +3,7 @@ import { act, renderHook } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { CdeApiClient } from "../api/client";
 import type { CatalogsResponse, DirectoryNode, EntryRef } from "../api/types";
-import { parseRef, refsToPath, useCatalogSelection } from "./useCatalogSelection";
+import { folderChain, parseRef, useCatalogSelection } from "./useCatalogSelection";
 
 const { show } = vi.hoisted(() => ({ show: vi.fn() }));
 vi.mock("@mantine/notifications", () => ({ notifications: { show } }));
@@ -41,9 +41,16 @@ describe("ref helpers", () => {
     expect(parseRef("x-1")).toBeNull();
   });
 
-  it("refsToPath returns the root-to-entry ref chain", async () => {
+  it("folderChain returns the ref's root-to-entry chain while it still ends at the folder's path", async () => {
     const client = fakeClient({}, chains);
-    expect(await refsToPath(client, b.ref)).toEqual([root.ref, a.ref, b.ref]);
+    expect(await folderChain(client, b.ref, b.fullPath)).toEqual({ chain: [root, a, b], exact: true });
+    expect(client.catalogs).not.toHaveBeenCalled();
+  });
+
+  it("folderChain falls back to the nearest folder when a rescan replaced the folder with a file of the same name", async () => {
+    const bFile = node(1, 2, "b", "/r/a/b", false);
+    const client = fakeClient({ 0: [a], 1: [] }, { ...chains, 2: [root, a, bFile] });
+    expect(await folderChain(client, b.ref, b.fullPath)).toEqual({ chain: [root, a], exact: false });
   });
 });
 
@@ -76,10 +83,11 @@ describe("useCatalogSelection", () => {
   });
 
   it("restores the selection to the nearest surviving parent after a rescan removed it", async () => {
-    // After the rescan /r/a exists but /r/a/b is gone.
+    // After the rescan /r/a exists but /r/a/b is gone, and so is its old index.
     const { result, client } = setup({ 0: [a], 1: [] });
     await act(() => result.current.selectNode(b.ref, b.fullPath));
     const snapshot = result.current.snapshot();
+    (client.path as ReturnType<typeof vi.fn>).mockResolvedValueOnce([]);
 
     await act(() => result.current.restoreAfterRescan(client, 1, snapshot));
     expect(result.current.selectedKey).toBe("1-1");
@@ -91,12 +99,13 @@ describe("useCatalogSelection", () => {
     await act(() => result.current.selectNode(b.ref, b.fullPath));
     const snapshot = result.current.snapshot();
 
-    // Hold the restore at its first await, then let the user click the root before it resumes.
+    // Hold the restore at its first await (the old ref, whose index the rescan shifted), then let the
+    // user click the root before it resumes.
     let release!: () => void;
-    (client.catalogs as ReturnType<typeof vi.fn>).mockImplementationOnce(
+    (client.path as ReturnType<typeof vi.fn>).mockImplementationOnce(
       () =>
         new Promise((resolve) => {
-          release = () => resolve({ catalogs: [{ catalogId: 1, rootPath: "/r" }] });
+          release = () => resolve([]);
         }),
     );
     let restoring!: Promise<void>;
@@ -193,5 +202,101 @@ describe("useCatalogSelection", () => {
       expect(await up).toBe(false);
     });
     expect(result.current.selectedKey).toBe("1-0");
+  });
+});
+
+describe("navigation from refs a rescan made stale", () => {
+  // The rescanned file adds /r/x, so the indexes shift: /r/a is now 2 and /r/a/b is 3.
+  const x2 = node(1, 1, "x", "/r/x");
+  const a2 = node(1, 2, "a", "/r/a");
+  const b2 = node(1, 3, "b", "/r/a/b");
+  const rescanned = {
+    tree: { 0: [x2, a2], 1: [], 2: [b2], 3: [] } as Record<number, DirectoryNode[]>,
+    chains: { 0: [root], 1: [root, x2], 2: [root, a2], 3: [root, a2, b2] } as Record<number, DirectoryNode[]>,
+  };
+
+  // Select /r/a/b in the old file, then swap the sidecar's answers to the rescanned file's.
+  async function selectThenRescan() {
+    const tree: Record<number, DirectoryNode[]> = { 0: [a], 1: [b], 2: [] };
+    const liveChains: Record<number, DirectoryNode[]> = { ...chains };
+    const client = fakeClient(tree, liveChains);
+    const hook = renderHook(() => useCatalogSelection({ getClient: () => client, showDirectory: vi.fn() }));
+    await act(() => hook.result.current.selectNode(b.ref, b.fullPath));
+    for (const k of Object.keys(tree)) delete tree[Number(k)];
+    Object.assign(tree, rescanned.tree);
+    for (const k of Object.keys(liveChains)) delete liveChains[Number(k)];
+    Object.assign(liveChains, rescanned.chains);
+    return { ...hook, client };
+  }
+
+  it("goUp opens the parent of the folder on screen, found by its path", async () => {
+    const { result } = await selectThenRescan();
+    await act(() => result.current.goUp());
+    expect(result.current.dirPath).toBe("/r/a");
+    expect(result.current.selectedKey).toBe("1-2");
+    expect(result.current.dirNodes).toEqual([b2]);
+    expect(result.current.expandTo).toEqual([root.ref, a2.ref]);
+  });
+
+  it("activateDir opens the folder that was clicked, found by its path", async () => {
+    const { result } = await selectThenRescan();
+    await act(() => result.current.activateDir(b));
+    expect(result.current.selectedKey).toBe("1-3");
+    expect(result.current.dirPath).toBe("/r/a/b");
+    expect(result.current.dirNodes).toEqual([]);
+    expect(result.current.expandTo).toEqual([root.ref, a2.ref, b2.ref]);
+  });
+
+  it("activateDir on a folder the rescan removed opens its nearest surviving parent and says so", async () => {
+    const { result } = await selectThenRescan();
+    await act(() => result.current.activateDir(node(1, 2, "gone", "/r/a/gone")));
+    expect(result.current.dirPath).toBe("/r/a");
+    expect(result.current.selectedKey).toBe("1-2");
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Not found" }));
+  });
+
+  it("restoreAfterRescan finds the folder at its new index by path", async () => {
+    const { result, client } = await selectThenRescan();
+    await act(() => result.current.restoreAfterRescan(client, 1, { selectedKey: "1-2", dirPath: "/r/a/b" }));
+    expect(result.current.selectedKey).toBe("1-3");
+    expect(result.current.dirPath).toBe("/r/a/b");
+    expect(result.current.expandTo).toEqual([root.ref, a2.ref, b2.ref]);
+  });
+});
+
+describe("navigation errors", () => {
+  it.each([
+    ["goUp", (s: ReturnType<typeof useCatalogSelection>) => s.goUp()],
+    ["activateDir", (s: ReturnType<typeof useCatalogSelection>) => s.activateDir(a)],
+  ])("%s shows the error and keeps the selection when the sidecar call fails", async (_name, navigate) => {
+    const { result, client } = setup();
+    await act(() => result.current.selectNode(b.ref, b.fullPath));
+    (client.path as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("sidecar went away"));
+    await act(async () => {
+      await navigate(result.current);
+    });
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "sidecar went away" }));
+    expect(result.current.selectedKey).toBe("1-2");
+  });
+
+  it("a failed listing fetch shows the error and does not leave the old folder's rows under the new path", async () => {
+    const { result, client } = setup();
+    await act(() => result.current.selectNode(a.ref, a.fullPath));
+    (client.children as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("listing failed"));
+    let opened = true;
+    await act(async () => {
+      opened = await result.current.selectNode(root.ref, root.fullPath);
+    });
+    expect(opened).toBe(false);
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "listing failed" }));
+    expect(result.current.dirPath).toBe("/r");
+    expect(result.current.dirNodes).toEqual([]);
+  });
+
+  it("activateDir reports a listing fetch that fails after the folder was found", async () => {
+    const { result, client } = setup();
+    (client.children as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("listing failed"));
+    await act(() => result.current.activateDir(a));
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "listing failed" }));
   });
 });
