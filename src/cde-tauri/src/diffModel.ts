@@ -163,7 +163,7 @@ export const DIFF_FILTERS: Record<
   DiffFilterId,
   {
     label: string;
-    /** Shown on the Diffs toggle while this mode is the selected one. */
+    /** Shown on the Diffs toggle, after "Diff | ", while this mode is the selected one. */
     short: string;
     shows: (row: DiffRow) => boolean;
     belowMatches: (s: SubtreeSummary) => boolean;
@@ -173,7 +173,7 @@ export const DIFF_FILTERS: Record<
   same: { label: "Same", short: "Same", shows: (row) => row.status === "same", belowMatches: (s) => s.sameFiles + s.sameFolders > 0 },
   differences: {
     label: "Show Differences",
-    short: "Diffs",
+    short: "Differences",
     shows: (row) => row.status !== "same",
     belowMatches: (s) => s.differentFiles + s.differentFolders + s.leftOnly + s.rightOnly > 0,
   },
@@ -185,7 +185,7 @@ export const DIFF_FILTERS: Record<
   },
   differencesNoOrphans: {
     label: "Show Differences but No Orphans",
-    short: "Diffs, No Orphans",
+    short: "Differences, No Orphans",
     shows: (row) => row.status === "different",
     belowMatches: (s) => s.differentFiles + s.differentFolders > 0,
   },
