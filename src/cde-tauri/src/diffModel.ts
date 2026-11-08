@@ -161,44 +161,56 @@ const rightNewer = (row: DiffRow) =>
  */
 export const DIFF_FILTERS: Record<
   DiffFilterId,
-  { label: string; shows: (row: DiffRow) => boolean; belowMatches: (s: SubtreeSummary) => boolean }
+  {
+    label: string;
+    /** Shown on the Diffs toggle, after "Diff | ", while this mode is the selected one. */
+    short: string;
+    shows: (row: DiffRow) => boolean;
+    belowMatches: (s: SubtreeSummary) => boolean;
+  }
 > = {
-  all: { label: "All", shows: () => true, belowMatches: () => true },
-  same: { label: "Same", shows: (row) => row.status === "same", belowMatches: (s) => s.sameFiles + s.sameFolders > 0 },
+  all: { label: "All", short: "All", shows: () => true, belowMatches: () => true },
+  same: { label: "Same", short: "Same", shows: (row) => row.status === "same", belowMatches: (s) => s.sameFiles + s.sameFolders > 0 },
   differences: {
     label: "Show Differences",
+    short: "Differences",
     shows: (row) => row.status !== "same",
     belowMatches: (s) => s.differentFiles + s.differentFolders + s.leftOnly + s.rightOnly > 0,
   },
   noOrphans: {
     label: "Show No Orphans",
+    short: "No Orphans",
     shows: (row) => row.status === "same" || row.status === "different",
     belowMatches: (s) => s.sameFiles + s.differentFiles + s.sameFolders + s.differentFolders > 0,
   },
   differencesNoOrphans: {
     label: "Show Differences but No Orphans",
+    short: "Differences, No Orphans",
     shows: (row) => row.status === "different",
     belowMatches: (s) => s.differentFiles + s.differentFolders > 0,
   },
   orphans: {
     label: "Show Orphans",
+    short: "Orphans",
     shows: (row) => row.status === "left-only" || row.status === "right-only",
     belowMatches: (s) => s.leftOnly + s.rightOnly > 0,
   },
-  leftNewer: { label: "Show Left Newer", shows: leftNewer, belowMatches: (s) => s.leftNewerFiles + s.leftNewerFolders > 0 },
-  rightNewer: { label: "Show Right Newer", shows: rightNewer, belowMatches: (s) => s.rightNewerFiles + s.rightNewerFolders > 0 },
+  leftNewer: { label: "Show Left Newer", short: "Left Newer", shows: leftNewer, belowMatches: (s) => s.leftNewerFiles + s.leftNewerFolders > 0 },
+  rightNewer: { label: "Show Right Newer", short: "Right Newer", shows: rightNewer, belowMatches: (s) => s.rightNewerFiles + s.rightNewerFolders > 0 },
   leftNewerLeftOrphans: {
     label: "Show Left Newer and Left Orphans",
+    short: "Left Newer + Orphans",
     shows: (row) => leftNewer(row) || row.status === "left-only",
     belowMatches: (s) => s.leftNewerFiles + s.leftNewerFolders + s.leftOnly > 0,
   },
   rightNewerRightOrphans: {
     label: "Show Right Newer and Right Orphans",
+    short: "Right Newer + Orphans",
     shows: (row) => rightNewer(row) || row.status === "right-only",
     belowMatches: (s) => s.rightNewerFiles + s.rightNewerFolders + s.rightOnly > 0,
   },
-  leftOrphans: { label: "Show Left Orphans", shows: (row) => row.status === "left-only", belowMatches: (s) => s.leftOnly > 0 },
-  rightOrphans: { label: "Show Right Orphans", shows: (row) => row.status === "right-only", belowMatches: (s) => s.rightOnly > 0 },
+  leftOrphans: { label: "Show Left Orphans", short: "Left Orphans", shows: (row) => row.status === "left-only", belowMatches: (s) => s.leftOnly > 0 },
+  rightOrphans: { label: "Show Right Orphans", short: "Right Orphans", shows: (row) => row.status === "right-only", belowMatches: (s) => s.rightOnly > 0 },
 };
 
 /** The entries of the Diffs drop-down menu, in display order. */
