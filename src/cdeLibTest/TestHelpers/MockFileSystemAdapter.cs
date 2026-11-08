@@ -10,18 +10,21 @@ public class MockFileSystemAdapter : IFileSystemAdapter
     private readonly string _root;
     private readonly bool _isUnc;
     private readonly string _fullPath;
+    private readonly string _volumeLabel;
 
     public MockFileSystemAdapter(
         string root = @"C:\",
         bool isUnc = false,
         string fullPath = @"C:\",
-        bool isWindows = true
+        bool isWindows = true,
+        string volumeLabel = "Vol"
     )
     {
         _root = root;
         _isUnc = isUnc;
         _fullPath = fullPath;
         IsWindows = isWindows;
+        _volumeLabel = volumeLabel;
     }
 
     public bool IsWindows { get; }
@@ -40,4 +43,6 @@ public class MockFileSystemAdapter : IFileSystemAdapter
     {
         return _root;
     }
+
+    public string GetVolumeLabel(string rootPath) => _volumeLabel;
 }

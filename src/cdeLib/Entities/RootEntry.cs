@@ -152,10 +152,19 @@ public sealed class RootEntry : object, ICommonEntry
         SetSummaryFields();
     }
 
-    public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot)
+    public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot) =>
+        GetDefaultFileName(scanPath, out hint, out volumeRoot, out _);
+
+    /// <summary>
+    /// The default catalog file name (<c>.cde</c>) for <paramref name="scanPath"/>. On Windows it is
+    /// <c>{hint}-{volume}</c> for a volume root and <c>{hint}-{volume}-{safePath}</c> for a folder, leaving out an empty
+    /// volume label and its dash (#251). <paramref name="legacyName"/> is the name builds before #251 gave the same
+    /// path (<c>C-.cde</c>, <c>C--C__x.cde</c>), or null when it is the same name.
+    /// </summary>
+    public string GetDefaultFileName(string scanPath, out string hint, out string volumeRoot, out string legacyName)
     {
         const string ext = ".cde";
-        string fileName;
+        legacyName = null;
         volumeRoot = GetDirectoryRoot(scanPath);
         if (!_fileSystemAdapter.IsWindows)
         {
@@ -164,28 +173,37 @@ public sealed class RootEntry : object, ICommonEntry
             return hint + ext;
         }
 
-        var volumeName = GetVolumeName(volumeRoot);
         hint = GetDriverLetterHint(scanPath, volumeRoot);
         var filenameSafePath = SafeFileName(scanPath);
         if (IsUnc(scanPath))
         {
             // Use Span slicing instead of Substring to avoid allocation
-            fileName = $"{hint}-{filenameSafePath.AsSpan(2)}{ext}";
-        }
-        else
-        {
-            // ReSharper disable once ConvertIfStatementToConditionalTernaryExpression
-            if (volumeRoot == scanPath)
-            {
-                fileName = $"{hint}-{volumeName}{ext}";
-            }
-            else
-            {
-                fileName = $"{hint}-{volumeName}-{filenameSafePath}{ext}";
-            }
+            return $"{hint}-{filenameSafePath.AsSpan(2)}{ext}";
         }
 
-        return fileName;
+        var volumeName = GetVolumeName(volumeRoot);
+        var isRoot = volumeRoot == scanPath;
+        if (string.IsNullOrEmpty(volumeName))
+        {
+            legacyName = isRoot ? $"{hint}-{ext}" : $"{hint}--{filenameSafePath}{ext}";
+            return isRoot ? $"{hint}{ext}" : $"{hint}-{filenameSafePath}{ext}";
+        }
+
+        return isRoot ? $"{hint}-{volumeName}{ext}" : $"{hint}-{volumeName}-{filenameSafePath}{ext}";
+    }
+
+    /// <summary>
+    /// The <c>.cdex</c> a scan of <see cref="DirEntry.Path"/> writes: the default name, unless only a catalog under the name
+    /// builds before #251 gave an unlabelled volume exists. Then that one is kept, so its hashes are reused and the
+    /// scan does not leave a second catalog of the same root.
+    /// </summary>
+    public string ScanCatalogFileName()
+    {
+        var cdexName = System.IO.Path.ChangeExtension(DefaultFileName, ".cdex");
+        GetDefaultFileName(Path, out _, out _, out var legacyName);
+        if (legacyName == null || File.Exists(cdexName)) return cdexName;
+        var legacyCdex = System.IO.Path.ChangeExtension(legacyName, ".cdex");
+        return File.Exists(legacyCdex) ? legacyCdex : cdexName;
     }
 
     #region File system operations (delegated to adapter for testability)
@@ -247,8 +265,7 @@ public sealed class RootEntry : object, ICommonEntry
             return string.Empty;
         try
         {
-            var driveInfo = new DriveInfo(pathRoot);
-            return driveInfo.VolumeLabel;
+            return _fileSystemAdapter.GetVolumeLabel(pathRoot);
         }
         catch (ArgumentException ex)
         {
@@ -1165,4 +1182,4 @@ public sealed class RootEntry : object, ICommonEntry
         // Not high priority as will not generally be able to specify a folder with a problem path at or above root.
         return !string.IsNullOrEmpty(Path) && (Path.EndsWith(' ') || Path.EndsWith('.'));
     }
-}
+}

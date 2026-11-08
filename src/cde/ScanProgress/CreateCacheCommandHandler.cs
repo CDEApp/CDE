@@ -63,7 +63,7 @@ public class CreateCacheCommandHandler : IRequestHandler<CreateCacheCommand>
                 return;
             }
 
-            var cdexName = Path.ChangeExtension(re.DefaultFileName, ".cdex");
+            var cdexName = re.ScanCatalogFileName();
             ReuseHashesFromExistingCatalog(re, cdexName);
 
             re.SortAllChildrenByPath();

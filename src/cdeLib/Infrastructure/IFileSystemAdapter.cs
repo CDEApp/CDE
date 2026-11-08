@@ -14,4 +14,7 @@ public interface IFileSystemAdapter
     /// scan path on Linux and macOS), so the platform comes from here and a test can pick either.
     /// </summary>
     bool IsWindows { get; }
+
+    /// <summary>The label of the volume at <paramref name="rootPath"/> (a Windows drive root); empty when it has none.</summary>
+    string GetVolumeLabel(string rootPath);
 }
