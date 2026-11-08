@@ -319,8 +319,16 @@ tbody tr:hover { background: var(--row-hover); }
 .diff-sides { border-bottom: 1px solid var(--border); }
 .diff-side { display: grid; grid-template-columns: max-content minmax(0, 1fr); align-items: center; align-content: start; gap: 3px 8px; padding: 4px 8px; min-width: 0; }
 .diff-field-label { color: #9a9a9a; }
-.diff-side + .diff-side { border-left: 1px solid var(--border); }
+.diff-side ~ .diff-side { border-left: 1px solid var(--border); }
 .diff-side input { width: 100%; padding: 3px 6px; min-width: 0; }
+.diff-base { display: flex; gap: 4px; min-width: 0; }
+.diff-base button { padding: 0 7px; }
+/* The ← / → copy buttons sit on the divider between the two sides; each side leaves room for them. */
+.diff-sides { position: relative; }
+.diff-sides > .diff-side:first-child { padding-right: 22px; }
+.diff-sides > .diff-side:last-child { padding-left: 22px; }
+.diff-copy { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); display: flex; flex-direction: column; gap: 2px; z-index: 1; }
+.diff-copy button { padding: 0 5px; line-height: 1.3; }
 .catalog-select { position: relative; min-width: 0; }
 .catalog-select-button { display: flex; align-items: center; gap: 6px; width: 100%; min-width: 0; padding: 3px 6px; text-align: left; background: #333; color: var(--fg); border: 1px solid var(--border); }
 .catalog-select-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

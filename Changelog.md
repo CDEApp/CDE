@@ -76,6 +76,10 @@
   shadow, so it is easy to see on light and dark tiles. The small white dot is still shown. (#253)
 - feature: In Compare, the Diffs toggle shows the mode picked from its ▾ menu, such as `Diff | Left Orphans` or
   `Diff | Differences, No Orphans`, instead of always `Diffs`. The full name is still in the tooltip. (#252)
+- feature: In Compare, an ↑ button beside each Base field moves that side up one folder (greyed out at the catalog
+  root). The → and ← buttons between the two sides copy one side's Base path to the other, which keeps its own
+  catalog, so the same folder in an old and a new scan is one click away. A side with no catalog takes the other's
+  catalog too. (#255)
 
 ### Release
 

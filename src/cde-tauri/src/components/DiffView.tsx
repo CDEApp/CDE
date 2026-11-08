@@ -10,6 +10,7 @@ import {
   type DiffFilterId,
   type DiffRow,
   flattenVisible,
+  parentBasePath,
   relativeSegments,
 } from "../diffModel";
 import { catalogFile, fileBaseName, formatDate, sizeCell, sizeTitle } from "../format";
@@ -59,6 +60,11 @@ interface Side {
   selectCatalog: (catalogId: number | null) => void;
   applyPath: () => void;
   setRoot: (node: DirectoryNode) => void;
+  /** The Base one folder up, or null at the catalog root (or when the typed path is not in the catalog). */
+  parentPath: string | null;
+  up: () => void;
+  /** Take the other side's Base path, and its catalog too when this side has none. */
+  copyFrom: (other: { catalogId: number | null; pathText: string }) => void;
 }
 
 function useSide(client: CdeApiClient, catalogs: CatalogInfo[]): Side {
@@ -80,21 +86,46 @@ function useSide(client: CdeApiClient, catalogs: CatalogInfo[]): Side {
     [catalogs, guard],
   );
 
-  const applyPath = useCallback(() => {
-    const catalog = catalogs.find((c) => c.catalogId === catalogId);
-    if (!catalog) return;
-    const token = guard.begin();
-    resolveFolder(client, catalog, pathText).then(
-      (next) => {
-        if (!guard.isCurrent(token)) return;
-        setError(null);
-        setRef((prev) => (sameRef(prev, next) ? prev : next));
-      },
-      (e: unknown) => {
-        if (guard.isCurrent(token)) setError(e instanceof Error ? e.message : String(e));
-      },
-    );
-  }, [catalogs, catalogId, client, guard, pathText]);
+  const resolve = useCallback(
+    (id: number | null, text: string) => {
+      const catalog = catalogs.find((c) => c.catalogId === id);
+      if (!catalog) return;
+      const token = guard.begin();
+      resolveFolder(client, catalog, text).then(
+        (next) => {
+          if (!guard.isCurrent(token)) return;
+          setError(null);
+          setRef((prev) => (sameRef(prev, next) ? prev : next));
+        },
+        (e: unknown) => {
+          if (guard.isCurrent(token)) setError(e instanceof Error ? e.message : String(e));
+        },
+      );
+    },
+    [catalogs, client, guard],
+  );
+
+  const applyPath = useCallback(() => resolve(catalogId, pathText), [resolve, catalogId, pathText]);
+
+  const catalog = catalogs.find((c) => c.catalogId === catalogId);
+  const parentPath = catalog ? parentBasePath(catalog.rootPath, pathText) : null;
+
+  const up = useCallback(() => {
+    if (parentPath === null) return;
+    setPathText(parentPath);
+    resolve(catalogId, parentPath);
+  }, [resolve, catalogId, parentPath]);
+
+  const copyFrom = useCallback(
+    (other: { catalogId: number | null; pathText: string }) => {
+      if (other.catalogId === null) return;
+      const id = catalogId ?? other.catalogId;
+      setCatalogId(id);
+      setPathText(other.pathText);
+      resolve(id, other.pathText);
+    },
+    [resolve, catalogId],
+  );
 
   const setRoot = useCallback(
     (node: DirectoryNode) => {
@@ -106,7 +137,7 @@ function useSide(client: CdeApiClient, catalogs: CatalogInfo[]): Side {
     [guard],
   );
 
-  return { catalogId, pathText, error, ref, setPathText, selectCatalog, applyPath, setRoot };
+  return { catalogId, pathText, error, ref, setPathText, selectCatalog, applyPath, setRoot, parentPath, up, copyFrom };
 }
 
 /** Dropdown order: the catalogs' on-disk file names, ascending (case-insensitive). */
@@ -122,19 +153,30 @@ function SideHeader({ side, catalogs, label }: { side: Side; catalogs: CatalogIn
       <span className="diff-field-label" aria-hidden="true">Catalog</span>
       <CatalogSelect label={label} catalogs={sortByFileName(catalogs)} value={side.catalogId} onChange={side.selectCatalog} />
       <label className="diff-field-label" htmlFor={pathId}>Base</label>
-      <input
-        id={pathId}
-        aria-label={`${label} path`}
-        className={side.error ? "invalid" : undefined}
-        value={side.pathText}
-        disabled={side.catalogId === null}
-        spellCheck={false}
-        onChange={(e) => side.setPathText(e.target.value)}
-        onBlur={side.applyPath}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") side.applyPath();
-        }}
-      />
+      <div className="diff-base">
+        <input
+          id={pathId}
+          aria-label={`${label} path`}
+          className={side.error ? "invalid" : undefined}
+          value={side.pathText}
+          disabled={side.catalogId === null}
+          spellCheck={false}
+          onChange={(e) => side.setPathText(e.target.value)}
+          onBlur={side.applyPath}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") side.applyPath();
+          }}
+        />
+        <button
+          type="button"
+          aria-label={`${label} base up`}
+          title="Up one folder"
+          disabled={side.parentPath === null}
+          onClick={side.up}
+        >
+          ↑
+        </button>
+      </div>
       {side.error && <div className="diff-error" role="alert">{side.error}</div>}
     </div>
   );
@@ -371,6 +413,26 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
       <ContextMenu menu={menu} onClose={closeMenu} />
       <div className="diff-sides">
         <SideHeader side={left} catalogs={catalogs} label="Left" />
+        <div className="diff-copy">
+          <button
+            type="button"
+            aria-label="Copy left base to right"
+            title="Copy the left Base path to the right side (and the catalog, if the right has none)"
+            disabled={left.catalogId === null}
+            onClick={() => right.copyFrom(left)}
+          >
+            →
+          </button>
+          <button
+            type="button"
+            aria-label="Copy right base to left"
+            title="Copy the right Base path to the left side (and the catalog, if the left has none)"
+            disabled={right.catalogId === null}
+            onClick={() => left.copyFrom(right)}
+          >
+            ←
+          </button>
+        </div>
         <SideHeader side={right} catalogs={catalogs} label="Right" />
       </div>
       {loadError && <div className="diff-error" role="alert">{loadError}</div>}

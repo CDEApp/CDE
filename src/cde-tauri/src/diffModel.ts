@@ -1,4 +1,5 @@
 import type { DirectoryNode, SubtreeSummary } from "./api/types";
+import { pathSeparatorOf } from "./format";
 
 export type DiffStatus = "same" | "different" | "left-only" | "right-only";
 
@@ -276,6 +277,18 @@ export function flattenVisible(
  * The folder names from `rootPath` down to `path`, or null when `path` is not at or below the root.
  * Accepts `/` or `\`, ignores empty segments and compares case-insensitively.
  */
+/**
+ * The Base one folder up from `path` in a catalog rooted at `rootPath`: the catalog root itself (as written) for a
+ * folder just below it. Null when `path` is the root or is not inside the catalog, so there is nothing to go up to.
+ */
+export function parentBasePath(rootPath: string, path: string): string | null {
+  const segments = relativeSegments(rootPath, path);
+  if (!segments || segments.length === 0) return null;
+  if (segments.length === 1) return rootPath;
+  const sep = pathSeparatorOf(rootPath);
+  return rootPath.replace(/[\\/]+$/, "") + sep + segments.slice(0, -1).join(sep);
+}
+
 export function relativeSegments(rootPath: string, path: string): string[] | null {
   const split = (p: string) => p.split(/[\\/]+/).filter((s) => s !== "");
   const root = split(rootPath);
