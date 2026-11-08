@@ -142,7 +142,7 @@ describe("DiffView", () => {
     expect(screen.getByRole("button", { name: "Same" }).getAttribute("aria-pressed")).toBe("true");
   });
 
-  it("applies a filter picked from the Diffs menu and keeps Diffs active", async () => {
+  it("applies a filter picked from the Diffs menu, keeps the toggle active and names the mode on it", async () => {
     await setup();
     fireEvent.click(screen.getByRole("button", { name: "Diffs options" }));
     const entries = screen.getAllByRole("listitem").map((li) => li.textContent!.replace(/^[✓ \s]+/, ""));
@@ -152,7 +152,8 @@ describe("DiffView", () => {
     expect(dataRows()).toHaveLength(2);
     expect(rowOf("docs")).toBeTruthy();
     expect(rowOf("only-left.txt").className).toContain("left-only");
-    const diffs = screen.getByRole("button", { name: "Diffs" });
+    const diffs = screen.getByRole("button", { name: "Left Orphans" });
+    expect(screen.queryByRole("button", { name: "Diffs" })).toBeNull();
     expect(diffs.getAttribute("aria-pressed")).toBe("true");
     expect(diffs.title).toBe("Show Left Orphans");
     expect(screen.queryAllByRole("listitem")).toHaveLength(0);

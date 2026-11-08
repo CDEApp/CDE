@@ -339,7 +339,7 @@ export function DiffView({ client, catalogs, resolveStyle, onExplore }: Props) {
             title={DIFF_FILTERS[diffFilter].label}
             onClick={() => setFilter(diffFilter)}
           >
-            Diffs
+            {DIFF_FILTERS[diffFilter].short}
           </button>
           <button
             type="button"

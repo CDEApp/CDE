@@ -306,6 +306,13 @@ describe("DIFF_FILTERS.belowMatches", () => {
 });
 
 describe("DIFF_FILTERS", () => {
+  it("gives every Diffs menu mode its own short name, with Diffs for plain differences", () => {
+    const shorts = DIFF_MENU_FILTERS.map((id) => DIFF_FILTERS[id].short);
+    expect(new Set(shorts).size).toBe(DIFF_MENU_FILTERS.length);
+    expect(DIFF_FILTERS.differences.short).toBe("Diffs");
+    expect(DIFF_FILTERS.differencesNoOrphans.short).toBe("Diffs, No Orphans");
+  });
+
   const T0 = "2024-01-01T10:00:00Z";
   const T1 = "2024-01-01T11:00:00Z";
   const rows = alignChildren(
