@@ -69,8 +69,8 @@ import {
   type ViewKind,
 } from "./viewState";
 import {
+  catalogMenu,
   collapseAllItem,
-  editDescriptionItem,
   entryMenu,
   listMenu,
   rescanItem as rescanMenuEntry,
@@ -695,7 +695,7 @@ export default function App() {
             onColumnWidthsChange={onCatalogColumnWidthsChange}
             onNewCatalog={() => void pickNewRoot()}
             onContextMenu={(c, x, y) =>
-              setMenu({ x, y, items: [editDescriptionItem(() => setEditingDescription(c)), rescanItem(c.catalogId)] })
+              setMenu({ x, y, items: catalogMenu(c.catalogId, showTreemap, () => setEditingDescription(c), rescanItem(c.catalogId)) })
             }
             onActivate={(c: CatalogInfo) => {
               showDirectory();
