@@ -4,7 +4,7 @@ import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, ShellError } from "./api/client";
-import { activeCatalogIds, activeCount, anyActive, loadBlockedReason, sortedJobs, statusLines } from "./jobsModel";
+import { activeCatalogIds, activeCount, loadBlockedReason, sortedJobs, statusLines } from "./jobsModel";
 import { NewCatalogDialog } from "./components/NewCatalogDialog";
 import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
@@ -253,7 +253,7 @@ export default function App() {
     (catalogId: number, rootPath: string) => openRoot({ catalogId, entryIndex: 0 }, rootPath),
     [openRoot],
   );
-  const { model: jobs, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished } =
+  const { model: jobs, busy: jobsBusy, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished } =
     useJobs({
       getClient,
       sidecarReady: ready,
@@ -261,12 +261,12 @@ export default function App() {
       refreshCatalogs,
       openCatalog: openNewRoot,
     });
-  const jobsRef = useRef(jobs);
-  jobsRef.current = jobs;
+  const jobsBusyRef = useRef(jobsBusy);
+  jobsBusyRef.current = jobsBusy;
 
   const reloadCatalogs = useCallback(
     async (dir?: string | null) => {
-      if (anyActive(jobsRef.current)) return;
+      if (jobsBusyRef.current) return;
       const client = clientRef.current!;
       setStatus("Loading catalogs…");
       // Reset BEFORE the call, so it also happens when the reload fails part-way (the sidecar may
@@ -321,7 +321,7 @@ export default function App() {
 
   // File ▸ Open Folder… — native folder picker, then load .cdex catalogs from it.
   const openFolder = useCallback(async () => {
-    if (anyActive(jobsRef.current)) return;
+    if (jobsBusyRef.current) return;
     const picked = await open({ directory: true, multiple: false, title: "Select catalog folder" });
     if (typeof picked !== "string") return; // cancelled
     setCatalogDir(picked);
@@ -491,7 +491,7 @@ export default function App() {
   }
 
   const { selectedKey, revealKey, revealNonce, expandTo, dirPath, dirNodes } = selection;
-  const loadBlockedReasonText = loadBlockedReason(jobs);
+  const loadBlockedReasonText = loadBlockedReason(jobsBusy);
   const staleBanner = staleBannerFor((id) => {
     const c = catalogs?.catalogs.find((x) => x.catalogId === id);
     return c ? c.rootPath : `#${id}`;
@@ -736,8 +736,8 @@ export default function App() {
         legacy={catalogs?.legacyCatalogs ?? []}
         folder={catalogs?.catalogDir ?? ""}
         blockedReason={
-          anyActive(jobs)
-            ? "Unavailable while catalog jobs are queued or running; try again when they finish."
+          jobsBusy
+            ? "Unavailable while catalog jobs are queued, running or finishing; try again when they finish."
             : null
         }
         client={clientRef.current}

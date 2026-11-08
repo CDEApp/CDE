@@ -127,6 +127,29 @@ describe("useJobs completion handling", () => {
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Catalog created", color: "green" }));
   });
 
+  it("stays busy until a finished rescan's view refresh completes", async () => {
+    const t = setup();
+    let release!: () => void;
+    t.afterRescan.mockReturnValueOnce(new Promise<void>((r) => (release = r)));
+    await t.snapshot([job(1)]);
+    expect(t.result.current.busy).toBe(true);
+    await t.event(done(1));
+    expect(t.result.current.busy).toBe(true);
+    await act(async () => release());
+    expect(t.result.current.busy).toBe(false);
+  });
+
+  it("stays busy until a finished create's catalog refresh completes", async () => {
+    const t = setup();
+    let release!: () => void;
+    t.refreshCatalogs.mockReturnValueOnce(new Promise((r) => (release = () => r({}))));
+    await t.snapshot([job(5, { kind: "create" })]);
+    await t.event(done(5, { kind: "create" }));
+    expect(t.result.current.busy).toBe(true);
+    await act(async () => release());
+    expect(t.result.current.busy).toBe(false);
+  });
+
   it("toasts a failed job and leaves the views alone", async () => {
     const t = setup();
     await t.snapshot([]);
@@ -242,6 +265,23 @@ describe("useJobs actions", () => {
     expect([...t.result.current.model.jobs.keys()]).toEqual([1, 3]);
     await act(() => t.result.current.clearFinished());
     expect(t.client.clearFinishedJobs).toHaveBeenCalledOnce();
+    expect([...t.result.current.model.jobs.keys()]).toEqual([1]);
+  });
+
+  it("clear finished keeps a job that finished while the request was in flight", async () => {
+    const t = setup();
+    await t.snapshot([job(1), done(2)]);
+    let release!: () => void;
+    t.client.clearFinishedJobs.mockReturnValueOnce(new Promise<void>((r) => (release = r)));
+    let pending!: Promise<unknown>;
+    act(() => {
+      pending = t.result.current.clearFinished();
+    });
+    await t.event(done(1));
+    await act(async () => {
+      release();
+      await pending;
+    });
     expect([...t.result.current.model.jobs.keys()]).toEqual([1]);
   });
 

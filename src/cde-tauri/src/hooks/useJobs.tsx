@@ -8,9 +8,10 @@ import {
   applySnapshot,
   emptyJobs,
   addIfUnknown,
+  anyActive,
   isActive,
   isFromEarlierSession,
-  removeFinished,
+  removeJobs,
   removeJob,
   type JobsModel,
 } from "../jobsModel";
@@ -127,6 +128,7 @@ export function useJobs({
 }: UseJobsOptions) {
   const [model, setModel] = useState<JobsModel>(emptyJobs);
   const [unreachableRoot, setUnreachableRoot] = useState<string | null>(null);
+  const [completing, setCompleting] = useState(0);
   const modelRef = useRef(model);
   const handled = useRef(new Set<number>());
   const submitted = useRef(new Set<number>());
@@ -147,7 +149,10 @@ export function useJobs({
       handled.current.add(job.id);
       if (job.state === "succeeded" && job.result) {
         const announce = job.kind === "rescan" ? announceRescan : announceCreate;
-        void announce(getClient(), job, latestCallbacks.current).catch((e) => console.error("job completion handling failed", e));
+        setCompleting((n) => n + 1);
+        void announce(getClient(), job, latestCallbacks.current)
+          .catch((e) => console.error("job completion handling failed", e))
+          .finally(() => setCompleting((n) => n - 1));
       } else if (job.state === "failed") {
         announceFailure(job, setUnreachableRoot);
       } else if (job.state === "cancelled") {
@@ -242,13 +247,17 @@ export function useJobs({
   const clearFinished = useCallback(
     () =>
       guarded("clear finished jobs", async (c) => {
+        const finished = [...modelRef.current.jobs.values()].filter((j) => !isActive(j.state)).map((j) => j.id);
         await c.clearFinishedJobs();
-        update(removeFinished(modelRef.current));
+        update(removeJobs(modelRef.current, finished));
       }),
     [guarded, update],
   );
 
   const clearUnreachable = useCallback(() => setUnreachableRoot(null), []);
 
-  return { model, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished };
+  // A finished job's refresh still writes the catalog list and selection, so a reload must wait for it too.
+  const busy = anyActive(model) || completing > 0;
+
+  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished };
 }

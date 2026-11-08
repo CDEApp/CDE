@@ -10,7 +10,7 @@ import {
   isFromEarlierSession,
   loadBlockedReason,
   progressNote,
-  removeFinished,
+  removeJobs,
   removeJob,
   rescanMenuItem,
   sortedJobs,
@@ -67,16 +67,16 @@ describe("reducer", () => {
     expect(isFromEarlierSession(job(3, { state: "running" }), submitted)).toBe(false);
   });
 
-  it("removes one job, or every finished job", () => {
+  it("removes one job, or a set of jobs", () => {
     let m = applySnapshot({
       jobs: [job(1, { state: "running" }), job(2, { state: "failed" }), job(3, { state: "cancelled" })],
       maxConcurrent: 2,
     });
     expect([...removeJob(m, 2).jobs.keys()]).toEqual([1, 3]);
     expect(removeJob(m, 99)).toBe(m);
-    m = removeFinished(m);
+    m = removeJobs(m, [2, 3]);
     expect([...m.jobs.keys()]).toEqual([1]);
-    expect(removeFinished(m)).toBe(m);
+    expect(removeJobs(m, [2, 99])).toBe(m);
   });
 });
 
@@ -110,9 +110,8 @@ describe("views", () => {
   });
 
   it("blocks load while anything is queued or running, with a reason", () => {
-    expect(loadBlockedReason(emptyJobs)).toBeNull();
-    expect(loadBlockedReason(applyJob(emptyJobs, job(1, { state: "queued" })))).toMatch(/queued or running/);
-    expect(loadBlockedReason(applyJob(emptyJobs, job(1, { state: "succeeded" })))).toBeNull();
+    expect(loadBlockedReason(false)).toBeNull();
+    expect(loadBlockedReason(true)).toMatch(/queued, running or finishing/);
   });
 
   it("disables Rescan only for a catalog with an active job", () => {

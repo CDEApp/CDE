@@ -47,8 +47,9 @@ export function removeJob(model: JobsModel, id: number): JobsModel {
   return { ...model, jobs };
 }
 
-export function removeFinished(model: JobsModel): JobsModel {
-  const jobs = new Map([...model.jobs].filter(([, j]) => isActive(j.state)));
+export function removeJobs(model: JobsModel, ids: Iterable<number>): JobsModel {
+  const jobs = new Map(model.jobs);
+  for (const id of ids) jobs.delete(id);
   return jobs.size === model.jobs.size ? model : { ...model, jobs };
 }
 
@@ -109,9 +110,9 @@ export function rescanMenuItem(
     : { label: "Rescan", disabled: false };
 }
 
-export function loadBlockedReason(model: JobsModel): string | null {
-  return anyActive(model)
-    ? "Unavailable while catalog jobs are queued or running (reloading would drop the catalogs they are changing)"
+export function loadBlockedReason(jobsBusy: boolean): string | null {
+  return jobsBusy
+    ? "Unavailable while catalog jobs are queued, running or finishing (reloading would drop the catalogs they are changing)"
     : null;
 }
 
