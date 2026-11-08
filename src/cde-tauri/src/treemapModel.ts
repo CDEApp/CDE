@@ -24,6 +24,11 @@ export function joinPath(base: string, name: string): string {
   return base.endsWith(sep) ? base + name : base + sep + name;
 }
 
+/** A folder's name or path with a trailing `sep`, so folders read apart from files; anything else is unchanged. */
+export function folderLabel(text: string, isDirectory: boolean, sep: string): string {
+  return isDirectory && !text.endsWith(sep) ? text + sep : text;
+}
+
 /** The minimal node shape these helpers need (a subset of TanStack's TreemapNode). */
 export interface MapNode {
   id: string;

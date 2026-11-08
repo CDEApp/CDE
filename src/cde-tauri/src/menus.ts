@@ -84,6 +84,19 @@ export function listMenu(ctx: EntryMenuContext, node: DirectoryNode): MenuItem[]
   return entryMenu(ctx, { ref: node.ref, fullPath: node.fullPath, isDirectory: node.isDirectory });
 }
 
+export function catalogMenu(
+  catalogId: number,
+  showTreemap: (ref: EntryRef) => void,
+  onEditDescription: () => void,
+  rescan: MenuItem,
+): MenuItem[] {
+  return [
+    { label: "Show TreeMap", onClick: () => showTreemap({ catalogId, entryIndex: 0 }) },
+    editDescriptionItem(onEditDescription),
+    rescan,
+  ];
+}
+
 export function treeBackgroundMenu(
   selected: EntryRef | null,
   showTreemap: (ref: EntryRef) => void,

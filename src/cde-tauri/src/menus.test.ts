@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  catalogMenu,
   collapseAllItem,
   editDescriptionItem,
   entryMenu,
@@ -110,6 +111,27 @@ describe("listMenu", () => {
 
   it("never offers Collapse all", () => {
     expect(labels(listMenu(context(), node(true)))).not.toContain("Collapse all");
+  });
+});
+
+describe("catalogMenu", () => {
+  it("offers Show TreeMap, Edit Description… and the rescan item, in that order", () => {
+    const rescan = { label: "Rescan", onClick: () => {} };
+    const items = catalogMenu(7, vi.fn(), vi.fn(), rescan);
+    expect(labels(items)).toEqual(["Show TreeMap", "Edit Description…", "Rescan"]);
+    expect(items[2]).toBe(rescan);
+  });
+
+  it("Show TreeMap maps the catalog's root", () => {
+    const showTreemap = vi.fn();
+    catalogMenu(7, showTreemap, vi.fn(), { label: "Rescan", onClick: () => {} })[0].onClick();
+    expect(showTreemap).toHaveBeenCalledWith({ catalogId: 7, entryIndex: 0 });
+  });
+
+  it("Edit Description… runs the handler", () => {
+    const onEdit = vi.fn();
+    catalogMenu(7, vi.fn(), onEdit, { label: "Rescan", onClick: () => {} })[1].onClick();
+    expect(onEdit).toHaveBeenCalledOnce();
   });
 });
 

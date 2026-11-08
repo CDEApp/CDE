@@ -12,7 +12,7 @@ vi.mock("@tanstack/charts/react", () => ({
     <div
       data-testid="chart"
       tabIndex={0}
-      onFocus={() => onFocusChange?.({ datum: { id: "d1", depth: 1, ancestorIds: ["root"], data: {} } })}
+      onFocus={() => onFocusChange?.({ datum: { id: "d1", depth: 1, ancestorIds: ["root"], data: response.rows[1] } })}
     />
   ),
 }));
@@ -68,5 +68,21 @@ describe("TreemapView tile keyboard support", () => {
     fireEvent.focus(chart);
     fireEvent.keyDown(chart, { key: "a" });
     expect(treemap).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("TreemapView folder marks", () => {
+  it("the legend ends folder names with the catalog's separator and leaves file names alone", async () => {
+    setup();
+    const legend = await screen.findByRole("list", { name: "Top-level folders" });
+    await waitFor(() => expect(legend.querySelectorAll(".legend-name")).toHaveLength(2));
+    const names = [...legend.querySelectorAll(".legend-name")].map((n) => n.textContent);
+    expect(names).toEqual(["Users\\", "a.bin"]);
+  });
+
+  it("the tooltip ends a folder's path with the catalog's separator", async () => {
+    setup();
+    fireEvent.focus(await screen.findByTestId("chart"));
+    await waitFor(() => expect(document.querySelector(".tt-path")?.textContent).toBe("C:\\Users\\"));
   });
 });

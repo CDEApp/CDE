@@ -4,13 +4,14 @@ import { treemap, type TreemapNode } from "@tanstack/charts/hierarchy/treemap";
 import { Chart } from "@tanstack/charts/react";
 import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, TreemapResponse, TreemapRow } from "../api/types";
-import { toHRString } from "../format";
+import { pathSeparatorOf, toHRString } from "../format";
 import {
   branchColors,
   branchIdOf,
   canFitAnyText,
   createTextMeasurer,
   drillTargetId,
+  folderLabel,
   fullPathOf,
   LABEL_PADDING,
   labelLines,
@@ -255,6 +256,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
   const rootSize = data?.rootSize ?? 0;
   const pct = (bytes: number) => (rootSize > 0 ? `${((100 * bytes) / rootSize).toFixed(1)}%` : "");
   const hoverRow = hover?.data ?? null;
+  const sep = pathSeparatorOf(data?.rootFullPath ?? "");
 
   return (
     <div className="treemap-view">
@@ -363,8 +365,8 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
               <>
                 <div className="tt-path">
                   {hoverRow.mergedCount > 0
-                    ? `${fullPathOf(hoverRow.parentId ?? "", rowsById, data.rootFullPath)} — ${hoverRow.name}`
-                    : fullPathOf(hoverRow.nodeId, rowsById, data.rootFullPath)}
+                    ? `${folderLabel(fullPathOf(hoverRow.parentId ?? "", rowsById, data.rootFullPath), true, sep)} — ${hoverRow.name}`
+                    : folderLabel(fullPathOf(hoverRow.nodeId, rowsById, data.rootFullPath), hoverRow.isDirectory, sep)}
                 </div>
                 <div>
                   {toHRString(hoverRow.size)} · {pct(hoverRow.size)} of {rootRow?.name}
@@ -388,7 +390,7 @@ export function TreemapView({ client, request, depth, onDepthChange, onStatus, o
                 onClick={() => canDrill && drill(b.nodeId)}
               >
                 <span className="swatch" style={{ background: colors.get(b.nodeId) }} />
-                <span className="legend-name">{b.name}</span>
+                <span className="legend-name">{folderLabel(b.name, b.isDirectory, sep)}</span>
                 <span className="legend-size">{toHRString(b.size)}</span>
                 <span className="legend-pct">{pct(b.size)}</span>
               </li>
