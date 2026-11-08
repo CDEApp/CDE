@@ -237,6 +237,12 @@ describe("jobs", () => {
     ]);
   });
 
+  it("dismissJob treats an already-gone job as dismissed", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 404 })));
+
+    await expect(client.dismissJob(5)).resolves.toBeUndefined();
+  });
+
   it("dismissJob surfaces a refusal", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not finished", { status: 409 })));
 

@@ -369,16 +369,16 @@ export class CdeApiClient {
 
   /** Remove one finished job from the list (the sidecar refuses a queued or running one). */
   async dismissJob(id: number): Promise<void> {
-    await this.jobCall("DELETE", ["jobs", idSegment(id)]);
+    await this.jobCall("DELETE", ["jobs", idSegment(id)], 404);
   }
 
   async clearFinishedJobs(): Promise<void> {
     await this.jobCall("DELETE", ["jobs", "finished"]);
   }
 
-  private async jobCall(method: string, path: string[]): Promise<void> {
+  private async jobCall(method: string, path: string[], alsoOk?: number): Promise<void> {
     const r = await fetch(this.url(path), { method, headers: this.headers() });
-    if (!r.ok) {
+    if (!r.ok && r.status !== alsoOk) {
       const body = await r.text();
       throw new Error(body ? `jobs: ${r.status} ${body}` : `jobs: ${r.status}`);
     }
