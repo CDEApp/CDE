@@ -244,6 +244,7 @@ tbody tr:hover { background: var(--row-hover); }
   border-bottom: 1px solid var(--row-line); cursor: default;
 }
 .vlist-row:hover { background: var(--row-hover); }
+.dir-cols .vlist-row:focus { outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
 /* header drag-to-reorder */
 .vlist-header.reordering, .vlist-header.reordering > div.sortable { cursor: grabbing; }
 .vlist-header > div.dragging { opacity: .5; }

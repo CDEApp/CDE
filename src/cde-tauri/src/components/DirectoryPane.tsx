@@ -30,6 +30,7 @@ interface Props {
   onBackgroundContextMenu: (x: number, y: number) => void;
   onSort: (column: SortColumn) => void;
   onActivate: (node: DirectoryNode) => void;
+  onUp?: () => void;
   onListContextMenu: (node: DirectoryNode, x: number, y: number) => void;
 }
 
@@ -68,6 +69,7 @@ export const DirectoryPane = memo(function DirectoryPane(p: Props) {
           onColumnWidthsChange={p.onColumnWidthsChange}
           resolveStyle={p.resolveStyle}
           onActivate={p.onActivate}
+          onUp={p.onUp}
           onContextMenu={p.onListContextMenu}
         />
       }
