@@ -248,6 +248,14 @@ describe("navigation from refs a rescan made stale", () => {
     expect(result.current.selectedKey).toBe("1-2");
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Not found" }));
   });
+
+  it("restoreAfterRescan finds the folder at its new index by path", async () => {
+    const { result, client } = await selectThenRescan();
+    await act(() => result.current.restoreAfterRescan(client, 1, { selectedKey: "1-2", dirPath: "/r/a/b" }));
+    expect(result.current.selectedKey).toBe("1-3");
+    expect(result.current.dirPath).toBe("/r/a/b");
+    expect(result.current.expandTo).toEqual([root.ref, a2.ref, b2.ref]);
+  });
 });
 
 describe("navigation errors", () => {
@@ -263,5 +271,26 @@ describe("navigation errors", () => {
     });
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "sidecar went away" }));
     expect(result.current.selectedKey).toBe("1-2");
+  });
+
+  it("a failed listing fetch shows the error and does not leave the old folder's rows under the new path", async () => {
+    const { result, client } = setup();
+    await act(() => result.current.selectNode(a.ref, a.fullPath));
+    (client.children as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("listing failed"));
+    let opened = true;
+    await act(async () => {
+      opened = await result.current.selectNode(root.ref, root.fullPath);
+    });
+    expect(opened).toBe(false);
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "listing failed" }));
+    expect(result.current.dirPath).toBe("/r");
+    expect(result.current.dirNodes).toEqual([]);
+  });
+
+  it("activateDir reports a listing fetch that fails after the folder was found", async () => {
+    const { result, client } = setup();
+    (client.children as ReturnType<typeof vi.fn>).mockRejectedValue(new Error("listing failed"));
+    await act(() => result.current.activateDir(a));
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ color: "red", message: "listing failed" }));
   });
 });

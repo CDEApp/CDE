@@ -67,14 +67,24 @@ export function useCatalogSelection({ getClient, showDirectory }: UseCatalogSele
   // Update the directory selection + listing. Deliberately does NOT change the view: the view is
   // switched synchronously by whichever handler initiated the navigation, so a late-resolving
   // listing fetch here can never clobber a newer tab click.
-  // Returns false when the response was dropped (a newer selection or a reload came first).
+  // Returns false when the response was dropped (a newer selection or a reload came first) or the
+  // listing failed (reported in a toast, with the old folder's rows cleared).
   const selectNode = useCallback(
     async (ref: EntryRef, fullPath: string): Promise<boolean> => {
       const client = getClient();
       const token = navGuard.begin();
       setSelectedKey(refToString(ref));
       setDirPath(fullPath);
-      const nodes = await client.children(ref, { sort: "name", hasChildren: false });
+      let nodes: DirectoryNode[];
+      try {
+        nodes = await client.children(ref, { sort: "name", hasChildren: false });
+      } catch (e) {
+        if (navGuard.isCurrent(token)) {
+          setDirNodes([]);
+          notifications.show({ color: "red", title: "Could not open the folder", message: (e as Error).message });
+        }
+        return false;
+      }
       if (!navGuard.isCurrent(token)) return false;
       setDirNodes(nodes);
       return true;
