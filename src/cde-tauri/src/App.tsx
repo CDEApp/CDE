@@ -3,7 +3,7 @@ import { getCurrentWindow } from "@tauri-apps/api/window";
 import { open, save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
-import { CdeApiClient, ShellError } from "./api/client";
+import { CdeApiClient } from "./api/client";
 import { activeCatalogIds, activeCount, loadBlockedReason, sortedJobs } from "./jobsModel";
 import { NewCatalogDialog } from "./components/NewCatalogDialog";
 import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
@@ -17,8 +17,6 @@ import {
   CatalogsResponse,
   DirectoryNode,
   EntryRef,
-  refToString,
-  ShellAction,
   TreemapRow,
 } from "./api/types";
 import { startSidecar, Sidecar } from "./sidecar";
@@ -38,13 +36,13 @@ import { ContextMenu, MenuState } from "./components/ContextMenu";
 import { TreemapView } from "./components/TreemapView";
 import { ColoursView } from "./components/ColoursView";
 import { DiffView } from "./components/DiffView";
-import { createRuleResolver, parseColourRules } from "./colourRules";
 import type { CatalogColumnWidths } from "./catalogColumns";
 import type { ColumnWidths } from "./columnWidths";
 import { viewPaneClass } from "./viewPane";
-import { createSerialSaver, SerialSaver } from "./serialSaver";
 import { parseRef, useCatalogSelection } from "./hooks/useCatalogSelection";
 import { useJobs } from "./hooks/useJobs";
+import { useColourRules } from "./hooks/useColourRules";
+import { useShellActions } from "./hooks/useShellActions";
 import { JobsView } from "./components/JobsView";
 import { useSearch } from "./hooks/useSearch";
 import { encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
@@ -80,17 +78,19 @@ export default function App() {
   const [view, setView] = useState(initialView);
   const [catalogs, setCatalogs] = useState<CatalogsResponse | null>(null);
   const [roots, setRoots] = useState<TreeRoot[]>([]);
-  // Colour rules text (file-backed via the sidecar). Parsed + compiled once per change; the
-  // resolvers (with their per-name caches) are rebuilt whenever the text changes.
-  const [rulesText, setRulesText] = useState("");
-  // Saves live here, not in ColoursView, so a save flushed as the tab closes still runs in order
-  // and its error is still shown when the tab reopens.
-  const rulesSaverRef = useRef<SerialSaver | null>(null);
-  const [rulesSaveError, setRulesSaveError] = useState<string | null>(null);
-  const rules = useMemo(() => parseColourRules(rulesText).rules, [rulesText]);
-  const resolveStyle = useMemo(() => createRuleResolver(rules), [rules]);
-  const resolveTreeStyle = useMemo(() => createRuleResolver(rules, { skipFolder: true }), [rules]);
-  const [commands, setCommands] = useState<{ id: number; label: string }[]>([]);
+
+  // Stable accessors so the hooks' callbacks keep a stable identity.
+  const getClient = useCallback(() => {
+    const client = clientRef.current;
+    if (!client) throw new Error("The catalog service is not ready yet.");
+    return client;
+  }, []);
+  const getUi = useCallback(() => uiRef.current, []);
+
+  const colours = useColourRules({ getClient });
+  const { resolveStyle, resolveTreeStyle } = colours;
+  const shell = useShellActions({ getClient });
+  const { runShell, exploreEntry } = shell;
 
   // Directory-listing sort: session-only (deliberately not in uiState) and kept across folders.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
@@ -131,15 +131,10 @@ export default function App() {
         const client = new CdeApiClient(sidecar.connection.baseUrl, sidecar.connection.token);
         clientRef.current = client;
         uiRef.current = new UiStateManager(client);
-        rulesSaverRef.current = createSerialSaver((text) => client.putColourRules(text), setRulesSaveError);
 
         const ui = await uiRef.current.load();
-        setCommands(await client.shellCommands());
-        try {
-          setRulesText(await client.getColourRules());
-        } catch (e) {
-          console.error("colour rules failed to load; continuing without custom colours", e);
-        }
+        await shell.loadCommands();
+        await colours.load();
         // Load the last-used catalog folder, or the sidecar's default folder. The sidecar loads nothing on
         // its own, so the handshake never waits on catalogs (a folder of legacy .cde files is slow).
         const savedDir = typeof ui.catalogDir === "string" ? ui.catalogDir : undefined;
@@ -214,13 +209,6 @@ export default function App() {
     setLegacyOpen(false);
   }, []);
 
-  // Stable accessors so the hooks' callbacks keep a stable identity.
-  const getClient = useCallback(() => {
-    const client = clientRef.current;
-    if (!client) throw new Error("The catalog service is not ready yet.");
-    return client;
-  }, []);
-  const getUi = useCallback(() => uiRef.current, []);
   const showDirectory = useCallback(() => setView((v) => showView(v, "directory")), []);
   const showResults = useCallback(() => setView((v) => showView(v, "results")), []);
 
@@ -294,18 +282,13 @@ export default function App() {
     [refreshCatalogs, promptForLegacy, resetForReload],
   );
 
-  // Re-read the rules file each time the Customize tab opens (picks up hand edits). Fetch first, then
-  // switch, so the editor never shows stale text that a keystroke could then overwrite. Wait for
-  // pending saves first, or a save flushed as the tab last closed could land after this read.
+  // Re-read the rules file each time the Customize tab opens. Fetch first, then switch, so the editor
+  // never shows stale text that a keystroke could then overwrite.
+  const { load: loadColours } = colours;
   const openColours = useCallback(async () => {
-    try {
-      await rulesSaverRef.current?.idle();
-      setRulesText(await clientRef.current!.getColourRules());
-    } catch (e) {
-      console.error("colour rules reload failed", e);
-    }
+    await loadColours();
     setView((v) => showView(v, "colours"));
-  }, []);
+  }, [loadColours]);
 
   const onDirColumnWidthsChange = useCallback((directoryColumnWidths: ColumnWidths) => {
     uiRef.current?.update({ directoryColumnWidths });
@@ -375,20 +358,7 @@ export default function App() {
     if (picked) setNewCatalogRoot(picked);
   }, [pickNewCatalogRoot]);
 
-  // --- shell actions / context menu ---
-  const runShell = useCallback(async (ref: EntryRef, action: ShellAction, commandId?: number) => {
-    try {
-      await clientRef.current!.shell({ ref: refToString(ref), action, commandId });
-    } catch (e) {
-      // 501/422 carry the reason the OS action did not happen; anything else mirrors cdeWin, where
-      // shell actions are silent no-ops when the entry isn't on this filesystem.
-      if (e instanceof ShellError && e.status !== 400) {
-        notifications.show({ color: "red", title: "Could not run the action", message: e.message });
-      }
-    }
-  }, []);
-  const exploreEntry = useCallback((ref: EntryRef) => void runShell(ref, "explore"), [runShell]);
-
+  // --- context menu ---
   const showTreemap = useCallback((ref: EntryRef) => setView((v) => showTreemapView(v, ref)), []);
 
   const rescanItem = useCallback(
@@ -434,7 +404,7 @@ export default function App() {
 
   const menuContext = useMemo<EntryMenuContext>(
     () => ({
-      commands,
+      commands: shell.commands,
       runShell: (ref, action, commandId) => void runShell(ref, action, commandId),
       showTreemap,
       searchFromHere,
@@ -442,7 +412,7 @@ export default function App() {
       rescanFor: rescanItem,
       editDescription: editCatalogDescription,
     }),
-    [commands, runShell, showTreemap, searchFromHere, rescanItem, editCatalogDescription],
+    [shell.commands, runShell, showTreemap, searchFromHere, rescanItem, editCatalogDescription],
   );
 
   // Handlers for the memoised DirectoryPane must keep a stable identity, or every App render (e.g. each
@@ -580,11 +550,11 @@ export default function App() {
       case "colours":
         return (
           <ColoursView
-            text={rulesText}
-            onChange={setRulesText}
-            save={(text) => rulesSaverRef.current?.save(text)}
-            saveError={rulesSaveError}
-            getDefaults={() => clientRef.current!.getColourRuleDefaults()}
+            text={colours.text}
+            onChange={colours.setText}
+            save={colours.save}
+            saveError={colours.saveError}
+            getDefaults={colours.getDefaults}
           />
         );
       case "treemap":
