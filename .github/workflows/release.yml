@@ -419,6 +419,11 @@ jobs:
         run: |
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
             -F draft=false -F prerelease=true -f make_latest=false > /dev/null
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq .tag_name)
+          if [ "$actual" != "$TAG" ]; then
+            echo "::error::Release $RELEASE_ID was published with tag '$actual', not $TAG."
+            exit 1
+          fi
           echo "Published pre-release $TAG"
 
       # ---- Stable release ----
@@ -433,6 +438,15 @@ jobs:
       #
       # config-name uses file: (read from the checkout), the same file a remote fetch reads, because
       # the checkout is the tag.
+      # The draft must target the tag's own commit. Release Drafter otherwise targets develop, and once
+      # develop has moved past the tag (a merge between tagging and publishing, or a re-run for an
+      # existing tag) GitHub publishes the draft as "untagged-<hash>" (2.1.0 did).
+      - name: Resolve tag commit
+        if: ${{ env.PRERELEASE == 'false' }}
+        id: tagsha
+        shell: bash
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+
       - name: Update draft release
         if: ${{ env.PRERELEASE == 'false' }}
         uses: release-drafter/release-drafter@34d80673e067bdc0c24568d3af899c216adcfaa9 # v7.7.0
@@ -441,6 +455,7 @@ jobs:
           publish: false
           tag: ${{ env.TAG }}
           name: ${{ env.TAG }}
+          commitish: ${{ steps.tagsha.outputs.sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -515,9 +530,16 @@ jobs:
         shell: bash
         env:
           RELEASE_ID: ${{ steps.draft.outputs.id }}
+          TAG_SHA: ${{ steps.tagsha.outputs.sha }}
         run: |
           # make_latest is set explicitly: "Check tag" has already validated this tag as higher than
-          # every other stable tag, so it is the latest release.
+          # every other stable tag, so it is the latest release. tag_name and target_commitish are
+          # restated so the release is attached to the existing tag, whatever the draft held.
           gh api --method PATCH "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
-            -F draft=false -f make_latest=true > /dev/null
+            -F draft=false -f make_latest=true -f tag_name="$TAG" -f target_commitish="$TAG_SHA" > /dev/null
+          actual=$(gh api "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" --jq .tag_name)
+          if [ "$actual" != "$TAG" ]; then
+            echo "::error::Release $RELEASE_ID was published with tag '$actual', not $TAG. Fix it with: gh api --method PATCH repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID -f tag_name=$TAG"
+            exit 1
+          fi
           echo "Published $TAG"

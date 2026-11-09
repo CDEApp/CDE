@@ -48,6 +48,11 @@ A pushed tag blocks that version: Publish Release refuses a tag that already exi
 
 If the release was already published, there is nothing to re-run.
 
+The draft is updated to target the tag's own commit, and the publish step checks that the release
+carries the tag. Before this, a re-run after a fix had moved `develop` past the tag published 2.1.0
+as `untagged-<hash>`. If a run ever stops with "published with tag 'untagged-…'", attach the
+release to its tag with `gh api --method PATCH repos/CDEApp/CDE/releases/<id> -f tag_name=<tag>`.
+
 ## Publishing a pre-release
 
 Use a pre-release to put an alpha, beta or release candidate in people's hands before the stable
