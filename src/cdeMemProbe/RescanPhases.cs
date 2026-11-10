@@ -30,7 +30,7 @@ public static class RescanPhases
         var target = Path.Combine(work, "probe.cdex");
         File.Delete(target);
 
-        Console.WriteLine("run,entries,enumerateMs,carryHashesMs,sortSummaryMs,writeMs,swapMs,totalMs,cdexBytes,peakWorkingSet");
+        Console.WriteLine("run,entries,enumerateMs,carryHashesMs,sortSummaryMs,writeMs,swapMs,totalMs,cdexBytes,peakWorkingSet,enumerateGcPauseMs");
         for (var i = 0; i <= runs; i++)
         {
             var line = RunOnce(root, target, threads, i == 0 ? "seed" : i.ToString(CultureInfo.InvariantCulture));
@@ -43,11 +43,13 @@ public static class RescanPhases
     private static string RunOnce(string root, string target, int threads, string label)
     {
         var tmp = target + ".tmp";
+        var gcBefore = GC.GetTotalPauseDuration();
         var sw = Stopwatch.StartNew();
 
         var tree = new RootEntry();
         tree.PopulateRoot(root, threads: threads);
         var enumerate = sw.Elapsed;
+        var enumerateGc = GC.GetTotalPauseDuration() - gcBefore;
 
         if (File.Exists(target))
         {
@@ -74,7 +76,7 @@ public static class RescanPhases
         Process.GetCurrentProcess().Refresh();
         return string.Join(',', label, entries,
             Ms(enumerate), Ms(carry - enumerate), Ms(sort - carry), Ms(write - sort), Ms(swap - write), Ms(swap),
-            new FileInfo(target).Length, Process.GetCurrentProcess().PeakWorkingSet64);
+            new FileInfo(target).Length, Process.GetCurrentProcess().PeakWorkingSet64, Ms(enumerateGc));
     }
 
     private static string Ms(TimeSpan t) => t.TotalMilliseconds.ToString("0", CultureInfo.InvariantCulture);

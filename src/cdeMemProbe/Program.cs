@@ -76,6 +76,11 @@ public static class Program
             return RescanPhases.Run(rescanRoot, name => HasFlag(args, name, out var v) ? v : null);
         }
 
+        if (HasFlag(args, "--dir-stat", out var statCdex) && !string.IsNullOrEmpty(statCdex))
+        {
+            return DirStatProbe.Run(statCdex, name => HasFlag(args, name, out var v) ? v : null);
+        }
+
         if (HasFlag(args, "--compare", out _))
         {
             return PerfCommands.Compare(name => HasFlag(args, name, out var v) ? v : null);
