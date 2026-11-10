@@ -28,10 +28,13 @@ export interface UseJobsOptions {
 type Callbacks = Pick<UseJobsOptions, "afterRescan" | "refreshCatalogs" | "openCatalog">;
 
 /**
- * One bulk rescan (Rescan all, Rescan stale, rescan on startup). Refusals and failures that would each open
- * the unreachable-root modal or a toast are gathered here and reported once, after every job has settled.
+ * One bulk rescan (Rescan all, Rescan stale, rescan on startup). Its catalogs rescan one at a time, so several
+ * catalogs on one disk do not compete for it. Refusals and failures that would each open the unreachable-root
+ * modal or a toast are gathered here and reported once, after the last job has settled.
  */
 interface RescanBatch {
+  /** Catalogs not submitted yet. */
+  queue: number[];
   jobIds: Set<number>;
   submitting: boolean;
   unreachable: Set<string>;
@@ -174,10 +177,8 @@ export function useJobs({
     setModel(next);
   }, []);
 
-  const closeBatchIfDone = useCallback((b: RescanBatch) => {
-    if (b.submitting || b.jobIds.size > 0 || !batches.current.delete(b)) return;
-    reportBatch(b);
-  }, []);
+  // settle() advances a batch when its job finishes, and advancing submits through submit(), which calls settle().
+  const advanceBatch = useRef<(b: RescanBatch) => Promise<void>>(async () => {});
 
   const settle = useCallback(
     (job: JobDto) => {
@@ -191,7 +192,7 @@ export function useJobs({
         } else if (job.state === "failed") {
           announceFailure(job, setUnreachableRoot);
         }
-        closeBatchIfDone(batch);
+        void advanceBatch.current(batch);
         if (job.state === "failed") return;
       }
       if (job.state === "succeeded" && job.result) {
@@ -206,7 +207,7 @@ export function useJobs({
         announceCancelled(job);
       }
     },
-    [getClient, closeBatchIfDone],
+    [getClient],
   );
 
   useEffect(() => {
@@ -273,18 +274,25 @@ export function useJobs({
     [submit],
   );
 
-  const rescanMany = useCallback(
-    async (catalogIds: readonly number[]) => {
-      const batch: RescanBatch = { jobIds: new Set(), submitting: true, unreachable: new Set(), refused: [] };
-      batches.current.add(batch);
-      for (const id of catalogIds) {
-        await submit({ kind: "rescan", catalogId: id }, `rescan:${id}`, "Rescan not started", batch);
-      }
-      batch.submitting = false;
-      closeBatchIfDone(batch);
-    },
-    [submit, closeBatchIfDone],
-  );
+  // Submit the batch's next catalog once none of its jobs is active; report the batch when nothing is left.
+  advanceBatch.current = async (b: RescanBatch) => {
+    if (b.submitting || b.jobIds.size > 0) return;
+    b.submitting = true;
+    while (b.queue.length > 0 && b.jobIds.size === 0) {
+      const id = b.queue.shift()!;
+      await submit({ kind: "rescan", catalogId: id }, `rescan:${id}`, "Rescan not started", b);
+    }
+    b.submitting = false;
+    if (b.jobIds.size === 0 && b.queue.length === 0 && batches.current.delete(b)) reportBatch(b);
+  };
+
+  const rescanMany = useCallback(async (catalogIds: readonly number[]) => {
+    const batch: RescanBatch = {
+      queue: [...catalogIds], jobIds: new Set(), submitting: false, unreachable: new Set(), refused: [],
+    };
+    batches.current.add(batch);
+    await advanceBatch.current(batch);
+  }, []);
 
   const createCatalog = useCallback(
     (req: { rootPath: string; fileName: string; description: string; followJunctions: boolean }) =>
