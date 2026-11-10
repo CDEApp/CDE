@@ -24,6 +24,8 @@ namespace cdeMemProbe;
 ///
 ///   cdeMemProbe --report &lt;N&gt; [--out perf.json] [--cde path/to/cde] [--work dir] [--seed N] [--direct]
 ///       Release performance report (perf.json); see src/cdeBenchmarks/README.md.
+///   cdeMemProbe --rescan-phases &lt;dir&gt; [--runs N] [--threads N] [--work dir]
+///       Time each rescan phase (enumerate, carry hashes, sort, write, swap) over a real tree; CSV out.
 ///   cdeMemProbe --compare --current perf.json [--baseline old.json] [--markdown out.md]
 ///       Show deltas vs the baseline; exit 3 only when the .cdex size grew more than 2%.
 ///   cdeMemProbe --readme --current perf.json --file Readme.md
@@ -67,6 +69,11 @@ public static class Program
                 return 1;
             }
             return ReportRunner.Run(args, size, name => HasFlag(args, name, out var v) ? v : null);
+        }
+
+        if (HasFlag(args, "--rescan-phases", out var rescanRoot) && !string.IsNullOrEmpty(rescanRoot))
+        {
+            return RescanPhases.Run(rescanRoot, name => HasFlag(args, name, out var v) ? v : null);
         }
 
         if (HasFlag(args, "--compare", out _))
