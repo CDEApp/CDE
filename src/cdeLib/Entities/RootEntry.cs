@@ -40,15 +40,21 @@ public sealed class RootEntry : object, ICommonEntry
 
     /// <summary>Folders the last scan recorded but did not descend into because they matched an exclude pattern (#169). Scan-time only; never persisted.</summary>
     [IgnoreMember]
-    public int ExcludedFolderCount { get; private set; }
+    public int ExcludedFolderCount => _excludedFolderCount;
+
+    private int _excludedFolderCount;
 
     /// <summary>Folders the last scan could not read because access was denied, listed in <see cref="PathsWithUnauthorisedExceptions"/> (#169). Scan-time only; never persisted.</summary>
     [IgnoreMember]
-    public int AccessDeniedFolderCount { get; private set; }
+    public int AccessDeniedFolderCount => _accessDeniedFolderCount;
+
+    private int _accessDeniedFolderCount;
 
     /// <summary>Folders the last scan could not read for another reason (IO error, folder vanished, path too long), also listed in <see cref="PathsWithUnauthorisedExceptions"/>. Scan-time only; never persisted.</summary>
     [IgnoreMember]
-    public int UnreadableFolderCount { get; private set; }
+    public int UnreadableFolderCount => _unreadableFolderCount;
+
+    private int _unreadableFolderCount;
 
     [Key(4)]
     public string DefaultFileName { get; set; }
@@ -112,11 +118,11 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     public void PopulateRoot(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
-        CancellationToken token = default)
+        int threads = 1, CancellationToken token = default)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath, followJunctions, excludes, token);
+        RecurseTree(startPath, followJunctions, excludes, threads, token);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -319,52 +325,136 @@ public sealed class RootEntry : object, ICommonEntry
             .Replace(':', '_');
     }
 
+    /// <summary>A typo in <c>AppConfig.Scan.Threads</c> must not start hundreds of threads per scan; 16 already gains nothing over 4 on C:\ (#235).</summary>
+    public const int MaxScanThreads = 64;
+
     /// <summary>
-    /// Iteratively scans a directory tree using a stack-based approach for optimal performance.
-    /// Folders matched by <paramref name="excludes"/> are recorded but not descended into; the start path, and any pattern covering it or its ancestors, never applies.
+    /// Scans a directory tree. Folders matched by <paramref name="excludes"/> are recorded but not descended into; the
+    /// start path, and any pattern covering it or its ancestors, never applies. <paramref name="threads"/> folders are
+    /// enumerated at once (#235). Each folder is read whole by one thread in OS order, so the tree is the same for any
+    /// thread count. 1 runs on the calling thread; more than <see cref="MaxScanThreads"/> is capped.
     /// </summary>
     public void RecurseTree(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
-        CancellationToken token = default)
+        int threads = 1, CancellationToken token = default)
     {
         FollowJunctions = followJunctions;
         excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
-        ExcludedFolderCount = 0;
-        AccessDeniedFolderCount = 0;
-        UnreadableFolderCount = 0;
-        var entryCount = 0;
-        var stack = new Stack<(ICommonEntry, string)>(capacity: 64);
-        stack.Push((this, startPath));
+        _excludedFolderCount = 0;
+        _accessDeniedFolderCount = 0;
+        _unreadableFolderCount = 0;
 
-        var progressTracker = new ScanProgressTracker(SimpleScanCountEvent);
-        var namePool = new ScanNamePool(); // scan-local; freed when the scan ends
+        var progress = new ScanProgressTracker(SimpleScanCountEvent);
+        new ScanWalk(this, excludes, progress, token).Run(startPath, Math.Clamp(threads, 1, MaxScanThreads));
 
-        while (stack.Count > 0)
+        if (threads > 1 && PathsWithUnauthorisedExceptions is List<string> unreadable)
         {
-            var (parent, directory) = stack.Pop();
-
-            if (TryEnumerateDirectory(directory, parent, stack, ref entryCount, progressTracker, namePool, excludes, token))
-            {
-                continue;
-            }
-
-            if (token.IsCancellationRequested)
-            {
-                break;
-            }
+            unreadable.Sort(StringComparer.Ordinal); // workers finish in any order; keep the list stable between runs
         }
 
-        progressTracker.ReportFinalCount(entryCount, startPath);
+        progress.ReportFinalCount(startPath);
         SimpleScanEndEvent?.Invoke();
     }
 
     /// <summary>
-    /// Attempts to enumerate a directory and add its children. Returns true on success, false if access denied.
+    /// The folders still to enumerate, shared by the scan's workers. A worker takes a folder, adds its entries to
+    /// that folder's node (no other worker touches that node), and hands back the subfolders to descend into.
     /// </summary>
-    private bool TryEnumerateDirectory(
+    private sealed class ScanWalk(RootEntry root, ScanExcludeMatcher excludes, ScanProgressTracker progress,
+        CancellationToken token)
+    {
+        private readonly Stack<(ICommonEntry Parent, string Path)> _work = new(capacity: 64);
+        private readonly object _gate = new();
+        private readonly ScanNamePool _namePool = new(); // scan-local; freed when the scan ends
+        private int _pending; // folders queued or being enumerated
+        private Exception _fault;
+
+        public void Run(string startPath, int threads)
+        {
+            _work.Push((root, startPath));
+            _pending = 1;
+            if (threads == 1)
+            {
+                Worker();
+                ThrowFault();
+                return;
+            }
+
+            using var wake = token.Register(() => { lock (_gate) Monitor.PulseAll(_gate); });
+            var workers = new Thread[threads];
+            for (var i = 0; i < threads; i++)
+            {
+                workers[i] = new Thread(Worker) { IsBackground = true, Name = $"cde-scan-{i}" };
+                workers[i].Start();
+            }
+
+            foreach (var w in workers) w.Join();
+            ThrowFault();
+        }
+
+        private void ThrowFault()
+        {
+            if (_fault != null) System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(_fault).Throw();
+        }
+
+        private void Worker()
+        {
+            var found = new List<(ICommonEntry, string)>();
+            while (TryTake(out var item))
+            {
+                try
+                {
+                    root.EnumerateDirectory(item.Path, item.Parent, found, progress, _namePool, excludes, token);
+                }
+                catch (Exception ex)
+                {
+                    // The progress callback throws to cancel; any failure stops every worker and is rethrown by Run.
+                    lock (_gate)
+                    {
+                        _fault ??= ex;
+                        Monitor.PulseAll(_gate);
+                    }
+                    return;
+                }
+
+                lock (_gate)
+                {
+                    foreach (var f in found) _work.Push(f);
+                    _pending += found.Count - 1;
+                    if (found.Count > 0 || _pending == 0) Monitor.PulseAll(_gate);
+                }
+                found.Clear();
+            }
+        }
+
+        private bool TryTake(out (ICommonEntry Parent, string Path) item)
+        {
+            lock (_gate)
+            {
+                while (_work.Count == 0 && _pending > 0 && _fault == null && !token.IsCancellationRequested)
+                {
+                    Monitor.Wait(_gate);
+                }
+
+                if (_work.Count == 0 || _fault != null || token.IsCancellationRequested)
+                {
+                    item = default;
+                    return false;
+                }
+
+                item = _work.Pop();
+                return true;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Enumerates one directory into <paramref name="parent"/> and adds the subfolders to descend into to
+    /// <paramref name="descend"/>. An access error is recorded and the folder is left as read so far.
+    /// </summary>
+    private void EnumerateDirectory(
         string directory,
         ICommonEntry parent,
-        Stack<(ICommonEntry, string)> stack,
-        ref int entryCount,
+        List<(ICommonEntry, string)> descend,
         ScanProgressTracker progressTracker,
         ScanNamePool namePool,
         ScanExcludeMatcher excludes,
@@ -380,7 +470,7 @@ public sealed class RootEntry : object, ICommonEntry
                 parent.AddChild(dirEntry);
                 if (enumerator.WasExcluded)
                 {
-                    ExcludedFolderCount++;
+                    Interlocked.Increment(ref _excludedFolderCount);
                 }
 
                 // Reparse points (junctions / directory symlinks) carry the Directory attribute, so they
@@ -388,24 +478,20 @@ public sealed class RootEntry : object, ICommonEntry
                 // avoiding cycles (e.g. a junction pointing at an ancestor) and duplicate content.
                 if (enumerator.DescendPath != null)
                 {
-                    stack.Push((dirEntry, enumerator.DescendPath));
+                    descend.Add((dirEntry, enumerator.DescendPath));
                 }
 
-                entryCount++;
-                progressTracker.ReportProgress(entryCount, directory);
+                progressTracker.ReportProgress(directory);
 
                 if (token.IsCancellationRequested)
                 {
                     break;
                 }
             }
-
-            return true;
         }
         catch (Exception ex) when (IsFileSystemAccessException(ex))
         {
             HandleFileSystemAccessError(ex, directory);
-            return false;
         }
     }
 
@@ -482,46 +568,53 @@ public sealed class RootEntry : object, ICommonEntry
         };
 
         Log.Logger.Warning(logMessage, directory, ex.Message);
-        AddPathsWithUnauthorisedExceptions(directory);
+        lock (_scanErrorGate)
+        {
+            AddPathsWithUnauthorisedExceptions(directory);
+        }
+
         if (ex is UnauthorizedAccessException)
         {
-            AccessDeniedFolderCount++;
+            Interlocked.Increment(ref _accessDeniedFolderCount);
         }
         else
         {
-            UnreadableFolderCount++;
+            Interlocked.Increment(ref _unreadableFolderCount);
         }
     }
 
     /// <summary>
-    /// Manages progress event reporting with batching to reduce overhead.
+    /// Counts scanned entries and raises the progress event every <see cref="EventBatchSize"/> entries. Safe to call
+    /// from several scan workers; the event is raised by one worker at a time.
     /// </summary>
-    private sealed class ScanProgressTracker
+    private sealed class ScanProgressTracker(Action<int, string> eventHandler)
     {
         private const int EventBatchSize = 1000;
-        private readonly Action<int, string> _eventHandler;
-        private int _nextEventThreshold;
+        private readonly object _eventGate = new();
+        private int _count;
+        private int _lastReported;
 
-        public ScanProgressTracker(Action<int, string> eventHandler)
+        public void ReportProgress(string currentDirectory)
         {
-            _eventHandler = eventHandler;
-            _nextEventThreshold = EventBatchSize;
-        }
-
-        public void ReportProgress(int entryCount, string currentDirectory)
-        {
-            if (_eventHandler != null && entryCount >= _nextEventThreshold)
+            var count = Interlocked.Increment(ref _count);
+            if (eventHandler != null && count % EventBatchSize == 0)
             {
-                _eventHandler(entryCount, currentDirectory);
-                _nextEventThreshold += EventBatchSize;
+                lock (_eventGate)
+                {
+                    if (count <= _lastReported) return; // a later batch won the lock; never report a count going down
+                    _lastReported = count;
+                    eventHandler(count, currentDirectory);
+                }
             }
         }
 
-        public void ReportFinalCount(int entryCount, string startPath)
+        public void ReportFinalCount(string startPath)
         {
-            _eventHandler?.Invoke(entryCount, startPath);
+            eventHandler?.Invoke(Volatile.Read(ref _count), startPath);
         }
     }
+
+    private readonly object _scanErrorGate = new();
 
     private void AddPathsWithUnauthorisedExceptions(string directory)
     {

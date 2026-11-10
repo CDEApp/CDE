@@ -1,5 +1,6 @@
 import { CatalogsResponse } from "../api/types";
 import { mb } from "../format";
+import { staleNotice } from "../freshness";
 
 interface Props {
   catalogs: CatalogsResponse | null;
@@ -11,6 +12,10 @@ interface Props {
   /** Legacy catalogs that were not loaded ("N legacy catalogs not loaded"), with a Migrate… action; null for none. */
   legacyNotice?: string | null;
   onMigrate?: () => void;
+  /** Catalogs older than the stale threshold; 0 hides the notice. */
+  staleCount?: number;
+  staleAfterDays?: number;
+  onRescanStale?: () => void;
 }
 
 /** Status bar parity: results, entries loaded, catalogs loaded, memory, timing; plus background job progress. */
@@ -22,7 +27,11 @@ export function StatusBar({
   onShowJobs,
   legacyNotice = null,
   onMigrate,
+  staleCount = 0,
+  staleAfterDays = 0,
+  onRescanStale,
 }: Props) {
+  const staleText = staleNotice(staleCount, staleAfterDays);
   return (
     <div className="statusbar">
       <span>Results: {resultCount.toLocaleString()}</span>
@@ -35,6 +44,14 @@ export function StatusBar({
           {legacyNotice}
           <button onClick={() => onMigrate?.()} title="Convert the legacy .cde catalogs to the faster .cdex format">
             Migrate…
+          </button>
+        </span>
+      )}
+      {staleText && (
+        <span className="rescan-status">
+          {staleText}
+          <button onClick={() => onRescanStale?.()} title="Rescan every catalog older than the stale threshold, in the background">
+            Rescan stale
           </button>
         </span>
       )}

@@ -27,6 +27,41 @@ export interface UseJobsOptions {
 
 type Callbacks = Pick<UseJobsOptions, "afterRescan" | "refreshCatalogs" | "openCatalog">;
 
+/**
+ * One bulk rescan (Rescan all, Rescan stale, rescan on startup). Its catalogs rescan one at a time, so several
+ * catalogs on one disk do not compete for it. Refusals and failures that would each open the unreachable-root
+ * modal or a toast are gathered here and reported once, after the last job has settled.
+ */
+interface RescanBatch {
+  /** Catalogs not submitted yet. */
+  queue: number[];
+  /** Every catalog this batch has taken on; a request that joins it adds only the others. */
+  included: Set<number>;
+  jobIds: Set<number>;
+  submitting: boolean;
+  unreachable: Set<string>;
+  refused: string[];
+}
+
+function reportBatch(b: RescanBatch) {
+  if (b.unreachable.size > 0) {
+    const n = b.unreachable.size;
+    notifications.show({
+      color: "orange",
+      title: `${n} ${n === 1 ? "catalog" : "catalogs"} skipped, root not reachable`,
+      message: `${[...b.unreachable].join(", ")}. Check the drive or share is connected, then rescan.`,
+      autoClose: 20000,
+    });
+  }
+  if (b.refused.length > 0) {
+    notifications.show({
+      color: "red",
+      title: `${b.refused.length} ${b.refused.length === 1 ? "rescan" : "rescans"} not started`,
+      message: b.refused.join("; "),
+    });
+  }
+}
+
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 function skipped(job: JobDto): string {
@@ -135,6 +170,12 @@ export function useJobs({
   const finishedAtStart = useRef(new Set<number>());
   const gotSnapshot = useRef(false);
   const inFlightSubmits = useRef(new Set<string>());
+  // At most one bulk rescan; a second request joins its queue, so catalogs still rescan one at a time.
+  const batchRef = useRef<RescanBatch | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
+  // Jobs that finished while the batch was submitting and before submit() knew their id: the server starts a job
+  // inside POST /jobs, so its finished event can arrive first. submit() claims them; anything left is settled after.
+  const settledEarly = useRef(new Map<number, JobDto>());
   const latestCallbacks = useRef<Callbacks>({ afterRescan, refreshCatalogs, openCatalog });
   latestCallbacks.current = { afterRescan, refreshCatalogs, openCatalog };
 
@@ -143,10 +184,30 @@ export function useJobs({
     setModel(next);
   }, []);
 
+  // settle() advances a batch when its job finishes, and advancing submits through submit(), which calls settle().
+  const advanceBatch = useRef<(b: RescanBatch) => Promise<void>>(async () => {});
+
   const settle = useCallback(
     (job: JobDto) => {
       if (isActive(job.state) || handled.current.has(job.id) || finishedAtStart.current.has(job.id)) return;
+      const batch = batchRef.current;
+      if (batch?.submitting && !submitted.current.has(job.id)) {
+        settledEarly.current.set(job.id, job);
+        return;
+      }
       handled.current.add(job.id);
+      if (batch?.jobIds.has(job.id)) {
+        batch.jobIds.delete(job.id);
+        if (job.state === "failed" && job.error?.code === "root-not-accessible") {
+          batch.unreachable.add(job.error.rootPath || job.title);
+        } else if (job.state === "failed") {
+          announceFailure(job, setUnreachableRoot);
+        } else if (job.state === "cancelled") {
+          batch.queue.length = 0; // cancelling the running catalog stops the bulk rescan
+        }
+        void advanceBatch.current(batch);
+        if (job.state === "failed") return;
+      }
       if (job.state === "succeeded" && job.result) {
         const announce = job.kind === "rescan" ? announceRescan : announceCreate;
         setCompleting((n) => n + 1);
@@ -189,7 +250,7 @@ export function useJobs({
   }, [sidecarReady, getClient, update, settle, retryDelayMs]);
 
   const submit = useCallback(
-    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string) => {
+    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string, batch?: RescanBatch) => {
       if (inFlightKey) {
         if (inFlightSubmits.current.has(inFlightKey)) return;
         inFlightSubmits.current.add(inFlightKey);
@@ -197,12 +258,20 @@ export function useJobs({
       try {
         const accepted = await getClient().submitJob(req);
         submitted.current.add(accepted.id);
+        batch?.jobIds.add(accepted.id);
+        settledEarly.current.delete(accepted.id); // the model already holds its final state; settle it below
         finishedAtStart.current.delete(accepted.id);
         const next = addIfUnknown(modelRef.current, accepted);
         update(next);
         settle(next.jobs.get(accepted.id)!);
       } catch (e) {
-        if (e instanceof JobRefusal && e.rootNotAccessible) {
+        if (batch) {
+          // Already queued or running is the guard doing its job, not something to report.
+          if (!(e instanceof JobRefusal && e.error.code === "already-running")) {
+            if (e instanceof JobRefusal && e.rootNotAccessible) batch.unreachable.add(e.error.rootPath || errText(e));
+            else batch.refused.push(errText(e));
+          }
+        } else if (e instanceof JobRefusal && e.rootNotAccessible) {
           setUnreachableRoot(e.error.rootPath || (req.kind === "create" ? req.rootPath : null) || e.message);
         } else {
           notifications.show({ color: "red", title: refusedTitle, message: errText(e) });
@@ -218,6 +287,40 @@ export function useJobs({
     (catalogId: number) => submit({ kind: "rescan", catalogId }, `rescan:${catalogId}`, "Rescan not started"),
     [submit],
   );
+
+  // Submit the batch's next catalog once none of its jobs is active; report the batch when nothing is left.
+  advanceBatch.current = async (b: RescanBatch) => {
+    if (b.submitting || b.jobIds.size > 0) return;
+    b.submitting = true;
+    while (b.queue.length > 0 && b.jobIds.size === 0) {
+      const id = b.queue.shift()!;
+      await submit({ kind: "rescan", catalogId: id }, `rescan:${id}`, "Rescan not started", b);
+    }
+    b.submitting = false;
+    const early = [...settledEarly.current.values()];
+    settledEarly.current.clear();
+    for (const job of early) settle(job);
+    if (b.jobIds.size === 0 && b.queue.length === 0 && batchRef.current === b) {
+      batchRef.current = null;
+      setBatchOpen(false);
+      reportBatch(b);
+    }
+  };
+
+  const rescanMany = useCallback(async (catalogIds: readonly number[]) => {
+    let batch = batchRef.current;
+    if (!batch) {
+      batch = { queue: [], included: new Set(), jobIds: new Set(), submitting: false, unreachable: new Set(), refused: [] };
+      batchRef.current = batch;
+      setBatchOpen(true);
+    }
+    for (const id of catalogIds) {
+      if (batch.included.has(id)) continue;
+      batch.included.add(id);
+      batch.queue.push(id);
+    }
+    await advanceBatch.current(batch);
+  }, []);
 
   const createCatalog = useCallback(
     (req: { rootPath: string; fileName: string; description: string; followJunctions: boolean }) =>
@@ -255,9 +358,10 @@ export function useJobs({
   );
 
   const clearUnreachable = useCallback(() => setUnreachableRoot(null), []);
-
+  // A finished job's refresh still writes the catalog list and selection, and a bulk rescan's queued catalog ids are
+  // list positions, so a reload must wait for both.
   // A finished job's refresh still writes the catalog list and selection, so a reload must wait for it too.
-  const busy = anyActive(model) || completing > 0;
+  const busy = anyActive(model) || completing > 0 || batchOpen;
 
-  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished };
+  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, rescanMany, createCatalog, cancelJob, dismissJob, clearFinished };
 }

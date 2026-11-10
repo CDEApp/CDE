@@ -80,7 +80,10 @@ public sealed class AppSettingsLocator
               "DegreesOfParallelism": 2
             },
             "Scan": {
-              "ExcludePaths": []
+              "ExcludePaths": [],
+              "StaleAfterDays": 30,
+              "RescanStaleOnStartup": false,
+              "Threads": 4
             },
             "Jobs": {
               "MaxConcurrent": 3

@@ -280,6 +280,7 @@ tbody tr:hover { background: var(--row-hover); }
 .cataloglist td.dates { font-variant-numeric: tabular-nums; }
 .cataloglist tbody tr.selected, .cataloglist tbody tr.selected:hover { background: var(--accent); color: #fff; }
 .cataloglist tr.rescanning td { color: #8a8a8a; font-style: italic; }
+.stale-badge { margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #4a3d12; color: #f1e2a8; font-size: 11px; }
 
 /* new catalog: dialog form, Catalogs-tab toolbar, toast action */
 .nc-form { display: flex; flex-direction: column; gap: 4px; }

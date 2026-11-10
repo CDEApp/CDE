@@ -14,6 +14,10 @@ public sealed class CatalogsResponse
     public long MemoryBytes { get; set; }
     /// <summary>Legacy .cde catalogs the last load found and did not load; the UI offers to migrate them.</summary>
     public IReadOnlyList<LegacyCatalogDto> LegacyCatalogs { get; set; } = [];
+    /// <summary>AppConfig:Scan:StaleAfterDays as of this request (appsettings reloads apply); 0 means no stale marker.</summary>
+    public int StaleAfterDays { get; set; }
+    /// <summary>AppConfig:Scan:RescanStaleOnStartup as of this request.</summary>
+    public bool RescanStaleOnStartup { get; set; }
 }
 
 /// <summary>

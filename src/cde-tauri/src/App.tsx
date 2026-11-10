@@ -1,10 +1,12 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { CdeApiClient } from "./api/client";
-import type { CatalogInfo, EntryRef } from "./api/types";
+import type { CatalogInfo, CatalogsResponse, EntryRef } from "./api/types";
 import { activeCount, loadBlockedReason } from "./jobsModel";
 import { legacyNotice } from "./legacyMigration";
 import { catalogFile } from "./format";
+import { staleCatalogIds, startupRescanIds } from "./freshness";
+import { useNow } from "./hooks/useNow";
 import { searchFromHereQuery } from "./everythingSearch";
 import { dropTreemap, initialView, selectTreemap, showTreemap as showTreemapView, showView, type ViewKind } from "./viewState";
 import { AboutModal } from "./components/AboutModal";
@@ -76,7 +78,20 @@ export default function App() {
   // Jobs block a load, but useJobs needs this hook's refresh, so the check reads its latest state.
   const jobsBusyRef = useRef(false);
   const isBlocked = useCallback(() => jobsBusyRef.current, []);
-  const catalogsState = useCatalogs({ getClient, getUi, setStatus, isBlocked, onBeforeReload, onLoaded: legacy.promptFor });
+  // Rescan-on-startup runs once, for the first load of the session, and only after the window is up.
+  const startupChecked = useRef(false);
+  const startupIds = useRef<number[]>([]);
+  const { promptFor } = legacy;
+  const onLoaded = useCallback(
+    (loaded: CatalogsResponse) => {
+      promptFor(loaded);
+      if (startupChecked.current) return;
+      startupChecked.current = true;
+      startupIds.current = startupRescanIds(loaded, new Date());
+    },
+    [promptFor],
+  );
+  const catalogsState = useCatalogs({ getClient, getUi, setStatus, isBlocked, onBeforeReload, onLoaded });
   const { catalogs, refreshCatalogs, remountRoot } = catalogsState;
   const catalogList = catalogs?.catalogs ?? NO_CATALOGS;
 
@@ -102,6 +117,19 @@ export default function App() {
   );
   const jobs = useJobs({ getClient, sidecarReady: sidecar.ready, afterRescan, refreshCatalogs, openCatalog: openNewRoot });
   jobsBusyRef.current = jobs.busy;
+
+  const { rescanMany } = jobs;
+  useEffect(() => {
+    if (!sidecar.ready || startupIds.current.length === 0) return;
+    const ids = startupIds.current;
+    startupIds.current = [];
+    void rescanMany(ids);
+  }, [sidecar.ready, rescanMany]);
+
+  const staleAfterDays = catalogs?.staleAfterDays ?? 0;
+  // One clock for the list badges, the status bar count and Rescan stale, so they agree as catalogs age.
+  const now = useNow(60_000);
+  const staleIds = useMemo(() => staleCatalogIds(catalogList, staleAfterDays, now), [catalogList, staleAfterDays, now]);
 
   // Customize re-reads the rules file each time it opens: fetch first, then switch, so the editor never
   // shows stale text that a keystroke could then overwrite.
@@ -154,6 +182,8 @@ export default function App() {
           if (await catalogsState.openFolder()) setView((v) => showView(v, "catalogs"));
         }}
         onReload={reload}
+        onRescanAll={() => void jobs.rescanMany(catalogList.map((c) => c.catalogId))}
+        rescanAllDisabledReason={catalogList.length === 0 ? "No catalogs are loaded" : null}
         onExit={() => void getCurrentWindow().close()}
         onAbout={() => setAboutOpen(true)}
         onSearchSyntax={() => setSyntaxOpen(true)}
@@ -196,6 +226,8 @@ export default function App() {
         diffEpoch={diffEpoch}
         collapseNonce={collapseNonce}
         selectedCatalogId={selectedCatalogId}
+        staleAfterDays={staleAfterDays}
+        now={now}
         onSelectCatalog={setSelectedCatalogId}
         onNewCatalog={() => void newCatalog.pick()}
         onExplore={shell.exploreEntry}
@@ -210,6 +242,9 @@ export default function App() {
         onShowJobs={() => setView((v) => showView(v, "jobs"))}
         legacyNotice={legacyNotice(catalogs?.legacyCatalogs ?? [])}
         onMigrate={legacy.show}
+        staleCount={staleIds.length}
+        staleAfterDays={staleAfterDays}
+        onRescanStale={() => void jobs.rescanMany(staleIds)}
       />
       <ContextMenu menu={menus.menu} onClose={menus.close} />
       <RootUnreachableModal rootPath={jobs.unreachableRoot} onClose={jobs.clearUnreachable} />

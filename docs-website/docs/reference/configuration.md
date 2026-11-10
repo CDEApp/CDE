@@ -62,6 +62,9 @@ The file that ships beside the executable also has a Seq sink for a log server o
 | `AppConfig.Hashing.DegreesOfParallelism` | `2` | How many hashers run at once on one file system. Different file systems are always hashed in parallel. |
 | `AppConfig.Scan.ExcludePaths` | `[]` | Folders that a scan records but does not go into. See below. |
 | `AppConfig.Scan.UseDefaultExcludes` | `true` | Skip the built-in list of system folders on Linux and macOS. See below. |
+| `AppConfig.Scan.StaleAfterDays` | `30` | cde-tauri marks a catalog stale when its last scan is older than this many days. `0` turns the marker off. |
+| `AppConfig.Scan.RescanStaleOnStartup` | `false` | cde-tauri rescans the stale catalogs once, after the first catalog load of a session. |
+| `AppConfig.Scan.Threads` | `4` | Folders a scan reads at the same time. The catalog is the same for any value. Lower it for a network share or a spinning disk. |
 
 :::caution
 If you change `FirstPassSizeInBytes` after you made catalogs with hashes, delete those catalogs, scan again and hash again.

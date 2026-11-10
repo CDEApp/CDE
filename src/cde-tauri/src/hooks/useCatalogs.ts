@@ -3,6 +3,7 @@ import { open } from "@tauri-apps/plugin-dialog";
 import type { CdeApiClient } from "../api/client";
 import type { CatalogsResponse } from "../api/types";
 import type { TreeRoot } from "../components/CatalogTree";
+import { catalogCreated } from "../catalogColumns";
 import { catalogFile, catalogName } from "../format";
 import type { UiStateManager } from "../state/uiState";
 
@@ -39,6 +40,7 @@ export function useCatalogs({ getClient, getUi, setStatus, isBlocked, onBeforeRe
         fullPath: c.rootPath,
         size: c.rootSize,
         catalogName: catalogName(catalogFile(c)),
+        scannedAt: catalogCreated(c),
         generation: (treeGenRef.current[c.catalogId] ?? 0) + reloadEpochRef.current,
       })),
     );

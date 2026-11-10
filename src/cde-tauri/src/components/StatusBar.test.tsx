@@ -23,3 +23,18 @@ describe("StatusBar jobs", () => {
     expect(screen.queryByText("Jobs running")).toBeNull();
   });
 });
+
+describe("StatusBar stale catalogs", () => {
+  it("shows the stale count and threshold, and Rescan stale triggers the action", () => {
+    const onRescanStale = vi.fn();
+    render(<StatusBar catalogs={null} resultCount={0} searchTiming="" staleCount={3} staleAfterDays={30} onRescanStale={onRescanStale} />);
+    expect(screen.getByText(/3 catalogs older than 30 days/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Rescan stale" }));
+    expect(onRescanStale).toHaveBeenCalledOnce();
+  });
+
+  it("shows nothing when no catalog is stale", () => {
+    render(<StatusBar catalogs={null} resultCount={0} searchTiming="" staleCount={0} staleAfterDays={30} />);
+    expect(screen.queryByRole("button", { name: "Rescan stale" })).toBeNull();
+  });
+});
