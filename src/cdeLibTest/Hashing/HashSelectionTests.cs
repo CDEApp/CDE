@@ -84,19 +84,22 @@ public class HashSelectionTests
         ["lone.bin"] = (5 * GiB, 5),
     };
 
-    private string CatalogWithStatedSizes()
+    private string CatalogWithStatedSizes(string name = "root") => Catalog(name, StatedSizes);
+
+    // Each file holds 4 KB of seeded bytes (so a first-pass hash covers only part of it) but the catalog states the given size.
+    private string Catalog(string name, IReadOnlyDictionary<string, (long StatedSize, int ContentSeed)> files)
     {
-        var root = Path.Combine(_dir, "root");
+        var root = Path.Combine(_dir, name);
         Directory.CreateDirectory(root);
-        foreach (var (name, (_, seed)) in StatedSizes) File.WriteAllBytes(Path.Combine(root, name), Bytes(seed));
+        foreach (var (file, (_, seed)) in files) File.WriteAllBytes(Path.Combine(root, file), Bytes(seed));
 
         var config = Substitute.For<IConfiguration>();
         config.Config.Returns(new AppConfigurationSection { Display = new DisplaySection { ConsoleLogToSeq = true } });
         var tree = new RootEntry(config);
         tree.PopulateRoot(root);
-        foreach (var entry in tree.Children) entry.Size = StatedSizes[entry.Path].StatedSize;
+        foreach (var entry in tree.Children) entry.Size = files[entry.Path].StatedSize;
 
-        var cdex = Path.Combine(_dir, "root.cdex");
+        var cdex = Path.Combine(_dir, name + ".cdex");
         ColumnarFormat.Write(tree, cdex);
         return cdex;
     }
@@ -107,6 +110,13 @@ public class HashSelectionTests
         return Enumerable.Range(1, r.Count - 1)
             .Where(i => !r.IsDirectory(i))
             .ToDictionary(i => Path.GetFileName(r.FullPath(i)), i => (r.SizeOf(i), r.Flags(i)));
+    }
+
+    private static Hash16 HashOf(string cdex, string fileName)
+    {
+        using var r = new ColumnarCatalogReader(cdex);
+        var i = Enumerable.Range(1, r.Count - 1).Single(i => Path.GetFileName(r.FullPath(i)) == fileName);
+        return r.HashOf(i);
     }
 
     private static bool IsFullHash(EFlags f) => f.IsHashUsable() && (f & EFlags.PartialHash) == 0;
@@ -171,19 +181,58 @@ public class HashSelectionTests
     }
 
     [Test]
-    public void A_cancelled_run_leaves_the_catalog_byte_identical()
+    public async Task A_cancelled_run_leaves_the_catalog_byte_identical()
     {
         var cdex = CatalogWithStatedSizes();
         var original = File.ReadAllBytes(cdex);
         using var cts = new CancellationTokenSource();
         var helper = new RecordingHashHelper(Substitute.For<ILogger>(), _ => cts.Cancel());
 
-        Assert.CatchAsync<OperationCanceledException>(() =>
+        await Assert.CatchAsync<OperationCanceledException>(() =>
             ColumnarCatalogHashing.HashAndSave(NewDuplication(helper), [cdex], null, cancellationToken: cts.Token));
 
         Assert.That(helper.Read, Is.Not.Empty, "the run was cancelled while it hashed");
         Assert.That(File.ReadAllBytes(cdex), Is.EqualTo(original));
         Assert.That(File.Exists(cdex + ".tmp"), Is.False);
+    }
+
+    [Test]
+    public async Task Cancelling_while_saving_leaves_every_catalog_byte_identical()
+    {
+        var first = CatalogWithStatedSizes("one");
+        var second = CatalogWithStatedSizes("two");
+        var originals = new[] { File.ReadAllBytes(first), File.ReadAllBytes(second) };
+        using var cts = new CancellationTokenSource();
+
+        await Assert.CatchAsync<OperationCanceledException>(() =>
+            ColumnarCatalogHashing.HashAndSave(NewDuplication(), [first, second],
+                file => { if (file == second) cts.Cancel(); }, cancellationToken: cts.Token));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(File.ReadAllBytes(first), Is.EqualTo(originals[0]), "the catalog saved before the cancel");
+            Assert.That(File.ReadAllBytes(second), Is.EqualTo(originals[1]));
+            Assert.That(File.Exists(first + ".tmp") || File.Exists(second + ".tmp"), Is.False, "no temp file is left");
+        });
+    }
+
+    [Test]
+    public async Task A_copy_that_only_has_a_partial_hash_is_promoted_when_a_same_size_file_has_a_full_hash()
+    {
+        var cdex = Catalog("mixed", new Dictionary<string, (long, int)>
+        {
+            ["disk.iso"] = (3 * GiB, 7),
+            ["disk.bin"] = (3 * GiB, 7),
+        });
+        await ColumnarCatalogHashing.HashAndSave(NewDuplication(), [cdex], null,
+            selection: HashSelection.Parse("ext:iso", includeUniqueSizes: true));
+        Assert.That(IsFullHash(Entries(cdex)["disk.iso"].Flags), Is.True);
+        Assert.That(Entries(cdex)["disk.bin"].Flags & EFlags.HashDone, Is.EqualTo(EFlags.None));
+
+        await ColumnarCatalogHashing.HashAndSave(NewDuplication(), [cdex], null);
+
+        Assert.That(IsFullHash(Entries(cdex)["disk.bin"].Flags), Is.True, "a partial hash cannot be compared with a full one");
+        Assert.That(HashOf(cdex, "disk.bin"), Is.EqualTo(HashOf(cdex, "disk.iso")), "so cde dupes sees the pair");
     }
 
     [Test]

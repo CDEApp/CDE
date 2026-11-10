@@ -9,6 +9,11 @@
   one fails before any catalog is read. The filter narrows the files that share a size; `--include-unique-sizes` also
   hashes files with a unique size and gives each selected file a full hash. Hashes already in the catalog are kept.
   The filter is not saved. (#230)
+- fix (cde): `cde hash` gives a full hash to a file that only has a partial hash when a file of the same size already
+  has a full one, so `cde dupes` can compare them. Before, a new copy of a file that an earlier run had fully hashed
+  was never matched with it. (#230)
+- fix (cde): Cancelling `cde hash` while it saves leaves every catalog unchanged: each catalog is written beside
+  itself first, and only once all are written are they moved into place. (#230)
 
 ### Search
 

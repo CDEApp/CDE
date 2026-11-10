@@ -449,6 +449,8 @@ public partial class Duplication
         }
 
         ReportDuplicateSets(foundDupes.Count, totalEntriesInDupes, longestListLength);
+        var besideFull = PartialsBesideFullHashes();
+        if (besideFull.Count > 0) foundDupes.Add(new(besideFull[0].ChildDE, besideFull));
 
         // Populate HashSet with entries requiring full hash
         foreach (var kvp in foundDupes)
@@ -462,6 +464,34 @@ public partial class Duplication
 
         // Process full hashing using async pattern (same as partial hash phase)
         await ProcessFullHashAsync(foundDupes);
+    }
+
+    /// <summary>
+    /// A partial hash never equals a whole-file hash, so a file that only has a partial hash would never be compared with
+    /// a same-size file that already has a full one. Returns those partials that are not already in a set being promoted,
+    /// so they get a full hash too (as the columnar path does).
+    /// </summary>
+    private List<PairDirEntry> PartialsBesideFullHashes()
+    {
+        var fullSizes = new HashSet<long>();
+        foreach (var kvp in _duplicateFile)
+        {
+            foreach (var pair in kvp.Value)
+            {
+                if (!pair.ChildDE.IsPartialHash) fullSizes.Add(pair.ChildDE.Size);
+            }
+        }
+
+        var partials = new List<PairDirEntry>();
+        if (fullSizes.Count == 0) return partials;
+        foreach (var kvp in _duplicateFile)
+        {
+            if (kvp.Value.Count != 1) continue; // a set of more than one is promoted already
+            var pair = kvp.Value[0];
+            if (pair.ChildDE.IsPartialHash && fullSizes.Contains(pair.ChildDE.Size)) partials.Add(pair);
+        }
+
+        return partials;
     }
 
     /// <summary>

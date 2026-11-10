@@ -24,8 +24,9 @@ public static class ColumnarCatalogHashing
     /// <param name="output">Receives a record for each file hashed in this run, with its new hash, once the catalog it is in
     /// has saved (#173); a catalog that fails to save writes none. Null writes none. Files whose usable hash was already in the catalog are not repeated.</param>
     /// <param name="selection">Which files to hash; null is <see cref="HashSelection.All"/>.</param>
-    /// <param name="cancellationToken">Stops the run before any catalog is saved and throws
-    /// <see cref="OperationCanceledException"/>, so every catalog is left as it was.</param>
+    /// <param name="cancellationToken">Stops the run and throws <see cref="OperationCanceledException"/>, leaving every
+    /// catalog as it was, when it is cancelled before all the catalogs are written beside themselves. Once they are,
+    /// they are moved into place and the run is no longer cancellable.</param>
     public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
         IRecordWriter output = null, HashSelection selection = null, CancellationToken cancellationToken = default)
     {
@@ -45,22 +46,52 @@ public static class ColumnarCatalogHashing
 
             // A catalog that fails to save does not stop the others: their hashes are expensive to redo.
             List<Exception> failures = null;
+            var staged = new string[readers.Count];
+            try
+            {
+                // Stage: every catalog is written beside itself first, so a cancel up to the moves changes nothing.
+                for (var c = 0; c < readers.Count; c++)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    var file = cdexFiles[c];
+                    onSaving?.Invoke(file);
+                    var tempPath = file + ".tmp";
+                    try
+                    {
+                        ColumnarFormat.WriteWithHashes(readers[c], updates.For(c), file, tempPath);
+                        staged[c] = tempPath;
+                    }
+                    catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
+                    {
+                        TryDelete(tempPath);
+                        (failures ??= []).Add(ex);
+                    }
+                }
+
+                // The last point a cancel is honoured: past it every staged catalog is moved into place.
+                cancellationToken.ThrowIfCancellationRequested();
+            }
+            catch (OperationCanceledException)
+            {
+                foreach (var tempPath in staged)
+                    if (tempPath != null) TryDelete(tempPath);
+                throw;
+            }
+
             for (var c = 0; c < readers.Count; c++)
             {
+                if (staged[c] == null) continue;
                 var file = cdexFiles[c];
-                onSaving?.Invoke(file);
-                var tempPath = file + ".tmp";
                 var saved = false;
                 try
                 {
-                    ColumnarFormat.WriteWithHashes(readers[c], updates.For(c), file, tempPath);
                     readers[c].Dispose(); // release the mapping so the file can be replaced
-                    File.Move(tempPath, file, overwrite: true);
+                    File.Move(staged[c], file, overwrite: true);
                     saved = true;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
                 {
-                    TryDelete(tempPath);
+                    TryDelete(staged[c]);
                     (failures ??= []).Add(ex);
                 }
 

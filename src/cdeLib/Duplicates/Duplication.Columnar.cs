@@ -244,6 +244,7 @@ public partial class Duplication
         }
 
         ReportDuplicateSets(sets, entriesToHash.Count, longest);
+        QueuePartialsBesideFullHashes(candidates, hashed, entriesToHash);
         if (fullHashEveryCandidate)
         {
             entriesToHash = hashed;
@@ -299,6 +300,28 @@ public partial class Duplication
         catch (Exception ex) when (!cancellationToken.IsCancellationRequested)
         {
             RecordUnexpectedFailure(ex, nameof(CompleteFullHashesAsync));
+        }
+    }
+
+    /// <summary>
+    /// A partial hash never equals a whole-file hash, so a file that only has a partial hash would never be compared with
+    /// a same-size file that already has a full one (from an earlier promotion or an <c>--include-unique-sizes</c> run).
+    /// Queue those partials for a full hash too. Files of exactly the same size are few unless they are copies.
+    /// </summary>
+    private static void QueuePartialsBesideFullHashes(HashCandidate[] candidates, List<int> hashed, List<int> entriesToHash)
+    {
+        HashSet<long> fullSizes = null;
+        foreach (var k in hashed)
+        {
+            if ((candidates[k].Flags & Flags.PartialHash) == 0) (fullSizes ??= []).Add(candidates[k].Size);
+        }
+
+        if (fullSizes == null) return;
+        var queued = new HashSet<int>(entriesToHash);
+        foreach (var k in hashed)
+        {
+            if ((candidates[k].Flags & Flags.PartialHash) != 0 && fullSizes.Contains(candidates[k].Size) && queued.Add(k))
+                entriesToHash.Add(k);
         }
     }
 
