@@ -466,14 +466,9 @@ Each command writes these fields, in this order:
 
 #### Valid Options for this mode
 
-[`-basePath`](#parameter-options)
-[`-minSize`](#parameter-options)
-[`-maxSize`](#parameter-options)
-[`-minDateTime`](#parameter-options)
-[`-maxDateTime`](#parameter-options)
-[`-minTime`](#parameter-options)
-[`-maxTime`](#parameter-options)
-[`-minHourAge`](#parameter-options)
+- `--filter "<query>"` hashes only the files that match an Everything-style query, such as `size:>2gb` or `ext:iso;mkv` (the syntax of [cde everything](#cde-everything-query)). A file must also share its size with another file. A malformed query prints `error: ... (at position N)` and exits 1 before a catalog is read. Hashes already in the catalog are kept, and the filter is not saved.
+- `--include-unique-sizes` also hashes files whose size no other file has, and gives each selected file a full hash.
+- `--json` and `--csv` write a record for each file hashed.
 
 This mode exists to provide file hashes to the Dupes mode.
 

@@ -58,12 +58,12 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         // The token is the Ctrl-C break signal. For hashing a break ends the current phase (handled inside Duplication),
         // then the hashes so far are saved, so nothing here may stop on it: not the work, the display, or the
         // in-process notifications. The token stays cancelled after the first break, so passing it on would fail them.
-        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles, request.Output), CancellationToken.None);
+        var mainLoopTask = Task.Run(() => MainLoop(cdexFiles, request.Output, request.Selection), CancellationToken.None);
         HashProgressConsole.Start(mainLoopTask);
         await mainLoopTask.ConfigureAwait(false);
     }
 
-    private async Task MainLoop(IList<string> cdexFiles, IRecordWriter output)
+    private async Task MainLoop(IList<string> cdexFiles, IRecordWriter output, HashSelection selection)
     {
         _logger.Information("Memory pre-hash: {MemoryAllocated}",
             _applicationDiagnostics.GetMemoryAllocated().FormatAsBytes());
@@ -78,7 +78,8 @@ public class HashCatalogCommandHandler : IRequestHandler<HashCatalogCommand>
         try
         {
             await ColumnarCatalogHashing.HashAndSave(_duplication, cdexFiles,
-                file => HashProgressConsole.EnqueueMessage($"Saving catalog {file}"), output).ConfigureAwait(false);
+                file => HashProgressConsole.EnqueueMessage($"Saving catalog {file}"), output, selection)
+                .ConfigureAwait(false);
 
             var ts = stopwatch.Elapsed;
             var elapsedTime = string.Create(CultureInfo.InvariantCulture,
