@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Threading;
 using cdeAppCore.Compare;
 using cdeAppCore.Dtos;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Routing;
 
 namespace cdeApi;
 
@@ -15,6 +17,12 @@ namespace cdeApi;
 public static class CompareEndpoint
 {
     public const int ClientClosedRequest = 499;
+
+    public static IEndpointRouteBuilder MapCompareEndpoints(this IEndpointRouteBuilder app)
+    {
+        app.MapPost("/compare/summaries", Handle);
+        return app;
+    }
 
     public static IResult Handle(CompareSummariesRequest request, ICompareService compare, CancellationToken ct)
     {

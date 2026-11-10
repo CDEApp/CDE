@@ -100,7 +100,7 @@ public static class ApiComposition
         app.MapPost("/search", SearchEndpoint.HandleAsync);
 
         // POST /compare/summaries — exact subtree summaries for folder pairs (JSON).
-        app.MapPost("/compare/summaries", CompareEndpoint.Handle);
+        app.MapCompareEndpoints();
 
         return app;
     }
