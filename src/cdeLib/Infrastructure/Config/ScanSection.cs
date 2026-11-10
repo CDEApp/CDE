@@ -13,4 +13,10 @@ public class ScanSection
     /// built-in defaults. The list lives in code.
     /// </summary>
     public bool UseDefaultExcludes { get; set; } = true;
+
+    /// <summary>
+    /// Folders a scan reads at the same time (#235). The catalog is the same for any value; 1 is a single-threaded walk.
+    /// A network share or a spinning disk can be slower with more, so lower it for those.
+    /// </summary>
+    public int Threads { get; set; } = 4;
 }

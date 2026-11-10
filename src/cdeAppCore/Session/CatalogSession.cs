@@ -50,6 +50,8 @@ public sealed partial class CatalogSession : ICatalogSession
     // Read per scan, never cached: appsettings reloads at runtime and a rescan must see the current excludes.
     private ScanExcludeMatcher CurrentExcludes() => ScanExcludeMatcher.ForScanConfig(_scanConfig?.Invoke());
 
+    private int CurrentScanThreads() => (_scanConfig?.Invoke() ?? new ScanSection()).Threads;
+
     public int CatalogCount => _slots.Count;
 
     // An unavailable slot (failed swap that could not be rolled back) counts as empty rather than throwing.
