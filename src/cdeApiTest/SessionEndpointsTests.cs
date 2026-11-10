@@ -8,6 +8,7 @@ using cdeAppCore.Jobs;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.Extensions.Configuration;
 using NSubstitute;
 using NUnit.Framework;
 
@@ -45,13 +46,46 @@ public class SessionEndpointsTests
     [Test]
     public void Catalogs_reports_the_loaded_catalogs_and_status_figures()
     {
-        var response = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session)).Value!;
+        var response = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session, Config())).Value!;
 
         Assert.That(response.Catalogs, Has.Count.EqualTo(1));
         Assert.That(response.CatalogsLoaded, Is.EqualTo(1));
         Assert.That(response.TotalEntries, Is.EqualTo(_catalog.Session.TotalEntryCount).And.GreaterThan(0));
         Assert.That(response.CatalogDir, Is.EqualTo(_catalog.Session.CatalogDir));
         Assert.That(response.MemoryBytes, Is.GreaterThan(0));
+    }
+
+    private static IConfiguration Config(params (string Key, string Value)[] values) =>
+        new ConfigurationBuilder().AddInMemoryCollection(values.Select(v => new System.Collections.Generic.KeyValuePair<string, string>(v.Key, v.Value))).Build();
+
+    [Test]
+    public void Catalogs_defaults_to_a_30_day_stale_threshold_with_startup_rescan_off()
+    {
+        var response = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session, Config())).Value!;
+
+        Assert.That(response.StaleAfterDays, Is.EqualTo(30));
+        Assert.That(response.RescanStaleOnStartup, Is.False);
+    }
+
+    [Test]
+    public void Catalogs_reports_the_configured_stale_settings_on_every_request()
+    {
+        var config = Config(("AppConfig:Scan:StaleAfterDays", "7"), ("AppConfig:Scan:RescanStaleOnStartup", "true"));
+        var first = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session, config)).Value!;
+        config["AppConfig:Scan:StaleAfterDays"] = "0";
+        var second = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session, config)).Value!;
+
+        Assert.That(first.StaleAfterDays, Is.EqualTo(7));
+        Assert.That(first.RescanStaleOnStartup, Is.True);
+        Assert.That(second.StaleAfterDays, Is.EqualTo(0));
+    }
+
+    [Test]
+    public void Catalogs_treats_a_negative_threshold_as_off()
+    {
+        var response = ((JsonHttpResult<CatalogsResponse>)SessionEndpoints.Catalogs(_catalog.Session, Config(("AppConfig:Scan:StaleAfterDays", "-5")))).Value!;
+
+        Assert.That(response.StaleAfterDays, Is.EqualTo(0));
     }
 
     [TestCase(null, "configured", TestName = "no path uses the configured folder")]

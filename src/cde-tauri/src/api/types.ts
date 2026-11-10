@@ -117,6 +117,10 @@ export interface CatalogsResponse {
   memoryBytes: number;
   /** Legacy .cde catalogs the last load found and did not load (no .cdex beside them); offered for migration. */
   legacyCatalogs: LegacyCatalog[];
+  /** AppConfig.Scan.StaleAfterDays: a catalog scanned longer ago than this many days is stale; 0 = no marker. */
+  staleAfterDays: number;
+  /** AppConfig.Scan.RescanStaleOnStartup: rescan the stale catalogs once after the first load. */
+  rescanStaleOnStartup: boolean;
 }
 
 export interface LegacyCatalog {

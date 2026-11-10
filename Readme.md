@@ -24,6 +24,7 @@
   - [cde Operation](#cde-operation)
   - [Examples](#examples)
   - [cde scan Path](#cde-scan-path)
+    - [Keeping catalogs current](#keeping-catalogs-current)
   - [cde find String](#cde-find-string)
   - [cde everything Query](#cde-everything-query)
   - [Machine-readable output](#machine-readable-output---json-and---csv)
@@ -315,6 +316,50 @@ Pass `--exclude <path>` to skip a folder for this scan only. Repeat it for sever
 ```
   cde scan /data --exclude /data/cache --exclude "/data/*/tmp"
 ```
+
+#### Keeping catalogs current
+
+A catalog is a snapshot. cde-tauri shows how long ago each catalog was scanned and marks the old ones (see `AppConfig.Scan.StaleAfterDays`), but it only runs while its window is open. To rescan while the app is closed, run `cde scan <path>` from your operating system's scheduler. The scan updates the existing catalog for that path in the folder you run it from, reuses hashes for files that did not change, and leaves the old catalog untouched if it fails. Run it from your catalog folder, as the examples do.
+
+Windows Task Scheduler, every day at 02:00 (run once in a Command Prompt; adjust the paths):
+
+```
+schtasks /Create /SC DAILY /ST 02:00 /TN "cde scan data" /TR "cmd /c cd /d D:\catalogs && C:\tools\cde\cde.exe scan D:\data"
+```
+
+cron, every day at 02:00 (add with `crontab -e`):
+
+```
+0 2 * * * cd /var/lib/cde && /usr/local/bin/cde scan /data
+```
+
+systemd timer, every day at 02:00. Create `/etc/systemd/system/cde-scan.service`:
+
+```
+[Unit]
+Description=Rescan the /data catalog
+
+[Service]
+Type=oneshot
+WorkingDirectory=/var/lib/cde
+ExecStart=/usr/local/bin/cde scan /data
+```
+
+and `/etc/systemd/system/cde-scan.timer`:
+
+```
+[Unit]
+Description=Rescan the /data catalog daily
+
+[Timer]
+OnCalendar=*-*-* 02:00:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target
+```
+
+Then run `sudo systemctl enable --now cde-scan.timer`. `Persistent=true` runs a missed scan at the next boot.
 
 ### cde find String
 
@@ -638,7 +683,7 @@ The file shipped beside the executables has a Seq sink for a log server on `loca
 
 cde reads `AppConfig` and `Serilog`. The cde-tauri sidecar reads `Cde.ConfigPath` (the folder catalogs load from, default `.`) and `CustomCommands`, and `shell.json` in the same config folder is layered over it. cdeWin is unchanged: it reads the `appsettings.json` beside `cdeWin.exe`.
 
-There are 5 values in `AppConfig` that can be modified to change cde behaviour.
+There are 7 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Display.ProgressUpdateInterval` which defaults to 5000.
 
@@ -666,6 +711,15 @@ There are 5 values in `AppConfig` that can be modified to change cde behaviour.
   - On Linux, also skips `/proc`, `/sys`, `/dev`, `/run`, `/tmp`, `/var/tmp`, `/var/cache`, `/var/spool`, `/var/lock`, `/lost+found` and `/home/*/.cache`. Note `/var/spool` can hold user mail; scan it explicitly if you want it. `ExcludePaths` adds to this list.
   - On macOS, also skips `/dev`, `/.Spotlight-V100` and `/.fseventsd` (the last two are the per-volume Spotlight index and file system events store at a volume root). The two dot folders are anchored at `/`, so they apply when you scan from `/`; to exclude them on another volume add a pattern such as `/Volumes/<name>/.Spotlight-V100`. `ExcludePaths` adds to this list.
   - Set it to false to scan those folders. It has no effect on Windows, which has no built-in list.
+
+- `AppConfig.Scan.StaleAfterDays` which defaults to 30.
+
+  - In cde-tauri, a catalog whose last scan finished more than this many days ago is marked stale in the Catalogs tab, and the status bar offers "Rescan stale". Set it to 0 to turn the marker off.
+  - The setting is read on every refresh of the catalog list, so an edit applies after the next rescan or reload.
+
+- `AppConfig.Scan.RescanStaleOnStartup` which defaults to false.
+
+  - When true, cde-tauri rescans the stale catalogs once, after the first catalog load of a session. Search keeps working while they rescan. A catalog whose root is not reachable is skipped and listed in one notification.
 
 ### Catalog file sizes and memory usage
 

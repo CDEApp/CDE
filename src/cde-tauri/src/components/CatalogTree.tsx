@@ -3,6 +3,7 @@ import { CdeApiClient } from "../api/client";
 import { DirectoryNode, EntryRef, refToString } from "../api/types";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { toHRString } from "../format";
+import { scannedText } from "../freshness";
 import { flipDirection, isHiddenByFilter, sortForKey, visibleRoots, type RootSort, type RootSortKey } from "../rootsView";
 import { changedCatalogs, flattenTree, nextSelection, type TreeRoot, type TreeRow } from "../treeModel";
 import { StyledName } from "./StyledName";
@@ -20,6 +21,12 @@ const SORT_OPTIONS: { value: RootSortKey | ""; label: string }[] = [
   { value: "catalog", label: "Catalog name" },
   { value: "size", label: "Size" },
 ];
+
+function rootTitle(row: TreeRow): string {
+  const path = row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath;
+  const scanned = row.isRoot ? scannedText(row.scannedAt, new Date()) : "";
+  return scanned ? `${path}\n${scanned}` : path;
+}
 
 // Tree glyphs as inline SVG (crisp at any DPI, unlike the old ▸ / · text characters).
 function Chevron({ expanded }: { expanded: boolean }) {
@@ -349,7 +356,7 @@ export function CatalogTree({
                 <span className="twisty leaf" aria-hidden="true" />
               )}
               <NodeIcon kind={row.isRoot ? "drive" : row.expanded && row.hasChildren ? "folder-open" : "folder"} />
-              <span className="tree-label" title={row.catalogName ? `${row.fullPath} [${row.catalogName}]` : row.fullPath}>
+              <span className="tree-label" title={rootTitle(row)}>
                 <StyledName nameStyle={nameStyle}>{row.label}</StyledName>
               </span>
               {/* Outside the label so a narrow pane truncates the path, not the name telling roots apart. */}

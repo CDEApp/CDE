@@ -1,3 +1,4 @@
+using System;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
@@ -6,6 +7,8 @@ using cdeAppCore.Session;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.Configuration;
+using ScanSection = cdeLib.Infrastructure.Config.ScanSection;
 
 namespace cdeApi;
 
@@ -23,9 +26,10 @@ public static class SessionEndpoints
     public static IResult Health() => Results.Ok(new { status = "ok" });
 
     /// <summary><c>GET /catalogs</c>: the loaded catalogs plus the status-bar figures.</summary>
-    public static IResult Catalogs(ICatalogSession session)
+    public static IResult Catalogs(ICatalogSession session, IConfiguration configuration)
     {
         using var proc = Process.GetCurrentProcess();
+        var scan = configuration.GetSection("AppConfig:Scan").Get<ScanSection>() ?? new ScanSection();
         return Results.Json(new CatalogsResponse
         {
             Catalogs = session.GetCatalogs(),
@@ -33,7 +37,9 @@ public static class SessionEndpoints
             CatalogsLoaded = session.CatalogCount,
             TotalEntries = session.TotalEntryCount,
             MemoryBytes = proc.PrivateMemorySize64,
-            LegacyCatalogs = session.LegacyCatalogs
+            LegacyCatalogs = session.LegacyCatalogs,
+            StaleAfterDays = Math.Max(0, scan.StaleAfterDays),
+            RescanStaleOnStartup = scan.RescanStaleOnStartup
         });
     }
 

@@ -186,3 +186,27 @@ describe("CatalogTree sort and filter of the roots", () => {
     });
   });
 });
+
+describe("CatalogTree root tooltip", () => {
+  const renderRoot = (r: TreeRoot) =>
+    render(
+      <CatalogTree
+        client={{} as CdeApiClient}
+        roots={[r]}
+        selectedKey={null}
+        onSelect={() => {}}
+        onContextMenu={() => {}}
+        resolveStyle={() => undefined}
+      />,
+    );
+
+  it("tells how long ago the catalog was scanned", () => {
+    renderRoot({ ...root, scannedAt: new Date(Date.now() - 3 * 86_400_000 - 60_000) });
+    expect(screen.getByText("C:").closest(".tree-label")?.getAttribute("title")).toBe("C:\\ [cat]\nScanned 3 days ago");
+  });
+
+  it("keeps the plain path tooltip when the scan time is unknown", () => {
+    renderRoot(root);
+    expect(screen.getByText("C:").closest(".tree-label")?.getAttribute("title")).toBe("C:\\ [cat]");
+  });
+});
