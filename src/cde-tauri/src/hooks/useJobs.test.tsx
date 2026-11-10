@@ -55,7 +55,8 @@ function setup() {
   );
   const snapshot = (jobs: JobDto[]) => act(async () => handlers.onSnapshot({ jobs, maxConcurrent: 3 }));
   const event = (j: JobDto) => act(async () => handlers.onJob(j));
-  return { ...hook, client, afterRescan, refreshCatalogs, openCatalog, snapshot, event };
+  const pushJob = (j: JobDto) => handlers.onJob(j);
+  return { ...hook, client, afterRescan, refreshCatalogs, openCatalog, snapshot, event, pushJob };
 }
 
 beforeEach(() => {
@@ -346,6 +347,46 @@ describe("useJobs rescanMany", () => {
     await act(() => t.result.current.rescanMany([1, 2]));
     await t.event(done(1));
     expect(show.mock.calls.filter(([a]) => /skipped|not started/.test(a.title))).toHaveLength(0);
+  });
+
+  it("moves on when a job finishes before its submit returns, and still gathers an unreachable root", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    t.client.submitJob.mockImplementation(async (req: { catalogId: number }) => {
+      const failed = req.catalogId === 1
+        ? job(1, { state: "failed", error: { code: "root-not-accessible", message: "gone", rootPath: "E:\\usb" } })
+        : done(req.catalogId);
+      t.pushJob(failed);
+      return job(req.catalogId, { state: "queued" });
+    });
+    await act(() => t.result.current.rescanMany([1, 2]));
+    expect(t.client.submitJob).toHaveBeenCalledTimes(2);
+    expect(t.result.current.unreachableRoot).toBeNull();
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "1 catalog skipped, root not reachable" }));
+  });
+
+  it("adds a second bulk rescan to the running one, so still one catalog at a time", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    t.client.submitJob.mockImplementation(async (req: { catalogId: number }) => job(req.catalogId, { state: "queued" }));
+    await act(() => t.result.current.rescanMany([1, 2]));
+    await act(() => t.result.current.rescanMany([2, 3]));
+    expect(t.client.submitJob).toHaveBeenCalledTimes(1);
+    expect(t.result.current.busy).toBe(true);
+    await t.event(done(1));
+    await t.event(done(2));
+    await t.event(done(3));
+    expect(t.client.submitJob.mock.calls.map(([r]) => r.catalogId)).toEqual([1, 2, 3]);
+  });
+
+  it("stops the bulk rescan when the user cancels its running job", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    t.client.submitJob.mockImplementation(async (req: { catalogId: number }) => job(req.catalogId, { state: "queued" }));
+    await act(() => t.result.current.rescanMany([1, 2, 3]));
+    await t.event(job(1, { state: "cancelled" }));
+    expect(t.client.submitJob).toHaveBeenCalledTimes(1);
+    expect(t.result.current.busy).toBe(false);
   });
 
   it("reports other refusals once, together", async () => {

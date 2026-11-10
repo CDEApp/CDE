@@ -114,6 +114,19 @@ public class ParallelScanTests
         Assert.That(last, Is.EqualTo(tree.FileEntryCount + tree.DirEntryCount));
     }
 
+    [Test]
+    public void ParallelScan_ProgressCountsNeverGoDown()
+    {
+        var counts = new System.Collections.Generic.List<int>();
+        var tree = new RootEntry { SimpleScanCountEvent = (n, _) => counts.Add(n) };
+        for (var run = 0; run < 20; run++)
+        {
+            counts.Clear();
+            tree.PopulateRoot(_data, threads: 8);
+            Assert.That(counts, Is.Ordered, $"run {run}");
+        }
+    }
+
     [TestCase(1)]
     [TestCase(8)]
     public void ACancelThrownFromProgress_StopsTheScanAndReachesTheCaller(int threads)

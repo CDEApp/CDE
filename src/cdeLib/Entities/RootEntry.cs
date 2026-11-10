@@ -325,11 +325,14 @@ public sealed class RootEntry : object, ICommonEntry
             .Replace(':', '_');
     }
 
+    /// <summary>A typo in <c>AppConfig.Scan.Threads</c> must not start hundreds of threads per scan; 16 already gains nothing over 4 on C:\ (#235).</summary>
+    public const int MaxScanThreads = 64;
+
     /// <summary>
     /// Scans a directory tree. Folders matched by <paramref name="excludes"/> are recorded but not descended into; the
     /// start path, and any pattern covering it or its ancestors, never applies. <paramref name="threads"/> folders are
     /// enumerated at once (#235). Each folder is read whole by one thread in OS order, so the tree is the same for any
-    /// thread count. 1 runs on the calling thread.
+    /// thread count. 1 runs on the calling thread; more than <see cref="MaxScanThreads"/> is capped.
     /// </summary>
     public void RecurseTree(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
         CancellationToken token = default, int threads = 1)
@@ -341,7 +344,7 @@ public sealed class RootEntry : object, ICommonEntry
         _unreadableFolderCount = 0;
 
         var progress = new ScanProgressTracker(SimpleScanCountEvent);
-        new ScanWalk(this, excludes, progress, token).Run(startPath, Math.Max(1, threads));
+        new ScanWalk(this, excludes, progress, token).Run(startPath, Math.Clamp(threads, 1, MaxScanThreads));
 
         if (threads > 1 && PathsWithUnauthorisedExceptions is List<string> unreadable)
         {
@@ -589,13 +592,19 @@ public sealed class RootEntry : object, ICommonEntry
         private const int EventBatchSize = 1000;
         private readonly object _eventGate = new();
         private int _count;
+        private int _lastReported;
 
         public void ReportProgress(string currentDirectory)
         {
             var count = Interlocked.Increment(ref _count);
             if (eventHandler != null && count % EventBatchSize == 0)
             {
-                lock (_eventGate) eventHandler(count, currentDirectory);
+                lock (_eventGate)
+                {
+                    if (count <= _lastReported) return; // a later batch won the lock; never report a count going down
+                    _lastReported = count;
+                    eventHandler(count, currentDirectory);
+                }
             }
         }
 
