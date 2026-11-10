@@ -299,7 +299,7 @@ export function useJobs({
     b.submitting = false;
     const early = [...settledEarly.current.values()];
     settledEarly.current.clear();
-    early.forEach(settle);
+    for (const job of early) settle(job);
     if (b.jobIds.size === 0 && b.queue.length === 0 && batchRef.current === b) {
       batchRef.current = null;
       setBatchOpen(false);

@@ -100,7 +100,7 @@ public sealed partial class CatalogSession
                     progress?.Report(new RescanProgress(catalogId, "scanning", count, current));
                 }
             };
-            tree.PopulateRoot(rootPath, followJunctions, CurrentExcludes(), ct, CurrentScanThreads());
+            tree.PopulateRoot(rootPath, followJunctions, CurrentExcludes(), CurrentScanThreads(), ct);
             ct.ThrowIfCancellationRequested();
             if (!Directory.Exists(rootPath)) throw new RootNotAccessibleException(rootPath); // vanished mid-scan
 

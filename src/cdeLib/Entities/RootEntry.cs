@@ -118,11 +118,11 @@ public sealed class RootEntry : object, ICommonEntry
     }
 
     public void PopulateRoot(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
-        CancellationToken token = default, int threads = 1)
+        int threads = 1, CancellationToken token = default)
     {
         startPath = GetRootEntry(startPath);
         ScanStartUtc = DateTime.UtcNow;
-        RecurseTree(startPath, followJunctions, excludes, token, threads);
+        RecurseTree(startPath, followJunctions, excludes, threads, token);
         ScanEndUtc = DateTime.UtcNow;
         SetInMemoryFields();
     }
@@ -335,7 +335,7 @@ public sealed class RootEntry : object, ICommonEntry
     /// thread count. 1 runs on the calling thread; more than <see cref="MaxScanThreads"/> is capped.
     /// </summary>
     public void RecurseTree(string startPath, bool followJunctions = false, ScanExcludeMatcher excludes = null,
-        CancellationToken token = default, int threads = 1)
+        int threads = 1, CancellationToken token = default)
     {
         FollowJunctions = followJunctions;
         excludes = (excludes ?? ScanExcludeMatcher.None).ForScanRoot(startPath);
