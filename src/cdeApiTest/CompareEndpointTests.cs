@@ -151,7 +151,7 @@ public class CompareEndpointTests
             o.SerializerOptions.TypeInfoResolverChain.Insert(0, AppCoreJsonContext.Default));
         builder.Services.AddSingleton<ICompareService>(new CompareService(_catalog.Session));
         await using var app = builder.Build();
-        app.MapPost("/compare/summaries", CompareEndpoint.Handle);
+        app.MapCompareEndpoints();
         await app.StartAsync();
 
         using var http = new HttpClient { BaseAddress = new Uri(app.Urls.First()) };
