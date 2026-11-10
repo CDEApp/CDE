@@ -683,7 +683,7 @@ The file shipped beside the executables has a Seq sink for a log server on `loca
 
 cde reads `AppConfig` and `Serilog`. The cde-tauri sidecar reads `Cde.ConfigPath` (the folder catalogs load from, default `.`) and `CustomCommands`, and `shell.json` in the same config folder is layered over it. cdeWin is unchanged: it reads the `appsettings.json` beside `cdeWin.exe`.
 
-There are 7 values in `AppConfig` that can be modified to change cde behaviour.
+There are 8 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Display.ProgressUpdateInterval` which defaults to 5000.
 
@@ -719,7 +719,12 @@ There are 7 values in `AppConfig` that can be modified to change cde behaviour.
 
 - `AppConfig.Scan.RescanStaleOnStartup` which defaults to false.
 
-  - When true, cde-tauri rescans the stale catalogs once, after the first catalog load of a session. Search keeps working while they rescan. A catalog whose root is not reachable is skipped and listed in one notification.
+  - When true, cde-tauri rescans the stale catalogs once, after the first catalog load of a session. Search keeps working while they rescan, one catalog at a time. A catalog whose root is not reachable is skipped and listed in one notification.
+
+- `AppConfig.Scan.Threads` which defaults to 4.
+
+  - The number of folders a scan reads at the same time, in `cde scan` and in cde-tauri's new catalog and rescan. The catalog is the same for any value. 1 reads one folder at a time.
+  - A network share or a spinning disk can get slower with more threads. Lower it if scans of those take longer than before.
 
 ### Catalog file sizes and memory usage
 

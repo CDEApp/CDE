@@ -82,7 +82,8 @@ public sealed class AppSettingsLocator
             "Scan": {
               "ExcludePaths": [],
               "StaleAfterDays": 30,
-              "RescanStaleOnStartup": false
+              "RescanStaleOnStartup": false,
+              "Threads": 4
             },
             "Jobs": {
               "MaxConcurrent": 3
