@@ -379,6 +379,18 @@ describe("useJobs rescanMany", () => {
     expect(t.client.submitJob.mock.calls.map(([r]) => r.catalogId)).toEqual([1, 2, 3]);
   });
 
+  it("does not queue again a catalog the open bulk rescan is running or has done", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    t.client.submitJob.mockImplementation(async (req: { catalogId: number }) => job(req.catalogId, { state: "queued" }));
+    await act(() => t.result.current.rescanMany([1, 2]));
+    await act(() => t.result.current.rescanMany([1, 2, 3]));
+    await t.event(done(1));
+    await t.event(done(2));
+    await t.event(done(3));
+    expect(t.client.submitJob.mock.calls.map(([r]) => r.catalogId)).toEqual([1, 2, 3]);
+  });
+
   it("stops the bulk rescan when the user cancels its running job", async () => {
     const t = setup();
     await t.snapshot([]);

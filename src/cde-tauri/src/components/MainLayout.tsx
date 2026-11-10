@@ -43,6 +43,8 @@ interface Props {
   selectedCatalogId: number | null;
   /** AppConfig.Scan.StaleAfterDays from the last catalog load; 0 = no stale marker. */
   staleAfterDays: number;
+  /** The shared clock for catalog ages and the stale marker. */
+  now: Date;
   onSelectCatalog: (catalogId: number | null) => void;
   onNewCatalog: () => void;
   onExplore: (ref: EntryRef) => void;
@@ -87,6 +89,7 @@ export function MainLayout(p: Props) {
             catalogs={p.catalogs}
             rescanningIds={activeCatalogIds(jobs.model)}
             staleAfterDays={p.staleAfterDays}
+            now={p.now}
             sort={catalogSort}
             selectedId={p.selectedCatalogId}
             onSelect={p.onSelectCatalog}

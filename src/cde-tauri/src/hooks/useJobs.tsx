@@ -35,6 +35,8 @@ type Callbacks = Pick<UseJobsOptions, "afterRescan" | "refreshCatalogs" | "openC
 interface RescanBatch {
   /** Catalogs not submitted yet. */
   queue: number[];
+  /** Every catalog this batch has taken on; a request that joins it adds only the others. */
+  included: Set<number>;
   jobIds: Set<number>;
   submitting: boolean;
   unreachable: Set<string>;
@@ -307,12 +309,15 @@ export function useJobs({
 
   const rescanMany = useCallback(async (catalogIds: readonly number[]) => {
     let batch = batchRef.current;
-    if (batch) {
-      batch.queue.push(...catalogIds.filter((id) => !batch!.queue.includes(id)));
-    } else {
-      batch = { queue: [...catalogIds], jobIds: new Set(), submitting: false, unreachable: new Set(), refused: [] };
+    if (!batch) {
+      batch = { queue: [], included: new Set(), jobIds: new Set(), submitting: false, unreachable: new Set(), refused: [] };
       batchRef.current = batch;
       setBatchOpen(true);
+    }
+    for (const id of catalogIds) {
+      if (batch.included.has(id)) continue;
+      batch.included.add(id);
+      batch.queue.push(id);
     }
     await advanceBatch.current(batch);
   }, []);

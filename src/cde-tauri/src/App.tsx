@@ -6,6 +6,7 @@ import { activeCount, loadBlockedReason } from "./jobsModel";
 import { legacyNotice } from "./legacyMigration";
 import { catalogFile } from "./format";
 import { staleCatalogIds, startupRescanIds } from "./freshness";
+import { useNow } from "./hooks/useNow";
 import { searchFromHereQuery } from "./everythingSearch";
 import { dropTreemap, initialView, selectTreemap, showTreemap as showTreemapView, showView, type ViewKind } from "./viewState";
 import { AboutModal } from "./components/AboutModal";
@@ -126,7 +127,9 @@ export default function App() {
   }, [sidecar.ready, rescanMany]);
 
   const staleAfterDays = catalogs?.staleAfterDays ?? 0;
-  const staleIds = useMemo(() => staleCatalogIds(catalogList, staleAfterDays, new Date()), [catalogList, staleAfterDays]);
+  // One clock for the list badges, the status bar count and Rescan stale, so they agree as catalogs age.
+  const now = useNow(60_000);
+  const staleIds = useMemo(() => staleCatalogIds(catalogList, staleAfterDays, now), [catalogList, staleAfterDays, now]);
 
   // Customize re-reads the rules file each time it opens: fetch first, then switch, so the editor never
   // shows stale text that a keystroke could then overwrite.
@@ -224,6 +227,7 @@ export default function App() {
         collapseNonce={collapseNonce}
         selectedCatalogId={selectedCatalogId}
         staleAfterDays={staleAfterDays}
+        now={now}
         onSelectCatalog={setSelectedCatalogId}
         onNewCatalog={() => void newCatalog.pick()}
         onExplore={shell.exploreEntry}
