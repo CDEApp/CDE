@@ -176,3 +176,36 @@ describe("CatalogList description column", () => {
     expect(screen.getByRole("columnheader", { name: /^Description/ })).toBeTruthy();
   });
 });
+
+describe("CatalogList freshness", () => {
+  const NOW = new Date("2026-06-15T12:00:00Z");
+  const scannedAgo = (days: number) => {
+    const t = 621_355_968_000_000_000 + (NOW.getTime() - days * 86_400_000) * 10_000;
+    return { scanEndUtcTicks: t, scanStartUtcTicks: t };
+  };
+  const rows = [
+    { ...cat(1, "C:\\fresh", 1), ...scannedAgo(3) },
+    { ...cat(2, "C:\\old", 1), ...scannedAgo(45) },
+  ];
+  const show = (staleAfterDays: number) =>
+    render(<CatalogList catalogs={rows} sort={null} onSort={() => {}} onActivate={() => {}} staleAfterDays={staleAfterDays} now={NOW} />);
+  const createdCell = (row: number) => within(screen.getAllByRole("row")[row + 1]).getAllByRole("cell")[9];
+
+  it("tells how long ago each catalog was scanned", () => {
+    show(30);
+    expect(createdCell(0).getAttribute("title")).toBe("Scanned 3 days ago");
+    expect(createdCell(1).getAttribute("title")).toBe("Scanned 1 month ago");
+  });
+
+  it("marks only the catalogs past the threshold as stale", () => {
+    show(30);
+    expect(within(createdCell(0)).queryByText("stale")).toBeNull();
+    expect(within(createdCell(1)).getByText("stale")).toBeTruthy();
+    expect(screen.getAllByRole("row")[2].classList.contains("stale")).toBe(true);
+  });
+
+  it("marks nothing when the threshold is 0", () => {
+    show(0);
+    expect(screen.queryByText("stale")).toBeNull();
+  });
+});

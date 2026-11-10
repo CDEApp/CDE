@@ -5,11 +5,14 @@ interface Props {
   onNewCatalog: () => void;
   onOpenFolder: () => void;
   onReload: () => void;
+  onRescanAll: () => void;
   onExit: () => void;
   onAbout: () => void;
   onSearchSyntax: () => void;
   /** When set, Open Folder and Reload are disabled and this is their tooltip (e.g. a rescan is running). */
   loadDisabledReason?: string | null;
+  /** When set, Rescan All Catalogs is disabled and this is its tooltip (no catalogs are loaded). */
+  rescanAllDisabledReason?: string | null;
 }
 
 type MenuEntry =
@@ -27,7 +30,7 @@ interface MenuDef {
  * outside click closes; hovering another title while one is open switches to it; Left/Right move between
  * menus. "File ▸ New Catalog…" scans a folder into a new catalog; "Open Folder…" picks a catalog directory.
  */
-export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout, onSearchSyntax, loadDisabledReason }: Props) {
+export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onRescanAll, onExit, onAbout, onSearchSyntax, loadDisabledReason, rescanAllDisabledReason }: Props) {
   const [state, setState] = useState<MenuState>(closeMenus());
   const ref = useRef<HTMLDivElement>(null);
   const loadBlocked = !!loadDisabledReason;
@@ -43,6 +46,13 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
           { kind: "item", label: "New Catalog…", action: onNewCatalog, title: "Scan a folder into a new catalog file in the catalog folder" },
           { kind: "item", label: "Open Folder…", action: onOpenFolder, disabled: loadBlocked, title: loadTitle },
           { kind: "item", label: "Reload Catalogs", action: onReload, disabled: loadBlocked, title: loadTitle },
+          {
+            kind: "item",
+            label: "Rescan All Catalogs",
+            action: onRescanAll,
+            disabled: !!rescanAllDisabledReason,
+            title: rescanAllDisabledReason ?? "Rescan every catalog in the background",
+          },
           { kind: "separator" },
           { kind: "item", label: "Exit", action: onExit },
         ],
@@ -57,7 +67,7 @@ export function MenuBar({ onNewCatalog, onOpenFolder, onReload, onExit, onAbout,
         ],
       },
     ],
-    [onNewCatalog, onOpenFolder, onReload, onExit, onAbout, onSearchSyntax, loadBlocked, loadTitle],
+    [onNewCatalog, onOpenFolder, onReload, onRescanAll, onExit, onAbout, onSearchSyntax, loadBlocked, loadTitle, rescanAllDisabledReason],
   );
   // Latest ids live in a ref so the window listeners below subscribe only when a menu opens or closes,
   // not on every App render (inline handler props change identity each render).

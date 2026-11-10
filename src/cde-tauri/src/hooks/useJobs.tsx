@@ -27,6 +27,36 @@ export interface UseJobsOptions {
 
 type Callbacks = Pick<UseJobsOptions, "afterRescan" | "refreshCatalogs" | "openCatalog">;
 
+/**
+ * One bulk rescan (Rescan all, Rescan stale, rescan on startup). Refusals and failures that would each open
+ * the unreachable-root modal or a toast are gathered here and reported once, after every job has settled.
+ */
+interface RescanBatch {
+  jobIds: Set<number>;
+  submitting: boolean;
+  unreachable: Set<string>;
+  refused: string[];
+}
+
+function reportBatch(b: RescanBatch) {
+  if (b.unreachable.size > 0) {
+    const n = b.unreachable.size;
+    notifications.show({
+      color: "orange",
+      title: `${n} ${n === 1 ? "catalog" : "catalogs"} skipped, root not reachable`,
+      message: `${[...b.unreachable].join(", ")}. Check the drive or share is connected, then rescan.`,
+      autoClose: 20000,
+    });
+  }
+  if (b.refused.length > 0) {
+    notifications.show({
+      color: "red",
+      title: `${b.refused.length} ${b.refused.length === 1 ? "rescan" : "rescans"} not started`,
+      message: b.refused.join("; "),
+    });
+  }
+}
+
 const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 function skipped(job: JobDto): string {
@@ -135,6 +165,7 @@ export function useJobs({
   const finishedAtStart = useRef(new Set<number>());
   const gotSnapshot = useRef(false);
   const inFlightSubmits = useRef(new Set<string>());
+  const batches = useRef(new Set<RescanBatch>());
   const latestCallbacks = useRef<Callbacks>({ afterRescan, refreshCatalogs, openCatalog });
   latestCallbacks.current = { afterRescan, refreshCatalogs, openCatalog };
 
@@ -143,10 +174,26 @@ export function useJobs({
     setModel(next);
   }, []);
 
+  const closeBatchIfDone = useCallback((b: RescanBatch) => {
+    if (b.submitting || b.jobIds.size > 0 || !batches.current.delete(b)) return;
+    reportBatch(b);
+  }, []);
+
   const settle = useCallback(
     (job: JobDto) => {
       if (isActive(job.state) || handled.current.has(job.id) || finishedAtStart.current.has(job.id)) return;
       handled.current.add(job.id);
+      const batch = [...batches.current].find((b) => b.jobIds.has(job.id));
+      if (batch) {
+        batch.jobIds.delete(job.id);
+        if (job.state === "failed" && job.error?.code === "root-not-accessible") {
+          batch.unreachable.add(job.error.rootPath || job.title);
+        } else if (job.state === "failed") {
+          announceFailure(job, setUnreachableRoot);
+        }
+        closeBatchIfDone(batch);
+        if (job.state === "failed") return;
+      }
       if (job.state === "succeeded" && job.result) {
         const announce = job.kind === "rescan" ? announceRescan : announceCreate;
         setCompleting((n) => n + 1);
@@ -159,7 +206,7 @@ export function useJobs({
         announceCancelled(job);
       }
     },
-    [getClient],
+    [getClient, closeBatchIfDone],
   );
 
   useEffect(() => {
@@ -189,7 +236,7 @@ export function useJobs({
   }, [sidecarReady, getClient, update, settle, retryDelayMs]);
 
   const submit = useCallback(
-    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string) => {
+    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string, batch?: RescanBatch) => {
       if (inFlightKey) {
         if (inFlightSubmits.current.has(inFlightKey)) return;
         inFlightSubmits.current.add(inFlightKey);
@@ -197,12 +244,19 @@ export function useJobs({
       try {
         const accepted = await getClient().submitJob(req);
         submitted.current.add(accepted.id);
+        batch?.jobIds.add(accepted.id);
         finishedAtStart.current.delete(accepted.id);
         const next = addIfUnknown(modelRef.current, accepted);
         update(next);
         settle(next.jobs.get(accepted.id)!);
       } catch (e) {
-        if (e instanceof JobRefusal && e.rootNotAccessible) {
+        if (batch) {
+          // Already queued or running is the guard doing its job, not something to report.
+          if (!(e instanceof JobRefusal && e.error.code === "already-running")) {
+            if (e instanceof JobRefusal && e.rootNotAccessible) batch.unreachable.add(e.error.rootPath || errText(e));
+            else batch.refused.push(errText(e));
+          }
+        } else if (e instanceof JobRefusal && e.rootNotAccessible) {
           setUnreachableRoot(e.error.rootPath || (req.kind === "create" ? req.rootPath : null) || e.message);
         } else {
           notifications.show({ color: "red", title: refusedTitle, message: errText(e) });
@@ -217,6 +271,19 @@ export function useJobs({
   const rescanCatalog = useCallback(
     (catalogId: number) => submit({ kind: "rescan", catalogId }, `rescan:${catalogId}`, "Rescan not started"),
     [submit],
+  );
+
+  const rescanMany = useCallback(
+    async (catalogIds: readonly number[]) => {
+      const batch: RescanBatch = { jobIds: new Set(), submitting: true, unreachable: new Set(), refused: [] };
+      batches.current.add(batch);
+      for (const id of catalogIds) {
+        await submit({ kind: "rescan", catalogId: id }, `rescan:${id}`, "Rescan not started", batch);
+      }
+      batch.submitting = false;
+      closeBatchIfDone(batch);
+    },
+    [submit, closeBatchIfDone],
   );
 
   const createCatalog = useCallback(
@@ -259,5 +326,5 @@ export function useJobs({
   // A finished job's refresh still writes the catalog list and selection, so a reload must wait for it too.
   const busy = anyActive(model) || completing > 0;
 
-  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, createCatalog, cancelJob, dismissJob, clearFinished };
+  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, rescanMany, createCatalog, cancelJob, dismissJob, clearFinished };
 }

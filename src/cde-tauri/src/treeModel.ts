@@ -16,6 +16,8 @@ export interface TreeRoot {
   size: number;
   /** Bumped when the catalog is rescanned, so its cached children are dropped. */
   generation?: number;
+  /** When the catalog was scanned; shown as an age in the root's tooltip. */
+  scannedAt?: Date | null;
 }
 
 const rootIdentity = (r: TreeRoot) => `${r.generation ?? 0}|${r.catalogName}|${r.fullPath}|${r.size}`;
@@ -52,6 +54,7 @@ export interface TreeRow {
   parentKey: string | null;
   /** Root rows only. */
   catalogName?: string;
+  scannedAt?: Date | null;
 }
 
 /**
@@ -97,6 +100,7 @@ export function flattenTree(
       isRoot: true,
       parentKey: null,
       catalogName: r.catalogName,
+      scannedAt: r.scannedAt,
     });
   }
   return rows;

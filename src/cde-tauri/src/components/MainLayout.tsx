@@ -41,6 +41,8 @@ interface Props {
   diffEpoch: number;
   collapseNonce: number;
   selectedCatalogId: number | null;
+  /** AppConfig.Scan.StaleAfterDays from the last catalog load; 0 = no stale marker. */
+  staleAfterDays: number;
   onSelectCatalog: (catalogId: number | null) => void;
   onNewCatalog: () => void;
   onExplore: (ref: EntryRef) => void;
@@ -84,6 +86,7 @@ export function MainLayout(p: Props) {
           <CatalogList
             catalogs={p.catalogs}
             rescanningIds={activeCatalogIds(jobs.model)}
+            staleAfterDays={p.staleAfterDays}
             sort={catalogSort}
             selectedId={p.selectedCatalogId}
             onSelect={p.onSelectCatalog}

@@ -12,6 +12,7 @@ import {
 } from "../catalogColumns";
 import { type CatalogSort, type CatalogSortColumn, filterCatalogs, sortCatalogs } from "../catalogSort";
 import { catalogFile, fileBaseName, formatDate, toHRString } from "../format";
+import { isStale, scannedText } from "../freshness";
 
 interface Props {
   catalogs: CatalogInfo[];
@@ -32,6 +33,10 @@ interface Props {
   /** Selected catalog id (held by App so it survives tab switches). */
   selectedId?: number | null;
   onSelect?: (catalogId: number) => void;
+  /** AppConfig.Scan.StaleAfterDays; catalogs scanned longer ago are marked stale. 0 or unset: no marker. */
+  staleAfterDays?: number;
+  /** The clock for ages and staleness; tests pin it. */
+  now?: Date;
 }
 
 const COLUMNS: { column: CatalogSortColumn; label: string; numeric?: boolean }[] = [
@@ -56,7 +61,7 @@ const dateText = (d: Date) => formatDate(d.toISOString(), false);
 /** Catalog list view. Double-click a catalog to make it the directory-tree root. */
 export function CatalogList({
   catalogs, onActivate, onNewCatalog, onContextMenu, rescanningIds, sort, onSort, columnWidths, onColumnWidthsChange,
-  selectedId, onSelect,
+  selectedId, onSelect, staleAfterDays = 0, now,
 }: Props) {
   const [filter, setFilter] = useState("");
   const rows = useMemo(() => sortCatalogs(filterCatalogs(catalogs, filter), sort), [catalogs, filter, sort]);
@@ -178,11 +183,13 @@ export function CatalogList({
           {rows.map((c) => {
             const created = catalogCreated(c);
             const modified = catalogModified(c);
+            const clock = now ?? new Date();
+            const stale = isStale(c, staleAfterDays, clock);
             return (
               <tr
                 key={c.catalogId}
                 className={
-                  [rescanningIds?.has(c.catalogId) && "rescanning", c.catalogId === selectedId && "selected"]
+                  [rescanningIds?.has(c.catalogId) && "rescanning", stale && "stale", c.catalogId === selectedId && "selected"]
                     .filter(Boolean)
                     .join(" ") || undefined
                 }
@@ -211,7 +218,14 @@ export function CatalogList({
                 <td>{c.driveLetterHint}</td>
                 <td title={catalogFile(c)}>{fileBaseName(catalogFile(c))}</td>
                 <td title={c.description || undefined}>{c.description}</td>
-                <td className="dates">{created && dateText(created)}</td>
+                <td className="dates" title={scannedText(created, clock) || undefined}>
+                  {created && dateText(created)}
+                  {stale && (
+                    <span className="stale-badge" title={`Scanned more than ${staleAfterDays} days ago; rescan to refresh`}>
+                      stale
+                    </span>
+                  )}
+                </td>
                 <td className="dates">{modified && dateText(modified)}</td>
               </tr>
             );
