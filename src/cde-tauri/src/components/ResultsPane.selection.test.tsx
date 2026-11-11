@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResultRow } from "../api/types";
+import { useResultsFilter } from "../hooks/useResultsFilter";
 import { useRowSelection } from "../hooks/useRowSelection";
 import { ResultsPane } from "./ResultsPane";
 
@@ -40,10 +41,14 @@ const ROWS = [mk(1, "a.txt", "C:\\one\\"), mk(2, "b.txt", "C:\\two\\"), mk(3, "=
 
 function Harness({ onContextMenu, busy = false }: { onContextMenu?: (...a: unknown[]) => void; busy?: boolean }) {
   const rowSelection = useRowSelection(0);
+  const filter = useResultsFilter(ROWS, 0);
   return (
     <ResultsPane
       rows={ROWS}
       rowSelection={rowSelection}
+      filter={filter}
+      canSearchWithFilter
+      onSearchWithFilter={vi.fn()}
       busy={busy}
       staleBanner={null}
       onSearchAgain={vi.fn()}
@@ -82,7 +87,7 @@ describe("ResultsPane copy and export of the selected rows", () => {
     const user = userEvent.setup();
     render(<Harness />);
     await navigator.clipboard.writeText("untouched");
-    await user.tab();
+    screen.getByRole("grid", { name: "Search results" }).focus();
     await user.keyboard("{Meta>}c{/Meta}");
     expect(await navigator.clipboard.readText()).toBe("untouched");
     await user.click(rowOf("a.txt"));

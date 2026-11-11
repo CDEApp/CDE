@@ -9,6 +9,7 @@ import type { useCatalogSelection } from "../hooks/useCatalogSelection";
 import type { useColourRules } from "../hooks/useColourRules";
 import type { useContextMenus } from "../hooks/useContextMenus";
 import type { useJobs } from "../hooks/useJobs";
+import type { ResultsFilterApi } from "../hooks/useResultsFilter";
 import type { RowSelectionApi } from "../hooks/useRowSelection";
 import type { useSearch } from "../hooks/useSearch";
 import { activeCatalogIds, sortedJobs } from "../jobsModel";
@@ -36,6 +37,8 @@ interface Props {
   selection: ReturnType<typeof useCatalogSelection>;
   search: ReturnType<typeof useSearch>;
   rowSelection: RowSelectionApi;
+  resultsFilter: ResultsFilterApi;
+  onSearchWithFilter: () => void;
   colours: ReturnType<typeof useColourRules>;
   jobs: ReturnType<typeof useJobs>;
   menus: ReturnType<typeof useContextMenus>;
@@ -76,6 +79,9 @@ export function MainLayout(p: Props) {
           <ResultsPane
             rows={search.results}
             rowSelection={rowSelection}
+            filter={p.resultsFilter}
+            canSearchWithFilter={search.hasLastQuery}
+            onSearchWithFilter={p.onSearchWithFilter}
             busy={search.busy}
             staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
             onSearchAgain={() => void search.searchAgain()}

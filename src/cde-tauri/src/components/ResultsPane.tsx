@@ -6,13 +6,18 @@ import { refToString, type SearchResultRow } from "../api/types";
 import type { StyleResolver } from "../colourRules";
 import { rowsToClipboardText } from "../copyText";
 import { encodeCsv, exportFileName, resultsToCsv } from "../csvExport";
+import type { ResultsFilterApi } from "../hooks/useResultsFilter";
 import type { RowSelectionApi } from "../hooks/useRowSelection";
 import { selectedInOrder } from "../rowSelection";
+import { ResultsFilterBar } from "./ResultsFilterBar";
 import { ResultsList } from "./ResultsList";
 
 interface Props {
   rows: SearchResultRow[];
   rowSelection: RowSelectionApi;
+  filter: ResultsFilterApi;
+  canSearchWithFilter: boolean;
+  onSearchWithFilter: () => void;
   busy: boolean;
   /** Set when results point into a catalog rescanned since the search; offers Search again. */
   staleBanner: string | null;
@@ -27,8 +32,10 @@ interface Props {
 }
 
 /** The Search Results tab: the stale-results banner, Export results…, and the results list. */
-export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnOrder, rowSelection, onContextMenu, ...list }: Props) {
-  const visibleRowsRef = useRef<readonly SearchResultRow[]>(rows);
+export function ResultsPane({
+  rows, busy, staleBanner, onSearchAgain, getColumnOrder, rowSelection, filter, canSearchWithFilter, onSearchWithFilter, onContextMenu, ...list
+}: Props) {
+  const visibleRowsRef = useRef<readonly SearchResultRow[]>(filter.shown);
   const selectedCount = rowSelection.selection.selected.size;
   const selectedRows = () => selectedInOrder(visibleRowsRef.current, (r) => refToString(r.ref), rowSelection.selection);
 
@@ -68,10 +75,19 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnO
           </button>
         </div>
       )}
+      <ResultsFilterBar filter={filter} busy={busy} canSearchAgain={canSearchWithFilter} onSearchAgain={onSearchWithFilter} />
       <div className="results-toolbar">
         <button
           disabled={busy || rows.length === 0}
-          title={busy ? "Wait for the search to finish" : rows.length === 0 ? "No results to export" : undefined}
+          title={
+            busy
+              ? "Wait for the search to finish"
+              : rows.length === 0
+                ? "No results to export"
+                : filter.active
+                  ? `Exports all ${rows.length.toLocaleString()} loaded results, including the rows the filter hides`
+                  : undefined
+          }
           onClick={() => void exportRows(rows)}
         >
           Export results…
@@ -86,7 +102,7 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnO
       </div>
       <div className="results-fill">
         <ResultsList
-          rows={rows}
+          rows={filter.shown}
           selection={rowSelection.selection}
           dispatchSelection={rowSelection.dispatch}
           columnOrder={getColumnOrder()}

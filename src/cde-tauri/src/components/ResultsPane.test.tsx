@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResultRow } from "../api/types";
+import type { ResultsFilterApi } from "../hooks/useResultsFilter";
 import { EMPTY_SELECTION } from "../rowSelection";
 import { ResultsPane } from "./ResultsPane";
 
@@ -27,10 +28,27 @@ afterEach(cleanup);
 
 const row = { name: "a.txt", fullPath: "C:\\a.txt", size: 1, modified: "", catalogName: "c.cdex" } as unknown as SearchResultRow;
 
+const idleFilter = (rows: SearchResultRow[]): ResultsFilterApi => ({
+  text: "",
+  setText: vi.fn(),
+  mode: "substring",
+  setMode: vi.fn(),
+  field: "name",
+  setField: vi.fn(),
+  shown: rows,
+  total: rows.length,
+  active: false,
+  error: null,
+  searchable: false,
+});
+
 function setup(over: Partial<Parameters<typeof ResultsPane>[0]> = {}) {
   const props = {
     rows: [row],
     rowSelection: { selection: EMPTY_SELECTION, dispatch: vi.fn() },
+    filter: idleFilter(over.rows ?? [row]),
+    canSearchWithFilter: true,
+    onSearchWithFilter: vi.fn(),
     busy: false,
     staleBanner: null,
     onSearchAgain: vi.fn(),

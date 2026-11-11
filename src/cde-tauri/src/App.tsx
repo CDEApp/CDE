@@ -28,10 +28,12 @@ import { useContextMenus } from "./hooks/useContextMenus";
 import { useJobs } from "./hooks/useJobs";
 import { useLegacyMigration } from "./hooks/useLegacyMigration";
 import { useNewCatalog } from "./hooks/useNewCatalog";
+import { useResultsFilter } from "./hooks/useResultsFilter";
 import { useRowSelection } from "./hooks/useRowSelection";
 import { useSearch } from "./hooks/useSearch";
 import { useShellActions } from "./hooks/useShellActions";
 import { useSidecar } from "./hooks/useSidecar";
+import { combineQuery } from "./resultsFilter";
 import { summarizeRows } from "./selectionSummary";
 
 const NO_CATALOGS: CatalogInfo[] = [];
@@ -69,9 +71,10 @@ export default function App() {
   const selection = useCatalogSelection({ getClient, showDirectory });
   const search = useSearch({ getClient, getUi, onStart: showResults });
   const rowSelection = useRowSelection(search.searchEpoch);
+  const resultsFilter = useResultsFilter(search.results, search.searchEpoch);
   const resultsSummary = useMemo(
-    () => summarizeRows(search.results, rowSelection.selection.selected),
-    [search.results, rowSelection.selection.selected],
+    () => summarizeRows(resultsFilter.shown, rowSelection.selection.selected, resultsFilter.active),
+    [resultsFilter.shown, resultsFilter.active, rowSelection.selection.selected],
   );
   const { resetForReload, snapshot, restoreAfterRescan, openRoot, viewInTree } = selection;
   const { markRescanned } = search;
@@ -158,6 +161,16 @@ export default function App() {
     [catalogList],
   );
 
+  const { getLastQuery, runSearch } = search;
+  const { text: filterText, mode: filterMode, field: filterField } = resultsFilter;
+  const searchWithFilter = useCallback(() => {
+    const last = getLastQuery();
+    if (!last) return;
+    const query = combineQuery(last, filterText, filterMode, filterField);
+    setSearchPrefill((p) => ({ pattern: query.pattern, nonce: (p?.nonce ?? 0) + 1 }));
+    void runSearch(query);
+  }, [getLastQuery, runSearch, filterText, filterMode, filterField]);
+
   const menus = useContextMenus({
     commands: shell.commands,
     catalogs: catalogList,
@@ -228,6 +241,8 @@ export default function App() {
         selection={selection}
         search={search}
         rowSelection={rowSelection}
+        resultsFilter={resultsFilter}
+        onSearchWithFilter={searchWithFilter}
         colours={colours}
         jobs={jobs}
         menus={menus}
