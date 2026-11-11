@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { writeFile } from "@tauri-apps/plugin-fs";
 import { notifications } from "@mantine/notifications";
@@ -39,7 +39,11 @@ export function ResultsPane({
   rows, busy, staleBanner, onSearchAgain, getColumnOrder, getVisibleColumns, rowSelection, filter, canSearchWithFilter, onSearchWithFilter, onContextMenu, ...list
 }: Props) {
   const visibleRowsRef = useRef<readonly SearchResultRow[]>(filter.shown);
-  const selectedCount = rowSelection.selection.selected.size;
+  const selected = rowSelection.selection.selected;
+  const shownSelectedCount = useMemo(
+    () => (selected.size === 0 ? 0 : filter.shown.reduce((n, r) => (selected.has(refToString(r.ref)) ? n + 1 : n), 0)),
+    [filter.shown, selected],
+  );
   const selectedRows = () => selectedInOrder(visibleRowsRef.current, (r) => refToString(r.ref), rowSelection.selection);
 
   // The rows as UTF-8 CSV, with the list's shown columns in its current order: a column drag or toggle saves
@@ -96,8 +100,16 @@ export function ResultsPane({
           Export results…
         </button>
         <button
-          disabled={busy || selectedCount === 0}
-          title={busy ? "Wait for the search to finish" : selectedCount === 0 ? "Select results to export" : undefined}
+          disabled={busy || shownSelectedCount === 0}
+          title={
+            busy
+              ? "Wait for the search to finish"
+              : shownSelectedCount > 0
+                ? undefined
+                : selected.size > 0
+                  ? "The filter hides every selected result"
+                  : "Select results to export"
+          }
           onClick={() => void exportRows(selectedRows())}
         >
           Export selected…
