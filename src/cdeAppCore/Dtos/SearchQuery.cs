@@ -22,6 +22,12 @@ public sealed class SearchQuery
     /// <summary>Maximum number of result rows to return (matches the WinForms result-limit dropdown).</summary>
     public int LimitResultCount { get; set; } = 10000;
 
+    /// <summary>
+    /// Fill <see cref="SearchResultRow.DuplicateCount"/>. Off by default: it counts the full hashes of every entry of
+    /// every loaded catalog before the first result, so set it only when the count is shown.
+    /// </summary>
+    public bool IncludeDuplicateCounts { get; set; }
+
     public bool FromSizeEnable { get; set; }
     public long FromSize { get; set; }
     public bool ToSizeEnable { get; set; }
