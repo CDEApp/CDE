@@ -22,7 +22,11 @@ public enum DupeProperties
 }
 
 /// <summary>One <c>dupe:</c> function: the properties it compares and whether text is compared with case.</summary>
-public readonly record struct DupeSpec(DupeProperties Properties, bool MatchCase);
+public readonly record struct DupeSpec(DupeProperties Properties, bool MatchCase)
+{
+    /// <summary>Same content: the spec <c>dupe:hash</c> binds to.</summary>
+    public static DupeSpec SameHash => new(DupeProperties.Hash, false);
+}
 
 /// <summary>A 128-bit fingerprint of the values of a <see cref="DupeSpec"/>, so no per-entry key string is kept.</summary>
 public readonly record struct DuplicateKey(ulong A, ulong B);
@@ -98,6 +102,13 @@ public sealed class DuplicateIndex
         return mask;
     }
 
+    /// <summary>
+    /// How many entries of all the catalogs, entry <paramref name="i"/> included, share its key under
+    /// <paramref name="spec"/>; 0 when the entry has no key or the index was not built for the spec.
+    /// </summary>
+    public int CountOf(DupeSpec spec, IEntrySource catalog, int i) =>
+        _counts.TryGetValue(spec, out var table) && TryKey(spec, catalog, i, out var key) ? table.GetValueOrDefault(key) : 0;
+
     // False when the entry has no key: it is left out of the counts and is never a duplicate.
     private static bool TryKey(DupeSpec spec, IEntrySource catalog, int i, out DuplicateKey key)
     {
@@ -105,14 +116,12 @@ public sealed class DuplicateIndex
         var builder = new KeyBuilder();
         if ((p & DupeProperties.Hash) != 0)
         {
-            // Only a full hash that is stored in the catalog; a partial hash does not prove equal content.
-            if (!catalog.HasHash || !catalog.IsHashDone(i) || catalog.IsPartialHash(i))
+            if (!catalog.TryGetFullHash(i, out var hash))
             {
                 key = default;
                 return false;
             }
 
-            var hash = catalog.HashOf(i);
             builder.Add(hash.HashA);
             builder.Add(hash.HashB);
         }

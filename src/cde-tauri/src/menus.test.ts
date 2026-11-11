@@ -22,6 +22,7 @@ function context(overrides: Partial<EntryMenuContext> = {}) {
     runShell: vi.fn(),
     showTreemap: vi.fn(),
     searchFromHere: vi.fn(),
+    findDuplicates: vi.fn(),
     copyPath: vi.fn(),
     copyText: vi.fn(),
     rescanFor: (catalogId) => ({ label: "Rescan", onClick: () => {}, title: `rescan ${catalogId}` }),
@@ -199,6 +200,7 @@ describe("editDescriptionItem", () => {
 
 const res = (name: string, parentPath: string, entryIndex: number) =>
   ({ ref: { catalogId: 3, entryIndex }, name, parentPath, fullPath: `${parentPath}${name}`, isDirectory: false }) as SearchResultRow;
+const HASH = "0123456789abcdef0123456789abcdef";
 const NL = String.fromCharCode(10);
 const two = [res("b.txt", "/x/", 1), res("a.txt", "/y/", 2)];
 const one = (items: { label: string }[], label: string) => items.find((i) => i.label === label)! as ReturnType<typeof entryMenu>[number];
@@ -207,10 +209,33 @@ describe("entryMenu for search results", () => {
   it("a single result keeps the shell actions enabled and offers the three copy variants", () => {
     const ctx = context({ commands: [{ id: 7, label: "Hash" }] });
     const items = entryMenu(ctx, { ref, fullPath: "/x/b.txt", isDirectory: false, selection: [two[0]] });
-    expect(labels(items)).toEqual(["Open", "Explore", "Properties", "Hash", "", "Copy Full Path", "Copy Name", "Copy Parent Folder", "Edit Description…"]);
-    expect(items.every((i) => !i.disabled)).toBe(true);
+    expect(labels(items)).toEqual(["Open", "Explore", "Properties", "Hash", "", "Find duplicates of this file", "Copy Full Path", "Copy Name", "Copy Parent Folder", "Edit Description…"]);
+    expect(items.filter((i) => i.disabled).map((i) => i.label)).toEqual(["Find duplicates of this file"]);
     one(items, "Open").onClick();
     expect(ctx.runShell).toHaveBeenCalledWith(ref, "open");
+  });
+
+  it("Find duplicates of this file searches the file's content hash", () => {
+    const ctx = context();
+    const hashed = { ...two[0], contentHash: HASH };
+    const items = entryMenu(ctx, { ref, fullPath: "/x/b.txt", isDirectory: false, selection: [hashed] });
+    const item = one(items, "Find duplicates of this file");
+    expect(item.disabled).toBeFalsy();
+    item.onClick();
+    expect(ctx.findDuplicates).toHaveBeenCalledWith(HASH);
+  });
+
+  it("Find duplicates is disabled with a reason for an unhashed file and for a folder", () => {
+    const unhashed = one(entryMenu(context(), { ref, fullPath: "/x/b.txt", isDirectory: false, selection: [two[0]] }), "Find duplicates of this file");
+    expect(unhashed.disabled).toBe(true);
+    expect(unhashed.title).toMatch(/no full content hash/);
+    const folder = one(entryMenu(context(), { ref, fullPath: "/x", isDirectory: true, selection: [{ ...two[0], isDirectory: true }] }), "Find duplicates of this file");
+    expect(folder.disabled).toBe(true);
+    expect(folder.title).toMatch(/Folders/);
+  });
+
+  it("the tree and list menus have no Find duplicates item", () => {
+    expect(labels(entryMenu(context(), { ref, fullPath: "/x/b.txt", isDirectory: false }))).not.toContain("Find duplicates of this file");
   });
 
   it("copy items put the selected values on the clipboard, one per line in the given order", () => {
@@ -235,6 +260,7 @@ describe("entryMenu for search results", () => {
       "Hash (one item only)",
       "Show TreeMap (one item only)",
       "Search from here (one item only)",
+      "Find duplicates of this file (one item only)",
       "View in Tree (one item only)",
       "Rescan (one item only)",
       "Edit Description… (one item only)",

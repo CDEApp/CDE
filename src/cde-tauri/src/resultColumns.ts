@@ -1,8 +1,8 @@
-import type { SearchResultRow } from "./api/types";
+import type { SearchQuery, SearchResultRow } from "./api/types";
 import { formatDate, sizeCell, sizeTitle } from "./format";
 import { normalizeColumnOrder } from "./columnOrder";
 
-export type SortKind = "text" | "basic" | "date";
+export type SortKind = "text" | "basic" | "nanLast";
 
 export interface ResultColumn {
   id: string;
@@ -31,6 +31,22 @@ export function entryKind(r: Pick<SearchResultRow, "isDirectory" | "isReparsePoi
   return r.isReparsePoint ? "link" : r.isDirectory ? "folder" : "file";
 }
 
+function dupesCell(r: SearchResultRow): string {
+  if (r.isDirectory) return "";
+  if (r.contentHash === undefined) return "not hashed";
+  return r.duplicateCount === undefined ? "—" : String(r.duplicateCount);
+}
+
+function dupesTitle(r: SearchResultRow): string {
+  if (r.isDirectory) return "";
+  if (r.contentHash === undefined) return "No full content hash. Run cde hash to add one";
+  return r.duplicateCount === undefined ? "Search again to count duplicates" : r.duplicateCount === 0 ? "Unique" : "";
+}
+
+function hashedCell(r: SearchResultRow): string {
+  return r.isDirectory ? "" : r.contentHash !== undefined ? "yes" : "no";
+}
+
 export const RESULT_COLUMNS: readonly ResultColumn[] = [
   {
     id: "name", header: "Name", defaultWidthPx: 260, sort: "text", defaultVisible: true, guardFormula: true,
@@ -42,7 +58,7 @@ export const RESULT_COLUMNS: readonly ResultColumn[] = [
     cellTitle: (r) => sizeTitle(r.size), csv: (r) => String(r.size),
   },
   {
-    id: "modified", header: "Modified", defaultWidthPx: 150, sort: "date", defaultVisible: true,
+    id: "modified", header: "Modified", defaultWidthPx: 150, sort: "nanLast", defaultVisible: true,
     sortValue: (r) => Date.parse(r.modified), cell: (r) => formatDate(r.modified, r.isModifiedBad),
     csv: (r) => (r.isModifiedBad ? "" : r.modified),
   },
@@ -62,6 +78,15 @@ export const RESULT_COLUMNS: readonly ResultColumn[] = [
     id: "type", header: "Type", defaultWidthPx: 80, sort: "text", defaultVisible: false,
     sortValue: entryKind, cell: entryKind, csv: entryKind,
   },
+  {
+    id: "dupes", header: "Dupes", defaultWidthPx: 90, sort: "nanLast", defaultVisible: false, numeric: true,
+    sortValue: (r) => r.duplicateCount ?? NaN, cell: dupesCell, cellTitle: dupesTitle,
+    csv: (r) => (r.duplicateCount === undefined ? "" : String(r.duplicateCount)),
+  },
+  {
+    id: "hashed", header: "Hashed", defaultWidthPx: 80, sort: "nanLast", defaultVisible: false,
+    sortValue: (r) => (r.contentHash ? 1 : NaN), cell: hashedCell, csv: (r) => String(r.contentHash !== undefined),
+  },
 ];
 
 export const RESULT_COLUMN_IDS: readonly string[] = RESULT_COLUMNS.map((c) => c.id);
@@ -78,4 +103,12 @@ export function resolveVisibleColumns(saved: unknown): ReadonlySet<string> {
 export function visibleColumnIds(savedOrder: unknown, savedVisible: unknown): string[] {
   const visible = resolveVisibleColumns(savedVisible);
   return normalizeColumnOrder(savedOrder, RESULT_COLUMN_IDS).filter((id) => visible.has(id));
+}
+
+export function wantsDuplicateCounts(savedVisible: unknown): boolean {
+  return resolveVisibleColumns(savedVisible).has("dupes");
+}
+
+export function withDuplicateCounts(query: SearchQuery, wanted: boolean): SearchQuery {
+  return { ...query, includeDuplicateCounts: wanted };
 }

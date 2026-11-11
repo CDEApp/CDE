@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { CdeApiClient } from "../api/client";
 import type { SearchQuery, SearchResultRow } from "../api/types";
+import { withDuplicateCounts } from "../resultColumns";
 import { staleResultsBanner } from "../rescan";
 import { searchErrorMessage } from "../everythingSearch";
 import type { UiStateManager } from "../state/uiState";
@@ -10,10 +11,11 @@ export interface UseSearchOptions {
   getUi: () => UiStateManager | null;
   /** Called when a search starts, so the caller can switch to the results view. */
   onStart: () => void;
+  wantsDuplicateCounts: () => boolean;
 }
 
 /** Streaming search: the results, busy/timing text, the last query, and which catalogs were rescanned since. */
-export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
+export function useSearch({ getClient, getUi, onStart, wantsDuplicateCounts }: UseSearchOptions) {
   const searchAbort = useRef<AbortController | null>(null);
   const lastQueryRef = useRef<SearchQuery | null>(null); // for the stale-results "Search again"
   const [results, setResults] = useState<SearchResultRow[]>([]);
@@ -24,7 +26,8 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
 
   const runSearch = useCallback(
-    async (query: SearchQuery) => {
+    async (requested: SearchQuery) => {
+      const query = withDuplicateCounts(requested, wantsDuplicateCounts());
       const client = getClient();
       const ui = getUi();
       lastQueryRef.current = query;
@@ -99,7 +102,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
         }
       }
     },
-    [getClient, getUi, onStart],
+    [getClient, getUi, onStart, wantsDuplicateCounts],
   );
 
   const cancelSearch = useCallback(() => {

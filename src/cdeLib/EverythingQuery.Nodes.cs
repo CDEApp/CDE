@@ -34,7 +34,7 @@ public sealed partial class EverythingQuery
     }
 
     [Flags]
-    private enum Needs { None = 0, Properties = 1, ChildCounts = 2, DescendantCounts = 4 }
+    private enum Needs { None = 0, Properties = 1, ChildCounts = 2, DescendantCounts = 4, FullHash = 8 }
 
     [Flags]
     private enum Use { None = 0, Default = 1, Path = 2, Name = 4 }

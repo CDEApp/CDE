@@ -78,7 +78,7 @@ describe("column chooser", () => {
     const checked = screen.getAllByRole("menuitemcheckbox").map((i) => [i.textContent?.replace("✓", ""), i.getAttribute("aria-checked")]);
     expect(checked).toEqual([
       ["Name", "true"], ["Size", "true"], ["Modified", "true"], ["Catalog", "true"], ["Path", "true"],
-      ["Extension", "false"], ["Type", "false"],
+      ["Extension", "false"], ["Type", "false"], ["Dupes", "false"], ["Hashed", "false"],
     ]);
   });
 

@@ -96,14 +96,57 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress, CancellationToken ct)
     {
         var opts = ToFindOptions(query);
-        opts.Duplicates = CountDuplicates(opts, ct);
+        var specs = DuplicateSpecsOf(opts, query.IncludeDuplicateCounts);
+
+        // A duplicate index counts over every catalog, so its leases stay held until the last row is built: a rescan
+        // swap waits, and no row or count mixes catalog versions. Held leases are reused below, never re-entered
+        // (the slot lock does not allow recursion).
+        var held = specs.Count == 0 ? null : AcquireAll();
+        try
+        {
+            opts.Duplicates = held == null ? null : DuplicateIndex.Build(specs, held.ConvertAll(l => l.Source), ct);
+            Find(query, opts, held, writer, progress, ct);
+        }
+        finally
+        {
+            if (held != null)
+                foreach (var lease in held) lease.Dispose();
+        }
+    }
+
+    private List<CatalogReadLease> AcquireAll()
+    {
+        var leases = new List<CatalogReadLease>(_session.CatalogCount);
+        try
+        {
+            for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
+            return leases;
+        }
+        catch
+        {
+            foreach (var lease in leases) lease.Dispose();
+            throw;
+        }
+    }
+
+    private void Find(SearchQuery query, EntryStoreFindOptions opts, List<CatalogReadLease> held,
+        ChannelWriter<SearchResultRow> writer, IProgress<SearchProgress> progress, CancellationToken ct)
+    {
+        var duplicateCounts = query.IncludeDuplicateCounts ? opts.Duplicates : null;
         var limit = query.LimitResultCount;
 
         var grandTotal = 0;
         for (var i = 0; i < _session.CatalogCount; i++)
         {
-            using var lease = _session.AcquireRead(i);
-            grandTotal += lease.Source.Count;
+            var owned = held == null ? _session.AcquireRead(i) : default;
+            try
+            {
+                grandTotal += (held == null ? owned : held[i]).Source.Count;
+            }
+            finally
+            {
+                owned.Dispose();
+            }
         }
 
         var matched = 0;
@@ -117,7 +160,9 @@ public sealed class SearchService : ISearchService
             if (ct.IsCancellationRequested || matched >= limit) break;
 
             // Read lock for this catalog's scan: a rescan swap of it waits until the scan is done.
-            using var lease = _session.AcquireRead(catalogId);
+            var owned = held == null ? _session.AcquireRead(catalogId) : default;
+            using var release = owned;
+            var lease = held == null ? owned : held[catalogId];
             var source = lease.Source;
             var baseScanned = scannedBase;
             var localCatalogId = catalogId;
@@ -128,7 +173,7 @@ public sealed class SearchService : ISearchService
                 onMatch: idx =>
                 {
                     if (matched >= limit) return;
-                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx), ct)) matched++;
+                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx, duplicateCounts), ct)) matched++;
                 },
                 isCancelled: () => ct.IsCancellationRequested || matched >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
@@ -150,24 +195,13 @@ public sealed class SearchService : ISearchService
         }
     }
 
-    // A dupe: function compares entries across ALL the catalogs, so its keys are counted over every catalog before the
-    // first one is scanned. Null when the query has no dupe: function.
-    private DuplicateIndex CountDuplicates(EntryStoreFindOptions opts, CancellationToken ct)
+    private static List<DupeSpec> DuplicateSpecsOf(EntryStoreFindOptions opts, bool includeDuplicateCounts)
     {
-        if (!opts.EverythingMode) return null;
-        var query = EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System);
-        if (query.DuplicateSpecs.Count == 0) return null;
-
-        var leases = new List<CatalogReadLease>(_session.CatalogCount);
-        try
-        {
-            for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
-            return DuplicateIndex.Build(query.DuplicateSpecs, leases.ConvertAll(l => l.Source), ct); // a cancel ends it and the finally frees the leases
-        }
-        finally
-        {
-            foreach (var lease in leases) lease.Dispose();
-        }
+        var specs = new List<DupeSpec>();
+        if (opts.EverythingMode)
+            specs.AddRange(EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System).DuplicateSpecs);
+        if (includeDuplicateCounts && !specs.Contains(DupeSpec.SameHash)) specs.Add(DupeSpec.SameHash);
+        return specs;
     }
 
     // The find loop is synchronous CPU-bound work inside Task.Run, so waiting for space here is the
@@ -189,13 +223,15 @@ public sealed class SearchService : ISearchService
     private static string CatalogFileName(string sourcePath, IEntrySource source) =>
         CatalogNames.FileName(sourcePath, source.DefaultFileName);
 
-    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx)
+    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx,
+        DuplicateIndex duplicateCounts)
     {
         // One parent-chain walk: build the parent path once, then derive the entry's full path from it
         // plus the name (same separator rule as EntryRef.MakeFullPath and the catalog path builders).
         var name = source.FullName(idx);
         var parentPath = source.FullPath(source.ParentOf(idx));
         var flags = source.FlagsOf(idx);
+        var hashed = source.TryGetFullHash(idx, out var hash);
         return new SearchResultRow
         {
             Ref = new EntryRefDto(catalogId, idx),
@@ -207,7 +243,11 @@ public sealed class SearchService : ISearchService
             IsReparsePoint = (flags & Flags.ReparsePoint) == Flags.ReparsePoint,
             FullPath = PathJoin.Child(parentPath, name),
             ParentPath = parentPath,
-            CatalogName = catalogName
+            CatalogName = catalogName,
+            ContentHash = hashed ? hash.ToHex() : null,
+            DuplicateCount = hashed && duplicateCounts != null
+                ? duplicateCounts.CountOf(DupeSpec.SameHash, source, idx) - 1
+                : null
         };
     }
 
