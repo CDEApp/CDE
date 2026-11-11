@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { SearchQuery } from "../api/types";
 import { AGE_UNITS, notOlderThanCutoff, parseAge, parseSize, toLocalIsoString, type AgeUnit } from "../format";
 import { PatternCombo } from "./PatternCombo";
+import { SEARCH_LIMITS } from "../searchLimit";
 import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls } from "../everythingSearch";
 
 interface Props {
@@ -16,8 +17,6 @@ interface Props {
   /** A shortcut ("Search from here") asking for this pattern in the box, in Everything mode. Bump `nonce` to apply again. */
   prefill?: { pattern: string; nonce: number } | null;
 }
-
-const LIMITS = [100, 1000, 10000, 100000];
 
 /** Search box + advanced filters (size/date/hour ranges, not-older-than). */
 export function SearchBar({
@@ -140,7 +139,7 @@ export function SearchBar({
         <label>
           Limit
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-            {LIMITS.map((l) => (
+            {SEARCH_LIMITS.map((l) => (
               <option key={l} value={l}>{l.toLocaleString()}</option>
             ))}
           </select>

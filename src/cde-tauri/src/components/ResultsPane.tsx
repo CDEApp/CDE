@@ -12,6 +12,9 @@ interface Props {
   /** Set when results point into a catalog rescanned since the search; offers Search again. */
   staleBanner: string | null;
   onSearchAgain: () => void;
+  /** The result count when the limit stopped the search (more matches exist), else null. */
+  limitReachedCount?: number | null;
+  onRaiseLimit?: () => void;
   resolveStyle: StyleResolver;
   /** The persisted column ids in display order, read when the list mounts and at each export. */
   getColumnOrder: () => string[] | undefined;
@@ -21,7 +24,9 @@ interface Props {
 }
 
 /** The Search Results tab: the stale-results banner, Export results…, and the results list. */
-export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnOrder, ...list }: Props) {
+export function ResultsPane({
+  rows, busy, staleBanner, onSearchAgain, limitReachedCount = null, onRaiseLimit, getColumnOrder, ...list
+}: Props) {
   // Every streamed row (all held in `rows`) as UTF-8 CSV, columns in the list's current order: a column
   // drag saves the order without re-rendering this pane, so it is read at click time.
   async function exportResults() {
@@ -53,6 +58,17 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnO
           </button>
         </div>
       )}
+      {limitReachedCount !== null && (
+        <div className="stale-banner" role="status">
+          <span>
+            {limitReachedCount.toLocaleString()} results (limit reached, more exist). Change the Limit in the search bar,
+            or raise it here.
+          </span>
+          <button disabled={busy} onClick={onRaiseLimit}>
+            Raise limit
+          </button>
+        </div>
+      )}
       <div className="results-toolbar">
         <button
           disabled={busy || rows.length === 0}
@@ -63,7 +79,12 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnO
         </button>
       </div>
       <div className="results-fill">
-        <ResultsList rows={rows} columnOrder={getColumnOrder()} {...list} />
+        <ResultsList
+          rows={rows}
+          columnOrder={getColumnOrder()}
+          sortHint={limitReachedCount === null ? undefined : `sorted within the first ${limitReachedCount.toLocaleString()} matches`}
+          {...list}
+        />
       </div>
     </div>
   );
