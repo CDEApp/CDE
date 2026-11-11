@@ -293,6 +293,69 @@ public class SearchServiceTests
         Assert.That(rows, Has.Count.EqualTo(1));
     }
 
+    private sealed class LastProgress : IProgress<SearchProgress>
+    {
+        public SearchProgress? Last { get; private set; }
+        public void Report(SearchProgress value) => Last = value;
+    }
+
+    private async Task<(int Rows, bool? LimitReached)> SearchWithLimit(int limit, CancellationToken ct = default)
+    {
+        var progress = new LastProgress();
+        var rows = await Drain(_search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = limit }, progress, ct));
+        return (rows.Count, progress.Last?.LimitReached);
+    }
+
+    [Test]
+    public async Task LimitReached_is_true_when_a_match_exists_beyond_the_limit()
+    {
+        var total = (await SearchWithLimit(100000)).Rows;
+
+        var (rows, limitReached) = await SearchWithLimit(total - 1);
+
+        Assert.That(rows, Is.EqualTo(total - 1));
+        Assert.That(limitReached, Is.True);
+    }
+
+    [Test]
+    public async Task LimitReached_is_false_when_the_matches_equal_the_limit_exactly()
+    {
+        var total = (await SearchWithLimit(100000)).Rows;
+
+        var (rows, limitReached) = await SearchWithLimit(total);
+
+        Assert.That(rows, Is.EqualTo(total));
+        Assert.That(limitReached, Is.False);
+    }
+
+    [Test]
+    public async Task LimitReached_is_false_below_the_limit()
+    {
+        var (_, limitReached) = await SearchWithLimit(100000);
+
+        Assert.That(limitReached, Is.False);
+    }
+
+    [Test]
+    public async Task LimitReached_is_false_when_the_search_is_cancelled()
+    {
+        using var cts = new CancellationTokenSource();
+        await cts.CancelAsync();
+        var progress = new LastProgress();
+
+        try
+        {
+            await Drain(_search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = 1 }, progress, cts.Token));
+        }
+        catch (OperationCanceledException)
+        {
+            // expected: the token was cancelled before the search began
+        }
+
+        Assert.That(progress.Last, Is.Not.Null);
+        Assert.That(progress.Last!.Value.LimitReached, Is.False);
+    }
+
     [Test]
     public async Task Search_FiltersBySize()
     {
