@@ -134,7 +134,7 @@ describe("useSearch", () => {
   });
 
   it("searchAgain re-runs the last query", async () => {
-    const { result, client } = setup(async () => {});
+    const { result, client } = setup(async (_q, h) => h.onDone?.(0));
     await act(() => result.current.searchAgain());
     expect(client.search).not.toHaveBeenCalled();
     await act(() => result.current.runSearch(query));
@@ -163,5 +163,22 @@ describe("useSearch", () => {
     await act(() => result.current.raiseLimit());
 
     expect(vi.mocked(client.search).mock.calls[1][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
+  });
+
+  it("Search again and Raise limit use the query behind the shown results, not a refused one after it", async () => {
+    const { result, client } = setup(async (q, h) => {
+      if (q.pattern === "a || b") throw new Error("bad query");
+      h.onResult(row(1));
+      h.onDone?.(1, true);
+    });
+    await act(() => result.current.runSearch({ ...query, limitResultCount: 10000 }));
+    await act(() => result.current.runSearch({ ...query, pattern: "a || b", limitResultCount: 10000 }));
+    expect(result.current.limitReachedCount).toBe(1);
+
+    await act(() => result.current.raiseLimit());
+    expect(vi.mocked(client.search).mock.calls[2][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
+
+    await act(() => result.current.searchAgain());
+    expect(vi.mocked(client.search).mock.calls[3][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
   });
 });

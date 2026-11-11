@@ -16,7 +16,8 @@ export interface UseSearchOptions {
 /** Streaming search: the results, busy/timing text, the last query, and which catalogs were rescanned since. */
 export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const searchAbort = useRef<AbortController | null>(null);
-  const lastQueryRef = useRef<SearchQuery | null>(null); // for the stale-results "Search again"
+  // The query behind the results on screen: a refused query leaves it alone, so Search again and Raise limit act on them.
+  const lastQueryRef = useRef<SearchQuery | null>(null);
   const [results, setResults] = useState<SearchResultRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");
@@ -29,7 +30,6 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     async (query: SearchQuery) => {
       const client = getClient();
       const ui = getUi();
-      lastQueryRef.current = query;
       setQueryLimit(query.limitResultCount ?? null);
       ui?.pushSearchHistory(query.pattern);
       ui?.update({
@@ -57,6 +57,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
       const begin = () => {
         if (started) return;
         started = true;
+        lastQueryRef.current = query;
         setResults([]);
         setLimitReachedCount(null);
         setRescannedSinceSearch(new Set()); // fresh results are not stale
