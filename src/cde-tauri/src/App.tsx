@@ -18,7 +18,7 @@ import { MenuBar } from "./components/MenuBar";
 import { MigrateLegacyDialog } from "./components/MigrateLegacyDialog";
 import { NewCatalogDialog } from "./components/NewCatalogDialog";
 import { RootUnreachableModal } from "./components/RootUnreachableModal";
-import { SearchBar } from "./components/SearchBar";
+import { SearchBar, type SearchPrefill } from "./components/SearchBar";
 import { SearchSyntaxModal } from "./components/SearchSyntaxModal";
 import { StatusBar } from "./components/StatusBar";
 import { TabBar } from "./components/TabBar";
@@ -48,7 +48,7 @@ export default function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [syntaxOpen, setSyntaxOpen] = useState(false);
   const [editingDescription, setEditingDescription] = useState<CatalogInfo | null>(null);
-  const [searchPrefill, setSearchPrefill] = useState<{ pattern: string; nonce: number } | null>(null);
+  const [searchPrefill, setSearchPrefill] = useState<SearchPrefill | null>(null);
   const [collapseNonce, setCollapseNonce] = useState(0);
 
   const sidecar = useSidecar({
@@ -184,7 +184,7 @@ export default function App() {
   const findDuplicates = useCallback(
     (contentHash: string) => {
       const query = duplicatesOfQuery(contentHash, getLastQuery()?.limitResultCount ?? 10000);
-      setSearchPrefill((p) => ({ pattern: query.pattern, nonce: (p?.nonce ?? 0) + 1 }));
+      setSearchPrefill((p) => ({ pattern: query.pattern, nonce: (p?.nonce ?? 0) + 1, clearFilters: true }));
       void runSearch(query);
     },
     [getLastQuery, runSearch],
