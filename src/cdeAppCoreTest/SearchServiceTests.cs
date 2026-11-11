@@ -349,7 +349,6 @@ public class SearchServiceTests
         }
         catch (OperationCanceledException)
         {
-            // expected: the token was cancelled before the search began
         }
 
         Assert.That(progress.Last, Is.Not.Null);

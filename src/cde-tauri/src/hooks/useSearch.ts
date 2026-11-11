@@ -20,9 +20,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const [results, setResults] = useState<SearchResultRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");
-  // The result count at which the limit stopped the current search, or null when it did not.
   const [limitReachedCount, setLimitReachedCount] = useState<number | null>(null);
-  // The limit of the last query run, so the search bar follows a Raise limit.
   const [queryLimit, setQueryLimit] = useState<number | null>(null);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
@@ -117,7 +115,6 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     if (q) await runSearch(q);
   }, [runSearch]);
 
-  /** Re-run the last query with the next limit up. */
   const raiseLimit = useCallback(async () => {
     const q = lastQueryRef.current;
     if (q) await runSearch({ ...q, limitResultCount: nextSearchLimit(q.limitResultCount ?? 10000) });

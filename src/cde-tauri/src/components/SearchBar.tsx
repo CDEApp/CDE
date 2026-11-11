@@ -16,7 +16,6 @@ interface Props {
   onFiltersExpandedChange: (expanded: boolean) => void;
   /** A shortcut ("Search from here") asking for this pattern in the box, in Everything mode. Bump `nonce` to apply again. */
   prefill?: { pattern: string; nonce: number } | null;
-  /** The limit of the last search run; the Limit control follows it (a Raise limit changes it). */
   queryLimit?: number | null;
 }
 

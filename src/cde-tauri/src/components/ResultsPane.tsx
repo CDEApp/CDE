@@ -12,7 +12,6 @@ interface Props {
   /** Set when results point into a catalog rescanned since the search; offers Search again. */
   staleBanner: string | null;
   onSearchAgain: () => void;
-  /** The result count when the limit stopped the search (more matches exist), else null. */
   limitReachedCount?: number | null;
   onRaiseLimit?: () => void;
   resolveStyle: StyleResolver;

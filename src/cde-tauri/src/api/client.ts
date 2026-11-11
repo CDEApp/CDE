@@ -404,7 +404,7 @@ export class CdeApiClient {
    * 400 validation message when the query is invalid.
    */
   async search(query: SearchQuery, handlers: SearchHandlers): Promise<void> {
-    let limitReached = false; // set by the final progress event, which precedes done
+    let limitReached = false;
     await this.streamSse(
       this.url(["search"]),
       {

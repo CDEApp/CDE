@@ -29,7 +29,6 @@ interface Props {
   onColumnOrderChange: (order: string[]) => void;
   /** Colour-rule style for an entry name (undefined = no custom style). */
   resolveStyle: StyleResolver;
-  /** Set while the result limit stopped the search: sorted headers carry this text, since a sort sees only the loaded rows. */
   sortHint?: string;
 }
 

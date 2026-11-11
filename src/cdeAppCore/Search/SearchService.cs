@@ -142,7 +142,6 @@ public sealed class SearchService : ISearchService
             scannedBase += source.Count;
         }
 
-        // Final 100% progress report. limitHit means a match beyond the limit was seen, so more results exist.
         progress?.Report(new SearchProgress(grandTotal, grandTotal, Stopwatch.GetElapsedTime(started),
             limitHit && !ct.IsCancellationRequested));
         return;
