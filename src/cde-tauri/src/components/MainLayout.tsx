@@ -88,6 +88,8 @@ export function MainLayout(p: Props) {
             resolveStyle={colours.resolveStyle}
             getColumnOrder={() => ui?.get().searchResultColumnOrder}
             onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}
+            getVisibleColumns={() => ui?.get().searchResultVisibleColumns}
+            onVisibleColumnsChange={(searchResultVisibleColumns) => ui?.update({ searchResultVisibleColumns })}
             onActivate={(row) => void selection.viewInTree(row.ref, row.fullPath)}
             onContextMenu={menus.onResultContextMenu}
           />

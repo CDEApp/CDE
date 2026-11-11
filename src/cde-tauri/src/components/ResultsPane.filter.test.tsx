@@ -61,6 +61,8 @@ function Harness({ onSearchWithFilter = vi.fn(), busy = false }: { onSearchWithF
       resolveStyle={() => undefined}
       getColumnOrder={() => undefined}
       onColumnOrderChange={vi.fn()}
+      getVisibleColumns={() => undefined}
+      onVisibleColumnsChange={vi.fn()}
       onActivate={vi.fn()}
       onContextMenu={vi.fn()}
     />

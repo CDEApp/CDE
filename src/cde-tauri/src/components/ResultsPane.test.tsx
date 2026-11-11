@@ -55,6 +55,8 @@ function setup(over: Partial<Parameters<typeof ResultsPane>[0]> = {}) {
     resolveStyle: () => undefined,
     getColumnOrder: () => undefined as string[] | undefined,
     onColumnOrderChange: vi.fn(),
+    getVisibleColumns: () => undefined as string[] | undefined,
+    onVisibleColumnsChange: vi.fn(),
     onActivate: vi.fn(),
     onContextMenu: vi.fn(),
     ...over,
@@ -102,6 +104,17 @@ describe("ResultsPane", () => {
     await waitFor(() => expect(h.writeFile).toHaveBeenCalledOnce());
     const header = new TextDecoder().decode(h.writeFile.mock.calls[0][1]).split(/\r?\n/)[0];
     expect(header.indexOf("Path")).toBeLessThan(header.indexOf("Name"));
+  });
+
+  it("exports only the shown columns, including Extension and Type, in the saved order, read at click time", async () => {
+    h.save.mockResolvedValue("D:\\out.csv");
+    let visible = ["name", "path"];
+    setup({ getColumnOrder: () => ["type", "name", "extension", "size", "modified", "catalog", "path"], getVisibleColumns: () => visible });
+    visible = ["name", "extension", "type"];
+    fireEvent.click(exportButton());
+    await waitFor(() => expect(h.writeFile).toHaveBeenCalledOnce());
+    const lines = new TextDecoder().decode(h.writeFile.mock.calls[0][1]).split(/\r?\n/);
+    expect(lines.slice(0, 2)).toEqual(["Type,Name,Extension", "file,a.txt,txt"]);
   });
 
   it("cancelling the save writes nothing; a failed write is reported", async () => {
