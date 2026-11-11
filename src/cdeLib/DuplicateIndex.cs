@@ -24,7 +24,7 @@ public enum DupeProperties
 /// <summary>One <c>dupe:</c> function: the properties it compares and whether text is compared with case.</summary>
 public readonly record struct DupeSpec(DupeProperties Properties, bool MatchCase)
 {
-    /// <summary>Same content: what <c>dupe:hash</c> binds to, and what a search result's duplicate count uses.</summary>
+    /// <summary>Same content: the spec <c>dupe:hash</c> binds to.</summary>
     public static DupeSpec SameHash => new(DupeProperties.Hash, false);
 }
 

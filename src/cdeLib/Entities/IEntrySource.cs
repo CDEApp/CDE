@@ -64,8 +64,8 @@ public interface IEntrySource
 public static class EntrySourceExtensions
 {
     /// <summary>
-    /// The entry's full hash, when the catalog holds one that proves its content: a partial hash does not, and the
-    /// reader already reports a legacy hash (#222, #37) as not done. False for a folder or an unhashed file.
+    /// The entry's full hash, when the catalog holds a usable one. False for a folder, an unhashed file, a partial hash
+    /// or a legacy hash (#222, #37).
     /// </summary>
     public static bool TryGetFullHash(this IEntrySource source, int i, out Hash16 hash)
     {

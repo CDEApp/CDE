@@ -243,7 +243,6 @@ public sealed partial class EverythingQuery
         }
     }
 
-    // hash:. True for a file whose usable full hash is the one given, so it finds one file and every copy of it.
     private sealed class HashFilter(Hash16 hash) : Node
     {
         public override Needs Needs => Needs.FullHash;

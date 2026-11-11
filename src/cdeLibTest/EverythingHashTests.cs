@@ -10,7 +10,6 @@ using NUnit.Framework;
 
 namespace cdeLibTest;
 
-/// <summary>The <c>hash:</c> function (#288): one file and every copy of it, by usable full hash.</summary>
 [TestFixture]
 public class EverythingHashTests
 {
@@ -57,7 +56,6 @@ public class EverythingHashTests
         Assert.Throws<EverythingQueryException>(() => EverythingQuery.Parse("case:hash:" + SameHex));
     }
 
-    // copy.bin shares the hash; partial.bin has it only as a partial hash, and unhashed.bin and the folder have none.
     private static RootEntry Tree()
     {
         var root = new RootEntry { Path = @"C:\data", VolumeName = "DATA", DefaultFileName = "DATA.cde", DriveLetterHint = "C" };

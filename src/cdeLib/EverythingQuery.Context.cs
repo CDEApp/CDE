@@ -23,7 +23,7 @@ public sealed partial class EverythingQuery
         public readonly long ModifiedTicks; // likewise
         public readonly EntryCounts Counts; // likewise
         public readonly ulong Duplicates; // likewise
-        public readonly Hash16? FullHash; // likewise
+        public readonly Hash16? FullHash;
         public readonly Kind Source;
 
         public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks, EntryCounts counts,

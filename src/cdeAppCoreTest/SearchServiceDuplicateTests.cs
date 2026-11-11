@@ -16,7 +16,6 @@ using Serilog;
 
 namespace cdeAppCoreTest;
 
-/// <summary>A search result's content hash and duplicate count, and the hash: search they feed (#288).</summary>
 [TestFixture]
 public class SearchServiceDuplicateTests
 {
@@ -27,7 +26,6 @@ public class SearchServiceDuplicateTests
     private CatalogSession _session;
     private SearchService _search;
 
-    // same.bin is in both catalogs (two copies in one), unique.bin only once, unhashed.bin has no hash.
     [SetUp]
     public async Task SetUp()
     {

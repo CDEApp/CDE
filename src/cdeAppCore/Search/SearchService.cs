@@ -96,7 +96,7 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress, CancellationToken ct)
     {
         var opts = ToFindOptions(query);
-        opts.Duplicates = CountDuplicates(opts, query.IncludeDuplicateCounts, ct);
+        opts.Duplicates = BuildDuplicateIndex(opts, query.IncludeDuplicateCounts, ct);
         var duplicateCounts = query.IncludeDuplicateCounts ? opts.Duplicates : null;
         var limit = query.LimitResultCount;
 
@@ -151,9 +151,7 @@ public sealed class SearchService : ISearchService
         }
     }
 
-    // A dupe: function and a result's duplicate count compare entries across ALL the catalogs, so their keys are
-    // counted over every catalog before the first one is scanned, in one index. Null when neither is asked for.
-    private DuplicateIndex CountDuplicates(EntryStoreFindOptions opts, bool includeDuplicateCounts, CancellationToken ct)
+    private DuplicateIndex BuildDuplicateIndex(EntryStoreFindOptions opts, bool includeDuplicateCounts, CancellationToken ct)
     {
         var specs = new List<DupeSpec>();
         if (opts.EverythingMode)
@@ -165,7 +163,7 @@ public sealed class SearchService : ISearchService
         try
         {
             for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
-            return DuplicateIndex.Build(specs, leases.ConvertAll(l => l.Source), ct); // a cancel ends it and the finally frees the leases
+            return DuplicateIndex.Build(specs, leases.ConvertAll(l => l.Source), ct);
         }
         finally
         {
