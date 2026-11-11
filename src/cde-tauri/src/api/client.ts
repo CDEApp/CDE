@@ -25,7 +25,7 @@ import {
 export interface SearchHandlers {
   onResult: (row: SearchResultRow) => void;
   onProgress?: (p: SearchProgress) => void;
-  onDone?: (count: number) => void;
+  onDone?: (count: number, limitReached?: boolean) => void;
   signal?: AbortSignal;
 }
 
@@ -404,6 +404,7 @@ export class CdeApiClient {
    * 400 validation message when the query is invalid.
    */
   async search(query: SearchQuery, handlers: SearchHandlers): Promise<void> {
+    let limitReached = false; // set by the final progress event, which precedes done
     await this.streamSse(
       this.url(["search"]),
       {
@@ -414,8 +415,11 @@ export class CdeApiClient {
       },
       (event, data) => {
         if (event === "result") handlers.onResult(JSON.parse(data));
-        else if (event === "progress") handlers.onProgress?.(JSON.parse(data));
-        else if (event === "done") handlers.onDone?.(JSON.parse(data).count);
+        else if (event === "progress") {
+          const p: SearchProgress = JSON.parse(data);
+          limitReached = p.limitReached === true;
+          handlers.onProgress?.(p);
+        } else if (event === "done") handlers.onDone?.(JSON.parse(data).count, limitReached);
       },
     );
   }
