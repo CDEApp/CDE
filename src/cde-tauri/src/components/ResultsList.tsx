@@ -29,6 +29,7 @@ interface Props {
   onColumnOrderChange: (order: string[]) => void;
   /** Colour-rule style for an entry name (undefined = no custom style). */
   resolveStyle: StyleResolver;
+  partialSortNotice?: string;
 }
 
 const ROW_HEIGHT = 22;
@@ -100,7 +101,7 @@ const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
  * Virtualized streaming search results (Name / Size / Modified / Catalog / Path): click a header
  * to sort, drag its right edge to resize, drag the header itself sideways to reorder.
  */
-export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onColumnOrderChange, resolveStyle }: Props) {
+export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onColumnOrderChange, resolveStyle, partialSortNotice }: Props) {
   const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
 
   // Sorting, sizes and order live in the table's own store; useTable re-renders on their change.
@@ -231,7 +232,8 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
                 <button
                   type="button"
                   className="sort-btn"
-                  title="Click to sort, drag to move"
+                  title={sorted && partialSortNotice ? partialSortNotice : "Click to sort, drag to move"}
+                  aria-label={sorted && partialSortNotice ? `${String(h.column.columnDef.header)}, ${partialSortNotice}` : undefined}
                   onMouseDown={(e) => startReorder(e, h.column.id)}
                   onClick={(e) => {
                     if (suppressClickRef.current) return;
@@ -240,6 +242,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
                 >
                   {String(h.column.columnDef.header)}
                   {sorted ? SORT_GLYPH[sorted] : ""}
+                  {sorted && partialSortNotice ? <span aria-hidden="true"> *</span> : null}
                 </button>
                 <span
                   className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}

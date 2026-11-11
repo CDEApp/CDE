@@ -296,3 +296,31 @@ describe("jobs", () => {
     expect(onDisconnect).toHaveBeenCalledOnce();
   });
 });
+
+describe("search limitReached", () => {
+  const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
+  const sse = (...events: [string, unknown][]) =>
+    new Response(events.map(([e, d]) => `event: ${e}\ndata: ${JSON.stringify(d)}\n\n`).join(""), { status: 200 });
+  const run = async (...events: [string, unknown][]) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(sse(...events)));
+    const done: [number, boolean][] = [];
+    await client.search({ pattern: "a" } as never, { onResult: () => {}, onDone: (c, l) => done.push([c, l === true]) });
+    return done;
+  };
+
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("passes the final progress event's flag to onDone", async () => {
+    const done = await run(
+      ["progress", { count: 1, total: 9, elapsed: "0" }],
+      ["progress", { count: 9, total: 9, elapsed: "0", limitReached: true }],
+      ["done", { count: 5 }],
+    );
+    expect(done).toEqual([[5, true]]);
+  });
+
+  it("is false when the final progress event lacks the flag or is false", async () => {
+    expect(await run(["progress", { count: 9, total: 9, elapsed: "0", limitReached: false }], ["done", { count: 2 }])).toEqual([[2, false]]);
+    expect(await run(["done", { count: 0 }])).toEqual([[0, false]]);
+  });
+});
