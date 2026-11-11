@@ -35,6 +35,24 @@ describe("useSearch", () => {
     expect(result.current.staleBanner(nameOf)).toBeNull();
   });
 
+  it("bumps the search epoch when a search starts delivering, not on each streamed flush or on a refused query", async () => {
+    let fail = false;
+    const { result } = setup(async (_q, h) => {
+      if (fail) throw new Error("bad query");
+      h.onResult(row(1));
+      h.onResult(row(1, 2));
+      h.onDone?.(2);
+    });
+    expect(result.current.searchEpoch).toBe(0);
+    await act(() => result.current.runSearch(query));
+    expect(result.current.searchEpoch).toBe(1);
+    await act(() => result.current.runSearch(query));
+    expect(result.current.searchEpoch).toBe(2);
+    fail = true;
+    await act(() => result.current.runSearch(query));
+    expect(result.current.searchEpoch).toBe(2);
+  });
+
   it("does not flag a rescan of a catalog that has no results", async () => {
     const { result } = setup(async (_q, h) => {
       h.onResult(row(1));
