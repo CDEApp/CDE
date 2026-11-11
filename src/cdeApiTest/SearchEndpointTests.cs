@@ -1,9 +1,14 @@
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using cdeApi;
 using cdeAppCore.Dtos;
 using cdeAppCore.Search;
+using cdeAppCore.Session;
 using cdeAppCore.Validation;
+using cdeLib.Entities;
+using cdeLib.Entities.Columnar;
+using cdeLib.Entities.Soa;
 using NUnit.Framework;
 
 namespace cdeApiTest;
@@ -129,6 +134,47 @@ public class SearchEndpointTests
         Assert.That(results.Select(r => r.Data.GetProperty("name").GetString()), Is.EquivalentTo(new[] { "a.txt", "b.txt" }));
         Assert.That(events.Last().Event, Is.EqualTo("done"));
         Assert.That(events.Last().Data.GetProperty("count").GetInt32(), Is.EqualTo(2));
+    }
+
+    [Test]
+    public async Task Results_carry_content_hash_and_duplicate_count_only_when_there_is_one()
+    {
+        var root = new RootEntry { Path = @"C:\data", VolumeName = "DATA", DefaultFileName = "DATA.cde", DriveLetterHint = "C" };
+        foreach (var (name, hash) in new[] { ("a.bin", 7UL), ("b.bin", 7UL), ("c.bin", 8UL), ("plain.txt", 0UL) })
+        {
+            var file = new DirEntry(false) { Path = name, Size = 1 };
+            if (hash != 0) file.SetHash(new Hash16(hash, hash));
+            root.AddChild(file);
+        }
+
+        root.SetInMemoryFields();
+        var cdex = Path.Combine(_catalog.Dir, "hashed.cdex");
+        ColumnarFormat.Write(EntryStore.Build(root), cdex);
+        using var session = new CatalogSession(new TestCatalog.RecordingLoader(cdex), null);
+        await session.LoadAsync("hashed");
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(ctx, new SearchQuery { Pattern = "", IncludeDuplicateCounts = true }, new SearchService(session));
+
+        var rows = TestCatalog.Events(TestCatalog.Text(body)).Where(e => e.Event == "result")
+            .ToDictionary(e => e.Data.GetProperty("name").GetString(), e => e.Data);
+        Assert.That(rows["a.bin"].GetProperty("contentHash").GetString(), Is.EqualTo("00000000000000070000000000000007"));
+        Assert.That(rows["a.bin"].GetProperty("duplicateCount").GetInt32(), Is.EqualTo(1));
+        Assert.That(rows["c.bin"].GetProperty("duplicateCount").GetInt32(), Is.Zero);
+        Assert.That(rows["plain.txt"].TryGetProperty("contentHash", out _), Is.False);
+        Assert.That(rows["plain.txt"].TryGetProperty("duplicateCount", out _), Is.False);
+    }
+
+    [Test]
+    public async Task Malformed_hash_is_400_with_a_position()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(
+            ctx, new SearchQuery { Pattern = "a hash:123", EverythingMode = true }, new SearchService(_catalog.Session));
+
+        Assert.That(ctx.Response.StatusCode, Is.EqualTo(400));
+        Assert.That(TestCatalog.Text(body), Does.Contain("32 hex digits").And.Contain("position 2"));
     }
 
     private async Task<string[]> ResultNames(SearchQuery query)

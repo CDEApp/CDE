@@ -64,6 +64,7 @@ export const EVERYTHING_HELP: HelpSection[] = [
       { syntax: "descendant-count:200..300", meaning: "folders with that many files and folders at any depth. Also descendant-file-count: and descendant-folder-count:" },
       { syntax: "dupe:", meaning: "entries with the same name as another entry in any loaded catalog. dupe:size;name needs both to match" },
       { syntax: "dupe:size;hash", meaning: "same size and the hash stored in the catalog. Properties: name, path, ext, size, date-modified, hash. case:dupe: matches case" },
+      { syntax: "hash:0123456789abcdeffedcba9876543210", meaning: "files whose full hash is these 32 hex digits (as xxh128sum prints it): one file and every copy of it in any loaded catalog" },
       { syntax: "date-modified:today", meaning: "modified today. Also yesterday, tomorrow. dm: is short for date-modified:" },
       { syntax: "dm:2026-07-02", meaning: "modified on that day. Dates are YYYY[-MM[-DD[Thh[:mm[:ss[.sss]]]]]]: dm:2026 is the whole year" },
       { syntax: "dm:2026-07-02..2026-07-03", meaning: "modified in a range, including the whole last day" },
@@ -90,6 +91,6 @@ export const EVERYTHING_HELP_NOT_SUPPORTED: string[] = [
   "Terms are case-insensitive substrings of the name. A term with * or ? must match the whole name (or the whole path after path:).",
   "Include path and the Files/Folders choice are ignored in this mode: use path:, file: and folder:.",
   "size: and date-modified: apply together with the Size and Date controls: an entry must pass both.",
-  "dupe:hash uses the hash already stored by cde hash and never reads a file. A file with no full hash is left out of it; the other dupe: properties do not need hashes.",
+  "dupe:hash and hash: use the hash already stored by cde hash and never read a file. A file with no full hash is left out of them; the other dupe: properties do not need hashes.",
   "Not supported yet: other functions, size:unknown, the \: alias and the global ?path: form.",
 ];

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 using cdeLib.Infrastructure;
 using Superpower;
@@ -20,8 +21,8 @@ namespace cdeLib;
 /// not with <c>path:</c> or <c>no-path:</c>), <c>case:</c> (match case; terms, wildcards and <c>regex:</c> ignore case otherwise) and
 /// <c>diacritics:</c> (accepted for Everything compatibility; diacritics always count here, so it changes nothing).
 /// The functions are <c>size:</c>, <c>date-modified:</c> (<c>dm:</c>), <c>ext:</c>, <c>empty:</c>, the child and
-/// descendant counts and <c>dupe:</c>; see <see cref="UsesProperties"/>, <see cref="UsesCounts"/> and
-/// <see cref="DuplicateSpecs"/> for what a caller must hand to <c>Matches</c> for them.
+/// descendant counts, <c>dupe:</c> and <c>hash:</c>; see <see cref="UsesProperties"/>, <see cref="UsesCounts"/>,
+/// <see cref="DuplicateSpecs"/> and <see cref="UsesFullHash"/> for what a caller must hand to <c>Matches</c> for them.
 /// A modifier goes directly in front of one word, phrase or group, with no space; modifiers chain
 /// (<c>path:regex:^c:</c>); the one nearest the term wins, and inside a group the innermost modifier wins. The filters
 /// <c>file:</c> and <c>folder:</c> are stand-alone tests on the entry kind (not modifiers): they join the AND, OR, NOT
@@ -56,6 +57,7 @@ public sealed partial class EverythingQuery
         UsesProperties = (needs & Needs.Properties) != 0;
         UsesCounts = (needs & (Needs.ChildCounts | Needs.DescendantCounts)) != 0;
         UsesDescendantCounts = (needs & Needs.DescendantCounts) != 0;
+        UsesFullHash = (needs & Needs.FullHash) != 0;
     }
 
     /// <summary>
@@ -76,6 +78,12 @@ public sealed partial class EverythingQuery
     /// <c>Matches</c>; bit k answers <c>DuplicateSpecs[k]</c>.
     /// </summary>
     public IReadOnlyList<DupeSpec> DuplicateSpecs { get; }
+
+    /// <summary>
+    /// True if the query has a hash: function, so the caller must pass the entry's usable full hash
+    /// (<see cref="EntrySourceExtensions.TryGetFullHash"/>) to <c>Matches</c>, or null when it has none.
+    /// </summary>
+    public bool UsesFullHash { get; }
 
     /// <summary>
     /// Say which catalog is about to be searched, by its file name on disk. Terms after <c>catalog:</c> are tested
@@ -131,37 +139,37 @@ public sealed partial class EverythingQuery
     /// Allocation-free when the text and every term are ASCII.
     /// </summary>
     public bool Matches(ReadOnlySpan<byte> utf8, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default, ulong duplicates = 0)
+        EntryCounts counts = default, ulong duplicates = 0, Hash16? fullHash = null)
     {
         if (_root is null) return true;
-        var context = new Context(utf8, isFolder, size, modifiedTicks, counts, duplicates);
+        var context = new Context(utf8, isFolder, size, modifiedTicks, counts, duplicates, fullHash);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path; identical to the UTF-8 overload.</summary>
     public bool Matches(ReadOnlySpan<char> text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default, ulong duplicates = 0)
+        EntryCounts counts = default, ulong duplicates = 0, Hash16? fullHash = null)
     {
         if (_root is null) return true;
-        var context = new Context(text, isFolder, size, modifiedTicks, counts, duplicates);
+        var context = new Context(text, isFolder, size, modifiedTicks, counts, duplicates, fullHash);
         return _root.Eval(in context);
     }
 
     /// <summary>Test one text that stands for both the name and the path.</summary>
     public bool Matches(string text, bool isFolder = false, long size = 0, long modifiedTicks = 0,
-        EntryCounts counts = default, ulong duplicates = 0)
+        EntryCounts counts = default, ulong duplicates = 0, Hash16? fullHash = null)
     {
         ArgumentNullException.ThrowIfNull(text);
-        return Matches(text.AsSpan(), isFolder, size, modifiedTicks, counts, duplicates);
+        return Matches(text.AsSpan(), isFolder, size, modifiedTicks, counts, duplicates, fullHash);
     }
 
     /// <summary>Test an entry's name and full path. Unmarked terms use the path if <paramref name="defaultMatchesPath"/>.</summary>
     public bool Matches(string name, string fullPath, bool defaultMatchesPath, bool isFolder = false,
-        long size = 0, long modifiedTicks = 0, EntryCounts counts = default, ulong duplicates = 0)
+        long size = 0, long modifiedTicks = 0, EntryCounts counts = default, ulong duplicates = 0, Hash16? fullHash = null)
     {
         ArgumentNullException.ThrowIfNull(name);
         ArgumentNullException.ThrowIfNull(fullPath);
-        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks, counts, duplicates), defaultMatchesPath);
+        return Matches(new StringEntry(name, fullPath, isFolder, size, modifiedTicks, counts, duplicates, fullHash), defaultMatchesPath);
     }
 
     /// <summary>

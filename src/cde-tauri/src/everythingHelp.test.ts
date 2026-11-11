@@ -33,7 +33,7 @@ describe("EVERYTHING_HELP", () => {
   it("lists the size and date-modified functions", () => {
     const functions = EVERYTHING_HELP.find((s) => s.title === "Functions")!;
     const all = functions.rows.map((r) => r.syntax).join("\n");
-    for (const item of ["size:", "date-modified:", "dm:", "ext:", "empty:", "child-count:", "descendant-count:", "dupe:"]) expect(all).toContain(item);
+    for (const item of ["size:", "date-modified:", "dm:", "ext:", "empty:", "child-count:", "descendant-count:", "dupe:", "hash:"]) expect(all).toContain(item);
   });
 
   it("says what is not supported yet and which controls are ignored", () => {

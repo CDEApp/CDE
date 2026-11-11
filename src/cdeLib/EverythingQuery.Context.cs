@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using cdeLib.Entities;
 using cdeLib.Entities.Columnar;
 
 namespace cdeLib;
@@ -22,10 +23,11 @@ public sealed partial class EverythingQuery
         public readonly long ModifiedTicks; // likewise
         public readonly EntryCounts Counts; // likewise
         public readonly ulong Duplicates; // likewise
+        public readonly Hash16? FullHash;
         public readonly Kind Source;
 
         public Context(ReadOnlySpan<byte> bytes, bool isFolder, long size, long modifiedTicks, EntryCounts counts,
-            ulong duplicates)
+            ulong duplicates, Hash16? fullHash)
         {
             Bytes = bytes;
             IsFolder = isFolder;
@@ -33,11 +35,12 @@ public sealed partial class EverythingQuery
             ModifiedTicks = modifiedTicks;
             Counts = counts;
             Duplicates = duplicates;
+            FullHash = fullHash;
             Source = Kind.SingleBytes;
         }
 
         public Context(ReadOnlySpan<char> chars, bool isFolder, long size, long modifiedTicks, EntryCounts counts,
-            ulong duplicates)
+            ulong duplicates, Hash16? fullHash)
         {
             Chars = chars;
             IsFolder = isFolder;
@@ -45,6 +48,7 @@ public sealed partial class EverythingQuery
             ModifiedTicks = modifiedTicks;
             Counts = counts;
             Duplicates = duplicates;
+            FullHash = fullHash;
             Source = Kind.SingleChars;
         }
 
@@ -66,7 +70,7 @@ public sealed partial class EverythingQuery
     private enum Kind { SingleBytes, SingleChars, Utf8Entry, CharEntry }
 
     private sealed class StringEntry(string name, string path, bool isFolder, long size, long modifiedTicks,
-        EntryCounts counts, ulong duplicates)
+        EntryCounts counts, ulong duplicates, Hash16? fullHash)
         : IEntryChars
     {
         public ReadOnlySpan<char> Name => name;
@@ -76,5 +80,6 @@ public sealed partial class EverythingQuery
         public long ModifiedTicks => modifiedTicks;
         public EntryCounts Counts => counts;
         public ulong Duplicates => duplicates;
+        public Hash16? FullHash => fullHash;
     }
 }

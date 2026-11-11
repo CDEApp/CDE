@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Text;
+using cdeLib.Entities;
 
 namespace cdeLib;
 
@@ -20,6 +21,7 @@ public sealed partial class EverythingQuery
         DescendantFileCount,
         DescendantFolderCount,
         Dupe,
+        Hash,
     }
 
     /// <summary>Names are matched with the dashes removed, so <c>date-modified</c> and <c>datemodified</c> are the same.</summary>
@@ -48,11 +50,13 @@ public sealed partial class EverythingQuery
             case "descendantfilecount": function = Function.DescendantFileCount; return true;
             case "descendantfoldercount": function = Function.DescendantFolderCount; return true;
             case "dupe": function = Function.Dupe; return true;
+            case "hash": function = Function.Hash; return true;
             default: return false;
         }
     }
 
-    private static bool TakesOperators(Function function) => function is not (Function.Ext or Function.Empty or Function.Dupe);
+    private static bool TakesOperators(Function function) =>
+        function is not (Function.Ext or Function.Empty or Function.Dupe or Function.Hash);
 
     // The functions that can follow case: and diacritics:, which are not modifiers of a term but of the whole test.
     private static bool SupportsCase(Function function) => function is Function.Ext or Function.Dupe;
@@ -69,6 +73,11 @@ public sealed partial class EverythingQuery
                 return new ExtFilter(value, position);
             case Function.Dupe:
                 return new DupeFilter(value, position);
+            case Function.Hash:
+                if (!Hash16.TryParseHex(value, out var hash))
+                    throw new EverythingQueryException(
+                        "'hash:' needs the 32 hex digits of a file's full hash, as xxh128sum prints it", position);
+                return new HashFilter(hash);
             case Function.Empty:
                 if (value.Length != 0) throw new EverythingQueryException("'empty:' takes no value", position);
                 return new CountFilter(CountKind.Children, "0", position);
@@ -232,6 +241,22 @@ public sealed partial class EverythingQuery
             _matchCase |= modifier.Case;
             return this;
         }
+    }
+
+    private sealed class HashFilter(Hash16 hash) : Node
+    {
+        public override Needs Needs => Needs.FullHash;
+
+        public override bool Eval(in Context c) => hash == c.Source switch
+        {
+            Kind.SingleBytes or Kind.SingleChars => c.FullHash,
+            Kind.Utf8Entry => c.Utf8Entry.FullHash,
+            _ => c.CharEntry.FullHash,
+        };
+
+        public override Use Uses() => Use.None;
+
+        public override Node Apply(Modifier modifier) => this;
     }
 
     // ext:. Whole extension of a file name: the text after the last dot, when that dot is not the first character

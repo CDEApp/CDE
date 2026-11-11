@@ -48,7 +48,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10 (ASP.NET / Kestrel minimal API)
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
-    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE; 409 busy while any job is queued or running),
+    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE; each `result` row carries `contentHash`, the usable full hash as 32 hex digits, and with `includeDuplicateCounts` in the query a `duplicateCount` of the other files with that hash; both are left out when null), `/session/reload` (SSE; 409 busy while any job is queued or running),
     `POST /jobs` (queue a rescan of a catalog or a create of a new `.cdex` in the working folder; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
   - Scan jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the
@@ -253,6 +253,12 @@ messages) and hashes only the repeated-size files it matches; `--include-unique-
 gives every selected file a full hash. The selection is a `HashSelection` per run, never saved. A filter only adds or
 upgrades hashes; it never clears one. `ColumnarCatalogHashing.Preview` counts what a selection will read, through the
 same `HashCandidateSelection` as the run, and `HashAndSave` takes a `CancellationToken` that stops before any save.
+
+### Content hash in search (#288)
+
+- `hash:<32 hex>` (Everything function) matches files whose usable full hash is that value, in the `xxh128sum` order of "Hashing", so it finds one file and every copy of it. Any other value is a parse error. A partial or legacy hash never matches.
+- `IEntrySource.TryGetFullHash` (`EntrySourceExtensions`) is the one "usable full hash" rule, shared by `dupe:hash`, `hash:` and the search result rows.
+- `SearchResultRow.ContentHash` is always filled from that rule; `DuplicateCount` (other files with the same hash, 0 = unique) only when `SearchQuery.IncludeDuplicateCounts` is set, because it builds a `DuplicateIndex` over every loaded catalog before the first result. A `dupe:` query in the same search shares that index.
 
 ### Duplicate Detection
 

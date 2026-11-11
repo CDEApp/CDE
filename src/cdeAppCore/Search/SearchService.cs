@@ -96,7 +96,8 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress, CancellationToken ct)
     {
         var opts = ToFindOptions(query);
-        opts.Duplicates = CountDuplicates(opts, ct);
+        opts.Duplicates = BuildDuplicateIndex(opts, query.IncludeDuplicateCounts, ct);
+        var duplicateCounts = query.IncludeDuplicateCounts ? opts.Duplicates : null;
         var limit = query.LimitResultCount;
 
         var grandTotal = 0;
@@ -128,7 +129,7 @@ public sealed class SearchService : ISearchService
                 onMatch: idx =>
                 {
                     if (matched >= limit) return;
-                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx), ct)) matched++;
+                    if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx, duplicateCounts), ct)) matched++;
                 },
                 isCancelled: () => ct.IsCancellationRequested || matched >= limit,
                 onScan: scanned => Report(baseScanned + scanned));
@@ -150,19 +151,19 @@ public sealed class SearchService : ISearchService
         }
     }
 
-    // A dupe: function compares entries across ALL the catalogs, so its keys are counted over every catalog before the
-    // first one is scanned. Null when the query has no dupe: function.
-    private DuplicateIndex CountDuplicates(EntryStoreFindOptions opts, CancellationToken ct)
+    private DuplicateIndex BuildDuplicateIndex(EntryStoreFindOptions opts, bool includeDuplicateCounts, CancellationToken ct)
     {
-        if (!opts.EverythingMode) return null;
-        var query = EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System);
-        if (query.DuplicateSpecs.Count == 0) return null;
+        var specs = new List<DupeSpec>();
+        if (opts.EverythingMode)
+            specs.AddRange(EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System).DuplicateSpecs);
+        if (includeDuplicateCounts && !specs.Contains(DupeSpec.SameHash)) specs.Add(DupeSpec.SameHash);
+        if (specs.Count == 0) return null;
 
         var leases = new List<CatalogReadLease>(_session.CatalogCount);
         try
         {
             for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
-            return DuplicateIndex.Build(query.DuplicateSpecs, leases.ConvertAll(l => l.Source), ct); // a cancel ends it and the finally frees the leases
+            return DuplicateIndex.Build(specs, leases.ConvertAll(l => l.Source), ct);
         }
         finally
         {
@@ -189,13 +190,15 @@ public sealed class SearchService : ISearchService
     private static string CatalogFileName(string sourcePath, IEntrySource source) =>
         CatalogNames.FileName(sourcePath, source.DefaultFileName);
 
-    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx)
+    private static SearchResultRow BuildRow(IEntrySource source, int catalogId, string catalogName, int idx,
+        DuplicateIndex duplicateCounts)
     {
         // One parent-chain walk: build the parent path once, then derive the entry's full path from it
         // plus the name (same separator rule as EntryRef.MakeFullPath and the catalog path builders).
         var name = source.FullName(idx);
         var parentPath = source.FullPath(source.ParentOf(idx));
         var flags = source.FlagsOf(idx);
+        var hashed = source.TryGetFullHash(idx, out var hash);
         return new SearchResultRow
         {
             Ref = new EntryRefDto(catalogId, idx),
@@ -207,7 +210,11 @@ public sealed class SearchService : ISearchService
             IsReparsePoint = (flags & Flags.ReparsePoint) == Flags.ReparsePoint,
             FullPath = PathJoin.Child(parentPath, name),
             ParentPath = parentPath,
-            CatalogName = catalogName
+            CatalogName = catalogName,
+            ContentHash = hashed ? hash.ToHex() : null,
+            DuplicateCount = hashed && duplicateCounts != null
+                ? duplicateCounts.CountOf(DupeSpec.SameHash, source, idx) - 1
+                : null
         };
     }
 

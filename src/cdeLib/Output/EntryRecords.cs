@@ -1,5 +1,4 @@
 using System;
-using System.Globalization;
 using cdeLib.Entities;
 
 namespace cdeLib.Output;
@@ -65,8 +64,7 @@ public static class EntryRecords
     private static void WriteHash(IRecordWriter writer, Hash16 hash)
     {
         Span<char> hex = stackalloc char[32];
-        hash.HashA.TryFormat(hex, out _, "x16", CultureInfo.InvariantCulture);
-        hash.HashB.TryFormat(hex[16..], out _, "x16", CultureInfo.InvariantCulture);
+        hash.FormatHex(hex);
         writer.Field("hash", hex);
     }
 }
