@@ -65,9 +65,9 @@ describe("useContextMenus", () => {
     const { result } = setup();
     const row = (catalogName: string) => ({ ref, fullPath: "C:\\a", isDirectory: true, catalogName }) as SearchResultRow;
     const editItem = () => result.current.menu!.items.find((i) => i.label === "Edit Description…")!;
-    act(() => result.current.onResultContextMenu(row("C-one.cdex"), 0, 0));
+    act(() => result.current.onResultContextMenu(row("C-one.cdex"), [], 0, 0));
     expect(editItem().disabled).toBeFalsy();
-    act(() => result.current.onResultContextMenu(row("other.cdex"), 0, 0));
+    act(() => result.current.onResultContextMenu(row("other.cdex"), [], 0, 0));
     expect(editItem().disabled).toBe(true);
   });
 
