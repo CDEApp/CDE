@@ -370,3 +370,9 @@ tbody tr:hover { background: var(--row-hover); }
 .jobs-table td button { padding: 0 8px; }
 .jobs-table tr.job-failed td:nth-child(4) { color: #f48771; }
 .jobs-table tr.job-cancelled td, .jobs-table tr.job-queued td:nth-child(2) { color: #8a8a8a; }
+
+/* search result selection */
+.vlist.results-cols:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
+.results-cols .vlist-row { user-select: none; }
+.results-cols .vlist-row[aria-selected="true"] { background: var(--accent) !important; color: #fff !important; }
+.results-cols .vlist-row.active { box-shadow: inset 0 0 0 1px var(--fg); }

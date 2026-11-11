@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import type { SearchResultRow } from "../api/types";
+import { EMPTY_SELECTION } from "../rowSelection";
 import { ResultsPane } from "./ResultsPane";
 
 const h = vi.hoisted(() => ({ save: vi.fn(), writeFile: vi.fn(), show: vi.fn() }));
@@ -29,6 +30,7 @@ const row = { name: "a.txt", fullPath: "C:\\a.txt", size: 1, modified: "", catal
 function setup(over: Partial<Parameters<typeof ResultsPane>[0]> = {}) {
   const props = {
     rows: [row],
+    rowSelection: { selection: EMPTY_SELECTION, dispatch: vi.fn() },
     busy: false,
     staleBanner: null,
     onSearchAgain: vi.fn(),

@@ -1,4 +1,4 @@
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode } from "react";
 import {
   columnOrderingFeature,
   columnResizingFeature,
@@ -13,12 +13,13 @@ import {
   type Row,
   type SortFn,
 } from "@tanstack/react-table";
-import { SearchResultRow } from "../api/types";
+import { refToString, SearchResultRow } from "../api/types";
 import { moveColumn, normalizeColumnOrder } from "../columnOrder";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
 import { formatDate, sizeCell, sizeTitle } from "../format";
+import type { RowSelection, SelectionAction } from "../rowSelection";
 import { StyledName } from "./StyledName";
-import { VirtualList } from "./VirtualList";
+import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
 interface Props {
   rows: SearchResultRow[];
@@ -29,6 +30,10 @@ interface Props {
   onColumnOrderChange: (order: string[]) => void;
   /** Colour-rule style for an entry name (undefined = no custom style). */
   resolveStyle: StyleResolver;
+  selection: RowSelection;
+  dispatchSelection: Dispatch<SelectionAction>;
+  /** Kept pointing at the rows as sorted on screen, for actions that read the selection in visible order. */
+  visibleRowsRef?: { current: readonly SearchResultRow[] };
 }
 
 const ROW_HEIGHT = 22;
@@ -100,7 +105,17 @@ const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
  * Virtualized streaming search results (Name / Size / Modified / Catalog / Path): click a header
  * to sort, drag its right edge to resize, drag the header itself sideways to reorder.
  */
-export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onColumnOrderChange, resolveStyle }: Props) {
+export function ResultsList({
+  rows,
+  onActivate,
+  onContextMenu,
+  columnOrder,
+  onColumnOrderChange,
+  resolveStyle,
+  selection,
+  dispatchSelection,
+  visibleRowsRef,
+}: Props) {
   const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
 
   // Sorting, sizes and order live in the table's own store; useTable re-renders on their change.
@@ -116,8 +131,45 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
   const suppressClickRef = useRef(false);
   const [drag, setDrag] = useState<{ id: string; drop: number } | null>(null);
 
+  const sortedRows = table.getRowModel().rows;
+  const visibleRows = useMemo(() => sortedRows.map((r) => r.original), [sortedRows]);
+  const order = useMemo(() => visibleRows.map((r) => refToString(r.ref)), [visibleRows]);
+  const listRef = useRef<VirtualListHandle>(null);
+  const idPrefix = useId();
+  const rowId = (key: string) => `${idPrefix}-row-${key}`;
+
+  useEffect(() => {
+    if (visibleRowsRef) visibleRowsRef.current = visibleRows;
+  }, [visibleRows, visibleRowsRef]);
+
+  const orderRef = useRef(order);
+  orderRef.current = order;
+  useEffect(() => {
+    if (selection.active === null) return;
+    const index = orderRef.current.indexOf(selection.active);
+    if (index >= 0) listRef.current?.scrollToIndex(index, "nearest");
+  }, [selection.active]);
+
+  // Focus stays on the grid; the active row is announced through aria-activedescendant. A roving
+  // tabindex would have to mount and focus a row that scrolling may have unmounted.
+  function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
+    if (e.target !== e.currentTarget || e.altKey) return;
+    const mod = e.ctrlKey || e.metaKey;
+    const extend = e.shiftKey;
+    if (mod && e.key.toLowerCase() === "a") dispatchSelection({ type: "selectAll", order });
+    else if (mod) return;
+    else if (e.key === "ArrowDown") dispatchSelection({ type: "move", to: { delta: 1 }, extend, order });
+    else if (e.key === "ArrowUp") dispatchSelection({ type: "move", to: { delta: -1 }, extend, order });
+    else if (e.key === "Home") dispatchSelection({ type: "move", to: "start", extend, order });
+    else if (e.key === "End") dispatchSelection({ type: "move", to: "end", extend, order });
+    else if (e.key === " ") dispatchSelection({ type: "toggleActive" });
+    else if (e.key === "Escape") dispatchSelection({ type: "clear" });
+    else return;
+    e.preventDefault();
+  }
+
   const leafColumns = table.getAllLeafColumns();
-  const order = leafColumns.map((c) => c.id);
+  const columnIds = leafColumns.map((c) => c.id);
 
   // Fixed widths for every column but Path, which — until the user resizes it — grows into any
   // spare pane width so long paths aren't ellipsised beside empty space. Its size is then only a
@@ -144,7 +196,7 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
   function startReorder(e: React.MouseEvent, id: string) {
     if (e.button !== 0) return;
     const startX = e.clientX;
-    const startOrder = order;
+    const startOrder = columnIds;
     let active = false;
     let drop = -1;
 
@@ -182,12 +234,19 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
   }
 
   // Show the drop marker only where releasing would actually move the column.
-  const marker = drag && moveColumn(order, drag.id, drag.drop) !== order ? drag.drop : -1;
+  const marker = drag && moveColumn(columnIds, drag.id, drag.drop) !== columnIds ? drag.drop : -1;
 
   return (
     <VirtualList<Row<Features, SearchResultRow>>
       className="results-cols"
-      items={table.getRowModel().rows}
+      items={sortedRows}
+      handleRef={listRef}
+      rootProps={{
+        tabIndex: 0,
+        onKeyDown: onGridKeyDown,
+        "aria-multiselectable": true,
+        "aria-activedescendant": selection.active === null ? undefined : rowId(selection.active),
+      }}
       rowHeight={ROW_HEIGHT}
       innerStyle={{ minWidth: totalWidth }}
       role="grid"
@@ -277,22 +336,28 @@ export function ResultsList({ rows, onActivate, onContextMenu, columnOrder, onCo
       renderRow={(row, i, style) => {
         const r = row.original;
         const { row: rowStyle, name: nameStyle } = splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
+        const key = refToString(r.ref);
+        const isSelected = selection.selected.has(key);
+        const click = (mode: "replace" | "toggle" | "range") => dispatchSelection({ type: "click", key, mode, order });
         return (
           <div
-            key={`${r.ref.catalogId}-${r.ref.entryIndex}-${i}`}
+            key={`${key}-${i}`}
+            id={rowId(key)}
             role="row"
-            tabIndex={-1}
+            aria-selected={isSelected}
             aria-rowindex={i + 2}
-            className={`vlist-row${r.isDirectory ? " dir" : ""}`}
+            className={`vlist-row${r.isDirectory ? " dir" : ""}${isSelected ? " selected" : ""}${selection.active === key ? " active" : ""}`}
             style={{ ...style, ...rowStyle, gridTemplateColumns }}
+            onClick={(e) => click(e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "replace")}
             onDoubleClick={() => onActivate(r)}
             onContextMenu={(e) => {
               e.preventDefault();
               e.stopPropagation();
+              if (!isSelected) click("replace");
               onContextMenu(r, e.clientX, e.clientY);
             }}
           >
-            {order.map((id) => (
+            {columnIds.map((id) => (
               <div key={id} role="gridcell" className={CELLS[id].className} title={CELLS[id].title?.(r)}>
                 <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
               </div>

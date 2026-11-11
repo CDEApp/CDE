@@ -4,10 +4,12 @@ import { notifications } from "@mantine/notifications";
 import type { SearchResultRow } from "../api/types";
 import type { StyleResolver } from "../colourRules";
 import { encodeCsv, exportFileName, resultsToCsv } from "../csvExport";
+import type { RowSelectionApi } from "../hooks/useRowSelection";
 import { ResultsList } from "./ResultsList";
 
 interface Props {
   rows: SearchResultRow[];
+  rowSelection: RowSelectionApi;
   busy: boolean;
   /** Set when results point into a catalog rescanned since the search; offers Search again. */
   staleBanner: string | null;
@@ -21,7 +23,7 @@ interface Props {
 }
 
 /** The Search Results tab: the stale-results banner, Export results…, and the results list. */
-export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnOrder, ...list }: Props) {
+export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnOrder, rowSelection, ...list }: Props) {
   // Every streamed row (all held in `rows`) as UTF-8 CSV, columns in the list's current order: a column
   // drag saves the order without re-rendering this pane, so it is read at click time.
   async function exportResults() {
@@ -63,7 +65,7 @@ export function ResultsPane({ rows, busy, staleBanner, onSearchAgain, getColumnO
         </button>
       </div>
       <div className="results-fill">
-        <ResultsList rows={rows} columnOrder={getColumnOrder()} {...list} />
+        <ResultsList rows={rows} selection={rowSelection.selection} dispatchSelection={rowSelection.dispatch} columnOrder={getColumnOrder()} {...list} />
       </div>
     </div>
   );

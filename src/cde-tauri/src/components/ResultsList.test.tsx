@@ -3,6 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from "@testing-library/rea
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import type { SearchResultRow } from "../api/types";
+import { EMPTY_SELECTION } from "../rowSelection";
 import { ResultsList } from "./ResultsList";
 
 beforeAll(() => {
@@ -35,6 +36,8 @@ function setup() {
       onContextMenu={vi.fn()}
       onColumnOrderChange={vi.fn()}
       resolveStyle={() => undefined}
+      selection={EMPTY_SELECTION}
+      dispatchSelection={vi.fn()}
     />,
   );
 }
@@ -54,6 +57,7 @@ describe("ResultsList header accessibility", () => {
     setup();
     const user = userEvent.setup();
     expect(nameHeader().getAttribute("aria-sort")).toBe("none");
+    await user.tab(); // the grid itself is the first stop; the header controls follow
     await user.tab();
     const button = within(nameHeader()).getByRole("button");
     expect(document.activeElement).toBe(button);
