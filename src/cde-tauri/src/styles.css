@@ -310,6 +310,7 @@ tbody tr:hover { background: var(--row-hover); }
 }
 .context-menu li { padding: 4px 14px; cursor: default; }
 .context-menu li:hover:not(.disabled):not(.separator) { background: var(--accent); color: #fff; }
+.context-menu .menu-check { display: inline-block; width: 1.2em; }
 .context-menu li.disabled { color: #777; }
 .context-menu li.separator { height: 1px; padding: 0; margin: 4px 0; background: var(--border); }
 

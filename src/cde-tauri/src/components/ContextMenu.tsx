@@ -7,6 +7,8 @@ export interface MenuItem {
   /** Tooltip, e.g. why the item is disabled. */
   title?: string;
   separator?: boolean;
+  /** Renders a check mark (true) or a blank (false) before the label; omit for a plain item. */
+  checked?: boolean;
 }
 
 export interface MenuState {
@@ -65,6 +67,9 @@ export function ContextMenu({ menu, onClose }: Props) {
             key={i}
             className={item.disabled ? "disabled" : ""}
             title={item.title}
+            role={item.checked === undefined ? undefined : "menuitemcheckbox"}
+            aria-checked={item.checked}
+            aria-disabled={item.disabled || undefined}
             onClick={() => {
               if (!item.disabled) {
                 item.onClick();
@@ -72,6 +77,7 @@ export function ContextMenu({ menu, onClose }: Props) {
               }
             }}
           >
+            {item.checked !== undefined && <span className="menu-check">{item.checked ? "✓" : ""}</span>}
             {item.label}
           </li>
         ),
