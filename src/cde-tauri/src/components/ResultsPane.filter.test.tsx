@@ -128,6 +128,20 @@ describe("ResultsPane filter", () => {
     expect(csv.slice(1).map((l) => l.split(",")[0]).sort()).toEqual(["alpine.md", "gamma.md"]);
   });
 
+  it("Export selected is disabled, with the reason, when the filter hides every selected row", async () => {
+    const user = userEvent.setup();
+    render(<Harness />);
+    await user.click(rowOf("alpha.txt"));
+    const exportSelected = () => screen.getByRole("button", { name: "Export selected…" });
+    expect(exportSelected()).toHaveProperty("disabled", false);
+    await user.type(box(), ".md");
+    await waitFor(() => expect(rowCount()).toBe(2));
+    expect(exportSelected()).toHaveProperty("disabled", true);
+    expect(exportSelected().title).toBe("The filter hides every selected result");
+    fireEvent.change(box(), { target: { value: "" } });
+    await waitFor(() => expect(exportSelected()).toHaveProperty("disabled", false));
+  });
+
   it("Ctrl+C copies only the selected rows that the filter still shows", async () => {
     const user = userEvent.setup();
     render(<Harness />);
