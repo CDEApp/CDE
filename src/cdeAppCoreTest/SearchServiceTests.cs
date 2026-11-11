@@ -343,13 +343,8 @@ public class SearchServiceTests
         await cts.CancelAsync();
         var progress = new LastProgress();
 
-        try
-        {
-            await Drain(_search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = 1 }, progress, cts.Token));
-        }
-        catch (OperationCanceledException)
-        {
-        }
+        Assert.That(async () => await Drain(_search.SearchAsync(new SearchQuery { Pattern = "", LimitResultCount = 1 }, progress, cts.Token)),
+            Throws.InstanceOf<OperationCanceledException>());
 
         Assert.That(progress.Last, Is.Not.Null);
         Assert.That(progress.Last!.Value.LimitReached, Is.False);

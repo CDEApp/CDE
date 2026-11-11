@@ -27,7 +27,7 @@ const mk = (name: string, size: number): SearchResultRow => ({
   catalogName: "cat",
 });
 
-function setup(sortHint?: string) {
+function setup(partialSortNotice?: string) {
   render(
     <ResultsList
       rows={[mk("b.txt", 2), mk("a.txt", 1)]}
@@ -35,7 +35,7 @@ function setup(sortHint?: string) {
       onContextMenu={vi.fn()}
       onColumnOrderChange={vi.fn()}
       resolveStyle={() => undefined}
-      sortHint={sortHint}
+      partialSortNotice={partialSortNotice}
     />,
   );
 }

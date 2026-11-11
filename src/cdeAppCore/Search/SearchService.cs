@@ -107,7 +107,7 @@ public sealed class SearchService : ISearchService
         }
 
         var matched = 0;
-        var limitHit = false;
+        var matchBeyondLimit = false;
         var scannedBase = 0;
         var lastReport = Stopwatch.GetTimestamp();
         var reportTicks = Stopwatch.Frequency / 10; // ~100ms streaming, matching the WinForms search
@@ -115,7 +115,7 @@ public sealed class SearchService : ISearchService
 
         for (var catalogId = 0; catalogId < _session.CatalogCount; catalogId++)
         {
-            if (ct.IsCancellationRequested || limitHit) break;
+            if (ct.IsCancellationRequested || matchBeyondLimit) break;
 
             // Read lock for this catalog's scan: a rescan swap of it waits until the scan is done.
             using var lease = _session.AcquireRead(catalogId);
@@ -130,20 +130,20 @@ public sealed class SearchService : ISearchService
                 {
                     if (matched >= limit)
                     {
-                        limitHit = true;
+                        matchBeyondLimit = true;
                         return;
                     }
 
                     if (WriteBlocking(writer, BuildRow(source, localCatalogId, catalogName, idx), ct)) matched++;
                 },
-                isCancelled: () => ct.IsCancellationRequested || limitHit,
+                isCancelled: () => ct.IsCancellationRequested || matchBeyondLimit,
                 onScan: scanned => Report(baseScanned + scanned));
 
             scannedBase += source.Count;
         }
 
         progress?.Report(new SearchProgress(grandTotal, grandTotal, Stopwatch.GetElapsedTime(started),
-            limitHit && !ct.IsCancellationRequested));
+            matchBeyondLimit && !ct.IsCancellationRequested));
         return;
 
         void Report(int scanned)

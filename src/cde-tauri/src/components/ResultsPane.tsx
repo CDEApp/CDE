@@ -81,7 +81,7 @@ export function ResultsPane({
         <ResultsList
           rows={rows}
           columnOrder={getColumnOrder()}
-          sortHint={limitReachedCount === null ? undefined : `sorted within the first ${limitReachedCount.toLocaleString()} matches`}
+          partialSortNotice={limitReachedCount === null ? undefined : `sorted within the first ${limitReachedCount.toLocaleString()} matches`}
           {...list}
         />
       </div>
