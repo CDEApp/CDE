@@ -1,6 +1,6 @@
 import type { MenuItem } from "./components/ContextMenu";
 import type { DirectoryNode, EntryRef, SearchResultRow, ShellAction } from "./api/types";
-import { rowsToClipboardText } from "./copyText";
+import { rowsToClipboardText, type CopyKind } from "./copyText";
 import { rescanMenuItem, type JobsModel } from "./jobsModel";
 
 export interface ShellCommand {
@@ -79,7 +79,7 @@ export function entryMenu(
   if (isDirectory) items.push(single({ label: "Show TreeMap", onClick: () => ctx.showTreemap(ref) }));
   if (isDirectory) items.push(single({ label: "Search from here", onClick: () => ctx.searchFromHere(ref, fullPath) }));
   if (selection) {
-    const copy = (label: string, kind: "path" | "name" | "parent") => ({
+    const copy = (label: string, kind: CopyKind) => ({
       label,
       onClick: () => ctx.copyText(rowsToClipboardText(selection, kind)),
     });
