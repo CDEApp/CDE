@@ -9,7 +9,7 @@ import type { useCatalogSelection } from "../hooks/useCatalogSelection";
 import type { useColourRules } from "../hooks/useColourRules";
 import type { useContextMenus } from "../hooks/useContextMenus";
 import type { useJobs } from "../hooks/useJobs";
-import { useRowSelection } from "../hooks/useRowSelection";
+import type { RowSelectionApi } from "../hooks/useRowSelection";
 import type { useSearch } from "../hooks/useSearch";
 import { activeCatalogIds, sortedJobs } from "../jobsModel";
 import type { UiStateManager } from "../state/uiState";
@@ -35,6 +35,7 @@ interface Props {
   roots: TreeRoot[];
   selection: ReturnType<typeof useCatalogSelection>;
   search: ReturnType<typeof useSearch>;
+  rowSelection: RowSelectionApi;
   colours: ReturnType<typeof useColourRules>;
   jobs: ReturnType<typeof useJobs>;
   menus: ReturnType<typeof useContextMenus>;
@@ -54,11 +55,10 @@ interface Props {
 
 /** The tab area: the Directory and Compare views stay mounted across tabs; the active other view renders on demand. */
 export function MainLayout(p: Props) {
-  const { view, ui, selection, search, colours, jobs, menus } = p;
+  const { view, ui, selection, search, rowSelection, colours, jobs, menus } = p;
   // Session-only sorts (deliberately not in uiState), kept across folders and tab switches.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
-  const rowSelection = useRowSelection(search.searchEpoch);
 
   // Handlers for the memoised DirectoryPane keep a stable identity.
   const onDirSort = useCallback((column: SortColumn) => setDirSort((cur) => nextSort(cur, column)), []);
