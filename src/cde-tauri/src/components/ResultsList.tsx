@@ -32,6 +32,7 @@ interface Props {
   resolveStyle: StyleResolver;
   selection: RowSelection;
   dispatchSelection: Dispatch<SelectionAction>;
+  onCopy?: () => void;
   visibleRowsRef?: { current: readonly SearchResultRow[] };
 }
 
@@ -114,6 +115,7 @@ export function ResultsList({
   selection,
   dispatchSelection,
   visibleRowsRef,
+  onCopy,
 }: Props) {
   const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
 
@@ -154,6 +156,7 @@ export function ResultsList({
     const mod = e.ctrlKey || e.metaKey;
     const extend = e.shiftKey;
     if (mod && e.key.toLowerCase() === "a") dispatchSelection({ type: "selectAll", order });
+    else if (mod && e.key.toLowerCase() === "c" && onCopy) onCopy();
     else if (mod) return;
     else if (e.key === "ArrowDown") dispatchSelection({ type: "move", to: { delta: 1 }, extend, order });
     else if (e.key === "ArrowUp") dispatchSelection({ type: "move", to: { delta: -1 }, extend, order });

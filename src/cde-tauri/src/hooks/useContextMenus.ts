@@ -43,6 +43,7 @@ export function useContextMenus(o: UseContextMenusOptions) {
       showTreemap,
       searchFromHere,
       copyPath: (fullPath) => void navigator.clipboard.writeText(fullPath),
+      copyText: (text) => void navigator.clipboard.writeText(text),
       rescanFor: (catalogId) =>
         rescanItem(jobs, catalogId, catalogs.find((c) => c.catalogId === catalogId)?.rootPath, rescanCatalog),
       editDescription: (catalogId) => {
@@ -92,7 +93,7 @@ export function useContextMenus(o: UseContextMenusOptions) {
   );
 
   const onResultContextMenu = useCallback(
-    (row: SearchResultRow, x: number, y: number) => {
+    (row: SearchResultRow, selection: readonly SearchResultRow[], x: number, y: number) => {
       // Results outlive a reload and catalog ids are reused, so confirm the row's catalog is still at that id.
       const current = catalogs.find((c) => c.catalogId === row.ref.catalogId);
       const sameCatalog = !!current && fileBaseName(catalogFile(current)) === row.catalogName;
@@ -105,6 +106,7 @@ export function useContextMenus(o: UseContextMenusOptions) {
           isDirectory: row.isDirectory,
           onViewInTree: () => viewInTree(row.ref, row.fullPath),
           canEditDescription: sameCatalog,
+          selection,
         }),
       });
     },
