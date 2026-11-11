@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { moveColumn, normalizeColumnOrder } from "./columnOrder";
+import { mergeVisibleOrder, moveColumn, normalizeColumnOrder } from "./columnOrder";
 
 const DEFAULTS = ["name", "size", "modified", "path"] as const;
 
@@ -55,5 +55,15 @@ describe("moveColumn", () => {
     expect(moveColumn(order, "b", 1)).toBe(order);
     expect(moveColumn(order, "b", 2)).toBe(order);
     expect(moveColumn(order, "zzz", 0)).toBe(order);
+  });
+});
+
+describe("mergeVisibleOrder", () => {
+  it("lets the visible columns take the visible slots in their new order, hidden ones stay put", () => {
+    expect(mergeVisibleOrder(["a", "h", "b", "c", "i"], ["c", "a", "b"])).toEqual(["c", "h", "a", "b", "i"]);
+  });
+
+  it("is the new order when every column is visible", () => {
+    expect(mergeVisibleOrder(["a", "b"], ["b", "a"])).toEqual(["b", "a"]);
   });
 });

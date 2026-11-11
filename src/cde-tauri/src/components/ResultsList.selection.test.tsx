@@ -49,6 +49,7 @@ function Harness(p: HarnessProps) {
       onActivate={p.onActivate ?? vi.fn()}
       onContextMenu={p.onContextMenu ?? vi.fn()}
       onColumnOrderChange={vi.fn()}
+      onVisibleColumnsChange={vi.fn()}
       resolveStyle={p.resolveStyle ?? (() => undefined)}
       selection={selection}
       dispatchSelection={dispatch}

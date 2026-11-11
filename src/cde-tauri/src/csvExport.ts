@@ -1,24 +1,5 @@
 import type { SearchResultRow } from "./api/types";
-import { normalizeColumnOrder } from "./columnOrder";
-
-interface CsvColumn {
-  header: string;
-  value: (r: SearchResultRow) => string;
-  /** Free text from the file system (name, path, catalog): guarded against spreadsheet formulas. */
-  text?: boolean;
-}
-
-// Ids match the search results list columns. Values are machine-readable rather than the display
-// text: Size is exact bytes and Modified is the ISO timestamp (empty when the date is bad).
-const COLUMNS: Record<string, CsvColumn> = {
-  name: { text: true, header: "Name", value: (r) => r.name },
-  size: { header: "Size", value: (r) => String(r.size) },
-  modified: { header: "Modified", value: (r) => (r.isModifiedBad ? "" : r.modified) },
-  catalog: { text: true, header: "Catalog", value: (r) => r.catalogName },
-  path: { text: true, header: "Path", value: (r) => r.parentPath },
-};
-
-export const CSV_COLUMN_IDS: readonly string[] = Object.keys(COLUMNS);
+import { RESULT_COLUMN_BY_ID, visibleColumnIds } from "./resultColumns";
 
 /**
  * Spreadsheet formula injection guard (CSV export only; the CLI CSV stays exact for scripts). A cell whose first
@@ -36,13 +17,14 @@ export function csvField(text: string): string {
 }
 
 /**
- * CSV text (header + one CRLF-terminated line per row) of `rows` with the columns in `columnOrder`
- * (the persisted results-list order; stale or partial orders are reconciled to the known columns).
+ * CSV text (header + one CRLF-terminated line per row) of `rows` with the columns the results list
+ * shows, in its order (the persisted order and visible set; stale or partial values are reconciled
+ * to the known columns).
  */
-export function resultsToCsv(rows: readonly SearchResultRow[], columnOrder: unknown): string {
-  const cols = normalizeColumnOrder(columnOrder, CSV_COLUMN_IDS).map((id) => COLUMNS[id]);
+export function resultsToCsv(rows: readonly SearchResultRow[], columnOrder: unknown, visibleColumns?: unknown): string {
+  const cols = visibleColumnIds(columnOrder, visibleColumns).map((id) => RESULT_COLUMN_BY_ID.get(id)!);
   const lines = [cols.map((c) => csvField(c.header)).join(",")];
-  for (const r of rows) lines.push(cols.map((c) => csvField(c.text ? neutraliseFormula(c.value(r)) : c.value(r))).join(","));
+  for (const r of rows) lines.push(cols.map((c) => csvField(c.guardFormula ? neutraliseFormula(c.csv(r)) : c.csv(r))).join(","));
   return lines.join("\r\n") + "\r\n";
 }
 

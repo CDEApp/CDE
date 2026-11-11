@@ -49,6 +49,25 @@ describe("summarizeRows", () => {
   });
 });
 
+describe("summarizeRows with a filter", () => {
+  const shown = [rows[0], rows[1]];
+
+  it("labels the shown rows when none of the selected rows is among them", () => {
+    const s = summarizeRows(shown, keys(rows[3]), true);
+    expect(s).toEqual({ scope: "shown", count: 2, files: 1, folders: 1, fileBytes: 1024 });
+    expect(summaryText(s)).toBe("2 shown (1 folder), 1 KB in 1 file");
+  });
+
+  it("counts only the selected rows that are still shown", () => {
+    const s = summarizeRows(shown, keys(rows[0], rows[3]), true);
+    expect(s).toEqual({ scope: "selection", count: 1, files: 1, folders: 0, fileBytes: 1024 });
+  });
+
+  it("is the plain results summary when the filter is off", () => {
+    expect(summarizeRows(rows, new Set(), false).scope).toBe("results");
+  });
+});
+
 describe("summaryText", () => {
   it("states the selection, its folders and the file-only size", () => {
     expect(summaryText(summarizeRows(rows, keys(rows[0], rows[1], rows[2])))).toBe("3 selected (1 folder), 3 KB in 2 files");

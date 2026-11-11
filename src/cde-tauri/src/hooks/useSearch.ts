@@ -111,6 +111,9 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     if (q) await runSearch(q);
   }, [runSearch]);
 
+  const hasLastQuery = lastQueryRef.current !== null;
+  const getLastQuery = useCallback(() => lastQueryRef.current, []);
+
   /** A catalog was rescanned: results pointing into it are now out of date. */
   const markRescanned = useCallback((catalogId: number) => {
     setRescannedSinceSearch((prev) => new Set(prev).add(catalogId));
@@ -119,5 +122,5 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const staleBanner = (nameOf: (catalogId: number) => string) =>
     staleResultsBanner(results, rescannedSinceSearch, nameOf);
 
-  return { results, searchEpoch, busy, timing, runSearch, cancelSearch, searchAgain, markRescanned, staleBanner };
+  return { results, searchEpoch, busy, timing, runSearch, cancelSearch, searchAgain, getLastQuery, hasLastQuery, markRescanned, staleBanner };
 }

@@ -18,6 +18,7 @@ export interface UiState {
   filtersExpanded?: boolean;
   /** Search-results column ids in display order. */
   searchResultColumnOrder?: string[];
+  searchResultVisibleColumns?: string[];
   /** Directory-listing column widths in px, keyed by column id; absent = default. */
   directoryColumnWidths?: Record<string, number>;
   /** Catalog-list column widths in px, keyed by sort-column id; absent = default. */
