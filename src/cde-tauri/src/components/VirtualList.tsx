@@ -1,4 +1,4 @@
-import { CSSProperties, ReactNode, Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { CSSProperties, HTMLAttributes, ReactNode, Ref, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { scrollTopFor, visibleRange } from "../visibleRange";
 
 export interface VirtualListHandle {
@@ -21,6 +21,7 @@ interface Props<T> {
   /** Optional ARIA role (e.g. "grid") and label for the list root. */
   role?: string;
   ariaLabel?: string;
+  rootProps?: HTMLAttributes<HTMLDivElement>;
 }
 
 /**
@@ -29,7 +30,7 @@ interface Props<T> {
  * constant regardless of result count (10 rows or 1,000,000).
  */
 export function VirtualList<T>({
-  items, rowHeight, header, renderRow, className, overscan = 8, innerStyle, handleRef, role, ariaLabel,
+  items, rowHeight, header, renderRow, className, overscan = 8, innerStyle, handleRef, role, ariaLabel, rootProps,
 }: Props<T>) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
@@ -78,7 +79,7 @@ export function VirtualList<T>({
   }
 
   return (
-    <div className={`vlist ${className ?? ""}`} role={role} aria-label={ariaLabel}>
+    <div className={`vlist ${className ?? ""}`} role={role} aria-label={ariaLabel} {...rootProps}>
       <div
         className="vlist-scroll"
         ref={scrollRef}

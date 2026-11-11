@@ -19,6 +19,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   // The query behind the results on screen: a refused query leaves it alone, so Search again and Raise limit act on them.
   const lastQueryRef = useRef<SearchQuery | null>(null);
   const [results, setResults] = useState<SearchResultRow[]>([]);
+  const [searchEpoch, setSearchEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");
   const [limitReachedCount, setLimitReachedCount] = useState<number | null>(null);
@@ -59,6 +60,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
         started = true;
         lastQueryRef.current = query;
         setResults([]);
+        setSearchEpoch((n) => n + 1);
         setLimitReachedCount(null);
         setRescannedSinceSearch(new Set()); // fresh results are not stale
       };
@@ -129,5 +131,5 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const staleBanner = (nameOf: (catalogId: number) => string) =>
     staleResultsBanner(results, rescannedSinceSearch, nameOf);
 
-  return { results, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
+  return { results, searchEpoch, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
 }

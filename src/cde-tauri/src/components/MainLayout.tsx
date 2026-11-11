@@ -9,6 +9,7 @@ import type { useCatalogSelection } from "../hooks/useCatalogSelection";
 import type { useColourRules } from "../hooks/useColourRules";
 import type { useContextMenus } from "../hooks/useContextMenus";
 import type { useJobs } from "../hooks/useJobs";
+import { useRowSelection } from "../hooks/useRowSelection";
 import type { useSearch } from "../hooks/useSearch";
 import { activeCatalogIds, sortedJobs } from "../jobsModel";
 import type { UiStateManager } from "../state/uiState";
@@ -57,6 +58,7 @@ export function MainLayout(p: Props) {
   // Session-only sorts (deliberately not in uiState), kept across folders and tab switches.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
+  const rowSelection = useRowSelection(search.searchEpoch);
 
   // Handlers for the memoised DirectoryPane keep a stable identity.
   const onDirSort = useCallback((column: SortColumn) => setDirSort((cur) => nextSort(cur, column)), []);
@@ -73,6 +75,7 @@ export function MainLayout(p: Props) {
         return (
           <ResultsPane
             rows={search.results}
+            rowSelection={rowSelection}
             busy={search.busy}
             staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
             onSearchAgain={() => void search.searchAgain()}

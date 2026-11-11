@@ -4,6 +4,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { CdeApiClient } from "./api/client";
 import { ResultsPane } from "./components/ResultsPane";
 import { useSearch } from "./hooks/useSearch";
+import { EMPTY_SELECTION } from "./rowSelection";
 import type { UiStateManager } from "./state/uiState";
 
 vi.mock("@tauri-apps/plugin-dialog", () => ({ save: vi.fn() }));
@@ -66,6 +67,7 @@ describe("limit reached, from the stream to the list", () => {
           onColumnOrderChange={vi.fn()}
           onActivate={vi.fn()}
           onContextMenu={vi.fn()}
+          rowSelection={{ selection: EMPTY_SELECTION, dispatch: vi.fn() }}
         />,
       );
     const sizeButton = () => within(screen.getByRole("columnheader", { name: /Size/ })).getByRole("button");

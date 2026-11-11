@@ -12,7 +12,7 @@ import {
 } from "./menus";
 import { applyJob, emptyJobs } from "./jobsModel";
 import type { JobDto } from "./api/types";
-import type { DirectoryNode } from "./api/types";
+import type { DirectoryNode, SearchResultRow } from "./api/types";
 
 const ref = { catalogId: 3, entryIndex: 9 };
 
@@ -23,6 +23,7 @@ function context(overrides: Partial<EntryMenuContext> = {}) {
     showTreemap: vi.fn(),
     searchFromHere: vi.fn(),
     copyPath: vi.fn(),
+    copyText: vi.fn(),
     rescanFor: (catalogId) => ({ label: "Rescan", onClick: () => {}, title: `rescan ${catalogId}` }),
     editDescription: vi.fn(),
     ...overrides,
@@ -193,5 +194,53 @@ describe("editDescriptionItem", () => {
     expect(item.label).toBe("Edit Description…");
     item.onClick();
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+});
+
+const res = (name: string, parentPath: string, entryIndex: number) =>
+  ({ ref: { catalogId: 3, entryIndex }, name, parentPath, fullPath: `${parentPath}${name}`, isDirectory: false }) as SearchResultRow;
+const NL = String.fromCharCode(10);
+const two = [res("b.txt", "/x/", 1), res("a.txt", "/y/", 2)];
+const one = (items: { label: string }[], label: string) => items.find((i) => i.label === label)! as ReturnType<typeof entryMenu>[number];
+
+describe("entryMenu for search results", () => {
+  it("a single result keeps the shell actions enabled and offers the three copy variants", () => {
+    const ctx = context({ commands: [{ id: 7, label: "Hash" }] });
+    const items = entryMenu(ctx, { ref, fullPath: "/x/b.txt", isDirectory: false, selection: [two[0]] });
+    expect(labels(items)).toEqual(["Open", "Explore", "Properties", "Hash", "", "Copy Full Path", "Copy Name", "Copy Parent Folder", "Edit Description…"]);
+    expect(items.every((i) => !i.disabled)).toBe(true);
+    one(items, "Open").onClick();
+    expect(ctx.runShell).toHaveBeenCalledWith(ref, "open");
+  });
+
+  it("copy items put the selected values on the clipboard, one per line in the given order", () => {
+    const ctx = context();
+    const items = entryMenu(ctx, { ref, fullPath: "/x/b.txt", isDirectory: false, selection: two });
+    one(items, "Copy Full Paths").onClick();
+    one(items, "Copy Names").onClick();
+    one(items, "Copy Parent Folders").onClick();
+    expect(ctx.copyText).toHaveBeenNthCalledWith(1, "/x/b.txt" + NL + "/y/a.txt");
+    expect(ctx.copyText).toHaveBeenNthCalledWith(2, "b.txt" + NL + "a.txt");
+    expect(ctx.copyText).toHaveBeenNthCalledWith(3, "/x/" + NL + "/y/");
+  });
+
+  it("with several results the single-entry items are disabled and say why, while copy stays enabled", () => {
+    const ctx = context({ commands: [{ id: 7, label: "Hash" }] });
+    const items = entryMenu(ctx, { ref, fullPath: "/x", isDirectory: true, selection: two, onViewInTree: () => {} });
+    const disabled = items.filter((i) => i.disabled).map((i) => i.label);
+    expect(disabled).toEqual([
+      "Open (one item only)",
+      "Explore (one item only)",
+      "Properties (one item only)",
+      "Hash (one item only)",
+      "Show TreeMap (one item only)",
+      "Search from here (one item only)",
+      "View in Tree (one item only)",
+      "Rescan (one item only)",
+      "Edit Description… (one item only)",
+    ]);
+    for (const i of items.filter((x) => x.disabled)) expect(i.title).toBeTruthy();
+    expect(one(items, "Copy Full Paths").disabled).toBeFalsy();
+    one(items, "Open (one item only)").onClick();
   });
 });
