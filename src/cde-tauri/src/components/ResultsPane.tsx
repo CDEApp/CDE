@@ -26,6 +26,9 @@ interface Props {
   /** The persisted column ids in display order, read when the list mounts and at each export. */
   getColumnOrder: () => string[] | undefined;
   onColumnOrderChange: (order: string[]) => void;
+  /** The persisted ids of the shown columns, read when the list mounts and at each export. */
+  getVisibleColumns: () => string[] | undefined;
+  onVisibleColumnsChange: (visible: string[]) => void;
   onActivate: (row: SearchResultRow) => void;
   /** `selection` is the rows the menu acts on, in on-screen order: the whole selection if `row` is in it, else just `row`. */
   onContextMenu: (row: SearchResultRow, selection: readonly SearchResultRow[], x: number, y: number) => void;
@@ -33,14 +36,14 @@ interface Props {
 
 /** The Search Results tab: the stale-results banner, Export results…, and the results list. */
 export function ResultsPane({
-  rows, busy, staleBanner, onSearchAgain, getColumnOrder, rowSelection, filter, canSearchWithFilter, onSearchWithFilter, onContextMenu, ...list
+  rows, busy, staleBanner, onSearchAgain, getColumnOrder, getVisibleColumns, rowSelection, filter, canSearchWithFilter, onSearchWithFilter, onContextMenu, ...list
 }: Props) {
   const visibleRowsRef = useRef<readonly SearchResultRow[]>(filter.shown);
   const selectedCount = rowSelection.selection.selected.size;
   const selectedRows = () => selectedInOrder(visibleRowsRef.current, (r) => refToString(r.ref), rowSelection.selection);
 
-  // The rows as UTF-8 CSV, columns in the list's current order: a column drag saves the order without
-  // re-rendering this pane, so it is read at click time.
+  // The rows as UTF-8 CSV, with the list's shown columns in its current order: a column drag or toggle saves
+  // without re-rendering this pane, so both are read at click time.
   async function exportRows(toExport: readonly SearchResultRow[]) {
     try {
       const path = await save({
@@ -49,7 +52,7 @@ export function ResultsPane({
         filters: [{ name: "CSV", extensions: ["csv"] }],
       });
       if (!path) return;
-      await writeFile(path, encodeCsv(resultsToCsv(toExport, getColumnOrder())));
+      await writeFile(path, encodeCsv(resultsToCsv(toExport, getColumnOrder(), getVisibleColumns())));
       notifications.show({
         color: "green",
         title: "Results exported",
@@ -106,6 +109,7 @@ export function ResultsPane({
           selection={rowSelection.selection}
           dispatchSelection={rowSelection.dispatch}
           columnOrder={getColumnOrder()}
+          visibleColumns={getVisibleColumns()}
           visibleRowsRef={visibleRowsRef}
           onCopy={copySelectedPaths}
           onContextMenu={(row, x, y) => {

@@ -55,6 +55,8 @@ function Harness({ onContextMenu, busy = false }: { onContextMenu?: (...a: unkno
       resolveStyle={() => undefined}
       getColumnOrder={() => undefined}
       onColumnOrderChange={vi.fn()}
+      getVisibleColumns={() => undefined}
+      onVisibleColumnsChange={vi.fn()}
       onActivate={vi.fn()}
       onContextMenu={(onContextMenu as never) ?? vi.fn()}
     />

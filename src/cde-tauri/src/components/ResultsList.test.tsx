@@ -35,6 +35,7 @@ function setup() {
       onActivate={vi.fn()}
       onContextMenu={vi.fn()}
       onColumnOrderChange={vi.fn()}
+      onVisibleColumnsChange={vi.fn()}
       resolveStyle={() => undefined}
       selection={EMPTY_SELECTION}
       dispatchSelection={vi.fn()}

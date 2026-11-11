@@ -34,3 +34,9 @@ export function moveColumn(order: readonly string[], id: string, toIndex: number
   next.splice(to > from ? to - 1 : to, 0, id);
   return next;
 }
+
+export function mergeVisibleOrder(fullOrder: readonly string[], visibleOrder: readonly string[]): string[] {
+  const visible = new Set(visibleOrder);
+  let next = 0;
+  return fullOrder.map((id) => (visible.has(id) ? visibleOrder[next++] : id));
+}
