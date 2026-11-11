@@ -1,4 +1,5 @@
 using System;
+using System.Text.Json.Serialization;
 
 namespace cdeAppCore.Dtos;
 
@@ -30,4 +31,18 @@ public sealed class SearchResultRow
 
     /// <summary>The owning catalog's display file name (the WinForms result "Catalog" column).</summary>
     public string CatalogName { get; set; }
+
+    /// <summary>
+    /// The file's full hash as 32 lowercase hex digits (the <c>xxh128sum</c> form that <c>hash:</c> takes), or null
+    /// when the catalog holds no usable full hash for it: a folder, an unhashed file, or only a partial or legacy hash.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public string ContentHash { get; set; }
+
+    /// <summary>
+    /// How many OTHER files in the loaded catalogs have the same <see cref="ContentHash"/>; 0 for a unique file. Null
+    /// when <see cref="ContentHash"/> is null or the query did not set <see cref="SearchQuery.IncludeDuplicateCounts"/>.
+    /// </summary>
+    [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+    public int? DuplicateCount { get; set; }
 }

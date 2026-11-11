@@ -1,4 +1,5 @@
 using System;
+using cdeLib.Entities;
 
 namespace cdeLib;
 
@@ -35,6 +36,12 @@ public interface IEntryText
 
     /// <summary>Bit k is set when the entry is a duplicate under the query's k-th dupe: function (see <see cref="DuplicateIndex"/>).</summary>
     ulong Duplicates => 0;
+
+    /// <summary>
+    /// The usable full hash (<see cref="EntrySourceExtensions.TryGetFullHash"/>), or null. Only read when the query
+    /// has a hash: function.
+    /// </summary>
+    Hash16? FullHash => null;
 }
 
 /// <summary>Same as <see cref="IEntryText"/> but as characters.</summary>
@@ -55,6 +62,9 @@ public interface IEntryChars
 
     /// <summary>See <see cref="IEntryText.Duplicates"/>.</summary>
     ulong Duplicates => 0;
+
+    /// <summary>See <see cref="IEntryText.FullHash"/>.</summary>
+    Hash16? FullHash => null;
 }
 
 /// <summary>Which of an entry's texts an <see cref="EverythingQuery"/> reads.</summary>

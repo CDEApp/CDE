@@ -33,6 +33,8 @@ export interface SearchQuery {
   toHour?: string;
   notOlderThanEnable?: boolean;
   notOlderThan?: string;
+  /** Fill `duplicateCount` on each row. Costs one pass over every loaded catalog's hashes, so set it only when shown. */
+  includeDuplicateCounts?: boolean;
 }
 
 export interface SearchResultRow {
@@ -46,6 +48,10 @@ export interface SearchResultRow {
   fullPath: string;
   parentPath: string;
   catalogName: string;
+  /** Full hash as 32 lowercase hex digits (`hash:` takes it); absent for a folder or a file with no usable full hash. */
+  contentHash?: string;
+  /** Other files in the loaded catalogs with the same `contentHash` (0 = unique); absent without a hash or `includeDuplicateCounts`. */
+  duplicateCount?: number;
 }
 
 export interface DirectoryNode {

@@ -101,7 +101,8 @@ public static class EntryStoreSearch
                         readsProperties ? size : 0,
                         readsProperties ? store.Modified(i).Ticks : 0,
                         counts?.Of(i) ?? default,
-                        dupes?.MaskOf(store, i, dupeSpecs) ?? 0UL);
+                        dupes?.MaskOf(store, i, dupeSpecs) ?? 0UL,
+                        everything.UsesFullHash && store.TryGetFullHash(i, out var fullHash) ? fullHash : null);
                 }
                 else if (o.IncludePath)
                 {
@@ -167,6 +168,8 @@ public static class EntryStoreSearch
         public IReadOnlyList<DupeSpec> DupeSpecs { get; set; }
 
         ulong IEntryChars.Duplicates => Dupes?.MaskOf(store, _index, DupeSpecs) ?? 0UL;
+
+        Hash16? IEntryChars.FullHash => store.TryGetFullHash(_index, out var hash) ? hash : null;
 
         public ReadOnlySpan<char> Path
         {
