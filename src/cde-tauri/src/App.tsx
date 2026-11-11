@@ -7,7 +7,8 @@ import { legacyNotice } from "./legacyMigration";
 import { catalogFile } from "./format";
 import { staleCatalogIds, startupRescanIds } from "./freshness";
 import { useNow } from "./hooks/useNow";
-import { searchFromHereQuery } from "./everythingSearch";
+import { wantsDuplicateCounts } from "./resultColumns";
+import { duplicatesOfQuery, searchFromHereQuery } from "./everythingSearch";
 import { dropTreemap, initialView, selectTreemap, showTreemap as showTreemapView, showView, type ViewKind } from "./viewState";
 import { AboutModal } from "./components/AboutModal";
 import { ContextMenu } from "./components/ContextMenu";
@@ -69,7 +70,16 @@ export default function App() {
   const collapseAll = useCallback(() => setCollapseNonce((n) => n + 1), []);
 
   const selection = useCatalogSelection({ getClient, showDirectory });
-  const search = useSearch({ getClient, getUi, onStart: showResults });
+  const duplicateCountsWanted = useCallback(
+    () => wantsDuplicateCounts(getUi()?.get().searchResultVisibleColumns),
+    [getUi],
+  );
+  const search = useSearch({
+    getClient,
+    getUi,
+    onStart: showResults,
+    wantsDuplicateCounts: duplicateCountsWanted,
+  });
   const rowSelection = useRowSelection(search.searchEpoch);
   const resultsFilter = useResultsFilter(search.results, search.searchEpoch);
   const resultsSummary = useMemo(
@@ -171,6 +181,15 @@ export default function App() {
     void runSearch(query);
   }, [getLastQuery, runSearch, filterText, filterMode, filterField]);
 
+  const findDuplicates = useCallback(
+    (contentHash: string) => {
+      const query = duplicatesOfQuery(contentHash, getLastQuery()?.limitResultCount ?? 10000);
+      setSearchPrefill((p) => ({ pattern: query.pattern, nonce: (p?.nonce ?? 0) + 1 }));
+      void runSearch(query);
+    },
+    [getLastQuery, runSearch],
+  );
+
   const menus = useContextMenus({
     commands: shell.commands,
     catalogs: catalogList,
@@ -179,6 +198,7 @@ export default function App() {
     runShell: shell.runShell,
     showTreemap,
     searchFromHere,
+    findDuplicates,
     viewInTree,
     rescanCatalog: jobs.rescanCatalog,
     editDescription: setEditingDescription,

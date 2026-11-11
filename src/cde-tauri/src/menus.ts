@@ -17,6 +17,7 @@ export interface EntryMenuContext {
   copyPath: (fullPath: string) => void;
   copyText: (text: string) => void;
   rescanFor: (catalogId: number) => MenuItem;
+  findDuplicates: (contentHash: string) => void;
   /** Open the description editor for this catalog. */
   editDescription: (catalogId: number) => void;
 }
@@ -61,6 +62,17 @@ export function rescanItem(
   };
 }
 
+function findDuplicatesItem(ctx: EntryMenuContext, selection: readonly SearchResultRow[], isDirectory: boolean): MenuItem {
+  const label = "Find duplicates of this file";
+  if (selection.length > 1) return oneItemOnly({ label, onClick: () => {} });
+  if (isDirectory) return { label, disabled: true, title: "Folders have no content hash", onClick: () => {} };
+  const hash = selection[0]?.contentHash;
+  if (hash === undefined) {
+    return { label, disabled: true, title: "This file has no full content hash. Run cde hash first", onClick: () => {} };
+  }
+  return { label, onClick: () => ctx.findDuplicates(hash) };
+}
+
 export function entryMenu(
   ctx: EntryMenuContext,
   { ref, fullPath, isDirectory, onViewInTree, canEditDescription = true, selection }: MenuEntry,
@@ -78,6 +90,7 @@ export function entryMenu(
   items.push({ label: "", onClick: () => {}, separator: true });
   if (isDirectory) items.push(single({ label: "Show TreeMap", onClick: () => ctx.showTreemap(ref) }));
   if (isDirectory) items.push(single({ label: "Search from here", onClick: () => ctx.searchFromHere(ref, fullPath) }));
+  if (selection) items.push(findDuplicatesItem(ctx, selection, isDirectory));
   if (selection) {
     const copy = (label: string, kind: CopyKind) => ({
       label,

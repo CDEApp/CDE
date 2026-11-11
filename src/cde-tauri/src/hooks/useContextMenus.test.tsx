@@ -20,6 +20,7 @@ function setup(over: Partial<UseContextMenusOptions> = {}) {
     runShell: vi.fn(),
     showTreemap: vi.fn(),
     searchFromHere: vi.fn(),
+    findDuplicates: vi.fn(),
     viewInTree: vi.fn(),
     rescanCatalog: vi.fn(),
     editDescription: vi.fn(),

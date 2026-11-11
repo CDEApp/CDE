@@ -1,4 +1,5 @@
 import { ApiError } from "./api/client";
+import type { SearchQuery } from "./api/types";
 import { catalogName, pathSeparatorOf } from "./format";
 
 /** One-line syntax reminder for the Everything checkbox tooltip. */
@@ -77,4 +78,14 @@ export function filterTerm(text: string, field: "name" | "path", regex: boolean)
   if (regex) return `${prefix}regex:"${quoteFreeRegex(text)}"`;
   if (NEEDS_REGEX.test(text)) return `${prefix}regex:"${regexLiteral(text)}"`;
   return `${prefix}${everythingTerm(text)}`;
+}
+
+export function duplicatesOfQuery(contentHash: string, limitResultCount: number): SearchQuery {
+  return {
+    pattern: `hash:${contentHash}`,
+    everythingMode: true,
+    includeFiles: true,
+    includeFolders: true,
+    limitResultCount,
+  };
 }

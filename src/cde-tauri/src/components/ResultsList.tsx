@@ -59,9 +59,7 @@ type Features = typeof features;
 
 const col = createColumnHelper<Features, SearchResultRow>();
 
-// Modified is sorted on the parsed timestamp; bad dates (NaN) are pushed to the end of the
-// ascending order so they stay grouped rather than scattered through the list.
-const modifiedSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
+const nanLastSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
   const av = a.getValue<number>(columnId);
   const bv = b.getValue<number>(columnId);
   const an = Number.isNaN(av);
@@ -72,7 +70,7 @@ const modifiedSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
   return av === bv ? 0 : av < bv ? -1 : 1;
 };
 
-const SORT_FNS = { text: "text", basic: "basic", date: modifiedSort } as const;
+const SORT_FNS = { text: "text", basic: "basic", nanLast: nanLastSort } as const;
 
 const columns = col.columns(
   RESULT_COLUMNS.map((c) =>

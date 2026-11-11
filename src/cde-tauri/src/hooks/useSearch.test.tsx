@@ -11,11 +11,11 @@ const row = (catalogId: number, entryIndex = 1) =>
   ({ ref: { catalogId, entryIndex }, fullPath: `/c${catalogId}/f${entryIndex}` }) as SearchResultRow;
 const nameOf = (id: number) => `cat${id}`;
 
-function setup(search: (q: SearchQuery, h: SearchHandlers) => Promise<void>) {
+function setup(search: (q: SearchQuery, h: SearchHandlers) => Promise<void>, wantsDuplicateCounts = () => false) {
   const client = { search: vi.fn(search) } as unknown as CdeApiClient;
   const ui = { pushSearchHistory: vi.fn(), update: vi.fn() } as unknown as UiStateManager;
   const onStart = vi.fn();
-  const hook = renderHook(() => useSearch({ getClient: () => client, getUi: () => ui, onStart }));
+  const hook = renderHook(() => useSearch({ getClient: () => client, getUi: () => ui, onStart, wantsDuplicateCounts }));
   return { ...hook, client, ui, onStart };
 }
 
@@ -158,6 +158,18 @@ describe("useSearch", () => {
     await act(() => result.current.runSearch(query));
     await act(() => result.current.searchAgain());
     expect(client.search).toHaveBeenCalledTimes(2);
-    expect((client.search as ReturnType<typeof vi.fn>).mock.calls[1][0]).toBe(query);
+    expect((client.search as ReturnType<typeof vi.fn>).mock.calls[1][0]).toEqual({ ...query, includeDuplicateCounts: false });
+  });
+
+  it("asks for duplicate counts only while the Dupes column is wanted, and re-reads that on searchAgain", async () => {
+    let wanted = false;
+    const { result, client } = setup(async () => {}, () => wanted);
+    const sent = () => (client.search as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].includeDuplicateCounts);
+    await act(() => result.current.runSearch(query));
+    wanted = true;
+    await act(() => result.current.searchAgain());
+    wanted = false;
+    await act(() => result.current.searchAgain());
+    expect(sent()).toEqual([false, true, false]);
   });
 });
