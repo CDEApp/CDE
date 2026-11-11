@@ -66,3 +66,10 @@ export function searchFromHereQuery(folderPath: string, catalogFile: string): st
   parts.push(literalTerm("path", scoped, true));
   return `${parts.join(" ")} `;
 }
+
+export function filterTerm(text: string, field: "name" | "path", regex: boolean): string {
+  const prefix = field === "path" ? "path:" : "";
+  if (regex) return `${prefix}regex:"${text.replace(/"/g, "\\x22")}"`;
+  if (NEEDS_REGEX.test(text)) return `${prefix}regex:"${regexLiteral(text)}"`;
+  return `${prefix}${everythingTerm(text)}`;
+}
