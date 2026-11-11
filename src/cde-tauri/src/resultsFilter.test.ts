@@ -111,3 +111,10 @@ describe("combineQuery", () => {
     expect(combineQuery({ ...base, pattern: "a", includeFiles: false }, "b", "substring", "name").pattern).toBe("a folder: b");
   });
 });
+
+describe("combineQuery quotes in a regex filter", () => {
+  const last = { pattern: "", everythingMode: true } as SearchQuery;
+  it("turns a plain or escaped quote into \\x22 and keeps other escapes", () => {
+    expect(combineQuery(last, String.raw`a"b\"c\d`, "regex", "name").pattern).toBe(String.raw`regex:"a\x22b\x22c\d"`);
+  });
+});
