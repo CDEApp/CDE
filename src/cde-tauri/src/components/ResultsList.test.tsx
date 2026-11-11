@@ -28,7 +28,7 @@ const mk = (name: string, size: number): SearchResultRow => ({
   catalogName: "cat",
 });
 
-function setup() {
+function setup(partialSortNotice?: string) {
   render(
     <ResultsList
       rows={[mk("b.txt", 2), mk("a.txt", 1)]}
@@ -38,6 +38,7 @@ function setup() {
       resolveStyle={() => undefined}
       selection={EMPTY_SELECTION}
       dispatchSelection={vi.fn()}
+      partialSortNotice={partialSortNotice}
     />,
   );
 }
@@ -84,5 +85,24 @@ describe("ResultsList header accessibility", () => {
     expect(handle.getAttribute("aria-valuenow")).toBe("220");
     fireEvent.keyDown(handle, { key: "Home" });
     expect(handle.getAttribute("aria-valuenow")).toBe("260");
+  });
+});
+
+describe("ResultsList sort hint", () => {
+  const hint = "sorted within the first 10,000 matches";
+
+  it("labels only the sorted header, and only while a hint is given", () => {
+    setup(hint);
+    fireEvent.click(within(nameHeader()).getByRole("button"));
+    const button = within(nameHeader()).getByRole("button");
+    expect(button.title).toBe(hint);
+    expect(button.getAttribute("aria-label")).toBe(`Name, ${hint}`);
+    expect(within(screen.getByRole("columnheader", { name: /Size/ })).getByRole("button").title).toBe("Click to sort, drag to move");
+  });
+
+  it("adds nothing without a hint", () => {
+    setup();
+    fireEvent.click(within(nameHeader()).getByRole("button"));
+    expect(within(nameHeader()).getByRole("button").getAttribute("aria-label")).toBeNull();
   });
 });

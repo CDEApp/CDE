@@ -48,7 +48,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Target: .NET 10 (ASP.NET / Kestrel minimal API)
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
-    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE), `/session/reload` (SSE; 409 busy while any job is queued or running),
+    `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE; the final `progress` event carries `limitReached: true` only when the result limit stopped the search with more matches beyond it), `/session/reload` (SSE; 409 busy while any job is queued or running),
     `POST /jobs` (queue a rescan of a catalog or a create of a new `.cdex` in the working folder; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
   - Scan jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the

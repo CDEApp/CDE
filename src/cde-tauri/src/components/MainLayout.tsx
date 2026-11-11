@@ -79,6 +79,8 @@ export function MainLayout(p: Props) {
             busy={search.busy}
             staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
             onSearchAgain={() => void search.searchAgain()}
+            limitReachedCount={search.limitReachedCount}
+            onRaiseLimit={() => void search.raiseLimit()}
             resolveStyle={colours.resolveStyle}
             getColumnOrder={() => ui?.get().searchResultColumnOrder}
             onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}

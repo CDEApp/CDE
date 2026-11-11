@@ -131,6 +131,32 @@ public class SearchEndpointTests
         Assert.That(events.Last().Data.GetProperty("count").GetInt32(), Is.EqualTo(2));
     }
 
+    [Test]
+    public async Task Limit_stop_reports_limitReached_on_the_final_progress_event_before_done()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(ctx, new SearchQuery { Pattern = ".txt", LimitResultCount = 1 }, new SearchService(_catalog.Session));
+
+        var events = TestCatalog.Events(TestCatalog.Text(body));
+        Assert.That(events.Count(e => e.Event == "result"), Is.EqualTo(1));
+        Assert.That(events.Last().Event, Is.EqualTo("done"));
+        var finalProgress = events.Last(e => e.Event == "progress");
+        Assert.That(finalProgress.Data.GetProperty("limitReached").GetBoolean(), Is.True);
+    }
+
+    [Test]
+    public async Task Exact_limit_does_not_report_limitReached()
+    {
+        var (ctx, body) = TestCatalog.NewContext();
+
+        await SearchEndpoint.HandleAsync(ctx, new SearchQuery { Pattern = ".txt", LimitResultCount = 2 }, new SearchService(_catalog.Session));
+
+        var events = TestCatalog.Events(TestCatalog.Text(body));
+        Assert.That(events.Count(e => e.Event == "result"), Is.EqualTo(2));
+        Assert.That(events.Last(e => e.Event == "progress").Data.GetProperty("limitReached").GetBoolean(), Is.False);
+    }
+
     private async Task<string[]> ResultNames(SearchQuery query)
     {
         var (ctx, body) = TestCatalog.NewContext();

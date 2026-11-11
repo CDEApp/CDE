@@ -96,4 +96,21 @@ describe("ResultsPane", () => {
     fireEvent.click(exportButton());
     await waitFor(() => expect(h.show).toHaveBeenCalledWith(expect.objectContaining({ title: "Export failed", message: "read-only" })));
   });
+
+  it("shows no limit notice unless the limit was reached", () => {
+    setup();
+    expect(screen.queryByText(/limit reached/)).toBeNull();
+    expect(screen.queryByRole("button", { name: "Raise limit" })).toBeNull();
+  });
+
+  it("shows the limit notice with a Raise limit button that waits for a running search", () => {
+    const onRaiseLimit = vi.fn();
+    setup({ limitReachedCount: 10000, onRaiseLimit });
+    expect(screen.getByRole("status").textContent).toContain("10,000 results (limit reached, more exist)");
+    fireEvent.click(screen.getByRole("button", { name: "Raise limit" }));
+    expect(onRaiseLimit).toHaveBeenCalledOnce();
+    cleanup();
+    setup({ limitReachedCount: 10000, busy: true });
+    expect(screen.getByRole("button", { name: "Raise limit" })).toHaveProperty("disabled", true);
+  });
 });

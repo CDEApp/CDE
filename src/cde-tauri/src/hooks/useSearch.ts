@@ -3,6 +3,7 @@ import type { CdeApiClient } from "../api/client";
 import type { SearchQuery, SearchResultRow } from "../api/types";
 import { staleResultsBanner } from "../rescan";
 import { searchErrorMessage } from "../everythingSearch";
+import { nextSearchLimit } from "../searchLimit";
 import type { UiStateManager } from "../state/uiState";
 
 export interface UseSearchOptions {
@@ -15,11 +16,14 @@ export interface UseSearchOptions {
 /** Streaming search: the results, busy/timing text, the last query, and which catalogs were rescanned since. */
 export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const searchAbort = useRef<AbortController | null>(null);
-  const lastQueryRef = useRef<SearchQuery | null>(null); // for the stale-results "Search again"
+  // The query behind the results on screen: a refused query leaves it alone, so Search again and Raise limit act on them.
+  const lastQueryRef = useRef<SearchQuery | null>(null);
   const [results, setResults] = useState<SearchResultRow[]>([]);
   const [searchEpoch, setSearchEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");
+  const [limitReachedCount, setLimitReachedCount] = useState<number | null>(null);
+  const [queryLimit, setQueryLimit] = useState<number | null>(null);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
 
@@ -27,7 +31,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     async (query: SearchQuery) => {
       const client = getClient();
       const ui = getUi();
-      lastQueryRef.current = query;
+      setQueryLimit(query.limitResultCount ?? null);
       ui?.pushSearchHistory(query.pattern);
       ui?.update({
         regexMode: query.regexMode,
@@ -54,8 +58,10 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
       const begin = () => {
         if (started) return;
         started = true;
+        lastQueryRef.current = query;
         setResults([]);
         setSearchEpoch((n) => n + 1);
+        setLimitReachedCount(null);
         setRescannedSinceSearch(new Set()); // fresh results are not stale
       };
       let flush: ReturnType<typeof setTimeout> | null = null;
@@ -81,10 +87,11 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
             begin();
             setTiming(`${p.total > 0 ? Math.round((100 * p.count) / p.total) : 0}%`);
           },
-          onDone: (count) => {
+          onDone: (count, limitReached) => {
             if (!isLatest()) return;
             begin();
             setResults([...buffer]);
+            setLimitReachedCount(limitReached ? count : null);
             setTiming(`${count.toLocaleString()} results in ${Math.round(performance.now() - start)} ms`);
           },
         });
@@ -111,6 +118,11 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     if (q) await runSearch(q);
   }, [runSearch]);
 
+  const raiseLimit = useCallback(async () => {
+    const q = lastQueryRef.current;
+    if (q) await runSearch({ ...q, limitResultCount: nextSearchLimit(q.limitResultCount ?? 10000) });
+  }, [runSearch]);
+
   /** A catalog was rescanned: results pointing into it are now out of date. */
   const markRescanned = useCallback((catalogId: number) => {
     setRescannedSinceSearch((prev) => new Set(prev).add(catalogId));
@@ -119,5 +131,5 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const staleBanner = (nameOf: (catalogId: number) => string) =>
     staleResultsBanner(results, rescannedSinceSearch, nameOf);
 
-  return { results, searchEpoch, busy, timing, runSearch, cancelSearch, searchAgain, markRescanned, staleBanner };
+  return { results, searchEpoch, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
 }

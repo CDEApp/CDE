@@ -199,6 +199,7 @@ export default function App() {
         onSearch={search.runSearch}
         onCancel={search.cancelSearch}
         prefill={searchPrefill}
+        queryLimit={search.queryLimit}
       />
 
       <TabBar

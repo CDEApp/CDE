@@ -34,6 +34,7 @@ interface Props {
   dispatchSelection: Dispatch<SelectionAction>;
   onCopy?: () => void;
   visibleRowsRef?: { current: readonly SearchResultRow[] };
+  partialSortNotice?: string;
 }
 
 const ROW_HEIGHT = 22;
@@ -116,6 +117,7 @@ export function ResultsList({
   dispatchSelection,
   visibleRowsRef,
   onCopy,
+  partialSortNotice,
 }: Props) {
   const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
 
@@ -296,7 +298,8 @@ export function ResultsList({
                 <button
                   type="button"
                   className="sort-btn"
-                  title="Click to sort, drag to move"
+                  title={sorted && partialSortNotice ? partialSortNotice : "Click to sort, drag to move"}
+                  aria-label={sorted && partialSortNotice ? `${String(h.column.columnDef.header)}, ${partialSortNotice}` : undefined}
                   onMouseDown={(e) => startReorder(e, h.column.id)}
                   onClick={(e) => {
                     if (suppressClickRef.current) return;
@@ -305,6 +308,7 @@ export function ResultsList({
                 >
                   {String(h.column.columnDef.header)}
                   {sorted ? SORT_GLYPH[sorted] : ""}
+                  {sorted && partialSortNotice ? <span aria-hidden="true"> *</span> : null}
                 </button>
                 <span
                   className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}
