@@ -117,4 +117,33 @@ public class SearchServiceDuplicateTests
 
         Assert.That(rows.Keys, Is.EquivalentTo(new[] { (0, "same.bin"), (1, "same.bin"), (1, "copy-of-same.bin") }));
     }
+
+    [Test]
+    public async Task Counts_and_rows_come_from_the_same_catalog_versions_when_a_rescan_swaps_one_mid_search()
+    {
+        var after = Path.Combine(Path.GetTempPath(), $"cdeappcoretest-dupecount-{Guid.NewGuid():N}.cdex");
+        ColumnarFormat.Write(EntryStore.Build(Tree(@"D:	wo", "TWO", ("same.bin", 7))), after);
+        _paths.Add(after);
+        var loader = Substitute.For<ILoadCatalogService>();
+        loader.GetColumnarFiles(Arg.Any<string>()).Returns(_paths);
+        using var three = new CatalogSession(loader, Substitute.For<ILogger>());
+        await three.LoadAsync("config");
+
+        // Catalog 1 is rescanned (copy-of-same.bin deleted) after its first lease: later leases see the new version.
+        var session = Substitute.For<ICatalogSession>();
+        session.CatalogCount.Returns(2);
+        session.AcquireRead(0).Returns(_ => three.AcquireRead(0));
+        var catalogOneLeases = 0;
+        session.AcquireRead(1).Returns(_ => three.AcquireRead(catalogOneLeases++ == 0 ? 1 : 2));
+
+        var rows = new List<SearchResultRow>();
+        await foreach (var row in new SearchService(session).SearchAsync(new SearchQuery { Pattern = "", IncludeDuplicateCounts = true }))
+            rows.Add(row);
+
+        var hashed = rows.Where(r => r.ContentHash != null).ToList();
+        Assert.That(hashed, Is.Not.Empty);
+        foreach (var row in hashed)
+            Assert.That(row.DuplicateCount, Is.EqualTo(hashed.Count(r => r.ContentHash == row.ContentHash) - 1),
+                $"{row.Ref.CatalogId}/{row.Name} counts copies the returned rows do not have");
+    }
 }

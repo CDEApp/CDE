@@ -309,7 +309,9 @@ tbody tr:hover { background: var(--row-hover); }
   list-style: none; background: #2b2b2b; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.5);
 }
 .context-menu li { padding: 4px 14px; cursor: default; }
-.context-menu li:hover:not(.disabled):not(.separator) { background: var(--accent); color: #fff; }
+.context-menu li:hover:not(.disabled):not(.separator),
+.context-menu li:focus:not(.disabled) { background: var(--accent); color: #fff; outline: none; }
+.context-menu li.disabled:focus { outline: 1px dotted var(--fg); outline-offset: -1px; }
 .context-menu .menu-check { display: inline-block; width: 1.2em; }
 .context-menu li.disabled { color: #777; }
 .context-menu li.separator { height: 1px; padding: 0; margin: 4px 0; background: var(--border); }

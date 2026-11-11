@@ -149,3 +149,34 @@ describe("Extension and Type columns", () => {
     expect(rowCells("Type")).toEqual(["link", "folder", "folder", "file", "file", "file", "file"]);
   });
 });
+
+describe("column chooser from the keyboard", () => {
+  it("focuses the first column, moves with the arrows, toggles with Enter and Space, and returns focus on close", () => {
+    const { onVisibleColumnsChange } = setup();
+    const nameButton = within(screen.getAllByRole("columnheader")[0]).getByRole("button");
+    nameButton.focus();
+    openMenu();
+    expect(document.activeElement).toBe(menuItem("Name"));
+
+    const key = (k: string) => fireEvent.keyDown(document.activeElement!, { key: k });
+    key("ArrowDown");
+    key("ArrowDown");
+    key("ArrowDown");
+    expect(document.activeElement).toBe(menuItem("Catalog"));
+    key("Enter");
+    expect(headers()).toEqual(["Name", "Size", "Modified", "Path"]);
+    expect(screen.queryByRole("menu")).toBeNull();
+    expect(document.activeElement).toBe(nameButton);
+
+    openMenu();
+    key("End");
+    key("ArrowUp");
+    expect(document.activeElement?.getAttribute("role")).toBe("menuitemcheckbox");
+    key("Home");
+    key("ArrowUp");
+    key("Home");
+    key("ArrowDown");
+    key(" ");
+    expect(onVisibleColumnsChange).toHaveBeenLastCalledWith(["name", "modified", "path"]);
+  });
+});
