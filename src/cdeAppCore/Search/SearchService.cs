@@ -96,15 +96,57 @@ public sealed class SearchService : ISearchService
         IProgress<SearchProgress> progress, CancellationToken ct)
     {
         var opts = ToFindOptions(query);
-        opts.Duplicates = BuildDuplicateIndex(opts, query.IncludeDuplicateCounts, ct);
+        var specs = DuplicateSpecsOf(opts, query.IncludeDuplicateCounts);
+
+        // A duplicate index counts over every catalog, so its leases stay held until the last row is built: a rescan
+        // swap waits, and no row or count mixes catalog versions. Held leases are reused below, never re-entered
+        // (the slot lock does not allow recursion).
+        var held = specs.Count == 0 ? null : AcquireAll();
+        try
+        {
+            opts.Duplicates = held == null ? null : DuplicateIndex.Build(specs, held.ConvertAll(l => l.Source), ct);
+            Find(query, opts, held, writer, progress, ct);
+        }
+        finally
+        {
+            if (held != null)
+                foreach (var lease in held) lease.Dispose();
+        }
+    }
+
+    private List<CatalogReadLease> AcquireAll()
+    {
+        var leases = new List<CatalogReadLease>(_session.CatalogCount);
+        try
+        {
+            for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
+            return leases;
+        }
+        catch
+        {
+            foreach (var lease in leases) lease.Dispose();
+            throw;
+        }
+    }
+
+    private void Find(SearchQuery query, EntryStoreFindOptions opts, List<CatalogReadLease> held,
+        ChannelWriter<SearchResultRow> writer, IProgress<SearchProgress> progress, CancellationToken ct)
+    {
         var duplicateCounts = query.IncludeDuplicateCounts ? opts.Duplicates : null;
         var limit = query.LimitResultCount;
 
         var grandTotal = 0;
         for (var i = 0; i < _session.CatalogCount; i++)
         {
-            using var lease = _session.AcquireRead(i);
-            grandTotal += lease.Source.Count;
+            var owned = held == null ? _session.AcquireRead(i) : default;
+            try
+            {
+                grandTotal += (held == null ? owned : held[i]).Source.Count;
+            }
+            finally
+            {
+                owned.Dispose();
+            }
         }
 
         var matched = 0;
@@ -118,7 +160,9 @@ public sealed class SearchService : ISearchService
             if (ct.IsCancellationRequested || matched >= limit) break;
 
             // Read lock for this catalog's scan: a rescan swap of it waits until the scan is done.
-            using var lease = _session.AcquireRead(catalogId);
+            var owned = held == null ? _session.AcquireRead(catalogId) : default;
+            using var release = owned;
+            var lease = held == null ? owned : held[catalogId];
             var source = lease.Source;
             var baseScanned = scannedBase;
             var localCatalogId = catalogId;
@@ -151,24 +195,13 @@ public sealed class SearchService : ISearchService
         }
     }
 
-    private DuplicateIndex BuildDuplicateIndex(EntryStoreFindOptions opts, bool includeDuplicateCounts, CancellationToken ct)
+    private static List<DupeSpec> DuplicateSpecsOf(EntryStoreFindOptions opts, bool includeDuplicateCounts)
     {
         var specs = new List<DupeSpec>();
         if (opts.EverythingMode)
             specs.AddRange(EverythingQuery.Parse(opts.Pattern ?? string.Empty, opts.Clock ?? TimeProvider.System).DuplicateSpecs);
         if (includeDuplicateCounts && !specs.Contains(DupeSpec.SameHash)) specs.Add(DupeSpec.SameHash);
-        if (specs.Count == 0) return null;
-
-        var leases = new List<CatalogReadLease>(_session.CatalogCount);
-        try
-        {
-            for (var i = 0; i < _session.CatalogCount; i++) leases.Add(_session.AcquireRead(i));
-            return DuplicateIndex.Build(specs, leases.ConvertAll(l => l.Source), ct);
-        }
-        finally
-        {
-            foreach (var lease in leases) lease.Dispose();
-        }
+        return specs;
     }
 
     // The find loop is synchronous CPU-bound work inside Task.Run, so waiting for space here is the
