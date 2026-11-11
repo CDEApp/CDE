@@ -145,7 +145,7 @@ describe("DiffView", () => {
   it("applies a filter picked from the Diffs menu, keeps the toggle active and names the mode on it", async () => {
     await setup();
     fireEvent.click(screen.getByRole("button", { name: "Diffs options" }));
-    const entries = screen.getAllByRole("listitem").map((li) => li.textContent!.replace(/^[✓ \s]+/, ""));
+    const entries = Array.from(screen.getByRole("menu").querySelectorAll('[role^="menuitem"]')).map((li) => li.textContent!.replace(/^[✓ \s]+/, ""));
     expect(entries).toHaveLength(10);
     expect(entries[0]).toBe("Show Differences");
     fireEvent.click(screen.getByText("Show Left Orphans"));
@@ -156,7 +156,7 @@ describe("DiffView", () => {
     expect(screen.queryByRole("button", { name: "Diff | Differences" })).toBeNull();
     expect(diffs.getAttribute("aria-pressed")).toBe("true");
     expect(diffs.title).toBe("Show Left Orphans");
-    expect(screen.queryAllByRole("listitem")).toHaveLength(0);
+    expect(screen.queryByRole("menu")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "All" }));
     expect(dataRows()).toHaveLength(4);
