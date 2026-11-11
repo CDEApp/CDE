@@ -17,7 +17,6 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const searchAbort = useRef<AbortController | null>(null);
   const lastQueryRef = useRef<SearchQuery | null>(null); // for the stale-results "Search again"
   const [results, setResults] = useState<SearchResultRow[]>([]);
-  // Bumps each time a search starts delivering, so per-result state (the row selection) can reset.
   const [searchEpoch, setSearchEpoch] = useState(0);
   const [busy, setBusy] = useState(false);
   const [timing, setTiming] = useState("");

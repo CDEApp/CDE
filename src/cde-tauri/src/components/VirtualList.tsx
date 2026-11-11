@@ -21,7 +21,6 @@ interface Props<T> {
   /** Optional ARIA role (e.g. "grid") and label for the list root. */
   role?: string;
   ariaLabel?: string;
-  /** Extra attributes for the list root (focus, key handling, ARIA state). */
   rootProps?: HTMLAttributes<HTMLDivElement>;
 }
 

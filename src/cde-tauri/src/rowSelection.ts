@@ -78,7 +78,6 @@ export function selectionReducer(state: RowSelection, action: SelectionAction): 
   }
 }
 
-/** The selected items, in the order of `visible` (the list as sorted and filtered on screen). */
 export function selectedInOrder<T>(
   visible: readonly T[],
   keyOf: (item: T) => string,

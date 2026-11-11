@@ -57,7 +57,7 @@ describe("ResultsList header accessibility", () => {
     setup();
     const user = userEvent.setup();
     expect(nameHeader().getAttribute("aria-sort")).toBe("none");
-    await user.tab(); // the grid itself is the first stop; the header controls follow
+    await user.tab();
     await user.tab();
     const button = within(nameHeader()).getByRole("button");
     expect(document.activeElement).toBe(button);

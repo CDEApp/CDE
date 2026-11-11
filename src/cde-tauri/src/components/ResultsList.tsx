@@ -32,7 +32,6 @@ interface Props {
   resolveStyle: StyleResolver;
   selection: RowSelection;
   dispatchSelection: Dispatch<SelectionAction>;
-  /** Kept pointing at the rows as sorted on screen, for actions that read the selection in visible order. */
   visibleRowsRef?: { current: readonly SearchResultRow[] };
 }
 
@@ -150,8 +149,6 @@ export function ResultsList({
     if (index >= 0) listRef.current?.scrollToIndex(index, "nearest");
   }, [selection.active]);
 
-  // Focus stays on the grid; the active row is announced through aria-activedescendant. A roving
-  // tabindex would have to mount and focus a row that scrolling may have unmounted.
   function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.altKey) return;
     const mod = e.ctrlKey || e.metaKey;

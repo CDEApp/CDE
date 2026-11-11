@@ -58,7 +58,6 @@ export function MainLayout(p: Props) {
   // Session-only sorts (deliberately not in uiState), kept across folders and tab switches.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
-  // Held here, not in ResultsPane, so the selection survives switching tabs and back.
   const rowSelection = useRowSelection(search.searchEpoch);
 
   // Handlers for the memoised DirectoryPane keep a stable identity.
