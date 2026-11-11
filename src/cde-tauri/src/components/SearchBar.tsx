@@ -16,11 +16,13 @@ interface Props {
   onFiltersExpandedChange: (expanded: boolean) => void;
   /** A shortcut ("Search from here") asking for this pattern in the box, in Everything mode. Bump `nonce` to apply again. */
   prefill?: { pattern: string; nonce: number } | null;
+  /** The limit of the last search run; the Limit control follows it (a Raise limit changes it). */
+  queryLimit?: number | null;
 }
 
 /** Search box + advanced filters (size/date/hour ranges, not-older-than). */
 export function SearchBar({
-  busy, onSearch, onCancel, history, defaults, filtersExpanded, onFiltersExpandedChange, prefill,
+  busy, onSearch, onCancel, history, defaults, filtersExpanded, onFiltersExpandedChange, prefill, queryLimit,
 }: Props) {
   const [pattern, setPattern] = useState("");
   const [regexMode, setRegexMode] = useState(defaults.regexMode ?? false);
@@ -29,6 +31,10 @@ export function SearchBar({
   const [includeFiles, setIncludeFiles] = useState(defaults.includeFiles ?? true);
   const [includeFolders, setIncludeFolders] = useState(defaults.includeFolders ?? true);
   const [limit, setLimit] = useState(defaults.limitResultCount ?? 10000);
+  useEffect(() => {
+    if (queryLimit != null) setLimit(queryLimit);
+  }, [queryLimit]);
+  const limitOptions = SEARCH_LIMITS.includes(limit) ? SEARCH_LIMITS : [...SEARCH_LIMITS, limit].sort((a, b) => a - b);
   useEffect(() => {
     if (!prefill) return;
     setPattern(prefill.pattern);
@@ -139,7 +145,7 @@ export function SearchBar({
         <label>
           Limit
           <select value={limit} onChange={(e) => setLimit(Number(e.target.value))}>
-            {SEARCH_LIMITS.map((l) => (
+            {limitOptions.map((l) => (
               <option key={l} value={l}>{l.toLocaleString()}</option>
             ))}
           </select>

@@ -22,6 +22,8 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const [timing, setTiming] = useState("");
   // The result count at which the limit stopped the current search, or null when it did not.
   const [limitReachedCount, setLimitReachedCount] = useState<number | null>(null);
+  // The limit of the last query run, so the search bar follows a Raise limit.
+  const [queryLimit, setQueryLimit] = useState<number | null>(null);
   // Catalogs rescanned since the current results were produced (drives the stale banner).
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
 
@@ -30,6 +32,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
       const client = getClient();
       const ui = getUi();
       lastQueryRef.current = query;
+      setQueryLimit(query.limitResultCount ?? null);
       ui?.pushSearchHistory(query.pattern);
       ui?.update({
         regexMode: query.regexMode,
@@ -128,5 +131,5 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const staleBanner = (nameOf: (catalogId: number) => string) =>
     staleResultsBanner(results, rescannedSinceSearch, nameOf);
 
-  return { results, busy, timing, limitReachedCount, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
+  return { results, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
 }
