@@ -60,3 +60,22 @@ public interface IEntrySource
     uint RootFileEntryCount { get; }
     uint RootDirEntryCount { get; }
 }
+
+public static class EntrySourceExtensions
+{
+    /// <summary>
+    /// The entry's full hash, when the catalog holds one that proves its content: a partial hash does not, and the
+    /// reader already reports a legacy hash (#222, #37) as not done. False for a folder or an unhashed file.
+    /// </summary>
+    public static bool TryGetFullHash(this IEntrySource source, int i, out Hash16 hash)
+    {
+        if (!source.HasHash || !source.IsHashDone(i) || source.IsPartialHash(i))
+        {
+            hash = default;
+            return false;
+        }
+
+        hash = source.HashOf(i);
+        return true;
+    }
+}
