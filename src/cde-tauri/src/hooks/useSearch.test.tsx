@@ -134,12 +134,51 @@ describe("useSearch", () => {
   });
 
   it("searchAgain re-runs the last query", async () => {
-    const { result, client } = setup(async () => {});
+    const { result, client } = setup(async (_q, h) => h.onDone?.(0));
     await act(() => result.current.searchAgain());
     expect(client.search).not.toHaveBeenCalled();
     await act(() => result.current.runSearch(query));
     await act(() => result.current.searchAgain());
     expect(client.search).toHaveBeenCalledTimes(2);
     expect((client.search as ReturnType<typeof vi.fn>).mock.calls[1][0]).toBe(query);
+  });
+  it("records the count when the limit stopped the search, and clears it on a search that did not hit it", async () => {
+    let limitReached = true;
+    const { result } = setup(async (_q, h) => {
+      h.onResult(row(1));
+      h.onDone?.(1, limitReached);
+    });
+    await act(() => result.current.runSearch(query));
+    expect(result.current.limitReachedCount).toBe(1);
+
+    limitReached = false;
+    await act(() => result.current.runSearch(query));
+    expect(result.current.limitReachedCount).toBeNull();
+  });
+
+  it("raiseLimit re-runs the last query with the next limit up", async () => {
+    const { result, client } = setup(async (_q, h) => h.onDone?.(0, true));
+    await act(() => result.current.runSearch({ ...query, limitResultCount: 10000 }));
+
+    await act(() => result.current.raiseLimit());
+
+    expect(vi.mocked(client.search).mock.calls[1][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
+  });
+
+  it("Search again and Raise limit use the query behind the shown results, not a refused one after it", async () => {
+    const { result, client } = setup(async (q, h) => {
+      if (q.pattern === "a || b") throw new Error("bad query");
+      h.onResult(row(1));
+      h.onDone?.(1, true);
+    });
+    await act(() => result.current.runSearch({ ...query, limitResultCount: 10000 }));
+    await act(() => result.current.runSearch({ ...query, pattern: "a || b", limitResultCount: 10000 }));
+    expect(result.current.limitReachedCount).toBe(1);
+
+    await act(() => result.current.raiseLimit());
+    expect(vi.mocked(client.search).mock.calls[2][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
+
+    await act(() => result.current.searchAgain());
+    expect(vi.mocked(client.search).mock.calls[3][0]).toMatchObject({ pattern: "a", limitResultCount: 100000 });
   });
 });

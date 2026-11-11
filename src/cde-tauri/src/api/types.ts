@@ -162,6 +162,8 @@ export interface SearchProgress {
   count: number;
   total: number;
   elapsed: string;
+  /** On the final report only: the result limit stopped the search and more matches exist. */
+  limitReached?: boolean;
 }
 
 export interface CatalogLoadProgress {
