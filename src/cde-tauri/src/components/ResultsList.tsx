@@ -1,8 +1,9 @@
-import { useEffect, useId, useMemo, useRef, useState, type Dispatch, type ReactNode } from "react";
+import { useEffect, useId, useMemo, useRef, useState, type Dispatch } from "react";
 import {
   columnOrderingFeature,
   columnResizingFeature,
   columnSizingFeature,
+  columnVisibilityFeature,
   createColumnHelper,
   createSortedRowModel,
   rowSortingFeature,
@@ -14,10 +15,11 @@ import {
   type SortFn,
 } from "@tanstack/react-table";
 import { refToString, SearchResultRow } from "../api/types";
-import { moveColumn, normalizeColumnOrder } from "../columnOrder";
+import { mergeVisibleOrder, moveColumn, normalizeColumnOrder } from "../columnOrder";
 import { splitRowAndNameStyle, type StyleResolver } from "../colourRules";
-import { formatDate, sizeCell, sizeTitle } from "../format";
+import { RESULT_COLUMNS, RESULT_COLUMN_BY_ID, RESULT_COLUMN_IDS, resolveVisibleColumns } from "../resultColumns";
 import type { RowSelection, SelectionAction } from "../rowSelection";
+import { ContextMenu, type MenuState } from "./ContextMenu";
 import { StyledName } from "./StyledName";
 import { VirtualList, type VirtualListHandle } from "./VirtualList";
 
@@ -28,6 +30,8 @@ interface Props {
   /** Persisted column order (column ids); reconciled against the current columns on mount. */
   columnOrder?: unknown;
   onColumnOrderChange: (order: string[]) => void;
+  visibleColumns?: unknown;
+  onVisibleColumnsChange: (visible: string[]) => void;
   /** Colour-rule style for an entry name (undefined = no custom style). */
   resolveStyle: StyleResolver;
   selection: RowSelection;
@@ -48,6 +52,7 @@ const features = tableFeatures({
   columnSizingFeature,
   columnResizingFeature,
   columnOrderingFeature,
+  columnVisibilityFeature,
   sortedRowModel: createSortedRowModel(),
   sortFns: { text: sortFn_text, basic: sortFn_basic },
 });
@@ -55,9 +60,7 @@ type Features = typeof features;
 
 const col = createColumnHelper<Features, SearchResultRow>();
 
-// Modified is sorted on the parsed timestamp; bad dates (NaN) are pushed to the end of the
-// ascending order so they stay grouped rather than scattered through the list.
-const modifiedSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
+const nanLastSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
   const av = a.getValue<number>(columnId);
   const bv = b.getValue<number>(columnId);
   const an = Number.isNaN(av);
@@ -68,33 +71,18 @@ const modifiedSort: SortFn<Features, SearchResultRow> = (a, b, columnId) => {
   return av === bv ? 0 : av < bv ? -1 : 1;
 };
 
-const columns = col.columns([
-  col.accessor((r) => r.name, { id: "name", header: "Name", sortFn: "text", size: 260 }),
-  col.accessor((r) => r.size, { id: "size", header: "Size", sortFn: "basic", size: 90 }),
-  col.accessor((r) => Date.parse(r.modified), { id: "modified", header: "Modified", sortFn: modifiedSort, size: 150 }),
-  col.accessor((r) => r.catalogName, { id: "catalog", header: "Catalog", sortFn: "text", size: 160 }),
-  col.accessor((r) => r.parentPath, { id: "path", header: "Path", sortFn: "text", size: 380 }),
-]);
-const DEFAULT_COLUMN_IDS = columns.map((c) => c.id as string);
+const SORT_FNS = { text: "text", basic: "basic", nanLast: nanLastSort } as const;
+
+const columns = col.columns(
+  RESULT_COLUMNS.map((c) =>
+    col.accessor((r) => c.sortValue(r), { id: c.id, header: c.header, sortFn: SORT_FNS[c.sort], size: c.defaultWidthPx }),
+  ),
+);
 
 /** The column that absorbs spare pane width, wherever it has been moved to. */
 const FILL_COLUMN = "path";
 
-// Row cell rendering per column id, so cells follow the current column order.
-const CELLS: Record<
-  string,
-  { className: string; render: (r: SearchResultRow) => ReactNode; title?: (r: SearchResultRow) => string }
-> = {
-  name: { className: "cell", render: (r) => r.name },
-  size: {
-    className: "cell num",
-    render: (r) => sizeCell(r.isDirectory, r.size, r.isReparsePoint),
-    title: (r) => sizeTitle(r.size),
-  },
-  modified: { className: "cell", render: (r) => formatDate(r.modified, r.isModifiedBad) },
-  catalog: { className: "cell", render: (r) => r.catalogName },
-  path: { className: "cell", render: (r) => r.parentPath },
-};
+const cellClass = (id: string) => (RESULT_COLUMN_BY_ID.get(id)?.numeric ? "cell num" : "cell");
 
 const SORT_ARIA = { none: "none", asc: "ascending", desc: "descending" } as const;
 const MIN_COLUMN_WIDTH = 30;
@@ -103,7 +91,7 @@ const KEY_STEP_LARGE = 50;
 const SORT_GLYPH = { asc: " ▲", desc: " ▼" } as const;
 
 /**
- * Virtualized streaming search results (Name / Size / Modified / Catalog / Path): click a header
+ * Virtualized streaming search results: right-click the header to show or hide columns, click a header
  * to sort, drag its right edge to resize, drag the header itself sideways to reorder.
  */
 export function ResultsList({
@@ -112,6 +100,8 @@ export function ResultsList({
   onContextMenu,
   columnOrder,
   onColumnOrderChange,
+  visibleColumns,
+  onVisibleColumnsChange,
   resolveStyle,
   selection,
   dispatchSelection,
@@ -119,7 +109,11 @@ export function ResultsList({
   onCopy,
   partialSortNotice,
 }: Props) {
-  const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, DEFAULT_COLUMN_IDS));
+  const [initialOrder] = useState(() => normalizeColumnOrder(columnOrder, RESULT_COLUMN_IDS));
+  const [initialVisibility] = useState(() => {
+    const visible = resolveVisibleColumns(visibleColumns);
+    return Object.fromEntries(RESULT_COLUMN_IDS.map((id) => [id, visible.has(id)]));
+  });
 
   // Sorting, sizes and order live in the table's own store; useTable re-renders on their change.
   const table = useTable({
@@ -127,12 +121,13 @@ export function ResultsList({
     data: rows,
     columns,
     columnResizeMode: "onChange",
-    initialState: { columnOrder: initialOrder },
+    initialState: { columnOrder: initialOrder, columnVisibility: initialVisibility },
   });
 
   const headerRef = useRef<HTMLDivElement>(null);
   const suppressClickRef = useRef(false);
   const [drag, setDrag] = useState<{ id: string; drop: number } | null>(null);
+  const [menu, setMenu] = useState<MenuState | null>(null);
 
   const sortedRows = table.getRowModel().rows;
   const visibleRows = useMemo(() => sortedRows.map((r) => r.original), [sortedRows]);
@@ -147,17 +142,11 @@ export function ResultsList({
 
   const orderRef = useRef(order);
   orderRef.current = order;
-  // Bumped by every keyboard move, so Home or End on an already-active row still scrolls it back into view.
-  const [revealNonce, setRevealNonce] = useState(0);
   useEffect(() => {
     if (selection.active === null) return;
     const index = orderRef.current.indexOf(selection.active);
     if (index >= 0) listRef.current?.scrollToIndex(index, "nearest");
-  }, [selection.active, revealNonce]);
-  const move = (to: { delta: number } | "start" | "end", extend: boolean) => {
-    dispatchSelection({ type: "move", to, extend, order });
-    setRevealNonce((n) => n + 1);
-  };
+  }, [selection.active]);
 
   function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.altKey) return;
@@ -166,17 +155,17 @@ export function ResultsList({
     if (mod && e.key.toLowerCase() === "a") dispatchSelection({ type: "selectAll", order });
     else if (mod && e.key.toLowerCase() === "c" && onCopy) onCopy();
     else if (mod) return;
-    else if (e.key === "ArrowDown") move({ delta: 1 }, extend);
-    else if (e.key === "ArrowUp") move({ delta: -1 }, extend);
-    else if (e.key === "Home") move("start", extend);
-    else if (e.key === "End") move("end", extend);
+    else if (e.key === "ArrowDown") dispatchSelection({ type: "move", to: { delta: 1 }, extend, order });
+    else if (e.key === "ArrowUp") dispatchSelection({ type: "move", to: { delta: -1 }, extend, order });
+    else if (e.key === "Home") dispatchSelection({ type: "move", to: "start", extend, order });
+    else if (e.key === "End") dispatchSelection({ type: "move", to: "end", extend, order });
     else if (e.key === " ") dispatchSelection({ type: "toggleActive" });
     else if (e.key === "Escape") dispatchSelection({ type: "clear" });
     else return;
     e.preventDefault();
   }
 
-  const leafColumns = table.getAllLeafColumns();
+  const leafColumns = table.getVisibleLeafColumns();
   const columnIds = leafColumns.map((c) => c.id);
 
   // Fixed widths for every column but Path, which — until the user resizes it — grows into any
@@ -228,8 +217,9 @@ export function ResultsList({
       setDrag(null);
       const next = moveColumn(startOrder, id, drop);
       if (next !== startOrder) {
-        table.setColumnOrder([...next]);
-        onColumnOrderChange([...next]);
+        const full = mergeVisibleOrder(table.state.columnOrder, next);
+        table.setColumnOrder(full);
+        onColumnOrderChange(full);
       }
     };
     window.addEventListener("mousemove", onMove);
@@ -241,143 +231,172 @@ export function ResultsList({
     table.setColumnSizing((old) => ({ ...old, [id]: Math.max(MIN_COLUMN_WIDTH, width) }));
   }
 
+  function openColumnMenu(e: React.MouseEvent) {
+    e.preventDefault();
+    const shown = leafColumns.length;
+    setMenu({
+      x: e.clientX,
+      y: e.clientY,
+      items: table.state.columnOrder.map((id) => {
+        const visible = table.getColumn(id)!.getIsVisible();
+        const last = visible && shown === 1;
+        return {
+          label: RESULT_COLUMN_BY_ID.get(id)!.header,
+          checked: visible,
+          disabled: last,
+          title: last ? "At least one column stays visible" : undefined,
+          onClick: () => toggleColumn(id, !visible),
+        };
+      }),
+    });
+  }
+
+  function toggleColumn(id: string, visible: boolean) {
+    table.setColumnVisibility((old) => ({ ...old, [id]: visible }));
+    const shown = new Set(columnIds);
+    if (visible) shown.add(id);
+    else shown.delete(id);
+    onVisibleColumnsChange(RESULT_COLUMN_IDS.filter((c) => shown.has(c)));
+  }
+
   // Show the drop marker only where releasing would actually move the column.
   const marker = drag && moveColumn(columnIds, drag.id, drag.drop) !== columnIds ? drag.drop : -1;
 
   return (
-    <VirtualList<Row<Features, SearchResultRow>>
-      className="results-cols"
-      items={sortedRows}
-      handleRef={listRef}
-      rootProps={{
-        tabIndex: 0,
-        onKeyDown: onGridKeyDown,
-        "aria-multiselectable": true,
-        "aria-activedescendant": selection.active === null ? undefined : rowId(selection.active),
-      }}
-      rowHeight={ROW_HEIGHT}
-      innerStyle={{ minWidth: totalWidth }}
-      role="grid"
-      ariaLabel="Search results"
-      header={
-        <div
-          ref={headerRef}
-          role="row"
-          className={`vlist-header results-cols${drag ? " reordering" : ""}`}
-          style={{ gridTemplateColumns, minWidth: totalWidth }}
-        >
-          {table.getFlatHeaders().map((h, i, all) => {
-            const sorted = h.column.getIsSorted();
-            const resizeHandler = h.getResizeHandler();
-            // A filling Path column is wider than its size (which is only its minimum), so a drag
-            // would start from the wrong width and appear dead. Pin it to its rendered width
-            // first; the resize then tracks the pointer and Path stays fixed-width afterwards.
-            const resize = (e: React.MouseEvent | React.TouchEvent) => {
-              if (h.column.id === FILL_COLUMN && fillActive) {
-                const cell = (e.currentTarget as HTMLElement).parentElement;
-                const width = Math.round(cell?.getBoundingClientRect().width ?? h.column.getSize());
-                table.setColumnSizing((old) => ({ ...old, [FILL_COLUMN]: width }));
-              }
-              resizeHandler(e);
-            };
-            const classes = [
-              "sortable",
-              h.column.id === "size" ? "num" : "",
-              sorted ? "sorted" : "",
-              drag?.id === h.column.id ? "dragging" : "",
-              marker === i ? "drop-before" : "",
-              marker === all.length && i === all.length - 1 ? "drop-after" : "",
-            ];
-            return (
-              <div
-                key={h.id}
-                role="columnheader"
-                aria-sort={SORT_ARIA[sorted || "none"]}
-                className={classes.filter(Boolean).join(" ")}
-              >
-                <button
-                  type="button"
-                  className="sort-btn"
-                  title={sorted && partialSortNotice ? partialSortNotice : "Click to sort, drag to move"}
-                  aria-label={sorted && partialSortNotice ? `${String(h.column.columnDef.header)}, ${partialSortNotice}` : undefined}
-                  onMouseDown={(e) => startReorder(e, h.column.id)}
-                  onClick={(e) => {
-                    if (suppressClickRef.current) return;
-                    h.column.getToggleSortingHandler()?.(e);
-                  }}
-                >
-                  {String(h.column.columnDef.header)}
-                  {sorted ? SORT_GLYPH[sorted] : ""}
-                  {sorted && partialSortNotice ? <span aria-hidden="true"> *</span> : null}
-                </button>
-                <span
-                  className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}
-                  role="slider"
-                  aria-orientation="horizontal"
-                  aria-label={`Resize ${String(h.column.columnDef.header)} column`}
-                  aria-valuenow={h.column.getSize()}
-                  aria-valuemin={MIN_COLUMN_WIDTH}
-                  tabIndex={0}
-                  onMouseDown={(e) => {
-                    e.stopPropagation(); // resizing, not reordering
-                    resize(e);
-                  }}
-                  onTouchStart={resize}
-                  onKeyDown={(e) => {
-                    const step = e.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
-                    if (e.key === "ArrowRight") nudge(h.column.id, h.column.getSize() + step);
-                    else if (e.key === "ArrowLeft") nudge(h.column.id, h.column.getSize() - step);
-                    else if (e.key === "Home") h.column.resetSize();
-                    else return;
-                    e.preventDefault();
-                  }}
-                  // Back to the default width (and, for Path, back to filling the spare width).
-                  onDoubleClick={(e) => {
-                    e.stopPropagation();
-                    h.column.resetSize();
-                  }}
-                  title="Drag or use the arrow keys to resize, double-click or Home to reset"
-                />
-              </div>
-            );
-          })}
-        </div>
-      }
-      renderRow={(row, i, style) => {
-        const r = row.original;
-        const key = refToString(r.ref);
-        const isSelected = selection.selected.has(key);
-        // Selected rows keep the selection look: no rule styles (transparent gradient text must not hide the name).
-        const { row: rowStyle, name: nameStyle } = isSelected
-          ? { row: undefined, name: undefined }
-          : splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
-        const click = (mode: "replace" | "toggle" | "range") => dispatchSelection({ type: "click", key, mode, order });
-        return (
+    <>
+      <VirtualList<Row<Features, SearchResultRow>>
+        className="results-cols"
+        items={sortedRows}
+        handleRef={listRef}
+        rootProps={{
+          tabIndex: 0,
+          onKeyDown: onGridKeyDown,
+          "aria-multiselectable": true,
+          "aria-activedescendant": selection.active === null ? undefined : rowId(selection.active),
+        }}
+        rowHeight={ROW_HEIGHT}
+        innerStyle={{ minWidth: totalWidth }}
+        role="grid"
+        ariaLabel="Search results"
+        header={
           <div
-            key={`${key}-${i}`}
-            id={rowId(key)}
+            ref={headerRef}
             role="row"
-            aria-selected={isSelected}
-            aria-rowindex={i + 2}
-            className={`vlist-row${r.isDirectory ? " dir" : ""}${isSelected ? " selected" : ""}${selection.active === key ? " active" : ""}`}
-            style={{ ...style, ...rowStyle, gridTemplateColumns }}
-            onClick={(e) => click(e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "replace")}
-            onDoubleClick={() => onActivate(r)}
-            onContextMenu={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              if (!isSelected) click("replace");
-              onContextMenu(r, e.clientX, e.clientY);
-            }}
+            className={`vlist-header results-cols${drag ? " reordering" : ""}`}
+            style={{ gridTemplateColumns, minWidth: totalWidth }}
+            onContextMenu={openColumnMenu}
           >
-            {columnIds.map((id) => (
-              <div key={id} role="gridcell" className={CELLS[id].className} title={CELLS[id].title?.(r)}>
-                <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{CELLS[id].render(r)}</StyledName>
-              </div>
-            ))}
+            {table.getFlatHeaders().map((h, i, all) => {
+              const sorted = h.column.getIsSorted();
+              const resizeHandler = h.getResizeHandler();
+              // A filling Path column is wider than its size (which is only its minimum), so a drag
+              // would start from the wrong width and appear dead. Pin it to its rendered width
+              // first; the resize then tracks the pointer and Path stays fixed-width afterwards.
+              const resize = (e: React.MouseEvent | React.TouchEvent) => {
+                if (h.column.id === FILL_COLUMN && fillActive) {
+                  const cell = (e.currentTarget as HTMLElement).parentElement;
+                  const width = Math.round(cell?.getBoundingClientRect().width ?? h.column.getSize());
+                  table.setColumnSizing((old) => ({ ...old, [FILL_COLUMN]: width }));
+                }
+                resizeHandler(e);
+              };
+              const classes = [
+                "sortable",
+                RESULT_COLUMN_BY_ID.get(h.column.id)?.numeric ? "num" : "",
+                sorted ? "sorted" : "",
+                drag?.id === h.column.id ? "dragging" : "",
+                marker === i ? "drop-before" : "",
+                marker === all.length && i === all.length - 1 ? "drop-after" : "",
+              ];
+              return (
+                <div
+                  key={h.id}
+                  role="columnheader"
+                  aria-sort={SORT_ARIA[sorted || "none"]}
+                  className={classes.filter(Boolean).join(" ")}
+                >
+                  <button
+                    type="button"
+                    className="sort-btn"
+                    title={sorted && partialSortNotice ? partialSortNotice : "Click to sort, drag to move"}
+                    aria-label={sorted && partialSortNotice ? `${String(h.column.columnDef.header)}, ${partialSortNotice}` : undefined}
+                    onMouseDown={(e) => startReorder(e, h.column.id)}
+                    onClick={(e) => {
+                      if (suppressClickRef.current) return;
+                      h.column.getToggleSortingHandler()?.(e);
+                    }}
+                  >
+                    {String(h.column.columnDef.header)}
+                    {sorted ? SORT_GLYPH[sorted] : ""}
+                    {sorted && partialSortNotice ? <span aria-hidden="true"> *</span> : null}
+                  </button>
+                  <span
+                    className={`resizer${h.column.getIsResizing() ? " resizing" : ""}`}
+                    role="slider"
+                    aria-orientation="horizontal"
+                    aria-label={`Resize ${String(h.column.columnDef.header)} column`}
+                    aria-valuenow={h.column.getSize()}
+                    aria-valuemin={MIN_COLUMN_WIDTH}
+                    tabIndex={0}
+                    onMouseDown={(e) => {
+                      e.stopPropagation(); // resizing, not reordering
+                      resize(e);
+                    }}
+                    onTouchStart={resize}
+                    onKeyDown={(e) => {
+                      const step = e.shiftKey ? KEY_STEP_LARGE : KEY_STEP;
+                      if (e.key === "ArrowRight") nudge(h.column.id, h.column.getSize() + step);
+                      else if (e.key === "ArrowLeft") nudge(h.column.id, h.column.getSize() - step);
+                      else if (e.key === "Home") h.column.resetSize();
+                      else return;
+                      e.preventDefault();
+                    }}
+                    // Back to the default width (and, for Path, back to filling the spare width).
+                    onDoubleClick={(e) => {
+                      e.stopPropagation();
+                      h.column.resetSize();
+                    }}
+                    title="Drag or use the arrow keys to resize, double-click or Home to reset"
+                  />
+                </div>
+              );
+            })}
           </div>
-        );
-      }}
-    />
+        }
+        renderRow={(row, i, style) => {
+          const r = row.original;
+          const { row: rowStyle, name: nameStyle } = splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
+          const key = refToString(r.ref);
+          const isSelected = selection.selected.has(key);
+          const click = (mode: "replace" | "toggle" | "range") => dispatchSelection({ type: "click", key, mode, order });
+          return (
+            <div
+              key={`${key}-${i}`}
+              id={rowId(key)}
+              role="row"
+              aria-selected={isSelected}
+              aria-rowindex={i + 2}
+              className={`vlist-row${r.isDirectory ? " dir" : ""}${isSelected ? " selected" : ""}${selection.active === key ? " active" : ""}`}
+              style={{ ...style, ...rowStyle, gridTemplateColumns }}
+              onClick={(e) => click(e.shiftKey ? "range" : e.ctrlKey || e.metaKey ? "toggle" : "replace")}
+              onDoubleClick={() => onActivate(r)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isSelected) click("replace");
+                onContextMenu(r, e.clientX, e.clientY);
+              }}
+            >
+              {columnIds.map((id) => (
+                <div key={id} role="gridcell" className={cellClass(id)} title={RESULT_COLUMN_BY_ID.get(id)!.cellTitle?.(r)}>
+                  <StyledName nameStyle={id === "name" ? nameStyle : undefined}>{RESULT_COLUMN_BY_ID.get(id)!.cell(r)}</StyledName>
+                </div>
+              ))}
+            </div>
+          );
+        }}
+      />
+    <ContextMenu menu={menu} onClose={() => setMenu(null)} />
+    </>
   );
 }

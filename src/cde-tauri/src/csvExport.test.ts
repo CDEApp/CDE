@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { SearchResultRow } from "./api/types";
-import { CSV_COLUMN_IDS, csvField, neutraliseFormula, encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
+import { csvField, neutraliseFormula, encodeCsv, exportFileName, resultsToCsv } from "./csvExport";
 
 function row(over: Partial<SearchResultRow> = {}): SearchResultRow {
   return {
@@ -72,8 +72,18 @@ describe("resultsToCsv", () => {
     expect(resultsToCsv([], DEFAULT)).toBe("Name,Size,Modified,Catalog,Path\r\n");
   });
 
-  it("exposes the column ids the results list uses", () => {
-    expect(CSV_COLUMN_IDS).toEqual(DEFAULT);
+  it("writes only the visible columns, in the saved order, with Extension and Type when shown", () => {
+    const order = ["type", "name", "extension", "size", "modified", "catalog", "path"];
+    expect(resultsToCsv([row()], order, ["name", "extension", "type"])).toBe("Type,Name,Extension\r\nfile,a.txt,txt\r\n");
+  });
+
+  it("keeps the default columns when no visible set was saved", () => {
+    expect(resultsToCsv([], ["extension", "name"])).toBe("Name,Size,Modified,Catalog,Path\r\n");
+  });
+
+  it("guards a formula-looking extension but not the type", () => {
+    const csv = resultsToCsv([row({ name: "x.=1" })], undefined, ["extension", "type"]);
+    expect(csv).toBe("Extension,Type\r\n'=1,file\r\n");
   });
 });
 

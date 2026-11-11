@@ -1,4 +1,5 @@
 import { ApiError } from "./api/client";
+import type { SearchQuery } from "./api/types";
 import { catalogName, pathSeparatorOf } from "./format";
 
 /** One-line syntax reminder for the Everything checkbox tooltip. */
@@ -65,4 +66,26 @@ export function searchFromHereQuery(folderPath: string, catalogFile: string): st
   const parts = name ? [literalTerm("catalog", name, false)] : [];
   parts.push(literalTerm("path", scoped, true));
   return `${parts.join(" ")} `;
+}
+
+// A quote, escaped or not, becomes \x22 so it cannot end the quoted term; other escapes pass through whole.
+function quoteFreeRegex(source: string): string {
+  return source.replace(/\\[\s\S]|"/g, (m) => (m === '"' || m === '\\"' ? "\\x22" : m));
+}
+
+export function filterTerm(text: string, field: "name" | "path", regex: boolean): string {
+  const prefix = field === "path" ? "path:" : "";
+  if (regex) return `${prefix}regex:"${quoteFreeRegex(text)}"`;
+  if (NEEDS_REGEX.test(text)) return `${prefix}regex:"${regexLiteral(text)}"`;
+  return `${prefix}${everythingTerm(text)}`;
+}
+
+export function duplicatesOfQuery(contentHash: string, limitResultCount: number): SearchQuery {
+  return {
+    pattern: `hash:${contentHash}`,
+    everythingMode: true,
+    includeFiles: true,
+    includeFolders: true,
+    limitResultCount,
+  };
 }
