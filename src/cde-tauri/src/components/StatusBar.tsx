@@ -1,10 +1,13 @@
 import { CatalogsResponse } from "../api/types";
 import { mb } from "../format";
 import { staleNotice } from "../freshness";
+import { type ResultsSummary, summaryText } from "../selectionSummary";
 
 interface Props {
   catalogs: CatalogsResponse | null;
   resultCount: number;
+  /** The selected rows, or all results when none are selected; null before any results. */
+  summary?: ResultsSummary | null;
   searchTiming: string;
   /** Queued and running jobs; the count links to the Jobs tab, where they can be cancelled. */
   activeJobCount?: number;
@@ -22,6 +25,7 @@ interface Props {
 export function StatusBar({
   catalogs,
   resultCount,
+  summary = null,
   searchTiming,
   activeJobCount = 0,
   onShowJobs,
@@ -35,6 +39,11 @@ export function StatusBar({
   return (
     <div className="statusbar">
       <span>Results: {resultCount.toLocaleString()}</span>
+      {summary && summary.count > 0 && (
+        <span title="Folder sizes are not added to the total, since a folder size already contains its files.">
+          {summaryText(summary)}
+        </span>
+      )}
       <span>Entries loaded: {(catalogs?.totalEntries ?? 0).toLocaleString()}</span>
       <span>Catalogs loaded: {catalogs?.catalogsLoaded ?? 0}</span>
       <span>Memory: {catalogs ? mb(catalogs.memoryBytes) : "-"}</span>

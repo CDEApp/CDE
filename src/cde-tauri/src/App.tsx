@@ -28,9 +28,11 @@ import { useContextMenus } from "./hooks/useContextMenus";
 import { useJobs } from "./hooks/useJobs";
 import { useLegacyMigration } from "./hooks/useLegacyMigration";
 import { useNewCatalog } from "./hooks/useNewCatalog";
+import { useRowSelection } from "./hooks/useRowSelection";
 import { useSearch } from "./hooks/useSearch";
 import { useShellActions } from "./hooks/useShellActions";
 import { useSidecar } from "./hooks/useSidecar";
+import { summarizeRows } from "./selectionSummary";
 
 const NO_CATALOGS: CatalogInfo[] = [];
 
@@ -66,6 +68,11 @@ export default function App() {
 
   const selection = useCatalogSelection({ getClient, showDirectory });
   const search = useSearch({ getClient, getUi, onStart: showResults });
+  const rowSelection = useRowSelection(search.searchEpoch);
+  const resultsSummary = useMemo(
+    () => summarizeRows(search.results, rowSelection.selection.selected),
+    [search.results, rowSelection.selection.selected],
+  );
   const { resetForReload, snapshot, restoreAfterRescan, openRoot, viewInTree } = selection;
   const { markRescanned } = search;
 
@@ -220,6 +227,7 @@ export default function App() {
         roots={catalogsState.roots}
         selection={selection}
         search={search}
+        rowSelection={rowSelection}
         colours={colours}
         jobs={jobs}
         menus={menus}
@@ -237,6 +245,7 @@ export default function App() {
       <StatusBar
         catalogs={catalogs}
         resultCount={search.results.length}
+        summary={resultsSummary}
         searchTiming={sidecar.status || search.timing}
         activeJobCount={activeCount(jobs.model)}
         onShowJobs={() => setView((v) => showView(v, "jobs"))}
