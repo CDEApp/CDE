@@ -62,6 +62,15 @@ export function rescanItem(
   };
 }
 
+export function hashItem(disabledReason: string | null, onHash: () => void): MenuItem {
+  return {
+    label: "Hash files…",
+    disabled: disabledReason !== null,
+    title: disabledReason ?? "Hash this catalog's files so duplicates can be found",
+    onClick: onHash,
+  };
+}
+
 function findDuplicatesItem(ctx: EntryMenuContext, selection: readonly SearchResultRow[], isDirectory: boolean): MenuItem {
   const label = "Find duplicates of this file";
   if (selection.length > 1) return oneItemOnly({ label, onClick: () => {} });
@@ -126,11 +135,13 @@ export function catalogMenu(
   showTreemap: (ref: EntryRef) => void,
   onEditDescription: () => void,
   rescan: MenuItem,
+  hash: MenuItem,
 ): MenuItem[] {
   return [
     { label: "Show TreeMap", onClick: () => showTreemap({ catalogId, entryIndex: 0 }) },
     editDescriptionItem(onEditDescription),
     rescan,
+    hash,
   ];
 }
 

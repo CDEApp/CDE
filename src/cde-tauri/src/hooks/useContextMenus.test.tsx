@@ -2,7 +2,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { CatalogInfo, DirectoryNode, SearchResultRow, TreemapRow } from "../api/types";
-import { emptyJobs } from "../jobsModel";
+import { applyJob, emptyJobs } from "../jobsModel";
 import { useContextMenus, type UseContextMenusOptions } from "./useContextMenus";
 
 const catalog = (catalogId: number, file: string) =>
@@ -24,6 +24,7 @@ function setup(over: Partial<UseContextMenusOptions> = {}) {
     viewInTree: vi.fn(),
     rescanCatalog: vi.fn(),
     editDescription: vi.fn(),
+    hashCatalogs: vi.fn(),
     collapseAll: vi.fn(),
     ...over,
   };
@@ -75,11 +76,41 @@ describe("useContextMenus", () => {
   it("the catalog row menu edits that catalog's description and rescans it", () => {
     const { result, opts } = setup();
     act(() => result.current.onCatalogContextMenu(opts.catalogs[0], 0, 0));
-    expect(labels(result.current.menu?.items)).toEqual(["Show TreeMap", "Edit Description…", "Rescan"]);
+    expect(labels(result.current.menu?.items)).toEqual(["Show TreeMap", "Edit Description…", "Rescan", "Hash files…"]);
     result.current.menu!.items[1].onClick();
     expect(opts.editDescription).toHaveBeenCalledWith(opts.catalogs[0]);
     result.current.menu!.items[2].onClick();
     expect(opts.rescanCatalog).toHaveBeenCalledWith(1);
+    result.current.menu!.items[3].onClick();
+    expect(opts.hashCatalogs).toHaveBeenCalledWith([1]);
+  });
+
+  it("disables Hash files… for a legacy catalog and for one a job holds", () => {
+    const legacy = { ...catalog(1, "C-one.cde"), sourcePath: "C:\\cats\\C-one.cde" } as CatalogInfo;
+    const a = setup({ catalogs: [legacy] });
+    act(() => a.result.current.onCatalogContextMenu(legacy, 0, 0));
+    expect(a.result.current.menu!.items[3]).toMatchObject({ disabled: true, title: expect.stringMatching(/legacy/i) });
+
+    const held = applyJob(emptyJobs, {
+      id: 1,
+      kind: "hash",
+      title: "Hashing",
+      catalogId: null,
+      catalogIds: [1],
+      catalogName: "x",
+      state: "running",
+      queuedAtUtc: "",
+      startedAtUtc: null,
+      endedAtUtc: null,
+      phase: "hashing",
+      entriesScanned: 0,
+      note: "",
+      result: null,
+      error: null,
+    });
+    const b = setup({ jobs: held });
+    act(() => b.result.current.onCatalogContextMenu(b.opts.catalogs[0], 0, 0));
+    expect(b.result.current.menu!.items[3]).toMatchObject({ disabled: true, title: expect.stringMatching(/already queued or running/) });
   });
 
   it("a treemap tile's View in Tree reveals that entry", () => {

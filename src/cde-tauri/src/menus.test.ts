@@ -4,6 +4,7 @@ import {
   collapseAllItem,
   editDescriptionItem,
   entryMenu,
+  hashItem,
   listMenu,
   rescanItem,
   treeBackgroundMenu,
@@ -118,23 +119,40 @@ describe("listMenu", () => {
 });
 
 describe("catalogMenu", () => {
-  it("offers Show TreeMap, Edit Description… and the rescan item, in that order", () => {
+  const hash = { label: "Hash files…", onClick: () => {} };
+
+  it("offers Show TreeMap, Edit Description…, the rescan item and the hash item, in that order", () => {
     const rescan = { label: "Rescan", onClick: () => {} };
-    const items = catalogMenu(7, vi.fn(), vi.fn(), rescan);
-    expect(labels(items)).toEqual(["Show TreeMap", "Edit Description…", "Rescan"]);
+    const items = catalogMenu(7, vi.fn(), vi.fn(), rescan, hash);
+    expect(labels(items)).toEqual(["Show TreeMap", "Edit Description…", "Rescan", "Hash files…"]);
+    expect(items[3]).toBe(hash);
     expect(items[2]).toBe(rescan);
   });
 
   it("Show TreeMap maps the catalog's root", () => {
     const showTreemap = vi.fn();
-    catalogMenu(7, showTreemap, vi.fn(), { label: "Rescan", onClick: () => {} })[0].onClick();
+    catalogMenu(7, showTreemap, vi.fn(), { label: "Rescan", onClick: () => {} }, hash)[0].onClick();
     expect(showTreemap).toHaveBeenCalledWith({ catalogId: 7, entryIndex: 0 });
   });
 
   it("Edit Description… runs the handler", () => {
     const onEdit = vi.fn();
-    catalogMenu(7, vi.fn(), onEdit, { label: "Rescan", onClick: () => {} })[1].onClick();
+    catalogMenu(7, vi.fn(), onEdit, { label: "Rescan", onClick: () => {} }, hash)[1].onClick();
     expect(onEdit).toHaveBeenCalledOnce();
+  });
+});
+
+describe("hashItem", () => {
+  it("runs the handler when nothing blocks it", () => {
+    const onHash = vi.fn();
+    const item = hashItem(null, onHash);
+    expect(item).toMatchObject({ label: "Hash files…", disabled: false });
+    item.onClick();
+    expect(onHash).toHaveBeenCalledOnce();
+  });
+
+  it("is disabled with the reason as its tooltip", () => {
+    expect(hashItem("A job holds it", vi.fn())).toMatchObject({ disabled: true, title: "A job holds it" });
   });
 });
 
