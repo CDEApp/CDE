@@ -152,6 +152,8 @@ public sealed class JobRegistry : IDisposable
     private JobSubmission SubmitCreate(JobSubmitRequest request)
     {
         var generation = ExclusiveGeneration();
+        if (request.Hash != null && ValidateHashFilter(request.Hash) is { } badFilter) return new JobSubmission(null, badFilter);
+
         var pf = _session.PreflightCreate(new CreatePreflightRequest { RootPath = request.RootPath, FileName = request.FileName });
 
         if (pf.TargetPath != null && IsActiveTarget(pf.TargetPath)) return AlreadyRunning(pf.FileName);
@@ -178,7 +180,20 @@ public sealed class JobRegistry : IDisposable
                 FileName = pf.FileName,
                 Description = request.Description,
                 FollowJunctions = request.FollowJunctions
-            });
+            }, request.Hash);
+    }
+
+    private static JobError ValidateHashFilter(HashOptions options)
+    {
+        try
+        {
+            HashSelection.Parse(options.Filter, options.IncludeUniqueSizes);
+            return null;
+        }
+        catch (cdeLib.EverythingQueryException ex)
+        {
+            return new JobError { Code = JobErrorCodes.InvalidFilter, Message = ex.Message };
+        }
     }
 
     private static JobSubmission AlreadyRunning(string what) =>
@@ -326,8 +341,8 @@ public sealed class JobRegistry : IDisposable
         Func<JobDto, JobDto> end;
         try
         {
-            var result = await ExecuteAsync(entry).ConfigureAwait(false);
-            end = job => job.Succeed(result, DateTime.UtcNow);
+            var (result, note) = await ExecuteAsync(entry).ConfigureAwait(false);
+            end = job => job.Succeed(result, DateTime.UtcNow, note);
         }
         catch (OperationCanceledException) when (entry.Cts.IsCancellationRequested)
         {
@@ -348,7 +363,7 @@ public sealed class JobRegistry : IDisposable
         }
     }
 
-    private async Task<JobResult> ExecuteAsync(Entry entry)
+    private async Task<(JobResult Result, string Note)> ExecuteAsync(Entry entry)
     {
         var ct = entry.Cts.Token;
         if (entry.Job.Kind == JobKind.Hash)
@@ -356,7 +371,7 @@ public sealed class JobRegistry : IDisposable
             var hashed = await _session.HashAsync(entry.Job.CatalogIds, entry.Hash,
                 new ProgressSink<HashProgress>(p => OnProgress(entry, p.Phase, 0, p.Note, p.Counts)), ct)
                 .ConfigureAwait(false);
-            return new JobResult { Hash = hashed };
+            return (new JobResult { Hash = hashed }, null);
         }
 
         if (entry.Job.Kind == JobKind.Rescan)
@@ -364,23 +379,46 @@ public sealed class JobRegistry : IDisposable
             var r = await _session.RescanAsync(entry.Job.CatalogId!.Value,
                 new ProgressSink<RescanProgress>(p => OnProgress(entry, p.Phase, p.EntriesScanned, p.CurrentPath)), ct)
                 .ConfigureAwait(false);
-            return new JobResult
+            return (new JobResult
             {
                 CatalogId = r.CatalogId, RootPath = r.RootPath, Entries = r.Entries, SavedPath = r.SavedPath,
                 ExcludedFolderCount = r.ExcludedFolderCount, AccessDeniedFolderCount = r.AccessDeniedFolderCount,
                 UnreadableFolderCount = r.UnreadableFolderCount
-            };
+            }, null);
         }
 
         var c = await _session.CreateCatalogAsync(entry.Create,
             new ProgressSink<CreateProgress>(p => OnProgress(entry, p.Phase, p.EntriesScanned, p.CurrentPath)), ct)
             .ConfigureAwait(false);
-        return new JobResult
+        var created = new JobResult
         {
             CatalogId = c.CatalogId, RootPath = c.RootPath, Entries = c.Entries, SavedPath = c.SavedPath,
             ExcludedFolderCount = c.ExcludedFolderCount, AccessDeniedFolderCount = c.AccessDeniedFolderCount,
             UnreadableFolderCount = c.UnreadableFolderCount
         };
+        return entry.Hash == null ? (created, null) : await TryHashCreatedAsync(entry, created).ConfigureAwait(false);
+    }
+
+    private async Task<(JobResult Result, string Note)> TryHashCreatedAsync(Entry entry, JobResult created)
+    {
+        try
+        {
+            created.Hash = await _session.HashAsync([created.CatalogId!.Value], entry.Hash,
+                new ProgressSink<HashProgress>(p => OnProgress(entry, p.Phase, 0, p.Note, p.Counts)), entry.Cts.Token)
+                .ConfigureAwait(false);
+            return (created, null);
+        }
+        catch (OperationCanceledException) when (entry.Cts.IsCancellationRequested)
+        {
+            return (created, "Hashing cancelled");
+        }
+        catch (Exception ex)
+        {
+            if (ex is not HashRefusedException) _logger?.Error(ex, "Hashing the new catalog of job {JobId} failed", entry.Job.Id);
+            if (ex is HashFailedException { FilesSaved: > 0 } failed)
+                created.Hash = new HashResult { FilesHashed = failed.FilesSaved, FilesFailed = failed.FilesFailed };
+            return (created, $"Hashing failed: {ex.Message}");
+        }
     }
 
     private static (JobError Error, bool Unexpected) ToError(JobKind kind, Exception ex)

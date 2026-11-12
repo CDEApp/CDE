@@ -1,3 +1,4 @@
+using cdeLib.Hashing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,7 +39,8 @@ public class JobRegistryTests
         _cdex = [ScanToCdex(_data[0], "zero.cdex"), ScanToCdex(_data[1], "one.cdex")];
 
         var loader = Substitute.For<ILoadCatalogService>();
-        loader.GetColumnarFiles(Arg.Any<string>()).Returns(_cdex.ToList());
+        loader.GetColumnarFiles(Arg.Any<string>())
+            .Returns(_ => _cdex.Concat(Directory.GetFiles(_cat, "*.cdex").Except(_cdex)).ToList());
         _session = new CatalogSession(loader, Substitute.For<ILogger>());
         _session.LoadAsync(_cat).GetAwaiter().GetResult();
     }
@@ -449,6 +451,207 @@ public class JobRegistryTests
         Assert.That(failed.Error.Code, Is.EqualTo(JobErrorCodes.RescanFailed));
         Assert.That(failed.Error.Message, Is.EqualTo("boom"));
         logger.Received(1).Error(boom, Arg.Any<string>(), Arg.Any<long>(), Arg.Any<string>());
+    }
+
+    private string MakeBinData(string name, params (string File, int Size)[] files)
+    {
+        var d = Path.Combine(_dir, name);
+        Directory.CreateDirectory(d);
+        foreach (var (file, size) in files)
+            File.WriteAllBytes(Path.Combine(d, file), Enumerable.Repeat((byte)file[0], size).ToArray());
+        return d;
+    }
+
+    private static JobSubmitRequest CreateWithHash(string root, string fileName, string filter = null,
+        bool includeUniqueSizes = false) =>
+        new()
+        {
+            Kind = JobKind.Create, RootPath = root, FileName = fileName,
+            Hash = new HashOptions { Filter = filter, IncludeUniqueSizes = includeUniqueSizes }
+        };
+
+    private string[] HashedNames(int catalogId)
+    {
+        var children = _session.GetChildren(new EntryRefDto(catalogId, 0));
+        using var lease = _session.AcquireRead(catalogId);
+        return children.Where(c => lease.Source.IsHashDone(c.Ref.EntryIndex)).Select(c => c.Name).OrderBy(n => n).ToArray();
+    }
+
+    private bool IsFullHash(int catalogId, string name)
+    {
+        var entry = _session.GetChildren(new EntryRefDto(catalogId, 0)).Single(c => c.Name == name);
+        using var lease = _session.AcquireRead(catalogId);
+        return lease.Source.IsHashDone(entry.Ref.EntryIndex) && !lease.Source.IsPartialHash(entry.Ref.EntryIndex);
+    }
+
+    [Test]
+    public async Task A_create_with_hash_scans_then_hashes_only_the_new_catalog_and_the_hashes_survive_a_reload()
+    {
+        var jobs = Registry();
+        using var subscription = jobs.Subscribe();
+        var root = MakeBinData("fresh-root", ("dup1.bin", 3000), ("dup2.bin", 3000), ("lonely.bin", 4100), ("a.bin", 1));
+
+        var job = Accepted(jobs.Submit(CreateWithHash(root, "fresh")));
+        var seen = await ReadUntilEnd(subscription, job.Id);
+        var done = seen[^1];
+
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded), () => done.Error?.Message);
+        Assert.That(done.Note, Does.Not.StartWith("Hashing"));
+        var id = done.CatalogId!.Value;
+        Assert.That(done.Result.Hash.FilesHashed, Is.EqualTo(2));
+        Assert.That(HashedNames(id), Is.EqualTo(new[] { "dup1.bin", "dup2.bin" }),
+            "a.bin shares its size with a file of catalog 0, which a create does not compare against");
+        Assert.That(IsFullHash(id, "dup1.bin") && IsFullHash(id, "dup2.bin"), Is.True);
+        Assert.That(IsHashed(0) || IsHashed(1), Is.False, "other catalogs are untouched");
+
+        var phases = seen.Select(j => j.Phase).Distinct().ToList();
+        Assert.That(phases, Is.SupersetOf(new[] { "scanning", "writing", "saving", "swapping" }));
+        Assert.That(phases.IndexOf("scanning"), Is.LessThan(phases.IndexOf("swapping")));
+        Assert.That(seen.Where(j => j.Phase == "scanning").All(j => j.Hash == null), Is.True);
+        Assert.That(done.Hash, Is.Not.Null);
+
+        await _session.LoadAsync(_cat);
+        var reloaded = _session.GetCatalogs().Single(c => c.SourcePath == done.Result.SavedPath).CatalogId;
+        Assert.That(HashedNames(reloaded), Is.EqualTo(new[] { "dup1.bin", "dup2.bin" }));
+    }
+
+    [Test]
+    public async Task A_create_with_hash_respects_the_filter_and_the_unique_size_option()
+    {
+        var jobs = Registry();
+        var root = MakeBinData("fresh-root", ("big1.bin", 4096), ("big2.bin", 4096), ("small1.txt", 100),
+            ("small2.txt", 100), ("lonely.bin", 9000));
+
+        var filtered = await WaitForEnd(jobs, Accepted(jobs.Submit(CreateWithHash(root, "filtered", "size:>1kb"))).Id);
+        Assert.That(HashedNames(filtered.CatalogId!.Value), Is.EqualTo(new[] { "big1.bin", "big2.bin" }));
+
+        var withUnique = await WaitForEnd(jobs,
+            Accepted(jobs.Submit(CreateWithHash(root, "unique", "size:>1kb", includeUniqueSizes: true))).Id);
+        Assert.That(HashedNames(withUnique.CatalogId!.Value), Is.EqualTo(new[] { "big1.bin", "big2.bin", "lonely.bin" }));
+    }
+
+    [Test]
+    public void An_invalid_filter_refuses_the_create_before_anything_is_scanned_or_written()
+    {
+        var jobs = Registry();
+        var root = MakeBinData("fresh-root", ("a.bin", 3000), ("b.bin", 3000));
+        var parserMessage = Assert.Throws<cdeLib.EverythingQueryException>(() => cdeLib.EverythingQuery.Parse("size:>>")).Message;
+
+        var refusal = jobs.Submit(CreateWithHash(root, "fresh", "size:>>")).Refusal;
+
+        Assert.That(refusal.Code, Is.EqualTo(JobErrorCodes.InvalidFilter));
+        Assert.That(refusal.Message, Is.EqualTo(parserMessage));
+        Assert.That(jobs.GetJobs(), Is.Empty);
+        Assert.That(Directory.GetFiles(_cat), Has.Length.EqualTo(2), "only the two catalogs of SetUp");
+    }
+
+    [Test]
+    public async Task A_cancel_in_the_hash_stage_keeps_the_scan_and_records_no_hashes()
+    {
+        var root = MakeBinData("fresh-root", ("a.bin", 3000), ("b.bin", 3000));
+        var created = await _session.CreateCatalogAsync(new CreateCatalogRequest { RootPath = root, FileName = "fresh" });
+        var before = File.ReadAllBytes(created.SavedPath);
+        using var cts = new CancellationTokenSource();
+        var progress = new HashSink(p =>
+        {
+            if (p.Phase == "saving") cts.Cancel();
+        });
+
+        Assert.That(async () => await _session.HashAsync([created.CatalogId], null, progress, cts.Token),
+            Throws.InstanceOf<OperationCanceledException>());
+
+        Assert.That(File.ReadAllBytes(created.SavedPath), Is.EqualTo(before));
+        Assert.That(Directory.GetFiles(_cat, "*.tmp"), Is.Empty);
+        Assert.That(HashedNames(created.CatalogId), Is.Empty);
+        Assert.That(_session.GetCatalogs().Any(c => c.CatalogId == created.CatalogId), Is.True);
+    }
+
+    private sealed class HashSink(Action<HashProgress> report) : IProgress<HashProgress>
+    {
+        public void Report(HashProgress value) => report(value);
+    }
+
+    private static ICatalogSession FakeCreateSession(Func<IReadOnlyList<int>, CancellationToken, Task<HashResult>> hash)
+    {
+        var session = Substitute.For<ICatalogSession>();
+        session.PreflightCreate(Arg.Any<CreatePreflightRequest>()).Returns(new CreatePreflightResult
+        {
+            FileName = "fresh", CatalogDir = "cat", TargetPath = Path.Combine(Path.GetTempPath(), "fresh.cdex"),
+            RootAccessible = true, Writable = true
+        });
+        session.CreateCatalogAsync(Arg.Any<CreateCatalogRequest>(), Arg.Any<IProgress<CreateProgress>>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateCatalogResult { CatalogId = 7, RootPath = "root", Entries = 3, SavedPath = "fresh.cdex" });
+        session.HashAsync(Arg.Any<IReadOnlyList<int>>(), Arg.Any<HashOptions>(), Arg.Any<IProgress<HashProgress>>(), Arg.Any<CancellationToken>())
+            .Returns(ci => hash(ci.Arg<IReadOnlyList<int>>(), ci.Arg<CancellationToken>()));
+        return session;
+    }
+
+    [Test]
+    public async Task A_cancel_in_the_hash_stage_ends_the_create_as_succeeded_with_a_note()
+    {
+        var started = new TaskCompletionSource();
+        IReadOnlyList<int> hashed = null;
+        _jobs = new JobRegistry(FakeCreateSession(async (ids, ct) =>
+        {
+            hashed = ids;
+            started.SetResult();
+            await Task.Delay(Timeout, ct);
+            return new HashResult();
+        }));
+
+        var job = Accepted(_jobs.Submit(CreateWithHash("root", "fresh")));
+        await started.Task;
+        _jobs.Cancel(job.Id);
+        var done = await WaitForEnd(_jobs, job.Id);
+
+        Assert.That(hashed, Is.EqualTo(new[] { 7 }), "only the new catalog");
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(done.CatalogId, Is.EqualTo(7));
+        Assert.That(done.Note, Is.EqualTo("Hashing cancelled"));
+        Assert.That(done.Result.Hash, Is.Null);
+    }
+
+    [Test]
+    public async Task A_failure_in_the_hash_stage_ends_the_create_as_succeeded_with_the_message()
+    {
+        _jobs = new JobRegistry(FakeCreateSession((_, _) => throw new InvalidOperationException("disk gone")));
+
+        var job = Accepted(_jobs.Submit(CreateWithHash("root", "fresh")));
+        var done = await WaitForEnd(_jobs, job.Id);
+
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(done.CatalogId, Is.EqualTo(7));
+        Assert.That(done.Note, Is.EqualTo("Hashing failed: disk gone"));
+        Assert.That(done.Error, Is.Null);
+    }
+
+    [Test]
+    public async Task A_hash_stage_failure_after_some_hashes_were_saved_reports_them()
+    {
+        _jobs = new JobRegistry(FakeCreateSession((_, _) =>
+            throw new HashFailedException("Hash FAILED: 2 files hashed, 0 files could not be read; unexpected error: boom",
+                new InvalidOperationException("boom"), filesSaved: 2, filesFailed: 0)));
+
+        var job = Accepted(_jobs.Submit(CreateWithHash("root", "fresh")));
+        var done = await WaitForEnd(_jobs, job.Id);
+
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(done.Note, Does.StartWith("Hashing failed: Hash FAILED"));
+        Assert.That(done.Result.Hash, Is.Not.Null, "the saved hashes are reported, not dropped");
+        Assert.That((done.Result.Hash.FilesHashed, done.Result.Hash.FilesFailed), Is.EqualTo((2L, 0L)));
+    }
+
+    [Test]
+    public async Task A_create_without_hash_never_hashes()
+    {
+        var session = FakeCreateSession((_, _) => throw new InvalidOperationException("must not run"));
+        _jobs = new JobRegistry(session);
+
+        var done = await WaitForEnd(_jobs, Accepted(_jobs.Submit(Create("root", "fresh"))).Id);
+
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(done.Note, Is.Null);
+        await session.DidNotReceiveWithAnyArgs().HashAsync(default, default, default, default);
     }
 
     [Test]

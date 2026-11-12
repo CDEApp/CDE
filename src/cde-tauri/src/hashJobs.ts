@@ -1,4 +1,4 @@
-import type { CatalogInfo, HashJobProgress, HashOptions, HashPreflightResult, HashResult, JobPhase } from "./api/types";
+import type { CatalogInfo, HashJobProgress, HashOptions, HashPreflightResult, HashResult, JobPhase, JobResult } from "./api/types";
 import { toHRString } from "./format";
 
 const n = (v: number) => v.toLocaleString("en-US");
@@ -43,6 +43,12 @@ export function hashProgressNote(phase: JobPhase, p: HashJobProgress | null | un
 export function hashResultNote(r: HashResult): string {
   const failed = r.filesFailed > 0 ? `; ${n(r.filesFailed)} could not be read` : "";
   return `${files(r.filesHashed)} hashed${failed}`;
+}
+
+export function createHashOutcome(r: JobResult, note: string | null | undefined): { text: string; clean: boolean } | null {
+  if (r.hash && note) return { text: `${note}. ${hashResultNote(r.hash)} before it stopped`, clean: false };
+  if (r.hash) return { text: hashResultNote(r.hash), clean: r.hash.filesFailed === 0 };
+  return note ? { text: `${note}. The catalog was kept without hashes`, clean: false } : null;
 }
 
 export function hashToast(r: HashResult): { title: string; message: string; color: "green" | "orange" } {

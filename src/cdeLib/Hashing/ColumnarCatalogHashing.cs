@@ -126,7 +126,7 @@ public static class ColumnarCatalogHashing
                 throw new HashFailedException(
                     HashFailedException.Summarize(duplication.FilesHashed, duplication.FilesFailed,
                         string.Join("; ", reasons)),
-                    all.Count == 1 ? all[0] : new AggregateException(all));
+                    all.Count == 1 ? all[0] : new AggregateException(all), filesNewlyHashed, duplication.FilesFailed);
             }
 
             return filesNewlyHashed;

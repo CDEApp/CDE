@@ -3,7 +3,7 @@ import { notifications } from "@mantine/notifications";
 import { CdeApiClient, JobRefusal } from "../api/client";
 import type { HashOptions, JobDto, ScanJobResult, SubmitJobRequest } from "../api/types";
 import { skipSummary } from "../format";
-import { hashToast } from "../hashJobs";
+import { createHashOutcome, hashToast } from "../hashJobs";
 import {
   applyJob,
   applySnapshot,
@@ -98,15 +98,16 @@ async function announceCreate(client: CdeApiClient, job: JobDto, cb: Callbacks) 
     refreshed = false;
   }
   const toastId = `new-catalog-${r.catalogId}-${job.id}`;
+  const hashed = createHashOutcome(r, job.note);
   notifications.show({
     id: toastId,
-    color: refreshed ? "green" : "orange",
+    color: refreshed && (hashed?.clean ?? true) ? "green" : "orange",
     title: "Catalog created",
     autoClose: 15000,
     message: (
       <span>
         {refreshed
-          ? `Created ${job.catalogName}.cdex — ${r.entries.toLocaleString()} entries${skipped(job)}. `
+          ? `Created ${job.catalogName}.cdex — ${r.entries.toLocaleString()} entries${skipped(job)}. ${hashed ? `${hashed.text}. ` : ""}`
           : `Created ${job.catalogName}.cdex, but refreshing the view failed — use Reload. `}
         {refreshed && (
           <button
@@ -293,9 +294,9 @@ export function useJobs({
   }, [sidecarReady, getClient, update, settle, retryDelayMs]);
 
   const submit = useCallback(
-    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string, batch?: RescanBatch) => {
+    async (req: SubmitJobRequest, inFlightKey: string | null, refusedTitle: string, batch?: RescanBatch): Promise<string | null> => {
       if (inFlightKey) {
-        if (inFlightSubmits.current.has(inFlightKey)) return;
+        if (inFlightSubmits.current.has(inFlightKey)) return null;
         inFlightSubmits.current.add(inFlightKey);
       }
       try {
@@ -307,7 +308,9 @@ export function useJobs({
         const next = addIfUnknown(modelRef.current, accepted);
         update(next);
         settle(next.jobs.get(accepted.id)!);
+        return null;
       } catch (e) {
+        if (req.kind === "create" && e instanceof JobRefusal && e.error.code === "invalid-filter") return e.message;
         if (batch) {
           // Already queued or running is the guard doing its job, not something to report.
           if (!(e instanceof JobRefusal && e.error.code === "already-running")) {
@@ -319,6 +322,7 @@ export function useJobs({
         } else {
           notifications.show({ color: "red", title: refusedTitle, message: errText(e) });
         }
+        return null;
       } finally {
         if (inFlightKey) inFlightSubmits.current.delete(inFlightKey);
       }
@@ -372,8 +376,8 @@ export function useJobs({
   );
 
   const createCatalog = useCallback(
-    (req: { rootPath: string; fileName: string; description: string; followJunctions: boolean }) =>
-      submit({ kind: "create", ...req }, null, "New catalog not started"),
+    ({ hash, ...req }: { rootPath: string; fileName: string; description: string; followJunctions: boolean; hash?: HashOptions | null }) =>
+      submit({ kind: "create", ...req, ...(hash ? { hash } : {}) }, null, "New catalog not started"),
     [submit],
   );
 

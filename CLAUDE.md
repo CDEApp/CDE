@@ -49,7 +49,7 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
     `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE; each `result` row carries `contentHash`, the usable full hash as 32 hex digits, and with `includeDuplicateCounts` in the query a `duplicateCount` of the other files with that hash, both left out when null; the final `progress` event carries `limitReached: true` only when the result limit stopped the search with more matches beyond it), `/session/reload` (SSE; 409 busy while any job is queued or running),
-    `POST /jobs` (queue a rescan of a catalog, a create of a new `.cdex` in the working folder, or a hash of a set of catalogs; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `POST /catalogs/hash/preflight` (what a hash job with the same catalogs and filter would read; 400 `invalid-filter` with the search bar's message), `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
+    `POST /jobs` (queue a rescan of a catalog, a create of a new `.cdex` in the working folder (optionally hashed after its scan), or a hash of a set of catalogs; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `POST /catalogs/hash/preflight` (what a hash job with the same catalogs and filter would read; 400 `invalid-filter` with the search bar's message), `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
   - Jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the
     rest queued; never two queued/running jobs on one catalog file (a hash job holds every catalog of its set);
@@ -269,6 +269,16 @@ mappings via `ColumnarCatalogHashing.HashAndSave`, and passes a `replace` callba
 through the session's swap (that catalog's write lock, waiting for searches) instead of a plain move. A cancel before the
 first swap leaves every `.cdex` byte-identical and no `.tmp`; from the first swap on the run is not cancellable. The first-pass
 size comes from `AppConfig:Hashing:FirstPassSizeInBytes`, read per run.
+
+**Hash while creating (#230).** A `create` job takes the same `hash` (`HashOptions`): `POST /jobs` with
+`{"kind":"create","rootPath":"D:\data","hash":{"filter":"size:>1gb"}}` scans, saves and adds the catalog, then
+`JobRegistry` runs `HashAsync` on that new catalog alone in the same job, so sizes repeat only inside it. A bad filter is
+refused at submit with `invalid-filter` (400) before any scan. The phases continue from `scanning`, `writing`, `saving` into
+`hashing`, `hashing-full`, `saving`, `swapping`, with the `hash` progress fields from the hash stage on. A cancel or failure
+in the hash stage ends the job `succeeded`, not `cancelled` or `failed`: the scanned catalog is already saved and loaded, and
+a created catalog is not a failure. The job keeps `result.catalogId`, has `result.hash` null, and sets `note` to
+`Hashing cancelled` or `Hashing failed: <message>`; the `.cdex` stays as the scan wrote it. `note` is null on any other
+succeeded job.
 
 ### Content hash in search (#288)
 

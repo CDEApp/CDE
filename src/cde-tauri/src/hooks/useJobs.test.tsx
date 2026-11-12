@@ -194,7 +194,7 @@ describe("useJobs actions", () => {
     await t.snapshot([]);
     let release!: (j: JobDto) => void;
     t.client.submitJob.mockReturnValue(new Promise((r) => (release = r)));
-    let pending!: Promise<void>;
+    let pending!: Promise<unknown>;
     act(() => {
       pending = t.result.current.rescanCatalog(3);
     });
@@ -210,7 +210,7 @@ describe("useJobs actions", () => {
     const t = setup();
     let release!: (j: JobDto) => void;
     t.client.submitJob.mockReturnValue(new Promise((r) => (release = r)));
-    let first!: Promise<void>;
+    let first!: Promise<unknown>;
     act(() => {
       first = t.result.current.rescanCatalog(3);
       void t.result.current.rescanCatalog(3);
@@ -235,6 +235,62 @@ describe("useJobs actions", () => {
       description: "d",
       followJunctions: true,
     });
+  });
+
+  it("sends the hash options of a create only when it has them", async () => {
+    const t = setup();
+    t.client.submitJob.mockResolvedValue(job(4, { kind: "create", catalogId: null, state: "queued" }));
+    const base = { rootPath: "D:\\x", fileName: "D-x", description: "", followJunctions: false };
+
+    await act(() => t.result.current.createCatalog({ ...base, hash: null }));
+    expect(t.client.submitJob).toHaveBeenLastCalledWith({ kind: "create", ...base });
+
+    await act(() => t.result.current.createCatalog({ ...base, hash: { filter: "size:>1gb", includeUniqueSizes: false } }));
+    expect(t.client.submitJob).toHaveBeenLastCalledWith({
+      kind: "create",
+      ...base,
+      hash: { filter: "size:>1gb", includeUniqueSizes: false },
+    });
+  });
+
+  it("returns an invalid-filter refusal of a create to the caller instead of toasting it", async () => {
+    const t = setup();
+    t.client.submitJob.mockRejectedValue(new JobRefusal({ code: "invalid-filter", message: "Unknown function: sizee" }));
+    let result: string | null = null;
+    await act(async () => {
+      result = await t.result.current.createCatalog({
+        rootPath: "D:\\x",
+        fileName: "D-x",
+        description: "",
+        followJunctions: false,
+        hash: { filter: "sizee:1", includeUniqueSizes: false },
+      });
+    });
+    expect(result).toBe("Unknown function: sizee");
+    expect(show).not.toHaveBeenCalled();
+  });
+
+  it("returns null for an accepted create", async () => {
+    const t = setup();
+    t.client.submitJob.mockResolvedValue(job(4, { kind: "create", catalogId: null, state: "queued" }));
+    let result: string | null = "unset";
+    await act(async () => {
+      result = await t.result.current.createCatalog({ rootPath: "D:\\x", fileName: "D-x", description: "", followJunctions: false });
+    });
+    expect(result).toBeNull();
+  });
+
+  it("toasts the hash result with the created catalog, and an orange note when hashing was cut short", async () => {
+    const t = setup();
+    await t.snapshot([]);
+    const result = { catalogId: 5, rootPath: "D:\\data", entries: 42, savedPath: "x" };
+    await t.event(done(5, { kind: "create", catalogName: "D-data", result: { ...result, hash: { filesHashed: 2, filesFailed: 0 } } }));
+    expect(JSON.stringify(show.mock.calls[show.mock.calls.length - 1][0].message)).toContain("2 files hashed");
+    expect(show).toHaveBeenLastCalledWith(expect.objectContaining({ title: "Catalog created", color: "green" }));
+
+    await t.event(done(6, { kind: "create", catalogName: "E-data", note: "Hashing cancelled" }));
+    expect(JSON.stringify(show.mock.calls[show.mock.calls.length - 1][0].message)).toContain("Hashing cancelled. The catalog was kept without hashes");
+    expect(show).toHaveBeenLastCalledWith(expect.objectContaining({ title: "Catalog created", color: "orange" }));
   });
 
   it("toasts a refusal", async () => {

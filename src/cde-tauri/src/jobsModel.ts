@@ -1,5 +1,5 @@
 import { skipSummary } from "./format";
-import { hashProgressNote, hashResultNote, isLegacyCatalog } from "./hashJobs";
+import { createHashOutcome, hashProgressNote, hashResultNote, isLegacyCatalog } from "./hashJobs";
 import type { CatalogInfo, JobDto, JobState, JobsSnapshot } from "./api/types";
 
 export interface JobsModel {
@@ -145,14 +145,15 @@ export function progressNote(j: JobDto): string {
     case "queued":
       return "Waiting for a free slot";
     case "running":
-      if (j.kind === "hash") return [hashProgressNote(j.phase, j.hash), j.note].filter(Boolean).join(" · ");
+      if (j.kind === "hash" || j.hash) return [hashProgressNote(j.phase, j.hash), j.note].filter(Boolean).join(" · ");
       return [j.phase, j.entriesScanned > 0 ? `${n(j.entriesScanned)} entries` : "", j.note].filter(Boolean).join(" · ");
     case "succeeded": {
       const r = j.result;
       if (!r) return "";
       if (j.kind === "hash") return r.hash ? hashResultNote(r.hash) : "";
       const skipped = skipSummary(r.excludedFolderCount, r.accessDeniedFolderCount, r.unreadableFolderCount);
-      return `${n(r.entries)} entries${skipped ? `; ${skipped}` : ""}`;
+      const hashed = createHashOutcome(r, j.note);
+      return `${n(r.entries)} entries${skipped ? `; ${skipped}` : ""}${hashed ? ` · ${hashed.text}` : ""}`;
     }
     case "failed":
       return j.error?.message ?? "Failed";

@@ -320,7 +320,7 @@ export interface JobsSnapshot {
 
 export type SubmitJobRequest =
   | { kind: "rescan"; catalogId: number }
-  | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean }
+  | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean; hash?: HashOptions }
   | { kind: "hash"; catalogIds: number[]; hash?: HashOptions | null };
 
 export type ShellAction ="open" | "explore" | "properties" | "custom";

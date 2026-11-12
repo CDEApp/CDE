@@ -287,7 +287,7 @@ tbody tr:hover { background: var(--row-hover); }
 .stale-badge { margin-left: 6px; padding: 0 5px; border-radius: 3px; background: #4a3d12; color: #f1e2a8; font-size: 11px; }
 
 /* new catalog: dialog form, Catalogs-tab toolbar, toast action */
-.nc-form { display: flex; flex-direction: column; gap: 4px; }
+.nc-form { display: flex; flex-direction: column; gap: 4px; border: 0; padding: 0; margin: 0; min-width: 0; }
 .nc-label { margin-top: 8px; font-size: 12px; opacity: .8; }
 .nc-row { display: flex; align-items: center; gap: 8px; }
 /* line-height and bottom padding keep the underscore of a name like bin_x11 from being clipped (WebKitGTK) */

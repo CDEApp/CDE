@@ -330,9 +330,10 @@ export default function App() {
         client={client}
         catalogs={catalogList}
         onChangeRoot={() => void newCatalog.pick()}
-        onCreate={(form) => {
-          newCatalog.close();
-          void jobs.createCatalog(form);
+        onCreate={async (form) => {
+          const filterError = await jobs.createCatalog(form);
+          if (filterError === null) newCatalog.close();
+          return filterError;
         }}
         onRescanExisting={(catalogId) => {
           newCatalog.close();
