@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, JobRefusal } from "../api/client";
-import type { JobDto, SubmitJobRequest } from "../api/types";
+import type { JobDto, ScanJobResult, SubmitJobRequest } from "../api/types";
 import { skipSummary } from "../format";
 import {
   applyJob,
@@ -71,7 +71,7 @@ function skipped(job: JobDto): string {
 }
 
 async function announceRescan(client: CdeApiClient, job: JobDto, cb: Callbacks) {
-  const r = job.result!;
+  const r = job.result as ScanJobResult;
   try {
     await cb.afterRescan(client, r.catalogId);
     notifications.show({
@@ -89,7 +89,7 @@ async function announceRescan(client: CdeApiClient, job: JobDto, cb: Callbacks) 
 }
 
 async function announceCreate(client: CdeApiClient, job: JobDto, cb: Callbacks) {
-  const r = job.result!;
+  const r = job.result as ScanJobResult;
   let refreshed = true;
   try {
     await cb.refreshCatalogs(client);
@@ -196,6 +196,7 @@ export function useJobs({
         return;
       }
       handled.current.add(job.id);
+      if (job.kind === "hash") return; // no hash notifications yet: their UI comes with the hash dialog
       if (batch?.jobIds.has(job.id)) {
         batch.jobIds.delete(job.id);
         if (job.state === "failed" && job.error?.code === "root-not-accessible") {

@@ -490,6 +490,132 @@ public class JobRegistryTests
         return seen;
     }
 
+    private static JobSubmitRequest Hash(int[] catalogIds, string filter = null) =>
+        new() { Kind = JobKind.Hash, CatalogIds = catalogIds, Hash = new HashOptions { Filter = filter } };
+
+    private bool IsHashed(int catalogId)
+    {
+        using var lease = _session.AcquireRead(catalogId);
+        return lease.Source.IsHashDone(1);
+    }
+
+    [Test]
+    public async Task A_hash_job_hashes_its_catalogs_as_one_set_and_reports_what_it_did()
+    {
+        var jobs = Registry();
+
+        var job = Accepted(jobs.Submit(Hash([1, 0, 1])));
+        var done = await WaitForEnd(jobs, job.Id);
+
+        Assert.That(job.Kind, Is.EqualTo(JobKind.Hash));
+        Assert.That(job.CatalogIds, Is.EqualTo(new[] { 0, 1 }));
+        Assert.That(job.CatalogId, Is.Null);
+        Assert.That(job.CatalogName, Is.EqualTo("zero, one"));
+        Assert.That(job.Title, Is.EqualTo("Hashing 2 catalogs"));
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded), () => done.Error?.Message);
+        Assert.That(done.CatalogId, Is.Null);
+        Assert.That(done.Result.CatalogId, Is.Null);
+        Assert.That((done.Result.Hash.FilesHashed, done.Result.Hash.FilesFailed), Is.EqualTo((2L, 0L)));
+        Assert.That(done.Phase, Is.EqualTo("swapping"));
+        Assert.That(done.Hash, Is.EqualTo(new HashJobProgress(2, 2, 2, 2)), "the two 1-byte files, read in the first pass");
+        Assert.That(IsHashed(0) && IsHashed(1), Is.True, "a.txt of each catalog has the same size as the other");
+    }
+
+    [Test]
+    public async Task A_running_hash_starts_in_the_hashing_phase()
+    {
+        var jobs = Registry();
+        using var subscription = jobs.Subscribe();
+
+        var job = Accepted(jobs.Submit(Hash([0])));
+        var seen = await ReadUntilEnd(subscription, job.Id);
+
+        Assert.That(seen.First(j => j.State == JobState.Running).Phase, Is.EqualTo("hashing"));
+    }
+
+    [Test]
+    public async Task A_rescan_of_a_catalog_in_a_running_or_queued_hash_is_refused_and_so_is_the_reverse()
+    {
+        var jobs = Registry(maxConcurrent: 1);
+        JobDto hash, rescan;
+        using (new SwapBlockingLease(_session, 0))
+        {
+            hash = Accepted(jobs.Submit(Hash([0, 1])));
+            await WaitAtSwap(jobs, hash.Id);
+
+            Assert.That(jobs.Submit(Rescan(1)).Refusal.Code, Is.EqualTo(JobErrorCodes.AlreadyRunning));
+            Assert.That(jobs.Submit(Rescan(0)).Refusal.Code, Is.EqualTo(JobErrorCodes.AlreadyRunning));
+            Assert.That(jobs.Submit(Hash([1])).Refusal.Code, Is.EqualTo(JobErrorCodes.AlreadyRunning));
+        }
+
+        Assert.That((await WaitForEnd(jobs, hash.Id)).State, Is.EqualTo(JobState.Succeeded));
+
+        using (new SwapBlockingLease(_session, 0))
+        {
+            rescan = Accepted(jobs.Submit(Rescan(0)));
+            await WaitAtSwap(jobs, rescan.Id);
+            var queuedRescan = Accepted(jobs.Submit(Rescan(1)));
+
+            Assert.That(jobs.Submit(Hash([0, 1])).Refusal.Code, Is.EqualTo(JobErrorCodes.AlreadyRunning));
+            Assert.That(jobs.Submit(Hash([1])).Refusal.Code, Is.EqualTo(JobErrorCodes.AlreadyRunning), "queued, not yet running");
+            jobs.Cancel(queuedRescan.Id);
+        }
+
+        Assert.That((await WaitForEnd(jobs, rescan.Id)).State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(Accepted(jobs.Submit(Hash([0, 1]))).State, Is.AnyOf(JobState.Queued, JobState.Running));
+    }
+
+    [Test]
+    public async Task A_hash_past_its_first_swap_finishes_when_cancelled()
+    {
+        var jobs = Registry();
+        JobDto job;
+        using (new SwapBlockingLease(_session, 0))
+        {
+            job = Accepted(jobs.Submit(Hash([0, 1])));
+            await WaitAtSwap(jobs, job.Id);
+
+            Assert.That(jobs.Cancel(job.Id), Is.True);
+        }
+
+        Assert.That((await WaitForEnd(jobs, job.Id)).State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(IsHashed(0) && IsHashed(1), Is.True);
+    }
+
+    [Test]
+    public void A_hash_that_cannot_start_is_refused_with_its_code_and_lists_no_job()
+    {
+        var jobs = Registry();
+        var parserMessage = Assert.Throws<cdeLib.EverythingQueryException>(() => cdeLib.EverythingQuery.Parse("size:>>")).Message;
+
+        var badFilter = jobs.Submit(Hash([0], "size:>>")).Refusal;
+
+        Assert.That(badFilter.Code, Is.EqualTo(JobErrorCodes.InvalidFilter));
+        Assert.That(badFilter.Message, Is.EqualTo(parserMessage));
+        Assert.That(jobs.Submit(Hash([])).Refusal.Code, Is.EqualTo(JobErrorCodes.InvalidRequest));
+        Assert.That(jobs.Submit(new JobSubmitRequest { Kind = JobKind.Hash }).Refusal.Code, Is.EqualTo(JobErrorCodes.InvalidRequest));
+        Assert.That(jobs.Submit(Hash([0, 5])).Refusal.Code, Is.EqualTo(JobErrorCodes.UnknownCatalog));
+        Assert.That(jobs.GetJobs(), Is.Empty);
+    }
+
+    [Test]
+    public async Task A_queued_hash_holds_off_a_reload_like_any_job()
+    {
+        var jobs = Registry(maxConcurrent: 1);
+        JobDto rescan, hash;
+        using (new SwapBlockingLease(_session, 0))
+        {
+            rescan = Accepted(jobs.Submit(Rescan(0)));
+            await WaitAtSwap(jobs, rescan.Id);
+            hash = Accepted(jobs.Submit(Hash([1])));
+
+            Assert.That(jobs.TryBeginExclusive(), Is.Null);
+        }
+
+        await WaitForEnd(jobs, rescan.Id);
+        Assert.That((await WaitForEnd(jobs, hash.Id)).State, Is.EqualTo(JobState.Succeeded));
+    }
+
     private static JobState[] DistinctStates(IEnumerable<JobDto> jobs)
     {
         var states = new List<JobState>();

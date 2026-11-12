@@ -50,6 +50,16 @@ public partial class Duplication
         // drive/share hashes in parallel with the others.
         var groupedByDriveRoot = GroupByDriveRoot(readers, candidates);
 
+        long firstPassFiles = 0, firstPassBytes = 0;
+        foreach (var c in candidates)
+        {
+            if (c.Flags.IsHashUsable()) continue;
+            firstPassFiles++;
+            firstPassBytes += FirstPassBytes(c.Size);
+        }
+
+        BeginPass(fullPass: false, firstPassFiles, firstPassBytes);
+
         var timer = Stopwatch.StartNew();
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var token = cts.Token;
@@ -188,7 +198,13 @@ public partial class Duplication
         {
             _duplicationStatistics.AddFailedToHash();
         }
+
+        FileFinished(FirstPassBytes(candidates[c].Size));
     }
+
+    private long FirstPassBytes(long size) => Math.Min(size, _configuration.HashFirstPassSize);
+
+    private static bool HasFullHash(Flags flags) => flags.IsHashUsable() && (flags & Flags.PartialHash) == 0;
 
     private static void SetHash(ref HashCandidate candidate, Hash16 hash, bool partial)
     {
@@ -256,6 +272,16 @@ public partial class Duplication
             return;
         }
 
+        long fullPassFiles = 0, fullPassBytes = 0;
+        foreach (var c in entriesToHash)
+        {
+            if (HasFullHash(candidates[c].Flags)) continue;
+            fullPassFiles++;
+            fullPassBytes += candidates[c].Size;
+        }
+
+        if (fullPassFiles > 0) BeginPass(fullPass: true, fullPassFiles, fullPassBytes);
+
         using var cts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
         var parallelOptions = new ParallelOptions
         {
@@ -268,10 +294,9 @@ public partial class Duplication
         {
             await Parallel.ForEachAsync(entriesToHash, parallelOptions, async (c, _) =>
             {
-                var flags = candidates[c].Flags;
-                if (flags.IsHashUsable() && (flags & Flags.PartialHash) == 0)
+                if (HasFullHash(candidates[c].Flags))
                 {
-                    return; // already a full hash
+                    return;
                 }
 
                 var path = readers[candidates[c].Catalog].FullPath(candidates[c].Index);
@@ -285,6 +310,8 @@ public partial class Duplication
                 {
                     _duplicationStatistics.AddFailedToHash();
                 }
+
+                FileFinished(candidates[c].Size);
 
                 if (_cancellation.IsCancellationRequested)
                 {

@@ -84,6 +84,7 @@ public class ProgramTests
             "GET /ui-state",
             "DELETE /jobs/finished",
             "DELETE /jobs/{id:long}",
+            "POST /catalogs/hash/preflight",
             "POST /catalogs/migrate",
             "POST /catalogs/preflight",
             "POST /compare/summaries",

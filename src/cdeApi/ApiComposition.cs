@@ -8,6 +8,7 @@ using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using cdeAppCore.Shell;
 using cdeAppCore.Treemap;
+using HashingSection = cdeLib.Infrastructure.Config.HashingSection;
 using ScanSection = cdeLib.Infrastructure.Config.ScanSection;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -47,7 +48,8 @@ public static class ApiComposition
         services.AddSingleton<ICatalogSession>(sp =>
             new CatalogSession(sp.GetRequiredService<ILoadCatalogService>(), logger,
                 // Read on every scan, not snapshotted: appsettings reloads at runtime and a rescan uses the current excludes.
-                scanConfig: () => sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Scan").Get<ScanSection>())
+                scanConfig: () => sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Scan").Get<ScanSection>(),
+                hashingConfig: () => sp.GetRequiredService<IConfiguration>().GetSection("AppConfig:Hashing").Get<HashingSection>())
             { LoadLegacyCatalogs = false });
         services.AddSingleton(sp => new JobRegistry(sp.GetRequiredService<ICatalogSession>(),
             sp.GetRequiredService<IConfiguration>().GetValue("AppConfig:Jobs:MaxConcurrent", 3), logger));
@@ -93,6 +95,8 @@ public static class ApiComposition
 
         // POST /catalogs/preflight — default name, working folder, collisions for the New Catalog dialog (JSON).
         app.MapPost("/catalogs/preflight", CreateCatalogEndpoint.PreflightAsync);
+
+        app.MapPost("/catalogs/hash/preflight", HashEndpoint.Preflight);
 
         // POST /catalogs/migrate — convert the listed legacy .cde catalogs to .cdex (SSE: progress..., done | error).
         app.MapPost("/catalogs/migrate", MigrateEndpoint.HandleAsync);

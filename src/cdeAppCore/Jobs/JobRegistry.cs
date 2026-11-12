@@ -7,6 +7,7 @@ using System.Threading.Channels;
 using System.Threading.Tasks;
 using cdeAppCore.Dtos;
 using cdeAppCore.Session;
+using cdeLib.Hashing;
 using Serilog;
 
 namespace cdeAppCore.Jobs;
@@ -35,7 +36,7 @@ public sealed class JobSubscription(IReadOnlyList<JobDto> snapshot, ChannelReade
 }
 
 /// <summary>
-/// Owns the catalog scan jobs (rescan, create) of one session. At most <see cref="MaxConcurrent"/> run at once and the
+/// Owns the catalog jobs (rescan, create, hash) of one session. At most <see cref="MaxConcurrent"/> run at once and the
 /// rest wait in submit order. A catalog file is the target of at most one queued or running job. Finished jobs stay
 /// listed until dismissed (at most <see cref="MaxFinishedJobs"/>, oldest dropped).
 /// </summary>
@@ -87,7 +88,8 @@ public sealed class JobRegistry : IDisposable
         JobKind.Rescan when request.CatalogId is { } id => SubmitRescan(id),
         JobKind.Rescan => JobSubmission.Refused(JobErrorCodes.InvalidRequest, "A rescan needs a catalogId."),
         JobKind.Create => SubmitCreate(request),
-        _ => JobSubmission.Refused(JobErrorCodes.InvalidRequest, "kind must be \"rescan\" or \"create\".")
+        JobKind.Hash => SubmitHash(request),
+        _ => JobSubmission.Refused(JobErrorCodes.InvalidRequest, "kind must be \"rescan\", \"create\" or \"hash\".")
     };
 
     private long ExclusiveGeneration()
@@ -105,13 +107,34 @@ public sealed class JobRegistry : IDisposable
         if (info == null) return RefuseRescan(catalogId, RescanPreflight.Unavailable);
 
         var target = Path.ChangeExtension(Path.GetFullPath(info.SourcePath), CatalogNaming.Extension);
-        return Enqueue(generation, target, new JobDto
+        return Enqueue(generation, [target], new JobDto
         {
             Kind = JobKind.Rescan,
             Title = $"Rescanning {info.RootPath}",
             CatalogId = catalogId,
             CatalogName = Path.GetFileNameWithoutExtension(info.SourcePath)
-        }, null);
+        });
+    }
+
+    private JobSubmission SubmitHash(JobSubmitRequest request)
+    {
+        var generation = ExclusiveGeneration();
+        if (_session.PreflightHash(request.CatalogIds, request.Hash) is { } refusal)
+            return new JobSubmission(null, refusal);
+
+        var ids = request.CatalogIds.Distinct().Order().ToArray();
+        var catalogs = _session.GetCatalogs().Where(c => ids.Contains(c.CatalogId)).ToList();
+        if (catalogs.Count != ids.Length)
+            return JobSubmission.Refused(JobErrorCodes.CatalogUnavailable, "A catalog became unavailable; reload catalogs.");
+
+        var names = catalogs.Select(c => Path.GetFileNameWithoutExtension(c.SourcePath)).ToList();
+        return Enqueue(generation, catalogs.Select(c => Path.GetFullPath(c.SourcePath)).ToArray(), new JobDto
+        {
+            Kind = JobKind.Hash,
+            Title = names.Count == 1 ? $"Hashing {names[0]}" : $"Hashing {names.Count} catalogs",
+            CatalogIds = ids,
+            CatalogName = string.Join(", ", names)
+        }, hash: request.Hash ?? new HashOptions());
     }
 
     private JobSubmission RefuseRescan(int catalogId, RescanPreflight preflight) => preflight switch
@@ -143,7 +166,7 @@ public sealed class JobRegistry : IDisposable
             return JobSubmission.Refused(JobErrorCodes.FileExists,
                 new CatalogFileExistsException(pf.TargetPath, pf.ExistingCatalogId).Message);
 
-        return Enqueue(generation, pf.TargetPath, new JobDto
+        return Enqueue(generation, [pf.TargetPath], new JobDto
             {
                 Kind = JobKind.Create,
                 Title = $"Creating catalog {pf.FileName}",
@@ -167,14 +190,18 @@ public sealed class JobRegistry : IDisposable
     private static JobSubmission RootNotAccessible(string rootPath) =>
         JobSubmission.Refused(JobErrorCodes.RootNotAccessible, new RootNotAccessibleException(rootPath).Message, rootPath);
 
-    private JobSubmission Enqueue(long generationAtPreflight, string target, JobDto job, CreateCatalogRequest create)
+    private JobSubmission Enqueue(long generationAtPreflight, string[] targets, JobDto job,
+        CreateCatalogRequest create = null, HashOptions hash = null)
     {
         lock (_lock)
         {
             if (_disposed || _exclusive || generationAtPreflight != _exclusiveGeneration) return Busy();
-            if (IsActiveTargetLocked(target)) return AlreadyRunning(job.CatalogName);
+            foreach (var target in targets)
+            {
+                if (IsActiveTargetLocked(target)) return AlreadyRunning(Path.GetFileNameWithoutExtension(target));
+            }
 
-            var entry = new Entry(target, create)
+            var entry = new Entry(targets, create, hash)
             {
                 Job = job with
                 {
@@ -324,6 +351,14 @@ public sealed class JobRegistry : IDisposable
     private async Task<JobResult> ExecuteAsync(Entry entry)
     {
         var ct = entry.Cts.Token;
+        if (entry.Job.Kind == JobKind.Hash)
+        {
+            var hashed = await _session.HashAsync(entry.Job.CatalogIds, entry.Hash,
+                new ProgressSink<HashProgress>(p => OnProgress(entry, p.Phase, 0, p.Note, p.Counts)), ct)
+                .ConfigureAwait(false);
+            return new JobResult { Hash = hashed };
+        }
+
         if (entry.Job.Kind == JobKind.Rescan)
         {
             var r = await _session.RescanAsync(entry.Job.CatalogId!.Value,
@@ -350,6 +385,9 @@ public sealed class JobRegistry : IDisposable
 
     private static (JobError Error, bool Unexpected) ToError(JobKind kind, Exception ex)
     {
+        if (ex is HashRefusedException refused) return (refused.Error, false);
+        if (ex is HashFailedException) return (new JobError { Code = JobErrorCodes.HashFailed, Message = ex.Message }, true);
+
         var knownCode = ex switch
         {
             RootNotAccessibleException => JobErrorCodes.RootNotAccessible,
@@ -364,14 +402,19 @@ public sealed class JobRegistry : IDisposable
         };
         var error = new JobError
         {
-            Code = knownCode ?? (kind == JobKind.Rescan ? JobErrorCodes.RescanFailed : JobErrorCodes.CreateFailed),
+            Code = knownCode ?? kind switch
+            {
+                JobKind.Rescan => JobErrorCodes.RescanFailed,
+                JobKind.Create => JobErrorCodes.CreateFailed,
+                _ => JobErrorCodes.HashFailed
+            },
             Message = ex.Message,
             RootPath = (ex as RootNotAccessibleException)?.RootPath
         };
         return (error, knownCode == null);
     }
 
-    private void OnProgress(Entry entry, string phase, int entriesScanned, string note)
+    private void OnProgress(Entry entry, string phase, int entriesScanned, string note, HashJobProgress? hash = null)
     {
         lock (_lock)
         {
@@ -381,7 +424,8 @@ public sealed class JobRegistry : IDisposable
             {
                 Phase = phase,
                 EntriesScanned = Math.Max(entry.Job.EntriesScanned, entriesScanned),
-                Note = note
+                Note = note,
+                Hash = hash
             };
             var now = Environment.TickCount64;
             if (!phaseChanged && now - entry.LastPublishedMs < ProgressIntervalMs) return;
@@ -425,7 +469,7 @@ public sealed class JobRegistry : IDisposable
     }
 
     private bool IsActiveTargetLocked(string target) =>
-        _jobs.Any(e => !e.Job.IsTerminal && PathComparer.Equals(e.TargetFilePath, target));
+        _jobs.Any(e => !e.Job.IsTerminal && e.TargetFilePaths.Contains(target, PathComparer));
 
     private bool AnyActiveLocked() => _jobs.Any(e => !e.Job.IsTerminal);
 
@@ -451,11 +495,12 @@ public sealed class JobRegistry : IDisposable
         foreach (var subscriber in subscribers) subscriber.Writer.TryComplete();
     }
 
-    private sealed class Entry(string target, CreateCatalogRequest create)
+    private sealed class Entry(string[] targets, CreateCatalogRequest create, HashOptions hash)
     {
-        public string TargetFilePath { get; } = target;
+        public string[] TargetFilePaths { get; } = targets;
 
         public CreateCatalogRequest Create { get; } = create;
+        public HashOptions Hash { get; } = hash;
         public CancellationTokenSource Cts { get; } = new();
         public JobDto Job { get; set; }
         public long LastPublishedMs { get; set; }

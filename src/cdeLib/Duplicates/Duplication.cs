@@ -99,6 +99,36 @@ public partial class Duplication
     /// <summary>Files that could not be read and hashed (locked, vanished, access denied).</summary>
     public long FilesFailed => _duplicationStatistics.FailedToHash;
 
+    private long _passFilesDone;
+    private long _passFilesTotal;
+    private long _passBytesDone;
+    private long _passBytesTotal;
+    private volatile bool _fullPass;
+
+    /// <summary>
+    /// Where the current pass of
+    /// <see cref="ApplyHash(IReadOnlyList{Entities.Columnar.ColumnarCatalogReader}, HashSelection, CancellationToken)"/>
+    /// is, for a caller that polls. The counts start again at the full pass.
+    /// </summary>
+    public HashRunProgress Progress => new(_fullPass, Interlocked.Read(ref _passFilesDone),
+        Interlocked.Read(ref _passFilesTotal), Interlocked.Read(ref _passBytesDone),
+        Interlocked.Read(ref _passBytesTotal));
+
+    private void BeginPass(bool fullPass, long files, long bytes)
+    {
+        Interlocked.Exchange(ref _passFilesDone, 0);
+        Interlocked.Exchange(ref _passBytesDone, 0);
+        Interlocked.Exchange(ref _passFilesTotal, files);
+        Interlocked.Exchange(ref _passBytesTotal, bytes);
+        _fullPass = fullPass;
+    }
+
+    private void FileFinished(long plannedBytes)
+    {
+        Interlocked.Increment(ref _passFilesDone);
+        Interlocked.Add(ref _passBytesDone, plannedBytes);
+    }
+
     private void RecordUnexpectedFailure(Exception ex, string phase)
     {
         _logger.LogException(ex, "Error in {0}", phase);

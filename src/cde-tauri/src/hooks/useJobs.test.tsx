@@ -410,3 +410,20 @@ describe("useJobs rescanMany", () => {
     expect(refused[0][0].title).toBe("2 rescans not started");
   });
 });
+
+describe("useJobs hash jobs", () => {
+  beforeEach(() => show.mockClear());
+
+  it("announces nothing for a hash job that fails, is cancelled or succeeds, rather than a create-job message", async () => {
+    const t = setup();
+    const hash = (id: number, over: Partial<JobDto> = {}) =>
+      job(id, { kind: "hash", title: "Hashing c", catalogId: null, catalogIds: [0, 1], ...over } as Partial<JobDto>);
+    await t.snapshot([hash(4), hash(5), hash(6)]);
+    show.mockClear();
+    await t.event(hash(4, { state: "failed", error: { code: "hash-failed", message: "Hash FAILED: 3 files hashed" } }));
+    await t.event(hash(5, { state: "cancelled" }));
+    await t.event(hash(6, { state: "succeeded", result: { catalogId: null, hash: { filesHashed: 3, filesFailed: 0 } } } as Partial<JobDto>));
+    await act(async () => {});
+    expect(show).not.toHaveBeenCalled();
+  });
+});

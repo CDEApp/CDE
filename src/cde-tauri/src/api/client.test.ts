@@ -203,6 +203,43 @@ describe("jobs", () => {
     expect(JSON.parse(init.body)).toEqual({ kind: "rescan", catalogId: 3 });
   });
 
+  it("submitJob sends a hash job's catalog set and options", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 8, kind: "hash" }), { status: 202 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await client.submitJob({ kind: "hash", catalogIds: [0, 2], hash: { filter: "size:>2gb", includeUniqueSizes: true } });
+
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      kind: "hash",
+      catalogIds: [0, 2],
+      hash: { filter: "size:>2gb", includeUniqueSizes: true },
+    });
+  });
+
+  it("preflightHash POSTs the catalog set and options and returns the counts", async () => {
+    const counts = { files: 12, bytes: 3_000_000_000, alreadyHashed: 4 };
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify(counts), { status: 200 }));
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(client.preflightHash({ catalogIds: [0, 2], hash: { filter: "size:>2gb" } })).resolves.toEqual(counts);
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("http://127.0.0.1:5000/catalogs/hash/preflight");
+    expect(init.method).toBe("POST");
+    expect(JSON.parse(init.body)).toEqual({ catalogIds: [0, 2], hash: { filter: "size:>2gb" } });
+  });
+
+  it("preflightHash throws a typed refusal carrying the parser's message for a bad filter", async () => {
+    const body = { code: "invalid-filter", message: "Expected a size after 'size:>'", rootPath: null };
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 400 })));
+
+    const err = await client.preflightHash({ catalogIds: [0], hash: { filter: "size:>" } }).catch((e) => e);
+
+    expect(err).toBeInstanceOf(JobRefusal);
+    expect(err.error.code).toBe("invalid-filter");
+    expect(err.message).toBe("Expected a size after 'size:>'");
+  });
+
   it("throws a typed refusal carrying the sidecar's code, message and root", async () => {
     const body = { code: "root-not-accessible", message: "no", rootPath: "Z:\\" };
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 422 })));

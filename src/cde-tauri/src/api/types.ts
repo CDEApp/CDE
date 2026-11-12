@@ -208,20 +208,67 @@ export interface CreatePreflightResult {
   busy: boolean;
 }
 
-export type JobKind = "rescan" | "create";
-export type JobState = "queued" | "running" | "succeeded" | "failed" | "cancelled";
-export type JobPhase = "queued" | "scanning" | "writing" | "swapping" | "saving";
+/** Which files a hash run reads. It belongs to one run and is never saved. */
+export interface HashOptions {
+  /** An Everything-style query a file must match (the search bar's syntax); blank or absent selects every file. */
+  filter?: string | null;
+  /** Also hash files whose size no other file in the run's catalogs has; each selected file then gets a full hash. */
+  includeUniqueSizes?: boolean;
+}
 
+/** Body of POST /catalogs/hash/preflight: the same catalog set and options as a "hash" job. */
+export interface HashPreflightRequest {
+  catalogIds: number[];
+  hash?: HashOptions | null;
+}
+
+/** What a hash job with the same catalogs and options would read (POST /catalogs/hash/preflight). */
+export interface HashPreflightResult {
+  /** Selected files the run reads in its first pass. */
+  files: number;
+  /** Their total size. The first pass reads only the start of each; possible duplicates are then read whole. */
+  bytes: number;
+  /** Selected files whose hash the run keeps as it is. */
+  alreadyHashed: number;
+}
+
+/**
+ * The current pass of a running hash job. The counts start again at 0 when the phase goes from "hashing" to
+ * "hashing-full". `bytesDone` grows as each file ends, not while it is read.
+ */
+export interface HashJobProgress {
+  filesDone: number;
+  filesTotal: number;
+  bytesDone: number;
+  bytesTotal: number;
+}
+
+export interface HashResult {
+  /** Files given a new or upgraded hash. */
+  filesHashed: number;
+  /** Files that could not be read; they stay unhashed. */
+  filesFailed: number;
+}
+
+export type JobKind = "rescan" | "create" | "hash";
+export type JobState = "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type JobPhase = "queued" | "scanning" | "writing" | "swapping" | "saving" | "hashing" | "hashing-full";
+
+/** A hash job fills only `hash`: its `catalogId` and `rootPath` are null and its counts 0. */
 export interface JobResult {
-  catalogId: number;
-  rootPath: string;
+  catalogId: number | null;
+  rootPath: string | null;
   /** Files + directories in the new catalog (root excluded, as in the status bar total). */
   entries: number;
   savedPath: string;
   excludedFolderCount?: number;
   accessDeniedFolderCount?: number;
   unreadableFolderCount?: number;
+  hash?: HashResult | null;
 }
+
+/** The result of a rescan or a create, which always names its catalog. */
+export type ScanJobResult = JobResult & { catalogId: number; rootPath: string };
 
 export interface JobError {
   code:
@@ -235,6 +282,9 @@ export interface JobError {
     | "invalid-file-name"
     | "rescan-failed"
     | "create-failed"
+    | "invalid-filter"
+    | "legacy-catalog"
+    | "hash-failed"
     | string;
   message: string;
   rootPath?: string | null;
@@ -244,9 +294,11 @@ export interface JobDto {
   id: number;
   kind: JobKind;
   title: string;
-  /** Rescan: the catalog. Create: null until it succeeds, then the new id. */
+  /** Rescan: the catalog. Create: null until it succeeds, then the new id. Hash: null. */
   catalogId: number | null;
-  /** Catalog file name without extension. */
+  /** Hash: the catalogs the run hashes together, ascending. Null for the other kinds. */
+  catalogIds?: number[] | null;
+  /** Catalog file name without extension. Hash: the names of its catalogs, joined with ", ". */
   catalogName: string;
   state: JobState;
   queuedAtUtc: string;
@@ -254,6 +306,8 @@ export interface JobDto {
   endedAtUtc: string | null;
   phase: JobPhase;
   entriesScanned: number;
+  /** Hash: the counts of the current pass, from the first report on. Null for the other kinds. */
+  hash?: HashJobProgress | null;
   note: string;
   result: JobResult | null;
   error: JobError | null;
@@ -266,7 +320,8 @@ export interface JobsSnapshot {
 
 export type SubmitJobRequest =
   | { kind: "rescan"; catalogId: number }
-  | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean };
+  | { kind: "create"; rootPath: string; fileName?: string; description?: string; followJunctions?: boolean }
+  | { kind: "hash"; catalogIds: number[]; hash?: HashOptions | null };
 
 export type ShellAction ="open" | "explore" | "properties" | "custom";
 
