@@ -27,11 +27,17 @@ public static class ColumnarCatalogHashing
     /// <param name="cancellationToken">Stops the run and throws <see cref="OperationCanceledException"/>, leaving every
     /// catalog as it was, when it is cancelled before all the catalogs are written beside themselves. Once they are,
     /// they are moved into place and the run is no longer cancellable.</param>
+    /// <param name="replace">Puts a hashed copy (first argument) in place of its catalog (second argument), whose
+    /// mapping this run has released. Null moves the file over the catalog. A host that keeps the catalog mapped
+    /// passes its own swap. An <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> from it fails
+    /// that catalog only.</param>
     public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
-        IRecordWriter output = null, HashSelection selection = null, CancellationToken cancellationToken = default)
+        IRecordWriter output = null, HashSelection selection = null, CancellationToken cancellationToken = default,
+        Action<string, string> replace = null)
     {
         ArgumentNullException.ThrowIfNull(duplication);
         ArgumentNullException.ThrowIfNull(cdexFiles);
+        replace ??= static (staged, catalog) => File.Move(staged, catalog, overwrite: true);
 
         var readers = new List<ColumnarCatalogReader>(cdexFiles.Count);
         try
@@ -86,7 +92,7 @@ public static class ColumnarCatalogHashing
                 try
                 {
                     readers[c].Dispose(); // release the mapping so the file can be replaced
-                    File.Move(staged[c], file, overwrite: true);
+                    replace(staged[c], file);
                     saved = true;
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)

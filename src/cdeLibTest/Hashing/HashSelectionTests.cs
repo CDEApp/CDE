@@ -197,6 +197,79 @@ public class HashSelectionTests
     }
 
     [Test]
+    public async Task A_replace_callback_puts_each_hashed_copy_in_place_instead_of_the_move()
+    {
+        var first = CatalogWithStatedSizes("one");
+        var second = CatalogWithStatedSizes("two");
+        var original = File.ReadAllBytes(first);
+        var replaced = new List<(string Staged, string Catalog)>();
+
+        await ColumnarCatalogHashing.HashAndSave(NewDuplication(), [first, second], null, replace: (staged, catalog) =>
+        {
+            replaced.Add((staged, catalog));
+            File.Move(staged, catalog + ".hashed");
+        });
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(replaced, Is.EqualTo(new[] { (first + ".tmp", first), (second + ".tmp", second) }));
+            Assert.That(File.ReadAllBytes(first), Is.EqualTo(original), "the run itself moved nothing over the catalog");
+            Assert.That(Entries(first + ".hashed")["big1.bin"].Flags.IsHashUsable(), Is.True);
+        });
+    }
+
+    [Test]
+    public async Task A_replace_that_fails_on_one_catalog_still_saves_the_others_and_leaves_no_temp_file()
+    {
+        var first = CatalogWithStatedSizes("one");
+        var second = CatalogWithStatedSizes("two");
+        var original = File.ReadAllBytes(first);
+
+        var ex = await Assert.ThrowsAsync<HashFailedException>(() =>
+            ColumnarCatalogHashing.HashAndSave(NewDuplication(), [first, second], null, replace: (staged, catalog) =>
+            {
+                if (catalog == first) throw new IOException("in use");
+                File.Move(staged, catalog, overwrite: true);
+            }));
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(ex.Message, Does.Contain("in use"));
+            Assert.That(File.ReadAllBytes(first), Is.EqualTo(original));
+            Assert.That(Entries(second)["big1.bin"].Flags.IsHashUsable(), Is.True);
+            Assert.That(File.Exists(first + ".tmp") || File.Exists(second + ".tmp"), Is.False);
+        });
+    }
+
+    [Test]
+    public async Task Progress_counts_the_files_and_bytes_of_the_current_pass_up_to_its_totals()
+    {
+        var root = Path.Combine(_dir, "sized");
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "same1.bin"), Bytes(1));
+        File.WriteAllBytes(Path.Combine(root, "same2.bin"), Bytes(1));
+        File.WriteAllBytes(Path.Combine(root, "other.bin"), Bytes(2));
+        var tree = new RootEntry(Substitute.For<IConfiguration>());
+        tree.PopulateRoot(root);
+        var cdex = Path.Combine(_dir, "sized.cdex");
+        ColumnarFormat.Write(tree, cdex);
+        HashRunProgress? endOfFirstPass = null;
+        var duplication = NewDuplication();
+        duplication.StatusMessageEvent = message =>
+        {
+            if (message == "After initial partial hashing phase.") endOfFirstPass = duplication.Progress;
+        };
+
+        await ColumnarCatalogHashing.HashAndSave(duplication, [cdex], null);
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(endOfFirstPass, Is.EqualTo(new HashRunProgress(false, 3, 3, 3 * FirstPass, 3 * FirstPass)));
+            Assert.That(duplication.Progress, Is.EqualTo(new HashRunProgress(true, 2, 2, 2 * 4096, 2 * 4096)));
+        });
+    }
+
+    [Test]
     public async Task Cancelling_while_saving_leaves_every_catalog_byte_identical()
     {
         var first = CatalogWithStatedSizes("one");
