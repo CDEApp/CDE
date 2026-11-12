@@ -25,6 +25,8 @@ namespace cdeAppCore.Serialization;
 [JsonSerializable(typeof(JobsResponse))]
 [JsonSerializable(typeof(JobSubmitRequest))]
 [JsonSerializable(typeof(JobError))]
+[JsonSerializable(typeof(HashPreflightRequest))]
+[JsonSerializable(typeof(HashPreflightResult))]
 [JsonSerializable(typeof(CreatePreflightRequest))]
 [JsonSerializable(typeof(CreatePreflightResult))]
 [JsonSerializable(typeof(LegacyCatalogDto))]

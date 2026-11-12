@@ -136,4 +136,34 @@ public interface ICatalogSession : IDisposable
     /// has no file, and <see cref="NotSupportedException"/> for a legacy <c>.cde</c> (migrate it first).
     /// </summary>
     Task SetDescriptionAsync(int catalogId, string description, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Cheap checks before a hash run of <paramref name="catalogIds"/>: null when it can start, otherwise why not, as
+    /// one of <see cref="JobErrorCodes"/>: <c>invalid-request</c> (no catalog), <c>invalid-filter</c> (the message is
+    /// the one the search bar shows), <c>busy</c>, <c>unknown-catalog</c>, <c>already-running</c>,
+    /// <c>catalog-unavailable</c>, <c>legacy-catalog</c>, <c>no-source-file</c> or <c>root-not-accessible</c>.
+    /// </summary>
+    JobError PreflightHash(IReadOnlyList<int> catalogIds, HashOptions options);
+
+    /// <summary>
+    /// What <see cref="HashAsync"/> with the same arguments would read, counted from the loaded catalogs under read
+    /// leases without reading any file. Throws <see cref="HashRefusedException"/> for <c>invalid-request</c>,
+    /// <c>invalid-filter</c>, <c>busy</c>, <c>unknown-catalog</c>, <c>catalog-unavailable</c> or <c>legacy-catalog</c>.
+    /// It does not need the catalogs' drives, and it works while another job runs on them.
+    /// </summary>
+    HashPreflightResult PreviewHash(IReadOnlyList<int> catalogIds, HashOptions options,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Hash the files of <paramref name="catalogIds"/> as one run (file sizes are compared across the whole set, as
+    /// <c>cde hash</c> does over a folder of catalogs) and replace each catalog in place with its hashed copy (same
+    /// <c>CatalogId</c>). The run only adds or upgrades hashes. Each catalog stays searchable until its swap, which
+    /// takes that catalog's write lock. A cancel before the first swap leaves every file as it was and no
+    /// <c>.tmp</c>; from the first swap on the run is not cancellable. No rescan, edit or reload of a catalog in the
+    /// set can run meanwhile. Throws <see cref="HashRefusedException"/> for the refusals of
+    /// <see cref="PreflightHash"/>, and <c>cdeLib.Hashing.HashFailedException</c> when a pass stopped on an
+    /// unexpected error or a catalog could not be saved (the hashes of the other catalogs are still saved).
+    /// </summary>
+    Task<HashResult> HashAsync(IReadOnlyList<int> catalogIds, HashOptions options,
+        IProgress<HashProgress> progress = null, CancellationToken cancellationToken = default);
 }

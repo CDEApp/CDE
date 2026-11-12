@@ -34,14 +34,19 @@ public sealed partial class CatalogSession : ICatalogSession
     private bool _loading;
     private readonly Func<string, ColumnarCatalogReader> _openReader;
     private readonly Func<ScanSection> _scanConfig;
+    private readonly Func<HashingSection> _hashingConfig;
 
     /// <param name="openReader">Opens a .cdex; defaults to mapping it. A seam for failure-injection tests.</param>
     /// <param name="scanConfig">Supplies the CURRENT scan exclude config; called at the start of every create and
     /// rescan so a reloaded config applies without restart. Null means no user excludes and defaults on.</param>
+    /// <param name="hashingConfig">Supplies the CURRENT hashing config (the first-pass size), called at the start of
+    /// every hash run. Null means the defaults, which are also what <c>cde hash</c> uses without a config.</param>
     public CatalogSession(ILoadCatalogService loadCatalogService, ILogger logger,
-        Func<string, ColumnarCatalogReader> openReader = null, Func<ScanSection> scanConfig = null)
+        Func<string, ColumnarCatalogReader> openReader = null, Func<ScanSection> scanConfig = null,
+        Func<HashingSection> hashingConfig = null)
     {
         _scanConfig = scanConfig;
+        _hashingConfig = hashingConfig;
         _loadCatalogService = loadCatalogService;
         _logger = logger;
         _openReader = openReader ?? (path => new ColumnarCatalogReader(path));
