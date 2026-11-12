@@ -13,7 +13,6 @@ export interface HashRequest {
 }
 
 interface Props {
-  /** The catalogs ticked when the dialog opens, or null when it is closed. */
   initialCatalogIds: readonly number[] | null;
   catalogs: readonly CatalogInfo[];
   jobs: JobsModel;
@@ -22,7 +21,6 @@ interface Props {
   onClose: () => void;
 }
 
-/** Pick catalogs and an optional filter, see what would be hashed, and start the hash job. */
 export function HashCatalogsDialog({ initialCatalogIds, catalogs, jobs, client, onStart, onClose }: Props) {
   return (
     <Modal opened={initialCatalogIds !== null} onClose={onClose} title="Hash files" centered size="lg">

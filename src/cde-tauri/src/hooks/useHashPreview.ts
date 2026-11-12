@@ -11,10 +11,6 @@ export type HashPreview =
 
 export const HASH_PREVIEW_DEBOUNCE_MS = 300;
 
-/**
- * What a hash run with `request` would read, asked of the sidecar after the request has been still for a while.
- * A null request, or no client, is idle. An answer for an older request is dropped.
- */
 export function useHashPreview(client: CdeApiClient | null, request: HashPreflightRequest | null): HashPreview {
   const [preview, setPreview] = useState<HashPreview>({ status: "idle" });
   const guard = useRef(createRequestGuard()).current;

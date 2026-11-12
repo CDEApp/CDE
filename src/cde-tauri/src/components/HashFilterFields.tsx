@@ -8,13 +8,10 @@ interface Props {
   includeUniqueSizes: boolean;
   onFilterChange: (filter: string) => void;
   onIncludeUniqueSizesChange: (include: boolean) => void;
-  /** The live answer for the current filter and flag, from {@link useHashPreview}. */
   preview: HashPreview;
-  /** Focus the filter box when it mounts. */
   autoFocus?: boolean;
 }
 
-/** The filter box, the unique-size checkbox and the preview line of a hash run. Used by the Hash dialog. */
 export function HashFilterFields({ filter, includeUniqueSizes, onFilterChange, onIncludeUniqueSizesChange, preview, autoFocus }: Props) {
   const id = useId();
   return (

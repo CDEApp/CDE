@@ -10,7 +10,6 @@ export function isLegacyCatalog(c: Pick<CatalogInfo, "sourcePath">): boolean {
   return /\.cde$/i.test(c.sourcePath ?? "");
 }
 
-/** The run's options, or null when they select every repeated-size file (the default). */
 export function hashOptions(filter: string, includeUniqueSizes: boolean): HashOptions | null {
   const f = filter.trim();
   return f === "" && !includeUniqueSizes ? null : { filter: f === "" ? null : f, includeUniqueSizes };

@@ -14,7 +14,6 @@ interface Props {
   loadDisabledReason?: string | null;
   /** When set, Rescan All Catalogs is disabled and this is its tooltip (no catalogs are loaded). */
   rescanAllDisabledReason?: string | null;
-  /** When set, Hash Catalogs is disabled and this is its tooltip (no catalogs are loaded). */
   hashDisabledReason?: string | null;
 }
 

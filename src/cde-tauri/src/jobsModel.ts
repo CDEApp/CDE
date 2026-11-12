@@ -111,7 +111,6 @@ export function rescanMenuItem(
     : { label: "Rescan", disabled: false };
 }
 
-/** Why this catalog cannot be hashed now, or null when it can. */
 export function hashDisabledReason(model: JobsModel, catalog: Pick<CatalogInfo, "catalogId" | "sourcePath">): string | null {
   if (isLegacyCatalog(catalog)) return "Legacy .cde catalogs cannot be hashed. Migrate it first";
   if (activeCatalogIds(model).has(catalog.catalogId)) return "A job for this catalog is already queued or running";
@@ -122,7 +121,6 @@ export function hashableCatalogIds(model: JobsModel, catalogs: readonly Pick<Cat
   return catalogs.filter((c) => hashDisabledReason(model, c) === null).map((c) => c.catalogId);
 }
 
-/** Why the menu bar's Hash Catalogs has nothing to offer, or null when at least one catalog can be hashed. */
 export function hashAllDisabledReason(model: JobsModel, catalogs: readonly Pick<CatalogInfo, "catalogId" | "sourcePath">[]): string | null {
   if (catalogs.length === 0) return "No catalogs are loaded";
   return hashableCatalogIds(model, catalogs).length === 0 ? "No loaded catalog can be hashed now (legacy, or a job holds it)" : null;
