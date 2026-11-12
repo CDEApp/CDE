@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, JobRefusal } from "../api/client";
-import type { JobDto, ScanJobResult, SubmitJobRequest } from "../api/types";
+import type { HashOptions, JobDto, ScanJobResult, SubmitJobRequest } from "../api/types";
 import { skipSummary } from "../format";
+import { hashToast } from "../hashJobs";
 import {
   applyJob,
   applySnapshot,
@@ -123,8 +124,30 @@ async function announceCreate(client: CdeApiClient, job: JobDto, cb: Callbacks) 
   });
 }
 
+async function announceHash(client: CdeApiClient, job: JobDto, cb: Callbacks) {
+  const toast = hashToast(job.result!.hash!);
+  try {
+    await cb.refreshCatalogs(client);
+    notifications.show(toast);
+  } catch (e) {
+    notifications.show({
+      color: "orange",
+      title: toast.title,
+      message: `${toast.message} Refreshing the catalog list failed: ${errText(e)}. Use Reload.`,
+    });
+  }
+}
+
 function announceFailure(job: JobDto, showUnreachable: (root: string) => void) {
   const err = job.error;
+  if (job.kind === "hash") {
+    notifications.show({
+      color: "red",
+      title: "Hashing failed",
+      message: `${job.title}: ${err?.message ?? "unknown error"}. Existing hashes were left unchanged.`,
+    });
+    return;
+  }
   if (err?.code === "root-not-accessible") {
     showUnreachable(err.rootPath || job.title);
     return;
@@ -146,10 +169,11 @@ function announceFailure(job: JobDto, showUnreachable: (root: string) => void) {
 }
 
 function announceCancelled(job: JobDto) {
+  const rescan = job.kind === "rescan";
   notifications.show({
     color: "gray",
-    title: job.kind === "rescan" ? "Rescan cancelled" : "New catalog cancelled",
-    message: job.kind === "rescan" ? `${job.title} was left unchanged.` : `${job.title}: nothing was written.`,
+    title: rescan ? "Rescan cancelled" : job.kind === "hash" ? "Hashing cancelled" : "New catalog cancelled",
+    message: rescan || job.kind === "hash" ? `${job.title} was left unchanged.` : `${job.title}: nothing was written.`,
   });
 }
 
@@ -208,8 +232,8 @@ export function useJobs({
         void advanceBatch.current(batch);
         if (job.state === "failed") return;
       }
-      if (job.state === "succeeded" && job.result && job.kind !== "hash") {
-        const announce = job.kind === "rescan" ? announceRescan : announceCreate;
+      if (job.state === "succeeded" && job.result && (job.kind !== "hash" || job.result.hash)) {
+        const announce = job.kind === "hash" ? announceHash : job.kind === "rescan" ? announceRescan : announceCreate;
         setCompleting((n) => n + 1);
         void announce(getClient(), job, latestCallbacks.current)
           .catch((e) => console.error("job completion handling failed", e))
@@ -271,7 +295,7 @@ export function useJobs({
             if (e instanceof JobRefusal && e.rootNotAccessible) batch.unreachable.add(e.error.rootPath || errText(e));
             else batch.refused.push(errText(e));
           }
-        } else if (e instanceof JobRefusal && e.rootNotAccessible) {
+        } else if (e instanceof JobRefusal && e.rootNotAccessible && req.kind !== "hash") {
           setUnreachableRoot(e.error.rootPath || (req.kind === "create" ? req.rootPath : null) || e.message);
         } else {
           notifications.show({ color: "red", title: refusedTitle, message: errText(e) });
@@ -322,6 +346,12 @@ export function useJobs({
     await advanceBatch.current(batch);
   }, []);
 
+  const hashCatalogs = useCallback(
+    (catalogIds: number[], hash: HashOptions | null) =>
+      submit({ kind: "hash", catalogIds, hash }, `hash:${catalogIds.join(",")}`, "Hashing not started"),
+    [submit],
+  );
+
   const createCatalog = useCallback(
     (req: { rootPath: string; fileName: string; description: string; followJunctions: boolean }) =>
       submit({ kind: "create", ...req }, null, "New catalog not started"),
@@ -363,5 +393,5 @@ export function useJobs({
   // A finished job's refresh still writes the catalog list and selection, so a reload must wait for it too.
   const busy = anyActive(model) || completing > 0 || batchOpen;
 
-  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, rescanMany, createCatalog, cancelJob, dismissJob, clearFinished };
+  return { model, busy, unreachableRoot, clearUnreachable, rescanCatalog, rescanMany, hashCatalogs, createCatalog, cancelJob, dismissJob, clearFinished };
 }

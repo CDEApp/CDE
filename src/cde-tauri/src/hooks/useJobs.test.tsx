@@ -410,3 +410,74 @@ describe("useJobs rescanMany", () => {
     expect(refused[0][0].title).toBe("2 rescans not started");
   });
 });
+
+describe("useJobs hash jobs", () => {
+  const hashJob = (id: number, over: Partial<JobDto> = {}) =>
+    job(id, {
+      kind: "hash",
+      title: "Hashing C-one",
+      catalogId: null,
+      catalogIds: [0, 2],
+      phase: "hashing",
+      ...over,
+    });
+  const hashDone = (id: number, filesFailed = 0) =>
+    hashJob(id, {
+      state: "succeeded",
+      endedAtUtc: "2026-01-01T00:01:00Z",
+      result: { catalogId: null, rootPath: null, entries: 0, savedPath: "x", hash: { filesHashed: 12, filesFailed } },
+    });
+
+  it("submits the catalogs and options as a hash job", async () => {
+    const t = setup();
+    t.client.submitJob.mockResolvedValue(hashJob(4, { state: "queued" }));
+    await act(() => t.result.current.hashCatalogs([0, 2], { filter: "size:>2gb", includeUniqueSizes: true }));
+    expect(t.client.submitJob).toHaveBeenCalledWith({
+      kind: "hash",
+      catalogIds: [0, 2],
+      hash: { filter: "size:>2gb", includeUniqueSizes: true },
+    });
+  });
+
+  it("announces a finished hash run once, refreshes the catalog list, and does not rescan-refresh", async () => {
+    const t = setup();
+    await t.snapshot([hashJob(4)]);
+    await t.event(hashDone(4));
+    await t.event(hashDone(4));
+    expect(t.afterRescan).not.toHaveBeenCalled();
+    expect(t.refreshCatalogs).toHaveBeenCalledTimes(1);
+    const toasts = show.mock.calls.filter(([a]) => a.title === "Hashing complete");
+    expect(toasts).toHaveLength(1);
+    expect(toasts[0][0]).toMatchObject({ color: "green", message: expect.stringContaining("Hashed 12 files.") });
+  });
+
+  it("mentions the files that could not be read", async () => {
+    const t = setup();
+    await t.snapshot([hashJob(4)]);
+    await t.event(hashDone(4, 2));
+    expect(show).toHaveBeenCalledWith(
+      expect.objectContaining({ color: "orange", message: expect.stringContaining("2 files could not be read") }),
+    );
+  });
+
+  it("reports a failed and a cancelled hash run as hashing, not as a rescan", async () => {
+    const t = setup();
+    await t.snapshot([hashJob(4), hashJob(5)]);
+    await t.event(hashJob(4, { state: "failed", error: { code: "hash-failed", message: "disk gone" } }));
+    await t.event(hashJob(5, { state: "cancelled" }));
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing failed", message: expect.stringContaining("disk gone") }));
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing cancelled" }));
+  });
+
+  it("shows a refused hash run as a toast, even when a root is offline", async () => {
+    const t = setup();
+    t.client.submitJob.mockRejectedValue(
+      new JobRefusal({ code: "root-not-accessible", message: "D:\\ cannot be reached", rootPath: "D:\\" }),
+    );
+    await act(() => t.result.current.hashCatalogs([0], null));
+    expect(t.result.current.unreachableRoot).toBeNull();
+    expect(show).toHaveBeenCalledWith(
+      expect.objectContaining({ title: "Hashing not started", message: expect.stringContaining("cannot be reached") }),
+    );
+  });
+});
