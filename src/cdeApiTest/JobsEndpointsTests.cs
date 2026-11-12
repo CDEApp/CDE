@@ -114,6 +114,56 @@ public class JobsEndpointsTests
     }
 
     [Test]
+    public async Task Submitting_a_hash_is_202_and_the_finished_job_carries_the_hash_result()
+    {
+        var (status, job) = await Submit(new JobSubmitRequest
+        {
+            Kind = JobKind.Hash, CatalogIds = [0, 1], Hash = new HashOptions { Filter = "a.txt" }
+        });
+
+        Assert.That(status, Is.EqualTo(StatusCodes.Status202Accepted));
+        Assert.That(job.GetProperty("kind").GetString(), Is.EqualTo("hash"));
+        Assert.That(job.GetProperty("catalogIds").EnumerateArray().Select(e => e.GetInt32()), Is.EqualTo(new[] { 0, 1 }));
+        Assert.That(job.GetProperty("catalogId").ValueKind, Is.EqualTo(JsonValueKind.Null));
+        Assert.That(job.GetProperty("catalogName").GetString(), Is.EqualTo("a, b"));
+        Assert.That(job.GetProperty("title").GetString(), Is.EqualTo("Hashing 2 catalogs"));
+
+        await WaitForEnd(job.GetProperty("id").GetInt64());
+        var (_, list) = await Run(JobsEndpoints.List(_jobs));
+        var done = list.GetProperty("jobs").EnumerateArray().Single();
+        Assert.That(done.GetProperty("state").GetString(), Is.EqualTo("succeeded"));
+        Assert.That(done.GetProperty("phase").GetString(), Is.EqualTo("swapping"));
+        Assert.That(done.GetProperty("hash").GetRawText(),
+            Is.EqualTo("""{"filesDone":2,"filesTotal":2,"bytesDone":2,"bytesTotal":2}"""));
+        Assert.That(done.GetProperty("result").GetProperty("hash").GetRawText(),
+            Is.EqualTo("""{"filesHashed":2,"filesFailed":0}"""));
+        Assert.That(done.GetProperty("result").GetProperty("catalogId").ValueKind, Is.EqualTo(JsonValueKind.Null));
+    }
+
+    [Test]
+    public async Task Hash_refusals_are_json_errors_with_the_contract_status()
+    {
+        JobSubmitRequest Hash(int[] ids, string filter = null) =>
+            new() { Kind = JobKind.Hash, CatalogIds = ids, Hash = new HashOptions { Filter = filter } };
+
+        await AssertRefused(Hash([0], "size:>>"), 400, JobErrorCodes.InvalidFilter);
+        await AssertRefused(Hash([]), 400, JobErrorCodes.InvalidRequest);
+        await AssertRefused(Hash([0, 9]), 404, JobErrorCodes.UnknownCatalog);
+        using (new TestCatalog.SwapBlockingLease(_session, 0))
+        {
+            var (_, rescan) = await Submit(Rescan(0));
+            await AssertRefused(Hash([0, 1]), 409, JobErrorCodes.AlreadyRunning);
+            await TestCatalog.WaitForJob(_jobs, rescan.GetProperty("id").GetInt64(), j => j.Phase == "swapping");
+        }
+
+        await TestCatalog.WaitForJob(_jobs, 1, j => j.IsTerminal);
+        Directory.Delete(_data[1], true);
+        await AssertRefused(Hash([0, 1]), 422, JobErrorCodes.RootNotAccessible);
+        Assert.That(JobsEndpoints.StatusFor(JobErrorCodes.LegacyCatalog), Is.EqualTo(422));
+        Assert.That(_jobs.GetJobs().Select(j => j.Kind), Is.All.EqualTo(JobKind.Rescan));
+    }
+
+    [Test]
     public async Task Refusals_are_json_errors_with_the_contract_status()
     {
         Directory.Delete(_data[1], true);

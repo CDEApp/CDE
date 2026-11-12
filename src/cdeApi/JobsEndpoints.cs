@@ -10,11 +10,12 @@ using Microsoft.AspNetCore.Routing;
 namespace cdeApi;
 
 /// <summary>
-/// Catalog scan jobs (rescan, create) owned by the sidecar's <see cref="JobRegistry"/>. <c>POST /jobs</c> answers 202
+/// Catalog jobs (rescan, create, hash) owned by the sidecar's <see cref="JobRegistry"/>. <c>POST /jobs</c> answers 202
 /// with the queued job, or refuses with a JSON <see cref="JobError"/>: 404 <c>unknown-catalog</c>; 409
 /// <c>already-running</c>, <c>busy</c>, <c>catalog-unavailable</c>, <c>file-exists</c>; 422 <c>root-not-accessible</c>,
-/// <c>no-source-file</c>, <c>invalid-file-name</c>, <c>no-catalog-dir</c>, <c>folder-not-writable</c>; 400
-/// <c>invalid-request</c>. Progress and outcomes arrive on <c>GET /jobs/events</c>.
+/// <c>no-source-file</c>, <c>invalid-file-name</c>, <c>no-catalog-dir</c>, <c>folder-not-writable</c>,
+/// <c>legacy-catalog</c>; 400 <c>invalid-request</c>, <c>invalid-filter</c>. Progress and outcomes arrive on
+/// <c>GET /jobs/events</c>.
 /// </summary>
 public static class JobsEndpoints
 {
@@ -42,7 +43,7 @@ public static class JobsEndpoints
         JobErrorCodes.UnknownCatalog => StatusCodes.Status404NotFound,
         JobErrorCodes.AlreadyRunning or JobErrorCodes.Busy or JobErrorCodes.CatalogUnavailable or JobErrorCodes.FileExists
             => StatusCodes.Status409Conflict,
-        JobErrorCodes.InvalidRequest => StatusCodes.Status400BadRequest,
+        JobErrorCodes.InvalidRequest or JobErrorCodes.InvalidFilter => StatusCodes.Status400BadRequest,
         _ => StatusCodes.Status422UnprocessableEntity
     };
 
