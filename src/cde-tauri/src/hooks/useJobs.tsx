@@ -196,6 +196,7 @@ export function useJobs({
         return;
       }
       handled.current.add(job.id);
+      if (job.kind === "hash") return; // no hash notifications yet: their UI comes with the hash dialog
       if (batch?.jobIds.has(job.id)) {
         batch.jobIds.delete(job.id);
         if (job.state === "failed" && job.error?.code === "root-not-accessible") {
@@ -208,7 +209,7 @@ export function useJobs({
         void advanceBatch.current(batch);
         if (job.state === "failed") return;
       }
-      if (job.state === "succeeded" && job.result && job.kind !== "hash") {
+      if (job.state === "succeeded" && job.result) {
         const announce = job.kind === "rescan" ? announceRescan : announceCreate;
         setCompleting((n) => n + 1);
         void announce(getClient(), job, latestCallbacks.current)
