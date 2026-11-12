@@ -236,6 +236,17 @@ public class CatalogSessionHashTests
     }
 
     [Test]
+    public async Task A_duplicate_pair_promoted_to_full_hashes_counts_as_two_files()
+    {
+        var data = MakeData("d", ("a1.bin", 200_000), ("a2.bin", 200_000), ("b.bin", 200_000));
+        var s = Load(ScanToCdex(data, "one.cdex"));
+
+        var result = await s.HashAsync([0], null);
+
+        Assert.That(result.FilesHashed, Is.EqualTo(3), "three files got a hash, though the pair was read twice");
+    }
+
+    [Test]
     public async Task After_a_rescan_a_second_run_reads_only_the_new_and_changed_files()
     {
         var data = MakeData("d", ("a.bin", 3000), ("b.bin", 3000), ("c.bin", 3000));

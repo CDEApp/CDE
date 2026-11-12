@@ -31,7 +31,9 @@ public static class ColumnarCatalogHashing
     /// mapping this run has released. Null moves the file over the catalog. A host that keeps the catalog mapped
     /// passes its own swap. An <see cref="IOException"/> or <see cref="UnauthorizedAccessException"/> from it fails
     /// that catalog only.</param>
-    public static async Task HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
+    /// <returns>How many files of the saved catalogs got a new usable hash. A file that was partially hashed and then
+    /// fully hashed counts once, unlike <see cref="Duplication.FilesHashed"/>, which counts hash reads.</returns>
+    public static async Task<long> HashAndSave(Duplication duplication, IList<string> cdexFiles, Action<string> onSaving,
         IRecordWriter output = null, HashSelection selection = null, CancellationToken cancellationToken = default,
         Action<string, string> replace = null)
     {
@@ -40,6 +42,7 @@ public static class ColumnarCatalogHashing
         replace ??= static (staged, catalog) => File.Move(staged, catalog, overwrite: true);
 
         var readers = new List<ColumnarCatalogReader>(cdexFiles.Count);
+        long filesNewlyHashed = 0;
         try
         {
             foreach (var file in cdexFiles)
@@ -101,8 +104,10 @@ public static class ColumnarCatalogHashing
                     (failures ??= []).Add(ex);
                 }
 
+                if (!saved) continue;
+                filesNewlyHashed += CountUsable(updates.For(c));
                 // Only a catalog that saved has its records written: a record says a hash is in the catalog.
-                if (saved && output != null) WriteHashed(output, file, updates.For(c));
+                if (output != null) WriteHashed(output, file, updates.For(c));
             }
 
             // The completed hashes are saved above even when a phase failed; now surface the failure.
@@ -123,6 +128,8 @@ public static class ColumnarCatalogHashing
                         string.Join("; ", reasons)),
                     all.Count == 1 ? all[0] : new AggregateException(all));
             }
+
+            return filesNewlyHashed;
         }
         finally
         {
@@ -157,6 +164,14 @@ public static class ColumnarCatalogHashing
         }
 
         return new HashPreview(files, bytes, alreadyHashed);
+    }
+
+    private static long CountUsable(ReadOnlySpan<EntryHashUpdate> updates)
+    {
+        long count = 0;
+        foreach (var update in updates)
+            if (update.Flags.IsHashUsable()) count++;
+        return count;
     }
 
     // Streams one record per newly hashed file of a saved catalog, straight from the updates, so nothing is collected in

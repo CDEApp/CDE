@@ -131,11 +131,12 @@ public sealed partial class CatalogSession
         var engine = NewHashEngine();
         var pastLastCancelPoint = CancellationToken.None;
         var reporter = new HashReporter(engine, progress);
+        long filesHashed;
         try
         {
             using (new Timer(_ => reporter.Tick(), null, HashProgressIntervalMs, HashProgressIntervalMs))
             {
-                await ColumnarCatalogHashing.HashAndSave(engine, files,
+                filesHashed = await ColumnarCatalogHashing.HashAndSave(engine, files,
                     file => reporter.Enter("saving", file), output: null, selection, ct,
                     replace: (staged, file) =>
                     {
@@ -151,7 +152,7 @@ public sealed partial class CatalogSession
             foreach (var file in files) TryDelete(file + ".tmp");
         }
 
-        return new HashResult { FilesHashed = engine.FilesHashed, FilesFailed = engine.FilesFailed };
+        return new HashResult { FilesHashed = filesHashed, FilesFailed = engine.FilesFailed };
     }
 
     private Duplication NewHashEngine()
