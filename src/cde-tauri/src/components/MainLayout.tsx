@@ -56,7 +56,7 @@ interface Props {
   onStatus: (text: string) => void;
 }
 
-/** The tab area: the Directory and Compare views stay mounted across tabs; the active other view renders on demand. */
+/** The tab area: the Directory, Search Results and Compare views stay mounted across tabs; the active other view renders on demand. */
 export function MainLayout(p: Props) {
   const { view, ui, selection, search, rowSelection, colours, jobs, menus } = p;
   // Session-only sorts (deliberately not in uiState), kept across folders and tab switches.
@@ -73,29 +73,8 @@ export function MainLayout(p: Props) {
     switch (view.kind) {
       case "directory":
       case "diff":
-        return null;
       case "results":
-        return (
-          <ResultsPane
-            rows={search.results}
-            rowSelection={rowSelection}
-            filter={p.resultsFilter}
-            canSearchWithFilter={search.hasLastQuery}
-            onSearchWithFilter={p.onSearchWithFilter}
-            busy={search.busy}
-            staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
-            onSearchAgain={() => void search.searchAgain()}
-            limitReachedCount={search.limitReachedCount}
-            onRaiseLimit={() => void search.raiseLimit()}
-            resolveStyle={colours.resolveStyle}
-            getColumnOrder={() => ui?.get().searchResultColumnOrder}
-            onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}
-            getVisibleColumns={() => ui?.get().searchResultVisibleColumns}
-            onVisibleColumnsChange={(searchResultVisibleColumns) => ui?.update({ searchResultVisibleColumns })}
-            onActivate={(row) => void selection.viewInTree(row.ref, row.fullPath)}
-            onContextMenu={menus.onResultContextMenu}
-          />
-        );
+        return null;
       case "catalogs":
         return (
           <CatalogList
@@ -181,6 +160,28 @@ export function MainLayout(p: Props) {
           onActivate={selection.activateDir}
           onGoUp={selection.canGoUp ? selection.goUp : undefined}
           onListContextMenu={menus.onListContextMenu}
+        />
+      </div>
+
+      <div className={viewPaneClass<ViewKind>("results", view.kind)} aria-hidden={view.kind !== "results"}>
+        <ResultsPane
+          rows={search.results}
+          rowSelection={rowSelection}
+          filter={p.resultsFilter}
+          canSearchWithFilter={search.hasLastQuery}
+          onSearchWithFilter={p.onSearchWithFilter}
+          busy={search.busy}
+          staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
+          onSearchAgain={() => void search.searchAgain()}
+          limitReachedCount={search.limitReachedCount}
+          onRaiseLimit={() => void search.raiseLimit()}
+          resolveStyle={colours.resolveStyle}
+          getColumnOrder={() => ui?.get().searchResultColumnOrder}
+          onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}
+          getVisibleColumns={() => ui?.get().searchResultVisibleColumns}
+          onVisibleColumnsChange={(searchResultVisibleColumns) => ui?.update({ searchResultVisibleColumns })}
+          onActivate={(row) => void selection.viewInTree(row.ref, row.fullPath)}
+          onContextMenu={menus.onResultContextMenu}
         />
       </div>
 
