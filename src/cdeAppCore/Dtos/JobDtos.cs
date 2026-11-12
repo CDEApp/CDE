@@ -45,7 +45,8 @@ public sealed record JobDto
 
     /// <summary>
     /// <c>queued</c>, then the scan's phase: <c>scanning</c>, <c>writing</c>, <c>swapping</c> (rescan) or <c>saving</c>
-    /// (create). Hash: <c>hashing</c>, <c>hashing-full</c>, <c>saving</c>, <c>swapping</c>.
+    /// (create). Hash: <c>hashing</c>, <c>hashing-full</c>, <c>saving</c>, <c>swapping</c>. A create with a hash option
+    /// continues from <c>saving</c> into those.
     /// </summary>
     public string Phase { get; init; }
 
@@ -65,8 +66,8 @@ public sealed record JobDto
     public JobDto Start(DateTime nowUtc) =>
         MoveTo(JobState.Running) with { StartedAtUtc = nowUtc, Phase = Kind == JobKind.Hash ? "hashing" : "scanning" };
 
-    public JobDto Succeed(JobResult result, DateTime nowUtc) =>
-        MoveTo(JobState.Succeeded) with { EndedAtUtc = nowUtc, Result = result, CatalogId = result.CatalogId };
+    public JobDto Succeed(JobResult result, DateTime nowUtc, string note = null) =>
+        MoveTo(JobState.Succeeded) with { EndedAtUtc = nowUtc, Result = result, CatalogId = result.CatalogId, Note = note ?? Note };
 
     public JobDto Fail(JobError error, DateTime nowUtc) =>
         MoveTo(JobState.Failed) with { EndedAtUtc = nowUtc, Error = error };
@@ -94,7 +95,10 @@ public sealed class JobResult
     public int AccessDeniedFolderCount { get; set; }
     public int UnreadableFolderCount { get; set; }
 
-    /// <summary>Hash: what the run did. Null for the other kinds, whose fields above a hash leaves empty.</summary>
+    /// <summary>
+    /// Hash: what the run did. Create with a hash option: what its hash stage did, null when that stage was cancelled or
+    /// failed (the job's <see cref="JobDto.Note"/> says which). Null for a rescan and a plain create.
+    /// </summary>
     public HashResult Hash { get; set; }
 }
 
@@ -146,7 +150,11 @@ public sealed class JobSubmitRequest
     /// </summary>
     public int[] CatalogIds { get; set; }
 
-    /// <summary><c>hash</c>: which files to hash; null hashes every file with a repeated size.</summary>
+    /// <summary>
+    /// <c>hash</c>: which files to hash; null hashes every file with a repeated size. <c>create</c>: when set, the new
+    /// catalog is hashed once its scan is saved, comparing sizes inside that catalog only; an invalid filter refuses the
+    /// submit before any scan.
+    /// </summary>
     public HashOptions Hash { get; set; }
     public string RootPath { get; set; }
     public string FileName { get; set; }
