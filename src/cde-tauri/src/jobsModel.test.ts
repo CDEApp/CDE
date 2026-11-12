@@ -7,6 +7,8 @@ import {
   applyJob,
   applySnapshot,
   emptyJobs,
+  hashAllDisabledReason,
+  hashDisabledReason,
   isFromEarlierSession,
   loadBlockedReason,
   progressNote,
@@ -143,5 +145,40 @@ describe("views", () => {
     expect(progressNote(job(1, { state: "failed", error: { code: "rescan-failed", message: "disk full" } }))).toBe(
       "disk full",
     );
+  });
+});
+
+describe("hash jobs", () => {
+  const hashJob = (id: number, over: Partial<JobDto> = {}) =>
+    job(id, { kind: "hash", catalogId: null, catalogIds: [1, 2], phase: "hashing", state: "running", ...over });
+
+  it("holds every catalog of an active hash job", () => {
+    const m = applyJob(emptyJobs, hashJob(9));
+    expect([...activeCatalogIds(m)].sort()).toEqual([1, 2]);
+    expect(rescanMenuItem(m, 2).disabled).toBe(true);
+    expect(activeCatalogIds(applyJob(emptyJobs, hashJob(9, { state: "succeeded" }))).size).toBe(0);
+  });
+
+  it("explains why a catalog cannot be hashed", () => {
+    const m = applyJob(emptyJobs, hashJob(9));
+    expect(hashDisabledReason(m, { catalogId: 1, sourcePath: "a.cdex" })).toMatch(/already queued or running/);
+    expect(hashDisabledReason(emptyJobs, { catalogId: 1, sourcePath: "a.cde" })).toMatch(/legacy/i);
+    expect(hashDisabledReason(emptyJobs, { catalogId: 1, sourcePath: "a.cdex" })).toBeNull();
+  });
+
+  it("disables the menu bar item when no catalog is loaded or none can be hashed", () => {
+    expect(hashAllDisabledReason(emptyJobs, [])).toBe("No catalogs are loaded");
+    expect(hashAllDisabledReason(emptyJobs, [{ catalogId: 1, sourcePath: "a.cde" }])).toMatch(/can be hashed/);
+    expect(hashAllDisabledReason(emptyJobs, [{ catalogId: 1, sourcePath: "a.cde" }, { catalogId: 2, sourcePath: "b.cdex" }])).toBeNull();
+  });
+
+  it("describes a running and a finished hash job, never as entries", () => {
+    const running = hashJob(9, { hash: { filesDone: 3, filesTotal: 10, bytesDone: 100, bytesTotal: 2000 } });
+    expect(progressNote(running)).toBe("partial hashes · 3 of 10 files · 100 B of 2 KB");
+    const finished = hashJob(9, {
+      state: "succeeded",
+      result: { catalogId: null, rootPath: null, entries: 0, savedPath: "", hash: { filesHashed: 7, filesFailed: 1 } },
+    });
+    expect(progressNote(finished)).toBe("7 files hashed; 1 could not be read");
   });
 });

@@ -2,12 +2,13 @@ import { useCallback, useMemo, useRef, useState, type RefObject } from "react";
 import type { CatalogInfo, DirectoryNode, EntryRef, SearchResultRow, ShellAction, TreemapRow } from "../api/types";
 import type { MenuState } from "../components/ContextMenu";
 import { catalogFile, fileBaseName } from "../format";
-import type { JobsModel } from "../jobsModel";
+import { hashDisabledReason, type JobsModel } from "../jobsModel";
 import {
   catalogMenu,
   collapseAllItem,
   entryMenu,
   listMenu,
+  hashItem,
   rescanItem,
   treeBackgroundMenu,
   treeNodeMenu,
@@ -29,13 +30,14 @@ export interface UseContextMenusOptions {
   viewInTree: (ref: EntryRef, expectedPath?: string) => void;
   rescanCatalog: (catalogId: number) => void;
   editDescription: (catalog: CatalogInfo) => void;
+  hashCatalogs: (catalogIds: number[]) => void;
   collapseAll: () => void;
 }
 
 /** The open context menu, and the handlers that build one for each pane's entries. */
 export function useContextMenus(o: UseContextMenusOptions) {
   const [menu, setMenu] = useState<MenuState | null>(null);
-  const { commands, catalogs, jobs, runShell, showTreemap, searchFromHere, findDuplicates, rescanCatalog, editDescription, collapseAll } = o;
+  const { commands, catalogs, jobs, runShell, showTreemap, searchFromHere, findDuplicates, rescanCatalog, editDescription, hashCatalogs, collapseAll } = o;
 
   const context = useMemo<EntryMenuContext>(
     () => ({
@@ -117,8 +119,18 @@ export function useContextMenus(o: UseContextMenusOptions) {
 
   const onCatalogContextMenu = useCallback(
     (c: CatalogInfo, x: number, y: number) =>
-      setMenu({ x, y, items: catalogMenu(c.catalogId, showTreemap, () => editDescription(c), contextRef.current.rescanFor(c.catalogId)) }),
-    [showTreemap, editDescription],
+      setMenu({
+        x,
+        y,
+        items: catalogMenu(
+          c.catalogId,
+          showTreemap,
+          () => editDescription(c),
+          contextRef.current.rescanFor(c.catalogId),
+          hashItem(hashDisabledReason(jobs, c), () => hashCatalogs([c.catalogId])),
+        ),
+      }),
+    [showTreemap, editDescription, hashCatalogs, jobs],
   );
 
   const onDirectoryTabMenu = useCallback(

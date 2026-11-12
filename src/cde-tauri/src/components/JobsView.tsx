@@ -18,7 +18,7 @@ export function JobsView({ sortedJobs: jobs, onCancel, onDismiss, onClearFinishe
         </button>
       </div>
       {jobs.length === 0 ? (
-        <div className="cataloglist-empty">No jobs. Rescans and new catalogs show up here.</div>
+        <div className="cataloglist-empty">No jobs. Rescans, new catalogs and hash runs show up here.</div>
       ) : (
         <table className="jobs-table">
           <thead>

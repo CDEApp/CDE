@@ -48,6 +48,27 @@ describe("JobsView", () => {
     expect(queued.getByText("Queued")).toBeTruthy();
   });
 
+  it("shows a running hash job's phase and counts, and a finished one's result", () => {
+    setup([
+      job(1, {
+        kind: "hash",
+        catalogId: null,
+        state: "running",
+        startedAtUtc: "2026-01-01T02:00:00Z",
+        phase: "hashing-full",
+        hash: { filesDone: 2, filesTotal: 8, bytesDone: 1024, bytesTotal: 4096 },
+      }),
+      job(2, {
+        kind: "hash",
+        catalogId: null,
+        state: "succeeded",
+        result: { catalogId: null, rootPath: null, entries: 0, savedPath: "", hash: { filesHashed: 5, filesFailed: 0 } },
+      }),
+    ]);
+    expect(within(rowOf("Task 1")).getByText("full hashes · 2 of 8 files · 1 KB of 4 KB")).toBeTruthy();
+    expect(within(rowOf("Task 2")).getByText("5 files hashed")).toBeTruthy();
+  });
+
   it("offers Cancel on active rows and Dismiss on finished rows", () => {
     const h = setup([job(1, { state: "running" }), job(2, {}), job(3, { state: "succeeded" })]);
     fireEvent.click(within(rowOf("Task 1")).getByText("Cancel"));

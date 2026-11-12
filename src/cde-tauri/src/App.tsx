@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { CdeApiClient } from "./api/client";
 import type { CatalogInfo, CatalogsResponse, EntryRef } from "./api/types";
-import { activeCount, loadBlockedReason } from "./jobsModel";
+import { activeCount, hashableCatalogIds, hashAllDisabledReason, loadBlockedReason } from "./jobsModel";
 import { legacyNotice } from "./legacyMigration";
 import { catalogFile } from "./format";
 import { staleCatalogIds, startupRescanIds } from "./freshness";
@@ -13,6 +13,7 @@ import { dropTreemap, initialView, selectTreemap, showTreemap as showTreemapView
 import { AboutModal } from "./components/AboutModal";
 import { ContextMenu } from "./components/ContextMenu";
 import { EditDescriptionDialog } from "./components/EditDescriptionDialog";
+import { HashCatalogsDialog } from "./components/HashCatalogsDialog";
 import { MainLayout } from "./components/MainLayout";
 import { MenuBar } from "./components/MenuBar";
 import { MigrateLegacyDialog } from "./components/MigrateLegacyDialog";
@@ -48,6 +49,7 @@ export default function App() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [syntaxOpen, setSyntaxOpen] = useState(false);
   const [editingDescription, setEditingDescription] = useState<CatalogInfo | null>(null);
+  const [hashingIds, setHashingIds] = useState<number[] | null>(null);
   const [searchPrefill, setSearchPrefill] = useState<SearchPrefill | null>(null);
   const [collapseNonce, setCollapseNonce] = useState(0);
 
@@ -202,6 +204,7 @@ export default function App() {
     viewInTree,
     rescanCatalog: jobs.rescanCatalog,
     editDescription: setEditingDescription,
+    hashCatalogs: setHashingIds,
     collapseAll,
   });
 
@@ -224,6 +227,8 @@ export default function App() {
         onReload={reload}
         onRescanAll={() => void jobs.rescanMany(catalogList.map((c) => c.catalogId))}
         rescanAllDisabledReason={catalogList.length === 0 ? "No catalogs are loaded" : null}
+        onHashCatalogs={() => setHashingIds(hashableCatalogIds(jobs.model, catalogList))}
+        hashDisabledReason={hashAllDisabledReason(jobs.model, catalogList)}
         onExit={() => void getCurrentWindow().close()}
         onAbout={() => setAboutOpen(true)}
         onSearchSyntax={() => setSyntaxOpen(true)}
@@ -309,6 +314,17 @@ export default function App() {
         }}
       />
       <EditDescriptionDialog catalog={editingDescription} onSave={catalogsState.saveDescription} onClose={() => setEditingDescription(null)} />
+      <HashCatalogsDialog
+        initialCatalogIds={hashingIds}
+        catalogs={catalogList}
+        jobs={jobs.model}
+        client={client}
+        onStart={(req) => {
+          setHashingIds(null);
+          void jobs.hashCatalogs(req.catalogIds, req.hash);
+        }}
+        onClose={() => setHashingIds(null)}
+      />
       <NewCatalogDialog
         rootPath={newCatalog.root}
         client={client}
