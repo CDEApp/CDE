@@ -396,11 +396,10 @@ public sealed class JobRegistry : IDisposable
             ExcludedFolderCount = c.ExcludedFolderCount, AccessDeniedFolderCount = c.AccessDeniedFolderCount,
             UnreadableFolderCount = c.UnreadableFolderCount
         };
-        return entry.Hash == null ? (created, null) : await HashCreatedAsync(entry, created).ConfigureAwait(false);
+        return entry.Hash == null ? (created, null) : await TryHashCreatedAsync(entry, created).ConfigureAwait(false);
     }
 
-    // The scan is already saved and in the session, so a stop or failure here leaves a created catalog without hashes.
-    private async Task<(JobResult Result, string Note)> HashCreatedAsync(Entry entry, JobResult created)
+    private async Task<(JobResult Result, string Note)> TryHashCreatedAsync(Entry entry, JobResult created)
     {
         try
         {
