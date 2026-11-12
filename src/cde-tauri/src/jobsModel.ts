@@ -1,5 +1,6 @@
 import { skipSummary } from "./format";
-import type { JobDto, JobState, JobsSnapshot } from "./api/types";
+import { hashProgressNote, hashResultNote, isLegacyCatalog } from "./hashJobs";
+import type { CatalogInfo, JobDto, JobState, JobsSnapshot } from "./api/types";
 
 export interface JobsModel {
   readonly jobs: ReadonlyMap<number, JobDto>;
@@ -93,7 +94,11 @@ export function statusLabel(state: JobState): string {
 
 export function activeCatalogIds(model: JobsModel): Set<number> {
   const ids = new Set<number>();
-  for (const j of model.jobs.values()) if (isActive(j.state) && j.catalogId !== null) ids.add(j.catalogId);
+  for (const j of model.jobs.values()) {
+    if (!isActive(j.state)) continue;
+    if (j.catalogId !== null) ids.add(j.catalogId);
+    for (const id of j.catalogIds ?? []) ids.add(id);
+  }
   return ids;
 }
 
@@ -104,6 +109,23 @@ export function rescanMenuItem(
   return activeCatalogIds(model).has(catalogId)
     ? { label: "Rescan", disabled: true, title: "A job for this catalog is already queued or running" }
     : { label: "Rescan", disabled: false };
+}
+
+/** Why this catalog cannot be hashed now, or null when it can. */
+export function hashDisabledReason(model: JobsModel, catalog: Pick<CatalogInfo, "catalogId" | "sourcePath">): string | null {
+  if (isLegacyCatalog(catalog)) return "Legacy .cde catalogs cannot be hashed. Migrate it first";
+  if (activeCatalogIds(model).has(catalog.catalogId)) return "A job for this catalog is already queued or running";
+  return null;
+}
+
+export function hashableCatalogIds(model: JobsModel, catalogs: readonly Pick<CatalogInfo, "catalogId" | "sourcePath">[]): number[] {
+  return catalogs.filter((c) => hashDisabledReason(model, c) === null).map((c) => c.catalogId);
+}
+
+/** Why the menu bar's Hash Catalogs has nothing to offer, or null when at least one catalog can be hashed. */
+export function hashAllDisabledReason(model: JobsModel, catalogs: readonly Pick<CatalogInfo, "catalogId" | "sourcePath">[]): string | null {
+  if (catalogs.length === 0) return "No catalogs are loaded";
+  return hashableCatalogIds(model, catalogs).length === 0 ? "No loaded catalog can be hashed now (legacy, or a job holds it)" : null;
 }
 
 export function loadBlockedReason(jobsBusy: boolean): string | null {
@@ -125,10 +147,12 @@ export function progressNote(j: JobDto): string {
     case "queued":
       return "Waiting for a free slot";
     case "running":
+      if (j.kind === "hash") return [hashProgressNote(j.phase, j.hash), j.note].filter(Boolean).join(" · ");
       return [j.phase, j.entriesScanned > 0 ? `${n(j.entriesScanned)} entries` : "", j.note].filter(Boolean).join(" · ");
     case "succeeded": {
       const r = j.result;
       if (!r) return "";
+      if (j.kind === "hash") return r.hash ? hashResultNote(r.hash) : "";
       const skipped = skipSummary(r.excludedFolderCount, r.accessDeniedFolderCount, r.unreadableFolderCount);
       return `${n(r.entries)} entries${skipped ? `; ${skipped}` : ""}`;
     }
