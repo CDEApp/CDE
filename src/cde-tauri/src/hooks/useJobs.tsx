@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { notifications } from "@mantine/notifications";
 import { CdeApiClient, JobRefusal } from "../api/client";
-import type { JobDto, SubmitJobRequest } from "../api/types";
+import type { JobDto, ScanJobResult, SubmitJobRequest } from "../api/types";
 import { skipSummary } from "../format";
 import {
   applyJob,
@@ -71,7 +71,7 @@ function skipped(job: JobDto): string {
 }
 
 async function announceRescan(client: CdeApiClient, job: JobDto, cb: Callbacks) {
-  const r = job.result!;
+  const r = job.result as ScanJobResult;
   try {
     await cb.afterRescan(client, r.catalogId);
     notifications.show({
@@ -89,7 +89,7 @@ async function announceRescan(client: CdeApiClient, job: JobDto, cb: Callbacks) 
 }
 
 async function announceCreate(client: CdeApiClient, job: JobDto, cb: Callbacks) {
-  const r = job.result!;
+  const r = job.result as ScanJobResult;
   let refreshed = true;
   try {
     await cb.refreshCatalogs(client);
@@ -208,7 +208,7 @@ export function useJobs({
         void advanceBatch.current(batch);
         if (job.state === "failed") return;
       }
-      if (job.state === "succeeded" && job.result) {
+      if (job.state === "succeeded" && job.result && job.kind !== "hash") {
         const announce = job.kind === "rescan" ? announceRescan : announceCreate;
         setCompleting((n) => n + 1);
         void announce(getClient(), job, latestCallbacks.current)

@@ -13,6 +13,8 @@ import {
   TreemapResponse,
   CreatePreflightRequest,
   CreatePreflightResult,
+  HashPreflightRequest,
+  HashPreflightResult,
   JobDto,
   JobError,
   JobsSnapshot,
@@ -330,7 +332,7 @@ export class CdeApiClient {
     );
   }
 
-  /** Queue a rescan or a create. Resolves with the queued job; throws {@link JobRefusal} when the sidecar refuses it. */
+  /** Queue a rescan, a create or a hash. Resolves with the queued job; throws {@link JobRefusal} when the sidecar refuses it. */
   async submitJob(req: SubmitJobRequest): Promise<JobDto> {
     const r = await fetch(this.url(["jobs"]), {
       method: "POST",
@@ -396,6 +398,22 @@ export class CdeApiClient {
       signal,
     });
     if (!r.ok) throw new Error(`catalogs/preflight: ${r.status} ${await r.text()}`);
+    return r.json();
+  }
+
+  /**
+   * What a hash job with the same catalogs and options would read, counted without reading any file. Throws
+   * {@link JobRefusal} for what the job would be refused for before it starts, e.g. `invalid-filter`, whose
+   * message is the one the search bar shows.
+   */
+  async preflightHash(req: HashPreflightRequest, signal?: AbortSignal): Promise<HashPreflightResult> {
+    const r = await fetch(this.url(["catalogs", "hash", "preflight"]), {
+      method: "POST",
+      headers: this.headers({ "Content-Type": "application/json" }),
+      body: JSON.stringify(req),
+      signal,
+    });
+    if (!r.ok) throw new JobRefusal(parseJobRefusal(r.status, await r.text()));
     return r.json();
   }
 
