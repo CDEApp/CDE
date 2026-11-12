@@ -148,6 +148,37 @@ describe("views", () => {
   });
 });
 
+describe("create jobs that hash", () => {
+  const created = { catalogId: 5, rootPath: "D:\\data", entries: 1500, savedPath: "x" };
+
+  it("shows the hash progress once the hash stage starts, and the scan progress before", () => {
+    const scanning = job(1, { kind: "create", state: "running", phase: "scanning", entriesScanned: 10 });
+    expect(progressNote(scanning)).toBe("scanning · 10 entries");
+    const hashing = job(1, {
+      kind: "create",
+      state: "running",
+      phase: "hashing",
+      entriesScanned: 1500,
+      hash: { filesDone: 3, filesTotal: 10, bytesDone: 100, bytesTotal: 2000 },
+    });
+    expect(progressNote(hashing)).toBe("partial hashes · 3 of 10 files · 100 B of 2 KB");
+  });
+
+  it("adds the hash result, or the cancelled and failed notes, to the finished create", () => {
+    const base = { kind: "create" as const, state: "succeeded" as const };
+    expect(progressNote(job(1, { ...base, result: { ...created, hash: { filesHashed: 7, filesFailed: 1 } } }))).toBe(
+      "1,500 entries · 7 files hashed; 1 could not be read",
+    );
+    expect(progressNote(job(1, { ...base, note: "Hashing cancelled", result: created }))).toBe(
+      "1,500 entries · Hashing cancelled. The catalog was kept without hashes",
+    );
+    expect(progressNote(job(1, { ...base, note: "Hashing failed: disk gone", result: created }))).toBe(
+      "1,500 entries · Hashing failed: disk gone. The catalog was kept without hashes",
+    );
+    expect(progressNote(job(1, { ...base, result: created }))).toBe("1,500 entries");
+  });
+});
+
 describe("hash jobs", () => {
   const hashJob = (id: number, over: Partial<JobDto> = {}) =>
     job(id, { kind: "hash", catalogId: null, catalogIds: [1, 2], phase: "hashing", state: "running", ...over });

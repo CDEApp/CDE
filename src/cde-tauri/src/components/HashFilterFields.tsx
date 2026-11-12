@@ -8,12 +8,16 @@ interface Props {
   includeUniqueSizes: boolean;
   onFilterChange: (filter: string) => void;
   onIncludeUniqueSizesChange: (include: boolean) => void;
-  preview: HashPreview;
+  /** Omitted when there is nothing to count yet (a catalog that is about to be created). */
+  preview?: HashPreview;
+  /** A refusal the caller got for this filter, shown like a preview error. */
+  error?: string | null;
   autoFocus?: boolean;
 }
 
-export function HashFilterFields({ filter, includeUniqueSizes, onFilterChange, onIncludeUniqueSizesChange, preview, autoFocus }: Props) {
+export function HashFilterFields({ filter, includeUniqueSizes, onFilterChange, onIncludeUniqueSizesChange, preview, error, autoFocus }: Props) {
   const id = useId();
+  const shownError = error ?? (preview?.status === "error" ? preview.message : null);
   return (
     <>
       <label className="nc-label" htmlFor={`${id}-filter`}>
@@ -27,7 +31,7 @@ export function HashFilterFields({ filter, includeUniqueSizes, onFilterChange, o
         placeholder="e.g. size:>2gb  or  ext:iso;mkv"
         title={EVERYTHING_SYNTAX_HINT}
         aria-describedby={`${id}-hint`}
-        aria-invalid={preview.status === "error"}
+        aria-invalid={shownError !== null}
         data-autofocus={autoFocus ? true : undefined}
         onChange={(e) => onFilterChange(e.target.value)}
       />
@@ -38,13 +42,15 @@ export function HashFilterFields({ filter, includeUniqueSizes, onFilterChange, o
         <input type="checkbox" checked={includeUniqueSizes} onChange={(e) => onIncludeUniqueSizesChange(e.target.checked)} />
         Also hash files with a unique size
       </label>
-      <div role="status" aria-live="polite" className="nc-label">
-        {preview.status === "loading" && "Counting files…"}
-        {preview.status === "ready" && hashPreviewText(preview.result)}
-      </div>
-      {preview.status === "error" && (
+      {preview && (
+        <div role="status" aria-live="polite" className="nc-label">
+          {preview.status === "loading" && "Counting files…"}
+          {preview.status === "ready" && hashPreviewText(preview.result)}
+        </div>
+      )}
+      {shownError !== null && (
         <div className="nc-error" role="alert">
-          {preview.message}
+          {shownError}
         </div>
       )}
     </>

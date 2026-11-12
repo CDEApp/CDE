@@ -56,6 +56,7 @@ public sealed record JobDto
     /// <summary>Hash: the counts of the current pass, from the first report on. Null for the other kinds.</summary>
     public HashJobProgress? Hash { get; init; }
 
+    /// <summary>The latest progress detail while running. When a create with a hash option succeeds without hashing: <c>Hashing cancelled</c> or <c>Hashing failed: &lt;message&gt;</c>. Null otherwise once succeeded.</summary>
     public string Note { get; init; }
     public JobResult Result { get; init; }
     public JobError Error { get; init; }
@@ -67,7 +68,7 @@ public sealed record JobDto
         MoveTo(JobState.Running) with { StartedAtUtc = nowUtc, Phase = Kind == JobKind.Hash ? "hashing" : "scanning" };
 
     public JobDto Succeed(JobResult result, DateTime nowUtc, string note = null) =>
-        MoveTo(JobState.Succeeded) with { EndedAtUtc = nowUtc, Result = result, CatalogId = result.CatalogId, Note = note ?? Note };
+        MoveTo(JobState.Succeeded) with { EndedAtUtc = nowUtc, Result = result, CatalogId = result.CatalogId, Note = note };
 
     public JobDto Fail(JobError error, DateTime nowUtc) =>
         MoveTo(JobState.Failed) with { EndedAtUtc = nowUtc, Error = error };

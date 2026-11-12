@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Button, Group, Modal } from "@mantine/core";
 import type { CdeApiClient } from "../api/client";
-import type { CatalogInfo, CreatePreflightResult } from "../api/types";
+import type { CatalogInfo, CreatePreflightResult, HashOptions } from "../api/types";
+import { HashFilterFields } from "./HashFilterFields";
 import { CATALOG_EXTENSION, deriveDialogState, normalizeFileName } from "../newCatalog";
 
 export interface NewCatalogForm {
@@ -10,6 +11,8 @@ export interface NewCatalogForm {
   fileName: string;
   description: string;
   followJunctions: boolean;
+  /** Hash the new catalog once it is scanned; null for no hashing. */
+  hash: HashOptions | null;
 }
 
 interface Props {
@@ -18,7 +21,8 @@ interface Props {
   client: CdeApiClient | null;
   catalogs: readonly CatalogInfo[];
   onChangeRoot: () => void;
-  onCreate: (form: NewCatalogForm) => void;
+  /** Resolves with the filter refusal to show in the dialog, or null when the job was submitted or refused elsewhere. */
+  onCreate: (form: NewCatalogForm) => Promise<string | null>;
   /** Run the rescan of this loaded catalog instead (its file already exists under the chosen name). */
   onRescanExisting: (catalogId: number) => void;
   onClose: () => void;
@@ -31,6 +35,11 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   const [fileName, setFileName] = useState<string | null>(null); // null = the default name
   const [description, setDescription] = useState("");
   const [followJunctions, setFollowJunctions] = useState(false);
+  const [hashAfterScan, setHashAfterScan] = useState(false);
+  const [hashFilter, setHashFilter] = useState("");
+  const [includeUniqueSizes, setIncludeUniqueSizes] = useState(false);
+  const [filterError, setFilterError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
   const [preflight, setPreflight] = useState<CreatePreflightResult | null>(null);
   const [preflightError, setPreflightError] = useState<string | null>(null);
   const [preflightRoot, setPreflightRoot] = useState<string | null>(null); // the root the answer above was asked for
@@ -41,6 +50,7 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
     setFileName(null);
     setPreflight(null);
     setPreflightError(null);
+    setFilterError(null);
   }, [rootPath]);
 
   // Ask the sidecar (debounced while typing) what the current root + name would do.
@@ -81,19 +91,28 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   const existingRoot =
     state.existingCatalogId !== null ? catalogs.find((c) => c.catalogId === state.existingCatalogId)?.rootPath : undefined;
 
-  const create = () => {
-    if (rootPath === null || !state.canCreate) return;
-    onCreate({
-      rootPath,
-      fileName: state.effectiveName,
-      description: description.trim(),
-      followJunctions,
-    });
+  const create = async () => {
+    if (rootPath === null || !state.canCreate || submitting) return;
+    const filter = hashFilter.trim();
+    setSubmitting(true);
+    try {
+      setFilterError(
+        await onCreate({
+          rootPath,
+          fileName: state.effectiveName,
+          description: description.trim(),
+          followJunctions,
+          hash: hashAfterScan ? { filter: filter === "" ? null : filter, includeUniqueSizes } : null,
+        }),
+      );
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   // Enter creates, but only from the two editable text inputs (not the read-only fields or the checkbox).
   const createOnEnter = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") create();
+    if (e.key === "Enter") void create();
   };
 
   const shownName = fileName ?? preflight?.defaultFileName ?? "";
@@ -159,6 +178,28 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
           Follow junctions
         </label>
 
+        <label className="nc-check">
+          <input type="checkbox" checked={hashAfterScan} onChange={(e) => setHashAfterScan(e.target.checked)} />
+          Hash files after scanning
+        </label>
+        {hashAfterScan && (
+          <>
+            <HashFilterFields
+              filter={hashFilter}
+              includeUniqueSizes={includeUniqueSizes}
+              onFilterChange={(f) => {
+                setHashFilter(f);
+                setFilterError(null);
+              }}
+              onIncludeUniqueSizesChange={setIncludeUniqueSizes}
+              error={filterError}
+            />
+            <div className="nc-label">
+              Sizes are compared inside this new catalog only. To find duplicates across catalogs, use Hash files… afterwards.
+            </div>
+          </>
+        )}
+
         <label className="nc-label" htmlFor="nc-catalog-dir">Saved to</label>
         <input id="nc-catalog-dir" className="nc-input" value={preflight?.catalogDir ?? ""} readOnly title={preflight?.catalogDir ?? undefined} />
         {state.folderError && <div className="nc-error">{state.folderError}</div>}
@@ -171,7 +212,7 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
         <Button variant="default" onClick={onClose}>
           Cancel
         </Button>
-        <Button onClick={create} disabled={!state.canCreate} title={state.checking ? "Checking…" : undefined}>
+        <Button onClick={() => void create()} disabled={!state.canCreate || submitting} title={state.checking ? "Checking…" : undefined}>
           Create
         </Button>
       </Group>
