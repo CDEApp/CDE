@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using cdeApi;
 using cdeAppCore.Dtos;
 using cdeAppCore.Jobs;
+using cdeAppCore.Serialization;
 using cdeAppCore.Session;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -111,6 +112,41 @@ public class JobsEndpointsTests
         Assert.That(done.CatalogId, Is.EqualTo(2));
         Assert.That(done.Result.SavedPath, Is.EqualTo(Path.Combine(Path.GetFullPath(_cat), "fresh.cdex")).IgnoreCase);
         Assert.That(_session.CatalogCount, Is.EqualTo(3));
+    }
+
+    [Test]
+    public async Task A_create_body_with_hash_options_is_parsed_hashes_the_new_catalog_and_reports_the_hash_result()
+    {
+        var root = Path.Combine(_dir, "fresh");
+        Directory.CreateDirectory(root);
+        File.WriteAllBytes(Path.Combine(root, "x1.bin"), new byte[3000]);
+        File.WriteAllBytes(Path.Combine(root, "x2.bin"), new byte[3000]);
+        var request = JsonSerializer.Deserialize(
+            """{"kind":"create","rootPath":""" + JsonSerializer.Serialize(root) +
+            ""","fileName":"fresh","hash":{"filter":"ext:bin","includeUniqueSizes":false}}""",
+            AppCoreJsonContext.Default.JobSubmitRequest);
+
+        var (status, job) = await Submit(request);
+
+        Assert.That(status, Is.EqualTo(StatusCodes.Status202Accepted));
+        var done = await WaitForEnd(job.GetProperty("id").GetInt64());
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded), () => done.Error?.Message);
+        Assert.That(done.Result.Hash.FilesHashed, Is.EqualTo(2));
+        var (_, list) = await Run(JobsEndpoints.List(_jobs));
+        Assert.That(list.GetProperty("jobs").EnumerateArray().Single().GetProperty("result").GetProperty("hash").GetRawText(),
+            Is.EqualTo("""{"filesHashed":2,"filesFailed":0}"""));
+    }
+
+    [Test]
+    public async Task A_create_with_an_invalid_hash_filter_is_a_400_before_any_scan()
+    {
+        var request = Create("fresh");
+        request.Hash = new HashOptions { Filter = "size:>>" };
+
+        await AssertRefused(request, 400, JobErrorCodes.InvalidFilter);
+
+        Assert.That(_jobs.GetJobs(), Is.Empty);
+        Assert.That(File.Exists(Path.Combine(_cat, "fresh.cdex")), Is.False);
     }
 
     [Test]
