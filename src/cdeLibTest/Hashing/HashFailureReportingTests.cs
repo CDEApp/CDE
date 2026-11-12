@@ -150,6 +150,7 @@ public class HashFailureReportingTests
             Assert.That(ex.InnerException, Is.InstanceOf<InvalidOperationException>());
             Assert.That(status.Any(m => m.Contains("ERROR")), Is.True, "the error is printed, not only logged");
             Assert.That(FlagsOf(cdex, "big1.bin") & EFlags.HashDone, Is.EqualTo(EFlags.HashDone), "completed hashes are saved");
+            Assert.That(ex.FilesSaved, Is.EqualTo(2), "the saved pair is reported");
             Assert.That(File.Exists(cdex + ".tmp"), Is.False);
         });
     }

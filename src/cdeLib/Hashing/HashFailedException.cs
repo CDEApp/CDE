@@ -9,9 +9,17 @@ namespace cdeLib.Hashing;
 /// </summary>
 public sealed class HashFailedException : Exception
 {
-    public HashFailedException(string summary, Exception inner) : base(summary, inner)
+    public HashFailedException(string summary, Exception inner, long filesSaved = 0, long filesFailed = 0)
+        : base(summary, inner)
     {
+        FilesSaved = filesSaved;
+        FilesFailed = filesFailed;
     }
+
+    /// <summary>Files that got a new usable hash in a catalog that was saved before the run failed.</summary>
+    public long FilesSaved { get; }
+
+    public long FilesFailed { get; }
 
     /// <summary>The summary line, e.g. "Hash FAILED: 12 files hashed, 1 file could not be read; unexpected error: boom".</summary>
     public static string Summarize(long filesHashed, long filesFailed, string reason) =>

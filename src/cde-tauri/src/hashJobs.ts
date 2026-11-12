@@ -46,6 +46,7 @@ export function hashResultNote(r: HashResult): string {
 }
 
 export function createHashOutcome(r: JobResult, note: string | null | undefined): { text: string; clean: boolean } | null {
+  if (r.hash && note) return { text: `${note}. ${hashResultNote(r.hash)} before it stopped`, clean: false };
   if (r.hash) return { text: hashResultNote(r.hash), clean: r.hash.filesFailed === 0 };
   return note ? { text: `${note}. The catalog was kept without hashes`, clean: false } : null;
 }

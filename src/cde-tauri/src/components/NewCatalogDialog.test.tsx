@@ -128,3 +128,39 @@ describe("NewCatalogDialog hashing", () => {
     expect(screen.queryByRole("alert")).toBeNull();
   });
 });
+
+describe("NewCatalogDialog while a create is being submitted", () => {
+  it("cannot be closed or changed until the answer arrives, so the answer always belongs to the form on screen", async () => {
+    let answer: (refusal: string | null) => void = () => {};
+    const onClose = vi.fn();
+    const onChangeRoot = vi.fn();
+    const client = { preflightCreate: vi.fn(async () => ready) } as unknown as CdeApiClient;
+    render(
+      <AppMantineProvider>
+        <NewCatalogDialog
+          rootPath={"D:\data"}
+          client={client}
+          catalogs={[]}
+          onChangeRoot={onChangeRoot}
+          onCreate={() => new Promise((resolve) => (answer = resolve))}
+          onRescanExisting={vi.fn()}
+          onClose={onClose}
+        />
+      </AppMantineProvider>,
+    );
+    await act(async () => {});
+
+    fireEvent.click(screen.getByRole("button", { name: "Create" }));
+    await act(async () => {});
+
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", true);
+    expect(screen.getByRole("button", { name: "Change…" })).toHaveProperty("disabled", true);
+    fireEvent.keyDown(document.activeElement ?? document.body, { key: "Escape" });
+    expect(onClose).not.toHaveBeenCalled();
+
+    await act(async () => answer(null));
+    expect(screen.getByRole("button", { name: "Cancel" })).toHaveProperty("disabled", false);
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+});

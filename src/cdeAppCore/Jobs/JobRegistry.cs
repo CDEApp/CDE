@@ -415,6 +415,8 @@ public sealed class JobRegistry : IDisposable
         catch (Exception ex)
         {
             if (ex is not HashRefusedException) _logger?.Error(ex, "Hashing the new catalog of job {JobId} failed", entry.Job.Id);
+            if (ex is HashFailedException { FilesSaved: > 0 } failed)
+                created.Hash = new HashResult { FilesHashed = failed.FilesSaved, FilesFailed = failed.FilesFailed };
             return (created, $"Hashing failed: {ex.Message}");
         }
     }

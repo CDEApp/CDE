@@ -118,12 +118,24 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
   const shownName = fileName ?? preflight?.defaultFileName ?? "";
 
   return (
-    <Modal opened={rootPath !== null} onClose={onClose} title="New catalog" centered size="lg">
-      <div className="nc-form">
+    // Locked while the create request is out, so its answer cannot land on a form the user has since changed or reopened.
+    <Modal
+      opened={rootPath !== null}
+      onClose={() => {
+        if (!submitting) onClose();
+      }}
+      closeOnEscape={!submitting}
+      closeOnClickOutside={!submitting}
+      withCloseButton={!submitting}
+      title="New catalog"
+      centered
+      size="lg"
+    >
+      <fieldset className="nc-form" disabled={submitting}>
         <label className="nc-label" htmlFor="nc-root">Root</label>
         <div className="nc-row">
           <input id="nc-root" className="nc-input" value={rootPath ?? ""} readOnly title={rootPath ?? undefined} />
-          <button type="button" onClick={onChangeRoot}>
+          <button type="button" onClick={onChangeRoot} disabled={submitting}>
             Change…
           </button>
         </div>
@@ -206,10 +218,10 @@ export function NewCatalogDialog({ rootPath, client, catalogs, onChangeRoot, onC
         {state.busyError && <div className="nc-error">{state.busyError}</div>}
         {state.preflightError && <div className="nc-error">Could not check the settings: {state.preflightError}</div>}
         {state.sameRootWarning && <div className="nc-warning">{state.sameRootWarning}</div>}
-      </div>
+      </fieldset>
 
       <Group justify="flex-end" mt="md">
-        <Button variant="default" onClick={onClose}>
+        <Button variant="default" onClick={onClose} disabled={submitting}>
           Cancel
         </Button>
         <Button onClick={() => void create()} disabled={!state.canCreate || submitting} title={state.checking ? "Checking…" : undefined}>

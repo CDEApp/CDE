@@ -175,6 +175,10 @@ describe("create jobs that hash", () => {
     expect(progressNote(job(1, { ...base, note: "Hashing failed: disk gone", result: created }))).toBe(
       "1,500 entries · Hashing failed: disk gone. The catalog was kept without hashes",
     );
+    const partly = { ...created, hash: { filesHashed: 2, filesFailed: 0 } };
+    expect(progressNote(job(1, { ...base, note: "Hashing failed: boom", result: partly }))).toBe(
+      "1,500 entries · Hashing failed: boom. 2 files hashed before it stopped",
+    );
     expect(progressNote(job(1, { ...base, result: created }))).toBe("1,500 entries");
   });
 });

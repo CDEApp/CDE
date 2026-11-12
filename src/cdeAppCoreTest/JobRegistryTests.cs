@@ -1,3 +1,4 @@
+using cdeLib.Hashing;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -622,6 +623,22 @@ public class JobRegistryTests
         Assert.That(done.CatalogId, Is.EqualTo(7));
         Assert.That(done.Note, Is.EqualTo("Hashing failed: disk gone"));
         Assert.That(done.Error, Is.Null);
+    }
+
+    [Test]
+    public async Task A_hash_stage_failure_after_some_hashes_were_saved_reports_them()
+    {
+        _jobs = new JobRegistry(FakeCreateSession((_, _) =>
+            throw new HashFailedException("Hash FAILED: 2 files hashed, 0 files could not be read; unexpected error: boom",
+                new InvalidOperationException("boom"), filesSaved: 2, filesFailed: 0)));
+
+        var job = Accepted(_jobs.Submit(CreateWithHash("root", "fresh")));
+        var done = await WaitForEnd(_jobs, job.Id);
+
+        Assert.That(done.State, Is.EqualTo(JobState.Succeeded));
+        Assert.That(done.Note, Does.StartWith("Hashing failed: Hash FAILED"));
+        Assert.That(done.Result.Hash, Is.Not.Null, "the saved hashes are reported, not dropped");
+        Assert.That((done.Result.Hash.FilesHashed, done.Result.Hash.FilesFailed), Is.EqualTo((2L, 0L)));
     }
 
     [Test]
