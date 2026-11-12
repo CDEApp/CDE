@@ -9,7 +9,8 @@ import type { useCatalogSelection } from "../hooks/useCatalogSelection";
 import type { useColourRules } from "../hooks/useColourRules";
 import type { useContextMenus } from "../hooks/useContextMenus";
 import type { useJobs } from "../hooks/useJobs";
-import { useRowSelection } from "../hooks/useRowSelection";
+import type { ResultsFilterApi } from "../hooks/useResultsFilter";
+import type { RowSelectionApi } from "../hooks/useRowSelection";
 import type { useSearch } from "../hooks/useSearch";
 import { activeCatalogIds, sortedJobs } from "../jobsModel";
 import type { UiStateManager } from "../state/uiState";
@@ -35,6 +36,9 @@ interface Props {
   roots: TreeRoot[];
   selection: ReturnType<typeof useCatalogSelection>;
   search: ReturnType<typeof useSearch>;
+  rowSelection: RowSelectionApi;
+  resultsFilter: ResultsFilterApi;
+  onSearchWithFilter: () => void;
   colours: ReturnType<typeof useColourRules>;
   jobs: ReturnType<typeof useJobs>;
   menus: ReturnType<typeof useContextMenus>;
@@ -54,11 +58,10 @@ interface Props {
 
 /** The tab area: the Directory and Compare views stay mounted across tabs; the active other view renders on demand. */
 export function MainLayout(p: Props) {
-  const { view, ui, selection, search, colours, jobs, menus } = p;
+  const { view, ui, selection, search, rowSelection, colours, jobs, menus } = p;
   // Session-only sorts (deliberately not in uiState), kept across folders and tab switches.
   const [dirSort, setDirSort] = useState<DirectorySort>(DEFAULT_SORT);
   const [catalogSort, setCatalogSort] = useState<CatalogSort>(null);
-  const rowSelection = useRowSelection(search.searchEpoch);
 
   // Handlers for the memoised DirectoryPane keep a stable identity.
   const onDirSort = useCallback((column: SortColumn) => setDirSort((cur) => nextSort(cur, column)), []);
@@ -76,6 +79,9 @@ export function MainLayout(p: Props) {
           <ResultsPane
             rows={search.results}
             rowSelection={rowSelection}
+            filter={p.resultsFilter}
+            canSearchWithFilter={search.hasLastQuery}
+            onSearchWithFilter={p.onSearchWithFilter}
             busy={search.busy}
             staleBanner={search.staleBanner((id) => p.catalogs.find((c) => c.catalogId === id)?.rootPath ?? `#${id}`)}
             onSearchAgain={() => void search.searchAgain()}
@@ -84,6 +90,8 @@ export function MainLayout(p: Props) {
             resolveStyle={colours.resolveStyle}
             getColumnOrder={() => ui?.get().searchResultColumnOrder}
             onColumnOrderChange={(searchResultColumnOrder) => ui?.update({ searchResultColumnOrder })}
+            getVisibleColumns={() => ui?.get().searchResultVisibleColumns}
+            onVisibleColumnsChange={(searchResultVisibleColumns) => ui?.update({ searchResultVisibleColumns })}
             onActivate={(row) => void selection.viewInTree(row.ref, row.fullPath)}
             onContextMenu={menus.onResultContextMenu}
           />

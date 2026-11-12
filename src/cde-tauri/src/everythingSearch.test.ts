@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ApiError } from "./api/client";
-import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage, searchFromHereQuery } from "./everythingSearch";
+import { EVERYTHING_SYNTAX_HINT, includePathControl, kindControls, searchErrorMessage, searchFromHereQuery, duplicatesOfQuery } from "./everythingSearch";
 
 describe("searchErrorMessage", () => {
   it("shows a refused query as an invalid query with the server message", () => {
@@ -86,5 +86,17 @@ describe("searchFromHereQuery", () => {
     expect(searchFromHereQuery('/data/say"hi"', "x.cdex")).toBe('catalog:x path:regex:"^/data/say\\x22hi\\x22/" ');
     expect(searchFromHereQuery("/data/(a)+b.c", "x.cdex")).toBe("catalog:x path:/data/(a)+b.c/ ");
     expect(searchFromHereQuery("/d", "we?rd.cdex")).toBe('catalog:regex:"we\\?rd" path:/d/ ');
+  });
+});
+
+describe("duplicatesOfQuery", () => {
+  it("is an Everything hash: search over files and folders", () => {
+    expect(duplicatesOfQuery("0123456789abcdef0123456789abcdef", 500)).toEqual({
+      pattern: "hash:0123456789abcdef0123456789abcdef",
+      everythingMode: true,
+      includeFiles: true,
+      includeFolders: true,
+      limitResultCount: 500,
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, type KeyboardEvent as ReactKeyboardEvent } from "react";
 
 export interface MenuItem {
   label: string;
@@ -7,6 +7,8 @@ export interface MenuItem {
   /** Tooltip, e.g. why the item is disabled. */
   title?: string;
   separator?: boolean;
+  /** Renders a check mark (true) or a blank (false) before the label; omit for a plain item. */
+  checked?: boolean;
 }
 
 export interface MenuState {
@@ -22,6 +24,16 @@ interface Props {
 
 export function ContextMenu({ menu, onClose }: Props) {
   const ref = useRef<HTMLUListElement>(null);
+
+  // Keyboard users land on the first item, and focus goes back to whatever opened the menu when it closes.
+  useEffect(() => {
+    if (!menu) return;
+    const opener = document.activeElement as HTMLElement | null;
+    ref.current?.querySelector<HTMLElement>('[role^="menuitem"]')?.focus();
+    return () => {
+      if (document.activeElement === document.body || document.activeElement === null) opener?.focus();
+    };
+  }, [menu]);
 
   useEffect(() => {
     if (!menu) return;
@@ -51,27 +63,56 @@ export function ContextMenu({ menu, onClose }: Props) {
 
   if (!menu) return null;
 
+  function activate(item: MenuItem) {
+    if (item.disabled) return;
+    item.onClick();
+    onClose();
+  }
+
+  function onKeyDown(e: ReactKeyboardEvent<HTMLUListElement>) {
+    const items = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role^="menuitem"]') ?? []);
+    const at = items.indexOf(document.activeElement as HTMLElement);
+    const focus = (i: number) => items[(i + items.length) % items.length]?.focus();
+    if (e.key === "ArrowDown") focus(at + 1);
+    else if (e.key === "ArrowUp") focus(at < 0 ? -1 : at - 1);
+    else if (e.key === "Home") focus(0);
+    else if (e.key === "End") focus(-1);
+    else if (e.key === "Tab") onClose();
+    else if (e.key === "Enter" || e.key === " ") {
+      const index = Number((document.activeElement as HTMLElement | null)?.dataset.index);
+      if (Number.isInteger(index)) activate(menu!.items[index]);
+    } else return;
+    e.preventDefault();
+  }
+
   // Keep the menu inside the viewport (rough width/height estimate is fine for clamping).
   const left = Math.min(menu.x, window.innerWidth - 200);
   const top = Math.min(menu.y, window.innerHeight - menu.items.length * 26 - 10);
 
   return (
-    <ul ref={ref} className="context-menu" style={{ left: Math.max(0, left), top: Math.max(0, top) }}>
+    <ul
+      ref={ref}
+      role="menu"
+      className="context-menu"
+      style={{ left: Math.max(0, left), top: Math.max(0, top) }}
+      onKeyDown={onKeyDown}
+    >
       {menu.items.map((item, i) =>
         item.separator ? (
-          <li key={i} className="separator" />
+          <li key={i} role="separator" className="separator" />
         ) : (
           <li
             key={i}
+            data-index={i}
+            tabIndex={-1}
             className={item.disabled ? "disabled" : ""}
             title={item.title}
-            onClick={() => {
-              if (!item.disabled) {
-                item.onClick();
-                onClose();
-              }
-            }}
+            role={item.checked === undefined ? "menuitem" : "menuitemcheckbox"}
+            aria-checked={item.checked}
+            aria-disabled={item.disabled || undefined}
+            onClick={() => activate(item)}
           >
+            {item.checked !== undefined && <span className="menu-check">{item.checked ? "✓" : ""}</span>}
             {item.label}
           </li>
         ),

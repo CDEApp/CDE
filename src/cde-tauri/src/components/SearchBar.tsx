@@ -15,8 +15,15 @@ interface Props {
   filtersExpanded: boolean;
   onFiltersExpandedChange: (expanded: boolean) => void;
   /** A shortcut ("Search from here") asking for this pattern in the box, in Everything mode. Bump `nonce` to apply again. */
-  prefill?: { pattern: string; nonce: number } | null;
+  prefill?: SearchPrefill | null;
   queryLimit?: number | null;
+}
+
+/** `clearFilters` unchecks the size and date filters, for a shortcut that runs its search without them. */
+export interface SearchPrefill {
+  pattern: string;
+  nonce: number;
+  clearFilters?: boolean;
 }
 
 /** Search box + advanced filters (size/date/hour ranges, not-older-than). */
@@ -38,6 +45,13 @@ export function SearchBar({
     if (!prefill) return;
     setPattern(prefill.pattern);
     setEverythingMode(true);
+    if (prefill.clearFilters) {
+      setFromSizeEnable(false);
+      setToSizeEnable(false);
+      setFromDateEnable(false);
+      setToDateEnable(false);
+      setNotOlderThanEnable(false);
+    }
   }, [prefill]);
   const [advanced, setAdvancedState] = useState(filtersExpanded);
   const setAdvanced = (expanded: boolean) => {

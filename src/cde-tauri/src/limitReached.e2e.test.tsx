@@ -51,12 +51,20 @@ describe("limit reached, from the stream to the list", () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(sseBody(limitReached), { status: 200 })));
     const client = new CdeApiClient("http://127.0.0.1:5000", "tok");
     const ui = { pushSearchHistory: vi.fn(), update: vi.fn() } as unknown as UiStateManager;
-    const { result } = renderHook(() => useSearch({ getClient: () => client, getUi: () => ui, onStart: vi.fn() }));
+    const { result } = renderHook(() => useSearch({ getClient: () => client, getUi: () => ui, onStart: vi.fn(), wantsDuplicateCounts: () => false }));
 
     const show = () =>
       render(
         <ResultsPane
           rows={result.current.results}
+          filter={{
+            text: "", setText: vi.fn(), mode: "substring", setMode: vi.fn(), field: "name", setField: vi.fn(),
+            shown: result.current.results, total: result.current.results.length, active: false, error: null, searchable: false,
+          }}
+          canSearchWithFilter={false}
+          onSearchWithFilter={vi.fn()}
+          getVisibleColumns={() => undefined}
+          onVisibleColumnsChange={vi.fn()}
           busy={result.current.busy}
           staleBanner={null}
           onSearchAgain={vi.fn()}

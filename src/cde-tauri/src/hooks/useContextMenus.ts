@@ -25,6 +25,7 @@ export interface UseContextMenusOptions {
   runShell: (ref: EntryRef, action: ShellAction, commandId?: number) => void;
   showTreemap: (ref: EntryRef) => void;
   searchFromHere: (ref: EntryRef, fullPath: string) => void;
+  findDuplicates: (contentHash: string) => void;
   viewInTree: (ref: EntryRef, expectedPath?: string) => void;
   rescanCatalog: (catalogId: number) => void;
   editDescription: (catalog: CatalogInfo) => void;
@@ -34,7 +35,7 @@ export interface UseContextMenusOptions {
 /** The open context menu, and the handlers that build one for each pane's entries. */
 export function useContextMenus(o: UseContextMenusOptions) {
   const [menu, setMenu] = useState<MenuState | null>(null);
-  const { commands, catalogs, jobs, runShell, showTreemap, searchFromHere, rescanCatalog, editDescription, collapseAll } = o;
+  const { commands, catalogs, jobs, runShell, showTreemap, searchFromHere, findDuplicates, rescanCatalog, editDescription, collapseAll } = o;
 
   const context = useMemo<EntryMenuContext>(
     () => ({
@@ -42,6 +43,7 @@ export function useContextMenus(o: UseContextMenusOptions) {
       runShell,
       showTreemap,
       searchFromHere,
+      findDuplicates,
       copyPath: (fullPath) => void navigator.clipboard.writeText(fullPath),
       copyText: (text) => void navigator.clipboard.writeText(text),
       rescanFor: (catalogId) =>
@@ -51,7 +53,7 @@ export function useContextMenus(o: UseContextMenusOptions) {
         if (c) editDescription(c);
       },
     }),
-    [commands, catalogs, jobs, runShell, showTreemap, searchFromHere, rescanCatalog, editDescription],
+    [commands, catalogs, jobs, runShell, showTreemap, searchFromHere, findDuplicates, rescanCatalog, editDescription],
   );
 
   // The memoised DirectoryPane needs handlers with a stable identity, or every App render (e.g. each

@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import type { CdeApiClient } from "../api/client";
 import type { SearchQuery, SearchResultRow } from "../api/types";
+import { withDuplicateCounts } from "../resultColumns";
 import { staleResultsBanner } from "../rescan";
 import { searchErrorMessage } from "../everythingSearch";
 import { nextSearchLimit } from "../searchLimit";
@@ -11,10 +12,11 @@ export interface UseSearchOptions {
   getUi: () => UiStateManager | null;
   /** Called when a search starts, so the caller can switch to the results view. */
   onStart: () => void;
+  wantsDuplicateCounts: () => boolean;
 }
 
 /** Streaming search: the results, busy/timing text, the last query, and which catalogs were rescanned since. */
-export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
+export function useSearch({ getClient, getUi, onStart, wantsDuplicateCounts }: UseSearchOptions) {
   const searchAbort = useRef<AbortController | null>(null);
   // The query behind the results on screen: a refused query leaves it alone, so Search again and Raise limit act on them.
   const lastQueryRef = useRef<SearchQuery | null>(null);
@@ -28,7 +30,8 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const [rescannedSinceSearch, setRescannedSinceSearch] = useState<ReadonlySet<number>>(new Set());
 
   const runSearch = useCallback(
-    async (query: SearchQuery) => {
+    async (requested: SearchQuery) => {
+      const query = withDuplicateCounts(requested, wantsDuplicateCounts());
       const client = getClient();
       const ui = getUi();
       setQueryLimit(query.limitResultCount ?? null);
@@ -106,7 +109,7 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
         }
       }
     },
-    [getClient, getUi, onStart],
+    [getClient, getUi, onStart, wantsDuplicateCounts],
   );
 
   const cancelSearch = useCallback(() => {
@@ -118,6 +121,8 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
     if (q) await runSearch(q);
   }, [runSearch]);
 
+  const hasLastQuery = lastQueryRef.current !== null;
+  const getLastQuery = useCallback(() => lastQueryRef.current, []);
   const raiseLimit = useCallback(async () => {
     const q = lastQueryRef.current;
     if (q) await runSearch({ ...q, limitResultCount: nextSearchLimit(q.limitResultCount ?? 10000) });
@@ -131,5 +136,8 @@ export function useSearch({ getClient, getUi, onStart }: UseSearchOptions) {
   const staleBanner = (nameOf: (catalogId: number) => string) =>
     staleResultsBanner(results, rescannedSinceSearch, nameOf);
 
-  return { results, searchEpoch, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit, markRescanned, staleBanner };
+  return {
+    results, searchEpoch, busy, timing, limitReachedCount, queryLimit, runSearch, cancelSearch, searchAgain, raiseLimit,
+    getLastQuery, hasLastQuery, markRescanned, staleBanner,
+  };
 }
