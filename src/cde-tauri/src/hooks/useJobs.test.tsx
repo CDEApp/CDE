@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { act, renderHook } from "@testing-library/react";
+import { act, renderHook, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { JobRefusal, type CdeApiClient, type JobsHandlers } from "../api/client";
 import type { JobDto } from "../api/types";
@@ -523,6 +523,28 @@ describe("useJobs hash jobs", () => {
     await t.event(hashJob(5, { state: "cancelled" }));
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing failed", message: expect.stringContaining("disk gone") }));
     expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing cancelled" }));
+  });
+
+  it("after a run that stopped part-way, refreshes the catalogs and says the finished hashes were saved", async () => {
+    const t = setup();
+    await t.snapshot([hashJob(4)]);
+    t.refreshCatalogs.mockClear();
+    await t.event(hashJob(4, { state: "failed", error: { code: "hash-failed", message: "Hash FAILED: 3 files hashed" } }));
+    await waitFor(() => expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing failed" })));
+    expect(t.refreshCatalogs).toHaveBeenCalledTimes(1);
+    expect(show).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining("Hashes finished before the failure were saved.") }),
+    );
+  });
+
+  it("after a run refused before it started, says nothing changed and does not refresh", async () => {
+    const t = setup();
+    await t.snapshot([hashJob(4)]);
+    t.refreshCatalogs.mockClear();
+    await t.event(hashJob(4, { state: "failed", error: { code: "catalog-unavailable", message: "busy" } }));
+    await waitFor(() => expect(show).toHaveBeenCalledWith(expect.objectContaining({ title: "Hashing failed" })));
+    expect(t.refreshCatalogs).not.toHaveBeenCalled();
+    expect(show).toHaveBeenCalledWith(expect.objectContaining({ message: expect.stringContaining("Existing hashes were left unchanged.") }));
   });
 
   it("shows a refused hash run as a toast, even when a root is offline", async () => {

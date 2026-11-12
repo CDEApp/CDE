@@ -139,16 +139,31 @@ async function announceHash(client: CdeApiClient, job: JobDto, cb: Callbacks) {
   }
 }
 
+// A run that stopped part-way ("hash-failed") has saved the hashes it finished, so the list is refreshed and the
+// message says so. Any other failure is a refusal before work started, which changed nothing.
+async function announceHashFailure(client: CdeApiClient, job: JobDto, cb: Callbacks) {
+  const err = job.error;
+  const partial = err?.code === "hash-failed";
+  let refreshNote = "";
+  if (partial) {
+    try {
+      await cb.refreshCatalogs(client);
+    } catch (e) {
+      refreshNote = ` Refreshing the catalog list failed: ${errText(e)}. Use Reload.`;
+    }
+  }
+  notifications.show({
+    color: "red",
+    title: "Hashing failed",
+    message:
+      `${job.title}: ${err?.message ?? "unknown error"}. ` +
+      (partial ? "Hashes finished before the failure were saved." : "Existing hashes were left unchanged.") +
+      refreshNote,
+  });
+}
+
 function announceFailure(job: JobDto, showUnreachable: (root: string) => void) {
   const err = job.error;
-  if (job.kind === "hash") {
-    notifications.show({
-      color: "red",
-      title: "Hashing failed",
-      message: `${job.title}: ${err?.message ?? "unknown error"}. Existing hashes were left unchanged.`,
-    });
-    return;
-  }
   if (err?.code === "root-not-accessible") {
     showUnreachable(err.rootPath || job.title);
     return;
@@ -239,6 +254,10 @@ export function useJobs({
         void announce(getClient(), job, latestCallbacks.current)
           .catch((e) => console.error("job completion handling failed", e))
           .finally(() => setCompleting((n) => n - 1));
+      } else if (job.state === "failed" && job.kind === "hash") {
+        void announceHashFailure(getClient(), job, latestCallbacks.current).catch((e) =>
+          console.error("job completion handling failed", e),
+        );
       } else if (job.state === "failed") {
         announceFailure(job, setUnreachableRoot);
       } else if (job.state === "cancelled") {
