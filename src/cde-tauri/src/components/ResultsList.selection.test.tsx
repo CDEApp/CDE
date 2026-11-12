@@ -5,6 +5,7 @@ import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { refToString, type SearchResultRow } from "../api/types";
 import { useRowSelection } from "../hooks/useRowSelection";
 import { selectedInOrder, type RowSelection } from "../rowSelection";
+import type { StyleResolver } from "../colourRules";
 import { ResultsList } from "./ResultsList";
 
 beforeAll(() => {
@@ -35,7 +36,7 @@ interface HarnessProps {
   epoch?: number;
   onActivate?: (r: SearchResultRow) => void;
   onContextMenu?: (r: SearchResultRow, x: number, y: number) => void;
-  resolveStyle?: () => undefined;
+  resolveStyle?: StyleResolver;
   visibleRowsRef?: { current: readonly SearchResultRow[] };
   selectionRef?: { current: RowSelection | null };
 }
@@ -262,4 +263,29 @@ describe("ResultsList selection at scale", () => {
     expect(resolveStyle.mock.calls.length).toBeLessThanOrEqual(mounted);
     expect(selectedNames()).toHaveLength(mounted);
   }, 30_000);
+});
+
+describe("ResultsList review fixes", () => {
+  it("Home scrolls back to the first row when it is already the active row", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness rows={makeRows(1000)} />);
+    await user.click(rowOf("r1.txt"));
+    const scroller = container.querySelector(".vlist-scroll") as HTMLElement;
+    scroller.scrollTop = 5000;
+    fireEvent.scroll(scroller);
+    await user.keyboard("{Home}");
+    expect(scroller.scrollTop).toBe(0);
+  });
+
+  it("a selected row drops the colour-rule gradient so its name stays visible", async () => {
+    const user = userEvent.setup();
+    const gradient = { backgroundImage: "linear-gradient(red, blue)", backgroundClip: "text", WebkitTextFillColor: "transparent" };
+    const { container } = render(<Harness rows={makeRows(3)} resolveStyle={() => gradient} />);
+    const nameSpan = () => rowOf("r2.txt").querySelector(".name-text");
+    expect(nameSpan()).not.toBeNull();
+    await user.click(rowOf("r2.txt"));
+    expect(rowOf("r2.txt").getAttribute("aria-selected")).toBe("true");
+    expect(nameSpan()).toBeNull();
+    expect(container.querySelectorAll(".name-text").length).toBe(2);
+  });
 });

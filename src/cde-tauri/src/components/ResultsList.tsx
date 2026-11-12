@@ -142,11 +142,17 @@ export function ResultsList({
 
   const orderRef = useRef(order);
   orderRef.current = order;
+  // Bumped by every keyboard move, so Home or End on an already-active row still scrolls it back into view.
+  const [revealNonce, setRevealNonce] = useState(0);
   useEffect(() => {
     if (selection.active === null) return;
     const index = orderRef.current.indexOf(selection.active);
     if (index >= 0) listRef.current?.scrollToIndex(index, "nearest");
-  }, [selection.active]);
+  }, [selection.active, revealNonce]);
+  const move = (to: { delta: number } | "start" | "end", extend: boolean) => {
+    dispatchSelection({ type: "move", to, extend, order });
+    setRevealNonce((n) => n + 1);
+  };
 
   function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.altKey) return;
@@ -155,10 +161,10 @@ export function ResultsList({
     if (mod && e.key.toLowerCase() === "a") dispatchSelection({ type: "selectAll", order });
     else if (mod && e.key.toLowerCase() === "c" && onCopy) onCopy();
     else if (mod) return;
-    else if (e.key === "ArrowDown") dispatchSelection({ type: "move", to: { delta: 1 }, extend, order });
-    else if (e.key === "ArrowUp") dispatchSelection({ type: "move", to: { delta: -1 }, extend, order });
-    else if (e.key === "Home") dispatchSelection({ type: "move", to: "start", extend, order });
-    else if (e.key === "End") dispatchSelection({ type: "move", to: "end", extend, order });
+    else if (e.key === "ArrowDown") move({ delta: 1 }, extend);
+    else if (e.key === "ArrowUp") move({ delta: -1 }, extend);
+    else if (e.key === "Home") move("start", extend);
+    else if (e.key === "End") move("end", extend);
     else if (e.key === " ") dispatchSelection({ type: "toggleActive" });
     else if (e.key === "Escape") dispatchSelection({ type: "clear" });
     else return;
@@ -365,9 +371,12 @@ export function ResultsList({
         }
         renderRow={(row, i, style) => {
           const r = row.original;
-          const { row: rowStyle, name: nameStyle } = splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
           const key = refToString(r.ref);
           const isSelected = selection.selected.has(key);
+          // Selected rows keep the selection look: no rule styles (transparent gradient text must not hide the name).
+          const { row: rowStyle, name: nameStyle } = isSelected
+            ? { row: undefined, name: undefined }
+            : splitRowAndNameStyle(resolveStyle(r.name, r.isDirectory));
           const click = (mode: "replace" | "toggle" | "range") => dispatchSelection({ type: "click", key, mode, order });
           return (
             <div

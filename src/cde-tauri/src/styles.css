@@ -380,5 +380,5 @@ tbody tr:hover { background: var(--row-hover); }
 
 .vlist.results-cols:focus-visible { outline: none; box-shadow: inset 0 0 0 1px var(--accent); }
 .results-cols .vlist-row { user-select: none; }
-.results-cols .vlist-row[aria-selected="true"] { background: var(--accent) !important; color: #fff !important; }
+.results-cols .vlist-row[aria-selected="true"] { background: var(--accent); color: #fff; }
 .results-cols .vlist-row.active { box-shadow: inset 0 0 0 1px var(--fg); }
