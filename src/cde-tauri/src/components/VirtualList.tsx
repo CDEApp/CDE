@@ -4,6 +4,8 @@ import { scrollTopFor, visibleRange } from "../visibleRange";
 export interface VirtualListHandle {
   /** Scroll row `index` into view: `nearest` only if it is off screen, `center` mid-viewport. */
   scrollToIndex: (index: number, align: "nearest" | "center") => void;
+  /** How many whole rows fit below the header (at least 1). */
+  rowsPerPage: () => number;
 }
 
 interface Props<T> {
@@ -53,11 +55,15 @@ export function VirtualList<T>({
       scrollToIndex(index, align) {
         const el = scrollRef.current;
         if (!el) return;
-        // Rows start below the (sticky) header, which also covers the top of the viewport.
+        // Rows start below the sticky header, and the header covers the same height at the top of the viewport: the
+        // two cancel, so a row is visible when its offset is at or past scrollTop, in a viewport shorter by the header.
         const offset = innerRef.current?.offsetTop ?? 0;
-        el.scrollTop =
-          offset +
-          scrollTopFor({ index, rowHeight, viewport: el.clientHeight - offset, scrollTop: el.scrollTop - offset, align });
+        el.scrollTop = scrollTopFor({ index, rowHeight, viewport: el.clientHeight - offset, scrollTop: el.scrollTop, align });
+      },
+      rowsPerPage() {
+        const el = scrollRef.current;
+        if (!el) return 1;
+        return Math.max(1, Math.floor((el.clientHeight - (innerRef.current?.offsetTop ?? 0)) / rowHeight));
       },
     }),
     [rowHeight],

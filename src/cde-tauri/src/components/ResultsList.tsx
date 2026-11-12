@@ -154,6 +154,9 @@ export function ResultsList({
     setRevealNonce((n) => n + 1);
   };
 
+  // One page less a row, so the row the user was on stays in view as context.
+  const pageStep = () => Math.max(1, (listRef.current?.rowsPerPage() ?? 1) - 1);
+
   function onGridKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if (e.target !== e.currentTarget || e.altKey) return;
     const mod = e.ctrlKey || e.metaKey;
@@ -163,6 +166,8 @@ export function ResultsList({
     else if (mod) return;
     else if (e.key === "ArrowDown") move({ delta: 1 }, extend);
     else if (e.key === "ArrowUp") move({ delta: -1 }, extend);
+    else if (e.key === "PageDown") move({ delta: pageStep() }, extend);
+    else if (e.key === "PageUp") move({ delta: -pageStep() }, extend);
     else if (e.key === "Home") move("start", extend);
     else if (e.key === "End") move("end", extend);
     else if (e.key === " ") dispatchSelection({ type: "toggleActive" });

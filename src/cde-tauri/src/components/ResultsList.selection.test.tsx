@@ -289,3 +289,62 @@ describe("ResultsList review fixes", () => {
     expect(container.querySelectorAll(".name-text").length).toBe(2);
   });
 });
+
+describe("ResultsList Page Up and Page Down", () => {
+  function tenRowsTall(container: HTMLElement) {
+    const scroller = container.querySelector(".vlist-scroll") as HTMLElement;
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 22 * 10 });
+  }
+
+  it("move the active row by a page less one row, and Shift extends the selection", async () => {
+    const user = userEvent.setup();
+    const selectionRef = { current: null as RowSelection | null };
+    const { container } = render(<Harness rows={makeRows(100)} selectionRef={selectionRef} />);
+    tenRowsTall(container);
+    await user.click(rowOf("r1.txt"));
+    const active = () => selectionRef.current!.active;
+    const selected = () => [...selectionRef.current!.selected].sort();
+
+    await user.keyboard("{PageDown}");
+    expect(active()).toBe("1-10");
+    expect(selected()).toEqual(["1-10"]);
+
+    await user.keyboard("{Shift>}{PageDown}{/Shift}");
+    expect(active()).toBe("1-19");
+    expect(selected()).toHaveLength(10);
+
+    await user.keyboard("{PageUp}");
+    expect(active()).toBe("1-10");
+    expect(selected()).toEqual(["1-10"]);
+  });
+
+  it("stop at the first and last row", async () => {
+    const user = userEvent.setup();
+    const selectionRef = { current: null as RowSelection | null };
+    const { container } = render(<Harness rows={makeRows(12)} selectionRef={selectionRef} />);
+    tenRowsTall(container);
+    await user.click(rowOf("r1.txt"));
+
+    await user.keyboard("{PageDown}{PageDown}");
+    expect(selectionRef.current!.active).toBe("1-12");
+    await user.keyboard("{PageUp}{PageUp}");
+    expect(selectionRef.current!.active).toBe("1-1");
+  });
+});
+
+describe("ResultsList keeps the active row clear of the column header", () => {
+  it("Home scrolls the first row to just below the sticky header, not under it", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<Harness rows={makeRows(1000)} />);
+    const scroller = container.querySelector(".vlist-scroll") as HTMLElement;
+    Object.defineProperty(scroller, "clientHeight", { configurable: true, value: 25 + 22 * 10 });
+    Object.defineProperty(container.querySelector(".vlist-inner") as HTMLElement, "offsetTop", { configurable: true, value: 25 });
+    await user.click(rowOf("r1.txt"));
+    scroller.scrollTop = 5000;
+    fireEvent.scroll(scroller);
+
+    await user.keyboard("{Home}");
+
+    expect(scroller.scrollTop).toBe(0);
+  });
+});
