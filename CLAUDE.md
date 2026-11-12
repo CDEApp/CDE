@@ -30,9 +30,9 @@ CDE is a high-performance file system cataloging utility written in C# that crea
 - **cdeAppCore** - Frontend-agnostic application core
   - Target: .NET 10 (no WinForms, no ASP.NET; references only `cdeLib`)
   - Transport-agnostic services + serializable DTOs shared by every frontend: `ICatalogSession`
-    (owned, disposable catalog lifetime over mmap `.cdex`; per-catalog rescan "replace", create "add" and the
-    `CatalogDir` working folder, all under one session gate), `JobRegistry` (queued/running/finished scan jobs over
-    the session, with a concurrency cap), streamed `ISearchService`
+    (owned, disposable catalog lifetime over mmap `.cdex`; per-catalog rescan "replace", create "add", hash of a
+    catalog set and the `CatalogDir` working folder, all under one session gate), `JobRegistry`
+    (queued/running/finished rescan, create and hash jobs over the session, with a concurrency cap), streamed `ISearchService`
     (`IAsyncEnumerable<SearchResultRow>` + `IProgress<SearchProgress>`), `IShellActions`
     (open/explore/properties + custom commands), and the pure formatting/sorting/validation helpers
     lifted out of the WinForms presenter
@@ -49,10 +49,11 @@ CDE is a high-performance file system cataloging utility written in C# that crea
   - Binds `127.0.0.1` on an ephemeral port; gated by a startup-handshake token printed on stdout
   - The API process owns the catalog session. Endpoints: `/health`, `/catalogs`,
     `/entries/{ref}/children`, `/entries/{ref}/path`, `/search` (SSE; each `result` row carries `contentHash`, the usable full hash as 32 hex digits, and with `includeDuplicateCounts` in the query a `duplicateCount` of the other files with that hash, both left out when null; the final `progress` event carries `limitReached: true` only when the result limit stopped the search with more matches beyond it), `/session/reload` (SSE; 409 busy while any job is queued or running),
-    `POST /jobs` (queue a rescan of a catalog or a create of a new `.cdex` in the working folder; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
+    `POST /jobs` (queue a rescan of a catalog, a create of a new `.cdex` in the working folder, or a hash of a set of catalogs; 202 + the job), `GET /jobs`, `GET /jobs/events` (SSE: `snapshot`, then one `job` event per change), `POST /jobs/{id}/cancel`, `DELETE /jobs/{id}`, `DELETE /jobs/finished`, `POST /catalogs/preflight`, `POST /catalogs/hash/preflight` (what a hash job with the same catalogs and filter would read; 400 `invalid-filter` with the search bar's message), `PUT /catalogs/{id}/description` (rewrites only the `.cdex` metadata and swaps it in; legacy `.cde` refused), `POST /compare/summaries` (exact subtree counts for folder pairs),
     `/shell`, `/shell/commands`, `/ui-state`
-  - Scan jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the
-    rest queued; never two queued/running jobs on one catalog file; finished jobs listed until dismissed (200 kept)
+  - Jobs run through `cdeAppCore`'s `JobRegistry`: at most `AppConfig:Jobs:MaxConcurrent` (default 3) at once, the
+    rest queued; never two queued/running jobs on one catalog file (a hash job holds every catalog of its set);
+    finished jobs listed until dismissed (200 kept)
   - Publishes as a self-contained single-file binary for sidecar bundling
 
 - **cde-tauri** - Tauri (React/TypeScript) desktop frontend (`src/cde-tauri`)
@@ -253,6 +254,21 @@ messages) and hashes only the repeated-size files it matches; `--include-unique-
 gives every selected file a full hash. The selection is a `HashSelection` per run, never saved. A filter only adds or
 upgrades hashes; it never clears one. `ColumnarCatalogHashing.Preview` counts what a selection will read, through the
 same `HashCandidateSelection` as the run, and `HashAndSave` takes a `CancellationToken` that stops before any save.
+
+**Hash jobs (issue #230, cde-tauri).** `POST /jobs` with `{"kind":"hash","catalogIds":[0,2],"hash":{"filter":"size:>2gb","includeUniqueSizes":false}}`
+queues a hash of a SET of catalogs: sizes are compared across the whole set, exactly as `cde hash` does over a folder of
+catalogs, and the resulting `.cdex` files are byte-identical to the CLI's. `hash` is a `HashOptions`; omit it to hash every
+repeated-size file. `JobDto` then carries `catalogIds`, `phase` (`hashing` for the first pass, `hashing-full`, `saving`,
+`swapping`) and `hash` (`filesDone`, `filesTotal`, `bytesDone`, `bytesTotal` of the current pass; they restart at the full
+pass, and bytes are counted as each file ends). A finished job has `result.hash` (`filesHashed`, `filesFailed`). Refusals
+add `invalid-filter` (400, the search bar's parser message), `legacy-catalog` (422, a `.cde` cannot carry XxHash128 hashes)
+and `hash-failed` to the scan job codes. `POST /catalogs/hash/preflight` takes the same `catalogIds` + `hash` and answers
+`{files, bytes, alreadyHashed}` from `ColumnarCatalogHashing.Preview`, read from the loaded catalogs under read leases.
+`CatalogSession.HashAsync` holds the rescan gate of every catalog in the set for the whole run, hashes through its own
+mappings via `ColumnarCatalogHashing.HashAndSave`, and passes a `replace` callback so each staged `<file>.tmp` goes in
+through the session's swap (that catalog's write lock, waiting for searches) instead of a plain move. A cancel before the
+first swap leaves every `.cdex` byte-identical and no `.tmp`; from the first swap on the run is not cancellable. The first-pass
+size comes from `AppConfig:Hashing:FirstPassSizeInBytes`, read per run.
 
 ### Content hash in search (#288)
 
